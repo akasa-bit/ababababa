@@ -643,6 +643,7 @@ class Game {
     this.outposts = []; // 採掘基地 { sys, body, lv }
     this.auto = {}; // 自動開発を有効にした星系 { [sysId]: true }
     this.autoTimer = 0;
+    this.autoDefense = false; // 自動防衛配備: 軍艦のいない入植星系へ余っている軍艦を回す
     this.events = []; // 重要なイベント { id, year, kind, sys, text, good }
     this.projects = []; // 資材の搬入を待つ建設 { id, type, sys, start, ready, from: [搬出元の星系], label, ... }
     this.flow = {}; // 直近の星系ごとの生産・需要[年あたり] (保存しない)
@@ -918,14 +919,14 @@ class Game {
     if (!this.hasShipyard(sysId)) return fail('造船所がない');
     return this.order(WARSHIP_COST, sysId, { type: 'warship', label: `${this.system(sysId).name} の軍艦` });
   }
-  sendFleet(from, to, n) {
+  sendFleet(from, to, n, prefix = '') {
     const have = this.garrison[from] || 0;
     n = Math.min(n, have);
     if (from === to || n < 1) return fail('派遣できる軍艦がない');
     this.garrison[from] = have - n;
     const years = this.travelYears(from, to);
     this.fleets.push({ id: this.nextShipId++, from, to, n, depart: this.year, arrive: this.year + years });
-    this.message(`${this.system(from).name} → ${this.system(to).name} へ艦隊 ${n} 隻が出撃 (到着まで ${years.toFixed(2)} 年)`);
+    this.message(`${prefix}${this.system(from).name} → ${this.system(to).name} へ艦隊 ${n} 隻が出撃 (到着まで ${years.toFixed(2)} 年)`);
     return { ok: true };
   }
 
@@ -993,6 +994,26 @@ class Game {
         if (done?.ok) break;
       }
     }
+  }
+
+  // 自動防衛配備: 駐留艦がおらず艦隊も向かっていない入植星系へ、人口の多い順に1隻ずつ回す。
+  // 回せるのは、入植星系なら2隻目以降 (自分の守りの1隻は残す)、入植していない星系にいる艦は全部。
+  autoDefend() {
+    if (!this.autoDefense) return;
+    const pop = (id) => this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
+    const targets = this.colonizedSystems()
+      .filter((s) => !(this.garrison[s.id] > 0) && !this.fleets.some((f) => f.to === s.id))
+      .sort((a, b) => pop(b.id) - pop(a.id));
+    for (const t of targets) {
+      const spare = Object.keys(this.garrison).map(Number)
+        .filter((id) => this.garrison[id] > (this.isColonized(id) ? 1 : 0))
+        .sort((a, b) => this.travelYears(a, t.id) - this.travelYears(b, t.id));
+      if (!spare.length) break;
+      this.sendFleet(spare[0], t.id, 1, '[自動防衛] ');
+    }
+  }
+  undefended() {
+    return this.colonizedSystems().filter((s) => !(this.garrison[s.id] > 0) && !this.fleets.some((f) => f.to === s.id));
   }
 
   rally(to) {
@@ -1081,7 +1102,7 @@ class Game {
       this.economy(h);
       if (this.pirates(h)) changed = true;
       this.autoTimer += h;
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); }
     }
     return changed;
   }
@@ -1274,6 +1295,7 @@ class Game {
     if (Array.isArray(d.outposts)) this.outposts = d.outposts.filter((o) => o && ok(o.sys, o.body) && o.lv >= 1);
     if (obj(d.auto)) this.auto = d.auto;
     if (Number.isFinite(d.autoTimer)) this.autoTimer = d.autoTimer;
+    this.autoDefense = !!d.autoDefense;
     if (Array.isArray(d.events)) this.events = d.events.filter((e) => e && typeof e.text === 'string');
     if (Array.isArray(d.projects)) this.projects = d.projects.filter((j) => j && sysOk(j.sys) && Number.isFinite(j.ready) && Array.isArray(j.from));
     if (obj(d.natives)) this.natives = d.natives;
@@ -1901,6 +1923,12 @@ function routeBox(app, sys) {
     ${list}${open}`;
 }
 
+function defenseToggle(g) {
+  const bare = g.undefended().length;
+  return `<label class="check auto"><input type="checkbox" data-act="autodefense" ${g.autoDefense ? 'checked' : ''}> 自動防衛配備</label>
+    <p class="note">オンにすると、年に1回、軍艦のいない入植星系 (${bare} か所) へ、余っている軍艦を近くから1隻ずつ回す。各入植星系の最後の1隻は動かさない。</p>`;
+}
+
 function militaryBox(app, sys) {
   const g = app.game;
   const n = g.garrison[sys.id] || 0;
@@ -1920,7 +1948,7 @@ function militaryBox(app, sys) {
   const queued = g.projects.filter((j) => j.type === 'warship' && j.sys === sys.id).length;
   return `<h3>軍事</h3>
     <p class="note">駐留艦 <b>${n}</b> 隻${queued ? ` (建造中 ${queued} 隻)` : ''}。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1隻あたり維持費 ${WARSHIP_UPKEEP} cr/年</p>
-    ${build}${send}`;
+    ${build}${send}${defenseToggle(g)}`;
 }
 
 function nativesSummary(g, sys) {
@@ -2154,7 +2182,7 @@ function empireHtml(app) {
     return `<tr><td>${goto(s)}</td><td><b>${n}</b> 隻${coming ? ` <span class="muted">(+${coming} 向かっている)</span>` : ''}</td><td>${build}</td>
       <td><button data-act="rally" data-sys="${id}">全艦をここへ集結</button></td></tr>`;
   }).join('');
-  const milTable = `<h3>軍事</h3><div class="scroll"><table class="tbl">
+  const milTable = `<h3>軍事</h3>${defenseToggle(g)}<div class="scroll"><table class="tbl">
     <tr><th>星系</th><th>駐留</th><th>軍艦の建造</th><th></th></tr>${milRows}</table></div>
     ${g.year < PIRATE_START ? `<p class="note">宇宙海賊は ${PIRATE_START} 年から現れる。</p>` : ''}`;
 
@@ -2355,7 +2383,7 @@ function buildSave(game, extra = {}) {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, events: game.events,
-    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
 }
@@ -2479,7 +2507,11 @@ function onPanelChange(e) {
   else if (act === 'forigin') app.fleetOrigin = Number(v);
   else if (act === 'bulkfocus') app.bulkFocus = v;
   else if (act === 'candonly') app.candOnly = e.target.checked;
-  else if (act === 'autodev') {
+  else if (act === 'autodefense') {
+    app.game.autoDefense = e.target.checked;
+    app.game.message(`自動防衛配備を${e.target.checked ? 'オン' : 'オフ'}にした`);
+    if (e.target.checked) app.game.autoDefend();
+  } else if (act === 'autodev') {
     const id = Number(e.target.dataset.sys);
     app.game.auto[id] = e.target.checked;
     app.game.message(`${app.game.system(id).name} の自動開発を${e.target.checked ? 'オン' : 'オフ'}にした`);
