@@ -1174,6 +1174,13 @@ function resize() {
   galaxyView.h = h;
 }
 window.addEventListener('resize', () => { resize(); galaxyView.fit(); });
+// サイドパネルの中身でキャンバスの表示サイズが変わる(狭い画面の縦並び時)ので、
+// 描画バッファを表示サイズに追従させる。ずれると図が縦に潰れて斜めから見たようになる。
+// まだ地図を触っていなければ、全体表示も新しいサイズに合わせ直す。
+let touched = false;
+canvas.addEventListener('pointerdown', () => { touched = true; });
+canvas.addEventListener('wheel', () => { touched = true; }, { passive: true });
+new ResizeObserver(() => { resize(); if (!touched) galaxyView.fit(); }).observe(canvas);
 
 // --- UI イベント ---
 $('tab-galaxy').onclick = () => app.setView('galaxy');
