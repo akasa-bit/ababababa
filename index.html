@@ -1,0 +1,1348 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Moribin</title></head><body>
+
+<style>:root { color-scheme: dark; --bg:#05070d; --panel:#0d121d; --line:#1d2840; --fg:#d7e1f3; --muted:#7f8da8; --accent:#4de3d0; }
+* { box-sizing: border-box; }
+html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:14px/1.5 system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+body { display:flex; flex-direction:column; }
+header { display:flex; align-items:center; gap:16px; padding:8px 14px; background:var(--panel); border-bottom:1px solid var(--line); flex-wrap:wrap; }
+h1 { margin:0; font-size:18px; letter-spacing:.1em; color:var(--accent); }
+#date { font-variant-numeric:tabular-nums; min-width:9em; }
+main { flex:1; display:flex; min-height:0; }
+#stage { flex:1; min-width:0; min-height:0; position:relative; }
+canvas { position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+#zoom { position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:6px; }
+#zoom button { min-width:46px; min-height:46px; font-size:18px; background:rgba(13,18,29,.85); }
+aside { width:340px; background:var(--panel); border-left:1px solid var(--line); padding:12px 14px; overflow-y:auto; }
+button { background:#17213a; color:var(--fg); border:1px solid #2a3a60; border-radius:5px; padding:5px 10px; font:inherit; cursor:pointer; }
+button:hover:not(:disabled) { background:#1f2d4f; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+button.on { background:#1f3a4a; border-color:var(--accent); color:var(--accent); }
+button.ghost { background:transparent; margin-top:10px; }
+button small { display:block; font-size:11px; color:var(--muted); }
+#speed { display:flex; gap:4px; }
+#speed button.on { border-color:var(--accent); color:var(--accent); }
+h2 { margin:0 0 2px; font-size:17px; }
+h3 { margin:16px 0 6px; font-size:13px; color:var(--muted); border-bottom:1px solid var(--line); padding-bottom:3px; }
+.sub, .note, .muted { color:var(--muted); }
+.sub { margin:0 0 8px; } .note { margin:4px 0; font-size:12px; }
+.tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.tbl th, .tbl td { text-align:left; padding:2px 6px 2px 0; vertical-align:top; }
+.tbl th { color:var(--muted); font-weight:normal; }
+.kv th { width:7.5em; }
+.dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; }
+.dot.big { width:13px; height:13px; }
+ul { margin:4px 0; padding-left:18px; } ul.bodies { list-style:none; padding:0; }
+ul.bodies li { padding:3px 6px; border-radius:4px; cursor:pointer; }
+ul.bodies li:hover, ul.bodies li.sel { background:#16213a; }
+.mk { color:var(--accent); float:right; }
+.hz { color:#6fdc96; }
+.grade { padding:0 6px; border-radius:3px; background:#2a2f3d; }
+.grade.g1 { background:#5a4320; } .grade.g2 { background:#2f5a2a; } .grade.g3 { background:#1d6a5d; }
+.field { display:block; font-size:12px; color:var(--muted); } select { width:100%; margin-top:2px; background:#111a2e; color:var(--fg); border:1px solid #2a3a60; border-radius:4px; padding:4px; }
+.btns { display:flex; gap:8px; } .btns button { flex:1; text-align:left; }
+.ship { font-size:12px; margin-bottom:6px; }
+.bar { display:block; height:3px; background:#1d2840; margin:2px 0; } .bar i { display:block; height:100%; background:#ffb347; }
+#log { font-size:12px; } #log div { margin-bottom:2px; }
+@media (max-width: 800px) { main { flex-direction:column; } aside { width:auto; max-height:45%; border-left:0; border-top:1px solid var(--line); } }
+
+@media (pointer: coarse) {
+  button { min-height:40px; padding:6px 14px; }
+  ul.bodies li { padding:9px 8px; }
+  select { padding:9px; font-size:16px; }
+}
+html, body { height:100%; }
+[hidden] { display:none!important; }
+</style>
+
+  <header>
+    <h1>Moribin</h1>
+    <nav>
+      <button id="tab-galaxy" class="tab on">星間マップ</button>
+      <button id="tab-system" class="tab">星系マップ</button>
+    </nav>
+    <div id="date">西暦 2300.0 年</div>
+    <div id="speed">
+      <button data-speed="0">⏸</button>
+      <button data-speed="1">1年/秒</button>
+      <button data-speed="4">4</button>
+      <button data-speed="16">16</button>
+      <button data-speed="64">64</button>
+    </div>
+    <button id="savenow">セーブ</button>
+    <button id="export">書き出し</button>
+    <button id="import">読み込み</button>
+    <input id="importfile" type="file" accept="application/json,.json" hidden>
+    <button id="newgame" class="ghost">新しい銀河</button>
+    <span id="savestat" class="muted"></span>
+  </header>
+  <main>
+    <div id="stage">
+      <canvas id="map"></canvas>
+      <div id="zoom"><button id="zoom-in" aria-label="拡大">＋</button><button id="zoom-out" aria-label="縮小">－</button><button id="zoom-fit" aria-label="全体表示">全体</button></div>
+    </div>
+    <aside>
+      <div id="panel"></div>
+      <h3>航行中の入植船</h3>
+      <div id="ships"></div>
+      <h3>ログ</h3>
+      <div id="log"></div>
+    </aside>
+  </main>
+  
+<script>
+// シード付き乱数 (mulberry32)。同じシードなら同じ銀河が生成される。
+function hashSeed(str) {
+  let h = 2166136261;
+  for (const c of String(str)) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return h >>> 0;
+}
+
+class Rng {
+  constructor(seed) {
+    this.state = seed >>> 0;
+  }
+  next() {
+    this.state = (this.state + 0x6d2b79f5) >>> 0;
+    let t = this.state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  range(a, b) { return a + (b - a) * this.next(); }
+  int(a, b) { return Math.floor(this.range(a, b + 1)); }
+  chance(p) { return this.next() < p; }
+  pick(arr) { return arr[Math.floor(this.next() * arr.length)]; }
+  logUniform(a, b) { return Math.exp(this.range(Math.log(a), Math.log(b))); }
+  normal(mu = 0, sigma = 1) {
+    const u = 1 - this.next();
+    const v = this.next();
+    return mu + sigma * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+  poisson(lambda) {
+    const L = Math.exp(-lambda);
+    let k = 0;
+    let p = 1;
+    do { k++; p *= this.next(); } while (p > L);
+    return k - 1;
+  }
+  weighted(items, weightOf) {
+    const total = items.reduce((s, it) => s + weightOf(it), 0);
+    let r = this.next() * total;
+    for (const it of items) {
+      r -= weightOf(it);
+      if (r <= 0) return it;
+    }
+    return items[items.length - 1];
+  }
+}
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+// 恒星の生成。スペクトル型の存在比・質量・光度は現実の近傍星の統計に準拠。
+
+
+// weight: 個数比(%)。O型は実際に 0.00003% 程度しかない。
+// skew: 質量範囲内で軽い側に偏らせる指数 (初期質量関数の近似)
+const CLASSES = [
+  { cls: 'O', lo: 16, hi: 60, weight: 0.00003, skew: 1.5 },
+  { cls: 'B', lo: 2.1, hi: 16, weight: 0.13, skew: 2 },
+  { cls: 'A', lo: 1.4, hi: 2.1, weight: 0.6, skew: 1.3 },
+  { cls: 'F', lo: 1.04, hi: 1.4, weight: 3, skew: 1.2 },
+  { cls: 'G', lo: 0.8, hi: 1.04, weight: 7.6, skew: 1 },
+  { cls: 'K', lo: 0.45, hi: 0.8, weight: 12.1, skew: 1 },
+  { cls: 'M', lo: 0.08, hi: 0.45, weight: 73, skew: 1.8 },
+  { cls: 'WD', weight: 3.5 }, // 白色矮星
+];
+
+// 近接連星・多重星になる確率 (Raghavan+2010 などの概数)
+const MULTIPLICITY = { O: 0.9, B: 0.8, A: 0.7, F: 0.5, G: 0.44, K: 0.41, M: 0.27, WD: 0.3 };
+
+const SOLAR_TEMP = 5772;
+
+const lumFromMass = (m) =>
+  m < 0.43 ? 0.23 * m ** 2.3 : m < 2 ? m ** 4 : m < 55 ? 1.4 * m ** 3.5 : 32000 * m;
+const radiusFromMass = (m) => (m < 1 ? m ** 0.8 : m ** 0.57);
+
+function tempToColor(T) {
+  const t = clamp(T, 1000, 40000) / 100;
+  let r, g, b;
+  if (t <= 66) {
+    r = 255;
+    g = 99.4708025861 * Math.log(t) - 161.1195681661;
+    b = t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+  } else {
+    r = 329.698727446 * (t - 60) ** -0.1332047592;
+    g = 288.1221695283 * (t - 60) ** -0.0755148492;
+    b = 255;
+  }
+  const c = (v) => Math.round(clamp(v, 0, 255));
+  return `rgb(${c(r)},${c(g)},${c(b)})`;
+}
+
+function mainSequence(cls, mass) {
+  const def = CLASSES.find((c) => c.cls === cls);
+  const lum = lumFromMass(mass);
+  const radius = radiusFromMass(mass);
+  const temp = SOLAR_TEMP * (lum / radius ** 2) ** 0.25;
+  const sub = clamp(Math.floor((10 * (def.hi - mass)) / (def.hi - def.lo)), 0, 9);
+  return { cls, label: `${cls}${sub} V`, mass, radius, lum, temp, color: tempToColor(temp), wd: false };
+}
+
+function whiteDwarf(rng) {
+  const mass = clamp(rng.normal(0.6, 0.12), 0.4, 1.1);
+  const radius = 0.0115 * (0.6 / mass) ** (1 / 3);
+  const temp = 4000 + 21000 * rng.next() ** 3; // 古いものほど数が多く冷たい
+  const lum = radius ** 2 * (temp / SOLAR_TEMP) ** 4;
+  return {
+    cls: 'WD', label: `DA${(50400 / temp).toFixed(1)}`, mass, radius, lum, temp,
+    color: tempToColor(temp), wd: true,
+  };
+}
+
+function classOfMass(m) {
+  return CLASSES.find((c) => c.lo !== undefined && m >= c.lo && m < c.hi)?.cls ?? (m < 0.08 ? 'M' : 'O');
+}
+
+// 主星を生成する。
+function makePrimary(rng) {
+  const def = rng.weighted(CLASSES, (c) => c.weight);
+  if (def.cls === 'WD') return whiteDwarf(rng);
+  const mass = def.lo + (def.hi - def.lo) * rng.next() ** def.skew;
+  return mainSequence(def.cls, mass);
+}
+
+// 伴星(0〜2個)を生成する。sep は主星との距離[AU] (対数正規分布、中央値≈30AU)。
+function makeCompanions(rng, primary) {
+  if (!rng.chance(MULTIPLICITY[primary.cls])) return [];
+  const n = rng.chance(0.2) ? 2 : 1;
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const mass = Math.max(0.08, primary.mass * rng.range(0.15, 1));
+    const star = mainSequence(classOfMass(mass), mass);
+    const sep = clamp(10 ** rng.normal(1.5, 1.3), 0.05, 20000) * (i + 1);
+    out.push({ star, sep, phase: rng.range(0, Math.PI * 2) });
+  }
+  return out.sort((a, b) => a.sep - b.sep);
+}
+
+// 惑星(天体)の生成と物理量の計算。単位: 距離=AU, 質量/半径=地球比, 時間=年。
+
+
+const PLANETS_MEAN = { M: 3.2, K: 3.5, G: 3.5, F: 3, A: 2, B: 0.8, O: 0, WD: 1.2 };
+
+// 平衡温度[K] (アルベド込み)
+const eqTemp = (lum, a, albedo) => (278.6 * ((1 - albedo) * lum) ** 0.25) / Math.sqrt(a);
+
+const frostLine = (star) => (star.wd ? 3 : 2.7 * Math.sqrt(star.lum));
+const habitableZone = (star) => ({ inner: 0.95 * Math.sqrt(star.lum), outer: 1.37 * Math.sqrt(star.lum) });
+
+function pickType(rng, x) {
+  const table =
+    x < 0.5 ? [['rocky', 0.68], ['mini-neptune', 0.27], ['gas-giant', 0.05]]
+    : x < 1.2 ? [['rocky', 0.55], ['mini-neptune', 0.3], ['gas-giant', 0.15]]
+    : x < 8 ? [['gas-giant', 0.35], ['ice-giant', 0.22], ['rocky', 0.18], ['dwarf', 0.15], ['mini-neptune', 0.1]]
+    : [['dwarf', 0.4], ['ice-giant', 0.25], ['rocky', 0.15], ['gas-giant', 0.1], ['mini-neptune', 0.1]];
+  return rng.weighted(table, (e) => e[1])[0];
+}
+
+function physical(rng, type) {
+  switch (type) {
+    case 'dwarf': {
+      const mass = rng.logUniform(0.0005, 0.05);
+      return { mass, radius: mass ** 0.3, albedo: rng.range(0.1, 0.6) };
+    }
+    case 'rocky': {
+      const mass = rng.logUniform(0.05, 8);
+      return { mass, radius: mass < 1 ? mass ** 0.3 : mass ** 0.27, albedo: rng.range(0.1, 0.45) };
+    }
+    case 'mini-neptune': {
+      const mass = rng.logUniform(2, 10);
+      return { mass, radius: 1.6 + (2 * Math.log10(mass / 2)) / Math.log10(5), albedo: rng.range(0.2, 0.5) };
+    }
+    case 'ice-giant': {
+      const mass = rng.logUniform(8, 40);
+      return { mass, radius: 3.9 * (mass / 16) ** 0.3, albedo: rng.range(0.25, 0.5) };
+    }
+    default: {
+      const mass = rng.logUniform(30, 1500);
+      return { mass, radius: clamp(7 + 1.7 * Math.log10(mass), 8, 12.5), albedo: rng.range(0.3, 0.55) };
+    }
+  }
+}
+
+// 大気圧[atm]。脱出速度が大きく温度が低いほど大気を保持しやすい。
+function atmosphere(rng, mass, radius, teq) {
+  const index = (mass / radius / (teq / 255)) * rng.logUniform(0.1, 10);
+  return index < 0.05 ? 0 : 0.6 * index ** 1.6 * rng.logUniform(0.3, 3);
+}
+
+const greenhouse = (p) => 1 + 0.1 * Math.log10(1 + 10 * p) + (p > 10 ? 0.5 * Math.log10(p / 10) : 0);
+
+function classifySurface(t, p, water) {
+  if (t > 1000) return 'molten';
+  if (t > 450) return 'scorched';
+  if (t < 200) return 'frozen';
+  if (t >= 253 && t <= 373 && p >= 0.3 && p <= 5 && water > 0.2) return water > 0.7 ? 'ocean' : 'temperate';
+  return p < 0.01 ? 'barren' : 'desert';
+}
+
+// 惑星入植の適性。ドーム/地下都市前提の「住みやすさ」で、テラフォーミング前の状態を評価する。
+function settleability(b) {
+  if (b.type !== 'rocky' && b.type !== 'dwarf') {
+    return { grade: 0, score: 0, notes: ['固体の地表がない'] };
+  }
+  const g = b.gravity;
+  const t = b.tSurf;
+  const p = b.pressure;
+  const gs = g < 0.7 ? clamp((g - 0.1) / 0.6, 0, 1) : g > 1.3 ? clamp((2.5 - g) / 1.2, 0, 1) : 1;
+  const ts = t < 273 ? clamp((t - 150) / 123, 0, 1) : t > 303 ? clamp((400 - t) / 97, 0, 1) : 1;
+  const ps = p < 0.01 ? 0.15 : p < 0.5 ? 0.15 + (0.85 * (p - 0.01)) / 0.49 : p <= 3 ? 1 : clamp(1 - (p - 3) / 17, 0, 1);
+  const ws = clamp(b.water, 0, 1);
+  const score = 0.35 * gs + 0.35 * ts + 0.2 * ps + 0.1 * ws;
+  const notes = [];
+  if (g > 2.5) notes.push('重力が強すぎる');
+  if (t > 600) notes.push('高温すぎる');
+  if (t < 40) notes.push('極低温');
+  const hardNo = g > 2.5 || t > 600 || t < 40;
+  const earthlike = score >= 0.9 && p >= 0.5 && p <= 3 && b.water > 0.4 && g >= 0.7 && g <= 1.5;
+  const grade = hardNo ? 0 : earthlike ? 3 : score >= 0.65 ? 2 : score >= 0.3 ? 1 : 0;
+  if (!hardNo && grade === 0) notes.push('環境が過酷すぎる');
+  return { grade, score, notes };
+}
+
+// 共通の派生量を計算して天体を完成させる。
+function finalizeBody(body, star) {
+  body.period = Math.sqrt(body.a ** 3 / star.mass);
+  body.tidalLock = body.a < 0.25 * Math.cbrt(star.mass) && body.type !== 'belt';
+  const hz = habitableZone(star);
+  body.inHZ = body.a >= hz.inner && body.a <= hz.outer;
+  if (body.type === 'belt') {
+    body.tSurf = eqTemp(star.lum, body.a, 0.1);
+    body.settle = { grade: 0, score: 0, notes: ['小天体の集まりで入植に適した地表がない'] };
+    return body;
+  }
+  body.gravity = body.mass / body.radius ** 2;
+  body.teq = eqTemp(star.lum, body.a, body.albedo);
+  if (body.pressure === undefined) body.pressure = 0;
+  if (body.tSurf === undefined) body.tSurf = body.teq * greenhouse(body.pressure);
+  if (body.type === 'rocky' || body.type === 'dwarf') {
+    body.surface = classifySurface(body.tSurf, body.pressure, body.water);
+  }
+  body.settle = settleability(body);
+  return body;
+}
+
+// 主星まわりの惑星系を生成する。maxA: 軌道が安定に保てる最大半径[AU] (伴星が近いと小さい)。
+function generatePlanets(rng, star, sysName, maxA) {
+  if (maxA < 0.1) return [];
+  const count = Math.min(9, rng.poisson(PLANETS_MEAN[star.cls]));
+  const frost = frostLine(star);
+  let a = star.wd ? rng.logUniform(1, 10) : rng.logUniform(0.05, 0.5) * star.lum ** 0.25;
+  const bodies = [];
+  for (let i = 0; i < count && a <= maxA; i++, a *= rng.range(1.4, 2.2)) {
+    const type = pickType(rng, a / frost);
+    const b = { type, a, phase: rng.range(0, Math.PI * 2), ...physical(rng, type), water: 0 };
+    if (type === 'rocky' || type === 'dwarf') {
+      const teq = eqTemp(star.lum, a, b.albedo);
+      b.pressure = type === 'dwarf' && teq > 120 ? 0 : atmosphere(rng, b.mass, b.radius, teq);
+      b.water = rng.next() ** 1.5;
+    }
+    bodies.push(b);
+  }
+  // 小惑星帯: 雪線付近に確率的に置く(近すぎる惑星があれば作らない)
+  const beltA = frost * rng.range(0.9, 1.3);
+  if (!star.wd && beltA < maxA && rng.chance(0.45) && bodies.every((b) => Math.abs(Math.log(b.a / beltA)) > 0.25)) {
+    bodies.push({ type: 'belt', a: beltA, phase: rng.range(0, Math.PI * 2) });
+  }
+  bodies.sort((x, y) => x.a - y.a);
+  let letter = 'b'.charCodeAt(0);
+  bodies.forEach((b) => {
+    if (b.type === 'belt') {
+      b.id = `belt${b.a.toFixed(2)}`;
+      b.name = `${sysName} 小惑星帯`;
+    } else {
+      const l = String.fromCharCode(letter++);
+      b.id = l;
+      b.name = `${sysName} ${l}`;
+    }
+    finalizeBody(b, star);
+  });
+  return bodies;
+}
+
+// 太陽系(実データ)。ゲームの開始地点。
+
+
+
+const sun = {
+  cls: 'G', label: 'G2 V', mass: 1, radius: 1, lum: 1, temp: 5772,
+  color: tempToColor(5772), wd: false,
+};
+
+const P = (id, name, type, a, mass, radius, extra = {}) => ({
+  id, name, type, a, mass, radius, albedo: 0.3, water: 0, pressure: 0, phase: 0, ...extra,
+});
+
+function makeSol() {
+  const bodies = [
+    P('mercury', '水星', 'rocky', 0.387, 0.055, 0.383, { albedo: 0.09, tSurf: 440, surface: 'barren' }),
+    P('venus', '金星', 'rocky', 0.723, 0.815, 0.949, { albedo: 0.77, pressure: 92, tSurf: 737, surface: 'scorched' }),
+    P('earth', '地球', 'rocky', 1, 1, 1, { albedo: 0.3, pressure: 1, water: 0.71, tSurf: 288, surface: 'temperate' }),
+    P('mars', '火星', 'rocky', 1.524, 0.107, 0.532, { albedo: 0.25, pressure: 0.006, tSurf: 210, surface: 'desert' }),
+    P('belt', '小惑星帯', 'belt', 2.77, 0, 0),
+    P('jupiter', '木星', 'gas-giant', 5.2, 318, 11.2, { albedo: 0.5 }),
+    P('saturn', '土星', 'gas-giant', 9.58, 95, 9.45, { albedo: 0.34 }),
+    P('uranus', '天王星', 'ice-giant', 19.2, 14.5, 4, { albedo: 0.3 }),
+    P('neptune', '海王星', 'ice-giant', 30.07, 17.1, 3.88, { albedo: 0.29 }),
+    P('pluto', '冥王星', 'dwarf', 39.5, 0.0022, 0.186, { albedo: 0.5, tSurf: 44, surface: 'frozen' }),
+  ];
+  bodies.forEach((b, i) => {
+    b.phase = i * 2.1; // 見た目用の初期位相
+    const keep = { surface: b.surface, tSurf: b.tSurf };
+    finalizeBody(b, sun);
+    Object.assign(b, Object.fromEntries(Object.entries(keep).filter(([, v]) => v !== undefined)));
+  });
+  return { name: '太陽系 (Sol)', star: sun, bodies };
+}
+
+// 星間マップの自動生成。
+// 星の配置: ディスク状の領域に最小間隔つきランダム配置 → 「最近接星までの平均距離」が
+// ちょうど meanSpacing[ly] になるよう全体を一様スケーリングする。
+
+
+
+
+
+const SYL_A = ['ka', 've', 'lo', 'ri', 'sa', 'tu', 'ne', 'mi', 'zo', 'ar', 'el', 'or', 'da', 'phi', 'xe', 'yu', 'ha', 'bo', 'gi', 'ce'];
+const SYL_B = ['ra', 'ta', 'nis', 'lon', 'dor', 'ria', 'sor', 'ven', 'mus', 'tan', 'lis', 'gar', 'pha', 'kon', 'dis', 'rix'];
+const SYL_C = ['', '', '', 'a', 'is', 'on', 'ae', 'us'];
+
+function makeNamer(rng) {
+  const used = new Set(['Sol']);
+  return () => {
+    for (;;) {
+      let n = rng.pick(SYL_A) + (rng.chance(0.5) ? rng.pick(SYL_A) : '') + rng.pick(SYL_B) + rng.pick(SYL_C);
+      n = n[0].toUpperCase() + n.slice(1);
+      if (!used.has(n)) { used.add(n); return n; }
+    }
+  };
+}
+
+function scatter(rng, count, meanSpacing) {
+  const pts = [[0, 0]]; // 原点 = 太陽系
+  const dmin = 0.45 * Math.sqrt(Math.PI / count); // 単位円での最小間隔
+  for (let tries = 0; pts.length < count && tries < count * 500; tries++) {
+    const r = Math.sqrt(rng.next());
+    const th = rng.range(0, Math.PI * 2);
+    const x = r * Math.cos(th);
+    const y = r * Math.sin(th);
+    if (pts.every((p) => (p[0] - x) ** 2 + (p[1] - y) ** 2 >= dmin * dmin)) pts.push([x, y]);
+  }
+  const k = meanSpacing / meanNearest(pts);
+  return pts.map(([x, y]) => [x * k, y * k]);
+}
+
+function nearestDistances(pts) {
+  return pts.map((p, i) => {
+    let best = Infinity;
+    pts.forEach((q, j) => {
+      if (i !== j) best = Math.min(best, Math.hypot(p[0] - q[0], p[1] - q[1]));
+    });
+    return best;
+  });
+}
+const meanNearest = (pts) => {
+  const d = nearestDistances(pts);
+  return d.reduce((s, v) => s + v, 0) / d.length;
+};
+
+function makeSystem(rng, id, x, y, name) {
+  const primary = makePrimary(rng);
+  const companions = makeCompanions(rng, primary);
+  // 伴星が近いと、その 1/3 より内側の軌道しか安定しない
+  const maxA = companions.length ? companions[0].sep / 3 : 100;
+  const bodies = generatePlanets(rng, primary, name, maxA);
+  const stars = [
+    { id: 's0', name: `${name} A`, ...primary, sep: 0, phase: 0 },
+    ...companions.map((c, i) => ({
+      id: `s${i + 1}`, name: `${name} ${'BC'[i]}`, ...c.star, sep: c.sep, phase: c.phase,
+    })),
+  ];
+  if (stars.length === 1) stars[0].name = name;
+  return { id, name, x, y, stars, bodies };
+}
+
+function generateGalaxy({ seed = 1, starCount = 400, meanSpacing = 4 } = {}) {
+  const rng = new Rng(typeof seed === 'number' ? seed : hashSeed(seed));
+  const pts = scatter(rng, starCount, meanSpacing);
+  const namer = makeNamer(rng);
+  const systems = pts.map(([x, y], i) => {
+    if (i > 0) return makeSystem(rng, i, x, y, namer());
+    const sol = makeSol();
+    return { id: 0, name: sol.name, x, y, stars: [{ id: 's0', name: '太陽', ...sol.star, sep: 0, phase: 0 }], bodies: sol.bodies };
+  });
+  const radius = Math.max(...systems.map((s) => Math.hypot(s.x, s.y)));
+  return { seed, systems, radius, meanSpacing };
+}
+
+const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+// ゲーム状態: 時間、入植地、入植船。
+
+
+const SHIP_SPEED = 1.0; // 入植船の速度 [ly/年] = 光速 (1c)。後で調整可能にする
+const START_YEAR = 2300;
+
+const KIND_LABEL = { station: '宇宙ステーション', planet: '惑星入植地' };
+
+class Game {
+  constructor(galaxy) {
+    this.galaxy = galaxy;
+    this.year = START_YEAR;
+    this.colonies = [];
+    this.ships = [];
+    this.log = [];
+    this.nextShipId = 1;
+    this.addColony(0, 'earth', 'planet', '地球');
+    this.message('ゲーム開始。地球から恒星間入植を進めよう。');
+  }
+
+  system(id) { return this.galaxy.systems[id]; }
+
+  // 星系内の入植対象: 惑星・小惑星帯・恒星
+  targetsOf(sys) { return [...sys.bodies, ...sys.stars]; }
+  target(sysId, bodyId) { return this.targetsOf(this.system(sysId)).find((b) => b.id === bodyId); }
+
+  coloniesIn(sysId) { return this.colonies.filter((c) => c.sys === sysId); }
+  colonyAt(sysId, bodyId, kind) {
+    return this.colonies.find((c) => c.sys === sysId && c.body === bodyId && c.kind === kind);
+  }
+  isColonized(sysId) { return this.colonies.some((c) => c.sys === sysId); }
+  colonizedSystems() { return [...new Set(this.colonies.map((c) => c.sys))].map((i) => this.system(i)); }
+  shipTo(sysId, bodyId, kind) {
+    return this.ships.find((s) => s.to === sysId && s.body === bodyId && s.kind === kind);
+  }
+
+  // 入植可否と理由。惑星入植は適性≥1の固体天体のみ、ステーションは任意の天体の周回軌道に建設できる。
+  check(sysId, bodyId, kind) {
+    const t = this.target(sysId, bodyId);
+    if (!t) return { ok: false, reason: '対象が存在しない' };
+    if (this.colonyAt(sysId, bodyId, kind)) return { ok: false, reason: '建設済み' };
+    if (this.shipTo(sysId, bodyId, kind)) return { ok: false, reason: '入植船が向かっている' };
+    if (kind === 'planet' && !(t.settle && t.settle.grade >= 1)) {
+      return { ok: false, reason: t.settle ? t.settle.notes.join('、') || '入植に適さない' : '惑星ではない' };
+    }
+    return { ok: true, reason: '' };
+  }
+
+  travelYears(fromId, toId) {
+    return Math.max(distance(this.system(fromId), this.system(toId)), 0.001) / SHIP_SPEED;
+  }
+
+  dispatch(fromId, toId, bodyId, kind) {
+    const c = this.check(toId, bodyId, kind);
+    if (!c.ok) return c;
+    if (!this.isColonized(fromId)) return { ok: false, reason: '出発地に入植地がない' };
+    const years = this.travelYears(fromId, toId);
+    const ship = {
+      id: this.nextShipId++, from: fromId, to: toId, body: bodyId, kind,
+      depart: this.year, arrive: this.year + years,
+    };
+    this.ships.push(ship);
+    this.message(`${this.system(fromId).name} → ${this.system(toId).name} へ入植船が出発 (${KIND_LABEL[kind]}、到着まで ${years.toFixed(2)} 年)`);
+    return { ok: true, ship };
+  }
+
+  addColony(sysId, bodyId, kind, name) {
+    this.colonies.push({ sys: sysId, body: bodyId, kind, founded: this.year, name });
+  }
+
+  advance(dt) {
+    this.year += dt;
+    const arrived = this.ships.filter((s) => s.arrive <= this.year);
+    if (!arrived.length) return false;
+    this.ships = this.ships.filter((s) => s.arrive > this.year);
+    for (const s of arrived) {
+      const t = this.target(s.to, s.body);
+      if (this.colonyAt(s.to, s.body, s.kind)) continue;
+      this.addColony(s.to, s.body, s.kind, t.name);
+      this.message(`${t.name} に${KIND_LABEL[s.kind]}を設立した (${this.system(s.to).name})`);
+    }
+    return true;
+  }
+
+  // セーブデータの復元。壊れたデータなら false を返し、状態は変えない。
+  restore(d) {
+    const ok = (sysId, bodyId) => this.galaxy.systems[sysId] && this.target(sysId, bodyId);
+    if (!Array.isArray(d.colonies) || !Array.isArray(d.ships) || !Number.isFinite(d.year)) return false;
+    if (!d.colonies.every((c) => ok(c.sys, c.body)) || !d.ships.every((s) => ok(s.to, s.body) && this.galaxy.systems[s.from])) return false;
+    this.year = d.year;
+    this.colonies = d.colonies;
+    this.ships = d.ships;
+    this.log = Array.isArray(d.log) ? d.log : [];
+    this.nextShipId = d.nextShipId || 1;
+    return true;
+  }
+
+  message(text) {
+    this.log.unshift({ year: this.year, text });
+    this.log.length = Math.min(this.log.length, 30);
+  }
+
+  shipPosition(s) {
+    const a = this.system(s.from);
+    const b = this.system(s.to);
+    const f = Math.min(1, (this.year - s.depart) / (s.arrive - s.depart));
+    return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, f };
+  }
+}
+
+const TYPE_LABEL = {
+  rocky: '岩石惑星', 'mini-neptune': 'ミニ・ネプチューン', 'gas-giant': 'ガス巨星', 'ice-giant': '氷巨星',
+  dwarf: '矮小天体', belt: '小惑星帯',
+};
+const SURFACE_LABEL = {
+  molten: '溶岩の海', scorched: '灼熱の乾燥地表', frozen: '氷に閉ざされた地表', temperate: '温暖(陸と海)',
+  ocean: '海洋が広がる', desert: '乾燥した荒地', barren: '大気のない岩盤',
+};
+const BODY_COLOR = {
+  molten: '#ff5a1f', scorched: '#c27a3a', frozen: '#cfe8f3', temperate: '#4d9a5b', ocean: '#3b82c4',
+  desert: '#c9a063', barren: '#9a9a9a',
+};
+const TYPE_COLOR = {
+  'mini-neptune': '#8fb0d9', 'gas-giant': '#d8b07a', 'ice-giant': '#6fb5d6', dwarf: '#8d8d96', belt: '#777',
+};
+const bodyColor = (b) => (b.surface && BODY_COLOR[b.surface]) || TYPE_COLOR[b.type] || '#aaa';
+const GRADE_LABEL = ['不可', '困難', '可', '良好(地球型)'];
+const fmt = (v, d = 2) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(d));
+
+// 星間マップ: パン(ドラッグ)・ズーム(ホイール)・星の選択/ダブルクリックで星系を開く。
+
+
+
+class GalaxyView {
+  constructor(canvas, app) {
+    this.canvas = canvas;
+    this.app = app;
+    this.ctx = canvas.getContext('2d');
+    this.cam = { x: 0, y: 0, zoom: 6 };
+    this.hover = null;
+    this.drag = null;
+    this.bind();
+  }
+
+  fit() {
+    const r = this.app.game.galaxy.radius + 6;
+    this.cam.zoom = clamp(Math.min(this.w, this.h) / 2 / r, 1.5, 80);
+    this.cam.x = 0;
+    this.cam.y = 0;
+  }
+
+  toScreen(x, y) {
+    return [(x - this.cam.x) * this.cam.zoom + this.w / 2, (y - this.cam.y) * this.cam.zoom + this.h / 2];
+  }
+  toWorld(sx, sy) {
+    return [(sx - this.w / 2) / this.cam.zoom + this.cam.x, (sy - this.h / 2) / this.cam.zoom + this.cam.y];
+  }
+
+  pick(sx, sy) {
+    let best = null;
+    let bd = 12;
+    for (const s of this.app.game.galaxy.systems) {
+      const [px, py] = this.toScreen(s.x, s.y);
+      const d = Math.hypot(px - sx, py - sy);
+      if (d < bd) { bd = d; best = s; }
+    }
+    return best;
+  }
+
+  zoomAt(factor, sx, sy) {
+    const [wx, wy] = this.toWorld(sx, sy);
+    this.cam.zoom = clamp(this.cam.zoom * factor, 1.5, 80);
+    this.cam.x = wx - (sx - this.w / 2) / this.cam.zoom;
+    this.cam.y = wy - (sy - this.h / 2) / this.cam.zoom;
+  }
+
+  // マウス・タッチ共通 (Pointer Events)。1本指=ドラッグ/タップ、2本指=ピンチズーム。
+  bind() {
+    const c = this.canvas;
+    const pos = (e) => { const r = c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    const pts = new Map();
+    let pinch = null;
+    c.addEventListener('pointerdown', (e) => {
+      if (this.app.view !== 'galaxy') return;
+      pts.set(e.pointerId, pos(e));
+      c.setPointerCapture(e.pointerId);
+      if (pts.size === 1) {
+        const [x, y] = pos(e);
+        this.drag = { x, y, cx: this.cam.x, cy: this.cam.y, moved: false };
+      } else if (pts.size === 2) {
+        const [a, b] = [...pts.values()];
+        pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), zoom: this.cam.zoom };
+        if (this.drag) this.drag.moved = true;
+      }
+    });
+    c.addEventListener('pointermove', (e) => {
+      if (this.app.view !== 'galaxy') return;
+      const [x, y] = pos(e);
+      if (pts.has(e.pointerId)) pts.set(e.pointerId, [x, y]);
+      if (pinch && pts.size === 2) {
+        const [a, b] = [...pts.values()];
+        const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+        this.zoomAt((pinch.zoom * d / pinch.d) / this.cam.zoom, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+        return;
+      }
+      if (this.drag) {
+        const dx = x - this.drag.x;
+        const dy = y - this.drag.y;
+        if (Math.hypot(dx, dy) > 6) this.drag.moved = true;
+        if (this.drag.moved) {
+          this.cam.x = this.drag.cx - dx / this.cam.zoom;
+          this.cam.y = this.drag.cy - dy / this.cam.zoom;
+        }
+      }
+      if (e.pointerType === 'mouse') {
+        this.hover = this.pick(x, y);
+        this.mouse = [x, y];
+        c.style.cursor = this.hover ? 'pointer' : this.drag?.moved ? 'grabbing' : 'default';
+      }
+    });
+    const end = (e) => {
+      if (this.app.view !== 'galaxy') return;
+      const [x, y] = pos(e);
+      const wasPinch = pts.size > 1;
+      pts.delete(e.pointerId);
+      if (pts.size < 2) pinch = null;
+      if (this.drag && !this.drag.moved && !wasPinch && e.type === 'pointerup') {
+        const s = this.pick(x, y);
+        if (s) this.app.selectSystem(s.id);
+      }
+      if (pts.size === 0) this.drag = null;
+    };
+    c.addEventListener('pointerup', end);
+    c.addEventListener('pointercancel', end);
+    c.addEventListener('dblclick', (e) => {
+      if (this.app.view !== 'galaxy') return;
+      const [x, y] = pos(e);
+      const s = this.pick(x, y);
+      if (s) this.app.openSystem(s.id);
+    });
+    c.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') this.hover = null; });
+    c.addEventListener('wheel', (e) => {
+      if (this.app.view !== 'galaxy') return;
+      e.preventDefault();
+      const [x, y] = pos(e);
+      this.zoomAt(Math.exp(-e.deltaY * 0.0015), x, y);
+    }, { passive: false });
+  }
+
+  centerOn(sys) { this.cam.x = sys.x; this.cam.y = sys.y; }
+
+  draw(w, h) {
+    this.w = w;
+    this.h = h;
+    const { ctx } = this;
+    const game = this.app.game;
+    const sel = game.system(this.app.sel.sys);
+    const z = this.cam.zoom;
+
+    // 選択中の星からの距離リング
+    const [cx, cy] = this.toScreen(sel.x, sel.y);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 6]);
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = 'rgba(120,160,230,0.55)';
+    ctx.strokeStyle = 'rgba(90,130,210,0.25)';
+    for (const d of [4, 8, 16, 32, 64]) {
+      if (d * z < 20) continue;
+      ctx.beginPath();
+      ctx.arc(cx, cy, d * z, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillText(`${d} ly`, cx + 4, cy - d * z - 3);
+    }
+    ctx.setLineDash([]);
+
+    // 入植船
+    for (const s of game.ships) {
+      const a = game.system(s.from);
+      const b = game.system(s.to);
+      const [ax, ay] = this.toScreen(a.x, a.y);
+      const [bx, by] = this.toScreen(b.x, b.y);
+      const p = game.shipPosition(s);
+      const [px, py] = this.toScreen(p.x, p.y);
+      ctx.strokeStyle = 'rgba(255,170,60,0.45)';
+      ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffb347';
+      ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // 星
+    const scale = clamp(z / 6, 0.8, 2.5);
+    for (const s of game.galaxy.systems) {
+      const [x, y] = this.toScreen(s.x, s.y);
+      if (x < -20 || y < -20 || x > this.w + 20 || y > this.h + 20) continue;
+      const star = s.stars[0];
+      const r = (1.5 + 1.1 * Math.log10(1 + star.lum * 20)) * scale;
+      const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
+      glow.addColorStop(0, star.color);
+      glow.addColorStop(0.35, star.color);
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = star.color;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      if (s.stars.length > 1) {
+        ctx.fillStyle = s.stars[1].color;
+        ctx.beginPath(); ctx.arc(x + r * 1.1, y - r * 0.9, r * 0.5, 0, Math.PI * 2); ctx.fill();
+      }
+      if (game.isColonized(s.id)) {
+        ctx.strokeStyle = '#4de3d0';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(x, y, r + 5, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (s.id === this.app.sel.sys) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - r - 8, y - r - 8, (r + 8) * 2, (r + 8) * 2);
+      }
+      const labeled = z >= 10 || game.isColonized(s.id) || s.id === this.app.sel.sys || s === this.hover;
+      if (labeled) {
+        ctx.fillStyle = s === this.hover ? '#fff' : 'rgba(200,215,240,0.8)';
+        ctx.font = '11px sans-serif';
+        ctx.fillText(s.name, x + r + 7, y + 4);
+      }
+    }
+
+    // ホバー中の星: 選択星からの距離と光速での所要年数
+    if (this.hover && this.hover.id !== sel.id) {
+      const d = distance(sel, this.hover);
+      const t = game.travelYears(sel.id, this.hover.id);
+      const [hx, hy] = this.toScreen(this.hover.x, this.hover.y);
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(hx, hy); ctx.stroke();
+      const st = this.hover.stars[0];
+      const lines = [this.hover.name, `${st.label}${this.hover.stars.length > 1 ? ` 他${this.hover.stars.length - 1}星` : ''}`,
+        `距離 ${d.toFixed(1)} ly (${t.toFixed(1)} 年)`];
+      const [mx, my] = this.mouse || [hx, hy];
+      ctx.font = '12px sans-serif';
+      const bw = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 14;
+      const bx = Math.min(mx + 14, this.w - bw - 4);
+      const by = Math.min(my + 14, this.h - 60);
+      ctx.fillStyle = 'rgba(10,14,24,0.9)';
+      ctx.fillRect(bx, by, bw, 52);
+      ctx.strokeStyle = '#345';
+      ctx.strokeRect(bx, by, bw, 52);
+      ctx.fillStyle = '#dfe8f7';
+      lines.forEach((l, i) => ctx.fillText(l, bx + 7, by + 16 + i * 15));
+    }
+  }
+}
+
+// 星系マップ: 恒星・伴星・惑星・小惑星帯を軌道上に表示。軌道半径は対数スケール。
+
+
+
+
+const A0 = 0.05; // 対数スケールの基準[AU]
+
+class SystemView {
+  constructor(canvas, app) {
+    this.canvas = canvas;
+    this.app = app;
+    this.ctx = canvas.getContext('2d');
+    this.hit = [];
+    this.hover = null;
+    canvas.addEventListener('pointermove', (e) => {
+      if (app.view !== 'system') return;
+      const r = canvas.getBoundingClientRect();
+      this.hover = this.pick(e.clientX - r.left, e.clientY - r.top);
+      canvas.style.cursor = this.hover ? 'pointer' : 'default';
+    });
+    canvas.addEventListener('click', (e) => {
+      if (app.view !== 'system') return;
+      const r = canvas.getBoundingClientRect();
+      const b = this.pick(e.clientX - r.left, e.clientY - r.top);
+      app.selectBody(b ? b.id : null);
+    });
+  }
+
+  pick(x, y) {
+    let best = null;
+    let bd = Infinity;
+    for (const h of this.hit) {
+      const d = Math.hypot(h.x - x, h.y - y);
+      if (d < Math.max(h.r + 5, 10) && d < bd) { bd = d; best = h.body; }
+    }
+    return best;
+  }
+
+  draw(w, h) {
+    const { ctx } = this;
+    const game = this.app.game;
+    const sys = game.system(this.app.sel.sys);
+    const cx = w / 2;
+    const cy = h / 2;
+    const outer = Math.max(...sys.bodies.map((b) => b.a), ...sys.stars.map((s) => s.sep), 1);
+    const aMax = outer * 1.15;
+    const rMax = Math.min(w, h) * 0.46;
+    const R = (a) => (a <= 0 ? 0 : 22 + ((rMax - 22) * Math.log(1 + a / A0)) / Math.log(1 + aMax / A0));
+    const primary = sys.stars[0];
+    this.hit = [];
+
+    // ハビタブルゾーンと雪線
+    const hz = habitableZone(primary);
+    if (!primary.wd && R(hz.inner) < rMax) {
+      ctx.fillStyle = 'rgba(70,200,110,0.10)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, R(hz.outer), 0, Math.PI * 2);
+      ctx.arc(cx, cy, R(hz.inner), 0, Math.PI * 2, true);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(110,220,150,0.7)';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('ハビタブルゾーン', cx + R(hz.outer) * 0.7 + 4, cy - R(hz.outer) * 0.7);
+    }
+    const fl = frostLine(primary);
+    if (R(fl) < rMax) {
+      ctx.strokeStyle = 'rgba(140,200,255,0.35)';
+      ctx.setLineDash([2, 5]);
+      ctx.beginPath(); ctx.arc(cx, cy, R(fl), 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(140,200,255,0.55)';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('雪線', cx - R(fl) * 0.7 - 24, cy - R(fl) * 0.7);
+    }
+
+    // 軌道リング
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(150,170,210,0.2)';
+    for (const b of [...sys.bodies, ...sys.stars.slice(1).map((s) => ({ a: s.sep }))]) {
+      ctx.beginPath(); ctx.arc(cx, cy, R(b.a), 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // 恒星
+    const drawStar = (star, x, y, big) => {
+      const r = big ? clamp(7 + 5 * Math.log10(1 + star.radius * 3), 6, 22) : clamp(4 + 4 * Math.log10(1 + star.radius * 3), 4, 14);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r * 3.2);
+      g.addColorStop(0, star.color);
+      g.addColorStop(0.3, star.color);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y, r * 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = star.color;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      this.hit.push({ x, y, r, body: star });
+      ctx.fillStyle = 'rgba(210,225,250,0.85)';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(`${star.name} (${star.label})`, x + r + 6, y - r - 2);
+      this.mark(star, x, y, r);
+    };
+    drawStar(primary, cx, cy, true);
+    for (const s of sys.stars.slice(1)) {
+      const ang = s.phase + (2 * Math.PI * game.year) / (Math.sqrt(s.sep ** 3 / (primary.mass + s.mass)) || 1);
+      drawStar(s, cx + R(s.sep) * Math.cos(ang), cy + R(s.sep) * Math.sin(ang), false);
+    }
+
+    // 惑星・小惑星帯
+    for (const b of sys.bodies) {
+      const ang = b.phase + (2 * Math.PI * game.year) / b.period;
+      const rr = R(b.a);
+      const x = cx + rr * Math.cos(ang);
+      const y = cy + rr * Math.sin(ang);
+      let r;
+      if (b.type === 'belt') {
+        r = 7;
+        ctx.strokeStyle = 'rgba(160,150,140,0.55)';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([1, 5]);
+        ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.lineWidth = 1;
+        const bx = cx + rr * Math.cos(b.phase);
+        const by = cy + rr * Math.sin(b.phase);
+        this.hit.push({ x: bx, y: by, r, body: b });
+        this.label(b, bx, by, 4);
+        this.mark(b, bx, by, 5);
+        continue;
+      }
+      r = 3 + 5 * Math.log10(1 + b.radius);
+      ctx.fillStyle = bodyColor(b);
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      if (b.type === 'gas-giant' || b.type === 'ice-giant') {
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath(); ctx.moveTo(x - r, y - r * 0.3); ctx.lineTo(x + r, y - r * 0.3); ctx.moveTo(x - r, y + r * 0.35); ctx.lineTo(x + r, y + r * 0.35); ctx.stroke();
+      }
+      this.hit.push({ x, y, r, body: b });
+      this.label(b, x, y, r);
+      this.mark(b, x, y, r);
+    }
+  }
+
+  label(b, x, y, r) {
+    const { ctx } = this;
+    ctx.fillStyle = b === this.hover || b.id === this.app.sel.body ? '#fff' : 'rgba(190,205,230,0.7)';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(b.name.replace(/^.* (?=[a-z]$)/, ''), x + r + 4, y + 4);
+  }
+
+  // 入植地・選択状態の表示
+  mark(b, x, y, r) {
+    const { ctx } = this;
+    const game = this.app.game;
+    const sys = this.app.sel.sys;
+    if (b.id === this.app.sel.body) {
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(x, y, r + 5, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (game.colonyAt(sys, b.id, 'planet')) {
+      ctx.fillStyle = '#4de3d0';
+      ctx.beginPath(); ctx.moveTo(x, y - r - 9); ctx.lineTo(x + 4, y - r - 3); ctx.lineTo(x - 4, y - r - 3); ctx.fill();
+    }
+    if (game.colonyAt(sys, b.id, 'station')) {
+      ctx.fillStyle = '#ffd24d';
+      ctx.fillRect(x + r + 2, y - r - 6, 5, 5);
+    }
+    if (game.shipTo(sys, b.id, 'planet') || game.shipTo(sys, b.id, 'station')) {
+      ctx.strokeStyle = '#ffb347';
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.arc(x, y, r + 8, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+}
+
+// 右サイドパネル(星/天体の詳細と入植船の発進)のHTML生成。
+
+
+
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function starRow(s) {
+  return `<tr><td><span class="dot" style="background:${s.color}"></span>${esc(s.name)}</td><td>${s.label}</td>
+    <td>${fmt(s.mass)} M☉</td><td>${Math.round(s.temp)} K</td><td>${fmt(s.lum, 3)} L☉</td></tr>`;
+}
+
+function systemPanel(app) {
+  const g = app.game;
+  const sys = g.system(app.sel.sys);
+  const home = g.system(0);
+  const cols = g.coloniesIn(sys.id);
+  const planets = sys.bodies.filter((b) => b.type !== 'belt').length;
+  return `
+    <h2>${esc(sys.name)}</h2>
+    <p class="sub">太陽系から ${distance(home, sys).toFixed(1)} ly ・ 惑星 ${planets} ・ ${sys.stars.length > 1 ? `${sys.stars.length}重星系` : '単独星'}</p>
+    <table class="tbl"><tr><th>恒星</th><th>型</th><th>質量</th><th>表面温度</th><th>光度</th></tr>${sys.stars.map(starRow).join('')}</table>
+    ${sys.stars.slice(1).map((s) => `<p class="note">${esc(s.name)} は主星から約 ${fmt(s.sep)} AU</p>`).join('')}
+    <h3>入植地</h3>
+    ${cols.length ? `<ul>${cols.map((c) => `<li>${esc(c.name)} — ${KIND_LABEL[c.kind]} (${c.founded.toFixed(1)}年)</li>`).join('')}</ul>` : '<p class="note">まだ入植していない</p>'}
+    <button data-act="open">星系マップを開く</button>
+    ${app.view === 'system' ? bodyList(app, sys) : ''}`;
+}
+
+function bodyList(app, sys) {
+  return `<h3>天体</h3><ul class="bodies">${sys.bodies.map((b) => {
+    const mark = ['planet', 'station'].filter((k) => app.game.colonyAt(sys.id, b.id, k)).map((k) => (k === 'planet' ? '▲' : '■')).join('');
+    return `<li data-body="${b.id}" class="${b.id === app.sel.body ? 'sel' : ''}"><span class="dot" style="background:${bodyColor(b)}"></span>${esc(b.name)}
+      <span class="muted">${TYPE_LABEL[b.type]} ${fmt(b.a)} AU</span> <span class="mk">${mark}</span></li>`;
+  }).join('')}</ul>`;
+}
+
+function row(k, v) { return `<tr><th>${k}</th><td>${v}</td></tr>`; }
+
+function bodyPanel(app) {
+  const g = app.game;
+  const sys = g.system(app.sel.sys);
+  const b = g.target(sys.id, app.sel.body);
+  if (!b) return systemPanel(app);
+  const isStar = !!b.label;
+  let info;
+  if (isStar) {
+    info = `<table class="tbl kv">${row('スペクトル型', b.label)}${row('質量', `${fmt(b.mass)} M☉`)}${row('半径', `${fmt(b.radius, 3)} R☉`)}
+      ${row('表面温度', `${Math.round(b.temp)} K`)}${row('光度', `${fmt(b.lum, 3)} L☉`)}${b.sep ? row('主星からの距離', `${fmt(b.sep)} AU`) : ''}</table>`;
+  } else if (b.type === 'belt') {
+    info = `<table class="tbl kv">${row('種類', TYPE_LABEL.belt)}${row('軌道半径', `${fmt(b.a)} AU`)}${row('公転周期', `${fmt(b.period)} 年`)}</table>`;
+  } else {
+    const solid = b.type === 'rocky' || b.type === 'dwarf';
+    info = `<table class="tbl kv">${row('種類', TYPE_LABEL[b.type])}${row('軌道半径', `${fmt(b.a)} AU${b.inHZ ? ' <span class="hz">(HZ内)</span>' : ''}`)}
+      ${row('公転周期', `${fmt(b.period)} 年${b.tidalLock ? ' (潮汐固定)' : ''}`)}${row('質量', `${fmt(b.mass)} M⊕`)}${row('半径', `${fmt(b.radius)} R⊕`)}
+      ${row(solid ? '表面重力' : '重力(1気圧面)', `${fmt(b.gravity)} g`)}${row('平衡温度', `${Math.round(b.teq)} K`)}
+      ${solid ? row('表面温度', `${Math.round(b.tSurf)} K (${Math.round(b.tSurf - 273)} ℃)`) : ''}
+      ${solid ? row('大気圧', b.pressure < 0.001 ? 'ほぼ真空' : `${fmt(b.pressure)} atm`) : ''}
+      ${solid ? row('地表', SURFACE_LABEL[b.surface] || '') : ''}
+      ${solid ? row('入植適性', `<b class="grade g${b.settle.grade}">${GRADE_LABEL[b.settle.grade]}</b>${b.settle.notes.length ? ` — ${b.settle.notes.join('、')}` : ''}`) : ''}</table>`;
+  }
+  const cols = ['planet', 'station'].filter((k) => g.colonyAt(sys.id, b.id, k)).map((k) => `<li>${KIND_LABEL[k]} 設立済み</li>`);
+  return `
+    <h2><span class="dot big" style="background:${isStar ? b.color : bodyColor(b)}"></span>${esc(b.name)}</h2>
+    <p class="sub">${esc(sys.name)}</p>
+    ${info}
+    ${cols.length ? `<ul>${cols.join('')}</ul>` : ''}
+    ${dispatchBox(app, sys, b)}
+    <button data-act="back" class="ghost">← 星系の一覧へ</button>`;
+}
+
+function dispatchBox(app, sys, b) {
+  const g = app.game;
+  const origins = g.colonizedSystems()
+    .map((s) => ({ s, t: g.travelYears(s.id, sys.id) }))
+    .sort((a, c) => a.t - c.t);
+  const sel = app.originId !== undefined && origins.some((o) => o.s.id === app.originId) ? app.originId : origins[0].s.id;
+  const t = g.travelYears(sel, sys.id);
+  const btn = (kind) => {
+    const c = g.check(sys.id, b.id, kind);
+    return `<button data-act="send" data-kind="${kind}" ${c.ok ? '' : 'disabled'}>${KIND_LABEL[kind]}を建設${c.ok ? '' : `<small>${esc(c.reason)}</small>`}</button>`;
+  };
+  return `<h3>入植船を送る</h3>
+    <label class="field">出発地
+      <select data-act="origin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === sel ? 'selected' : ''}>${esc(o.s.name)} (${o.t < 0.01 ? '星系内' : `${o.t.toFixed(1)} 年`})</option>`).join('')}</select></label>
+    <p class="note">入植船は光速で航行。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b></p>
+    <div class="btns">${btn('station')}${btn('planet')}</div>`;
+}
+
+function shipsHtml(game) {
+  if (!game.ships.length) return '<span class="muted">航行中の入植船なし</span>';
+  return game.ships.map((s) => {
+    const left = s.arrive - game.year;
+    const f = (game.year - s.depart) / (s.arrive - s.depart);
+    return `<div class="ship">${esc(game.system(s.from).name)} → ${esc(game.system(s.to).name)} <span class="muted">${KIND_LABEL[s.kind]}</span>
+      <span class="bar"><i style="width:${(f * 100).toFixed(0)}%"></i></span> あと ${left.toFixed(1)} 年</div>`;
+  }).join('');
+}
+
+function logHtml(game) {
+  return game.log.slice(0, 8).map((l) => `<div><span class="muted">${l.year.toFixed(1)}</span> ${esc(l.text)}</div>`).join('');
+}
+
+
+
+
+
+
+
+
+const params = new URLSearchParams(location.search);
+const $ = (id) => document.getElementById(id);
+const canvas = $('map');
+const SPEEDS = [0, 1, 4, 16, 64]; // 年/秒
+
+const app = {
+  game: null,
+  view: 'galaxy',
+  sel: { sys: 0, body: null },
+  speed: 1,
+  originId: undefined,
+  dirty: true,
+  selectSystem(id) { this.sel = { sys: id, body: null }; this.originId = undefined; this.dirty = true; },
+  openSystem(id) { this.selectSystem(id); this.setView('system'); },
+  selectBody(id) { this.sel.body = id; this.dirty = true; },
+  setView(v) {
+    this.view = v;
+    $('tab-galaxy').classList.toggle('on', v === 'galaxy');
+    $('tab-system').classList.toggle('on', v === 'system');
+    canvas.style.cursor = 'default';
+    $('zoom').hidden = v !== 'galaxy';
+    this.dirty = true;
+  },
+};
+
+function newGame(seed) {
+  const galaxy = generateGalaxy({ seed, starCount: 400, meanSpacing: 4 });
+  app.game = new Game(galaxy);
+  app.sel = { sys: 0, body: null };
+  try { history.replaceState(null, '', `?seed=${encodeURIComponent(seed)}`); } catch { /* 埋め込み環境では無視 */ }
+  galaxyView.fit();
+  app.dirty = true;
+}
+
+const galaxyView = new GalaxyView(canvas, app);
+const systemView = new SystemView(canvas, app);
+
+let w = 0, h = 0;
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  const r = canvas.getBoundingClientRect();
+  w = r.width; h = r.height;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  galaxyView.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  galaxyView.w = w;
+  galaxyView.h = h;
+}
+window.addEventListener('resize', () => { resize(); galaxyView.fit(); });
+
+// --- UI イベント ---
+$('tab-galaxy').onclick = () => app.setView('galaxy');
+$('tab-system').onclick = () => app.setView('system');
+$('zoom-in').onclick = () => galaxyView.zoomAt(1.5, w / 2, h / 2);
+$('zoom-out').onclick = () => galaxyView.zoomAt(1 / 1.5, w / 2, h / 2);
+$('zoom-fit').onclick = () => galaxyView.fit();
+// 「新しい銀河」はセーブを消すので、2回押して確定する(confirm() は使えない環境がある)
+let armed = 0;
+$('newgame').onclick = () => {
+  const b = $('newgame');
+  if (!armed) {
+    b.textContent = '本当に? セーブが消えます';
+    armed = setTimeout(() => { armed = 0; b.textContent = '新しい銀河'; }, 4000);
+    return;
+  }
+  clearTimeout(armed);
+  armed = 0;
+  b.textContent = '新しい銀河';
+  clearSave();
+  newGame(String(Math.floor(Math.random() * 1e6)));
+  save();
+};
+
+
+// --- セーブ(localStorage) ---
+const SAVE_KEY = 'moribin-save-v1';
+function buildSave(game, extra = {}) {
+  return {
+    v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
+    log: game.log, nextShipId: game.nextShipId, savedAt: Date.now(), ...extra,
+  };
+}
+function parseSave(text) {
+  try {
+    const d = JSON.parse(text);
+    return d && typeof d === 'object' && d.seed !== undefined && Number.isFinite(d.year) ? d : null;
+  } catch { return null; }
+}
+function writeSave(game, extra) {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave(game, extra))); return true; } catch { return false; }
+}
+function readSave() {
+  try { const t = localStorage.getItem(SAVE_KEY); return t ? parseSave(t) : null; } catch { return null; }
+}
+function clearSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch { /* 保存できない環境では無視 */ }
+}
+// セーブデータを読み込んで現在のゲームに反映する。失敗時は現在の状態を保つ。
+function loadSave(d) {
+  const prev = app.game;
+  newGame(d.seed);
+  if (app.game.restore(d)) {
+    app.speed = SPEEDS.includes(d.speed) ? d.speed : 1;
+    updateSpeedButtons();
+    return true;
+  }
+  app.game = prev;
+  return false;
+}
+
+function save() {
+  const ok = writeSave(app.game, { speed: app.speed });
+  $('savestat').textContent = ok ? `自動セーブ済み ${app.game.year.toFixed(1)}年` : 'セーブ不可(この環境では保存できません)';
+}
+
+$('savenow').onclick = () => { save(); app.game.message('セーブした。'); };
+$('export').onclick = () => {
+  const blob = new Blob([JSON.stringify(buildSave(app.game, { speed: app.speed }))], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `moribin-${app.game.year.toFixed(0)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$('import').onclick = () => $('importfile').click();
+$('importfile').onchange = async (e) => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  const d = parseSave(await f.text());
+  if (d && loadSave(d)) { save(); app.game.message('セーブデータを読み込んだ。'); }
+  else app.game.message('セーブデータを読み込めなかった。');
+};
+setInterval(save, 5000);
+window.addEventListener('pagehide', save);
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+document.querySelectorAll('[data-speed]').forEach((b) => {
+  b.onclick = () => { app.speed = Number(b.dataset.speed); updateSpeedButtons(); };
+});
+function updateSpeedButtons() {
+  document.querySelectorAll('[data-speed]').forEach((b) => b.classList.toggle('on', Number(b.dataset.speed) === app.speed));
+}
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'SELECT') return;
+  if (e.key === ' ') { app.speed = app.speed ? 0 : 1; updateSpeedButtons(); e.preventDefault(); }
+  else if (e.key >= '1' && e.key <= '5') { app.speed = SPEEDS[Number(e.key) - 1]; updateSpeedButtons(); }
+  else if (e.key === 'g') app.setView('galaxy');
+  else if (e.key === 's') app.setView('system');
+  else if (e.key === 'Escape') app.setView('galaxy');
+});
+
+const panel = $('panel');
+panel.addEventListener('click', (e) => {
+  const li = e.target.closest('[data-body]');
+  if (li) return app.selectBody(li.dataset.body);
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const { act, kind } = btn.dataset;
+  if (act === 'open') app.setView('system');
+  else if (act === 'back') app.selectBody(null);
+  else if (act === 'send') {
+    const from = app.originId ?? nearestOrigin();
+    const r = app.game.dispatch(from, app.sel.sys, app.sel.body, kind);
+    if (!r.ok) app.game.message(`派遣できない: ${r.reason}`);
+    app.dirty = true;
+    save();
+  }
+});
+panel.addEventListener('change', (e) => {
+  if (e.target.dataset.act === 'origin') { app.originId = Number(e.target.value); app.dirty = true; }
+});
+function nearestOrigin() {
+  const g = app.game;
+  return g.colonizedSystems().sort((a, b) => g.travelYears(a.id, app.sel.sys) - g.travelYears(b.id, app.sel.sys))[0].id;
+}
+
+// --- メインループ ---
+let last = performance.now();
+let acc = 0;
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  const game = app.game;
+  if (app.speed && game.advance(dt * app.speed)) app.dirty = true;
+  const ctx = galaxyView.ctx;
+  ctx.fillStyle = '#05070d';
+  ctx.fillRect(0, 0, w, h);
+  if (app.view === 'galaxy') galaxyView.draw(w, h);
+  else systemView.draw(w, h);
+
+  $('date').textContent = `西暦 ${game.year.toFixed(1)} 年`;
+  acc += dt;
+  if (acc > 0.25) {
+    acc = 0;
+    $('ships').innerHTML = shipsHtml(game);
+    $('log').innerHTML = logHtml(game);
+  }
+  if (app.dirty) {
+    app.dirty = false;
+    panel.innerHTML = app.view === 'system' && app.sel.body ? bodyPanel(app) : systemPanel(app);
+  }
+  requestAnimationFrame(frame);
+}
+
+resize();
+const saved = readSave();
+const wanted = params.get('seed');
+if (saved && (wanted === null || wanted === String(saved.seed))) {
+  if (loadSave(saved)) app.game.message('セーブデータをロードした。');
+  else newGame(wanted || String(Math.floor(Math.random() * 1e6))); // 壊れたデータは破棄
+} else {
+  newGame(wanted || String(Math.floor(Math.random() * 1e6)));
+}
+updateSpeedButtons();
+save();
+requestAnimationFrame(frame);
+window.__app = app; // デバッグ用
+
+</script>
+
+</body></html>
