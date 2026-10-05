@@ -576,6 +576,24 @@ function makeNatives(rng, b) {
   };
 }
 
+// 先住民の追加分。既存の銀河の先住民と資源を変えないよう、別の乱数列で上乗せする。
+// 温暖・海洋の惑星は適性「困難」でも、乾燥・寒冷でも大気があれば、まれに先住民がいる。
+function makeMoreNatives(rng, b) {
+  if (b.natives || b.type !== 'rocky' || !b.settle || b.settle.grade < 1) return null;
+  const lush = b.surface === 'temperate' || b.surface === 'ocean';
+  const harsh = (b.surface === 'desert' || b.surface === 'frozen') && b.pressure >= 0.05;
+  const p = lush ? [0, 0.35, 0.5, 0.6][b.settle.grade] : harsh ? 0.15 : 0;
+  if (!p || !rng.chance(p)) return null;
+  const tech = rng.weighted([0, 1, 2, 3], (t) => (lush ? [0.4, 0.35, 0.18, 0.07] : [0.6, 0.3, 0.08, 0.02])[t]);
+  return {
+    species: `${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`,
+    pop: rng.logUniform(1, lush ? 300 : 40) * (1 + tech) ** 1.5,
+    tech,
+    mood: Math.round(rng.range(-40, 30)),
+  };
+}
+const mayHaveNatives = (b) => b.type === 'rocky' && b.settle?.grade >= 1 && b.pressure >= 0.05 && ['temperate', 'ocean', 'desert', 'frozen'].includes(b.surface);
+
 function addExtras(galaxy) {
   for (const sys of galaxy.systems) {
     const rng = new Rng(hashSeed(`${galaxy.seed}/extras/${sys.id}`));
@@ -584,6 +602,9 @@ function addExtras(galaxy) {
       b.natives = sys.id === 0 ? null : makeNatives(rng, b);
     }
     for (const s of sys.stars) s.deposits = { water: 0, metal: 0, fuel: 0, rare: 0 };
+    if (sys.id === 0) continue;
+    const more = new Rng(hashSeed(`${galaxy.seed}/natives2/${sys.id}`));
+    for (const b of sys.bodies) if (!b.natives) b.natives = makeMoreNatives(more, b);
   }
   galaxy.systems[0].bodies.find((b) => b.id === 'earth').deposits = { water: 0.5, metal: 1, fuel: 0.4, rare: 0.15 };
 }
@@ -1227,6 +1248,60 @@ class Game {
     return { ok: true };
   }
 
+  // 支配下の先住民の扱い。どれも同じ惑星に入植地が必要で、悪名が増えて他の先住民の友好度が下がる。
+  // 奴隷化: 強制労働で食料・金属・希少元素を産むが、人口は年1%減り、駐留艦が少ないと反乱が起きる。
+  // 家畜化: 農耕時代以前の種族のみ。食料を大量に産み、人口は管理されて増える。悪名は最も大きい。
+  treat(sysId, bodyId, kind) {
+    const n = this.nativeOf(sysId, bodyId);
+    if (!n || n.st.status !== 'subjugated') return fail('支配下の先住民がいない');
+    if (!this.colonyAt(sysId, bodyId, 'planet')) return fail('同じ惑星に入植地が必要');
+    if (kind === 'livestock' && n.def.tech > 1) return fail('農耕時代以前の種族のみ');
+    const blame = kind === 'livestock' ? 30 : 15;
+    n.st.status = kind;
+    n.st.rel = -100;
+    this.infamy += blame;
+    for (const st of Object.values(this.natives)) if (st !== n.st && st.status === 'independent') st.rel -= blame;
+    this.event('natives', sysId, `${n.def.species}を${kind === 'livestock' ? '家畜化' : '奴隷化'}した。他の先住民の友好度が ${blame} 下がった`);
+    return { ok: true };
+  }
+  liberate(sysId, bodyId) {
+    const n = this.nativeOf(sysId, bodyId);
+    if (!n || !['subjugated', 'enslaved', 'livestock'].includes(n.st.status)) return fail('解放できる先住民がいない');
+    n.st.status = 'independent';
+    n.st.rel = -40;
+    this.infamy = Math.max(0, this.infamy - 10);
+    for (const st of Object.values(this.natives)) if (st !== n.st && st.status === 'independent') st.rel = Math.min(100, st.rel + 5);
+    this.event('natives', sysId, `${n.def.species}を解放した。他の先住民の友好度が少し上がった`, true);
+    return { ok: true };
+  }
+  // 年1回: 奴隷・家畜の人口の増減と、奴隷の反乱
+  nativesYearly() {
+    for (const [key, st] of Object.entries(this.natives)) {
+      const [sysStr, bodyId] = key.split('|');
+      const sys = Number(sysStr);
+      const n = this.nativeOf(sys, bodyId);
+      if (!n) continue;
+      if (st.status === 'livestock') st.pop = Math.min(n.def.pop * 1.5, st.pop * 1.01);
+      if (st.status !== 'enslaved') continue;
+      st.pop *= 0.99;
+      const guard = this.garrison[sys] || 0;
+      if (guard < this.nativeDefense(n) / 2 && Math.random() < 0.05) {
+        st.status = 'independent';
+        st.rel = -100;
+        for (const c of this.coloniesIn(sys)) c.pop *= 0.9;
+        this.garrison[sys] = Math.max(0, guard - 1);
+        this.event('natives', sys, `${n.def.species}の奴隷が反乱を起こし、独立を取り戻した (入植地の人口が1割減少)`);
+      }
+    }
+  }
+  // 奴隷・家畜が産む資源 [年あたり]
+  nativeYield(sys, bodyId, st) {
+    const d = this.target(sys, bodyId)?.deposits || {};
+    if (st.status === 'livestock') return { food: 1.5 * st.pop };
+    if (st.status === 'enslaved') return { food: 0.6 * st.pop, metal: 0.4 * st.pop * Math.max(0.3, d.metal || 0), rare: 0.05 * st.pop * (d.rare || 0) };
+    return {};
+  }
+
   // --- 時間の進行 ---
   advance(dt) {
     let changed = false;
@@ -1239,7 +1314,7 @@ class Game {
       this.economy(h);
       if (this.pirates(h)) changed = true;
       this.autoTimer += h;
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); }
     }
     return changed;
   }
@@ -1393,6 +1468,10 @@ class Game {
         }
       } else if (st.status === 'subjugated') {
         this.earn('natives', 0.03 * st.pop * h);
+      } else {
+        const stock = this.stockOf(sys);
+        const fl = F(sys);
+        for (const [r, v] of Object.entries(this.nativeYield(sys, key.split('|')[1], st))) { stock[r] += v * h; fl.prod[r] += v; }
       }
     }
     // 5. 交易路
@@ -2142,9 +2221,8 @@ function nativesSummary(g, sys) {
 }
 
 function nativeStatus(n) {
-  if (n.st.status === 'integrated') return '市民として統合済み';
-  if (n.st.status === 'subjugated') return '支配下';
-  return `${relLabel(n.st.rel)} (${Math.round(n.st.rel)})`;
+  const label = { integrated: '市民として統合済み', subjugated: '支配下', enslaved: '奴隷化', livestock: '家畜化' }[n.st.status];
+  return label || `${relLabel(n.st.rel)} (${Math.round(n.st.rel)})`;
 }
 
 function row(k, v) { return `<tr><th>${k}</th><td>${v}</td></tr>`; }
@@ -2243,9 +2321,8 @@ function colonyBox(g, c) {
 
 function nativesBox(app, sys, b) {
   const g = app.game;
-  const lush = b.surface === 'temperate' || b.surface === 'ocean';
   if (!g.isSurveyed(sys.id)) {
-    return lush && b.settle?.grade >= 2 ? '<h3>先住民</h3><p class="note">未調査。入植地を作るか艦隊が到達すると分かる。</p>' : '';
+    return mayHaveNatives(b) ? '<h3>先住民</h3><p class="note">未調査。入植地を作るか艦隊が到達すると分かる。</p>' : '';
   }
   const n = g.nativeOf(sys.id, b.id);
   if (!n) return '';
@@ -2258,13 +2335,27 @@ function nativesBox(app, sys, b) {
       ${costButton(g, 'data-act="integrate"', '市民として迎える', null, undefined, !col ? '同じ惑星に入植地が必要' : n.st.rel < 80 ? '友好度80以上が必要' : '')}
     </div>
     ${costButton(g, 'data-act="conquer"', `武力で制圧 (軍艦 ${need} 隻以上)`, null, undefined, (g.garrison[sys.id] || 0) < need ? `駐留艦が足りない (${g.garrison[sys.id] || 0}/${need})` : '')}` : '';
+  const st = n.st.status;
+  const noCol = col ? '' : '同じ惑星に入植地が必要';
+  const yieldNow = g.nativeYield(sys.id, b.id, n.st);
+  const ruled = st === 'subjugated' ? `<div class="btns">
+      ${costButton(g, 'data-act="enslave"', '奴隷化する', null, undefined, noCol)}
+      ${costButton(g, 'data-act="domesticate"', '家畜化する', null, undefined, noCol || (n.def.tech > 1 ? '農耕時代以前の種族のみ' : ''))}
+    </div>
+    <p class="note">奴隷化: 強制労働で食料・金属・希少元素を産む。人口は年1%減り、駐留艦が制圧に必要な数の半分 (${Math.ceil(need / 2)} 隻) 未満だと年5%の確率で反乱が起きる。悪名 +15。<br>
+      家畜化: 農耕時代以前の種族のみ。食料を大量に産み、人口は年1%増える。悪名 +30。<br>どちらも他の先住民の友好度が悪名ぶん下がり、同じ惑星の入植地は不穏で人口の伸びが落ちる。</p>` : '';
+  const kept = st === 'enslaved' || st === 'livestock'
+    ? `<p class="note">産出: ${yieldText(yieldNow)} /年${st === 'enslaved' ? `・駐留艦 ${g.garrison[sys.id] || 0} 隻 (反乱を抑えるには ${Math.ceil(need / 2)} 隻)` : ''}</p>` : '';
+  const free = ['subjugated', 'enslaved', 'livestock'].includes(st)
+    ? costButton(g, 'data-act="liberate"', '解放する (悪名 −10)', null) : '';
   return `<h3>先住民</h3>
     <table class="tbl kv">
       ${row('種族', esc(n.def.species))}${row('人口', fmtPop(n.st.pop))}${row('文明', TECH_LABEL[n.def.tech])}
       ${row('関係', nativeStatus(n))}
     </table>
-    ${ind ? `<p class="note">拠点があると友好度は少しずつ上がる。40以上で惑星への入植と交易 (収入・希少元素) が可能。80以上なら市民として迎えられる。制圧すると貢納を得るが、他の先住民の友好度が下がる。</p>` : ''}
-    ${actions}`;
+    ${ind ? `<p class="note">拠点があると友好度は少しずつ上がる。40以上で惑星への入植と交易 (収入・希少元素) が可能。80以上なら市民として迎えられる。制圧すると貢納を得るが、他の先住民の友好度が下がる。制圧後は奴隷化・家畜化もできる。</p>` : ''}
+    ${actions}${ruled}${kept}${free}
+    ${g.infamy ? `<p class="note">帝国の悪名: ${g.infamy} (新たに出会う先住民の友好度がこのぶん低い)</p>` : ''}`;
 }
 
 function dispatchBox(app, sys, b) {
@@ -2763,6 +2854,9 @@ function onPanelClick(e) {
     gift: () => g.gift(sys, body),
     integrate: () => g.integrate(sys, body),
     conquer: () => g.conquer(sys, body),
+    enslave: () => g.treat(sys, body, 'enslaved'),
+    domesticate: () => g.treat(sys, body, 'livestock'),
+    liberate: () => g.liberate(sys, body),
     rally: () => g.rally(sys),
     route2: () => g.openRoute(Number(btn.dataset.a), Number(btn.dataset.b)),
     candsend: () => g.dispatch(Number(btn.dataset.from), sys, body, kind),
