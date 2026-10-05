@@ -624,6 +624,7 @@ class Game {
     this.natives = {}; // 先住民の状態 { 'sys|body': { rel, status, pop } }
     this.infamy = 0; // 先住民を制圧するたびに増え、他の先住民の友好度を下げる
     this.surveyed = [];
+    this.projects = []; // 資材の搬入を待つ建設 { id, type, sys, start, ready, from: [搬出元の星系], label, ... }
     this.flow = {}; // 直近の星系ごとの生産・需要[年あたり] (保存しない)
     this.ledger = {}; // 直近の収支[cr/年] (保存しない)
     this.led = {}; // 今の刻みの収支
@@ -693,6 +694,7 @@ class Game {
     if (!t) return fail('対象が存在しない');
     if (this.colonyAt(sysId, bodyId, kind)) return fail('建設済み');
     if (this.shipTo(sysId, bodyId, kind)) return fail('入植船が向かっている');
+    if (this.projects.some((j) => j.type === 'ship' && j.to === sysId && j.body === bodyId && j.kind === kind)) return fail('入植船を準備中');
     if (kind === 'planet' && !(t.settle && t.settle.grade >= 1)) {
       return fail(t.settle ? t.settle.notes.join('、') || '入植に適さない' : '惑星ではない');
     }
@@ -723,6 +725,70 @@ class Game {
     return { ok: true };
   }
 
+  // 建設資材の調達計画。地元の備蓄で足りない分は、近い入植星系から順に取り寄せる。
+  // 取り寄せ元には1年分の需要を残す。eta は最も遠い取り寄せ元からの搬入年数 (0 なら即時)。
+  procure(cost, sysId) {
+    if ((cost.credits || 0) > this.credits) return { why: 'クレジット不足' };
+    const plan = [];
+    let eta = 0;
+    for (const r of RES) {
+      let need = cost[r] || 0;
+      if (!need) continue;
+      if (sysId === undefined) return { why: `${RES_LABEL[r]}が不足` };
+      const local = Math.min(Math.max(this.stockOf(sysId)[r], 0), need);
+      if (local > 0) { plan.push({ from: sysId, r, amt: local }); need -= local; }
+      if (need <= 1e-9) continue;
+      const sources = this.colonizedSystems()
+        .filter((s) => s.id !== sysId)
+        .map((s) => ({ id: s.id, d: this.travelYears(s.id, sysId), spare: this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) }))
+        .filter((x) => x.spare > 0)
+        .sort((a, b) => a.d - b.d);
+      for (const x of sources) {
+        const amt = Math.min(x.spare, need);
+        plan.push({ from: x.id, r, amt });
+        need -= amt;
+        eta = Math.max(eta, x.d);
+        if (need <= 1e-9) break;
+      }
+      if (need > 1e-6) return { why: `帝国全体で${RES_LABEL[r]}が不足` };
+    }
+    return { why: '', eta, plan };
+  }
+  // 建設を発注する。費用はその場で払い、資材が届いた時点で完成する。
+  order(cost, sysId, job) {
+    const p = this.procure(cost, sysId);
+    if (p.why) return fail(p.why);
+    this.credits -= cost.credits || 0;
+    for (const x of p.plan) this.stockOf(x.from)[x.r] -= x.amt;
+    if (p.eta <= 0) { this.finish({ ...job, sys: sysId }); return { ok: true }; }
+    Object.assign(job, {
+      id: this.nextShipId++, sys: sysId, start: this.year, ready: this.year + p.eta,
+      from: [...new Set(p.plan.filter((x) => x.from !== sysId).map((x) => x.from))],
+    });
+    this.projects.push(job);
+    this.message(`${job.label}: 資材を周辺の星系から搬入中 (完成まで ${p.eta.toFixed(1)} 年)`);
+    return { ok: true };
+  }
+  pending(pred) { return this.projects.find(pred); }
+  finish(job) {
+    if (job.type === 'upgrade') {
+      const c = this.colonyByKey(job.col);
+      if (!c) return;
+      c.lv[job.fac]++;
+      this.message(`${c.name} の${FACILITY[job.fac]}を Lv${c.lv[job.fac]} に拡張した`);
+    } else if (job.type === 'warship') {
+      this.garrison[job.sys] = (this.garrison[job.sys] || 0) + 1;
+      this.message(`${this.system(job.sys).name} で軍艦を建造した (駐留 ${this.garrison[job.sys]} 隻)`);
+    } else if (job.type === 'route') {
+      const r = this.routes.find((x) => x.id === job.route);
+      if (!r) return;
+      r.lv++;
+      this.message(`${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路を Lv${r.lv} に拡張した`);
+    } else if (job.type === 'ship') {
+      this.launch(job.sys, job.to, job.body, job.kind);
+    }
+  }
+
   travelYears(fromId, toId) {
     return Math.max(distance(this.system(fromId), this.system(toId)), 0.001) / SHIP_SPEED;
   }
@@ -731,8 +797,10 @@ class Game {
     const c = this.check(toId, bodyId, kind);
     if (!c.ok) return c;
     if (!this.isColonized(fromId)) return fail('出発地に入植地がない');
-    const paid = this.pay(SHIP_COST[kind], fromId);
-    if (!paid.ok) return paid;
+    const label = `${this.target(toId, bodyId).name} への入植船 (${KIND_LABEL[kind]})`;
+    return this.order(SHIP_COST[kind], fromId, { type: 'ship', to: toId, body: bodyId, kind, label });
+  }
+  launch(fromId, toId, bodyId, kind) {
     const years = this.travelYears(fromId, toId);
     const ship = {
       id: this.nextShipId++, from: fromId, to: toId, body: bodyId, kind,
@@ -758,11 +826,9 @@ class Game {
   }
   upgrade(c, fac) {
     if (c.lv[fac] >= FACILITY_MAX[fac]) return fail('最大レベル');
-    const paid = this.pay(this.upgradeCost(c, fac), c.sys);
-    if (!paid.ok) return paid;
-    c.lv[fac]++;
-    this.message(`${c.name} の${FACILITY[fac]}を Lv${c.lv[fac]} に拡張した`);
-    return { ok: true };
+    const col = colKey(c);
+    if (this.pending((j) => j.type === 'upgrade' && j.col === col && j.fac === fac)) return fail('建設中');
+    return this.order(this.upgradeCost(c, fac), c.sys, { type: 'upgrade', col, fac, label: `${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` });
   }
 
   // --- 交易路 ---
@@ -780,11 +846,8 @@ class Game {
     return { ok: true };
   }
   upgradeRoute(r) {
-    const paid = this.pay(this.routeUpCost(r), r.a);
-    if (!paid.ok) return paid;
-    r.lv++;
-    this.message(`${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路を Lv${r.lv} に拡張した`);
-    return { ok: true };
+    if (this.pending((j) => j.type === 'route' && j.route === r.id)) return fail('拡張中');
+    return this.order(this.routeUpCost(r), r.a, { type: 'route', route: r.id, label: `${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路 Lv${r.lv + 1}` });
   }
 
   // 各交易路は、送り手の余剰(需要2年分を超える備蓄)を受け手の不足(需要2年分に満たない分)へ自動で運ぶ。
@@ -824,11 +887,7 @@ class Game {
   hasShipyard(sysId) { return this.coloniesIn(sysId).some((c) => c.lv.shipyard >= 1); }
   buildWarship(sysId) {
     if (!this.hasShipyard(sysId)) return fail('造船所がない');
-    const paid = this.pay(WARSHIP_COST, sysId);
-    if (!paid.ok) return paid;
-    this.garrison[sysId] = (this.garrison[sysId] || 0) + 1;
-    this.message(`${this.system(sysId).name} で軍艦を建造した (駐留 ${this.garrison[sysId]} 隻)`);
-    return { ok: true };
+    return this.order(WARSHIP_COST, sysId, { type: 'warship', label: `${this.system(sysId).name} の軍艦` });
   }
   sendFleet(from, to, n) {
     const have = this.garrison[from] || 0;
@@ -933,6 +992,12 @@ class Game {
 
   arrivals() {
     let changed = false;
+    const done = this.projects.filter((j) => j.ready <= this.year);
+    if (done.length) {
+      changed = true;
+      this.projects = this.projects.filter((j) => j.ready > this.year);
+      for (const j of done) this.finish(j);
+    }
     const arrived = this.ships.filter((s) => s.arrive <= this.year);
     if (arrived.length) {
       changed = true;
@@ -1098,6 +1163,7 @@ class Game {
     if (Array.isArray(d.cargo)) this.cargo = d.cargo.filter((p) => this.routes.some((r) => r.id === p.route));
     if (obj(d.garrison)) this.garrison = d.garrison;
     if (Array.isArray(d.fleets)) this.fleets = d.fleets.filter((f) => sysOk(f.from) && sysOk(f.to));
+    if (Array.isArray(d.projects)) this.projects = d.projects.filter((j) => j && sysOk(j.sys) && Number.isFinite(j.ready) && Array.isArray(j.from));
     if (obj(d.natives)) this.natives = d.natives;
     if (Number.isFinite(d.infamy)) this.infamy = d.infamy;
     this.surveyed = Array.isArray(d.surveyed) ? d.surveyed.filter(sysOk) : [];
@@ -1309,6 +1375,16 @@ class GalaxyView {
       const [px, py] = this.toScreen(p.x, p.y);
       ctx.fillStyle = '#ff7a6b';
       ctx.beginPath(); ctx.moveTo(px, py - 5); ctx.lineTo(px + 4, py + 3); ctx.lineTo(px - 4, py + 3); ctx.fill();
+    }
+
+    // 建設資材の輸送船
+    ctx.fillStyle = '#ffd24d';
+    for (const j of game.projects) {
+      for (const from of j.from) {
+        const pos = game.shipPosition({ from, to: j.sys, depart: j.start, arrive: j.start + game.travelYears(from, j.sys) });
+        const [px, py] = this.toScreen(pos.x, pos.y);
+        ctx.beginPath(); ctx.moveTo(px, py - 3); ctx.lineTo(px + 3, py); ctx.lineTo(px, py + 3); ctx.lineTo(px - 3, py); ctx.fill();
+      }
     }
 
     // 入植船
@@ -1610,8 +1686,9 @@ const costText = (cost) => Object.entries(cost).map(([k, v]) => (k === 'credits'
 
 // 費用つきボタン。払えないときは理由を添えて無効化する
 function costButton(g, attrs, label, cost, sysId, extraReason = '') {
-  const why = extraReason || (cost ? g.lack(cost, sysId) : '');
-  const sub = why || (cost ? costText(cost) : '');
+  const p = cost && !extraReason ? g.procure(cost, sysId) : null;
+  const why = extraReason || p?.why || '';
+  const sub = why || (cost ? costText(cost) + (p?.eta > 0 ? ` ・資材搬入 ${p.eta.toFixed(1)}年` : '') : '');
   return `<button ${attrs} ${why ? 'disabled' : ''}>${label}${sub ? `<small>${esc(sub)}</small>` : ''}</button>`;
 }
 
@@ -1669,7 +1746,7 @@ function routeBox(app, sys) {
     const other = g.system(r.a === sys.id ? r.b : r.a);
     return `<div class="route"><b>⇄ ${esc(other.name)}</b> <span class="muted">${distance(sys, other).toFixed(1)} ly ・ Lv${r.lv} (片道 ${fmtAmt(g.routeCap(r))}/年)</span><br>
       <span class="muted">送り ${fmtAmt(r.vol[out])}/年 ・ 受け取り ${fmtAmt(r.vol[1 - out])}/年</span>
-      ${costButton(g, `data-act="uproute" data-route="${r.id}"`, '拡張', g.routeUpCost(r), r.a)}</div>`;
+      ${costButton(g, `data-act="uproute" data-route="${r.id}"`, '拡張', g.routeUpCost(r), r.a, busyText(g, (j) => j.type === 'route' && j.route === r.id))}</div>`;
   }).join('');
   const dest = others.some((s) => s.id === app.routeDest) ? app.routeDest : others[0]?.id;
   const open = others.length
@@ -1698,8 +1775,9 @@ function militaryBox(app, sys) {
         <select data-act="forigin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === from ? 'selected' : ''}>${esc(o.s.name)} (${o.k}隻・${g.travelYears(o.s.id, sys.id).toFixed(1)} 年)</option>`).join('')}</select></label>
        <div class="btns"><button data-act="fleet" data-from="${from}" data-n="1">1隻をここへ</button><button data-act="fleet" data-from="${from}" data-n="all">全艦をここへ</button></div>`
     : '';
+  const queued = g.projects.filter((j) => j.type === 'warship' && j.sys === sys.id).length;
   return `<h3>軍事</h3>
-    <p class="note">駐留艦 <b>${n}</b> 隻。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1隻あたり維持費 ${WARSHIP_UPKEEP} cr/年</p>
+    <p class="note">駐留艦 <b>${n}</b> 隻${queued ? ` (建造中 ${queued} 隻)` : ''}。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1隻あたり維持費 ${WARSHIP_UPKEEP} cr/年</p>
     ${build}${send}`;
 }
 
@@ -1770,8 +1848,9 @@ function colonyBox(g, c) {
   if (g.needsWater(c) && s.water < 0.99) warn.push('水');
   const facs = Object.keys(FACILITY).map((f) => {
     const max = c.lv[f] >= FACILITY_MAX[f];
+    const busy = busyText(g, (j) => j.type === 'upgrade' && j.col === key && j.fac === f);
     return `<div class="fac"><span>${FACILITY[f]} <b>Lv${c.lv[f]}</b></span>
-      ${costButton(g, `data-act="upgrade" data-col="${key}" data-fac="${f}"`, max ? '最大' : '拡張', max ? null : g.upgradeCost(c, f), c.sys, max ? '最大レベル' : '')}</div>`;
+      ${costButton(g, `data-act="upgrade" data-col="${key}" data-fac="${f}"`, max ? '最大' : '拡張', max ? null : g.upgradeCost(c, f), c.sys, max ? '最大レベル' : busy)}</div>`;
   }).join('');
   return `<h3>${KIND_LABEL[c.kind]}</h3>
     <table class="tbl kv">
@@ -1830,6 +1909,12 @@ function dispatchBox(app, sys, b) {
     <div class="btns">${btn('station')}${btn('planet')}</div>`;
 }
 
+// 建設中ならボタンに添える文言 (例: 建設中 あと 3.2 年)
+function busyText(g, pred) {
+  const j = g.pending(pred);
+  return j ? `建設中 あと ${(j.ready - g.year).toFixed(1)} 年` : '';
+}
+
 function shipsHtml(game) {
   const bar = (s) => {
     const f = (game.year - s.depart) / (s.arrive - s.depart);
@@ -1837,7 +1922,8 @@ function shipsHtml(game) {
   };
   const ships = game.ships.map((s) => `<div class="ship">${esc(game.system(s.from).name)} → ${esc(game.system(s.to).name)} <span class="muted">${KIND_LABEL[s.kind]}</span>${bar(s)}</div>`);
   const fleets = game.fleets.map((f) => `<div class="ship">${esc(game.system(f.from).name)} → ${esc(game.system(f.to).name)} <span class="bad">艦隊 ${f.n}隻</span>${bar(f)}</div>`);
-  const all = [...ships, ...fleets];
+  const jobs = game.projects.map((j) => `<div class="ship">${esc(j.label)} <span class="muted">資材搬入中</span>${bar({ depart: j.start, arrive: j.ready })}</div>`);
+  const all = [...jobs, ...ships, ...fleets];
   return all.length ? all.join('') : '<span class="muted">航行中の船なし</span>';
 }
 
@@ -2029,7 +2115,7 @@ function buildSave(game, extra = {}) {
   return {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, stock: game.stock, routes: game.routes,
-    cargo: game.cargo, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+    cargo: game.cargo, projects: game.projects, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
 }
