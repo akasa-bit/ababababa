@@ -635,7 +635,8 @@ class Game {
     this.credits = START_CREDITS;
     this.stock = {}; // 星系ごとの備蓄。同じ星系の入植地は備蓄を共有する
     this.routes = []; // 交易路 { id, a, b, lv, transit: [A→Bの輸送中量, B→A], vol: [年あたり輸送量] }
-    this.cargo = []; // 輸送中の貨物 { route, dir, arrive, load }
+    this.cargo = []; // 輸送中の貨物 { key, path: [経由する星系], times: [各星系に着く年], arrive, load }
+    this.inbound = {}; // 星系ごとの、向かってくる荷の量 (保存しない。貨物から数え直す)
     this.garrison = { 0: 3 }; // 星系ごとの駐留軍艦数
     this.fleets = []; // 移動中の艦隊 { id, from, to, n, depart, arrive }
     this.natives = {}; // 先住民の状態 { 'sys|body': { rel, status, pop } }
@@ -881,43 +882,105 @@ class Game {
     return this.order(this.routeUpCost(r), r.a, { type: 'route', route: r.id, label: `${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路 Lv${r.lv + 1}` });
   }
 
-  // 各交易路は、送り手の余剰(需要2年分を超える備蓄)を受け手の不足へ自動で運ぶ。
+  // 交易網による自動輸送。交易路でつながっていれば、複数の交易路を乗り継いで運ぶ。
+  // 生産が需要に届かない資源について、受け手から近い順 (航行年数の合計) に余剰のある星系を探し、
+  // 最短経路で送る。各交易路の輸送量 (片道あたり) を区間ごとに消費する。
+  // 受け手の目標 = 需要 × (2年 + 航行年数)。輸送中の荷も数え、備蓄上限の8割は超えない。
   trade(h, flow) {
+    if (!this.routes.length) return;
+    const adj = {};
+    const room = {};
     for (const r of this.routes) {
-      const years = this.travelYears(r.a, r.b);
-      for (const dir of [0, 1]) {
-        const [from, to] = dir ? [r.b, r.a] : [r.a, r.b];
-        const sf = this.stockOf(from);
-        const sto = this.stockOf(to);
-        const transit = r.transit[dir];
-        let room = this.routeCap(r) * h;
-        let sent = 0;
-        for (const res of RES) {
-          if (room <= 0) break;
-          const spare = sf[res] - 2 * (flow[from]?.cons[res] || 0);
-          // 受け手の目標 = 需要2年分の備蓄 + 航行中に消費される分 (遠い交易路ほど多くの荷が途中にある)。
-          // 自給できている資源は受け取らず、備蓄の上限も超えない (双方向の無駄な往復を防ぐ)
-          const ft = flow[to] || { prod: zeroRes(), cons: zeroRes(), pop: 0 };
-          const target = ft.prod[res] >= ft.cons[res] ? 0 : Math.min((2 + years) * ft.cons[res], 0.8 * stockCap(ft.pop));
-          const want = target - sto[res] - transit[res];
-          const amt = Math.min(spare, want, room);
-          if (amt <= 0.001) continue;
-          sf[res] -= amt;
-          transit[res] += amt;
-          room -= amt;
-          sent += amt;
-          let p = null;
-          for (let i = this.cargo.length - 1; i >= Math.max(0, this.cargo.length - 64) && !p; i--) {
-            const q = this.cargo[i];
-            if (q.route === r.id && q.dir === dir) p = q;
-          }
-          if (!(p && this.year + years - p.arrive < 0.5)) {
-            p = { route: r.id, dir, arrive: this.year + years, load: {} };
-            this.cargo.push(p);
-          }
-          p.load[res] = (p.load[res] || 0) + amt;
+      const y = this.travelYears(r.a, r.b);
+      (adj[r.a] ??= []).push({ to: r.b, r, dir: 0, y });
+      (adj[r.b] ??= []).push({ to: r.a, r, dir: 1, y });
+      room[`${r.id}:0`] = room[`${r.id}:1`] = this.routeCap(r) * h;
+    }
+    const sent = {};
+    const spareOf = (id, res) => this.stockOf(id)[res] - 2 * (flow[id]?.cons[res] || 0);
+    for (const T of Object.keys(adj).map(Number)) {
+      const ft = flow[T];
+      if (!ft) continue;
+      const needs = RES.filter((res) => ft.prod[res] < ft.cons[res]);
+      if (!needs.length) continue;
+      // T からの最短経路 (ダイクストラ)。via[n] は n から T へ向かう次の区間
+      const dist = { [T]: 0 };
+      const via = {};
+      const done = new Set();
+      for (;;) {
+        let u = null;
+        for (const k of Object.keys(dist)) if (!done.has(+k) && (u === null || dist[k] < dist[u])) u = +k;
+        if (u === null) break;
+        done.add(u);
+        for (const e of adj[u] || []) {
+          const d = dist[u] + e.y;
+          if (dist[e.to] === undefined || d < dist[e.to]) { dist[e.to] = d; via[e.to] = { next: u, r: e.r, dir: 1 - e.dir }; }
         }
-        r.vol[dir] += (sent / h - r.vol[dir]) * Math.min(1, h);
+      }
+      const sources = Object.keys(dist).map(Number).filter((id) => id !== T).sort((x, y) => dist[x] - dist[y]);
+      const inb = (this.inbound[T] ??= zeroRes());
+      const sto = this.stockOf(T);
+      for (const res of needs) {
+        for (const S of sources) {
+          const want = Math.min((2 + dist[S]) * ft.cons[res], 0.8 * stockCap(ft.pop)) - sto[res] - inb[res];
+          if (want <= 0.001) break;
+          let amt = Math.min(want, spareOf(S, res));
+          if (amt <= 0.001) continue;
+          const legs = [];
+          for (let n = S; n !== T; n = via[n].next) legs.push(via[n]);
+          for (const l of legs) amt = Math.min(amt, room[`${l.r.id}:${l.dir}`]);
+          if (amt <= 0.001) continue;
+          for (const l of legs) {
+            const k = `${l.r.id}:${l.dir}`;
+            room[k] -= amt;
+            sent[k] = (sent[k] || 0) + amt;
+          }
+          this.shipCargo(S, legs, res, amt);
+        }
+      }
+    }
+    for (const r of this.routes) {
+      for (const dir of [0, 1]) r.vol[dir] += ((sent[`${r.id}:${dir}`] || 0) / h - r.vol[dir]) * Math.min(1, h);
+    }
+  }
+  // 貨物を積み出す。path は経由する星系の列、times は各星系に着く年
+  shipCargo(from, legs, res, amt) {
+    const path = [from, ...legs.map((l) => l.next)];
+    const dest = path[path.length - 1];
+    this.stockOf(from)[res] -= amt;
+    (this.inbound[dest] ??= zeroRes())[res] += amt;
+    for (const l of legs) l.r.transit[l.dir][res] += amt;
+    const times = [this.year];
+    for (let i = 1; i < path.length; i++) times.push(times[i - 1] + this.travelYears(path[i - 1], path[i]));
+    const key = path.join('>');
+    let p = null;
+    for (let i = this.cargo.length - 1; i >= Math.max(0, this.cargo.length - 64) && !p; i--) {
+      if (this.cargo[i].key === key) p = this.cargo[i];
+    }
+    if (!p || times[times.length - 1] - p.arrive >= 0.5) {
+      p = { key, path, times, arrive: times[times.length - 1], load: {} };
+      this.cargo.push(p);
+    }
+    p.load[res] = (p.load[res] || 0) + amt;
+  }
+  // 区間 (path[i] → path[i+1]) の交易路と向き
+  legsOf(path) {
+    const out = [];
+    for (let i = 0; i + 1 < path.length; i++) {
+      const r = this.routeBetween(path[i], path[i + 1]);
+      if (r) out.push({ r, dir: r.a === path[i] ? 0 : 1 });
+    }
+    return out;
+  }
+  // 輸送中の量 (交易路ごと・受け手ごと) を貨物から数え直す
+  rebuildTransit() {
+    for (const r of this.routes) r.transit = [zeroRes(), zeroRes()];
+    this.inbound = {};
+    for (const p of this.cargo) {
+      const dest = p.path[p.path.length - 1];
+      for (const [res, amt] of Object.entries(p.load)) {
+        (this.inbound[dest] ??= zeroRes())[res] += amt;
+        for (const l of this.legsOf(p.path)) l.r.transit[l.dir][res] += amt;
       }
     }
   }
@@ -1222,12 +1285,14 @@ class Game {
       const due = this.cargo.filter((p) => p.arrive <= this.year);
       this.cargo = this.cargo.filter((p) => p.arrive > this.year);
       for (const p of due) {
-        const r = this.routes.find((x) => x.id === p.route);
-        if (!r) continue;
-        const st = this.stockOf(p.dir ? r.a : r.b);
+        const dest = p.path[p.path.length - 1];
+        const st = this.stockOf(dest);
+        const inb = (this.inbound[dest] ??= zeroRes());
+        const legs = this.legsOf(p.path);
         for (const [res, amt] of Object.entries(p.load)) {
           st[res] += amt;
-          r.transit[p.dir][res] = Math.max(0, r.transit[p.dir][res] - amt);
+          inb[res] = Math.max(0, inb[res] - amt);
+          for (const l of legs) l.r.transit[l.dir][res] = Math.max(0, l.r.transit[l.dir][res] - amt);
           this.earn('trade', amt * PRICE[res] * 0.1); // 運んだ荷の価値の1割が交易収入になる
         }
       }
@@ -1365,7 +1430,17 @@ class Game {
     for (const c of this.colonies) this.stockOf(c.sys);
     const sysOk = (id) => !!this.galaxy.systems[id];
     if (Array.isArray(d.routes)) this.routes = d.routes.filter((r) => sysOk(r.a) && sysOk(r.b) && Array.isArray(r.transit));
-    if (Array.isArray(d.cargo)) this.cargo = d.cargo.filter((p) => this.routes.some((r) => r.id === p.route));
+    if (Array.isArray(d.cargo)) {
+      // 旧形式 (交易路1本ぶん) の貨物は経路つきに直す
+      this.cargo = d.cargo.map((p) => {
+        if (Array.isArray(p.path)) return p;
+        const r = this.routes.find((x) => x.id === p.route);
+        if (!r) return null;
+        const path = p.dir ? [r.b, r.a] : [r.a, r.b];
+        return { key: path.join('>'), path, times: [p.arrive - this.travelYears(r.a, r.b), p.arrive], arrive: p.arrive, load: p.load };
+      }).filter((p) => p && p.path.every(sysOk) && Number.isFinite(p.arrive));
+    }
+    this.rebuildTransit();
     if (obj(d.garrison)) this.garrison = d.garrison;
     if (Array.isArray(d.fleets)) this.fleets = d.fleets.filter((f) => sysOk(f.from) && sysOk(f.to));
     if (Array.isArray(d.outposts)) this.outposts = d.outposts.filter((o) => o && ok(o.sys, o.body) && o.lv >= 1);
@@ -1596,10 +1671,9 @@ class GalaxyView {
     ctx.lineWidth = 1;
     ctx.fillStyle = '#6fdc96';
     for (const p of game.cargo) {
-      const r = game.routes.find((x) => x.id === p.route);
-      if (!r) continue;
-      const [from, to] = p.dir ? [r.b, r.a] : [r.a, r.b];
-      const pos = game.shipPosition({ from, to, depart: p.arrive - game.travelYears(from, to), arrive: p.arrive });
+      let i = 0;
+      while (i < p.path.length - 2 && game.year >= p.times[i + 1]) i++;
+      const pos = game.shipPosition({ from: p.path[i], to: p.path[i + 1], depart: p.times[i], arrive: p.times[i + 1] });
       const [px, py] = this.toScreen(pos.x, pos.y);
       ctx.fillRect(px - 1.5, py - 1.5, 3, 3);
     }
@@ -2011,7 +2085,7 @@ function routeBox(app, sys) {
        ${costButton(g, `data-act="route" data-dest="${dest}"`, '交易路を開設', g.routeCost(sys.id, dest))}`
     : '<p class="note">交易路を結べる相手(他の入植星系)がない</p>';
   return `<h3>交易路</h3>
-    <p class="note">余っている資源を、足りない側へ自動で運ぶ (光速の貨物船)。運んだ荷の価値の1割が交易収入になる。</p>
+    <p class="note">余っている資源を、足りない星系へ自動で運ぶ (光速の貨物船)。交易路でつながっていれば、複数の交易路を乗り継いで届ける。運んだ荷の価値の1割が交易収入になる。</p>
     ${list}${open}`;
 }
 
@@ -2264,7 +2338,7 @@ function routesSheet(app) {
     <h3>新しい交易路</h3>${open}
     <h3>交易路の一覧</h3>
     ${rows ? `<div class="scroll"><table class="tbl">
-      <tr><th>区間 (A ⇄ B)</th><th>距離</th><th>規模</th><th>A→B</th><th>B→A</th><th>稼働率</th><th>輸送中 A→B</th><th>輸送中 B→A</th><th></th></tr>${rows}</table></div>
+      <tr><th>区間 (A ⇄ B)</th><th>距離</th><th>規模</th><th>A→B</th><th>B→A</th><th>稼働率</th><th>通過中の荷 A→B</th><th>通過中の荷 B→A</th><th></th></tr>${rows}</table></div>
       <p class="note">稼働率が100%近い交易路は、拡張すると運べる量が増える。</p>` : '<p class="note">まだ交易路はない。</p>'}`;
 }
 
