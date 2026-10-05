@@ -19,7 +19,7 @@ button:disabled { opacity:.45; cursor:not-allowed; }
 button.on { background:#1f3a4a; border-color:var(--accent); color:var(--accent); }
 button.ghost { background:transparent; margin-top:10px; }
 button small { display:block; font-size:11px; color:var(--muted); }
-#speed { display:flex; gap:4px; }
+#speed { display:flex; gap:4px; flex-wrap:wrap; }
 #speed button.on { border-color:var(--accent); color:var(--accent); }
 h2 { margin:0 0 2px; font-size:17px; }
 h3 { margin:16px 0 6px; font-size:13px; color:var(--muted); border-bottom:1px solid var(--line); padding-bottom:3px; }
@@ -68,14 +68,16 @@ html, body { height:100%; }
       <button id="tab-galaxy" class="tab on">星間マップ</button>
       <button id="tab-system" class="tab">星系マップ</button>
     </nav>
-    <div id="date">西暦 2300.0 年</div>
+    <div id="date">西暦 2300年 1月</div>
     <div id="treasury"></div>
     <div id="speed">
-      <button data-speed="0">⏸</button>
-      <button data-speed="1">1年/秒</button>
-      <button data-speed="4">4</button>
-      <button data-speed="16">16</button>
-      <button data-speed="64">64</button>
+      <button data-speed="0" aria-label="一時停止">⏸</button>
+      <button data-speed="1">1ヶ月/秒</button>
+      <button data-speed="2">3ヶ月</button>
+      <button data-speed="3">1年</button>
+      <button data-speed="4">4年</button>
+      <button data-speed="5">16年</button>
+      <button data-speed="6">64年</button>
     </div>
     <button id="savenow">セーブ</button>
     <button id="export">書き出し</button>
@@ -1035,7 +1037,8 @@ class Game {
     this.flow = flow;
     const a = Math.min(1, h);
     for (const k of Object.keys(LEDGER_LABEL)) {
-      this.ledger[k] = (this.ledger[k] || 0) + (((this.led[k] || 0) / h) - (this.ledger[k] || 0)) * a;
+      const now = (this.led[k] || 0) / h;
+      this.ledger[k] = this.ledger[k] === undefined ? now : this.ledger[k] + (now - this.ledger[k]) * a;
     }
   }
 
@@ -1835,7 +1838,7 @@ function logHtml(game) {
 const params = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
 const canvas = $('map');
-const SPEEDS = [0, 1, 4, 16, 64]; // 年/秒
+const SPEEDS = [0, 1 / 12, 1 / 4, 1, 4, 16, 64]; // 年/秒 (data-speed はこの添字)
 
 const app = {
   game: null,
@@ -1983,16 +1986,21 @@ $('importfile').onchange = async (e) => {
 setInterval(save, 5000);
 window.addEventListener('pagehide', save);
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+const setSpeed = (v) => {
+  if (app.speed) app.lastSpeed = app.speed;
+  app.speed = v;
+  updateSpeedButtons();
+};
 document.querySelectorAll('[data-speed]').forEach((b) => {
-  b.onclick = () => { app.speed = Number(b.dataset.speed); updateSpeedButtons(); };
+  b.onclick = () => setSpeed(SPEEDS[Number(b.dataset.speed)]);
 });
 function updateSpeedButtons() {
-  document.querySelectorAll('[data-speed]').forEach((b) => b.classList.toggle('on', Number(b.dataset.speed) === app.speed));
+  document.querySelectorAll('[data-speed]').forEach((b) => b.classList.toggle('on', SPEEDS[Number(b.dataset.speed)] === app.speed));
 }
 window.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'SELECT') return;
-  if (e.key === ' ') { app.speed = app.speed ? 0 : 1; updateSpeedButtons(); e.preventDefault(); }
-  else if (e.key >= '1' && e.key <= '5') { app.speed = SPEEDS[Number(e.key) - 1]; updateSpeedButtons(); }
+  if (e.key === ' ') { setSpeed(app.speed ? 0 : app.lastSpeed || 1); e.preventDefault(); }
+  else if (e.key >= '1' && e.key <= String(SPEEDS.length)) setSpeed(SPEEDS[Number(e.key) - 1]);
   else if (e.key === 'g') app.setView('galaxy');
   else if (e.key === 's') app.setView('system');
   else if (e.key === 'Escape') app.setView('galaxy');
@@ -2064,7 +2072,7 @@ function frame(now) {
   if (app.view === 'galaxy') galaxyView.draw(w, h);
   else systemView.draw(w, h);
 
-  $('date').textContent = `西暦 ${game.year.toFixed(1)} 年`;
+  $('date').textContent = `西暦 ${Math.floor(game.year)}年 ${Math.floor((game.year % 1) * 12) + 1}月`;
   acc += dt;
   if (acc > 0.5) {
     acc = 0;
