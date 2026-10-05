@@ -21,6 +21,15 @@ canvas { position:absolute; inset:0; width:100%; height:100%; display:block; tou
 #empire .tbl button small { display:inline; margin-left:4px; }
 #empire .bulk { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; font-size:12px; }
 #empire .bulk select { width:auto; }
+.chips { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 10px; }
+.chips button.on { border-color:var(--accent); color:var(--accent); }
+.ev { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--line); font-size:13px; align-items:baseline; }
+.ev .yr { color:var(--muted); font-variant-numeric:tabular-nums; min-width:4.5em; }
+.ev .tag { font-size:11px; border-radius:3px; padding:0 5px; white-space:nowrap; }
+.tag.famine { background:#5a2020; } .tag.shortage { background:#5a4320; } .tag.pirate { background:#4a2050; }
+.tag.natives { background:#3a2f60; } .tag.colony { background:#1d4a45; }
+.ev.good .txt { color:#9fe0b4; }
+#empire label.check { font-size:12px; color:var(--muted); display:inline-flex; gap:4px; align-items:center; }
 .kpi { display:flex; gap:10px; flex-wrap:wrap; } .kpi div { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:8px 12px; }
 .kpi b { display:block; font-size:18px; color:var(--fg); } .kpi span { font-size:11px; color:var(--muted); }
 #zoom { position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:6px; }
@@ -64,7 +73,7 @@ ul.bodies li:hover, ul.bodies li.sel { background:#16213a; }
 .fac { display:flex; flex-direction:column; gap:3px; font-size:12px; background:#111a2e; border-radius:5px; padding:6px; }
 .fac button { text-align:left; }
 aside > div > button, #panel > button { margin-top:6px; } #log div { margin-bottom:2px; }
-@media (max-width: 800px) { body.empire-view aside { display:none; } main { flex-direction:column; } aside { width:auto; max-height:45%; border-left:0; border-top:1px solid var(--line); } }
+@media (max-width: 800px) { body.sheet-view aside { display:none; } main { flex-direction:column; } aside { width:auto; max-height:45%; border-left:0; border-top:1px solid var(--line); } }
 
 @media (pointer: coarse) {
   button { min-height:40px; padding:6px 14px; }
@@ -81,6 +90,8 @@ html, body { height:100%; }
       <button id="tab-galaxy" class="tab on">星間マップ</button>
       <button id="tab-system" class="tab">星系マップ</button>
       <button id="tab-empire" class="tab">帝国</button>
+      <button id="tab-events" class="tab">イベント</button>
+      <button id="tab-cands" class="tab">候補地</button>
     </nav>
     <div id="date">西暦 2300年 1月</div>
     <div id="treasury"></div>
@@ -624,6 +635,7 @@ class Game {
     this.natives = {}; // 先住民の状態 { 'sys|body': { rel, status, pop } }
     this.infamy = 0; // 先住民を制圧するたびに増え、他の先住民の友好度を下げる
     this.surveyed = [];
+    this.events = []; // 重要なイベント { id, year, kind, sys, text, good }
     this.projects = []; // 資材の搬入を待つ建設 { id, type, sys, start, ready, from: [搬出元の星系], label, ... }
     this.flow = {}; // 直近の星系ごとの生産・需要[年あたり] (保存しない)
     this.ledger = {}; // 直近の収支[cr/年] (保存しない)
@@ -664,7 +676,7 @@ class Game {
     if (this.isSurveyed(sysId)) return;
     this.surveyed.push(sysId);
     for (const b of this.system(sysId).bodies) {
-      if (b.natives) this.message(`${b.name} で先住民「${b.natives.species}」(${TECH_LABEL[b.natives.tech]}) を発見した`);
+      if (b.natives) this.event('natives', sysId, `${b.name} で先住民「${b.natives.species}」(${TECH_LABEL[b.natives.tech]}) を発見した`);
     }
   }
   nativeOf(sysId, bodyId) {
@@ -925,13 +937,13 @@ class Game {
     if (g >= power) {
       const loss = Math.floor((power / 3) * Math.random());
       this.garrison[sys.id] = g - loss;
-      this.message(`${sys.name} で宇宙海賊 (戦力${power}) を撃退した${loss ? ` (軍艦 ${loss} 隻を喪失)` : ''}`);
+      this.event('pirate', sys.id, `${sys.name} で宇宙海賊 (戦力${power}) を撃退した${loss ? ` (軍艦 ${loss} 隻を喪失)` : ''}`, true);
     } else {
       this.garrison[sys.id] = 0;
       const st = this.stockOf(sys.id);
       for (const r of RES) st[r] *= 0.6;
       for (const c of this.coloniesIn(sys.id)) c.pop *= 0.9;
-      this.message(`${sys.name} が宇宙海賊 (戦力${power}) に略奪された${g ? ` (駐留艦 ${g} 隻は全滅)` : ''}`);
+      this.event('pirate', sys.id, `${sys.name} が宇宙海賊 (戦力${power}) に略奪された${g ? ` (駐留艦 ${g} 隻は全滅)` : ''}`);
     }
     return true;
   }
@@ -955,7 +967,7 @@ class Game {
     if (n.st.rel < 80) return fail('友好度80以上が必要');
     c.pop += n.st.pop;
     n.st.status = 'integrated';
-    this.message(`${n.def.species} ${fmtPop(n.st.pop)}が ${c.name} の市民になった`);
+    this.event('natives', sysId, `${n.def.species} ${fmtPop(n.st.pop)}が ${c.name} の市民になった`, true);
     return { ok: true };
   }
   conquer(sysId, bodyId) {
@@ -971,7 +983,7 @@ class Game {
     n.st.rel = -80;
     this.infamy += 25;
     for (const st of Object.values(this.natives)) if (st !== n.st && st.status === 'independent') st.rel -= 25;
-    this.message(`${n.def.species}を制圧した (軍艦 ${loss} 隻を喪失)。他の先住民の友好度が下がった`);
+    this.event('natives', sysId, `${n.def.species}を制圧した (軍艦 ${loss} 隻を喪失)。他の先住民の友好度が下がった`);
     return { ok: true };
   }
 
@@ -1012,7 +1024,7 @@ class Game {
         }
         if (this.colonyAt(s.to, s.body, kind)) continue;
         this.addColony(s.to, s.body, kind, t.name);
-        this.message(`${t.name} に${KIND_LABEL[kind]}を設立した (${this.system(s.to).name})`);
+        this.event('colony', s.to, `${t.name} に${KIND_LABEL[kind]}を設立した (${this.system(s.to).name})`, true);
       }
     }
     const fleets = this.fleets.filter((f) => f.arrive <= this.year);
@@ -1076,6 +1088,9 @@ class Game {
       fl.cons.fuel += 0.2 * c.plan;
       fl.prod.goods += c.plan * k;
       c.industry = k;
+      if (c.pop >= 1 && c.plan > 0) {
+        this.watch(c, 'industry', k, 'shortage', () => `${c.name} の工場が原料 (金属・燃料) 不足で減産 (稼働 ${pct(k)})`, `${c.name} の工場の原料不足が解消した`);
+      }
     }
     // 3. 消費と人口の増減、税収
     for (const c of this.colonies) {
@@ -1092,6 +1107,9 @@ class Game {
       const water = this.needsWater(c) ? use('water', 0.1 * c.pop) : 1;
       const goods = use('goods', 0.3 * c.pop);
       c.sat = { food, water, goods };
+      this.watch(c, 'food', food, 'famine', () => `${c.name} で飢餓が発生 (食料の充足率 ${pct(food)})`, `${c.name} の飢餓が解消した`);
+      if (this.needsWater(c)) this.watch(c, 'water', water, 'famine', () => `${c.name} で水不足が発生 (充足率 ${pct(water)})`, `${c.name} の水不足が解消した`);
+      if (c.pop >= 1) this.watch(c, 'goods', goods, 'shortage', () => `${c.name} で工業品が不足 (充足率 ${pct(goods)})`, `${c.name} の工業品不足が解消した`);
       const life = Math.min(food, water);
       const n = c.kind === 'planet' ? this.nativeOf(c.sys, c.body) : null;
       const unrest = n && n.st.status !== 'integrated' && n.st.rel < -20 ? 0.02 : 0;
@@ -1163,12 +1181,31 @@ class Game {
     if (Array.isArray(d.cargo)) this.cargo = d.cargo.filter((p) => this.routes.some((r) => r.id === p.route));
     if (obj(d.garrison)) this.garrison = d.garrison;
     if (Array.isArray(d.fleets)) this.fleets = d.fleets.filter((f) => sysOk(f.from) && sysOk(f.to));
+    if (Array.isArray(d.events)) this.events = d.events.filter((e) => e && typeof e.text === 'string');
     if (Array.isArray(d.projects)) this.projects = d.projects.filter((j) => j && sysOk(j.sys) && Number.isFinite(j.ready) && Array.isArray(j.from));
     if (obj(d.natives)) this.natives = d.natives;
     if (Number.isFinite(d.infamy)) this.infamy = d.infamy;
     this.surveyed = Array.isArray(d.surveyed) ? d.surveyed.filter(sysOk) : [];
     for (const c of this.colonies) if (!this.isSurveyed(c.sys)) this.surveyed.push(c.sys);
     return true;
+  }
+
+  // 重要なイベント。ログにも流す
+  event(kind, sys, text, good = false) {
+    this.events.unshift({ id: this.nextShipId++, year: this.year, kind, sys, text, good });
+    this.events.length = Math.min(this.events.length, 200);
+    this.message(text);
+  }
+  // 充足率などの悪化と回復を検知してイベントにする (ばたつかないよう 95% 未満で発生、99% 以上で解消)
+  watch(c, key, v, kind, onText, offText) {
+    if (!c.alerts) c.alerts = {};
+    if (!c.alerts[key] && v < 0.95) {
+      c.alerts[key] = true;
+      this.event(kind, c.sys, onText());
+    } else if (c.alerts[key] && v >= 0.99) {
+      c.alerts[key] = false;
+      this.event(kind, c.sys, offText, true);
+    }
   }
 
   message(text) {
@@ -1995,6 +2032,78 @@ function empireHtml(app) {
   return `<h2>帝国</h2>${kpi}${ledger}${popTable}${resTable}${milTable}`;
 }
 
+const EVENT_KIND = { famine: '飢餓・水不足', shortage: '資源不足', pirate: '海賊', natives: '先住民', colony: '入植' };
+
+// イベントタブ: いま起きている問題と、重要なイベントの履歴
+function eventsHtml(app) {
+  const g = app.game;
+  const f = app.eventFilter || 'all';
+  const ALERT = { food: ['famine', '飢餓'], water: ['famine', '水不足'], goods: ['shortage', '工業品不足'], industry: ['shortage', '原料不足'] };
+  const now = g.colonies.flatMap((c) => Object.entries(c.alerts || {}).filter(([, on]) => on).map(([k]) => ({ c, k })));
+  const nowHtml = now.length
+    ? now.map(({ c, k }) => `<div class="ev"><span class="tag ${ALERT[k][0]}">${ALERT[k][1]}</span><span class="txt">${esc(c.name)}
+        <span class="muted">人口 ${fmtPop(c.pop)}・${((c.growth || 0) * 100).toFixed(1)}%/年</span></span>
+        <button data-act="gobody" data-sys="${c.sys}" data-body="${esc(c.body)}">表示</button></div>`).join('')
+    : '<p class="note">いま問題が起きている入植地はない。</p>';
+  const chips = ['all', ...Object.keys(EVENT_KIND)].map((k) => `<button data-act="evfilter" data-f="${k}" class="${k === f ? 'on' : ''}">${k === 'all' ? 'すべて' : EVENT_KIND[k]}</button>`).join('');
+  const list = g.events.filter((e) => f === 'all' || e.kind === f).slice(0, 120).map((e) => `<div class="ev ${e.good ? 'good' : ''}">
+      <span class="yr">${e.year.toFixed(1)}</span><span class="tag ${e.kind}">${EVENT_KIND[e.kind] || e.kind}</span>
+      <span class="txt">${esc(e.text)}</span>${e.sys !== undefined && g.system(e.sys) ? `<button data-act="goto" data-sys="${e.sys}">地図</button>` : ''}</div>`).join('');
+  return `<h2>イベント</h2>
+    <h3>いま起きている問題 (${now.length})</h3>${nowHtml}
+    <h3>履歴</h3><div class="chips">${chips}</div>${list || '<p class="note">まだ記録はない。</p>'}`;
+}
+
+// 候補地タブ: ハビタブルゾーン内にある未入植の天体
+function candidatesHtml(app) {
+  const g = app.game;
+  const origins = g.colonizedSystems();
+  const rows = [];
+  for (const sys of g.galaxy.systems) {
+    for (const b of sys.bodies) {
+      if (!b.inHZ || b.type === 'belt' || g.colonyAt(sys.id, b.id, 'planet') || g.colonyAt(sys.id, b.id, 'station')) continue;
+      const grade = b.settle?.grade || 0;
+      if (app.candOnly && grade < 1) continue;
+      let from = origins[0];
+      for (const o of origins) if (distance(o, sys) < distance(from, sys)) from = o;
+      rows.push({ sys, b, grade, from, d: distance(from, sys) });
+    }
+  }
+  const sort = app.candSort || 'dist';
+  rows.sort(sort === 'grade' ? (x, y) => y.grade - x.grade || x.d - y.d : (x, y) => x.d - y.d);
+  const stars = (v) => '★'.repeat(clamp(Math.ceil(v / 0.6), 1, 4));
+  const body = rows.slice(0, 100).map(({ sys, b, grade, from, d }) => {
+    const solid = b.type === 'rocky' || b.type === 'dwarf';
+    let nat = '<span class="muted">未調査</span>';
+    if (g.isSurveyed(sys.id)) {
+      const n = g.nativeOf(sys.id, b.id);
+      nat = n ? `<span class="nat">${esc(n.def.species)}</span> <span class="muted">${nativeStatus(n)}</span>` : 'なし';
+    }
+    const res = MINED.filter((r) => b.deposits?.[r] > 0.05).map((r) => `${RES_LABEL[r]}${stars(b.deposits[r])}`).join(' ') || '—';
+    const kind = grade >= 1 ? 'planet' : 'station';
+    const c = g.check(sys.id, b.id, kind);
+    const send = costButton(g, `data-act="candsend" data-sys="${sys.id}" data-body="${esc(b.id)}" data-kind="${kind}" data-from="${from.id}"`,
+      kind === 'planet' ? '入植船' : 'ステーション', SHIP_COST[kind], from.id, c.ok ? '' : c.reason);
+    return `<tr><td><button data-act="gobody" data-sys="${sys.id}" data-body="${esc(b.id)}">${esc(b.name)}</button></td>
+      <td>${d.toFixed(1)} ly <span class="muted">(${esc(from.name)})</span></td><td>${TYPE_LABEL[b.type]}</td>
+      <td>${solid ? `<b class="grade g${grade}">${GRADE_LABEL[grade]}</b>` : '<span class="muted">地表なし</span>'}</td>
+      <td>${solid ? `${Math.round(b.tSurf - 273)} ℃` : '—'}</td><td>${fmt(b.gravity)} g</td>
+      <td>${solid ? (b.pressure < 0.001 ? '真空' : `${fmt(b.pressure)} atm`) : '—'}</td>
+      <td>${nat}</td><td>${res}</td><td>${send}</td></tr>`;
+  }).join('');
+  return `<h2>候補地 <span class="muted" style="font-size:13px">ハビタブルゾーン内の未入植の天体 ${rows.length} 件${rows.length > 100 ? ' (近い順に100件を表示)' : ''}</span></h2>
+    <div class="bulk">
+      <label class="check"><input type="checkbox" data-act="candonly" ${app.candOnly ? 'checked' : ''}> 地表に入植できる天体だけ</label>
+      並び順 <select data-act="candsort"><option value="dist" ${sort === 'dist' ? 'selected' : ''}>最寄りの入植地から近い順</option><option value="grade" ${sort === 'grade' ? 'selected' : ''}>入植適性の高い順</option></select>
+    </div>
+    <div class="scroll"><table class="tbl">
+      <tr><th>天体</th><th>最寄りの入植地から</th><th>種類</th><th>入植適性</th><th>気温</th><th>重力</th><th>大気圧</th><th>先住民</th><th>資源</th><th>入植船を送る</th></tr>
+      ${body}</table></div>
+    <p class="note">入植船は最寄りの入植地から出る。地表に入植できない天体には宇宙ステーションを送る。</p>`;
+}
+
+const SHEETS = { empire: empireHtml, events: eventsHtml, cands: candidatesHtml };
+
 function treasuryHtml(g) {
   const inc = g.income();
   return `💰 ${fmtAmt(g.credits)} cr <span class="${inc < 0 ? 'bad' : 'hz'}">(${inc >= 0 ? '+' : ''}${fmtAmt(inc)}/年)</span> ・ 人口 ${fmtPop(g.totalPop())} ・ 軍艦 ${g.warships()}`;
@@ -2041,11 +2150,10 @@ const app = {
   selectBody(id) { this.sel.body = id; this.dirty = true; },
   setView(v) {
     this.view = v;
-    $('tab-galaxy').classList.toggle('on', v === 'galaxy');
-    $('tab-system').classList.toggle('on', v === 'system');
-    $('tab-empire').classList.toggle('on', v === 'empire');
-    $('empire').hidden = v !== 'empire';
-    document.body.classList.toggle('empire-view', v === 'empire');
+    for (const t of ['galaxy', 'system', 'empire', 'events', 'cands']) $(`tab-${t}`).classList.toggle('on', v === t);
+    $('empire').hidden = !SHEETS[v];
+    document.body.classList.toggle('sheet-view', !!SHEETS[v]);
+    if (v === 'events') this.seenEvent = this.game.events[0]?.id || 0;
     canvas.style.cursor = 'default';
     $('zoom').hidden = v !== 'galaxy';
     this.dirty = true;
@@ -2088,6 +2196,8 @@ new ResizeObserver(() => { resize(); if (!touched) galaxyView.fit(); }).observe(
 $('tab-galaxy').onclick = () => app.setView('galaxy');
 $('tab-system').onclick = () => app.setView('system');
 $('tab-empire').onclick = () => app.setView('empire');
+$('tab-events').onclick = () => app.setView('events');
+$('tab-cands').onclick = () => app.setView('cands');
 $('zoom-in').onclick = () => galaxyView.zoomAt(1.5, w / 2, h / 2);
 $('zoom-out').onclick = () => galaxyView.zoomAt(1 / 1.5, w / 2, h / 2);
 $('zoom-fit').onclick = () => galaxyView.fit();
@@ -2115,7 +2225,7 @@ function buildSave(game, extra = {}) {
   return {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, stock: game.stock, routes: game.routes,
-    cargo: game.cargo, projects: game.projects, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+    cargo: game.cargo, projects: game.projects, events: game.events, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
 }
@@ -2197,16 +2307,18 @@ window.addEventListener('keydown', (e) => {
 const panel = $('panel');
 const empire = $('empire');
 function onPanelClick(e) {
-  const li = e.target.closest('[data-body]');
+  const li = e.target.closest('li[data-body]');
   if (li) return app.selectBody(li.dataset.body);
   const btn = e.target.closest('button[data-act]');
   if (!btn) return;
   const { act, kind } = btn.dataset;
   const g = app.game;
   const sys = btn.dataset.sys !== undefined ? Number(btn.dataset.sys) : app.sel.sys;
-  const { body } = app.sel;
+  const body = btn.dataset.body ?? app.sel.body;
   if (act === 'open') return app.setView('system');
   if (act === 'goto') { app.selectSystem(sys); return app.setView('galaxy'); }
+  if (act === 'gobody') { app.openSystem(sys); return app.selectBody(body); }
+  if (act === 'evfilter') { app.eventFilter = btn.dataset.f; app.dirty = true; return; }
   if (act === 'back') return app.selectBody(null);
   const actions = {
     send: () => g.dispatch(app.originId ?? nearestOrigin(), sys, body, kind),
@@ -2219,6 +2331,7 @@ function onPanelClick(e) {
     integrate: () => g.integrate(sys, body),
     conquer: () => g.conquer(sys, body),
     rally: () => g.rally(sys),
+    candsend: () => g.dispatch(Number(btn.dataset.from), sys, body, kind),
     bulkfocus: () => g.setFocusAll(app.bulkFocus || 'balanced'),
   };
   if (!actions[act]) return;
@@ -2234,6 +2347,8 @@ function onPanelChange(e) {
   else if (act === 'rdest') app.routeDest = Number(v);
   else if (act === 'forigin') app.fleetOrigin = Number(v);
   else if (act === 'bulkfocus') app.bulkFocus = v;
+  else if (act === 'candonly') app.candOnly = e.target.checked;
+  else if (act === 'candsort') app.candSort = v;
   else if (act === 'focus') {
     const c = app.game.colonyByKey(col);
     if (c && FOCUS[v]) { c.focus = v; app.game.message(`${c.name} の方針を「${FOCUS[v].label}」にした`); }
@@ -2278,12 +2393,15 @@ function frame(now) {
     $('log').innerHTML = logHtml(game);
     $('treasury').innerHTML = treasuryHtml(game);
     $('ledger').innerHTML = ledgerHtml(game);
+    if (app.view === 'events') app.seenEvent = game.events[0]?.id || 0;
+    const unseen = game.events.filter((e) => !e.good && e.id > (app.seenEvent || 0)).length;
+    $('tab-events').textContent = unseen ? `イベント (${unseen})` : 'イベント';
     app.dirty = true;
   }
   if (app.dirty && !panelBusy()) {
     app.dirty = false;
     panel.innerHTML = app.view === 'system' && app.sel.body ? bodyPanel(app) : systemPanel(app);
-    if (app.view === 'empire') empire.innerHTML = empireHtml(app);
+    if (SHEETS[app.view]) empire.innerHTML = SHEETS[app.view](app);
   }
   requestAnimationFrame(frame);
 }
