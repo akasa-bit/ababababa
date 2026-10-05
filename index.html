@@ -10,6 +10,19 @@ h1 { margin:0; font-size:18px; letter-spacing:.1em; color:var(--accent); }
 main { flex:1; display:flex; min-height:0; }
 #stage { flex:1; min-width:0; min-height:0; position:relative; }
 canvas { position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+#empire { position:absolute; inset:0; overflow:auto; background:var(--bg); padding:12px 16px 40px; z-index:1; }
+#empire h2 { margin-bottom:6px; }
+#empire .scroll { overflow-x:auto; }
+#empire .tbl { font-size:12.5px; }
+#empire .tbl td, #empire .tbl th { padding:4px 10px 4px 0; white-space:nowrap; }
+#empire .tbl tr.total td { border-top:1px solid var(--line); font-weight:bold; }
+#empire .tbl select { width:auto; margin:0; padding:2px 4px; }
+#empire .tbl button { padding:2px 8px; min-height:0; }
+#empire .tbl button small { display:inline; margin-left:4px; }
+#empire .bulk { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; font-size:12px; }
+#empire .bulk select { width:auto; }
+.kpi { display:flex; gap:10px; flex-wrap:wrap; } .kpi div { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:8px 12px; }
+.kpi b { display:block; font-size:18px; color:var(--fg); } .kpi span { font-size:11px; color:var(--muted); }
 #zoom { position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:6px; }
 #zoom button { min-width:46px; min-height:46px; font-size:18px; background:rgba(13,18,29,.85); }
 aside { width:340px; background:var(--panel); border-left:1px solid var(--line); padding:12px 14px; overflow-y:auto; }
@@ -51,7 +64,7 @@ ul.bodies li:hover, ul.bodies li.sel { background:#16213a; }
 .fac { display:flex; flex-direction:column; gap:3px; font-size:12px; background:#111a2e; border-radius:5px; padding:6px; }
 .fac button { text-align:left; }
 aside > div > button, #panel > button { margin-top:6px; } #log div { margin-bottom:2px; }
-@media (max-width: 800px) { main { flex-direction:column; } aside { width:auto; max-height:45%; border-left:0; border-top:1px solid var(--line); } }
+@media (max-width: 800px) { body.empire-view aside { display:none; } main { flex-direction:column; } aside { width:auto; max-height:45%; border-left:0; border-top:1px solid var(--line); } }
 
 @media (pointer: coarse) {
   button { min-height:40px; padding:6px 14px; }
@@ -67,6 +80,7 @@ html, body { height:100%; }
     <nav>
       <button id="tab-galaxy" class="tab on">星間マップ</button>
       <button id="tab-system" class="tab">星系マップ</button>
+      <button id="tab-empire" class="tab">帝国</button>
     </nav>
     <div id="date">西暦 2300年 1月</div>
     <div id="treasury"></div>
@@ -89,6 +103,7 @@ html, body { height:100%; }
   <main>
     <div id="stage">
       <canvas id="map"></canvas>
+      <div id="empire" hidden></div>
       <div id="zoom"><button id="zoom-in" aria-label="拡大">＋</button><button id="zoom-out" aria-label="縮小">－</button><button id="zoom-fit" aria-label="全体表示">全体</button></div>
     </div>
     <aside>
@@ -823,6 +838,20 @@ class Game {
     const years = this.travelYears(from, to);
     this.fleets.push({ id: this.nextShipId++, from, to, n, depart: this.year, arrive: this.year + years });
     this.message(`${this.system(from).name} → ${this.system(to).name} へ艦隊 ${n} 隻が出撃 (到着まで ${years.toFixed(2)} 年)`);
+    return { ok: true };
+  }
+
+  // 他の星系に駐留する全艦をこの星系へ集める
+  rally(to) {
+    const from = Object.keys(this.garrison).map(Number).filter((id) => id !== to && this.garrison[id] > 0);
+    if (!from.length) return fail('集められる軍艦がない');
+    for (const id of from) this.sendFleet(id, to, this.garrison[id]);
+    return { ok: true };
+  }
+  setFocusAll(focus) {
+    if (!FOCUS[focus]) return fail('方針が不正');
+    for (const c of this.colonies) c.focus = focus;
+    this.message(`全入植地の方針を「${FOCUS[focus].label}」にした`);
     return { ok: true };
   }
 
@@ -1812,6 +1841,74 @@ function shipsHtml(game) {
   return all.length ? all.join('') : '<span class="muted">航行中の船なし</span>';
 }
 
+// 帝国タブ: 全星系の人口・資源・経済・軍事を一覧で管理する
+function empireHtml(app) {
+  const g = app.game;
+  const systems = g.colonizedSystems().sort((a, b) => g.coloniesIn(b.id).reduce((s, c) => s + c.pop, 0) - g.coloniesIn(a.id).reduce((s, c) => s + c.pop, 0));
+  const net = (fl, r) => fl.prod[r] - fl.cons[r];
+  const flowOf = (id) => g.flow[id] || { prod: zeroRes(), cons: zeroRes() };
+  const signed = (v) => (Math.abs(v) < 0.05 ? '<span class="muted">±0</span>' : `<span class="${v < 0 ? 'bad' : 'hz'}">${v > 0 ? '+' : ''}${fmtAmt(v)}</span>`);
+  const goto = (s) => `<button data-act="goto" data-sys="${s.id}">${esc(s.name)}</button>`;
+  const inc = g.income();
+
+  const kpi = `<div class="kpi">
+    <div><span>クレジット</span><b>${fmtAmt(g.credits)} cr</b><span class="${inc < 0 ? 'bad' : 'hz'}">${inc >= 0 ? '+' : ''}${fmtAmt(inc)}/年</span></div>
+    <div><span>総人口</span><b>${fmtPop(g.totalPop())}</b><span>入植地 ${g.colonies.length}・星系 ${systems.length}</span></div>
+    <div><span>軍艦</span><b>${g.warships()} 隻</b><span>維持費 ${fmtAmt(g.warships() * WARSHIP_UPKEEP)} cr/年</span></div>
+    <div><span>交易路</span><b>${g.routes.length} 本</b><span>輸送中 ${g.cargo.length} 便</span></div>
+  </div>`;
+
+  const ledger = `<h3>収支 (cr/年)</h3><table class="tbl">${ledgerHtml(g)}</table>`;
+
+  const colonies = [...g.colonies].sort((a, b) => b.pop - a.pop).map((c) => {
+    const s = c.sat || { food: 1, water: 1, goods: 1 };
+    const low = Math.min(s.food, g.needsWater(c) ? s.water : 1);
+    return `<tr><td>${esc(c.name)}</td><td>${goto(g.system(c.sys))}</td><td>${c.kind === 'planet' ? '惑星' : 'ステーション'}</td>
+      <td>${fmtPop(c.pop)}</td><td class="muted">${fmtPop(g.capOf(c))}</td>
+      <td class="${(c.growth || 0) < 0 ? 'bad' : 'hz'}">${((c.growth || 0) * 100).toFixed(1)}%</td>
+      <td class="${low < 0.99 ? 'bad' : ''}">${pct(low)}</td><td class="${s.goods < 0.99 ? 'bad' : ''}">${pct(s.goods)}</td>
+      <td><select data-act="focus" data-col="${colKey(c)}">${Object.entries(FOCUS).map(([k, f]) => `<option value="${k}" ${k === c.focus ? 'selected' : ''}>${f.label}</option>`).join('')}</select></td></tr>`;
+  }).join('');
+  const bulk = `<div class="bulk">全入植地の方針を
+    <select data-act="bulkfocus">${Object.entries(FOCUS).map(([k, f]) => `<option value="${k}" ${k === (app.bulkFocus || 'balanced') ? 'selected' : ''}>${f.label}</option>`).join('')}</select>
+    <button data-act="bulkfocus">一括で変更</button></div>`;
+  const popTable = `<h3>人口と入植地</h3>${bulk}<div class="scroll"><table class="tbl">
+    <tr><th>入植地</th><th>星系</th><th>種類</th><th>人口</th><th>上限</th><th>増加/年</th><th>生活物資</th><th>工業品</th><th>方針</th></tr>${colonies}</table></div>`;
+
+  const totals = zeroRes();
+  const totalNet = zeroRes();
+  const resRows = systems.map((s) => {
+    const st = g.stockOf(s.id);
+    const fl = flowOf(s.id);
+    return `<tr><td>${goto(s)}</td>${RES.map((r) => {
+      totals[r] += st[r];
+      totalNet[r] += net(fl, r);
+      return `<td>${fmtAmt(st[r])} <small>${signed(net(fl, r))}</small></td>`;
+    }).join('')}</tr>`;
+  }).join('');
+  const resTable = `<h3>資源 (備蓄 と 年あたりの増減)</h3><div class="scroll"><table class="tbl">
+    <tr><th>星系</th>${RES.map((r) => `<th>${RES_LABEL[r]}</th>`).join('')}</tr>${resRows}
+    <tr class="total"><td>合計</td>${RES.map((r) => `<td>${fmtAmt(totals[r])} <small>${signed(totalNet[r])}</small></td>`).join('')}</tr></table></div>
+    <p class="note">増減は生産−需要。交易路での出入りは含まない。</p>`;
+
+  const milIds = [...new Set([...systems.map((s) => s.id), ...Object.keys(g.garrison).map(Number).filter((id) => g.garrison[id] > 0)])];
+  const milRows = milIds.map((id) => {
+    const s = g.system(id);
+    const n = g.garrison[id] || 0;
+    const coming = g.fleets.filter((f) => f.to === id).reduce((k, f) => k + f.n, 0);
+    const build = g.isColonized(id) && g.hasShipyard(id)
+      ? costButton(g, `data-act="warship" data-sys="${id}"`, '建造', WARSHIP_COST, id)
+      : '<span class="muted">造船所なし</span>';
+    return `<tr><td>${goto(s)}</td><td><b>${n}</b> 隻${coming ? ` <span class="muted">(+${coming} 向かっている)</span>` : ''}</td><td>${build}</td>
+      <td><button data-act="rally" data-sys="${id}">全艦をここへ集結</button></td></tr>`;
+  }).join('');
+  const milTable = `<h3>軍事</h3><div class="scroll"><table class="tbl">
+    <tr><th>星系</th><th>駐留</th><th>軍艦の建造</th><th></th></tr>${milRows}</table></div>
+    ${g.year < PIRATE_START ? `<p class="note">宇宙海賊は ${PIRATE_START} 年から現れる。</p>` : ''}`;
+
+  return `<h2>帝国</h2>${kpi}${ledger}${popTable}${resTable}${milTable}`;
+}
+
 function treasuryHtml(g) {
   const inc = g.income();
   return `💰 ${fmtAmt(g.credits)} cr <span class="${inc < 0 ? 'bad' : 'hz'}">(${inc >= 0 ? '+' : ''}${fmtAmt(inc)}/年)</span> ・ 人口 ${fmtPop(g.totalPop())} ・ 軍艦 ${g.warships()}`;
@@ -1860,6 +1957,9 @@ const app = {
     this.view = v;
     $('tab-galaxy').classList.toggle('on', v === 'galaxy');
     $('tab-system').classList.toggle('on', v === 'system');
+    $('tab-empire').classList.toggle('on', v === 'empire');
+    $('empire').hidden = v !== 'empire';
+    document.body.classList.toggle('empire-view', v === 'empire');
     canvas.style.cursor = 'default';
     $('zoom').hidden = v !== 'galaxy';
     this.dirty = true;
@@ -1901,6 +2001,7 @@ new ResizeObserver(() => { resize(); if (!touched) galaxyView.fit(); }).observe(
 // --- UI イベント ---
 $('tab-galaxy').onclick = () => app.setView('galaxy');
 $('tab-system').onclick = () => app.setView('system');
+$('tab-empire').onclick = () => app.setView('empire');
 $('zoom-in').onclick = () => galaxyView.zoomAt(1.5, w / 2, h / 2);
 $('zoom-out').onclick = () => galaxyView.zoomAt(1 / 1.5, w / 2, h / 2);
 $('zoom-fit').onclick = () => galaxyView.fit();
@@ -2003,19 +2104,23 @@ window.addEventListener('keydown', (e) => {
   else if (e.key >= '1' && e.key <= String(SPEEDS.length)) setSpeed(SPEEDS[Number(e.key) - 1]);
   else if (e.key === 'g') app.setView('galaxy');
   else if (e.key === 's') app.setView('system');
+  else if (e.key === 'e') app.setView('empire');
   else if (e.key === 'Escape') app.setView('galaxy');
 });
 
 const panel = $('panel');
-panel.addEventListener('click', (e) => {
+const empire = $('empire');
+function onPanelClick(e) {
   const li = e.target.closest('[data-body]');
   if (li) return app.selectBody(li.dataset.body);
   const btn = e.target.closest('button[data-act]');
   if (!btn) return;
   const { act, kind } = btn.dataset;
   const g = app.game;
-  const { sys, body } = app.sel;
+  const sys = btn.dataset.sys !== undefined ? Number(btn.dataset.sys) : app.sel.sys;
+  const { body } = app.sel;
   if (act === 'open') return app.setView('system');
+  if (act === 'goto') { app.selectSystem(sys); return app.setView('galaxy'); }
   if (act === 'back') return app.selectBody(null);
   const actions = {
     send: () => g.dispatch(app.originId ?? nearestOrigin(), sys, body, kind),
@@ -2027,32 +2132,39 @@ panel.addEventListener('click', (e) => {
     gift: () => g.gift(sys, body),
     integrate: () => g.integrate(sys, body),
     conquer: () => g.conquer(sys, body),
+    rally: () => g.rally(sys),
+    bulkfocus: () => g.setFocusAll(app.bulkFocus || 'balanced'),
   };
   if (!actions[act]) return;
   const r = actions[act]();
   if (!r.ok) g.message(`できない: ${r.reason}`);
   app.dirty = true;
   save();
-});
-panel.addEventListener('change', (e) => {
+}
+function onPanelChange(e) {
   const { act, col } = e.target.dataset;
   const v = e.target.value;
   if (act === 'origin') app.originId = Number(v);
   else if (act === 'rdest') app.routeDest = Number(v);
   else if (act === 'forigin') app.fleetOrigin = Number(v);
+  else if (act === 'bulkfocus') app.bulkFocus = v;
   else if (act === 'focus') {
     const c = app.game.colonyByKey(col);
     if (c && FOCUS[v]) { c.focus = v; app.game.message(`${c.name} の方針を「${FOCUS[v].label}」にした`); }
   } else return;
   e.target.blur();
   app.dirty = true;
-});
+}
 // 数値は刻々と変わるのでパネルを定期的に描き直す。ただし操作中(押している・選択肢を開いている)は待つ
 let panelHeld = false;
-panel.addEventListener('pointerdown', () => { panelHeld = true; });
+for (const el of [panel, empire]) {
+  el.addEventListener('click', onPanelClick);
+  el.addEventListener('change', onPanelChange);
+  el.addEventListener('pointerdown', () => { panelHeld = true; });
+}
 window.addEventListener('pointerup', () => { panelHeld = false; });
 window.addEventListener('pointercancel', () => { panelHeld = false; });
-const panelBusy = () => panelHeld || (document.activeElement?.tagName === 'SELECT' && panel.contains(document.activeElement));
+const panelBusy = () => panelHeld || document.activeElement?.tagName === 'SELECT';
 function nearestOrigin() {
   const g = app.game;
   return g.colonizedSystems().sort((a, b) => g.travelYears(a.id, app.sel.sys) - g.travelYears(b.id, app.sel.sys))[0].id;
@@ -2070,7 +2182,7 @@ function frame(now) {
   ctx.fillStyle = '#05070d';
   ctx.fillRect(0, 0, w, h);
   if (app.view === 'galaxy') galaxyView.draw(w, h);
-  else systemView.draw(w, h);
+  else if (app.view === 'system') systemView.draw(w, h);
 
   $('date').textContent = `西暦 ${Math.floor(game.year)}年 ${Math.floor((game.year % 1) * 12) + 1}月`;
   acc += dt;
@@ -2085,6 +2197,7 @@ function frame(now) {
   if (app.dirty && !panelBusy()) {
     app.dirty = false;
     panel.innerHTML = app.view === 'system' && app.sel.body ? bodyPanel(app) : systemPanel(app);
+    if (app.view === 'empire') empire.innerHTML = empireHtml(app);
   }
   requestAnimationFrame(frame);
 }
