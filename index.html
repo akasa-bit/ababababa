@@ -29,6 +29,7 @@ canvas { position:absolute; inset:0; width:100%; height:100%; display:block; tou
 .tag.famine { background:#5a2020; } .tag.shortage { background:#5a4320; } .tag.pirate { background:#4a2050; }
 .tag.natives { background:#3a2f60; } .tag.colony { background:#1d4a45; }
 .ev.good .txt { color:#9fe0b4; }
+label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:12px; color:var(--accent); margin:6px 0 0; }
 #empire label.check { font-size:12px; color:var(--muted); display:inline-flex; gap:4px; align-items:center; }
 .kpi { display:flex; gap:10px; flex-wrap:wrap; } .kpi div { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:8px 12px; }
 .kpi b { display:block; font-size:18px; color:var(--fg); } .kpi span { font-size:11px; color:var(--muted); }
@@ -554,7 +555,7 @@ function makeDeposits(rng, b) {
       d.water = icy ? rng.range(0.8, 1.6) : 0.1;
       break;
     case 'belt': d.metal = rng.range(1.4, 2.4); d.rare = rng.range(0.3, 1); d.water = rng.range(0.1, 0.5); break;
-    case 'gas-giant': d.fuel = rng.range(1.4, 2.4); break;
+    case 'gas-giant': d.fuel = rng.range(1.4, 2.4); d.water = 0.3 + 0.2 * d.fuel; break;
     case 'ice-giant': d.fuel = rng.range(0.7, 1.4); d.water = rng.range(1, 2); break;
     case 'mini-neptune': d.fuel = rng.range(0.4, 1); d.water = rng.range(0.4, 1); break;
     default: break;
@@ -610,6 +611,10 @@ const SETTLERS = { planet: 0.2, station: 0.02 }; // 入植船が運ぶ人口[百
 const WARSHIP_COST = { credits: 150, metal: 100, fuel: 50, rare: 10 };
 const WARSHIP_UPKEEP = 5; // cr/年
 const GIFT_COST = { credits: 100 };
+// 採掘基地: 無人の基地で、ガス惑星からは水と燃料、岩石の天体からは金属と希少元素を採る
+const OUTPOST_RES = { 'gas-giant': ['water', 'fuel'], 'ice-giant': ['water', 'fuel'], 'mini-neptune': ['water', 'fuel'], rocky: ['metal', 'rare'], dwarf: ['metal', 'rare'], belt: ['metal', 'rare'] };
+const OUTPOST_RATE = 25; // 埋蔵量1・Lv1あたりの年産量
+const outpostRes = (b) => (b && !b.label && OUTPOST_RES[b.type]) || [];
 const PIRATE_START = 2320;
 const LEDGER_LABEL = { tax: '税収', trade: '交易', export: '余剰の売却', natives: '先住民', upkeep: '軍の維持費' };
 
@@ -635,6 +640,9 @@ class Game {
     this.natives = {}; // 先住民の状態 { 'sys|body': { rel, status, pop } }
     this.infamy = 0; // 先住民を制圧するたびに増え、他の先住民の友好度を下げる
     this.surveyed = [];
+    this.outposts = []; // 採掘基地 { sys, body, lv }
+    this.auto = {}; // 自動開発を有効にした星系 { [sysId]: true }
+    this.autoTimer = 0;
     this.events = []; // 重要なイベント { id, year, kind, sys, text, good }
     this.projects = []; // 資材の搬入を待つ建設 { id, type, sys, start, ready, from: [搬出元の星系], label, ... }
     this.flow = {}; // 直近の星系ごとの生産・需要[年あたり] (保存しない)
@@ -796,6 +804,11 @@ class Game {
       if (!r) return;
       r.lv++;
       this.message(`${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路を Lv${r.lv} に拡張した`);
+    } else if (job.type === 'outpost') {
+      const o = this.outpostAt(job.sys, job.body);
+      if (o) o.lv++;
+      else this.outposts.push({ sys: job.sys, body: job.body, lv: 1 });
+      this.message(`${this.target(job.sys, job.body).name} の採掘基地が Lv${o ? o.lv : 1} になった`);
     } else if (job.type === 'ship') {
       this.launch(job.sys, job.to, job.body, job.kind);
     }
@@ -883,8 +896,12 @@ class Game {
           transit[res] += amt;
           room -= amt;
           sent += amt;
-          let p = this.cargo[this.cargo.length - 1];
-          if (!(p && p.route === r.id && p.dir === dir && this.year + years - p.arrive < 0.5)) {
+          let p = null;
+          for (let i = this.cargo.length - 1; i >= Math.max(0, this.cargo.length - 64) && !p; i--) {
+            const q = this.cargo[i];
+            if (q.route === r.id && q.dir === dir) p = q;
+          }
+          if (!(p && this.year + years - p.arrive < 0.5)) {
             p = { route: r.id, dir, arrive: this.year + years, load: {} };
             this.cargo.push(p);
           }
@@ -913,6 +930,71 @@ class Game {
   }
 
   // 他の星系に駐留する全艦をこの星系へ集める
+  // --- 採掘基地 ---
+  outpostAt(sysId, bodyId) { return this.outposts.find((o) => o.sys === sysId && o.body === bodyId); }
+  outpostCost(o) { const k = 2 ** (o ? o.lv : 0); return { credits: 200 * k, metal: 100 * k }; }
+  outpostYield(o) {
+    const b = this.target(o.sys, o.body);
+    return Object.fromEntries(outpostRes(b).map((r) => [r, OUTPOST_RATE * (b.deposits?.[r] || 0) * o.lv]));
+  }
+  outpostCheck(sysId, bodyId) {
+    const b = this.target(sysId, bodyId);
+    const res = outpostRes(b);
+    if (!res.length) return fail('採掘できる天体ではない');
+    if (!res.some((r) => b.deposits?.[r] > 0.05)) return fail('採掘できる資源がない');
+    if (!this.isColonized(sysId)) return fail('同じ星系に入植地が必要');
+    if (this.colonyAt(sysId, bodyId, 'planet')) return fail('入植地が採掘している');
+    if (this.pending((j) => j.type === 'outpost' && j.sys === sysId && j.body === bodyId)) return fail('建設中');
+    if ((this.outpostAt(sysId, bodyId)?.lv || 0) >= 10) return fail('最大レベル');
+    return { ok: true };
+  }
+  buildOutpost(sysId, bodyId, prefix = '') {
+    const c = this.outpostCheck(sysId, bodyId);
+    if (!c.ok) return c;
+    const o = this.outpostAt(sysId, bodyId);
+    const label = `${prefix}${this.target(sysId, bodyId).name} の採掘基地 ${o ? `Lv${o.lv + 1}` : '建設'}`;
+    return this.order(this.outpostCost(o), sysId, { type: 'outpost', body: bodyId, label });
+  }
+
+  // --- 自動開発 ---
+  // 自動開発を有効にした星系では、年に1回、生産が需要に届かない資源を1つ選んで手を打つ:
+  // 採掘資源なら星系内で最も埋蔵量の多い天体の採掘基地 (なければ入植地の鉱山)、食料は農場、工業品は工場。
+  // クレジットは費用の2倍以上あるときだけ使う。
+  autoDevelop() {
+    for (const id of Object.keys(this.auto).filter((k) => this.auto[k]).map(Number)) {
+      const fl = this.flow[id];
+      if (!fl || !this.isColonized(id)) continue;
+      // 自動の発注は1星系あたり同時に2件まで (資材の到着を待たずに積み上げない)
+      if (this.projects.filter((j) => j.sys === id && j.label.startsWith('[自動]')).length >= 2) continue;
+      const sys = this.system(id);
+      const short = RES.map((r) => ({ r, gap: fl.cons[r] - fl.prod[r] }))
+        .filter((x) => x.gap > 1e-6)
+        .sort((a, b) => b.gap * PRICE[b.r] - a.gap * PRICE[a.r]);
+      const cols = this.coloniesIn(id).sort((a, b) => b.pop - a.pop);
+      const tag = `[自動] `;
+      const tryOrder = (cost, run) => (cost && this.credits >= 2 * (cost.credits || 0) && !this.procure(cost, id).why ? run() : null);
+      for (const { r } of short) {
+        let done = null;
+        if (r === 'food' || r === 'goods') {
+          const fac = r === 'food' ? 'farm' : 'factory';
+          const c = cols.find((x) => x.lv[fac] < FACILITY_MAX[fac] && !this.pending((j) => j.type === 'upgrade' && j.col === colKey(x) && j.fac === fac));
+          if (c) done = tryOrder(this.upgradeCost(c, fac), () => this.order(this.upgradeCost(c, fac), c.sys, { type: 'upgrade', col: colKey(c), fac, label: `${tag}${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` }));
+        } else {
+          const bodies = sys.bodies.filter((b) => outpostRes(b).includes(r) && (b.deposits?.[r] || 0) > 0.05 && this.outpostCheck(id, b.id).ok)
+            .sort((a, b) => b.deposits[r] - a.deposits[r]);
+          if (bodies.length) {
+            done = tryOrder(this.outpostCost(this.outpostAt(id, bodies[0].id)), () => this.buildOutpost(id, bodies[0].id, tag));
+          } else {
+            const c = cols.filter((x) => (this.target(x.sys, x.body).deposits?.[r] || 0) > 0.05 && x.lv.mine < FACILITY_MAX.mine
+              && !this.pending((j) => j.type === 'upgrade' && j.col === colKey(x) && j.fac === 'mine'))[0];
+            if (c) done = tryOrder(this.upgradeCost(c, 'mine'), () => this.order(this.upgradeCost(c, 'mine'), c.sys, { type: 'upgrade', col: colKey(c), fac: 'mine', label: `${tag}${c.name} の鉱山 Lv${c.lv.mine + 1}` }));
+          }
+        }
+        if (done?.ok) break;
+      }
+    }
+  }
+
   rally(to) {
     const from = Object.keys(this.garrison).map(Number).filter((id) => id !== to && this.garrison[id] > 0);
     if (!from.length) return fail('集められる軍艦がない');
@@ -998,6 +1080,8 @@ class Game {
       if (this.arrivals()) changed = true;
       this.economy(h);
       if (this.pirates(h)) changed = true;
+      this.autoTimer += h;
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); }
     }
     return changed;
   }
@@ -1037,7 +1121,8 @@ class Game {
         this.survey(f.to);
       }
     }
-    if (this.cargo.length && this.cargo[0].arrive <= this.year) {
+    // 交易路ごとに距離が違うので、配列の先頭だけでなく到着済みの荷をすべて配る
+    if (this.cargo.some((p) => p.arrive <= this.year)) {
       const due = this.cargo.filter((p) => p.arrive <= this.year);
       this.cargo = this.cargo.filter((p) => p.arrive > this.year);
       for (const p of due) {
@@ -1074,6 +1159,11 @@ class Game {
       for (const r of MINED) add(r, c.pop * f.mine * (b.deposits?.[r] || 0) * (1 + 0.25 * c.lv.mine));
       c.plan = c.pop * f.ind * (1 + 0.25 * c.lv.factory);
       fl.pop += c.pop;
+    }
+    for (const o of this.outposts) {
+      const st = this.stockOf(o.sys);
+      const fl = F(o.sys);
+      for (const [r, v] of Object.entries(this.outpostYield(o))) { st[r] += v * h; fl.prod[r] += v; }
     }
     // 2. 工業: 工業品1につき金属0.5と燃料0.2を使う。原料が足りなければ減産
     for (const c of this.colonies) {
@@ -1181,6 +1271,9 @@ class Game {
     if (Array.isArray(d.cargo)) this.cargo = d.cargo.filter((p) => this.routes.some((r) => r.id === p.route));
     if (obj(d.garrison)) this.garrison = d.garrison;
     if (Array.isArray(d.fleets)) this.fleets = d.fleets.filter((f) => sysOk(f.from) && sysOk(f.to));
+    if (Array.isArray(d.outposts)) this.outposts = d.outposts.filter((o) => o && ok(o.sys, o.body) && o.lv >= 1);
+    if (obj(d.auto)) this.auto = d.auto;
+    if (Number.isFinite(d.autoTimer)) this.autoTimer = d.autoTimer;
     if (Array.isArray(d.events)) this.events = d.events.filter((e) => e && typeof e.text === 'string');
     if (Array.isArray(d.projects)) this.projects = d.projects.filter((j) => j && sysOk(j.sys) && Number.isFinite(j.ready) && Array.isArray(j.from));
     if (obj(d.natives)) this.natives = d.natives;
@@ -1676,6 +1769,11 @@ class SystemView {
       ctx.beginPath(); ctx.arc(x, y, r + 2.5, 0, Math.PI * 2); ctx.stroke();
       ctx.lineWidth = 1;
     }
+    if (game.outpostAt(sys, b.id)) {
+      ctx.fillStyle = '#ffb347';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('⛏', x - r - 12, y - r);
+    }
     if (game.colonyAt(sys, b.id, 'planet')) {
       ctx.fillStyle = '#4de3d0';
       ctx.beginPath(); ctx.moveTo(x, y - r - 9); ctx.lineTo(x + 4, y - r - 3); ctx.lineTo(x - 4, y - r - 3); ctx.fill();
@@ -1742,6 +1840,8 @@ function systemPanel(app) {
     ${sys.stars.slice(1).map((s) => `<p class="note">${esc(s.name)} は主星から約 ${fmt(s.sep)} AU</p>`).join('')}
     <h3>入植地</h3>
     ${cols.length ? `<ul>${cols.map((c) => `<li>${esc(c.name)} — ${KIND_LABEL[c.kind]} <span class="muted">人口 ${fmtPop(c.pop)}</span></li>`).join('')}</ul>` : '<p class="note">まだ入植していない</p>'}
+    ${outpostList(g, sys)}
+    ${g.isColonized(sys.id) ? `${autoToggle(g, sys.id)}<p class="note">オンにすると、生産が需要に届かない資源を年に1回選び、採掘基地・鉱山・農場・工場を自動で建てる (資金が費用の2倍以上あるとき)。</p>` : ''}
     <button data-act="open">星系マップを開く</button>
     ${app.view === 'system' ? bodyList(app, sys) : ''}
     ${g.isColonized(sys.id) ? stockBox(g, sys.id) + routeBox(app, sys) : ''}
@@ -1749,10 +1849,15 @@ function systemPanel(app) {
     ${nativesSummary(g, sys)}`;
 }
 
+function autoToggle(g, sysId) {
+  return `<label class="check auto"><input type="checkbox" data-act="autodev" data-sys="${sysId}" ${g.auto[sysId] ? 'checked' : ''}> 自動開発</label>`;
+}
+
 function bodyList(app, sys) {
   const g = app.game;
   return `<h3>天体</h3><ul class="bodies">${sys.bodies.map((b) => {
-    const mark = ['planet', 'station'].filter((k) => g.colonyAt(sys.id, b.id, k)).map((k) => (k === 'planet' ? '▲' : '■')).join('');
+    const mark = ['planet', 'station'].filter((k) => g.colonyAt(sys.id, b.id, k)).map((k) => (k === 'planet' ? '▲' : '■')).join('')
+      + (g.outpostAt(sys.id, b.id) ? '⛏' : '');
     const nat = b.natives && g.isSurveyed(sys.id) ? ' <span class="nat">先住民</span>' : '';
     return `<li data-body="${b.id}" class="${b.id === app.sel.body ? 'sel' : ''}"><span class="dot" style="background:${bodyColor(b)}"></span>${esc(b.name)}${nat}
       <span class="muted">${TYPE_LABEL[b.type]} ${fmt(b.a)} AU</span> <span class="mk">${mark}</span></li>`;
@@ -1863,10 +1968,34 @@ function bodyPanel(app) {
     <p class="sub">${esc(sys.name)}</p>
     ${info}
     ${depositRow(b)}
+    ${outpostBox(g, sys, b)}
     ${nativesBox(app, sys, b)}
     ${cols.map((c) => colonyBox(g, c)).join('')}
     ${dispatchBox(app, sys, b)}
     <button data-act="back" class="ghost">← 星系の一覧へ</button>`;
+}
+
+function yieldText(y) {
+  return Object.entries(y).filter(([, v]) => v > 0.01).map(([r, v]) => `${RES_LABEL[r]} ${fmtAmt(v)}`).join('・') || 'なし';
+}
+
+function outpostList(g, sys) {
+  const list = g.outposts.filter((o) => o.sys === sys.id);
+  if (!list.length) return '';
+  return `<h3>採掘基地</h3><ul>${list.map((o) => `<li>${esc(g.target(o.sys, o.body).name)} Lv${o.lv} <span class="muted">${yieldText(g.outpostYield(o))} /年</span></li>`).join('')}</ul>`;
+}
+
+function outpostBox(g, sys, b) {
+  const res = outpostRes(b);
+  if (!res.length) return '';
+  const o = g.outpostAt(sys.id, b.id);
+  const c = g.outpostCheck(sys.id, b.id);
+  const busy = busyText(g, (j) => j.type === 'outpost' && j.sys === sys.id && j.body === b.id);
+  const next = { sys: sys.id, body: b.id, lv: (o?.lv || 0) + 1 };
+  return `<h3>採掘基地</h3>
+    <p class="note">${o ? `Lv${o.lv} 稼働中: ${yieldText(g.outpostYield(o))} /年` : `無人の採掘基地で${res.map((r) => RES_LABEL[r]).join('と')}を採る。採れた資源はこの星系の備蓄に入る。`}
+      <br>${o ? '拡張後' : '建設後'}: ${yieldText(g.outpostYield(next))} /年</p>
+    ${costButton(g, `data-act="outpost" data-sys="${sys.id}" data-body="${esc(b.id)}"`, o ? '採掘基地を拡張' : '採掘基地を建設', g.outpostCost(o), sys.id, busy || (c.ok ? '' : c.reason))}`;
 }
 
 function depositRow(b) {
@@ -2003,15 +2132,15 @@ function empireHtml(app) {
   const resRows = systems.map((s) => {
     const st = g.stockOf(s.id);
     const fl = flowOf(s.id);
-    return `<tr><td>${goto(s)}</td>${RES.map((r) => {
+    return `<tr><td>${goto(s)}</td><td>${autoToggle(g, s.id)}</td>${RES.map((r) => {
       totals[r] += st[r];
       totalNet[r] += net(fl, r);
       return `<td>${fmtAmt(st[r])} <small>${signed(net(fl, r))}</small></td>`;
     }).join('')}</tr>`;
   }).join('');
   const resTable = `<h3>資源 (備蓄 と 年あたりの増減)</h3><div class="scroll"><table class="tbl">
-    <tr><th>星系</th>${RES.map((r) => `<th>${RES_LABEL[r]}</th>`).join('')}</tr>${resRows}
-    <tr class="total"><td>合計</td>${RES.map((r) => `<td>${fmtAmt(totals[r])} <small>${signed(totalNet[r])}</small></td>`).join('')}</tr></table></div>
+    <tr><th>星系</th><th></th>${RES.map((r) => `<th>${RES_LABEL[r]}</th>`).join('')}</tr>${resRows}
+    <tr class="total"><td>合計</td><td></td>${RES.map((r) => `<td>${fmtAmt(totals[r])} <small>${signed(totalNet[r])}</small></td>`).join('')}</tr></table></div>
     <p class="note">増減は生産−需要。交易路での出入りは含まない。</p>`;
 
   const milIds = [...new Set([...systems.map((s) => s.id), ...Object.keys(g.garrison).map(Number).filter((id) => g.garrison[id] > 0)])];
@@ -2225,7 +2354,8 @@ function buildSave(game, extra = {}) {
   return {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, stock: game.stock, routes: game.routes,
-    cargo: game.cargo, projects: game.projects, events: game.events, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+    cargo: game.cargo, projects: game.projects, events: game.events,
+    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
 }
@@ -2332,6 +2462,7 @@ function onPanelClick(e) {
     conquer: () => g.conquer(sys, body),
     rally: () => g.rally(sys),
     candsend: () => g.dispatch(Number(btn.dataset.from), sys, body, kind),
+    outpost: () => g.buildOutpost(sys, body),
     bulkfocus: () => g.setFocusAll(app.bulkFocus || 'balanced'),
   };
   if (!actions[act]) return;
@@ -2348,6 +2479,11 @@ function onPanelChange(e) {
   else if (act === 'forigin') app.fleetOrigin = Number(v);
   else if (act === 'bulkfocus') app.bulkFocus = v;
   else if (act === 'candonly') app.candOnly = e.target.checked;
+  else if (act === 'autodev') {
+    const id = Number(e.target.dataset.sys);
+    app.game.auto[id] = e.target.checked;
+    app.game.message(`${app.game.system(id).name} の自動開発を${e.target.checked ? 'オン' : 'オフ'}にした`);
+  }
   else if (act === 'candsort') app.candSort = v;
   else if (act === 'focus') {
     const c = app.game.colonyByKey(col);
