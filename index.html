@@ -643,6 +643,7 @@ class Game {
     this.outposts = []; // 採掘基地 { sys, body, lv }
     this.auto = {}; // 自動開発を有効にした星系 { [sysId]: true }
     this.autoTimer = 0;
+    this.autoBuild = true; // 自動防衛配備で軍艦が足りなければ建造する
     this.autoDefense = false; // 自動防衛配備: 軍艦のいない入植星系へ余っている軍艦を回す
     this.events = []; // 重要なイベント { id, year, kind, sys, text, good }
     this.projects = []; // 資材の搬入を待つ建設 { id, type, sys, start, ready, from: [搬出元の星系], label, ... }
@@ -996,25 +997,46 @@ class Game {
     }
   }
 
-  // 自動防衛配備: 駐留艦がおらず艦隊も向かっていない入植星系へ、人口の多い順に1隻ずつ回す。
-  // 回せるのは、入植星系なら2隻目以降 (自分の守りの1隻は残す)、入植していない星系にいる艦は全部。
+  // 海賊の戦力の基準値と、起こりうる最大値 (乱数の幅は基準の0.5〜1.5倍)
+  pirateBase() { return 1 + Math.max(0, this.year - PIRATE_START) / 40; }
+  pirateMax() { return Math.max(1, Math.round(1.5 * this.pirateBase())); }
+  // 自動防衛配備で目指す駐留数。太陽系は海賊に狙われないので1隻、他の入植星系は海賊の最大戦力ぶん (海賊が現れる前は1隻)
+  defenseGoal(id) { return id === 0 || this.year < PIRATE_START ? 1 : this.pirateMax(); }
+  incoming(id) { return this.fleets.filter((f) => f.to === id).reduce((k, f) => k + f.n, 0); }
+  defenseGap(id) { return Math.max(0, this.defenseGoal(id) - (this.garrison[id] || 0) - this.incoming(id)); }
+
+  // 自動防衛配備: 年に1回、目標に足りない入植星系へ、人口の多い順に、近くの余っている軍艦を回す。
+  // 余っている = 入植星系なら自分の目標を超えた分、入植していない星系にいる艦は全部。
+  // autoBuild なら、それでも足りない分を造船所で建造する (資金が費用の2倍以上あるとき、年5隻まで)。
   autoDefend() {
     if (!this.autoDefense) return;
     const pop = (id) => this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
-    const targets = this.colonizedSystems()
-      .filter((s) => !(this.garrison[s.id] > 0) && !this.fleets.some((f) => f.to === s.id))
-      .sort((a, b) => pop(b.id) - pop(a.id));
+    const spareOf = (id) => (this.garrison[id] || 0) - (this.isColonized(id) ? this.defenseGoal(id) : 0);
+    const targets = this.colonizedSystems().filter((s) => this.defenseGap(s.id) > 0).sort((a, b) => pop(b.id) - pop(a.id));
     for (const t of targets) {
-      const spare = Object.keys(this.garrison).map(Number)
-        .filter((id) => this.garrison[id] > (this.isColonized(id) ? 1 : 0))
+      let gap = this.defenseGap(t.id);
+      const sources = Object.keys(this.garrison).map(Number)
+        .filter((id) => id !== t.id && spareOf(id) > 0)
         .sort((a, b) => this.travelYears(a, t.id) - this.travelYears(b, t.id));
-      if (!spare.length) break;
-      this.sendFleet(spare[0], t.id, 1, '[自動防衛] ');
+      for (const id of sources) {
+        if (gap <= 0) break;
+        const n = Math.min(gap, spareOf(id));
+        this.sendFleet(id, t.id, n, '[自動防衛] ');
+        gap -= n;
+      }
+    }
+    if (!this.autoBuild) return;
+    const short = this.colonizedSystems().reduce((k, s) => k + this.defenseGap(s.id), 0)
+      - this.projects.filter((j) => j.type === 'warship').length;
+    const yards = this.colonizedSystems().filter((s) => this.hasShipyard(s.id));
+    for (let i = 0; i < Math.min(short, 5) && yards.length; i++) {
+      if (this.credits < 2 * WARSHIP_COST.credits) break;
+      const yard = yards.find((s) => !this.procure(WARSHIP_COST, s.id).why);
+      if (!yard) break;
+      this.order(WARSHIP_COST, yard.id, { type: 'warship', label: `[自動防衛] ${yard.name} の軍艦` });
     }
   }
-  undefended() {
-    return this.colonizedSystems().filter((s) => !(this.garrison[s.id] > 0) && !this.fleets.some((f) => f.to === s.id));
-  }
+  undefended() { return this.colonizedSystems().filter((s) => this.defenseGap(s.id) > 0); }
 
   rally(to) {
     const from = Object.keys(this.garrison).map(Number).filter((id) => id !== to && this.garrison[id] > 0);
@@ -1035,7 +1057,7 @@ class Game {
     const targets = this.colonizedSystems().filter((s) => s.id !== 0);
     if (!targets.length || Math.random() > 0.05 * Math.sqrt(targets.length) * h) return false;
     const sys = targets[Math.floor(Math.random() * targets.length)];
-    const power = Math.max(1, Math.round((1 + (this.year - PIRATE_START) / 40) * (0.5 + Math.random())));
+    const power = Math.max(1, Math.round(this.pirateBase() * (0.5 + Math.random())));
     const g = this.garrison[sys.id] || 0;
     if (g >= power) {
       const loss = Math.floor((power / 3) * Math.random());
@@ -1296,6 +1318,7 @@ class Game {
     if (obj(d.auto)) this.auto = d.auto;
     if (Number.isFinite(d.autoTimer)) this.autoTimer = d.autoTimer;
     this.autoDefense = !!d.autoDefense;
+    if (typeof d.autoBuild === 'boolean') this.autoBuild = d.autoBuild;
     if (Array.isArray(d.events)) this.events = d.events.filter((e) => e && typeof e.text === 'string');
     if (Array.isArray(d.projects)) this.projects = d.projects.filter((j) => j && sysOk(j.sys) && Number.isFinite(j.ready) && Array.isArray(j.from));
     if (obj(d.natives)) this.natives = d.natives;
@@ -1925,8 +1948,10 @@ function routeBox(app, sys) {
 
 function defenseToggle(g) {
   const bare = g.undefended().length;
+  const goal = g.pirateMax();
   return `<label class="check auto"><input type="checkbox" data-act="autodefense" ${g.autoDefense ? 'checked' : ''}> 自動防衛配備</label>
-    <p class="note">オンにすると、年に1回、軍艦のいない入植星系 (${bare} か所) へ、余っている軍艦を近くから1隻ずつ回す。各入植星系の最後の1隻は動かさない。</p>`;
+    <label class="check auto"><input type="checkbox" data-act="autobuild" ${g.autoBuild ? 'checked' : ''} ${g.autoDefense ? '' : 'disabled'}> 足りない軍艦は自動で建造</label>
+    <p class="note">年に1回、各入植星系の駐留艦を海賊の最大戦力 (いま <b>${goal}</b> 隻、${PIRATE_START}年から40年ごとに増える) まで増やす。余っている軍艦を近くから回し、足りなければ造船所で建造する (資金が費用の2倍以上あるとき、年5隻まで)。太陽系と、海賊が現れる前は1隻。目標に届いていない入植星系: ${bare} か所</p>`;
 }
 
 function militaryBox(app, sys) {
@@ -2383,7 +2408,7 @@ function buildSave(game, extra = {}) {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, events: game.events,
-    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, autoBuild: game.autoBuild, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
 }
@@ -2507,7 +2532,9 @@ function onPanelChange(e) {
   else if (act === 'forigin') app.fleetOrigin = Number(v);
   else if (act === 'bulkfocus') app.bulkFocus = v;
   else if (act === 'candonly') app.candOnly = e.target.checked;
-  else if (act === 'autodefense') {
+  else if (act === 'autobuild') {
+    app.game.autoBuild = e.target.checked;
+  } else if (act === 'autodefense') {
     app.game.autoDefense = e.target.checked;
     app.game.message(`自動防衛配備を${e.target.checked ? 'オン' : 'オフ'}にした`);
     if (e.target.checked) app.game.autoDefend();
