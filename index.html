@@ -27,7 +27,7 @@ canvas { position:absolute; inset:0; width:100%; height:100%; display:block; tou
 .ev .yr { color:var(--muted); font-variant-numeric:tabular-nums; min-width:4.5em; }
 .ev .tag { font-size:11px; border-radius:3px; padding:0 5px; white-space:nowrap; }
 .tag.famine { background:#5a2020; } .tag.shortage { background:#5a4320; } .tag.pirate { background:#4a2050; }
-.tag.natives { background:#3a2f60; } .tag.colony { background:#1d4a45; }
+.tag.natives { background:#3a2f60; } .tag.migration { background:#1d3f5a; } .tag.colony { background:#1d4a45; }
 .ev.good .txt { color:#9fe0b4; }
 label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:12px; color:var(--accent); margin:6px 0 0; }
 #empire label.check { font-size:12px; color:var(--muted); display:inline-flex; gap:4px; align-items:center; }
@@ -618,6 +618,7 @@ const outpostRes = (b) => (b && !b.label && OUTPOST_RES[b.type]) || [];
 const PIRATE_START = 2320;
 const LEDGER_LABEL = { tax: '税収', trade: '交易', export: '余剰の売却', natives: '先住民', upkeep: '軍の維持費' };
 
+const stockCap = (pop) => 500 + 5 * pop; // 星系の備蓄上限 (資源ごと)
 const zeroRes = () => Object.fromEntries(RES.map((r) => [r, 0]));
 const colKey = (c) => `${c.sys}|${c.body}|${c.kind}`;
 const relLabel = (r) => (r >= 60 ? '友好' : r >= 20 ? '好意的' : r >= -20 ? '中立' : r >= -60 ? '警戒' : '敵対');
@@ -643,6 +644,9 @@ class Game {
     this.outposts = []; // 採掘基地 { sys, body, lv }
     this.auto = {}; // 自動開発を有効にした星系 { [sysId]: true }
     this.autoTimer = 0;
+    this.migration = true; // 過密な入植地からの恒星間移民
+    this.migrants = []; // 移動中の移民船 { id, from, to (入植地キー), fromSys, toSys, n, depart, arrive }
+    this.migLog = []; // 移民の到着記録 { year, from, to, n }
     this.autoBuild = true; // 自動防衛配備で軍艦が足りなければ建造する
     this.autoDefense = false; // 自動防衛配備: 軍艦のいない入植星系へ余っている軍艦を回す
     this.events = []; // 重要なイベント { id, year, kind, sys, text, good }
@@ -877,7 +881,7 @@ class Game {
     return this.order(this.routeUpCost(r), r.a, { type: 'route', route: r.id, label: `${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路 Lv${r.lv + 1}` });
   }
 
-  // 各交易路は、送り手の余剰(需要2年分を超える備蓄)を受け手の不足(需要2年分に満たない分)へ自動で運ぶ。
+  // 各交易路は、送り手の余剰(需要2年分を超える備蓄)を受け手の不足へ自動で運ぶ。
   trade(h, flow) {
     for (const r of this.routes) {
       const years = this.travelYears(r.a, r.b);
@@ -891,7 +895,11 @@ class Game {
         for (const res of RES) {
           if (room <= 0) break;
           const spare = sf[res] - 2 * (flow[from]?.cons[res] || 0);
-          const want = 2 * (flow[to]?.cons[res] || 0) - sto[res] - transit[res];
+          // 受け手の目標 = 需要2年分の備蓄 + 航行中に消費される分 (遠い交易路ほど多くの荷が途中にある)。
+          // 自給できている資源は受け取らず、備蓄の上限も超えない (双方向の無駄な往復を防ぐ)
+          const ft = flow[to] || { prod: zeroRes(), cons: zeroRes(), pop: 0 };
+          const target = ft.prod[res] >= ft.cons[res] ? 0 : Math.min((2 + years) * ft.cons[res], 0.8 * stockCap(ft.pop));
+          const want = target - sto[res] - transit[res];
           const amt = Math.min(spare, want, room);
           if (amt <= 0.001) continue;
           sf[res] -= amt;
@@ -1038,6 +1046,38 @@ class Game {
   }
   undefended() { return this.colonizedSystems().filter((s) => this.defenseGap(s.id) > 0); }
 
+  // --- 恒星間移民 ---
+  // 人口が上限の90%を超えた入植地から、年に1回、人口の3% (上限超えなら5%) が移民船で出ていく。
+  // 行き先は食料と水が足りている入植地のうち、空き (上限の80%まで) が大きく近いところ。
+  migrantsTo(c) { const k = colKey(c); return this.migrants.filter((m) => m.to === k).reduce((s, m) => s + m.n, 0); }
+  migrate() {
+    for (const c of this.colonies) {
+      const ratio = c.pop / this.capOf(c);
+      if (!c.alerts) c.alerts = {};
+      if (!c.alerts.crowd && ratio >= 0.9) {
+        c.alerts.crowd = true;
+        this.event('migration', c.sys, `${c.name} が人口過密になった (上限の ${pct(ratio)})${this.migration ? '。恒星間移民が始まる' : ''}`);
+      } else if (c.alerts.crowd && ratio < 0.85) {
+        c.alerts.crowd = false;
+        this.event('migration', c.sys, `${c.name} の人口過密が解消した`, true);
+      }
+      if (!this.migration || ratio < 0.9) continue;
+      const want = c.pop * (ratio >= 1 ? 0.05 : 0.03);
+      const dests = this.colonies
+        .filter((d) => d !== c && (d.sat?.food ?? 1) >= 0.99 && (!this.needsWater(d) || (d.sat?.water ?? 1) >= 0.99))
+        .map((d) => ({ d, room: this.capOf(d) * 0.8 - d.pop - this.migrantsTo(d), t: this.travelYears(c.sys, d.sys) }))
+        .filter((x) => x.room > 0.001)
+        .sort((a, b) => b.room / (1 + b.t / 10) - a.room / (1 + a.t / 10));
+      if (!dests.length) continue;
+      const { d, room, t } = dests[0];
+      const n = Math.min(want, room * 0.5);
+      if (n < 0.001) continue;
+      c.pop -= n;
+      c.migOut = (c.migOut || 0) + n;
+      this.migrants.push({ id: this.nextShipId++, from: colKey(c), to: colKey(d), fromSys: c.sys, toSys: d.sys, n, depart: this.year, arrive: this.year + t });
+    }
+  }
+
   rally(to) {
     const from = Object.keys(this.garrison).map(Number).filter((id) => id !== to && this.garrison[id] > 0);
     if (!from.length) return fail('集められる軍艦がない');
@@ -1124,7 +1164,7 @@ class Game {
       this.economy(h);
       if (this.pirates(h)) changed = true;
       this.autoTimer += h;
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); }
     }
     return changed;
   }
@@ -1153,6 +1193,19 @@ class Game {
         this.addColony(s.to, s.body, kind, t.name);
         this.event('colony', s.to, `${t.name} に${KIND_LABEL[kind]}を設立した (${this.system(s.to).name})`, true);
       }
+    }
+    if (this.migrants.some((m) => m.arrive <= this.year)) {
+      const due = this.migrants.filter((m) => m.arrive <= this.year);
+      this.migrants = this.migrants.filter((m) => m.arrive > this.year);
+      for (const m of due) {
+        const d = this.colonyByKey(m.to);
+        const from = this.colonyByKey(m.from);
+        if (!d) continue;
+        d.pop += m.n;
+        d.migIn = (d.migIn || 0) + m.n;
+        this.migLog.unshift({ year: this.year, from: from ? from.name : '?', to: d.name, n: m.n });
+      }
+      this.migLog.length = Math.min(this.migLog.length, 100);
     }
     const fleets = this.fleets.filter((f) => f.arrive <= this.year);
     if (fleets.length) {
@@ -1188,6 +1241,7 @@ class Game {
   }
 
   economy(h) {
+    this.stepH = h;
     const flow = {};
     const F = (s) => (flow[s] ??= { prod: zeroRes(), cons: zeroRes(), pop: 0 });
 
@@ -1268,7 +1322,7 @@ class Game {
     this.trade(h, flow);
     // 6. 備蓄の上限を超えた分は域外へ安値(基準価格の5%)で売る
     for (const [s, st] of Object.entries(this.stock)) {
-      const cap = 500 + 5 * (flow[s]?.pop || 0);
+      const cap = stockCap(flow[s]?.pop || 0);
       for (const r of RES) {
         if (st[r] > cap) {
           this.earn('export', (st[r] - cap) * PRICE[r] * 0.05);
@@ -1319,6 +1373,9 @@ class Game {
     if (Number.isFinite(d.autoTimer)) this.autoTimer = d.autoTimer;
     this.autoDefense = !!d.autoDefense;
     if (typeof d.autoBuild === 'boolean') this.autoBuild = d.autoBuild;
+    if (typeof d.migration === 'boolean') this.migration = d.migration;
+    if (Array.isArray(d.migrants)) this.migrants = d.migrants.filter((m) => m && sysOk(m.fromSys) && sysOk(m.toSys) && Number.isFinite(m.n));
+    if (Array.isArray(d.migLog)) this.migLog = d.migLog;
     if (Array.isArray(d.events)) this.events = d.events.filter((e) => e && typeof e.text === 'string');
     if (Array.isArray(d.projects)) this.projects = d.projects.filter((j) => j && sysOk(j.sys) && Number.isFinite(j.ready) && Array.isArray(j.from));
     if (obj(d.natives)) this.natives = d.natives;
@@ -1335,8 +1392,11 @@ class Game {
     this.message(text);
   }
   // 充足率などの悪化と回復を検知してイベントにする (ばたつかないよう 95% 未満で発生、99% 以上で解消)
-  watch(c, key, v, kind, onText, offText) {
+  // 判定には1年程度でならした値を使い、荷の到着の波で発生と解消を繰り返さないようにする
+  watch(c, key, raw, kind, onText, offText) {
     if (!c.alerts) c.alerts = {};
+    if (!c.avg) c.avg = {};
+    const v = c.avg[key] = c.avg[key] === undefined ? raw : c.avg[key] + (raw - c.avg[key]) * Math.min(1, this.stepH || 0.25);
     if (!c.alerts[key] && v < 0.95) {
       c.alerts[key] = true;
       this.event(kind, c.sys, onText());
@@ -1560,6 +1620,15 @@ class GalaxyView {
         const [px, py] = this.toScreen(pos.x, pos.y);
         ctx.beginPath(); ctx.moveTo(px, py - 3); ctx.lineTo(px + 3, py); ctx.lineTo(px, py + 3); ctx.lineTo(px - 3, py); ctx.fill();
       }
+    }
+
+    // 移民船
+    ctx.fillStyle = '#8fd3ff';
+    for (const m of game.migrants) {
+      if (m.fromSys === m.toSys) continue;
+      const pos = game.shipPosition({ from: m.fromSys, to: m.toSys, depart: m.depart, arrive: m.arrive });
+      const [px, py] = this.toScreen(pos.x, pos.y);
+      ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI * 2); ctx.fill();
     }
 
     // 入植船
@@ -2142,12 +2211,103 @@ function shipsHtml(game) {
   const ships = game.ships.map((s) => `<div class="ship">${esc(game.system(s.from).name)} → ${esc(game.system(s.to).name)} <span class="muted">${KIND_LABEL[s.kind]}</span>${bar(s)}</div>`);
   const fleets = game.fleets.map((f) => `<div class="ship">${esc(game.system(f.from).name)} → ${esc(game.system(f.to).name)} <span class="bad">艦隊 ${f.n}隻</span>${bar(f)}</div>`);
   const jobs = game.projects.map((j) => `<div class="ship">${esc(j.label)} <span class="muted">資材搬入中</span>${bar({ depart: j.start, arrive: j.ready })}</div>`);
-  const all = [...jobs, ...ships, ...fleets];
+  const mig = game.migrants.length
+    ? [`<div class="ship"><span style="color:#8fd3ff">移民船 ${game.migrants.length} 隻</span> <span class="muted">計 ${fmtPop(game.migrants.reduce((k, m) => k + m.n, 0))} (帝国タブ → 移民)</span></div>`]
+    : [];
+  const all = [...jobs, ...ships, ...fleets, ...mig];
   return all.length ? all.join('') : '<span class="muted">航行中の船なし</span>';
 }
 
 // 帝国タブ: 全星系の人口・資源・経済・軍事を一覧で管理する
+const EMPIRE_TABS = { overview: '概要', routes: '交易路', migration: '移民' };
+
 function empireHtml(app) {
+  const t = app.empireTab || 'overview';
+  const chips = `<div class="chips">${Object.entries(EMPIRE_TABS).map(([k, l]) => `<button data-act="etab" data-t="${k}" class="${k === t ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+  const body = t === 'routes' ? routesSheet(app) : t === 'migration' ? migrationSheet(app) : empireOverview(app);
+  return `<h2>帝国</h2>${chips}${body}`;
+}
+
+// 帝国 → 交易路: 全交易路の一覧と開設
+function routesSheet(app) {
+  const g = app.game;
+  const goto = (s) => `<button data-act="goto" data-sys="${s.id}">${esc(s.name)}</button>`;
+  const top = (tr) => RES.filter((r) => tr[r] > 0.05).sort((a, b) => tr[b] * PRICE[b] - tr[a] * PRICE[a]).slice(0, 3)
+    .map((r) => `${RES_LABEL[r]} ${fmtAmt(tr[r])}`).join('・') || '<span class="muted">なし</span>';
+  const rows = [...g.routes].sort((x, y) => (y.vol[0] + y.vol[1]) - (x.vol[0] + x.vol[1])).map((r) => {
+    const a = g.system(r.a);
+    const b = g.system(r.b);
+    const cap = g.routeCap(r);
+    const use = Math.max(r.vol[0], r.vol[1]) / cap;
+    const busy = busyText(g, (j) => j.type === 'route' && j.route === r.id);
+    return `<tr><td>${goto(a)} ⇄ ${goto(b)}</td><td>${distance(a, b).toFixed(1)} ly</td><td>Lv${r.lv} <span class="muted">(${fmtAmt(cap)}/年)</span></td>
+      <td>${fmtAmt(r.vol[0])}/年</td><td>${fmtAmt(r.vol[1])}/年</td><td class="${use > 0.95 ? 'bad' : ''}">${pct(Math.min(use, 1))}</td>
+      <td>${top(r.transit[0])}</td><td>${top(r.transit[1])}</td>
+      <td>${costButton(g, `data-act="uproute" data-route="${r.id}"`, '拡張', g.routeUpCost(r), r.a, busy)}</td></tr>`;
+  }).join('');
+  const cols = g.colonizedSystems().sort((x, y) => x.name.localeCompare(y.name));
+  const a = cols.some((s) => s.id === app.routeA) ? app.routeA : cols[0]?.id;
+  const others = cols.filter((s) => s.id !== a && !g.routeBetween(s.id, a)).sort((x, y) => distance(x, g.system(a)) - distance(y, g.system(a)));
+  const b = others.some((s) => s.id === app.routeB) ? app.routeB : others[0]?.id;
+  const opt = (list, sel, f = () => '') => list.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}${f(s)}</option>`).join('');
+  const open = cols.length > 1
+    ? `<div class="bulk">
+        <select data-act="ra">${opt(cols, a)}</select> ⇄
+        ${others.length ? `<select data-act="rb">${opt(others, b, (s) => ` (${distance(s, g.system(a)).toFixed(1)} ly)`)}</select>
+        ${costButton(g, `data-act="route2" data-a="${a}" data-b="${b}"`, '交易路を開設', g.routeCost(a, b))}` : '<span class="muted">結べる相手がない</span>'}
+      </div>`
+    : '<p class="note">交易路を結ぶには入植星系が2つ以上必要。</p>';
+  return `<div class="kpi">
+      <div><span>交易路</span><b>${g.routes.length} 本</b><span>輸送中 ${g.cargo.length} 便</span></div>
+      <div><span>交易収入</span><b>${fmtAmt(g.ledger.trade || 0)} cr</b><span>年あたり</span></div>
+    </div>
+    <h3>新しい交易路</h3>${open}
+    <h3>交易路の一覧</h3>
+    ${rows ? `<div class="scroll"><table class="tbl">
+      <tr><th>区間 (A ⇄ B)</th><th>距離</th><th>規模</th><th>A→B</th><th>B→A</th><th>稼働率</th><th>輸送中 A→B</th><th>輸送中 B→A</th><th></th></tr>${rows}</table></div>
+      <p class="note">稼働率が100%近い交易路は、拡張すると運べる量が増える。</p>` : '<p class="note">まだ交易路はない。</p>'}`;
+}
+
+// 帝国 → 移民: 過密な入植地、受け入れ先、移動中の移民船、到着の記録
+function migrationSheet(app) {
+  const g = app.game;
+  const goto = (s) => `<button data-act="goto" data-sys="${s.id}">${esc(s.name)}</button>`;
+  const ratio = (c) => c.pop / g.capOf(c);
+  const crowded = g.colonies.filter((c) => ratio(c) >= 0.85).sort((a, b) => ratio(b) - ratio(a));
+  const crowdRows = crowded.map((c) => `<tr><td>${esc(c.name)}</td><td>${goto(g.system(c.sys))}</td><td>${fmtPop(c.pop)} / ${fmtPop(g.capOf(c))}</td>
+    <td class="${ratio(c) >= 0.9 ? 'bad' : ''}">${pct(ratio(c))}</td><td>${fmtPop(c.migOut || 0)}</td></tr>`).join('');
+  const dests = g.colonies.map((c) => ({ c, room: g.capOf(c) * 0.8 - c.pop - g.migrantsTo(c) })).filter((x) => x.room > 0.001)
+    .sort((a, b) => b.room - a.room).slice(0, 15);
+  const destRows = dests.map(({ c, room }) => {
+    const ok = (c.sat?.food ?? 1) >= 0.99 && (!g.needsWater(c) || (c.sat?.water ?? 1) >= 0.99);
+    return `<tr><td>${esc(c.name)}</td><td>${goto(g.system(c.sys))}</td><td>${fmtPop(room)}</td><td>${fmtPop(g.migrantsTo(c))}</td>
+      <td>${fmtPop(c.migIn || 0)}</td><td>${ok ? '<span class="hz">受け入れ可</span>' : '<span class="bad">食料・水が不足</span>'}</td></tr>`;
+  }).join('');
+  const flights = [...g.migrants].sort((a, b) => a.arrive - b.arrive).slice(0, 30).map((m) => {
+    const f = g.colonyByKey(m.from);
+    const d = g.colonyByKey(m.to);
+    return `<tr><td>${esc(f?.name || '?')} → ${esc(d?.name || '?')}</td><td>${fmtPop(m.n)}</td><td>あと ${Math.max(0, m.arrive - g.year).toFixed(1)} 年</td></tr>`;
+  }).join('');
+  const total = g.migLog.reduce((k, m) => k + m.n, 0);
+  const log = g.migLog.slice(0, 30).map((m) => `<tr><td class="muted">${m.year.toFixed(1)}</td><td>${esc(m.from)} → ${esc(m.to)}</td><td>${fmtPop(m.n)}</td></tr>`).join('');
+  return `<label class="check auto"><input type="checkbox" data-act="migration" ${g.migration ? 'checked' : ''}> 恒星間移民を許可する</label>
+    <p class="note">人口が上限の90%を超えた入植地から、年に1回、人口の3% (上限を超えていれば5%) が移民船で出ていく。行き先は食料と水が足りている入植地のうち、空き (上限の80%まで) が大きく、近いところ。</p>
+    <div class="kpi">
+      <div><span>過密な入植地</span><b>${crowded.filter((c) => ratio(c) >= 0.9).length} か所</b><span>上限の90%以上</span></div>
+      <div><span>移動中</span><b>${fmtPop(g.migrants.reduce((k, m) => k + m.n, 0))}</b><span>移民船 ${g.migrants.length} 隻</span></div>
+      <div><span>最近の到着</span><b>${fmtPop(total)}</b><span>直近 ${g.migLog.length} 便</span></div>
+    </div>
+    <h3>過密な入植地 (上限の85%以上)</h3>
+    ${crowdRows ? `<div class="scroll"><table class="tbl"><tr><th>入植地</th><th>星系</th><th>人口 / 上限</th><th>過密度</th><th>送り出した累計</th></tr>${crowdRows}</table></div>` : '<p class="note">過密な入植地はない。</p>'}
+    <h3>受け入れ先 (空きの大きい順)</h3>
+    ${destRows ? `<div class="scroll"><table class="tbl"><tr><th>入植地</th><th>星系</th><th>空き</th><th>向かっている</th><th>受け入れた累計</th><th>状態</th></tr>${destRows}</table></div>` : '<p class="note">空きのある入植地がない。</p>'}
+    <h3>移動中の移民船</h3>
+    ${flights ? `<div class="scroll"><table class="tbl"><tr><th>区間</th><th>人数</th><th>到着</th></tr>${flights}</table></div>` : '<p class="note">移動中の移民船はない。</p>'}
+    <h3>到着の記録</h3>
+    ${log ? `<div class="scroll"><table class="tbl"><tr><th>年</th><th>区間</th><th>人数</th></tr>${log}</table></div>` : '<p class="note">まだ記録はない。</p>'}`;
+}
+
+function empireOverview(app) {
   const g = app.game;
   const systems = g.colonizedSystems().sort((a, b) => g.coloniesIn(b.id).reduce((s, c) => s + c.pop, 0) - g.coloniesIn(a.id).reduce((s, c) => s + c.pop, 0));
   const net = (fl, r) => fl.prod[r] - fl.cons[r];
@@ -2211,16 +2371,16 @@ function empireHtml(app) {
     <tr><th>星系</th><th>駐留</th><th>軍艦の建造</th><th></th></tr>${milRows}</table></div>
     ${g.year < PIRATE_START ? `<p class="note">宇宙海賊は ${PIRATE_START} 年から現れる。</p>` : ''}`;
 
-  return `<h2>帝国</h2>${kpi}${ledger}${popTable}${resTable}${milTable}`;
+  return `${kpi}${ledger}${popTable}${resTable}${milTable}`;
 }
 
-const EVENT_KIND = { famine: '飢餓・水不足', shortage: '資源不足', pirate: '海賊', natives: '先住民', colony: '入植' };
+const EVENT_KIND = { famine: '飢餓・水不足', shortage: '資源不足', pirate: '海賊', natives: '先住民', colony: '入植', migration: '移民' };
 
 // イベントタブ: いま起きている問題と、重要なイベントの履歴
 function eventsHtml(app) {
   const g = app.game;
   const f = app.eventFilter || 'all';
-  const ALERT = { food: ['famine', '飢餓'], water: ['famine', '水不足'], goods: ['shortage', '工業品不足'], industry: ['shortage', '原料不足'] };
+  const ALERT = { food: ['famine', '飢餓'], water: ['famine', '水不足'], goods: ['shortage', '工業品不足'], industry: ['shortage', '原料不足'], crowd: ['migration', '人口過密'] };
   const now = g.colonies.flatMap((c) => Object.entries(c.alerts || {}).filter(([, on]) => on).map(([k]) => ({ c, k })));
   const nowHtml = now.length
     ? now.map(({ c, k }) => `<div class="ev"><span class="tag ${ALERT[k][0]}">${ALERT[k][1]}</span><span class="txt">${esc(c.name)}
@@ -2408,7 +2568,7 @@ function buildSave(game, extra = {}) {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, events: game.events,
-    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, autoBuild: game.autoBuild, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, autoBuild: game.autoBuild, migration: game.migration, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
 }
@@ -2501,6 +2661,7 @@ function onPanelClick(e) {
   if (act === 'open') return app.setView('system');
   if (act === 'goto') { app.selectSystem(sys); return app.setView('galaxy'); }
   if (act === 'gobody') { app.openSystem(sys); return app.selectBody(body); }
+  if (act === 'etab') { app.empireTab = btn.dataset.t; app.dirty = true; return; }
   if (act === 'evfilter') { app.eventFilter = btn.dataset.f; app.dirty = true; return; }
   if (act === 'back') return app.selectBody(null);
   const actions = {
@@ -2514,6 +2675,7 @@ function onPanelClick(e) {
     integrate: () => g.integrate(sys, body),
     conquer: () => g.conquer(sys, body),
     rally: () => g.rally(sys),
+    route2: () => g.openRoute(Number(btn.dataset.a), Number(btn.dataset.b)),
     candsend: () => g.dispatch(Number(btn.dataset.from), sys, body, kind),
     outpost: () => g.buildOutpost(sys, body),
     bulkfocus: () => g.setFocusAll(app.bulkFocus || 'balanced'),
@@ -2532,7 +2694,12 @@ function onPanelChange(e) {
   else if (act === 'forigin') app.fleetOrigin = Number(v);
   else if (act === 'bulkfocus') app.bulkFocus = v;
   else if (act === 'candonly') app.candOnly = e.target.checked;
-  else if (act === 'autobuild') {
+  else if (act === 'ra') app.routeA = Number(v);
+  else if (act === 'rb') app.routeB = Number(v);
+  else if (act === 'migration') {
+    app.game.migration = e.target.checked;
+    app.game.message(`恒星間移民を${e.target.checked ? '許可' : '停止'}した`);
+  } else if (act === 'autobuild') {
     app.game.autoBuild = e.target.checked;
   } else if (act === 'autodefense') {
     app.game.autoDefense = e.target.checked;
