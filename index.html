@@ -646,6 +646,7 @@ class Game {
     this.auto = {}; // 自動開発を有効にした星系 { [sysId]: true }
     this.autoTimer = 0;
     this.migration = true; // 過密な入植地からの恒星間移民
+    this.autoHabitat = true; // 過密な入植地の居住区を自動で拡張する
     this.migrants = []; // 移動中の移民船 { id, from, to (入植地キー), fromSys, toSys, n, depart, arrive }
     this.migLog = []; // 移民の到着記録 { year, from, to, n }
     this.autoBuild = true; // 自動防衛配備で軍艦が足りなければ建造する
@@ -1112,6 +1113,16 @@ class Game {
   // --- 恒星間移民 ---
   // 人口が上限の90%を超えた入植地から、年に1回、人口の3% (上限超えなら5%) が移民船で出ていく。
   // 行き先は食料と水が足りている入植地のうち、空き (上限の80%まで) が大きく近いところ。
+  // 過密な入植地の居住区を拡張する (移民と並行して進む)。自動拡張がオンか、その星系の自動開発がオンのとき。
+  // 資金が費用の2倍以上あり、資材を調達できるときだけ。建設中なら重ねて発注しない。
+  expandHabitat(c) {
+    if (!(this.autoHabitat || this.auto[c.sys]) || c.lv.habitat >= FACILITY_MAX.habitat) return;
+    const col = colKey(c);
+    if (this.pending((j) => j.type === 'upgrade' && j.col === col && j.fac === 'habitat')) return;
+    const cost = this.upgradeCost(c, 'habitat');
+    if (this.credits < 2 * cost.credits || this.procure(cost, c.sys).why) return;
+    this.order(cost, c.sys, { type: 'upgrade', col, fac: 'habitat', label: `[過密] ${c.name} の居住区 Lv${c.lv.habitat + 1}` });
+  }
   migrantsTo(c) { const k = colKey(c); return this.migrants.filter((m) => m.to === k).reduce((s, m) => s + m.n, 0); }
   migrate() {
     for (const c of this.colonies) {
@@ -1124,6 +1135,7 @@ class Game {
         c.alerts.crowd = false;
         this.event('migration', c.sys, `${c.name} の人口過密が解消した`, true);
       }
+      if (ratio >= 0.9) this.expandHabitat(c);
       if (!this.migration || ratio < 0.9) continue;
       const want = c.pop * (ratio >= 1 ? 0.05 : 0.03);
       const dests = this.colonies
@@ -1449,6 +1461,7 @@ class Game {
     this.autoDefense = !!d.autoDefense;
     if (typeof d.autoBuild === 'boolean') this.autoBuild = d.autoBuild;
     if (typeof d.migration === 'boolean') this.migration = d.migration;
+    if (typeof d.autoHabitat === 'boolean') this.autoHabitat = d.autoHabitat;
     if (Array.isArray(d.migrants)) this.migrants = d.migrants.filter((m) => m && sysOk(m.fromSys) && sysOk(m.toSys) && Number.isFinite(m.n));
     if (Array.isArray(d.migLog)) this.migLog = d.migLog;
     if (Array.isArray(d.events)) this.events = d.events.filter((e) => e && typeof e.text === 'string');
@@ -2029,7 +2042,7 @@ function systemPanel(app) {
     <h3>入植地</h3>
     ${cols.length ? `<ul>${cols.map((c) => `<li>${esc(c.name)} — ${KIND_LABEL[c.kind]} <span class="muted">人口 ${fmtPop(c.pop)}</span></li>`).join('')}</ul>` : '<p class="note">まだ入植していない</p>'}
     ${outpostList(g, sys)}
-    ${g.isColonized(sys.id) ? `${autoToggle(g, sys.id)}<p class="note">オンにすると、生産が需要に届かない資源を年に1回選び、採掘基地・鉱山・農場・工場を自動で建てる (資金が費用の2倍以上あるとき)。</p>` : ''}
+    ${g.isColonized(sys.id) ? `${autoToggle(g, sys.id)}<p class="note">オンにすると、生産が需要に届かない資源を年に1回選び、惑星上の施設 (農場・鉱山・工場) や採掘基地を自動で建てる。過密な入植地では居住区も拡張する (資金が費用の2倍以上あるとき)。</p>` : ''}
     <button data-act="open">星系マップを開く</button>
     ${app.view === 'system' ? bodyList(app, sys) : ''}
     ${g.isColonized(sys.id) ? stockBox(g, sys.id) + routeBox(app, sys) : ''}
@@ -2224,7 +2237,8 @@ function colonyBox(g, c) {
     ${warn.length ? `<p class="note bad">${warn.join('・')}が足りず人口が減っている。方針を変えるか、交易路で運び込もう。</p>` : ''}
     <label class="field">方針 (労働力の配分)
       <select data-act="focus" data-col="${key}">${Object.entries(FOCUS).map(([k, f]) => `<option value="${k}" ${k === c.focus ? 'selected' : ''}>${f.label} — 農${pct(f.farm)}・鉱${pct(f.mine)}・工${pct(f.ind)}</option>`).join('')}</select></label>
-    <div class="facs">${facs}</div>`;
+    <div class="facs">${facs}</div>
+    ${autoToggle(g, c.sys)}<p class="note">オンにすると、この星系で足りない資源に合わせて農場・鉱山・工場・採掘基地を、過密になれば居住区を自動で建てる。</p>`;
 }
 
 function nativesBox(app, sys, b) {
@@ -2365,7 +2379,8 @@ function migrationSheet(app) {
   const total = g.migLog.reduce((k, m) => k + m.n, 0);
   const log = g.migLog.slice(0, 30).map((m) => `<tr><td class="muted">${m.year.toFixed(1)}</td><td>${esc(m.from)} → ${esc(m.to)}</td><td>${fmtPop(m.n)}</td></tr>`).join('');
   return `<label class="check auto"><input type="checkbox" data-act="migration" ${g.migration ? 'checked' : ''}> 恒星間移民を許可する</label>
-    <p class="note">人口が上限の90%を超えた入植地から、年に1回、人口の3% (上限を超えていれば5%) が移民船で出ていく。行き先は食料と水が足りている入植地のうち、空き (上限の80%まで) が大きく、近いところ。</p>
+    <label class="check auto"><input type="checkbox" data-act="autohabitat" ${g.autoHabitat ? 'checked' : ''}> 過密な入植地の居住区を自動で拡張する</label>
+    <p class="note">人口が上限の90%を超えた入植地では、居住区の拡張 (オンのとき) と移民が同時に進む。年に1回、人口の3% (上限を超えていれば5%) が移民船で出ていく。行き先は食料と水が足りている入植地のうち、空き (上限の80%まで) が大きく、近いところ。</p>
     <div class="kpi">
       <div><span>過密な入植地</span><b>${crowded.filter((c) => ratio(c) >= 0.9).length} か所</b><span>上限の90%以上</span></div>
       <div><span>移動中</span><b>${fmtPop(g.migrants.reduce((k, m) => k + m.n, 0))}</b><span>移民船 ${g.migrants.length} 隻</span></div>
@@ -2642,7 +2657,7 @@ function buildSave(game, extra = {}) {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, events: game.events,
-    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, autoBuild: game.autoBuild, migration: game.migration, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, autoBuild: game.autoBuild, migration: game.migration, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
 }
@@ -2770,7 +2785,10 @@ function onPanelChange(e) {
   else if (act === 'candonly') app.candOnly = e.target.checked;
   else if (act === 'ra') app.routeA = Number(v);
   else if (act === 'rb') app.routeB = Number(v);
-  else if (act === 'migration') {
+  else if (act === 'autohabitat') {
+    app.game.autoHabitat = e.target.checked;
+    app.game.message(`過密時の居住区の自動拡張を${e.target.checked ? 'オン' : 'オフ'}にした`);
+  } else if (act === 'migration') {
     app.game.migration = e.target.checked;
     app.game.message(`恒星間移民を${e.target.checked ? '許可' : '停止'}した`);
   } else if (act === 'autobuild') {
