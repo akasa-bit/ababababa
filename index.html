@@ -27,7 +27,7 @@ canvas { position:absolute; inset:0; width:100%; height:100%; display:block; tou
 .ev .yr { color:var(--muted); font-variant-numeric:tabular-nums; min-width:4.5em; }
 .ev .tag { font-size:11px; border-radius:3px; padding:0 5px; white-space:nowrap; }
 .tag.famine { background:#5a2020; } .tag.shortage { background:#5a4320; } .tag.pirate { background:#4a2050; }
-.tag.natives { background:#3a2f60; } .tag.migration { background:#1d3f5a; } .tag.colony { background:#1d4a45; }
+.tag.natives { background:#3a2f60; } tr.enroute td { background:rgba(77,227,208,0.06); } .tag.migration { background:#1d3f5a; } .tag.colony { background:#1d4a45; }
 .ev.good .txt { color:#9fe0b4; }
 label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:12px; color:var(--accent); margin:6px 0 0; }
 #empire label.check { font-size:12px; color:var(--muted); display:inline-flex; gap:4px; align-items:center; }
@@ -605,6 +605,9 @@ function addExtras(galaxy) {
     if (sys.id === 0) continue;
     const more = new Rng(hashSeed(`${galaxy.seed}/natives2/${sys.id}`));
     for (const b of sys.bodies) if (!b.natives) b.natives = makeMoreNatives(more, b);
+    // 出現率を半分にする。外した先住民は nativesSpare に残し、セーブで関わりのあったものは読み込み時に戻す
+    const keep = new Rng(hashSeed(`${galaxy.seed}/natives-keep/${sys.id}`));
+    for (const b of sys.bodies) if (b.natives && !keep.chance(0.5)) { b.nativesSpare = b.natives; b.natives = null; }
   }
   galaxy.systems[0].bodies.find((b) => b.id === 'earth').deposits = { water: 0.5, metal: 1, fuel: 0.4, rare: 0.15 };
 }
@@ -625,8 +628,18 @@ const FOCUS = {
   mine: { label: '鉱業', farm: 0.2, mine: 0.7, ind: 0.1 },
   ind: { label: '工業', farm: 0.2, mine: 0.1, ind: 0.7 },
 };
-const FACILITY = { farm: '農場', mine: '鉱山', factory: '工場', habitat: '居住区', shipyard: '造船所' };
-const FACILITY_MAX = { farm: 10, mine: 10, factory: 10, habitat: 10, shipyard: 1 };
+const FACILITY = { farm: '農場', mine: '鉱山', factory: '工場', habitat: '居住区', shipyard: '造船所', barracks: '軍事教練所' };
+const FACILITY_MAX = { farm: 10, mine: 10, factory: 10, habitat: 10, shipyard: 1, barracks: 5 };
+const LV0 = () => ({ farm: 0, mine: 0, factory: 0, habitat: 0, shipyard: 0, barracks: 0 });
+// 歩兵 (連隊)。軍事教練所で市民から訓練するか、軍事奴隷から徴集する。交易路を通って惑星間を移動する
+const TROOP_COST = { credits: 30, goods: 10 };
+const TROOP_DRAFT = 0.05; // 1連隊に徴集する人口[百万人]
+const TROOP_UPKEEP = 2; // cr/年
+const SLAVE_TROOP_UPKEEP = 0.5;
+const SLAVE_TROOP_POWER = 0.6; // 奴隷兵1連隊の戦力
+// 奴隷の扱い。奴隷化すると市場奴隷になり、手動で切り替えられる
+const SLAVE_TYPES = { market: '市場奴隷', military: '軍事奴隷', livestock: '家畜' };
+const HUMAN = '人類';
 const SHIP_COST = { planet: { credits: 300, goods: 100, fuel: 100 }, station: { credits: 150, goods: 50, fuel: 50 } };
 const SETTLERS = { planet: 0.2, station: 0.02 }; // 入植船が運ぶ人口[百万人]
 const WARSHIP_COST = { credits: 150, metal: 100, fuel: 50, rare: 10 };
@@ -668,6 +681,7 @@ class Game {
     this.autoTimer = 0;
     this.migration = true; // 過密な入植地からの恒星間移民
     this.autoHabitat = true; // 過密な入植地の居住区を自動で拡張する
+    this.troopMoves = []; // 移動中の歩兵 { id, from, to (入植地キー), path, times, arrive, troops, slave }
     this.migrants = []; // 移動中の移民船 { id, from, to (入植地キー), fromSys, toSys, n, depart, arrive }
     this.migLog = []; // 移民の到着記録 { year, from, to, n }
     this.autoBuild = true; // 自動防衛配備で軍艦が足りなければ建造する
@@ -678,7 +692,8 @@ class Game {
     this.ledger = {}; // 直近の収支[cr/年] (保存しない)
     this.led = {}; // 今の刻みの収支
     this.addColony(0, 'earth', 'planet', '地球', 10000);
-    Object.assign(this.colonies[0].lv, { mine: 1, factory: 2, shipyard: 1 });
+    Object.assign(this.colonies[0].lv, { mine: 1, factory: 2, shipyard: 1, barracks: 1 });
+    this.colonies[0].troops = 3;
     Object.assign(this.stock[0], { food: 5000, water: 1000, metal: 3000, fuel: 2000, rare: 300, goods: 2000 });
     this.message('ゲーム開始。地球から恒星間入植を進めよう。');
   }
@@ -833,6 +848,12 @@ class Game {
       if (!r) return;
       r.lv++;
       this.message(`${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路を Lv${r.lv} に拡張した`);
+    } else if (job.type === 'troop') {
+      const c = this.colonyByKey(job.col);
+      if (!c) return;
+      c.troops += 1;
+      c.pop = Math.max(0.001, c.pop - TROOP_DRAFT);
+      if (!job.quiet) this.message(`${c.name} で歩兵連隊を訓練した (駐留 ${c.troops} 連隊)`);
     } else if (job.type === 'outpost') {
       const o = this.outpostAt(job.sys, job.body);
       if (o) o.lv++;
@@ -868,7 +889,7 @@ class Game {
   addColony(sysId, bodyId, kind, name, pop = SETTLERS[kind]) {
     this.colonies.push({
       sys: sysId, body: bodyId, kind, founded: this.year, name, pop, focus: 'balanced',
-      lv: { farm: 0, mine: 0, factory: 0, habitat: 0, shipyard: 0 },
+      lv: LV0(), troops: 0, slaveTroops: 0, races: { [HUMAN]: 1 },
     });
     this.stockOf(sysId);
     this.survey(sysId);
@@ -1090,8 +1111,8 @@ class Game {
     }
   }
 
-  // 海賊の戦力の基準値と、起こりうる最大値 (乱数の幅は基準の0.5〜1.5倍)
-  pirateBase() { return 1 + Math.max(0, this.year - PIRATE_START) / 40; }
+  // 海賊の戦力の基準値と、起こりうる最大値 (乱数の幅は基準の0.5〜1.5倍)。基準は2320年に1/3、40年ごとに +1/3
+  pirateBase() { return (1 + Math.max(0, this.year - PIRATE_START) / 40) / 3; }
   pirateMax() { return Math.max(1, Math.round(1.5 * this.pirateBase())); }
   // 自動防衛配備で目指す駐留数。太陽系は海賊に狙われないので1隻、他の入植星系は海賊の最大戦力ぶん (海賊が現れる前は1隻)
   defenseGoal(id) { return id === 0 || this.year < PIRATE_START ? 1 : this.pirateMax(); }
@@ -1170,7 +1191,7 @@ class Game {
       if (n < 0.001) continue;
       c.pop -= n;
       c.migOut = (c.migOut || 0) + n;
-      this.migrants.push({ id: this.nextShipId++, from: colKey(c), to: colKey(d), fromSys: c.sys, toSys: d.sys, n, depart: this.year, arrive: this.year + t });
+      this.migrants.push({ id: this.nextShipId++, from: colKey(c), to: colKey(d), fromSys: c.sys, toSys: d.sys, n, races: { ...(c.races || { [HUMAN]: 1 }) }, depart: this.year, arrive: this.year + t });
     }
   }
 
@@ -1200,11 +1221,16 @@ class Game {
       this.garrison[sys.id] = g - loss;
       this.event('pirate', sys.id, `${sys.name} で宇宙海賊 (戦力${power}) を撃退した${loss ? ` (軍艦 ${loss} 隻を喪失)` : ''}`, true);
     } else {
+      // 地上では歩兵が抵抗し、歩兵が多いほど被害が小さくなる
       this.garrison[sys.id] = 0;
+      const tp = this.troopPower(sys.id);
+      const f = power / (power + tp);
       const st = this.stockOf(sys.id);
-      for (const r of RES) st[r] *= 0.6;
-      for (const c of this.coloniesIn(sys.id)) c.pop *= 0.9;
-      this.event('pirate', sys.id, `${sys.name} が宇宙海賊 (戦力${power}) に略奪された${g ? ` (駐留艦 ${g} 隻は全滅)` : ''}`);
+      for (const r of RES) st[r] *= 1 - 0.4 * f;
+      for (const c of this.coloniesIn(sys.id)) c.pop *= 1 - 0.1 * f;
+      const lost = Math.min(Math.ceil(power / 2), Math.ceil(tp));
+      if (tp) this.loseTroops(sys.id, lost);
+      this.event('pirate', sys.id, `${sys.name} が宇宙海賊 (戦力${power}) に略奪された${g ? ` (駐留艦 ${g} 隻は全滅)` : ''}${tp ? ` — 歩兵の抵抗で被害は ${pct(f)} に (歩兵 ${lost} 連隊を喪失)` : ''}`);
     }
     return true;
   }
@@ -1226,7 +1252,7 @@ class Game {
     if (!n || n.st.status !== 'independent') return fail('対象がいない');
     if (!c) return fail('同じ惑星に入植地が必要');
     if (n.st.rel < 80) return fail('友好度80以上が必要');
-    c.pop += n.st.pop;
+    this.addPeople(c, n.st.pop, { [n.def.species]: 1 });
     n.st.status = 'integrated';
     this.event('natives', sysId, `${n.def.species} ${fmtPop(n.st.pop)}が ${c.name} の市民になった`, true);
     return { ok: true };
@@ -1236,37 +1262,59 @@ class Game {
     if (!n || n.st.status !== 'independent') return fail('対象がいない');
     const need = this.nativeDefense(n);
     const g = this.garrison[sysId] || 0;
-    if (g < need) return fail(`戦力不足 (軍艦 ${need} 隻以上が必要)`);
-    const loss = Math.ceil(need / 3);
+    const power = g + this.troopPower(sysId);
+    if (g < 1) return fail('制宙権のための軍艦が1隻以上必要');
+    if (power < need) return fail(`戦力不足 (軍艦+歩兵で ${need} 以上が必要)`);
+    // 損害は歩兵から先に受ける
+    const tp = this.troopPower(sysId);
+    const troopLoss = Math.min(Math.ceil(need / 3), Math.floor(tp));
+    this.loseTroops(sysId, troopLoss);
+    const loss = Math.min(g, Math.ceil(Math.max(0, need / 3 - troopLoss) / 2));
     this.garrison[sysId] = g - loss;
     n.st.status = 'subjugated';
     n.st.pop *= 0.7;
     n.st.rel = -80;
     this.infamy += 25;
     for (const st of Object.values(this.natives)) if (st !== n.st && st.status === 'independent') st.rel -= 25;
-    this.event('natives', sysId, `${n.def.species}を制圧した (軍艦 ${loss} 隻を喪失)。他の先住民の友好度が下がった`);
+    this.event('natives', sysId, `${n.def.species}を制圧した (軍艦 ${loss} 隻・歩兵 ${troopLoss} 連隊を喪失)。他の先住民の友好度が下がった`);
     return { ok: true };
   }
 
-  // 支配下の先住民の扱い。どれも同じ惑星に入植地が必要で、悪名が増えて他の先住民の友好度が下がる。
-  // 奴隷化: 強制労働で食料・金属・希少元素を産むが、人口は年1%減り、駐留艦が少ないと反乱が起きる。
-  // 家畜化: 農耕時代以前の種族のみ。食料を大量に産み、人口は管理されて増える。悪名は最も大きい。
-  treat(sysId, bodyId, kind) {
+  // 支配下の先住民の扱い。奴隷化には同じ惑星に入植地が必要で、悪名が増えて他の先住民の友好度が下がる。
+  // 奴隷化するとまず市場奴隷になり、軍事奴隷・家畜に切り替えられる。奴隷の人口はふつうに増える。
+  //  市場奴隷: 労働力として食料・金属・希少元素・工業品を産む (消費されず、寿命で入れ替わる)
+  //  軍事奴隷: 安価な歩兵として毎年徴集される
+  //  家畜: 食料を大量に産む。初めて家畜にしたとき悪名がさらに +15
+  blame(n, amount) {
+    this.infamy += amount;
+    for (const st of Object.values(this.natives)) if (st !== n.st && st.status === 'independent') st.rel -= amount;
+  }
+  enslave(sysId, bodyId) {
     const n = this.nativeOf(sysId, bodyId);
     if (!n || n.st.status !== 'subjugated') return fail('支配下の先住民がいない');
     if (!this.colonyAt(sysId, bodyId, 'planet')) return fail('同じ惑星に入植地が必要');
-    if (kind === 'livestock' && n.def.tech > 1) return fail('農耕時代以前の種族のみ');
-    const blame = kind === 'livestock' ? 30 : 15;
-    n.st.status = kind;
+    n.st.status = 'enslaved';
+    n.st.slave = 'market';
     n.st.rel = -100;
-    this.infamy += blame;
-    for (const st of Object.values(this.natives)) if (st !== n.st && st.status === 'independent') st.rel -= blame;
-    this.event('natives', sysId, `${n.def.species}を${kind === 'livestock' ? '家畜化' : '奴隷化'}した。他の先住民の友好度が ${blame} 下がった`);
+    this.blame(n, 15);
+    this.event('natives', sysId, `${n.def.species}を奴隷化した (市場奴隷)。他の先住民の友好度が 15 下がった`);
+    return { ok: true };
+  }
+  setSlaveType(sysId, bodyId, type) {
+    const n = this.nativeOf(sysId, bodyId);
+    if (!n || n.st.status !== 'enslaved') return fail('奴隷がいない');
+    if (!SLAVE_TYPES[type] || n.st.slave === type) return fail('変更なし');
+    n.st.slave = type;
+    if (type === 'livestock' && !n.st.wasLivestock) {
+      n.st.wasLivestock = true;
+      this.blame(n, 15);
+    }
+    this.event('natives', sysId, `${n.def.species}の扱いを「${SLAVE_TYPES[type]}」にした`);
     return { ok: true };
   }
   liberate(sysId, bodyId) {
     const n = this.nativeOf(sysId, bodyId);
-    if (!n || !['subjugated', 'enslaved', 'livestock'].includes(n.st.status)) return fail('解放できる先住民がいない');
+    if (!n || !['subjugated', 'enslaved'].includes(n.st.status)) return fail('解放できる先住民がいない');
     n.st.status = 'independent';
     n.st.rel = -40;
     this.infamy = Math.max(0, this.infamy - 10);
@@ -1274,32 +1322,156 @@ class Game {
     this.event('natives', sysId, `${n.def.species}を解放した。他の先住民の友好度が少し上がった`, true);
     return { ok: true };
   }
-  // 年1回: 奴隷・家畜の人口の増減と、奴隷の反乱
+  // 年1回: 奴隷の人口の増加、軍事奴隷の徴集、反乱
   nativesYearly() {
     for (const [key, st] of Object.entries(this.natives)) {
       const [sysStr, bodyId] = key.split('|');
       const sys = Number(sysStr);
       const n = this.nativeOf(sys, bodyId);
-      if (!n) continue;
-      if (st.status === 'livestock') st.pop = Math.min(n.def.pop * 1.5, st.pop * 1.01);
-      if (st.status !== 'enslaved') continue;
-      st.pop *= 0.99;
-      const guard = this.garrison[sys] || 0;
+      if (!n || st.status !== 'enslaved') continue;
+      st.pop = Math.min(n.def.pop * 2, st.pop * 1.015);
+      const col = this.colonyAt(sys, bodyId, 'planet');
+      if (st.slave === 'military' && col && st.pop >= 2) {
+        const levy = Math.min(Math.max(1, Math.floor(st.pop / 25)), Math.max(0, Math.floor(st.pop / 5) - col.slaveTroops));
+        col.slaveTroops += levy;
+        st.pop -= levy * TROOP_DRAFT;
+      }
+      const guard = (this.garrison[sys] || 0) + this.troopPower(sys);
       if (guard < this.nativeDefense(n) / 2 && Math.random() < 0.05) {
         st.status = 'independent';
         st.rel = -100;
         for (const c of this.coloniesIn(sys)) c.pop *= 0.9;
-        this.garrison[sys] = Math.max(0, guard - 1);
+        this.garrison[sys] = Math.max(0, (this.garrison[sys] || 0) - 1);
         this.event('natives', sys, `${n.def.species}の奴隷が反乱を起こし、独立を取り戻した (入植地の人口が1割減少)`);
       }
     }
   }
-  // 奴隷・家畜が産む資源 [年あたり]
+  // 奴隷が産む資源 [年あたり]
   nativeYield(sys, bodyId, st) {
+    if (st.status !== 'enslaved') return {};
     const d = this.target(sys, bodyId)?.deposits || {};
-    if (st.status === 'livestock') return { food: 1.5 * st.pop };
-    if (st.status === 'enslaved') return { food: 0.6 * st.pop, metal: 0.4 * st.pop * Math.max(0.3, d.metal || 0), rare: 0.05 * st.pop * (d.rare || 0) };
-    return {};
+    if (st.slave === 'livestock') return { food: 1.5 * st.pop };
+    if (st.slave === 'military') return { food: 0.3 * st.pop };
+    return { food: 0.4 * st.pop, metal: 0.3 * st.pop * Math.max(0.3, d.metal || 0), rare: 0.05 * st.pop * (d.rare || 0), goods: 0.1 * st.pop };
+  }
+
+  // --- 歩兵 ---
+  troopPower(sysId) { return this.coloniesIn(sysId).reduce((k, c) => k + c.troops + SLAVE_TROOP_POWER * c.slaveTroops, 0); }
+  troopCount() { return this.colonies.reduce((k, c) => k + c.troops + c.slaveTroops, 0) + this.troopMoves.reduce((k, m) => k + m.troops + m.slave, 0); }
+  troopUpkeep() {
+    const all = [...this.colonies, ...this.troopMoves.map((m) => ({ troops: m.troops, slaveTroops: m.slave }))];
+    return all.reduce((k, c) => k + TROOP_UPKEEP * c.troops + SLAVE_TROOP_UPKEEP * c.slaveTroops, 0);
+  }
+  // 歩兵を失う (奴隷兵から先に)
+  loseTroops(sysId, n) {
+    for (const c of this.coloniesIn(sysId)) {
+      const s = Math.min(n, c.slaveTroops); c.slaveTroops -= s; n -= s;
+    }
+    for (const c of this.coloniesIn(sysId)) {
+      const t = Math.min(n, c.troops); c.troops -= t; n -= t;
+    }
+  }
+  trainTroop(c, quiet = false) {
+    if (c.lv.barracks < 1) return fail('軍事教練所がない');
+    if (c.pop < TROOP_DRAFT * 4) return fail('人口が少なすぎる');
+    if (this.pending((j) => j.type === 'troop' && j.col === colKey(c))) return fail('訓練中');
+    return this.order(TROOP_COST, c.sys, { type: 'troop', col: colKey(c), quiet, label: `${c.name} の歩兵連隊` });
+  }
+  // 軍事教練所は年に Lv 連隊まで自動で訓練し、Lv×5 連隊を保つ (資金が費用の2倍以上あるとき)
+  barracksYearly() {
+    for (const c of this.colonies) {
+      for (let i = 0; i < c.lv.barracks && c.troops < 5 * c.lv.barracks; i++) {
+        if (this.credits < 2 * TROOP_COST.credits || this.procure(TROOP_COST, c.sys).why) break;
+        if (!this.trainTroop(c, true).ok) break;
+      }
+    }
+  }
+  // 交易路網上の最短経路 (航行年数の合計)。つながっていなければ null
+  routePath(a, b) {
+    if (a === b) return { path: [a], years: 0 };
+    const dist = { [a]: 0 };
+    const prev = {};
+    const done = new Set();
+    for (;;) {
+      let u = null;
+      for (const k of Object.keys(dist)) if (!done.has(+k) && (u === null || dist[k] < dist[u])) u = +k;
+      if (u === null) return null;
+      if (u === b) break;
+      done.add(u);
+      for (const r of this.routes) {
+        const v = r.a === u ? r.b : r.b === u ? r.a : null;
+        if (v === null) continue;
+        const d = dist[u] + this.travelYears(u, v);
+        if (dist[v] === undefined || d < dist[v]) { dist[v] = d; prev[v] = u; }
+      }
+    }
+    const path = [b];
+    while (path[0] !== a) path.unshift(prev[path[0]]);
+    return { path, years: dist[b] };
+  }
+  // 歩兵を別の入植地へ送る。同じ星系ならすぐ、別の星系なら交易路をたどって光速で移動する
+  sendTroops(fromKey, toKey, n) {
+    const from = this.colonyByKey(fromKey);
+    const to = this.colonyByKey(toKey);
+    if (!from || !to || from === to) return fail('送り先が不正');
+    const troops = Math.min(n, from.troops);
+    const slave = Math.min(n - troops, from.slaveTroops);
+    if (troops + slave < 1) return fail('送れる歩兵がいない');
+    const route = this.routePath(from.sys, to.sys);
+    if (!route) return fail('交易路でつながっていない');
+    from.troops -= troops;
+    from.slaveTroops -= slave;
+    if (route.years === 0) {
+      to.troops += troops;
+      to.slaveTroops += slave;
+      return { ok: true };
+    }
+    const times = [this.year];
+    for (let i = 1; i < route.path.length; i++) times.push(times[i - 1] + this.travelYears(route.path[i - 1], route.path[i]));
+    this.troopMoves.push({ id: this.nextShipId++, from: fromKey, to: toKey, path: route.path, times, arrive: times[times.length - 1], troops, slave });
+    this.message(`${from.name} → ${to.name} へ歩兵 ${troops + slave} 連隊が出発 (交易路経由、到着まで ${route.years.toFixed(1)} 年)`);
+    return { ok: true };
+  }
+  // 交易路でつながる全入植地の歩兵をこの入植地へ集める
+  rallyTroops(toKey) {
+    const to = this.colonyByKey(toKey);
+    let sent = 0;
+    for (const c of this.colonies) {
+      if (c === to || c.troops + c.slaveTroops < 1 || !this.routePath(c.sys, to.sys)) continue;
+      if (this.sendTroops(colKey(c), toKey, c.troops + c.slaveTroops).ok) sent++;
+    }
+    return sent ? { ok: true } : fail('集められる歩兵がいない');
+  }
+
+  // --- 種族 ---
+  // 入植地に人を加え、種族の構成比を混ぜる。races は加える人々の構成比
+  addPeople(c, n, races) {
+    const total = c.pop + n;
+    if (total <= 0) return;
+    const out = {};
+    for (const [k, v] of Object.entries(c.races || { [HUMAN]: 1 })) out[k] = (out[k] || 0) + v * c.pop / total;
+    for (const [k, v] of Object.entries(races)) out[k] = (out[k] || 0) + v * n / total;
+    c.races = out;
+    c.pop = total;
+  }
+  // 惑星ごとの種族: 入植地の住民と、同じ惑星の先住民 (奴隷・家畜・独立など)
+  speciesOf(sysId, bodyId) {
+    const list = [];
+    for (const kind of ['planet', 'station']) {
+      const c = this.colonyAt(sysId, bodyId, kind);
+      if (c) for (const [k, v] of Object.entries(c.races || { [HUMAN]: 1 })) if (v * c.pop >= 0.0005) list.push({ name: k, pop: v * c.pop, role: '市民' });
+    }
+    const n = this.nativeOf(sysId, bodyId);
+    if (n && n.st.status !== 'integrated') {
+      const role = n.st.status === 'enslaved' ? SLAVE_TYPES[n.st.slave] : n.st.status === 'subjugated' ? '支配下' : '先住民';
+      list.push({ name: n.def.species, pop: n.st.pop, role });
+    }
+    const merged = {};
+    for (const x of list) {
+      const k = `${x.name}|${x.role}`;
+      merged[k] = merged[k] ? { ...merged[k], pop: merged[k].pop + x.pop } : { ...x };
+    }
+    return Object.values(merged).sort((a, b) => b.pop - a.pop);
   }
 
   // --- 時間の進行 ---
@@ -1314,7 +1486,7 @@ class Game {
       this.economy(h);
       if (this.pirates(h)) changed = true;
       this.autoTimer += h;
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); }
     }
     return changed;
   }
@@ -1351,11 +1523,23 @@ class Game {
         const d = this.colonyByKey(m.to);
         const from = this.colonyByKey(m.from);
         if (!d) continue;
-        d.pop += m.n;
+        this.addPeople(d, m.n, m.races || { [HUMAN]: 1 });
         d.migIn = (d.migIn || 0) + m.n;
         this.migLog.unshift({ year: this.year, from: from ? from.name : '?', to: d.name, n: m.n });
       }
       this.migLog.length = Math.min(this.migLog.length, 100);
+    }
+    if (this.troopMoves.some((m) => m.arrive <= this.year)) {
+      changed = true;
+      const due = this.troopMoves.filter((m) => m.arrive <= this.year);
+      this.troopMoves = this.troopMoves.filter((m) => m.arrive > this.year);
+      for (const m of due) {
+        const d = this.colonyByKey(m.to) || this.coloniesIn(m.path[m.path.length - 1])[0];
+        if (!d) continue;
+        d.troops += m.troops;
+        d.slaveTroops += m.slave;
+        this.message(`歩兵 ${m.troops + m.slave} 連隊が ${d.name} に到着した`);
+      }
     }
     const fleets = this.fleets.filter((f) => f.arrive <= this.year);
     if (fleets.length) {
@@ -1487,7 +1671,7 @@ class Game {
       }
     }
     // 7. 軍の維持費
-    this.earn('upkeep', -WARSHIP_UPKEEP * this.warships() * h);
+    this.earn('upkeep', -(WARSHIP_UPKEEP * this.warships() + this.troopUpkeep()) * h);
 
     this.flow = flow;
     const a = Math.min(1, h);
@@ -1513,7 +1697,10 @@ class Game {
       if (!Number.isFinite(c.pop)) c.pop = earth ? 10000 : SETTLERS[c.kind];
       if (!FOCUS[c.focus]) c.focus = 'balanced';
       if (!obj(c.lv)) c.lv = earth ? { mine: 1, factory: 2, shipyard: 1 } : {};
-      c.lv = { farm: 0, mine: 0, factory: 0, habitat: 0, shipyard: 0, ...c.lv };
+      c.lv = { ...LV0(), ...c.lv };
+      if (!Number.isFinite(c.troops)) c.troops = 0;
+      if (!Number.isFinite(c.slaveTroops)) c.slaveTroops = 0;
+      if (!obj(c.races)) c.races = { [HUMAN]: 1 };
     }
     if (Number.isFinite(d.credits)) this.credits = d.credits;
     if (obj(d.stock)) this.stock = { ...this.stock, ...d.stock };
@@ -1540,12 +1727,24 @@ class Game {
     this.autoDefense = !!d.autoDefense;
     if (typeof d.autoBuild === 'boolean') this.autoBuild = d.autoBuild;
     if (typeof d.migration === 'boolean') this.migration = d.migration;
+    if (Array.isArray(d.troopMoves)) this.troopMoves = d.troopMoves.filter((m) => m && Array.isArray(m.path) && m.path.every(sysOk));
     if (typeof d.autoHabitat === 'boolean') this.autoHabitat = d.autoHabitat;
     if (Array.isArray(d.migrants)) this.migrants = d.migrants.filter((m) => m && sysOk(m.fromSys) && sysOk(m.toSys) && Number.isFinite(m.n));
     if (Array.isArray(d.migLog)) this.migLog = d.migLog;
     if (Array.isArray(d.events)) this.events = d.events.filter((e) => e && typeof e.text === 'string');
     if (Array.isArray(d.projects)) this.projects = d.projects.filter((j) => j && sysOk(j.sys) && Number.isFinite(j.ready) && Array.isArray(j.from));
-    if (obj(d.natives)) this.natives = d.natives;
+    if (obj(d.natives)) {
+      for (const key of Object.keys(d.natives)) {
+        const [sysStr, bodyId] = key.split('|');
+        const b = this.target(Number(sysStr), bodyId);
+        if (b && !b.natives && b.nativesSpare) b.natives = b.nativesSpare;
+      }
+      this.natives = d.natives;
+      for (const st of Object.values(this.natives)) {
+        if (st.status === 'livestock') { st.status = 'enslaved'; st.slave = 'livestock'; st.wasLivestock = true; }
+        if (st.status === 'enslaved' && !SLAVE_TYPES[st.slave]) st.slave = 'market';
+      }
+    }
     if (Number.isFinite(d.infamy)) this.infamy = d.infamy;
     this.surveyed = Array.isArray(d.surveyed) ? d.surveyed.filter(sysOk) : [];
     for (const c of this.colonies) if (!this.isSurveyed(c.sys)) this.surveyed.push(c.sys);
@@ -1786,6 +1985,16 @@ class GalaxyView {
         const [px, py] = this.toScreen(pos.x, pos.y);
         ctx.beginPath(); ctx.moveTo(px, py - 3); ctx.lineTo(px + 3, py); ctx.lineTo(px, py + 3); ctx.lineTo(px - 3, py); ctx.fill();
       }
+    }
+
+    // 移動中の歩兵 (交易路をたどる)
+    ctx.fillStyle = '#ff9f8f';
+    for (const m of game.troopMoves) {
+      let i = 0;
+      while (i < m.path.length - 2 && game.year >= m.times[i + 1]) i++;
+      const pos = game.shipPosition({ from: m.path[i], to: m.path[i + 1], depart: m.times[i], arrive: m.times[i + 1] });
+      const [px, py] = this.toScreen(pos.x, pos.y);
+      ctx.fillRect(px - 2.5, py - 2.5, 5, 5);
     }
 
     // 移民船
@@ -2221,7 +2430,7 @@ function nativesSummary(g, sys) {
 }
 
 function nativeStatus(n) {
-  const label = { integrated: '市民として統合済み', subjugated: '支配下', enslaved: '奴隷化', livestock: '家畜化' }[n.st.status];
+  const label = n.st.status === 'enslaved' ? `奴隷 (${SLAVE_TYPES[n.st.slave] || '市場奴隷'})` : { integrated: '市民として統合済み', subjugated: '支配下' }[n.st.status];
   return label || `${relLabel(n.st.rel)} (${Math.round(n.st.rel)})`;
 }
 
@@ -2311,12 +2520,40 @@ function colonyBox(g, c) {
       ${row('人口増加', `<span class="${(c.growth || 0) < 0 ? 'bad' : 'hz'}">${((c.growth || 0) * 100).toFixed(1)}%/年</span>`)}
       ${row('充足率', `食料 ${pct(s.food)}${g.needsWater(c) ? `・水 ${pct(s.water)}` : ''}・工業品 ${pct(s.goods)}`)}
       ${row('工場の稼働', pct(c.industry ?? 1))}
+      ${row('種族', raceText(c))}
     </table>
     ${warn.length ? `<p class="note bad">${warn.join('・')}が足りず人口が減っている。方針を変えるか、交易路で運び込もう。</p>` : ''}
     <label class="field">方針 (労働力の配分)
       <select data-act="focus" data-col="${key}">${Object.entries(FOCUS).map(([k, f]) => `<option value="${k}" ${k === c.focus ? 'selected' : ''}>${f.label} — 農${pct(f.farm)}・鉱${pct(f.mine)}・工${pct(f.ind)}</option>`).join('')}</select></label>
     <div class="facs">${facs}</div>
-    ${autoToggle(g, c.sys)}<p class="note">オンにすると、この星系で足りない資源に合わせて農場・鉱山・工場・採掘基地を、過密になれば居住区を自動で建てる。</p>`;
+    ${autoToggle(g, c.sys)}<p class="note">オンにすると、この星系で足りない資源に合わせて農場・鉱山・工場・採掘基地を、過密になれば居住区を自動で建てる。</p>
+    ${troopBox(g, c)}`;
+}
+
+function raceText(c) {
+  return Object.entries(c.races || { [HUMAN]: 1 }).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${esc(k)} ${pct(v)}`).join('・');
+}
+
+// 入植地の歩兵: 駐留数、訓練、ほかの入植地から呼び寄せる
+function troopBox(g, c) {
+  const key = colKey(c);
+  const app = window.__app;
+  const origins = g.colonies.filter((o) => o !== c && o.troops + o.slaveTroops >= 1)
+    .map((o) => ({ o, r: g.routePath(o.sys, c.sys) })).filter((x) => x.r)
+    .sort((a, b) => a.r.years - b.r.years);
+  const fromKey = origins.some((x) => colKey(x.o) === app?.troopOrigin) ? app.troopOrigin : origins[0] && colKey(origins[0].o);
+  const coming = g.troopMoves.filter((m) => m.to === key).reduce((k, m) => k + m.troops + m.slave, 0);
+  const train = costButton(g, `data-act="train" data-col="${key}"`, '歩兵を訓練', TROOP_COST, c.sys,
+    c.lv.barracks < 1 ? '軍事教練所が必要' : busyText(g, (j) => j.type === 'troop' && j.col === key));
+  const send = origins.length ? `<label class="field">歩兵を呼び寄せる (交易路経由)
+      <select data-act="torigin">${origins.map(({ o, r }) => `<option value="${colKey(o)}" ${colKey(o) === fromKey ? 'selected' : ''}>${esc(o.name)} (${o.troops}+奴隷兵${o.slaveTroops}・${r.years < 0.01 ? '星系内' : `${r.years.toFixed(1)} 年`})</option>`).join('')}</select></label>
+    <div class="btns"><button data-act="troopsend" data-from="${fromKey}" data-to="${key}" data-n="1">1連隊</button><button data-act="troopsend" data-from="${fromKey}" data-to="${key}" data-n="all">全部隊</button></div>`
+    : '<p class="note">交易路でつながった入植地に、呼び寄せられる歩兵がいない。</p>';
+  return `<h3>歩兵</h3>
+    <p class="note">駐留: 歩兵 <b>${c.troops}</b> 連隊・奴隷兵 <b>${c.slaveTroops}</b> 連隊${coming ? ` (+${coming} 向かっている)` : ''}。
+      軍事教練所 Lv${c.lv.barracks}${c.lv.barracks ? ` — 年に ${c.lv.barracks} 連隊まで自動で訓練し、${5 * c.lv.barracks} 連隊を保つ` : ''}。
+      歩兵は先住民の制圧・奴隷の反乱の抑止・海賊からの地上防衛に使う。1連隊で人口 ${fmtPop(TROOP_DRAFT)} を徴集、維持費 ${TROOP_UPKEEP} cr/年。</p>
+    ${train}${send}`;
 }
 
 function nativesBox(app, sys, b) {
@@ -2334,26 +2571,33 @@ function nativesBox(app, sys, b) {
       ${costButton(g, 'data-act="gift"', '贈り物 (友好度+10)', GIFT_COST, undefined, presence ? '' : 'この星系に拠点が必要')}
       ${costButton(g, 'data-act="integrate"', '市民として迎える', null, undefined, !col ? '同じ惑星に入植地が必要' : n.st.rel < 80 ? '友好度80以上が必要' : '')}
     </div>
-    ${costButton(g, 'data-act="conquer"', `武力で制圧 (軍艦 ${need} 隻以上)`, null, undefined, (g.garrison[sys.id] || 0) < need ? `駐留艦が足りない (${g.garrison[sys.id] || 0}/${need})` : '')}` : '';
+    ${(() => {
+      const ships = g.garrison[sys.id] || 0;
+      const power = ships + g.troopPower(sys.id);
+      const why = ships < 1 ? '制宙権のため軍艦が1隻以上必要' : power < need ? `戦力が足りない (軍艦+歩兵 ${fmt(power, 1)}/${need})` : '';
+      return costButton(g, 'data-act="conquer"', `武力で制圧 (軍艦+歩兵の戦力 ${need} 以上)`, null, undefined, why);
+    })()}` : '';
   const st = n.st.status;
   const noCol = col ? '' : '同じ惑星に入植地が必要';
   const yieldNow = g.nativeYield(sys.id, b.id, n.st);
-  const ruled = st === 'subjugated' ? `<div class="btns">
-      ${costButton(g, 'data-act="enslave"', '奴隷化する', null, undefined, noCol)}
-      ${costButton(g, 'data-act="domesticate"', '家畜化する', null, undefined, noCol || (n.def.tech > 1 ? '農耕時代以前の種族のみ' : ''))}
-    </div>
-    <p class="note">奴隷化: 強制労働で食料・金属・希少元素を産む。人口は年1%減り、駐留艦が制圧に必要な数の半分 (${Math.ceil(need / 2)} 隻) 未満だと年5%の確率で反乱が起きる。悪名 +15。<br>
-      家畜化: 農耕時代以前の種族のみ。食料を大量に産み、人口は年1%増える。悪名 +30。<br>どちらも他の先住民の友好度が悪名ぶん下がり、同じ惑星の入植地は不穏で人口の伸びが落ちる。</p>` : '';
-  const kept = st === 'enslaved' || st === 'livestock'
-    ? `<p class="note">産出: ${yieldText(yieldNow)} /年${st === 'enslaved' ? `・駐留艦 ${g.garrison[sys.id] || 0} 隻 (反乱を抑えるには ${Math.ceil(need / 2)} 隻)` : ''}</p>` : '';
-  const free = ['subjugated', 'enslaved', 'livestock'].includes(st)
+  const guard = (g.garrison[sys.id] || 0) + g.troopPower(sys.id);
+  const ruled = st === 'subjugated' ? `
+    ${costButton(g, 'data-act="enslave"', '奴隷化する (市場奴隷)', null, undefined, noCol)}
+    <p class="note">奴隷化すると市場奴隷になり、あとで軍事奴隷・家畜に切り替えられる。悪名 +15 (他の先住民の友好度が下がり、同じ惑星の入植地は不穏になる)。</p>` : '';
+  const kept = st === 'enslaved' ? `
+    <div class="btns">${Object.entries(SLAVE_TYPES).map(([k, l]) => `<button data-act="slavetype" data-type="${k}" class="${n.st.slave === k ? 'on' : ''}" ${n.st.slave === k ? 'disabled' : ''}>${l}</button>`).join('')}</div>
+    <p class="note">市場奴隷: 労働力として食料・金属・希少元素・工業品を産む (消費されず、寿命で入れ替わる)。<br>
+      軍事奴隷: 安価な歩兵 (戦力 ${SLAVE_TROOP_POWER}・維持費 ${SLAVE_TROOP_UPKEEP} cr/年) として毎年徴集され、同じ惑星の入植地に配属される。<br>
+      家畜: 食料を大量に産む。初めて家畜にすると悪名がさらに +15。<br>
+      産出: ${yieldText(yieldNow)} /年。奴隷の人口は年1.5%増える。軍艦+歩兵の戦力が ${Math.ceil(need / 2)} 未満 (いま ${fmt(guard, 1)}) だと年5%の確率で反乱が起きる。</p>` : '';
+  const free = ['subjugated', 'enslaved'].includes(st)
     ? costButton(g, 'data-act="liberate"', '解放する (悪名 −10)', null) : '';
   return `<h3>先住民</h3>
     <table class="tbl kv">
       ${row('種族', esc(n.def.species))}${row('人口', fmtPop(n.st.pop))}${row('文明', TECH_LABEL[n.def.tech])}
       ${row('関係', nativeStatus(n))}
     </table>
-    ${ind ? `<p class="note">拠点があると友好度は少しずつ上がる。40以上で惑星への入植と交易 (収入・希少元素) が可能。80以上なら市民として迎えられる。制圧すると貢納を得るが、他の先住民の友好度が下がる。制圧後は奴隷化・家畜化もできる。</p>` : ''}
+    ${ind ? `<p class="note">拠点があると友好度は少しずつ上がる。40以上で惑星への入植と交易 (収入・希少元素) が可能。80以上なら市民として迎えられる。制圧すると貢納を得るが、他の先住民の友好度が下がる。制圧には軍艦が1隻以上と、軍艦+歩兵の戦力が必要。制圧後は奴隷化もできる。</p>` : ''}
     ${actions}${ruled}${kept}${free}
     ${g.infamy ? `<p class="note">帝国の悪名: ${g.infamy} (新たに出会う先住民の友好度がこのぶん低い)</p>` : ''}`;
 }
@@ -2393,17 +2637,18 @@ function shipsHtml(game) {
   const mig = game.migrants.length
     ? [`<div class="ship"><span style="color:#8fd3ff">移民船 ${game.migrants.length} 隻</span> <span class="muted">計 ${fmtPop(game.migrants.reduce((k, m) => k + m.n, 0))} (帝国タブ → 移民)</span></div>`]
     : [];
-  const all = [...jobs, ...ships, ...fleets, ...mig];
+  const troops = game.troopMoves.map((m) => `<div class="ship">${esc(game.colonyByKey(m.from)?.name || '?')} → ${esc(game.colonyByKey(m.to)?.name || '?')} <span style="color:#ff9f8f">歩兵 ${m.troops + m.slave}連隊</span>${bar({ depart: m.times[0], arrive: m.arrive })}</div>`);
+  const all = [...jobs, ...ships, ...fleets, ...troops, ...mig];
   return all.length ? all.join('') : '<span class="muted">航行中の船なし</span>';
 }
 
 // 帝国タブ: 全星系の人口・資源・経済・軍事を一覧で管理する
-const EMPIRE_TABS = { overview: '概要', routes: '交易路', migration: '移民' };
+const EMPIRE_TABS = { overview: '概要', routes: '交易路', migration: '移民', military: '軍事' };
 
 function empireHtml(app) {
   const t = app.empireTab || 'overview';
   const chips = `<div class="chips">${Object.entries(EMPIRE_TABS).map(([k, l]) => `<button data-act="etab" data-t="${k}" class="${k === t ? 'on' : ''}">${l}</button>`).join('')}</div>`;
-  const body = t === 'routes' ? routesSheet(app) : t === 'migration' ? migrationSheet(app) : empireOverview(app);
+  const body = t === 'routes' ? routesSheet(app) : t === 'migration' ? migrationSheet(app) : t === 'military' ? militarySheet(app) : empireOverview(app);
   return `<h2>帝国</h2>${chips}${body}`;
 }
 
@@ -2512,13 +2757,14 @@ function empireOverview(app) {
       <td>${fmtPop(c.pop)}</td><td class="muted">${fmtPop(g.capOf(c))}</td>
       <td class="${(c.growth || 0) < 0 ? 'bad' : 'hz'}">${((c.growth || 0) * 100).toFixed(1)}%</td>
       <td class="${low < 0.99 ? 'bad' : ''}">${pct(low)}</td><td class="${s.goods < 0.99 ? 'bad' : ''}">${pct(s.goods)}</td>
-      <td><select data-act="focus" data-col="${colKey(c)}">${Object.entries(FOCUS).map(([k, f]) => `<option value="${k}" ${k === c.focus ? 'selected' : ''}>${f.label}</option>`).join('')}</select></td></tr>`;
+      <td><select data-act="focus" data-col="${colKey(c)}">${Object.entries(FOCUS).map(([k, f]) => `<option value="${k}" ${k === c.focus ? 'selected' : ''}>${f.label}</option>`).join('')}</select></td>
+      <td>${speciesCell(g, c)}</td></tr>`;
   }).join('');
   const bulk = `<div class="bulk">全入植地の方針を
     <select data-act="bulkfocus">${Object.entries(FOCUS).map(([k, f]) => `<option value="${k}" ${k === (app.bulkFocus || 'balanced') ? 'selected' : ''}>${f.label}</option>`).join('')}</select>
     <button data-act="bulkfocus">一括で変更</button></div>`;
   const popTable = `<h3>人口と入植地</h3>${bulk}<div class="scroll"><table class="tbl">
-    <tr><th>入植地</th><th>星系</th><th>種類</th><th>人口</th><th>上限</th><th>増加/年</th><th>生活物資</th><th>工業品</th><th>方針</th></tr>${colonies}</table></div>`;
+    <tr><th>入植地</th><th>星系</th><th>種類</th><th>人口</th><th>上限</th><th>増加/年</th><th>生活物資</th><th>工業品</th><th>方針</th><th>種族 (この惑星)</th></tr>${colonies}</table></div>`;
 
   const totals = zeroRes();
   const totalNet = zeroRes();
@@ -2536,6 +2782,21 @@ function empireOverview(app) {
     <tr class="total"><td>合計</td><td></td>${RES.map((r) => `<td>${fmtAmt(totals[r])} <small>${signed(totalNet[r])}</small></td>`).join('')}</tr></table></div>
     <p class="note">増減は生産−需要。交易路での出入りは含まない。</p>`;
 
+  return `${kpi}${ledger}${popTable}${resTable}`;
+}
+
+// 惑星ごとの種族数と内訳 (住民の種族・同じ惑星の先住民)
+function speciesCell(g, c) {
+  const list = g.speciesOf(c.sys, c.body);
+  const names = new Set(list.map((x) => x.name));
+  return `<b>${names.size}</b> 種族 <span class="muted">${list.slice(0, 4).map((x) => `${esc(x.name)} ${fmtPop(x.pop)}${x.role === '市民' ? '' : ` (${x.role})`}`).join('・')}${list.length > 4 ? ' …' : ''}</span>`;
+}
+
+// 帝国 → 軍事: 軍艦と歩兵
+function militarySheet(app) {
+  const g = app.game;
+  const goto = (s) => `<button data-act="goto" data-sys="${s.id}">${esc(s.name)}</button>`;
+  const systems = g.colonizedSystems();
   const milIds = [...new Set([...systems.map((s) => s.id), ...Object.keys(g.garrison).map(Number).filter((id) => g.garrison[id] > 0)])];
   const milRows = milIds.map((id) => {
     const s = g.system(id);
@@ -2547,11 +2808,34 @@ function empireOverview(app) {
     return `<tr><td>${goto(s)}</td><td><b>${n}</b> 隻${coming ? ` <span class="muted">(+${coming} 向かっている)</span>` : ''}</td><td>${build}</td>
       <td><button data-act="rally" data-sys="${id}">全艦をここへ集結</button></td></tr>`;
   }).join('');
-  const milTable = `<h3>軍事</h3>${defenseToggle(g)}<div class="scroll"><table class="tbl">
+  const milTable = `<h3>軍艦</h3>${defenseToggle(g)}<div class="scroll"><table class="tbl">
     <tr><th>星系</th><th>駐留</th><th>軍艦の建造</th><th></th></tr>${milRows}</table></div>
     ${g.year < PIRATE_START ? `<p class="note">宇宙海賊は ${PIRATE_START} 年から現れる。</p>` : ''}`;
 
-  return `${kpi}${ledger}${popTable}${resTable}${milTable}`;
+  const troopRows = [...g.colonies].sort((a, b) => (b.troops + b.slaveTroops) - (a.troops + a.slaveTroops) || b.pop - a.pop).map((c) => {
+    const key = colKey(c);
+    const coming = g.troopMoves.filter((m) => m.to === key).reduce((k, m) => k + m.troops + m.slave, 0);
+    const train = costButton(g, `data-act="train" data-col="${key}"`, '訓練', TROOP_COST, c.sys,
+      c.lv.barracks < 1 ? '教練所なし' : busyText(g, (j) => j.type === 'troop' && j.col === key));
+    return `<tr><td><button data-act="gobody" data-sys="${c.sys}" data-body="${esc(c.body)}">${esc(c.name)}</button></td>
+      <td>Lv${c.lv.barracks}</td><td><b>${c.troops}</b></td><td>${c.slaveTroops}</td><td>${coming || ''}</td>
+      <td>${train}</td><td><button data-act="troopsrally" data-to="${key}">全歩兵をここへ</button></td></tr>`;
+  }).join('');
+  const moves = g.troopMoves.map((m) => `<tr><td>${esc(g.colonyByKey(m.from)?.name || '?')} → ${esc(g.colonyByKey(m.to)?.name || '?')}</td>
+    <td>${m.troops} + 奴隷兵 ${m.slave}</td><td>${m.path.length - 1} 本の交易路</td><td>あと ${Math.max(0, m.arrive - g.year).toFixed(1)} 年</td></tr>`).join('');
+  const fleets = g.fleets.map((f) => `<tr><td>${esc(g.system(f.from).name)} → ${esc(g.system(f.to).name)}</td><td>${f.n} 隻</td><td>あと ${Math.max(0, f.arrive - g.year).toFixed(1)} 年</td></tr>`).join('');
+  return `<div class="kpi">
+      <div><span>軍艦</span><b>${g.warships()} 隻</b><span>維持費 ${fmtAmt(g.warships() * WARSHIP_UPKEEP)} cr/年</span></div>
+      <div><span>歩兵</span><b>${g.troopCount()} 連隊</b><span>維持費 ${fmtAmt(g.troopUpkeep())} cr/年</span></div>
+      <div><span>海賊の最大戦力</span><b>${g.year < PIRATE_START ? '—' : g.pirateMax()}</b><span>${g.year < PIRATE_START ? `${PIRATE_START}年から出現` : '40年ごとに増える'}</span></div>
+      <div><span>悪名</span><b>${g.infamy}</b><span>先住民の友好度に影響</span></div>
+    </div>
+    ${milTable}
+    <h3>歩兵</h3>
+    <p class="note">歩兵は入植地ごとに駐留し、交易路を通って移動する。軍事教練所 (惑星・ステーションの施設) で訓練するか、軍事奴隷から徴集する。先住民の制圧、奴隷の反乱の抑止、海賊からの地上防衛に使う。</p>
+    <div class="scroll"><table class="tbl"><tr><th>入植地</th><th>教練所</th><th>歩兵</th><th>奴隷兵</th><th>向かっている</th><th>訓練</th><th></th></tr>${troopRows}</table></div>
+    <h3>移動中の歩兵</h3>${moves ? `<div class="scroll"><table class="tbl">${moves}</table></div>` : '<p class="note">なし</p>'}
+    <h3>移動中の艦隊</h3>${fleets ? `<div class="scroll"><table class="tbl">${fleets}</table></div>` : '<p class="note">なし</p>'}`;
 }
 
 const EVENT_KIND = { famine: '飢餓・水不足', shortage: '資源不足', pirate: '海賊', natives: '先住民', colony: '入植', migration: '移民' };
@@ -2606,7 +2890,11 @@ function candidatesHtml(app) {
     const c = g.check(sys.id, b.id, kind);
     const send = costButton(g, `data-act="candsend" data-sys="${sys.id}" data-body="${esc(b.id)}" data-kind="${kind}" data-from="${from.id}"`,
       kind === 'planet' ? '入植船' : 'ステーション', SHIP_COST[kind], from.id, c.ok ? '' : c.reason);
-    return `<tr><td><button data-act="gobody" data-sys="${sys.id}" data-body="${esc(b.id)}">${esc(b.name)}</button></td>
+    const ship = g.ships.find((x) => x.to === sys.id && x.body === b.id);
+    const prep = g.projects.find((j) => j.type === 'ship' && j.to === sys.id && j.body === b.id);
+    const status = ship ? `<span class="tag colony">入植船 航行中</span> <span class="muted">あと ${(ship.arrive - g.year).toFixed(1)} 年</span>`
+      : prep ? `<span class="tag shortage">入植船 準備中</span> <span class="muted">あと ${(prep.ready - g.year).toFixed(1)} 年</span>` : '';
+    return `<tr class="${ship || prep ? 'enroute' : ''}"><td><button data-act="gobody" data-sys="${sys.id}" data-body="${esc(b.id)}">${esc(b.name)}</button>${status ? `<br>${status}` : ''}</td>
       <td>${d.toFixed(1)} ly <span class="muted">(${esc(from.name)})</span></td><td>${TYPE_LABEL[b.type]}</td>
       <td>${solid ? `<b class="grade g${grade}">${GRADE_LABEL[grade]}</b>` : '<span class="muted">地表なし</span>'}</td>
       <td>${solid ? `${Math.round(b.tSurf - 273)} ℃` : '—'}</td><td>${fmt(b.gravity)} g</td>
@@ -2621,14 +2909,14 @@ function candidatesHtml(app) {
     <div class="scroll"><table class="tbl">
       <tr><th>天体</th><th>最寄りの入植地から</th><th>種類</th><th>入植適性</th><th>気温</th><th>重力</th><th>大気圧</th><th>先住民</th><th>資源</th><th>入植船を送る</th></tr>
       ${body}</table></div>
-    <p class="note">入植船は最寄りの入植地から出る。地表に入植できない天体には宇宙ステーションを送る。</p>`;
+    <p class="note">入植船は最寄りの入植地から出る。地表に入植できない天体には宇宙ステーションを送る。入植船が向かっている天体は色付きで、到着までの年数を表示する。</p>`;
 }
 
 const SHEETS = { empire: empireHtml, events: eventsHtml, cands: candidatesHtml };
 
 function treasuryHtml(g) {
   const inc = g.income();
-  return `💰 ${fmtAmt(g.credits)} cr <span class="${inc < 0 ? 'bad' : 'hz'}">(${inc >= 0 ? '+' : ''}${fmtAmt(inc)}/年)</span> ・ 人口 ${fmtPop(g.totalPop())} ・ 軍艦 ${g.warships()}`;
+  return `💰 ${fmtAmt(g.credits)} cr <span class="${inc < 0 ? 'bad' : 'hz'}">(${inc >= 0 ? '+' : ''}${fmtAmt(inc)}/年)</span> ・ 人口 ${fmtPop(g.totalPop())} ・ 軍艦 ${g.warships()} ・ 歩兵 ${g.troopCount()}`;
 }
 
 function ledgerHtml(g) {
@@ -2748,7 +3036,7 @@ function buildSave(game, extra = {}) {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, events: game.events,
-    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, autoBuild: game.autoBuild, migration: game.migration, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, autoBuild: game.autoBuild, migration: game.migration, troopMoves: game.troopMoves, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
 }
@@ -2854,9 +3142,12 @@ function onPanelClick(e) {
     gift: () => g.gift(sys, body),
     integrate: () => g.integrate(sys, body),
     conquer: () => g.conquer(sys, body),
-    enslave: () => g.treat(sys, body, 'enslaved'),
-    domesticate: () => g.treat(sys, body, 'livestock'),
+    enslave: () => g.enslave(sys, body),
+    slavetype: () => g.setSlaveType(sys, body, btn.dataset.type),
     liberate: () => g.liberate(sys, body),
+    train: () => g.trainTroop(g.colonyByKey(btn.dataset.col)),
+    troopsend: () => g.sendTroops(btn.dataset.from, btn.dataset.to, btn.dataset.n === 'all' ? Infinity : Number(btn.dataset.n)),
+    troopsrally: () => g.rallyTroops(btn.dataset.to),
     rally: () => g.rally(sys),
     route2: () => g.openRoute(Number(btn.dataset.a), Number(btn.dataset.b)),
     candsend: () => g.dispatch(Number(btn.dataset.from), sys, body, kind),
@@ -2878,6 +3169,7 @@ function onPanelChange(e) {
   else if (act === 'bulkfocus') app.bulkFocus = v;
   else if (act === 'candonly') app.candOnly = e.target.checked;
   else if (act === 'ra') app.routeA = Number(v);
+  else if (act === 'torigin') app.troopOrigin = v;
   else if (act === 'rb') app.routeB = Number(v);
   else if (act === 'autohabitat') {
     app.game.autoHabitat = e.target.checked;
