@@ -617,6 +617,7 @@ function addExtras(galaxy) {
 
 
 const SHIP_SPEED = 1.0; // 船の速度 [ly/年] = 光速 (1c)
+const OFFROUTE_SPEED = 0.9; // 交易路の外を飛ぶときの速度 (軍艦・入植船)。交易路上は光速
 const START_YEAR = 2300;
 const START_CREDITS = 1000;
 const STEP = 0.25; // 経済シミュレーションの刻み[年]
@@ -802,9 +803,11 @@ class Game {
       const local = Math.min(Math.max(this.stockOf(sysId)[r], 0), need);
       if (local > 0) { plan.push({ from: sysId, r, amt: local }); need -= local; }
       if (need <= 1e-9) continue;
+      // 資材輸送船は交易路しか通れないので、交易路でつながった星系からだけ取り寄せる
+      const { dist } = this.reach(sysId);
       const sources = this.colonizedSystems()
-        .filter((s) => s.id !== sysId)
-        .map((s) => ({ id: s.id, d: this.voyage(s.id, sysId).years, spare: this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) }))
+        .filter((s) => s.id !== sysId && dist[s.id] !== undefined)
+        .map((s) => ({ id: s.id, d: dist[s.id], spare: this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) }))
         .filter((x) => x.spare > 0)
         .sort((a, b) => a.d - b.d);
       for (const x of sources) {
@@ -814,7 +817,7 @@ class Game {
         eta = Math.max(eta, x.d);
         if (need <= 1e-9) break;
       }
-      if (need > 1e-6) return { why: `帝国全体で${RES_LABEL[r]}が不足` };
+      if (need > 1e-6) return { why: `${RES_LABEL[r]}が不足 (交易路でつながった星系を含めても足りない)` };
     }
     return { why: '', eta, plan };
   }
@@ -880,7 +883,7 @@ class Game {
     return this.order(SHIP_COST[kind], fromId, { type: 'ship', to: toId, body: bodyId, kind, label });
   }
   launch(fromId, toId, bodyId, kind) {
-    const v = this.voyage(fromId, toId);
+    const v = this.voyage(fromId, toId, OFFROUTE_SPEED);
     const years = v.years;
     const ship = {
       id: this.nextShipId++, from: fromId, to: toId, body: bodyId, kind,
@@ -1040,12 +1043,14 @@ class Game {
     if (!this.hasShipyard(sysId)) return fail('造船所がない');
     return this.order(WARSHIP_COST, sysId, { type: 'warship', label: `${this.system(sysId).name} の軍艦` });
   }
+  // 軍艦は直行する。交易路が直接結ぶ区間なら光速、それ以外は 0.9c
+  fleetYears(from, to) { return this.travelYears(from, to) / (this.routeBetween(from, to) ? 1 : OFFROUTE_SPEED); }
   sendFleet(from, to, n, prefix = '') {
     const have = this.garrison[from] || 0;
     n = Math.min(n, have);
     if (from === to || n < 1) return fail('派遣できる軍艦がない');
     this.garrison[from] = have - n;
-    const years = this.travelYears(from, to);
+    const years = this.fleetYears(from, to);
     this.fleets.push({ id: this.nextShipId++, from, to, n, depart: this.year, arrive: this.year + years });
     this.message(`${prefix}${this.system(from).name} → ${this.system(to).name} へ艦隊 ${n} 隻が出撃 (到着まで ${years.toFixed(2)} 年)`);
     return { ok: true };
@@ -1137,7 +1142,7 @@ class Game {
       let gap = this.defenseGap(t.id);
       const sources = Object.keys(this.garrison).map(Number)
         .filter((id) => id !== t.id && spareOf(id) > 0)
-        .sort((a, b) => this.travelYears(a, t.id) - this.travelYears(b, t.id));
+        .sort((a, b) => this.fleetYears(a, t.id) - this.fleetYears(b, t.id));
       for (const id of sources) {
         if (gap <= 0) break;
         const n = Math.min(gap, spareOf(id));
@@ -1809,7 +1814,7 @@ class Game {
   }
   // 軍事以外の船の航路: 交易路をたどり、目的地に最も近い星系まで行ってから最後だけ直行する。
   // 目的地が交易路網の中なら全区間が交易路。戻り値の times は出発からの経過年数
-  voyage(a, b) {
+  voyage(a, b, offSpeed = 1) {
     if (a === b) return { path: [a], times: [0], years: 0 };
     const { dist, prev } = this.reach(a);
     let end = a;
@@ -1822,7 +1827,10 @@ class Game {
     while (path[0] !== a) path.unshift(prev[path[0]]);
     if (end !== b) path.push(b);
     const times = [0];
-    for (let i = 1; i < path.length; i++) times.push(times[i - 1] + this.travelYears(path[i - 1], path[i]));
+    for (let i = 1; i < path.length; i++) {
+      const onRoute = !!this.routeBetween(path[i - 1], path[i]);
+      times.push(times[i - 1] + this.travelYears(path[i - 1], path[i]) / (onRoute ? 1 : offSpeed));
+    }
     return { path, times, years: times[times.length - 1] };
   }
   // 経路 (星系の列) と各星系に着く年から現在位置を求める
@@ -2469,12 +2477,12 @@ function militaryBox(app, sys) {
     : '';
   const send = origins.length
     ? `<label class="field">艦隊の出発地
-        <select data-act="forigin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === from ? 'selected' : ''}>${esc(o.s.name)} (${o.k}隻・${g.travelYears(o.s.id, sys.id).toFixed(1)} 年)</option>`).join('')}</select></label>
+        <select data-act="forigin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === from ? 'selected' : ''}>${esc(o.s.name)} (${o.k}隻・${g.fleetYears(o.s.id, sys.id).toFixed(1)} 年)</option>`).join('')}</select></label>
        <div class="btns"><button data-act="fleet" data-from="${from}" data-n="1">1隻をここへ</button><button data-act="fleet" data-from="${from}" data-n="all">全艦をここへ</button></div>`
     : '';
   const queued = g.projects.filter((j) => j.type === 'warship' && j.sys === sys.id).length;
   return `<h3>軍事</h3>
-    <p class="note">駐留艦 <b>${n}</b> 隻${queued ? ` (建造中 ${queued} 隻)` : ''}。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1隻あたり維持費 ${WARSHIP_UPKEEP} cr/年</p>
+    <p class="note">駐留艦 <b>${n}</b> 隻${queued ? ` (建造中 ${queued} 隻)` : ''}。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1隻あたり維持費 ${WARSHIP_UPKEEP} cr/年。艦隊は直行し、交易路が直接結ぶ区間は光速、それ以外は 0.9c</p>
     ${build}${send}${defenseToggle(g)}`;
 }
 
@@ -2663,10 +2671,10 @@ function nativesBox(app, sys, b) {
 function dispatchBox(app, sys, b) {
   const g = app.game;
   const origins = g.colonizedSystems()
-    .map((s) => ({ s, t: g.voyage(s.id, sys.id).years }))
+    .map((s) => ({ s, t: g.voyage(s.id, sys.id, OFFROUTE_SPEED).years }))
     .sort((a, c) => a.t - c.t);
   const sel = app.originId !== undefined && origins.some((o) => o.s.id === app.originId) ? app.originId : origins[0].s.id;
-  const v = g.voyage(sel, sys.id);
+  const v = g.voyage(sel, sys.id, OFFROUTE_SPEED);
   const t = v.years;
   const btn = (kind) => {
     const c = g.check(sys.id, b.id, kind);
@@ -2675,7 +2683,7 @@ function dispatchBox(app, sys, b) {
   return `<h3>入植船を送る</h3>
     <label class="field">出発地
       <select data-act="origin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === sel ? 'selected' : ''}>${esc(o.s.name)} (${o.t < 0.01 ? '星系内' : `${o.t.toFixed(1)} 年`})</option>`).join('')}</select></label>
-    <p class="note">入植船は光速で、交易路をたどって目的地に最も近い星系まで行き、最後だけ直行する${v.path.length > 2 ? ` (経由: ${v.path.slice(1, -1).map((id) => esc(g.system(id).name)).join(' → ')})` : ''}。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>。費用は出発地の備蓄から払う。</p>
+    <p class="note">入植船は交易路をたどって (光速) 目的地に最も近い星系まで行き、最後だけ交易路の外を 0.9c で直行する${v.path.length > 2 ? ` (経由: ${v.path.slice(1, -1).map((id) => esc(g.system(id).name)).join(' → ')})` : ''}。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>。費用は出発地の備蓄から払う。</p>
     <div class="btns">${btn('station')}${btn('planet')}</div>`;
 }
 
