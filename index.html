@@ -804,7 +804,7 @@ class Game {
       if (need <= 1e-9) continue;
       const sources = this.colonizedSystems()
         .filter((s) => s.id !== sysId)
-        .map((s) => ({ id: s.id, d: this.travelYears(s.id, sysId), spare: this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) }))
+        .map((s) => ({ id: s.id, d: this.voyage(s.id, sysId).years, spare: this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) }))
         .filter((x) => x.spare > 0)
         .sort((a, b) => a.d - b.d);
       for (const x of sources) {
@@ -828,6 +828,10 @@ class Game {
     Object.assign(job, {
       id: this.nextShipId++, sys: sysId, start: this.year, ready: this.year + p.eta,
       from: [...new Set(p.plan.filter((x) => x.from !== sysId).map((x) => x.from))],
+      legs: [...new Set(p.plan.filter((x) => x.from !== sysId).map((x) => x.from))].map((f) => {
+        const v = this.voyage(f, sysId);
+        return { path: v.path, times: v.times.map((t) => this.year + t) };
+      }),
     });
     this.projects.push(job);
     this.message(`${job.label}: 資材を周辺の星系から搬入中 (完成まで ${p.eta.toFixed(1)} 年)`);
@@ -876,13 +880,15 @@ class Game {
     return this.order(SHIP_COST[kind], fromId, { type: 'ship', to: toId, body: bodyId, kind, label });
   }
   launch(fromId, toId, bodyId, kind) {
-    const years = this.travelYears(fromId, toId);
+    const v = this.voyage(fromId, toId);
+    const years = v.years;
     const ship = {
       id: this.nextShipId++, from: fromId, to: toId, body: bodyId, kind,
+      path: v.path, times: v.times.map((t) => this.year + t),
       depart: this.year, arrive: this.year + years,
     };
     this.ships.push(ship);
-    this.message(`${this.system(fromId).name} → ${this.system(toId).name} へ入植船が出発 (${KIND_LABEL[kind]}、到着まで ${years.toFixed(2)} 年)`);
+    this.message(`${this.system(fromId).name} → ${this.system(toId).name} へ入植船が出発 (${KIND_LABEL[kind]}、${v.path.length > 2 ? `交易路経由、` : ''}到着まで ${years.toFixed(2)} 年)`);
     return { ok: true, ship };
   }
 
@@ -1182,7 +1188,7 @@ class Game {
       const want = c.pop * (ratio >= 1 ? 0.05 : 0.03);
       const dests = this.colonies
         .filter((d) => d !== c && (d.sat?.food ?? 1) >= 0.99 && (!this.needsWater(d) || (d.sat?.water ?? 1) >= 0.99))
-        .map((d) => ({ d, room: this.capOf(d) * 0.8 - d.pop - this.migrantsTo(d), t: this.travelYears(c.sys, d.sys) }))
+        .map((d) => ({ d, room: this.capOf(d) * 0.8 - d.pop - this.migrantsTo(d), t: this.voyage(c.sys, d.sys).years }))
         .filter((x) => x.room > 0.001)
         .sort((a, b) => b.room / (1 + b.t / 10) - a.room / (1 + a.t / 10));
       if (!dests.length) continue;
@@ -1191,7 +1197,9 @@ class Game {
       if (n < 0.001) continue;
       c.pop -= n;
       c.migOut = (c.migOut || 0) + n;
-      this.migrants.push({ id: this.nextShipId++, from: colKey(c), to: colKey(d), fromSys: c.sys, toSys: d.sys, n, races: { ...(c.races || { [HUMAN]: 1 }) }, depart: this.year, arrive: this.year + t });
+      const v = this.voyage(c.sys, d.sys);
+      this.migrants.push({ id: this.nextShipId++, from: colKey(c), to: colKey(d), fromSys: c.sys, toSys: d.sys, n, races: { ...(c.races || { [HUMAN]: 1 }) },
+        path: v.path, times: v.times.map((x) => this.year + x), depart: this.year, arrive: this.year + t });
     }
   }
 
@@ -1777,6 +1785,54 @@ class Game {
     this.log.length = Math.min(this.log.length, 30);
   }
 
+  // 交易路網での最短距離 (出発地ごとにキャッシュ。交易路が増えたら作り直す)
+  reach(a) {
+    const sig = this.routes.length;
+    if (this.reachCache?.sig !== sig) this.reachCache = { sig, map: {} };
+    if (this.reachCache.map[a]) return this.reachCache.map[a];
+    const dist = { [a]: 0 };
+    const prev = {};
+    const done = new Set();
+    for (;;) {
+      let u = null;
+      for (const k of Object.keys(dist)) if (!done.has(+k) && (u === null || dist[k] < dist[u])) u = +k;
+      if (u === null) break;
+      done.add(u);
+      for (const r of this.routes) {
+        const v = r.a === u ? r.b : r.b === u ? r.a : null;
+        if (v === null) continue;
+        const d = dist[u] + this.travelYears(u, v);
+        if (dist[v] === undefined || d < dist[v]) { dist[v] = d; prev[v] = u; }
+      }
+    }
+    return (this.reachCache.map[a] = { dist, prev });
+  }
+  // 軍事以外の船の航路: 交易路をたどり、目的地に最も近い星系まで行ってから最後だけ直行する。
+  // 目的地が交易路網の中なら全区間が交易路。戻り値の times は出発からの経過年数
+  voyage(a, b) {
+    if (a === b) return { path: [a], times: [0], years: 0 };
+    const { dist, prev } = this.reach(a);
+    let end = a;
+    for (const k of Object.keys(dist).map(Number)) {
+      const d = distance(this.system(k), this.system(b));
+      const best = distance(this.system(end), this.system(b));
+      if (d < best - 1e-9 || (Math.abs(d - best) < 1e-9 && dist[k] < dist[end])) end = k;
+    }
+    const path = [end];
+    while (path[0] !== a) path.unshift(prev[path[0]]);
+    if (end !== b) path.push(b);
+    const times = [0];
+    for (let i = 1; i < path.length; i++) times.push(times[i - 1] + this.travelYears(path[i - 1], path[i]));
+    return { path, times, years: times[times.length - 1] };
+  }
+  // 経路 (星系の列) と各星系に着く年から現在位置を求める
+  pathPosition(path, times) {
+    let i = 0;
+    while (i < path.length - 2 && this.year >= times[i + 1]) i++;
+    if (path.length < 2) return { x: this.system(path[0]).x, y: this.system(path[0]).y };
+    return this.shipPosition({ from: path[i], to: path[i + 1], depart: times[i], arrive: times[i + 1] });
+  }
+
   // 船・艦隊の現在位置 (from→to を直線で移動)
   shipPosition(s) {
     const a = this.system(s.from);
@@ -1980,8 +2036,10 @@ class GalaxyView {
     // 建設資材の輸送船
     ctx.fillStyle = '#ffd24d';
     for (const j of game.projects) {
-      for (const from of j.from) {
-        const pos = game.shipPosition({ from, to: j.sys, depart: j.start, arrive: j.start + game.travelYears(from, j.sys) });
+      const legs = j.legs || j.from.map((from) => ({ path: [from, j.sys], times: [j.start, j.start + game.travelYears(from, j.sys)] }));
+      for (const l of legs) {
+        if (game.year > l.times[l.times.length - 1]) continue;
+        const pos = game.pathPosition(l.path, l.times);
         const [px, py] = this.toScreen(pos.x, pos.y);
         ctx.beginPath(); ctx.moveTo(px, py - 3); ctx.lineTo(px + 3, py); ctx.lineTo(px, py + 3); ctx.lineTo(px - 3, py); ctx.fill();
       }
@@ -2001,22 +2059,22 @@ class GalaxyView {
     ctx.fillStyle = '#8fd3ff';
     for (const m of game.migrants) {
       if (m.fromSys === m.toSys) continue;
-      const pos = game.shipPosition({ from: m.fromSys, to: m.toSys, depart: m.depart, arrive: m.arrive });
+      const pos = m.path ? game.pathPosition(m.path, m.times) : game.shipPosition({ from: m.fromSys, to: m.toSys, depart: m.depart, arrive: m.arrive });
       const [px, py] = this.toScreen(pos.x, pos.y);
       ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI * 2); ctx.fill();
     }
 
     // 入植船
     for (const s of game.ships) {
-      const a = game.system(s.from);
-      const b = game.system(s.to);
-      const [ax, ay] = this.toScreen(a.x, a.y);
-      const [bx, by] = this.toScreen(b.x, b.y);
-      const p = game.shipPosition(s);
+      const path = s.path || [s.from, s.to];
+      const times = s.times || [s.depart, s.arrive];
+      const p = game.pathPosition(path, times);
       const [px, py] = this.toScreen(p.x, p.y);
       ctx.strokeStyle = 'rgba(255,170,60,0.45)';
       ctx.setLineDash([3, 4]);
-      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      ctx.beginPath();
+      path.forEach((id, i) => { const [x, y] = this.toScreen(game.system(id).x, game.system(id).y); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+      ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = '#ffb347';
       ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI * 2); ctx.fill();
@@ -2605,10 +2663,11 @@ function nativesBox(app, sys, b) {
 function dispatchBox(app, sys, b) {
   const g = app.game;
   const origins = g.colonizedSystems()
-    .map((s) => ({ s, t: g.travelYears(s.id, sys.id) }))
+    .map((s) => ({ s, t: g.voyage(s.id, sys.id).years }))
     .sort((a, c) => a.t - c.t);
   const sel = app.originId !== undefined && origins.some((o) => o.s.id === app.originId) ? app.originId : origins[0].s.id;
-  const t = g.travelYears(sel, sys.id);
+  const v = g.voyage(sel, sys.id);
+  const t = v.years;
   const btn = (kind) => {
     const c = g.check(sys.id, b.id, kind);
     return costButton(g, `data-act="send" data-kind="${kind}"`, `${KIND_LABEL[kind]}を建設`, SHIP_COST[kind], sel, c.ok ? '' : c.reason);
@@ -2616,7 +2675,7 @@ function dispatchBox(app, sys, b) {
   return `<h3>入植船を送る</h3>
     <label class="field">出発地
       <select data-act="origin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === sel ? 'selected' : ''}>${esc(o.s.name)} (${o.t < 0.01 ? '星系内' : `${o.t.toFixed(1)} 年`})</option>`).join('')}</select></label>
-    <p class="note">入植船は光速で航行。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>。費用は出発地の備蓄から払う。</p>
+    <p class="note">入植船は光速で、交易路をたどって目的地に最も近い星系まで行き、最後だけ直行する${v.path.length > 2 ? ` (経由: ${v.path.slice(1, -1).map((id) => esc(g.system(id).name)).join(' → ')})` : ''}。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>。費用は出発地の備蓄から払う。</p>
     <div class="btns">${btn('station')}${btn('planet')}</div>`;
 }
 
