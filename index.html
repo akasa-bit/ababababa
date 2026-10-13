@@ -741,12 +741,14 @@ class Game {
   income() { return Object.values(this.ledger).reduce((s, v) => s + v, 0); }
 
   // --- 調査と先住民 ---
-  isSurveyed(sysId) { return this.surveyed.includes(sysId); }
+  // 先住民の有無・文明は天体観測で入植前から分かる (直接の接触は入植地か艦隊が到達したとき)
+  isSurveyed() { return true; }
+  contacted(sysId) { return this.surveyed.includes(sysId); }
   survey(sysId) {
-    if (this.isSurveyed(sysId)) return;
+    if (this.contacted(sysId)) return;
     this.surveyed.push(sysId);
     for (const b of this.system(sysId).bodies) {
-      if (b.natives) this.event('natives', sysId, `${b.name} で先住民「${b.natives.species}」(${TECH_LABEL[b.natives.tech]}) を発見した`);
+      if (b.natives) this.event('natives', sysId, `${b.name} で先住民「${b.natives.species}」(${TECH_LABEL[b.natives.tech]}) と接触した`);
     }
   }
   nativeOf(sysId, bodyId) {
@@ -1885,7 +1887,7 @@ class Game {
     }
     if (Number.isFinite(d.infamy)) this.infamy = d.infamy;
     this.surveyed = Array.isArray(d.surveyed) ? d.surveyed.filter(sysOk) : [];
-    for (const c of this.colonies) if (!this.isSurveyed(c.sys)) this.surveyed.push(c.sys);
+    for (const c of this.colonies) if (!this.contacted(c.sys)) this.surveyed.push(c.sys);
     return true;
   }
 
@@ -3187,7 +3189,7 @@ function candidatesHtml(app) {
   const stars = (v) => '★'.repeat(clamp(Math.ceil(v / 0.6), 1, 4));
   const body = rows.slice(0, 100).map(({ sys, b, grade, from, d }) => {
     const solid = b.type === 'rocky' || b.type === 'dwarf';
-    let nat = '<span class="muted">未調査</span>';
+    let nat = 'なし';
     if (g.isSurveyed(sys.id)) {
       const n = g.nativeOf(sys.id, b.id);
       nat = n ? `<span class="nat">${esc(n.def.species)}</span> <span class="muted">${nativeStatus(n)}</span>` : 'なし';
