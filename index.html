@@ -886,7 +886,7 @@ class Game {
       else this.outposts.push({ sys: job.sys, body: job.body, lv: 1 });
       this.message(`${this.target(job.sys, job.body).name} の採掘基地が Lv${o ? o.lv : 1} になった`);
     } else if (job.type === 'ship') {
-      this.launch(job.sys, job.to, job.body, job.kind);
+      this.launch(job.sys, job.to, job.body, job.kind, job.supplies);
     }
   }
 
@@ -899,14 +899,24 @@ class Game {
     if (!c.ok) return c;
     if (!this.isColonized(fromId)) return fail('出発地に入植地がない');
     const label = `${this.target(toId, bodyId).name} への入植船 (${KIND_LABEL[kind]})`;
-    return this.order(SHIP_COST[kind], fromId, { type: 'ship', to: toId, body: bodyId, kind, label });
+    const cost = this.shipCost(kind, fromId, toId);
+    return this.order(cost, fromId, { type: 'ship', to: toId, body: bodyId, kind, label, supplies: { food: cost.food, water: cost.water } });
   }
-  launch(fromId, toId, bodyId, kind) {
+  // 入植船に積む食料と水。交易路を結んで物資移送要求の往復が回り出すまで (5年 + 出発地との往復の年数) を、
+  // 人口の伸びも見込んで2倍ぶん積む。到着すると入植先の備蓄になる
+  supplyYears(fromId, toId) { return 5 + 2 * this.travelYears(fromId, toId); }
+  shipSupplies(kind, fromId, toId) {
+    const y = this.supplyYears(fromId, toId);
+    const n = SETTLERS[kind];
+    return { food: Math.ceil(n * y * 2), water: Math.ceil(n * 0.1 * y * 2) };
+  }
+  shipCost(kind, fromId, toId) { return { ...SHIP_COST[kind], ...this.shipSupplies(kind, fromId, toId) }; }
+  launch(fromId, toId, bodyId, kind, supplies = {}) {
     const v = this.voyage(fromId, toId, OFFROUTE_SPEED);
     const years = v.years;
     const ship = {
       id: this.nextShipId++, from: fromId, to: toId, body: bodyId, kind,
-      path: v.path, times: v.times.map((t) => this.year + t),
+      path: v.path, times: v.times.map((t) => this.year + t), supplies,
       depart: this.year, arrive: this.year + years,
     };
     this.ships.push(ship);
@@ -1551,9 +1561,13 @@ class Game {
           this.message(`${t.name} の先住民に着陸を拒まれた。入植団は軌道上にとどまる`);
           kind = 'station';
         }
+        // 積んできた食料と水は入植先の備蓄に入る (入植できなくても荷は下ろす)
+        const st = this.stockOf(s.to);
+        for (const [r, v] of Object.entries(s.supplies || {})) st[r] += v;
         if (this.colonyAt(s.to, s.body, kind)) continue;
         this.addColony(s.to, s.body, kind, t.name);
-        this.event('colony', s.to, `${t.name} に${KIND_LABEL[kind]}を設立した (${this.system(s.to).name})`, true);
+        const sup = Object.entries(s.supplies || {}).filter(([, v]) => v > 0).map(([r, v]) => `${RES_LABEL[r]} ${fmtAmt(v)}`).join('・');
+        this.event('colony', s.to, `${t.name} に${KIND_LABEL[kind]}を設立した (${this.system(s.to).name})${sup ? `。積み荷: ${sup}` : ''}`, true);
       }
     }
     if (this.migrants.some((m) => m.arrive <= this.year)) {
@@ -2732,12 +2746,15 @@ function dispatchBox(app, sys, b) {
   const t = v.years;
   const btn = (kind) => {
     const c = g.check(sys.id, b.id, kind);
-    return costButton(g, `data-act="send" data-kind="${kind}"`, `${KIND_LABEL[kind]}を建設`, SHIP_COST[kind], sel, c.ok ? '' : c.reason);
+    return costButton(g, `data-act="send" data-kind="${kind}"`, `${KIND_LABEL[kind]}を建設`, g.shipCost(kind, sel, sys.id), sel, c.ok ? '' : c.reason);
   };
+  const sup = (kind) => g.shipSupplies(kind, sel, sys.id);
   return `<h3>入植船を送る</h3>
     <label class="field">出発地
       <select data-act="origin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === sel ? 'selected' : ''}>${esc(o.s.name)} (${o.t < 0.01 ? '星系内' : `${o.t.toFixed(1)} 年`})</option>`).join('')}</select></label>
     <p class="note">入植船は交易路をたどって (光速) 目的地に最も近い星系まで行き、最後だけ交易路の外を 0.9c で直行する${v.path.length > 2 ? ` (経由: ${v.path.slice(1, -1).map((id) => esc(g.system(id).name)).join(' → ')})` : ''}。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>。費用は出発地の備蓄から払う。</p>
+    <p class="note">入植船は食料と水を約 ${Math.round(g.supplyYears(sel, sys.id))} 年分 (交易路を結んで物資が届き始めるまでの見込み、人口の伸びも見込んで2倍) 積んでいき、入植先の備蓄にする。
+      惑星入植地: 食料 ${sup('planet').food}・水 ${sup('planet').water} / ステーション: 食料 ${sup('station').food}・水 ${sup('station').water}</p>
     <div class="btns">${btn('station')}${btn('planet')}</div>`;
 }
 
@@ -3031,7 +3048,7 @@ function candidatesHtml(app) {
     const kind = grade >= 1 ? 'planet' : 'station';
     const c = g.check(sys.id, b.id, kind);
     const send = costButton(g, `data-act="candsend" data-sys="${sys.id}" data-body="${esc(b.id)}" data-kind="${kind}" data-from="${from.id}"`,
-      kind === 'planet' ? '入植船' : 'ステーション', SHIP_COST[kind], from.id, c.ok ? '' : c.reason);
+      kind === 'planet' ? '入植船' : 'ステーション', g.shipCost(kind, from.id, sys.id), from.id, c.ok ? '' : c.reason);
     const ship = g.ships.find((x) => x.to === sys.id && x.body === b.id);
     const prep = g.projects.find((j) => j.type === 'ship' && j.to === sys.id && j.body === b.id);
     const status = ship ? `<span class="tag colony">入植船 航行中</span> <span class="muted">あと ${(ship.arrive - g.year).toFixed(1)} 年</span>`
