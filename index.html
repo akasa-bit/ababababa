@@ -33,6 +33,10 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #empire label.check { font-size:12px; color:var(--muted); display:inline-flex; gap:4px; align-items:center; }
 .kpi { display:flex; gap:10px; flex-wrap:wrap; } .kpi div { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:8px 12px; }
 .kpi b { display:block; font-size:18px; color:var(--fg); } .kpi span { font-size:11px; color:var(--muted); }
+#legend { position:absolute; right:10px; bottom:10px; background:rgba(13,18,29,.85); border:1px solid var(--line); border-radius:6px; padding:4px 10px; font-size:12px; }
+#legend summary { cursor:pointer; color:var(--muted); }
+#legend div { display:flex; align-items:center; gap:6px; margin:3px 0; }
+#legend i { display:inline-block; width:9px; height:9px; }
 #zoom { position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:6px; }
 #zoom button { min-width:46px; min-height:46px; font-size:18px; background:rgba(13,18,29,.85); }
 aside { width:340px; background:var(--panel); border-left:1px solid var(--line); padding:12px 14px; overflow-y:auto; }
@@ -116,6 +120,15 @@ html, body { height:100%; }
     <div id="stage">
       <canvas id="map"></canvas>
       <div id="empire" hidden></div>
+      <details id="legend"><summary>凡例</summary>
+        <div><i style="background:#ffb347;border-radius:50%"></i>入植船</div>
+        <div><i style="background:#ff7a6b;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>艦隊 (軍艦)</div>
+        <div><i style="background:#6fdc96"></i>交易の貨物船 (緑の線は交易路)</div>
+        <div><i style="background:#ffd24d;transform:rotate(45deg) scale(.8)"></i>資材輸送船</div>
+        <div><i style="background:#8fd3ff;border-radius:50%;transform:scale(.7)"></i>移民船</div>
+        <div><i style="background:#ff9f8f"></i>歩兵</div>
+        <div><i style="background:radial-gradient(#c9a2ff,transparent 70%)"></i>物資移送要求 (光速の通信)</div>
+      </details>
       <div id="zoom"><button id="zoom-in" aria-label="拡大">＋</button><button id="zoom-out" aria-label="縮小">－</button><button id="zoom-fit" aria-label="全体表示">全体</button></div>
     </div>
     <aside>
@@ -670,6 +683,7 @@ class Game {
     this.credits = START_CREDITS;
     this.stock = {}; // 星系ごとの備蓄。同じ星系の入植地は備蓄を共有する
     this.routes = []; // 交易路 { id, a, b, lv, transit: [A→Bの輸送中量, B→A], vol: [年あたり輸送量] }
+    this.requests = []; // 物資移送要求 { id, kind: 'trade'|'build', from (要求元), to (送り手), res, amt, sent, arrive, state }
     this.cargo = []; // 輸送中の貨物 { key, path: [経由する星系], times: [各星系に着く年], arrive, load }
     this.inbound = {}; // 星系ごとの、向かってくる荷の量 (保存しない。貨物から数え直す)
     this.garrison = { 0: 3 }; // 星系ごとの駐留軍艦数
@@ -807,7 +821,7 @@ class Game {
       const { dist } = this.reach(sysId);
       const sources = this.colonizedSystems()
         .filter((s) => s.id !== sysId && dist[s.id] !== undefined)
-        .map((s) => ({ id: s.id, d: dist[s.id], spare: this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) }))
+        .map((s) => ({ id: s.id, d: dist[s.id] + this.travelYears(sysId, s.id), spare: this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) }))
         .filter((x) => x.spare > 0)
         .sort((a, b) => a.d - b.d);
       for (const x of sources) {
@@ -831,11 +845,16 @@ class Game {
     Object.assign(job, {
       id: this.nextShipId++, sys: sysId, start: this.year, ready: this.year + p.eta,
       from: [...new Set(p.plan.filter((x) => x.from !== sysId).map((x) => x.from))],
+      // 物資移送要求が光速で取り寄せ元に届いてから、資材が交易路で出発する
       legs: [...new Set(p.plan.filter((x) => x.from !== sysId).map((x) => x.from))].map((f) => {
         const v = this.voyage(f, sysId);
-        return { path: v.path, times: v.times.map((t) => this.year + t) };
+        const go = this.year + this.travelYears(sysId, f);
+        return { path: v.path, times: v.times.map((t) => go + t) };
       }),
     });
+    for (const l of job.legs) {
+      this.requests.push({ id: this.nextShipId++, kind: 'build', from: sysId, to: l.path[0], job: job.id, label: job.label, sent: this.year, arrive: l.times[0], state: 'sending' });
+    }
     this.projects.push(job);
     this.message(`${job.label}: 資材を周辺の星系から搬入中 (完成まで ${p.eta.toFixed(1)} 年)`);
     return { ok: true };
@@ -934,60 +953,67 @@ class Game {
     return this.order(this.routeUpCost(r), r.a, { type: 'route', route: r.id, label: `${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路 Lv${r.lv + 1}` });
   }
 
-  // 交易網による自動輸送。交易路でつながっていれば、複数の交易路を乗り継いで運ぶ。
-  // 生産が需要に届かない資源について、受け手から近い順 (航行年数の合計) に余剰のある星系を探し、
-  // 最短経路で送る。各交易路の輸送量 (片道あたり) を区間ごとに消費する。
-  // 受け手の目標 = 需要 × (2年 + 航行年数)。輸送中の荷も数え、備蓄上限の8割は超えない。
+  // 交易網による自動輸送。情報は光速でしか伝わらないので、物資移送要求を介して動く。
+  // 1) 生産が需要に届かない星系は、交易路でつながった余剰のある星系へ「物資移送要求」を送る (光速で直進)
+  // 2) 要求が届いた星系が、交易路を乗り継いで荷を送る。交易路の輸送量が足りなければ待機して少しずつ送る
+  // 受け手の目標 = 需要 × (2年 + 要求の往復と航行の年数)。輸送中の荷と未処理の要求も数え、備蓄上限の8割は超えない。
   trade(h, flow) {
-    if (!this.routes.length) return;
-    const adj = {};
+    if (!this.routes.length) { this.requests = this.requests.filter((q) => q.kind !== 'trade'); return; }
     const room = {};
-    for (const r of this.routes) {
-      const y = this.travelYears(r.a, r.b);
-      (adj[r.a] ??= []).push({ to: r.b, r, dir: 0, y });
-      (adj[r.b] ??= []).push({ to: r.a, r, dir: 1, y });
-      room[`${r.id}:0`] = room[`${r.id}:1`] = this.routeCap(r) * h;
-    }
+    for (const r of this.routes) room[`${r.id}:0`] = room[`${r.id}:1`] = this.routeCap(r) * h;
     const sent = {};
     const spareOf = (id, res) => this.stockOf(id)[res] - 2 * (flow[id]?.cons[res] || 0);
-    for (const T of Object.keys(adj).map(Number)) {
+    // 届いた要求を処理する
+    for (const q of this.requests) {
+      if (q.kind !== 'trade' || q.arrive > this.year) continue;
+      const rp = this.routePath(q.to, q.from);
+      const spare = spareOf(q.to, q.res);
+      if (!rp || spare <= 0.001) { q.amt = 0; continue; }
+      const legs = this.legsOf(rp.path).map((l, i) => ({ ...l, next: rp.path[i + 1] }));
+      let amt = Math.min(q.amt, spare);
+      for (const l of legs) amt = Math.min(amt, room[`${l.r.id}:${l.dir}`]);
+      q.state = 'waiting';
+      if (amt <= 0.001) continue;
+      for (const l of legs) {
+        const k = `${l.r.id}:${l.dir}`;
+        room[k] -= amt;
+        sent[k] = (sent[k] || 0) + amt;
+      }
+      this.shipCargo(q.to, legs, q.res, amt);
+      q.amt -= amt;
+      q.shipped = (q.shipped || 0) + amt;
+    }
+    this.requests = this.requests.filter((q) => q.kind !== 'trade' || q.amt > 0.001);
+    // 未処理の要求の量 (受け手ごと・送り手ごと)
+    const asked = {};
+    const promised = {};
+    for (const q of this.requests) {
+      if (q.kind !== 'trade') continue;
+      asked[`${q.from}|${q.res}`] = (asked[`${q.from}|${q.res}`] || 0) + q.amt;
+      promised[`${q.to}|${q.res}`] = (promised[`${q.to}|${q.res}`] || 0) + q.amt;
+    }
+    // 新しい要求を送る
+    for (const T of [...new Set(this.routes.flatMap((r) => [r.a, r.b]))]) {
       const ft = flow[T];
       if (!ft) continue;
       const needs = RES.filter((res) => ft.prod[res] < ft.cons[res]);
       if (!needs.length) continue;
-      // T からの最短経路 (ダイクストラ)。via[n] は n から T へ向かう次の区間
-      const dist = { [T]: 0 };
-      const via = {};
-      const done = new Set();
-      for (;;) {
-        let u = null;
-        for (const k of Object.keys(dist)) if (!done.has(+k) && (u === null || dist[k] < dist[u])) u = +k;
-        if (u === null) break;
-        done.add(u);
-        for (const e of adj[u] || []) {
-          const d = dist[u] + e.y;
-          if (dist[e.to] === undefined || d < dist[e.to]) { dist[e.to] = d; via[e.to] = { next: u, r: e.r, dir: 1 - e.dir }; }
-        }
-      }
+      const { dist } = this.reach(T);
       const sources = Object.keys(dist).map(Number).filter((id) => id !== T).sort((x, y) => dist[x] - dist[y]);
       const inb = (this.inbound[T] ??= zeroRes());
       const sto = this.stockOf(T);
       for (const res of needs) {
+        const min = Math.max(0.5, 0.05 * ft.cons[res]);
         for (const S of sources) {
-          const want = Math.min((2 + dist[S]) * ft.cons[res], 0.8 * stockCap(ft.pop)) - sto[res] - inb[res];
-          if (want <= 0.001) break;
-          let amt = Math.min(want, spareOf(S, res));
-          if (amt <= 0.001) continue;
-          const legs = [];
-          for (let n = S; n !== T; n = via[n].next) legs.push(via[n]);
-          for (const l of legs) amt = Math.min(amt, room[`${l.r.id}:${l.dir}`]);
-          if (amt <= 0.001) continue;
-          for (const l of legs) {
-            const k = `${l.r.id}:${l.dir}`;
-            room[k] -= amt;
-            sent[k] = (sent[k] || 0) + amt;
-          }
-          this.shipCargo(S, legs, res, amt);
+          const lead = dist[S] + this.travelYears(T, S);
+          let want = Math.min((2 + lead) * ft.cons[res], 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked[`${T}|${res}`] || 0);
+          if (want <= min) break;
+          if (this.requests.some((q) => q.kind === 'trade' && q.from === T && q.to === S && q.res === res)) continue;
+          const amt = Math.min(want, spareOf(S, res) - (promised[`${S}|${res}`] || 0));
+          if (amt <= min) continue;
+          this.requests.push({ id: this.nextShipId++, kind: 'trade', from: T, to: S, res, amt, sent: this.year, arrive: this.year + this.travelYears(T, S), state: 'sending' });
+          asked[`${T}|${res}`] = (asked[`${T}|${res}`] || 0) + amt;
+          promised[`${S}|${res}`] = (promised[`${S}|${res}`] || 0) + amt;
         }
       }
     }
@@ -1506,6 +1532,7 @@ class Game {
 
   arrivals() {
     let changed = false;
+    this.requests = this.requests.filter((q) => q.kind !== 'build' || q.arrive > this.year);
     const done = this.projects.filter((j) => j.ready <= this.year);
     if (done.length) {
       changed = true;
@@ -1744,6 +1771,7 @@ class Game {
     if (typeof d.autoHabitat === 'boolean') this.autoHabitat = d.autoHabitat;
     if (Array.isArray(d.migrants)) this.migrants = d.migrants.filter((m) => m && sysOk(m.fromSys) && sysOk(m.toSys) && Number.isFinite(m.n));
     if (Array.isArray(d.migLog)) this.migLog = d.migLog;
+    if (Array.isArray(d.requests)) this.requests = d.requests.filter((q) => q && sysOk(q.from) && sysOk(q.to) && Number.isFinite(q.arrive));
     if (Array.isArray(d.events)) this.events = d.events.filter((e) => e && typeof e.text === 'string');
     if (Array.isArray(d.projects)) this.projects = d.projects.filter((j) => j && sysOk(j.sys) && Number.isFinite(j.ready) && Array.isArray(j.from));
     if (obj(d.natives)) {
@@ -2046,10 +2074,36 @@ class GalaxyView {
     for (const j of game.projects) {
       const legs = j.legs || j.from.map((from) => ({ path: [from, j.sys], times: [j.start, j.start + game.travelYears(from, j.sys)] }));
       for (const l of legs) {
-        if (game.year > l.times[l.times.length - 1]) continue;
+        if (game.year < l.times[0] || game.year > l.times[l.times.length - 1]) continue;
         const pos = game.pathPosition(l.path, l.times);
         const [px, py] = this.toScreen(pos.x, pos.y);
         ctx.beginPath(); ctx.moveTo(px, py - 3); ctx.lineTo(px + 3, py); ctx.lineTo(px, py + 3); ctx.lineTo(px - 3, py); ctx.fill();
+      }
+    }
+
+    // 物資移送要求 (光速の通信): 要求元から送り手へ点線、先端に光の点。届いて待機中の要求は送り手に小さな輪
+    for (const q of game.requests) {
+      const a = game.system(q.from);
+      const b = game.system(q.to);
+      const [ax, ay] = this.toScreen(a.x, a.y);
+      const [bx, by] = this.toScreen(b.x, b.y);
+      const color = q.kind === 'build' ? '255,210,77' : '201,162,255';
+      if (q.arrive > game.year) {
+        const f = clamp((game.year - q.sent) / Math.max(1e-6, q.arrive - q.sent), 0, 1);
+        const px = ax + (bx - ax) * f;
+        const py = ay + (by - ay) * f;
+        ctx.strokeStyle = `rgba(${color},0.35)`;
+        ctx.setLineDash([1, 4]);
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, py); ctx.stroke();
+        ctx.setLineDash([]);
+        const glow = ctx.createRadialGradient(px, py, 0, px, py, 6);
+        glow.addColorStop(0, `rgba(${color},1)`);
+        glow.addColorStop(1, `rgba(${color},0)`);
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.strokeStyle = `rgba(${color},0.6)`;
+        ctx.beginPath(); ctx.arc(bx, by, 9, 0, Math.PI * 2); ctx.stroke();
       }
     }
 
@@ -2705,7 +2759,12 @@ function shipsHtml(game) {
     ? [`<div class="ship"><span style="color:#8fd3ff">移民船 ${game.migrants.length} 隻</span> <span class="muted">計 ${fmtPop(game.migrants.reduce((k, m) => k + m.n, 0))} (帝国タブ → 移民)</span></div>`]
     : [];
   const troops = game.troopMoves.map((m) => `<div class="ship">${esc(game.colonyByKey(m.from)?.name || '?')} → ${esc(game.colonyByKey(m.to)?.name || '?')} <span style="color:#ff9f8f">歩兵 ${m.troops + m.slave}連隊</span>${bar({ depart: m.times[0], arrive: m.arrive })}</div>`);
-  const all = [...jobs, ...ships, ...fleets, ...troops, ...mig];
+  const sending = game.requests.filter((q) => q.arrive > game.year).length;
+  const waiting = game.requests.length - sending;
+  const req = game.requests.length
+    ? [`<div class="ship"><span style="color:#c9a2ff">物資移送要求 ${game.requests.length} 件</span> <span class="muted">光速で送信中 ${sending}・送り手で処理中 ${waiting} (帝国タブ → 交易路)</span></div>`]
+    : [];
+  const all = [...jobs, ...ships, ...fleets, ...troops, ...mig, ...req];
   return all.length ? all.join('') : '<span class="muted">航行中の船なし</span>';
 }
 
@@ -2753,10 +2812,26 @@ function routesSheet(app) {
       <div><span>交易収入</span><b>${fmtAmt(g.ledger.trade || 0)} cr</b><span>年あたり</span></div>
     </div>
     <h3>新しい交易路</h3>${open}
+    ${requestsTable(g)}
     <h3>交易路の一覧</h3>
     ${rows ? `<div class="scroll"><table class="tbl">
       <tr><th>区間 (A ⇄ B)</th><th>距離</th><th>規模</th><th>A→B</th><th>B→A</th><th>稼働率</th><th>通過中の荷 A→B</th><th>通過中の荷 B→A</th><th></th></tr>${rows}</table></div>
       <p class="note">稼働率が100%近い交易路は、拡張すると運べる量が増える。</p>` : '<p class="note">まだ交易路はない。</p>'}`;
+}
+
+// 物資移送要求の一覧。情報は光速でしか伝わらないので、要求が届くまでの時間と処理状況を見せる
+function requestsTable(g) {
+  const name = (id) => esc(g.system(id).name);
+  const rows = [...g.requests].sort((a, b) => a.arrive - b.arrive).slice(0, 40).map((q) => {
+    const what = q.kind === 'build' ? `建設資材 (${esc(q.label)})` : `${RES_LABEL[q.res]} ${fmtAmt(q.amt)}${q.shipped ? ` <span class="muted">(発送済み ${fmtAmt(q.shipped)})</span>` : ''}`;
+    const st = q.arrive > g.year
+      ? `<span style="color:#c9a2ff">光速で送信中</span> あと ${(q.arrive - g.year).toFixed(1)} 年`
+      : '<span class="hz">送り手で処理中</span> (交易路の空きを待って発送)';
+    return `<tr><td>${name(q.from)} → ${name(q.to)}</td><td>${what}</td><td>${st}</td></tr>`;
+  }).join('');
+  return `<h3>物資移送要求 (${g.requests.length} 件)</h3>
+    <p class="note">情報は光速でしか伝わらない。資源が足りない星系や建設地は、交易路でつながった送り手へ物資移送要求を送り、要求が届いてから荷が出発する。地図では要求元から送り手へ伸びる点線と光の点で表示 (紫: 交易、黄: 建設資材)。届いて処理中の要求は送り手に輪が付く。</p>
+    ${rows ? `<div class="scroll"><table class="tbl"><tr><th>要求元 → 送り手</th><th>内容</th><th>状況</th></tr>${rows}</table></div>` : '<p class="note">いま動いている要求はない。</p>'}`;
 }
 
 // 帝国 → 移民: 過密な入植地、受け入れ先、移動中の移民船、到着の記録
@@ -3033,6 +3108,7 @@ const app = {
     if (v === 'events') this.seenEvent = this.game.events[0]?.id || 0;
     canvas.style.cursor = 'default';
     $('zoom').hidden = v !== 'galaxy';
+    $('legend').hidden = v !== 'galaxy';
     this.dirty = true;
   },
 };
@@ -3102,7 +3178,7 @@ function buildSave(game, extra = {}) {
   return {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, stock: game.stock, routes: game.routes,
-    cargo: game.cargo, projects: game.projects, events: game.events,
+    cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, autoBuild: game.autoBuild, migration: game.migration, troopMoves: game.troopMoves, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
