@@ -1534,6 +1534,27 @@ class Game {
       if (this.dispatch(id, best.t.id, best.b.id, 'planet').ok) gv.lastColony = this.year;
     }
   }
+  // 星系内の拡張: 人口が2百万人以上で資金に余裕 (費用の2倍) のある星系の政府は、自分の星系の空いている天体
+  // (入植地も先住民もいない) に宇宙ステーションを建てる。10年に1つまで。資源の埋蔵が多い天体ほど優先する。
+  // 星系内なので入植船はすぐ着く。太陽系は自動開発がオンのときだけ
+  stationsYearly() {
+    for (const s of this.colonizedSystems()) {
+      const id = s.id;
+      if (id === 0 && !this.auto[0]) continue;
+      const gv = this.gov(id);
+      if (this.year - (gv.lastStation ?? gv.founded ?? -1e9) < 10) continue;
+      if (this.coloniesIn(id).reduce((k, c) => k + c.pop, 0) < 2) continue;
+      if (this.projects.some((j) => j.type === 'ship' && j.sys === id && j.to === id) || this.ships.some((x) => x.from === id && x.to === id)) continue;
+      const score = (b) => Object.values(b.deposits || {}).reduce((k, v) => k + v, 0) + (b.type === 'gas' ? 0.5 : 0);
+      const free = s.bodies
+        .filter((b) => !this.colonies.some((c) => c.sys === id && c.body === b.id) && !b.natives && this.check(id, b.id, 'station').ok)
+        .sort((a, b) => score(b) - score(a));
+      if (!free.length) continue;
+      const cost = this.shipCost('station', id, id);
+      if (gv.credits < 2 * cost.credits || this.procure(cost, id).why) continue;
+      if (this.dispatch(id, id, free[0].id, 'station').ok) gv.lastStation = this.year;
+    }
+  }
   // 朝貢: 年に1回、従属する星系は年間収入の25%を主人の星系へ送る (光速の送金。主人がさらに上へ納めるので連鎖する)
   // 資金援助: 主人の星系から従属星系へ光速で送金する。届くと受け手の資金になり、支援物資と同じく忠誠度が上がる
   sendGrant(from, to, amt, auto = false) {
@@ -2038,7 +2059,7 @@ class Game {
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
       this.keepGhosts(before);
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.govsYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); this.siegesYearly(); this.recordSnapshots(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.govsYearly(); this.stationsYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); this.siegesYearly(); this.recordSnapshots(); }
     }
     return changed;
   }
@@ -3288,7 +3309,7 @@ function systemPanel(app) {
     <h3>入植地</h3>
     ${cols.length ? `<ul>${cols.map((c) => `<li>${esc(c.name)} — ${KIND_LABEL[c.kind]} <span class="muted">人口 ${fmtPop(c.pop)}</span></li>`).join('')}</ul>` : '<p class="note">まだ入植していない</p>'}
     ${outpostList(g, sys)}
-    ${sys.id === 0 ? `${autoToggle(g, sys.id)}<p class="note">オンにすると、生産が需要に届かない資源を年に1回選び、惑星上の施設 (農場・鉱山・工場) や採掘基地を自動で建てる。過密な入植地では居住区も拡張する (資金が費用の2倍以上あるとき)。</p>` : ''}
+    ${sys.id === 0 ? `${autoToggle(g, sys.id)}<p class="note">オンにすると、生産が需要に届かない資源を年に1回選び、惑星上の施設 (農場・鉱山・工場) や採掘基地を自動で建てる。過密な入植地では居住区も拡張し、太陽系の空いている天体には宇宙ステーションも建てる (10年に1つまで。資金が費用の2倍以上あるとき)。</p>` : ''}
     <button data-act="open">星系マップを開く</button>
     ${app.view === 'system' ? bodyList(app, sys) : ''}
     ${colonized ? stockBox(g, sys.id) + routeBox(app, sys) : ''}
@@ -3521,7 +3542,7 @@ function colonyBox(g, c) {
     <label class="field">方針 (労働力の配分)
       <select data-act="focus" data-col="${key}">${Object.entries(FOCUS).map(([k, f]) => `<option value="${k}" ${k === c.focus ? 'selected' : ''}>${f.label} — 農${pct(f.farm)}・鉱${pct(f.mine)}・工${pct(f.ind)}</option>`).join('')}</select></label>
     <div class="facs">${facs}</div>
-    ${autoToggle(g, c.sys)}<p class="note">オンにすると、この星系で足りない資源に合わせて農場・鉱山・工場・採掘基地を、過密になれば居住区を自動で建てる。</p>
+    ${autoToggle(g, c.sys)}<p class="note">オンにすると、この星系で足りない資源に合わせて農場・鉱山・工場・採掘基地を、過密になれば居住区を自動で建てる。星系の政府は、星系内の空いている天体に宇宙ステーションも自分で建てていく (10年に1つまで)。</p>
     ${troopBox(g, c)}`;
 }
 
