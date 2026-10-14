@@ -132,6 +132,7 @@ html, body { height:100%; }
         <div><i style="background:radial-gradient(#c9a2ff,transparent 70%)"></i>物資移送要求 (光速の通信)</div>
         <div><i style="background:radial-gradient(#aadcff,transparent 70%)"></i>地球からの指令</div>
         <div><i style="background:radial-gradient(#a0e678,transparent 70%)"></i>朝貢 (主人の星系への送金)</div>
+        <div><i style="background:radial-gradient(#ffd778,transparent 70%)"></i>資金援助 (主人の星系からの送金)</div>
         <div class="muted" style="max-width:220px">地図は地球に届いている光で描く。遠くの星系は昔の様子で、船は見かけの位置に見える。</div>
         <div><i style="border:2px solid #ff5a5a;border-radius:50%;width:7px;height:7px"></i>征服戦争 (赤い輪と ⚔ の数字が進捗)</div>
         <div><i style="border:2px dashed #ff5a5a;border-radius:50%;width:7px;height:7px"></i>艦隊戦 (下の棒が両軍の残りの比)</div>
@@ -673,9 +674,11 @@ const OUTPOST_RES = { 'gas-giant': ['water', 'fuel'], 'ice-giant': ['water', 'fu
 const OUTPOST_RATE = 25; // 埋蔵量1・Lv1あたりの年産量
 const outpostRes = (b) => (b && !b.label && OUTPOST_RES[b.type]) || [];
 const PIRATE_START = 2320;
-const LEDGER_LABEL = { tax: '税収', trade: '輸出', import: '輸入', export: '余剰の売却', natives: '先住民', tribute: '朝貢', upkeep: '軍の維持費' };
+const LEDGER_LABEL = { tax: '税収', trade: '輸出', import: '輸入', export: '余剰の売却', natives: '先住民', tribute: '朝貢', grant: '資金援助', upkeep: '軍の維持費' };
 const TRIBUTE_RATE = 0.25;
 const LOYALTY_START = 70; // 新しい政府の忠誠度
+const GRANT_YEARS = 50; // 入植後この年数のあいだ、主人の星系が自動で資金援助を送る
+const GRANT_MAX = 300; // 自動の資金援助の上限 [cr/年]。主人の資金の3%まで
 const BATTLE_RATE = 0.6; // 艦隊戦で1艦隊が1年に壊滅させる敵艦隊の数 (ランチェスターの係数)
 const REALM_COLORS = ['#ff9f43', '#ee5aa8', '#a3e635', '#f5d142', '#60a5fa', '#c084fc', '#f87171', '#34d399'];
 const CMD_LABEL = {
@@ -727,6 +730,7 @@ class Game {
     this.migrants = []; // 移動中の移民船 { id, from, to (入植地キー), fromSys, toSys, n, depart, arrive }
     this.migLog = []; // 移民の到着記録 { year, from, to, n }
     this.autoBuild = true; // 自動防衛配備で艦隊が足りなければ編成する
+    this.autoGrant = true; // 入植後50年の自動資金援助 (地球から直接の従属星系へ)
     this.autoDefense = false; // 自動防衛配備: 艦隊のいない入植星系へ余っている艦隊を回す
     this.events = []; // 重要なイベント { id, year, kind, sys, text, good }
     this.projects = []; // 資材の搬入を待つ建設 { id, type, sys, start, ready, from: [搬出元の星系], label, ... }
@@ -1522,6 +1526,27 @@ class Game {
     }
   }
   // 朝貢: 年に1回、従属する星系は年間収入の25%を主人の星系へ送る (光速の送金。主人がさらに上へ納めるので連鎖する)
+  // 資金援助: 主人の星系から従属星系へ光速で送金する。届くと受け手の資金になり、支援物資と同じく忠誠度が上がる
+  sendGrant(from, to, amt, auto = false) {
+    amt = Math.min(amt, Math.max(0, this.gov(from).credits));
+    if (from === to || amt < 1) return fail('送れる資金がない');
+    this.earn('grant', -amt, from);
+    this.requests.push({ id: this.nextShipId++, kind: 'grant', from, to, amt, auto, sent: this.year, arrive: this.year + this.travelYears(from, to), state: 'sending' });
+    if (!auto) this.message(`${this.system(to).name} へ資金援助 ${fmtAmt(amt)} cr を送った (届くまで ${this.travelYears(from, to).toFixed(1)} 年)`, from);
+    return { ok: true };
+  }
+  // 入植後 GRANT_YEARS 年のあいだ、主人の星系は年に1回、資金の3% (最大 GRANT_MAX cr) を自動で送る (地球は設定で止められる)
+  grantsYearly() {
+    for (const [key, gv] of Object.entries(this.govs)) {
+      const id = Number(key);
+      const lord = gv.lord;
+      if (lord === null || lord === undefined || !this.isColonized(id) || this.year - (gv.founded ?? this.year) > GRANT_YEARS) continue;
+      if (lord === 0 && !this.autoGrant) continue;
+      if (this.realmOf(id) !== this.realmOf(lord)) continue;
+      const amt = Math.min(GRANT_MAX, 0.03 * this.gov(lord).credits);
+      if (amt >= 1) this.sendGrant(lord, id, amt, true);
+    }
+  }
   tributeYearly() {
     for (const [key, gv] of Object.entries(this.govs)) {
       const id = Number(key);
@@ -1746,20 +1771,23 @@ class Game {
     return { ok: true };
   }
   // --- 征服戦争 ---
-  // 統一されていない先住民の惑星に入植すると自動で始まる。毎年、入植地の歩兵 (+星系の艦隊の半分) の戦力と、
-  // 先住民の残りの抵抗力 (防衛力 × (1 − 進捗)) を比べ、上回れば勝利。届かなければ進捗が戦力比の半分進み、
-  // 歩兵が1連隊ずつ減り、入植地と先住民の人口が削られる。歩兵がいなければ進まない (歩兵を送り込もう)。
+  // 統一されていない先住民の惑星に入植すると自動で始まる。入植地の戦力 (歩兵 + 星系の艦隊の半分 + 入植者の民兵) と
+  // 先住民の残りの戦力が毎年削り合う: 先住民は 入植地の戦力 × 0.5 を失い、さらに疲弊して年7%ずつ弱る。
+  // 入植地は 先住民の戦力 × 0.15 の歩兵を失い、人口も少し減る。先住民の戦力が0.5を切れば勝利。
+  // 入植地が劣勢 (戦力が先住民に届かず歩兵を失っている) になると、入植船を送った星系が自動で歩兵を送り込む
   startWar(sysId, bodyId) {
     const n = this.nativeOf(sysId, bodyId);
     if (!n || this.wars.some((w) => w.sys === sysId && w.body === bodyId)) return;
     n.st.rel = Math.min(n.st.rel, -60);
-    this.wars.push({ sys: sysId, body: bodyId, start: this.year, progress: 0 });
+    const def = this.nativeDefense(n);
+    this.wars.push({ sys: sysId, body: bodyId, start: this.year, progress: 0, def0: def, enemy: def, lost: 0 });
     this.event('war', sysId, `${this.target(sysId, bodyId).name} で${n.def.species} (${TECH_LABEL[n.def.tech]}) との征服戦争が始まった`);
     this.warsYearly(true);
   }
+  militia(c) { return c ? 0.3 + 0.5 * Math.log10(1 + c.pop) : 0; }
   warPower(w) {
     const c = this.colonyAt(w.sys, w.body, 'planet');
-    return (c ? c.troops + SLAVE_TROOP_POWER * c.slaveTroops : 0) + 0.5 * (this.garrison[w.sys] || 0);
+    return (c ? c.troops + SLAVE_TROOP_POWER * c.slaveTroops : 0) + 0.5 * (this.garrison[w.sys] || 0) + this.militia(c);
   }
   warsYearly(first = false) {
     // 戦争方針に照らして、共存中の入植地でも友好度が基準を下回っていれば戦争を始める
@@ -1773,22 +1801,56 @@ class Game {
       const n = this.nativeOf(w.sys, w.body);
       const c = this.colonyAt(w.sys, w.body, 'planet');
       if (!n || n.st.status !== 'independent' || !c) { this.wars = this.wars.filter((x) => x !== w); continue; }
-      const def = this.nativeDefense(n);
-      const left = def * (1 - w.progress);
+      // 旧セーブの戦争は、いまの進捗から先住民の残りの戦力を決める
+      w.def0 ??= this.nativeDefense(n);
+      w.enemy ??= w.def0 * (1 - w.progress);
       const p = this.warPower(w);
-      if (p >= left) {
-        const loss = Math.min(c.troops + c.slaveTroops, Math.ceil(left / 3));
-        this.loseTroops(w.sys, loss);
+      const win = () => {
         this.subjugate(n);
         this.wars = this.wars.filter((x) => x !== w);
-        this.event('war', w.sys, `${c.name} の征服戦争に勝利し、${n.def.species}を支配下に置いた (歩兵 ${loss} 連隊を喪失)`, true);
+        this.event('war', w.sys, `${c.name} の征服戦争に勝利し、${n.def.species}を支配下に置いた (${(this.year - w.start).toFixed(0)} 年、歩兵 ${w.lost} 連隊を喪失)`, true);
+      };
+      if (first) {
+        // 同行した歩兵だけで圧倒できれば、すぐに決着する
+        if (p >= w.enemy) {
+          w.lost = Math.min(c.troops + c.slaveTroops, Math.ceil(w.enemy / 3));
+          this.loseTroops(w.sys, w.lost);
+          win();
+        }
         continue;
       }
-      if (first) continue;
-      w.progress = Math.min(0.99, w.progress + 0.5 * p / def);
-      if (p > 0) this.loseTroops(w.sys, 1);
-      c.pop = Math.max(0.001, c.pop * 0.95);
+      const e = w.enemy;
+      w.enemy = Math.max(0, e * 0.93 - 0.5 * p);
+      const before = c.troops + c.slaveTroops;
+      w.loss = Math.min(before, (w.loss || 0) + 0.15 * e);
+      const lose = Math.floor(w.loss);
+      if (lose > 0) { this.loseTroops(w.sys, lose); w.loss -= lose; w.lost = (w.lost || 0) + lose; }
+      c.pop = Math.max(0.001, c.pop * 0.97);
       n.st.pop *= 0.97;
+      w.progress = clamp(1 - w.enemy / w.def0, 0, 1);
+      if (w.enemy < 0.5) { win(); continue; }
+      if (p < e && (lose > 0 || before === 0)) this.reinforceWar(w, c, e - this.warPower(w));
+    }
+  }
+  // 劣勢の征服戦争へ、入植船を送った星系 (主人) から歩兵を送り込む。交易路でつながっていなければ直行する (0.9c)。
+  // 送れる歩兵がいなければ、軍事教練所で訓練を始める
+  reinforceWar(w, c, gap) {
+    const key = colKey(c);
+    if (this.troopMoves.some((m) => m.to === key) || this.year - (w.reinforced ?? -1e9) < 2) return;
+    const lord = this.gov(w.sys).lord;
+    if (lord === null || lord === undefined || !this.isColonized(lord)) return;
+    const src = this.coloniesIn(lord).filter((x) => x !== c).sort((a, b) => (b.troops + b.slaveTroops) - (a.troops + a.slaveTroops))[0];
+    if (!src) return;
+    const avail = src.troops + src.slaveTroops;
+    if (avail < 1) {
+      const yard = this.coloniesIn(lord).find((x) => x.lv.barracks >= 1);
+      if (yard) this.trainTroop(yard, true);
+      return;
+    }
+    const n = Math.min(avail, Math.ceil(gap) + 1);
+    if (this.sendTroops(colKey(src), key, n, true).ok) {
+      w.reinforced = this.year;
+      this.event('war', w.sys, `${c.name} の征服戦争が劣勢のため、${this.system(lord).name} が歩兵 ${n} 連隊を送り込んだ`);
     }
   }
   // 支配下に置く (制圧・征服戦争の共通処理)
@@ -1887,14 +1949,15 @@ class Game {
     return { path, years: dist[b] };
   }
   // 歩兵を別の入植地へ送る。同じ星系ならすぐ、別の星系なら交易路をたどって光速で移動する
-  sendTroops(fromKey, toKey, n) {
+  sendTroops(fromKey, toKey, n, direct = false) {
     const from = this.colonyByKey(fromKey);
     const to = this.colonyByKey(toKey);
     if (!from || !to || from === to) return fail('送り先が不正');
     const troops = Math.min(n, from.troops);
     const slave = Math.min(n - troops, from.slaveTroops);
     if (troops + slave < 1) return fail('送れる歩兵がいない');
-    const route = this.routePath(from.sys, to.sys);
+    // 交易路でつながっていなければ送れない (征服戦争の増援だけは直行する: 0.9c)
+    const route = this.routePath(from.sys, to.sys) || (direct ? { path: [from.sys, to.sys], years: this.travelYears(from.sys, to.sys) / OFFROUTE_SPEED, direct: true } : null);
     if (!route) return fail('交易路でつながっていない');
     from.troops -= troops;
     from.slaveTroops -= slave;
@@ -1904,9 +1967,9 @@ class Game {
       return { ok: true };
     }
     const times = [this.year];
-    for (let i = 1; i < route.path.length; i++) times.push(times[i - 1] + this.travelYears(route.path[i - 1], route.path[i]));
+    for (let i = 1; i < route.path.length; i++) times.push(times[i - 1] + this.travelYears(route.path[i - 1], route.path[i]) / (route.direct ? OFFROUTE_SPEED : 1));
     this.troopMoves.push({ id: this.nextShipId++, from: fromKey, to: toKey, path: route.path, times, arrive: times[times.length - 1], troops, slave });
-    this.message(`${from.name} → ${to.name} へ歩兵 ${troops + slave} 連隊が出発 (交易路経由、到着まで ${route.years.toFixed(1)} 年)`, from.sys);
+    this.message(`${from.name} → ${to.name} へ歩兵 ${troops + slave} 連隊が出発 (${route.direct ? '直行 0.9c' : '交易路経由'}、到着まで ${route.years.toFixed(1)} 年)`, from.sys);
     return { ok: true };
   }
   // 交易路でつながる全入植地の歩兵をこの入植地へ集める
@@ -1964,7 +2027,7 @@ class Game {
       if (this.pirates(h)) changed = true;
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.govsYearly(); this.tributeYearly(); this.loyaltyYearly(); this.realmsYearly(); this.siegesYearly(); this.recordSnapshots(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.govsYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); this.siegesYearly(); this.recordSnapshots(); }
     }
     return changed;
   }
@@ -1973,12 +2036,18 @@ class Game {
     let changed = false;
     for (const q of this.requests) if (q.kind === 'tribute' && q.arrive <= this.year && this.govs[q.to]) this.earn('tribute', q.amt, q.to);
     for (const q of this.requests) {
+      if (q.kind !== 'grant' || q.arrive > this.year || !this.govs[q.to]) continue;
+      this.earn('grant', q.amt, q.to);
+      this.receiveAid(q.to, q.amt);
+      if (!q.auto) this.message(`資金援助 ${fmtAmt(q.amt)} cr が ${this.system(q.to).name} に届いた`, q.to);
+    }
+    for (const q of this.requests) {
       if (q.kind !== 'order' || q.arrive > this.year) continue;
       const ob = q.act === 'peace' ? { ok: true } : this.obeys(q.to);
       const r = ob.ok ? this.exec(q.act, q.d) : ob;
       this.message(r.ok ? `指令「${q.label}」が ${this.system(q.to).name} に届き、実行された` : `指令「${q.label}」は ${this.system(q.to).name} で実行できなかった: ${r.reason}`, q.to);
     }
-    this.requests = this.requests.filter((q) => !['build', 'tribute', 'order'].includes(q.kind) || q.arrive > this.year);
+    this.requests = this.requests.filter((q) => !['build', 'tribute', 'order', 'grant'].includes(q.kind) || q.arrive > this.year);
     const done = this.projects.filter((j) => j.ready <= this.year);
     if (done.length) {
       changed = true;
@@ -2257,6 +2326,7 @@ class Game {
     if (obj(d.auto)) this.auto = d.auto;
     if (Number.isFinite(d.autoTimer)) this.autoTimer = d.autoTimer;
     this.autoDefense = !!d.autoDefense;
+    this.autoGrant = d.autoGrant === undefined ? true : !!d.autoGrant;
     if (typeof d.autoBuild === 'boolean') this.autoBuild = d.autoBuild;
     if (typeof d.migration === 'boolean') this.migration = d.migration;
     if (Array.isArray(d.wars)) this.wars = d.wars.filter((w) => w && ok(w.sys, w.body));
@@ -2333,8 +2403,8 @@ class Game {
       credits: gv ? gv.credits : 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null,
       outposts: this.outposts.filter((o) => o.sys === id).map((o) => ({ body: o.body, lv: o.lv })),
       natives: Object.fromEntries(this.system(id).bodies.filter((b) => this.natives[`${id}|${b.id}`]).map((b) => [b.id, { ...this.natives[`${id}|${b.id}`] }])),
-      wars: this.wars.filter((w) => w.sys === id).map((w) => ({ body: w.body, progress: w.progress })),
-      loyalty: gv ? gv.loyalty ?? LOYALTY_START : null, realm: this.isColonized(id) ? this.realmOf(id) : null, independent: !!gv?.independent, aid: gv ? gv.aid || 0 : 0, dep: gv ? gv.dep || 0 : 0,
+      wars: this.wars.filter((w) => w.sys === id).map((w) => ({ body: w.body, progress: w.progress, enemy: w.enemy })),
+      loyalty: gv ? gv.loyalty ?? LOYALTY_START : null, realm: this.isColonized(id) ? this.realmOf(id) : null, independent: !!gv?.independent, founded: gv ? gv.founded : undefined, aid: gv ? gv.aid || 0 : 0, dep: gv ? gv.dep || 0 : 0,
       siege: (() => { const g = this.sieges.find((x) => x.sys === id); return g ? { realm: g.realm, ships: g.ships, progress: g.progress } : null; })(),
       battle: (() => { const b = this.battleAt(id); return b ? { realm: b.realm, a: b.a, d: b.d, a0: b.a0, d0: b.d0, start: b.start } : null; })(),
     };
@@ -2414,6 +2484,11 @@ class Game {
   }
   command(act, d) {
     if (act === 'declarewar') return this.declareWar(Number(d.sys));
+    if (act === 'grant') {
+      const to = Number(d.sys);
+      if (to === 0 || !this.isColonized(to) || this.realmOf(to) !== 0) return fail('地球の国の星系にだけ送れる');
+      return this.sendGrant(0, to, Number(d.amt));
+    }
     // 集結は、それぞれの出発地への指令に分ける
     if (act === 'rally') {
       const from = Object.keys(this.garrison).map(Number).filter((id) => id !== d.sys && this.garrison[id] > 0);
@@ -2733,7 +2808,7 @@ class GalaxyView {
     }
 
     // 光速の通信 (物資移送要求・指令・朝貢): 見かけの位置に光の点と、出発地からの点線
-    const SIGNAL = { build: '255,210,77', trade: '201,162,255', order: '170,220,255', tribute: '160,230,120' };
+    const SIGNAL = { build: '255,210,77', trade: '201,162,255', order: '170,220,255', tribute: '160,230,120', grant: '255,215,120' };
     for (const q of game.requests) {
       const a = game.system(q.from);
       const b = game.system(q.to);
@@ -3209,13 +3284,16 @@ function govBox(g, id) {
   const war = realm !== 0 && g.realmWars[realm] !== undefined;
   const status = realm === 0 ? `地球の国・忠誠度 <b class="${(k.loyalty ?? 70) < 20 ? 'bad' : ''}">${Math.round(k.loyalty ?? LOYALTY_START)}</b>`
     : `<b class="bad">${realm === id ? '独立国の首都' : `${esc(g.system(realm).name)} の国に属する`}</b>${war ? ' (地球の国と交戦中)' : ''}`;
-  const btn = realm === 0 ? '' : war
+  const young = k.founded !== undefined && g.year - k.founded <= GRANT_YEARS;
+  const grant = realm === 0 && id !== 0 ? `<div class="btns">${[100, 500, 2000].map((a) => `<button data-act="grant" data-sys="${id}" data-amt="${a}" ${g.credits < a ? 'disabled' : ''}>資金援助 ${a} cr<small>光速の送金: 届くまで ${g.travelYears(0, id).toFixed(1)} 年</small></button>`).join('')}</div>
+    <p class="note">資金援助は地球の資金から送る。届くと${esc(g.system(id).name)}の政府の資金になり、忠誠度が上がる (10 cr ごとに +1)。${young && k.lord !== null && k.lord !== undefined ? `入植後${GRANT_YEARS}年 (${(k.founded + GRANT_YEARS).toFixed(0)}年まで) は主人の星系から毎年自動でも届く。` : ''}</p>` : '';
+  const btn = realm === 0 ? grant : war
     ? `<button data-act="peace" data-sys="${realm}">講和を申し入れる<small>指令: 届くまで ${g.lightDelay(realm).toFixed(1)} 年</small></button>`
     : `<button data-act="declarewar" data-sys="${realm}">${esc(g.system(realm).name)} の国に宣戦する</button>`;
   const siege = (k.siege ? `<p class="note bad">攻囲されている: ${esc(g.system(k.siege.realm).name)} の国の ${k.siege.ships} 艦隊・進捗 ${pct(k.siege.progress)}</p>` : '')
     + (k.battle ? `<p class="note bad">艦隊戦の最中: 攻撃 ${esc(g.system(k.battle.realm).name)} の国 ${Math.ceil(k.battle.a)} 艦隊 (投入 ${Math.round(k.battle.a0)}) 対 防衛 ${Math.ceil(k.battle.d)} 艦隊 (投入 ${Math.round(k.battle.d0)})・${k.battle.start.toFixed(1)}年から</p>` : '');
   return `<p class="note"><span class="dot" style="background:${realmColor(realm)}"></span>${status}。従属先: ${chain.map((l) => esc(g.system(l).name)).join(' → ') || 'なし'}・資金 ${fmtAmt(k.credits)} cr (収入 ${fmtAmt(k.income)}/年${k.lord !== null && k.lord !== undefined ? '、その25%を朝貢' : ''})。
-    ${k.aid > 0.5 ? `<b>主人から支援物資を受けている</b> (年 ${fmtAmt(k.aid)} cr 相当。代金のかわりに従属が深まり、忠誠度が上がる)。` : ''}輸入する物資は代金を払う。資源に余裕があれば自分で施設を建て、交易路を引き、入植も行う。指示は光速の指令で送る${realm === 0 ? '' : ' (他国なので従わない)'}。</p>${siege}${btn}`;
+    ${k.aid > 0.5 ? `<b>主人から支援 (物資・資金援助) を受けている</b> (年 ${fmtAmt(k.aid)} cr 相当。従属が深まり、忠誠度が上がる)。` : ''}輸入する物資は代金を払う。資源に余裕があれば自分で施設を建て、交易路を引き、入植も行う。指示は光速の指令で送る${realm === 0 ? '' : ' (他国なので従わない)'}。</p>${siege}${btn}`;
 }
 
 function autoToggle(g, sysId) {
@@ -3450,7 +3528,7 @@ function nativesBox(app, sys, b) {
   const need = g.nativeDefense(n);
   const unity = g.nativeUnity(n);
   const war = g.knownWars(sys.id).find((w) => w.body === b.id);
-  const warHtml = war ? `<p class="note bad">征服戦争中 — 進捗 ${pct(war.progress)}。入植地の戦力 ${fmt(g.warPower(war), 1)} (歩兵 + 星系の艦隊の半分) が残りの抵抗 ${fmt(need * (1 - war.progress), 1)} を上回れば勝利。歩兵を送り込むと早く終わる。</p>
+  const warHtml = war ? `<p class="note bad">征服戦争中 — 進捗 ${pct(war.progress)}。入植地の戦力 ${fmt(g.warPower(war), 1)} (歩兵 + 星系の艦隊の半分 + 入植者の民兵) と先住民の残りの戦力 ${fmt(war.enemy ?? need * (1 - war.progress), 1)} が毎年削り合う (先住民は疲弊して年7%ずつも弱る)。劣勢になると入植船を送った星系が歩兵を送り込む。</p>
     <span class="bar"><i style="width:${(war.progress * 100).toFixed(0)}%"></i></span>` : '';
   const unityHtml = row('統一度', `${unity} ${n.def.tech >= 3 ? '<span class="bad">(統一国家・組織的な抵抗あり)</span>' : '<span class="muted">(分裂・組織的な抵抗なし)</span>'}`);
   const presence = g.isColonized(sys.id);
@@ -3608,7 +3686,7 @@ function requestsTable(g) {
   const name = (id) => esc(g.system(id).name);
   const vis = g.requests.filter((q) => g.departSeen(q.from, q.sent));
   const rows = [...vis].sort((a, b) => a.arrive - b.arrive).slice(0, 40).map((q) => {
-    const what = q.kind === 'build' ? `建設資材 (${esc(q.label)})` : q.kind === 'order' ? `指令「${esc(q.label)}」` : q.kind === 'tribute' ? `朝貢 ${fmtAmt(q.amt)} cr`
+    const what = q.kind === 'build' ? `建設資材 (${esc(q.label)})` : q.kind === 'order' ? `指令「${esc(q.label)}」` : q.kind === 'tribute' ? `朝貢 ${fmtAmt(q.amt)} cr` : q.kind === 'grant' ? `資金援助 ${fmtAmt(q.amt)} cr${q.auto ? ' (自動)' : ''}`
       : `${RES_LABEL[q.res]} ${fmtAmt(q.amt)}${q.shipped ? ` <span class="muted">(発送済み ${fmtAmt(q.shipped)})</span>` : ''}`;
     const st = q.arrive > g.year
       ? `<span style="color:#c9a2ff">光速で送信中</span> あと ${(q.arrive - g.year).toFixed(1)} 年`
@@ -3649,6 +3727,8 @@ function politicsSheet(app) {
     <td>${Math.ceil(bt.d)} / ${Math.round(bt.d0)} 艦隊</td><td>${bt.start.toFixed(1)}年から</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
   return `<p class="note">星系の政府は忠誠度を持つ。忠誠度は主人の星系や国の首都から遠いほど、主人より大きくなるほど、指令が多いほど下がり、主人の星系に艦隊がいると上がる。
       50未満だと指令を拒むことがあり、20未満だと独立を宣言することがある (従属する星系も一緒に離れる)。主人から支援物資を受けると上がる (代金を払えない星系は主人から無償で物資を受け取れる)。地球の国からの独立は、半々の確率でそのまま戦争になる。</p>
+    <label class="check auto"><input type="checkbox" data-act="autogrant" ${g.autoGrant ? 'checked' : ''}> 入植後${GRANT_YEARS}年の自動資金援助 (地球から)</label>
+    <p class="note">入植して${GRANT_YEARS}年以内の星系には、主人の星系が毎年、資金の3% (最大 ${GRANT_MAX} cr) を自動で送る。資金援助は支援物資と同じく忠誠度を上げる。チェックを外すと地球からの自動送金だけが止まる (ほかの星系どうしは続く)。個別の資金援助は星系の詳細欄から送れる。</p>
     <h3>独立国</h3>
     ${realms ? `<div class="scroll"><table class="tbl"><tr><th>首都</th><th>規模 (把握分)</th><th>状態</th><th></th></tr>${realms}</table></div>` : '<p class="note">いまのところ独立国はない。</p>'}
     <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) で進み、100%で降伏して地球の国に従属する。交戦中の国どうしでは物資をやり取りしない。</p>
@@ -4047,7 +4127,7 @@ function buildSave(game, extra = {}) {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
-    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, autoBuild: game.autoBuild, migration: game.migration, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
 }
@@ -4178,6 +4258,8 @@ function onPanelChange(e) {
   } else if (act === 'migration') {
     app.game.migration = e.target.checked;
     app.game.message(`恒星間移民を${e.target.checked ? '許可' : '停止'}した`);
+  } else if (act === 'autogrant') {
+    app.game.autoGrant = e.target.checked;
   } else if (act === 'autobuild') {
     app.game.autoBuild = e.target.checked;
   } else if (act === 'autodefense') {
