@@ -35,6 +35,17 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 .kpi b { display:block; font-size:18px; color:var(--fg); } .kpi span { font-size:11px; color:var(--muted); }
 .age { font-size:11px; color:var(--muted); border:1px solid var(--line); border-radius:3px; padding:0 4px; margin-left:4px; white-space:nowrap; }
 .age.now { color:var(--accent); }
+#home { position:fixed; inset:0; z-index:20; background:rgba(5,7,13,.94); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
+#home[hidden] { display:none; }
+#home .card { width:min(660px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:22px 24px 26px; }
+#home h1 { font-size:34px; margin-bottom:2px; }
+#home section { margin-top:14px; }
+#home .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 0; border-bottom:1px solid var(--line); }
+#home .row .info { flex:1; min-width:200px; font-size:13px; }
+#home .row button.ghost { margin-top:0; }
+#home .big { font-size:16px; padding:10px 22px; border-color:var(--accent); color:var(--accent); }
+#home input[type=text] { background:#0a0f1a; color:var(--fg); border:1px solid var(--line); border-radius:5px; padding:5px 8px; font:inherit; width:10em; }
+#home label { display:inline-flex; gap:6px; align-items:center; font-size:13px; }
 #legend { position:absolute; right:10px; bottom:10px; background:rgba(13,18,29,.85); border:1px solid var(--line); border-radius:6px; padding:4px 10px; font-size:12px; }
 #legend summary { cursor:pointer; color:var(--muted); }
 #legend div { display:flex; align-items:center; gap:6px; margin:3px 0; }
@@ -112,10 +123,9 @@ html, body { height:100%; }
       <button data-speed="6">64年</button>
     </div>
     <button id="savenow">セーブ</button>
-    <button id="export">書き出し</button>
-    <button id="import">読み込み</button>
+    <button id="homebtn">ホーム</button>
+    <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
     <input id="importfile" type="file" accept="application/json,.json" hidden>
-    <button id="newgame" class="ghost">新しい銀河</button>
     <span id="savestat" class="muted"></span>
   </header>
   <main>
@@ -151,6 +161,7 @@ html, body { height:100%; }
       <div id="log"></div>
     </aside>
   </main>
+  <div id="home" hidden></div>
   
 <script>
 // シード付き乱数 (mulberry32)。同じシードなら同じ銀河が生成される。
@@ -725,6 +736,7 @@ class Game {
     this.surveyed = [];
     this.outposts = []; // 採掘基地 { sys, body, lv }
     this.auto = {}; // 自動開発を有効にした星系 { [sysId]: true }
+    this.spectate = false; // 観戦モード: 地図とタブを光の遅れなしの実際の様子で見せ、地球政府も自動で動く
     this.autoTimer = 0;
     this.migration = true; // 過密な入植地からの恒星間移民
     this.autoHabitat = true; // 過密な入植地の居住区を自動で拡張する
@@ -1500,7 +1512,7 @@ class Game {
   govsYearly() {
     for (const s of this.colonizedSystems()) {
       const id = s.id;
-      if (id === 0) continue;
+      if (id === 0 && !this.spectate) continue; // 地球政府はプレイヤー (観戦モードでは自動で動く)
       const gv = this.gov(id);
       const mine = this.routes.filter((r) => r.a === id || r.b === id);
       if (mine.length < 3) {
@@ -1516,11 +1528,11 @@ class Game {
       }
       const pop = this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
       const busy = this.projects.some((j) => j.type === 'ship' && j.sys === id) || this.ships.some((x) => x.from === id);
-      if (pop < 5 || busy || this.year - (gv.lastColony ?? gv.founded) < 15) continue;
+      if (pop < 5 || busy || this.year - (gv.lastColony ?? gv.founded) < (id === 0 ? 5 : 15)) continue;
       let best = null;
       for (const t of this.galaxy.systems) {
         const d = distance(t, s);
-        if (d > 10 || t.id === id || this.isColonized(t.id)) continue;
+        if (d > (id === 0 ? 20 : 10) || t.id === id || this.isColonized(t.id)) continue; // 観戦モードの地球政府は遠くまで
         for (const b of t.bodies) {
           const grade = b.settle?.grade || 0;
           if (grade < 1 || !this.check(t.id, b.id, 'planet').ok) continue;
@@ -2059,7 +2071,7 @@ class Game {
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
       this.keepGhosts(before);
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.govsYearly(); this.stationsYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); this.siegesYearly(); this.recordSnapshots(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.govsYearly(); this.stationsYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); if (this.spectate) this.earthWarYearly(); this.siegesYearly(); this.recordSnapshots(); }
     }
     return changed;
   }
@@ -2388,6 +2400,7 @@ class Game {
     if (Number.isFinite(d.warThreshold)) this.warThreshold = d.warThreshold;
     if (Array.isArray(d.troopMoves)) this.troopMoves = d.troopMoves.filter((m) => m && Array.isArray(m.path) && m.path.every(sysOk));
     if (typeof d.autoHabitat === 'boolean') this.autoHabitat = d.autoHabitat;
+    this.spectate = !!d.spectate;
     if (Array.isArray(d.migrants)) this.migrants = d.migrants.filter((m) => m && sysOk(m.fromSys) && sysOk(m.toSys) && Number.isFinite(m.n));
     if (Array.isArray(d.migLog)) this.migLog = d.migLog;
     if (Array.isArray(d.requests)) this.requests = d.requests.filter((q) => q && sysOk(q.from) && sysOk(q.to) && Number.isFinite(q.arrive));
@@ -2419,7 +2432,10 @@ class Game {
     this.events.length = Math.min(this.events.length, 300);
     this.message(text, sys);
   }
-  knownEvents() { return this.events.filter((e) => (e.seen ?? e.year) <= this.year).sort((a, b) => (b.seen ?? b.year) - (a.seen ?? a.year)); }
+  knownEvents() {
+    if (this.spectate) return this.events.filter((e) => e.year <= this.year).sort((a, b) => b.year - a.year);
+    return this.events.filter((e) => (e.seen ?? e.year) <= this.year).sort((a, b) => (b.seen ?? b.year) - (a.seen ?? a.year));
+  }
   // 充足率などの悪化と回復を検知してイベントにする (ばたつかないよう 95% 未満で発生、99% 以上で解消)
   // 判定には1年程度でならした値を使い、荷の到着の波で発生と解消を繰り返さないようにする
   watch(c, key, raw, kind, onText, offText) {
@@ -2439,7 +2455,10 @@ class Game {
     this.log.unshift({ year: this.year, seen: this.year + this.lightDelay(sys), text });
     this.log.length = Math.min(this.log.length, 120);
   }
-  knownLog() { return this.log.filter((l) => (l.seen ?? l.year) <= this.year).sort((a, b) => (b.seen ?? b.year) - (a.seen ?? a.year)); }
+  knownLog() {
+    if (this.spectate) return this.log.filter((l) => l.year <= this.year).sort((a, b) => b.year - a.year);
+    return this.log.filter((l) => (l.seen ?? l.year) <= this.year).sort((a, b) => (b.seen ?? b.year) - (a.seen ?? a.year));
+  }
 
   // --- 星系の様子の記録 (地球から見えるのは光が届いた時点の様子) ---
   snapshot(id) {
@@ -2480,6 +2499,12 @@ class Game {
   // 地球から見えている星系の様子。太陽系はいつも最新。まだ光が届いていなければ null
   known(id) {
     if (id === 0) return this.snapshot(0);
+    // 観戦モードでは、いまの実際の様子 (同じ時刻のあいだは使い回す)
+    if (this.spectate) {
+      if (!this.live || this.live.year !== this.year) this.live = { year: this.year, map: new Map() };
+      if (!this.live.map.has(id)) this.live.map.set(id, this.isColonized(id) || this.garrison[id] > 0 ? this.snapshot(id) : null);
+      return this.live.map.get(id);
+    }
     const list = this.snaps[id];
     if (!list) return null;
     const seenYear = this.year - this.lightDelay(id);
@@ -2510,10 +2535,11 @@ class Game {
     const k = this.known(id);
     return k ? this.year - k.year : null;
   }
-  routeKnown(r) { return r.built === undefined || r.built + this.lightDelay(r.by ?? r.a) <= this.year; }
+  routeKnown(r) { return this.spectate || r.built === undefined || r.built + this.lightDelay(r.by ?? r.a) <= this.year; }
   // 地球から見た動くものの位置。posAt(t) は年 t の位置。光が地球に届くのにかかる時間を差し引いた位置を返す
   // (出発がまだ見えていない・到着がもう見えているなら null)
   apparent(posAt, t0, t1) {
+    if (this.spectate) return this.year < t0 || this.year > t1 ? null : posAt(this.year); // 観戦モードは実際の位置
     const E = this.system(0);
     const f = (t) => { const q = posAt(t); return t + Math.hypot(q.x - E.x, q.y - E.y) - this.year; };
     if (f(t0) > 0 || f(t1) <= 0) return null;
@@ -2522,7 +2548,44 @@ class Game {
     for (let i = 0; i < 16; i++) { const m = (lo + hi) / 2; if (f(m) > 0) hi = m; else lo = m; }
     return posAt(lo);
   }
-  departSeen(sys, t) { return t + this.lightDelay(sys) <= this.year; }
+  departSeen(sys, t) { return t + (this.spectate ? 0 : this.lightDelay(sys)) <= this.year; }
+  // 観戦モードの切り替え。オンにすると地球政府の自動化 (開発・防衛配備・居住区・資金援助) もすべてオンにする
+  setSpectate(on) {
+    this.spectate = !!on;
+    this.live = null;
+    if (on) { this.auto[0] = true; this.autoDefense = true; this.autoBuild = true; this.autoHabitat = true; this.autoGrant = true; }
+    this.message(on ? '観戦モードにした (実際の様子を見る。地球政府も自動で動く)' : '観戦モードを終えた (地球に届く光で見る)');
+  }
+  // 観戦モードの地球政府の戦争の判断 (年1回): 交戦中の独立国に対し、優勢なら手近な敵の星系へ艦隊を差し向け、
+  // 劣勢なら講和を申し入れる。戦時は太陽系で艦隊を編成する。平時でも独立国より5倍以上強ければ年5%の確率で宣戦する
+  earthWarYearly() {
+    const ours = this.realmShips(0);
+    const ordered = (act, sys) => this.requests.some((q) => q.kind === 'order' && q.act === act && Number(q.d.sys) === sys);
+    for (const x of this.colonizedSystems()) {
+      const root = x.id;
+      if (root === 0 || this.realmOf(root) !== root || !this.gov(root).independent) continue;
+      const theirs = this.realmShips(root);
+      if (this.realmWars[root] === undefined) {
+        if (ours > 5 * Math.max(1, theirs) && Math.random() < 0.05) this.declareWar(root);
+        continue;
+      }
+      if (this.hasShipyard(0) && this.gov(0).credits >= 2 * WARSHIP_COST.credits) this.buildWarship(0);
+      if (ours < 0.7 * theirs) { if (!ordered('peace', root)) this.command('peace', { sys: root }); continue; }
+      let best = null;
+      for (const t of this.realmSystems(root)) {
+        if (ordered('fleet', t.id) || this.fleets.some((f) => f.to === t.id && (f.owner ?? 0) === 0)) continue;
+        const b = this.battleAt(t.id);
+        const need = (this.garrison[t.id] || 0) + (b ? b.d : 0) + 2;
+        for (const s of this.realmSystems(0)) {
+          const n = (this.garrison[s.id] || 0) - 1;
+          if (n < need) continue;
+          const d = distance(s, t);
+          if (!best || d < best.d) best = { s, t, n, d };
+        }
+      }
+      if (best) this.command('fleet', { from: best.s.id, sys: best.t.id, n: best.n });
+    }
+  }
 
   // --- 指令: 地球から他の星系への指示は光速で届き、届いた先の政府が実行する ---
   cmdTarget(act, d) {
@@ -4114,7 +4177,7 @@ function newGame(seed) {
   const galaxy = generateGalaxy({ seed, starCount: 400, meanSpacing: 4 });
   app.game = new Game(galaxy);
   app.sel = { sys: 0, body: null };
-  try { history.replaceState(null, '', `?seed=${encodeURIComponent(seed)}`); } catch { /* 埋め込み環境では無視 */ }
+  try { const q = new URLSearchParams(location.search); q.set('seed', seed); history.replaceState(null, '', `?${q}`); } catch { /* 埋め込み環境では無視 */ }
   galaxyView.fit();
   app.dirty = true;
 }
@@ -4151,24 +4214,6 @@ $('tab-cands').onclick = () => app.setView('cands');
 $('zoom-in').onclick = () => galaxyView.zoomAt(1.5, w / 2, h / 2);
 $('zoom-out').onclick = () => galaxyView.zoomAt(1 / 1.5, w / 2, h / 2);
 $('zoom-fit').onclick = () => galaxyView.fit();
-// 「新しい銀河」はセーブを消すので、2回押して確定する(confirm() は使えない環境がある)
-let armed = 0;
-$('newgame').onclick = () => {
-  const b = $('newgame');
-  if (!armed) {
-    b.textContent = '本当に? セーブが消えます';
-    armed = setTimeout(() => { armed = 0; b.textContent = '新しい銀河'; }, 4000);
-    return;
-  }
-  clearTimeout(armed);
-  armed = 0;
-  b.textContent = '新しい銀河';
-  clearSave();
-  newGame(String(Math.floor(Math.random() * 1e6)));
-  save();
-};
-
-
 // --- セーブ(localStorage) ---
 const SAVE_KEY = 'moribin-save-v1';
 function buildSave(game, extra = {}) {
@@ -4176,7 +4221,7 @@ function buildSave(game, extra = {}) {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
-    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, autoDefense: game.autoDefense, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
 }
@@ -4214,23 +4259,114 @@ function save() {
 }
 
 $('savenow').onclick = () => { save(); app.game.message('セーブした。'); };
-$('export').onclick = () => {
+function exportSave() {
   const blob = new Blob([JSON.stringify(buildSave(app.game, { speed: app.speed }))], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `moribin-${app.game.year.toFixed(0)}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-};
-$('import').onclick = () => $('importfile').click();
+}
 $('importfile').onchange = async (e) => {
   const f = e.target.files[0];
   e.target.value = '';
   if (!f) return;
   const d = parseSave(await f.text());
-  if (d && loadSave(d)) { save(); app.game.message('セーブデータを読み込んだ。'); }
-  else app.game.message('セーブデータを読み込めなかった。');
+  if (d && loadSave(d)) { save(); app.game.message('セーブデータを読み込んだ。'); closeHome(d.speed); }
+  else { app.homeNote = 'セーブデータを読み込めなかった。'; renderHome(); }
 };
+
+// --- ホーム画面 (新しいゲーム・続きから・セーブスロット・ファイル) ---
+// ホーム画面を開いているあいだは時間を止める。スロットは自動セーブとは別に localStorage に保存する
+const SLOT_KEYS = [1, 2, 3].map((i) => `moribin-slot-${i}`);
+const readKey = (k) => { try { const t = localStorage.getItem(k); return t ? parseSave(t) : null; } catch { return null; } };
+function saveInfo(d) {
+  if (!d) return '<span class="muted">空き</span>';
+  const sys = new Set((d.colonies || []).map((c) => c.sys)).size;
+  return `西暦 ${Math.floor(d.year)}年・入植星系 ${sys}・銀河 #${esc(String(d.seed))}${d.spectate ? '・<b>観戦</b>' : ''}
+    ${d.savedAt ? `<br><span class="muted">${esc(new Date(d.savedAt).toLocaleString('ja-JP'))}</span>` : ''}`;
+}
+function homeHtml() {
+  const armed = (k) => app.homeArmed === k;
+  const slots = SLOT_KEYS.map((k, i) => {
+    const d = readKey(k);
+    return `<div class="row"><div class="info"><b>スロット ${i + 1}</b><br>${saveInfo(d)}</div>
+      <button data-home="slotsave" data-i="${i}">${armed(`save${i}`) ? '上書きする?' : 'ここにセーブ'}</button>
+      <button data-home="slotload" data-i="${i}" ${d ? '' : 'disabled'}>ロード</button>
+      <button class="ghost" data-home="slotdel" data-i="${i}" ${d ? '' : 'disabled'}>${armed(`del${i}`) ? '本当に削除?' : '削除'}</button></div>`;
+  }).join('');
+  return `<div class="card">
+    <h1>Moribin</h1><p class="muted">光速の壁の向こうへ広がる恒星間植民</p>
+    ${app.homeNote ? `<p class="note bad">${esc(app.homeNote)}</p>` : ''}
+    <section><h3>いまのゲーム</h3>
+      <div class="row"><div class="info">${saveInfo(buildSave(app.game))}</div><button class="big" data-home="resume">${app.started ? 'ゲームに戻る' : '続きから'}</button></div>
+    </section>
+    <section><h3>新しいゲーム</h3>
+      <div class="row"><label>銀河の番号 <input id="home-seed" type="text" inputmode="numeric" placeholder="空欄ならランダム" value="${esc(app.homeSeed || '')}"></label>
+        <label><input id="home-spectate" type="checkbox" ${app.homeSpectate ? 'checked' : ''}> 観戦モード</label>
+        <button data-home="new">${armed('new') ? '本当に? いまのゲームは消える' : 'はじめる'}</button></div>
+      <p class="note">いまのゲームは、スロットにセーブしておかないと新しいゲームで上書きされる (自動セーブは1つだけ)。</p>
+      <p class="note">観戦モード: 光の遅れなしに実際の様子 (船の実際の位置・各星系のいまの状態) を見られ、地球政府も自動で入植・開発・防衛・戦争をする。ゲーム中でも上の「観戦」ボタンで切り替えられる。</p>
+    </section>
+    <section><h3>セーブスロット</h3>${slots}</section>
+    <section><h3>ファイル</h3><div class="row"><button data-home="export">ファイルに書き出し</button><button data-home="import">ファイルから読み込み</button></div></section>
+  </div>`;
+}
+function renderHome() { $('home').innerHTML = homeHtml(); }
+function openHome() {
+  if (!app.homeOpen) { app.homeSpeed = app.speed; app.speed = 0; updateSpeedButtons(); }
+  app.homeOpen = true;
+  app.homeArmed = null;
+  app.homeNote = '';
+  save();
+  renderHome();
+  $('home').hidden = false;
+}
+function closeHome(speed) {
+  $('home').hidden = true;
+  app.homeOpen = false;
+  app.started = true;
+  app.speed = SPEEDS.includes(speed) && speed ? speed : app.homeSpeed || 1;
+  updateSpeedButtons();
+  updateSpectateBtn();
+  app.dirty = true;
+}
+$('homebtn').onclick = openHome;
+$('home').onclick = (e) => {
+  const b = e.target.closest('button[data-home]');
+  if (!b) return;
+  const act = b.dataset.home;
+  const i = Number(b.dataset.i);
+  app.homeSeed = $('home-seed')?.value.trim() || '';
+  app.homeSpectate = !!$('home-spectate')?.checked;
+  app.homeNote = '';
+  // 取り返しのつかない操作は2回押して確定する (confirm() は使えない環境がある)
+  const confirm2 = (k) => { if (app.homeArmed === k) { app.homeArmed = null; return true; } app.homeArmed = k; renderHome(); return false; };
+  if (act === 'resume') return closeHome();
+  if (act === 'new') {
+    if (!confirm2('new')) return;
+    newGame(app.homeSeed || String(Math.floor(Math.random() * 1e6)));
+    if (app.homeSpectate) app.game.setSpectate(true);
+    save();
+    return closeHome(1);
+  }
+  if (act === 'slotsave') {
+    if (readKey(SLOT_KEYS[i]) && !confirm2(`save${i}`)) return;
+    try { localStorage.setItem(SLOT_KEYS[i], JSON.stringify(buildSave(app.game, { speed: app.homeSpeed }))); } catch { app.homeNote = 'セーブできなかった (保存容量が足りないか、この環境では保存できない)'; }
+  } else if (act === 'slotload') {
+    const d = readKey(SLOT_KEYS[i]);
+    if (d && loadSave(d)) { save(); app.game.message(`スロット ${i + 1} をロードした。`); return closeHome(d.speed); }
+    app.homeNote = 'ロードできなかった';
+  } else if (act === 'slotdel') {
+    if (!confirm2(`del${i}`)) return;
+    try { localStorage.removeItem(SLOT_KEYS[i]); } catch { /* 保存できない環境では無視 */ }
+  } else if (act === 'export') exportSave();
+  else if (act === 'import') return $('importfile').click();
+  app.homeArmed = null;
+  renderHome();
+};
+function updateSpectateBtn() { $('spectatebtn').classList.toggle('on', !!app.game.spectate); }
+$('spectatebtn').onclick = () => { app.game.setSpectate(!app.game.spectate); updateSpectateBtn(); app.dirty = true; };
 setInterval(save, 5000);
 window.addEventListener('pagehide', save);
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
@@ -4246,7 +4382,8 @@ function updateSpeedButtons() {
   document.querySelectorAll('[data-speed]').forEach((b) => b.classList.toggle('on', SPEEDS[Number(b.dataset.speed)] === app.speed));
 }
 window.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'SELECT') return;
+  if (app.homeOpen) { if (e.key === 'Escape') closeHome(); return; }
+  if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
   if (e.key === ' ') { setSpeed(app.speed ? 0 : app.lastSpeed || 1); e.preventDefault(); }
   else if (e.key >= '1' && e.key <= String(SPEEDS.length)) setSpeed(SPEEDS[Number(e.key) - 1]);
   else if (e.key === 'g') app.setView('galaxy');
@@ -4284,6 +4421,7 @@ function onPanelClick(e) {
   }
   if (!r) return;
   if (!r.ok) g.message(`できない: ${r.reason}`);
+  g.live = null; // 観戦モードの「いまの様子」を取り直す
   app.dirty = true;
   save();
 }
@@ -4381,7 +4519,10 @@ if (saved && (wanted === null || wanted === String(saved.seed))) {
   newGame(wanted || String(Math.floor(Math.random() * 1e6)));
 }
 updateSpeedButtons();
+updateSpectateBtn();
 save();
+// 起動時はホーム画面から (?home=0 なら出さない)
+if (params.get('home') !== '0') openHome();
 requestAnimationFrame(frame);
 window.__app = app; // デバッグ用
 
