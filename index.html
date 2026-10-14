@@ -644,6 +644,7 @@ const OFFROUTE_SPEED = 0.9; // 交易路の外を飛ぶときの速度 (艦隊�
 const START_YEAR = 2300;
 const START_CREDITS = 1000;
 const STEP = 0.25; // 経済シミュレーションの刻み[年]
+const GHOST_KINDS = ['cargo', 'fleets', 'requests', 'troopMoves', 'migrants', 'ships', 'projects'];
 
 const KIND_LABEL = { station: '宇宙ステーション', planet: '惑星入植地' };
 const FOCUS = {
@@ -708,6 +709,8 @@ class Game {
     this.snaps = {}; // 星系ごとの様子の記録 (地球から見えるのは光が届いた分だけ)
     this.realmWars = {}; // 地球の国と交戦中の独立国 { [独立国の首都の星系]: 開戦年 }
     this.sieges = []; // 攻囲 { sys, realm (攻める国の首都), ships, progress, start }
+    // 到着して消えたあとも、その到着の光が地球に届くまでは地図に見えている動くもの (表示用、セーブしない)
+    this.ghosts = { cargo: [], fleets: [], requests: [], troopMoves: [], migrants: [], ships: [], legs: [] };
     this.battles = []; // 艦隊戦 { sys, realm (攻める国の首都), a (攻撃側), d (防衛側), a0, d0 (投入した総数), start, progress (中断した攻囲の進捗) }
     this.stock = {}; // 星系ごとの備蓄。同じ星系の入植地は備蓄を共有する
     this.routes = []; // 交易路 { id, a, b, lv, transit: [A→Bの輸送中量, B→A], vol: [年あたり輸送量] }
@@ -2020,6 +2023,7 @@ class Game {
     while (dt > 1e-9) {
       const h = Math.min(STEP, dt);
       dt -= h;
+      const before = Object.fromEntries(GHOST_KINDS.map((k) => [k, [...this[k]]]));
       this.year += h;
       for (const gv of Object.values(this.govs)) gv.led = {};
       if (this.arrivals()) changed = true;
@@ -2027,11 +2031,35 @@ class Game {
       if (this.pirates(h)) changed = true;
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
+      this.keepGhosts(before);
       if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.govsYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); this.siegesYearly(); this.recordSnapshots(); }
     }
     return changed;
   }
 
+  // 1歩のあいだに一覧から消えた動くものを、到着が地球から見えるまで表示用に残す
+  keepGhosts(before) {
+    const dest = {
+      cargo: (p) => p.path[p.path.length - 1], fleets: (f) => f.to, requests: (q) => q.to, troopMoves: (m) => m.path[m.path.length - 1],
+      migrants: (m) => m.toSys, ships: (s) => s.to,
+    };
+    for (const k of GHOST_KINDS) {
+      const now = new Set(this[k]);
+      for (const o of before[k]) {
+        if (now.has(o)) continue;
+        if (k === 'projects') {
+          for (const l of o.legs || []) {
+            const until = l.times[l.times.length - 1] + this.lightDelay(o.sys);
+            if (until > this.year) this.ghosts.legs.push({ ...l, until });
+          }
+          continue;
+        }
+        const until = Math.max(o.arrive ?? this.year, this.year - 1e-9) + this.lightDelay(dest[k](o));
+        if (until > this.year) { o.until = until; this.ghosts[k].push(o); }
+      }
+    }
+    for (const k of Object.keys(this.ghosts)) this.ghosts[k] = this.ghosts[k].filter((o) => o.until > this.year);
+  }
   arrivals() {
     let changed = false;
     for (const q of this.requests) if (q.kind === 'tribute' && q.arrive <= this.year && this.govs[q.to]) this.earn('tribute', q.amt, q.to);
@@ -2779,7 +2807,7 @@ class GalaxyView {
     }
     ctx.lineWidth = 1;
     ctx.fillStyle = '#6fdc96';
-    for (const p of game.cargo) {
+    for (const p of [...game.cargo, ...game.ghosts.cargo]) {
       const pos = seenAt((t) => game.pathPosition(p.path, p.times, t), p.times[0], p.arrive);
       if (!pos) continue;
       const [px, py] = this.toScreen(pos.x, pos.y);
@@ -2787,7 +2815,7 @@ class GalaxyView {
     }
 
     // 艦隊
-    for (const f of game.fleets) {
+    for (const f of [...game.fleets, ...game.ghosts.fleets]) {
       const p = seenAt((t) => game.shipPosition(f, t), f.depart, f.arrive);
       if (!p) continue;
       const [px, py] = this.toScreen(p.x, p.y);
@@ -2797,7 +2825,7 @@ class GalaxyView {
 
     // 建設資材の輸送船
     ctx.fillStyle = '#ffd24d';
-    for (const j of game.projects) {
+    for (const j of [...game.projects, { legs: game.ghosts.legs }]) {
       const legs = j.legs || j.from.map((from) => ({ path: [from, j.sys], times: [j.start, j.start + game.travelYears(from, j.sys)] }));
       for (const l of legs) {
         const pos = seenAt((t) => game.pathPosition(l.path, l.times, t), l.times[0], l.times[l.times.length - 1]);
@@ -2809,7 +2837,7 @@ class GalaxyView {
 
     // 光速の通信 (物資移送要求・指令・朝貢): 見かけの位置に光の点と、出発地からの点線
     const SIGNAL = { build: '255,210,77', trade: '201,162,255', order: '170,220,255', tribute: '160,230,120', grant: '255,215,120' };
-    for (const q of game.requests) {
+    for (const q of [...game.requests, ...game.ghosts.requests]) {
       const a = game.system(q.from);
       const b = game.system(q.to);
       const color = SIGNAL[q.kind] || SIGNAL.trade;
@@ -2828,7 +2856,7 @@ class GalaxyView {
         glow.addColorStop(1, `rgba(${color},0)`);
         ctx.fillStyle = glow;
         ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
-      } else if (q.kind === 'trade' && q.arrive <= game.year && game.departSeen(q.to, q.arrive)) {
+      } else if (q.kind === 'trade' && q.until === undefined && q.arrive <= game.year && game.departSeen(q.to, q.arrive)) {
         ctx.strokeStyle = `rgba(${color},0.6)`;
         ctx.beginPath(); ctx.arc(bx, by, 9, 0, Math.PI * 2); ctx.stroke();
       }
@@ -2836,7 +2864,7 @@ class GalaxyView {
 
     // 移動中の歩兵 (交易路をたどる)
     ctx.fillStyle = '#ff9f8f';
-    for (const m of game.troopMoves) {
+    for (const m of [...game.troopMoves, ...game.ghosts.troopMoves]) {
       const pos = seenAt((t) => game.pathPosition(m.path, m.times, t), m.times[0], m.arrive);
       if (!pos) continue;
       const [px, py] = this.toScreen(pos.x, pos.y);
@@ -2845,7 +2873,7 @@ class GalaxyView {
 
     // 移民船
     ctx.fillStyle = '#8fd3ff';
-    for (const m of game.migrants) {
+    for (const m of [...game.migrants, ...game.ghosts.migrants]) {
       if (m.fromSys === m.toSys) continue;
       const at = (t) => (m.path ? game.pathPosition(m.path, m.times, t) : game.shipPosition({ from: m.fromSys, to: m.toSys, depart: m.depart, arrive: m.arrive }, t));
       const pos = seenAt(at, m.depart, m.arrive);
@@ -2855,7 +2883,7 @@ class GalaxyView {
     }
 
     // 入植船
-    for (const s of game.ships) {
+    for (const s of [...game.ships, ...game.ghosts.ships]) {
       const path = s.path || [s.from, s.to];
       const times = s.times || [s.depart, s.arrive];
       const p = seenAt((t) => game.pathPosition(path, times, t), times[0], s.arrive);
@@ -3573,10 +3601,8 @@ function nativesBox(app, sys, b) {
 
 function dispatchBox(app, sys, b) {
   const g = app.game;
-  const origins = g.knownSystems()
-    .map((s) => ({ s, t: g.voyage(s.id, sys.id, OFFROUTE_SPEED).years }))
-    .sort((a, c) => a.t - c.t);
-  const sel = app.originId !== undefined && origins.some((o) => o.s.id === app.originId) ? app.originId : origins[0].s.id;
+  // プレイヤー (地球政府) の入植船は、いつも太陽系から自分で送り出す (ほかの星系への指令にはしない)
+  const sel = 0;
   const v = g.voyage(sel, sys.id, OFFROUTE_SPEED);
   const t = v.years;
   const btn = (kind) => {
@@ -3585,9 +3611,8 @@ function dispatchBox(app, sys, b) {
   };
   const sup = (kind) => g.shipSupplies(kind, sel, sys.id);
   return `<h3>入植船を送る</h3>
-    <label class="field">出発地
-      <select data-act="origin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === sel ? 'selected' : ''}>${esc(o.s.name)} (${o.t < 0.01 ? '星系内' : `${o.t.toFixed(1)} 年`})</option>`).join('')}</select></label>
-    <p class="note">入植船は交易路をたどって (光速) 目的地に最も近い星系まで行き、最後だけ交易路の外を 0.9c で直行する${v.path.length > 2 ? ` (経由: ${v.path.slice(1, -1).map((id) => esc(g.system(id).name)).join(' → ')})` : ''}。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>。費用は出発地の備蓄から払う。</p>
+    <p class="note">入植船は地球政府が太陽系から送り出す (費用は地球の資金と太陽系の備蓄から。その場で出発の準備に入る)。新しい入植地は太陽系に従属する。ほかの星系の政府は自分の判断で入植する。</p>
+    <p class="note">入植船は交易路をたどって (光速) 目的地に最も近い星系まで行き、最後だけ交易路の外を 0.9c で直行する${v.path.length > 2 ? ` (経由: ${v.path.slice(1, -1).map((id) => esc(g.system(id).name)).join(' → ')})` : ''}。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>。</p>
     <p class="note">入植船は食料と水を約 ${Math.round(g.supplyYears(sel, sys.id))} 年分 (交易路を結んで物資が届き始めるまでの見込み、人口の伸びも見込んで2倍) 積んでいき、入植先の備蓄にする。
       惑星入植地: 食料 ${sup('planet').food}・水 ${sup('planet').water} / ステーション: 食料 ${sup('station').food}・水 ${sup('station').water}</p>
     ${(() => {
@@ -3595,7 +3620,7 @@ function dispatchBox(app, sys, b) {
       const have = g.coloniesIn(sel).reduce((k, c) => k + c.troops + c.slaveTroops, 0);
       const n = g.isSurveyed(sys.id) ? g.nativeOf(sys.id, b.id) : null;
       const warn = n && g.hostileNatives(sys.id, b.id) ? `<b class="bad">到着すると${esc(n.def.species)}との征服戦争になる (抵抗力 ${need})。</b>` : '';
-      return `<p class="note">惑星入植地の入植船には出発地の歩兵が同行する: ${Math.min(need, have)} / ${need} 連隊 (出発地の駐留 ${have})。${warn}</p>`;
+      return `<p class="note">惑星入植地の入植船には太陽系の歩兵が同行する: ${Math.min(need, have)} / ${need} 連隊 (太陽系の駐留 ${have})。${warn}</p>`;
     })()}
     <div class="btns">${btn('station')}${btn('planet')}</div>`;
 }
@@ -3945,15 +3970,13 @@ function eventsHtml(app) {
 // 候補地タブ: ハビタブルゾーン内にある未入植の天体
 function candidatesHtml(app) {
   const g = app.game;
-  const origins = g.knownSystems();
   const rows = [];
   for (const sys of g.galaxy.systems) {
     for (const b of sys.bodies) {
       if (!b.inHZ || b.type === 'belt' || g.knownColonyAt(sys.id, b.id, 'planet') || g.knownColonyAt(sys.id, b.id, 'station')) continue;
       const grade = b.settle?.grade || 0;
       if (app.candOnly && grade < 1) continue;
-      let from = origins[0];
-      for (const o of origins) if (distance(o, sys) < distance(from, sys)) from = o;
+      const from = g.system(0); // 入植船はいつも太陽系から送る
       rows.push({ sys, b, grade, from, d: distance(from, sys) });
     }
   }
@@ -4037,13 +4060,12 @@ const app = {
   view: 'galaxy',
   sel: { sys: 0, body: null },
   speed: 1,
-  originId: undefined,
   routeDest: undefined,
   fleetOrigin: undefined,
   dirty: true,
   selectSystem(id) {
     this.sel = { sys: id, body: null };
-    this.originId = this.routeDest = this.fleetOrigin = undefined;
+    this.routeDest = this.fleetOrigin = undefined;
     this.dirty = true;
   },
   openSystem(id) { this.selectSystem(id); this.setView('system'); },
@@ -4225,7 +4247,7 @@ function onPanelClick(e) {
   if (act === 'back') return app.selectBody(null);
   // 行動はすべて command を通す。太陽系以外が対象なら光速の指令になり、届いた先の政府が実行する
   const d = { ...btn.dataset, sys, body, kind };
-  if (act === 'send') d.from = app.originId ?? nearestOrigin();
+  if (act === 'send' || act === 'candsend') d.from = 0;
   let r;
   if (act === 'bulkfocus') {
     for (const sx of g.knownSystems()) for (const c of g.knownColonies(sx.id)) g.command('focus', { col: colKey(c), value: app.bulkFocus || 'balanced' });
@@ -4241,8 +4263,7 @@ function onPanelClick(e) {
 function onPanelChange(e) {
   const { act, col } = e.target.dataset;
   const v = e.target.value;
-  if (act === 'origin') app.originId = Number(v);
-  else if (act === 'rdest') app.routeDest = Number(v);
+  if (act === 'rdest') app.routeDest = Number(v);
   else if (act === 'forigin') app.fleetOrigin = Number(v);
   else if (act === 'bulkfocus') app.bulkFocus = v;
   else if (act === 'candonly') app.candOnly = e.target.checked;
@@ -4288,11 +4309,6 @@ for (const el of [panel, empire]) {
 window.addEventListener('pointerup', () => { panelHeld = false; });
 window.addEventListener('pointercancel', () => { panelHeld = false; });
 const panelBusy = () => panelHeld || document.activeElement?.tagName === 'SELECT';
-function nearestOrigin() {
-  const g = app.game;
-  return g.colonizedSystems().sort((a, b) => g.travelYears(a.id, app.sel.sys) - g.travelYears(b.id, app.sel.sys))[0].id;
-}
-
 // --- メインループ ---
 let last = performance.now();
 let acc = 0;
