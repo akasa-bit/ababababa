@@ -639,8 +639,9 @@ function addExtras(galaxy) {
 // 人口の単位は百万人。資源の単位は「100万人が1年に食べる食料」= 1 を基準にした量。
 
 
-const SHIP_SPEED = 1.0; // 船の速度 [ly/年] = 光速 (1c)
-const OFFROUTE_SPEED = 0.9; // 交易路の外を飛ぶときの速度 (艦隊・入植船)。交易路上は光速
+// 通信 (物資移送要求・指令・朝貢・送金) は光速。船はそれより遅いので、地球へ向かう船も瞬間移動には見えない
+const SHIP_SPEED = 0.95; // 交易路上の船の速度 [c] (貨物船・資材輸送船・入植船・移民船・歩兵・艦隊)
+const OFFROUTE_SPEED = 0.9; // 交易路の外を飛ぶときの速度 [c] (艦隊・入植船・征服戦争の増援)
 const START_YEAR = 2300;
 const START_CREDITS = 1000;
 const STEP = 0.25; // 経済シミュレーションの刻み[年]
@@ -1196,8 +1197,13 @@ class Game {
     }
   }
 
+  // 光 (通信) が届くまでの年数
   travelYears(fromId, toId) {
-    return Math.max(distance(this.system(fromId), this.system(toId)), 0.001) / SHIP_SPEED;
+    return Math.max(distance(this.system(fromId), this.system(toId)), 0.001);
+  }
+  // 船で行く年数 (交易路上は SHIP_SPEED、交易路の外は OFFROUTE_SPEED)
+  shipYears(fromId, toId, onRoute = true) {
+    return this.travelYears(fromId, toId) / (onRoute ? SHIP_SPEED : OFFROUTE_SPEED);
   }
 
   dispatch(fromId, toId, bodyId, kind) {
@@ -1366,7 +1372,7 @@ class Game {
     (this.inbound[dest] ??= zeroRes())[res] += amt;
     for (const l of legs) l.r.transit[l.dir][res] += amt;
     const times = [this.year];
-    for (let i = 1; i < path.length; i++) times.push(times[i - 1] + this.travelYears(path[i - 1], path[i]));
+    for (let i = 1; i < path.length; i++) times.push(times[i - 1] + this.shipYears(path[i - 1], path[i]));
     const key = path.join('>');
     let p = null;
     for (let i = this.cargo.length - 1; i >= Math.max(0, this.cargo.length - 64) && !p; i--) {
@@ -1406,8 +1412,8 @@ class Game {
     if (!this.hasShipyard(sysId)) return fail('軍事基地がない');
     return this.order(WARSHIP_COST, sysId, { type: 'warship', label: `${this.system(sysId).name} の艦隊` });
   }
-  // 艦隊は直行する。交易路が直接結ぶ区間なら光速、それ以外は 0.9c
-  fleetYears(from, to) { return this.travelYears(from, to) / (this.routeBetween(from, to) ? 1 : OFFROUTE_SPEED); }
+  // 艦隊は直行する。交易路が直接結ぶ区間なら 0.95c、それ以外は 0.9c
+  fleetYears(from, to) { return this.shipYears(from, to, !!this.routeBetween(from, to)); }
   sendFleet(from, to, n, prefix = '') {
     const have = this.garrison[from] || 0;
     n = Math.min(n, have);
@@ -1943,7 +1949,7 @@ class Game {
       for (const r of this.routes) {
         const v = r.a === u ? r.b : r.b === u ? r.a : null;
         if (v === null) continue;
-        const d = dist[u] + this.travelYears(u, v);
+        const d = dist[u] + this.shipYears(u, v);
         if (dist[v] === undefined || d < dist[v]) { dist[v] = d; prev[v] = u; }
       }
     }
@@ -1951,7 +1957,7 @@ class Game {
     while (path[0] !== a) path.unshift(prev[path[0]]);
     return { path, years: dist[b] };
   }
-  // 歩兵を別の入植地へ送る。同じ星系ならすぐ、別の星系なら交易路をたどって光速で移動する
+  // 歩兵を別の入植地へ送る。同じ星系ならすぐ、別の星系なら交易路をたどって 0.95c で移動する
   sendTroops(fromKey, toKey, n, direct = false) {
     const from = this.colonyByKey(fromKey);
     const to = this.colonyByKey(toKey);
@@ -1960,7 +1966,7 @@ class Game {
     const slave = Math.min(n - troops, from.slaveTroops);
     if (troops + slave < 1) return fail('送れる歩兵がいない');
     // 交易路でつながっていなければ送れない (征服戦争の増援だけは直行する: 0.9c)
-    const route = this.routePath(from.sys, to.sys) || (direct ? { path: [from.sys, to.sys], years: this.travelYears(from.sys, to.sys) / OFFROUTE_SPEED, direct: true } : null);
+    const route = this.routePath(from.sys, to.sys) || (direct ? { path: [from.sys, to.sys], years: this.shipYears(from.sys, to.sys, false), direct: true } : null);
     if (!route) return fail('交易路でつながっていない');
     from.troops -= troops;
     from.slaveTroops -= slave;
@@ -1970,7 +1976,7 @@ class Game {
       return { ok: true };
     }
     const times = [this.year];
-    for (let i = 1; i < route.path.length; i++) times.push(times[i - 1] + this.travelYears(route.path[i - 1], route.path[i]) / (route.direct ? OFFROUTE_SPEED : 1));
+    for (let i = 1; i < route.path.length; i++) times.push(times[i - 1] + this.shipYears(route.path[i - 1], route.path[i], !route.direct));
     this.troopMoves.push({ id: this.nextShipId++, from: fromKey, to: toKey, path: route.path, times, arrive: times[times.length - 1], troops, slave });
     this.message(`${from.name} → ${to.name} へ歩兵 ${troops + slave} 連隊が出発 (${route.direct ? '直行 0.9c' : '交易路経由'}、到着まで ${route.years.toFixed(1)} 年)`, from.sys);
     return { ok: true };
@@ -2344,7 +2350,7 @@ class Game {
         const r = this.routes.find((x) => x.id === p.route);
         if (!r) return null;
         const path = p.dir ? [r.b, r.a] : [r.a, r.b];
-        return { key: path.join('>'), path, times: [p.arrive - this.travelYears(r.a, r.b), p.arrive], arrive: p.arrive, load: p.load };
+        return { key: path.join('>'), path, times: [p.arrive - this.shipYears(r.a, r.b), p.arrive], arrive: p.arrive, load: p.load };
       }).filter((p) => p && p.path.every(sysOk) && Number.isFinite(p.arrive));
     }
     this.rebuildTransit();
@@ -2582,7 +2588,7 @@ class Game {
       for (const r of this.routes) {
         const v = r.a === u ? r.b : r.b === u ? r.a : null;
         if (v === null) continue;
-        const d = dist[u] + this.travelYears(u, v);
+        const d = dist[u] + this.shipYears(u, v);
         if (dist[v] === undefined || d < dist[v]) { dist[v] = d; prev[v] = u; }
       }
     }
@@ -2590,7 +2596,7 @@ class Game {
   }
   // 軍事以外の船の航路: 交易路をたどり、目的地に最も近い星系まで行ってから最後だけ直行する。
   // 目的地が交易路網の中なら全区間が交易路。戻り値の times は出発からの経過年数
-  voyage(a, b, offSpeed = 1) {
+  voyage(a, b, offSpeed = SHIP_SPEED) {
     if (a === b) return { path: [a], times: [0], years: 0 };
     const { dist, prev } = this.reach(a);
     let end = a;
@@ -2605,7 +2611,7 @@ class Game {
     const times = [0];
     for (let i = 1; i < path.length; i++) {
       const onRoute = !!this.routeBetween(path[i - 1], path[i]);
-      times.push(times[i - 1] + this.travelYears(path[i - 1], path[i]) / (onRoute ? 1 : offSpeed));
+      times.push(times[i - 1] + this.shipYears(path[i - 1], path[i]) * (onRoute ? 1 : SHIP_SPEED / offSpeed));
     }
     return { path, times, years: times[times.length - 1] };
   }
@@ -2826,7 +2832,7 @@ class GalaxyView {
     // 建設資材の輸送船
     ctx.fillStyle = '#ffd24d';
     for (const j of [...game.projects, { legs: game.ghosts.legs }]) {
-      const legs = j.legs || j.from.map((from) => ({ path: [from, j.sys], times: [j.start, j.start + game.travelYears(from, j.sys)] }));
+      const legs = j.legs || j.from.map((from) => ({ path: [from, j.sys], times: [j.start, j.start + game.shipYears(from, j.sys)] }));
       for (const l of legs) {
         const pos = seenAt((t) => game.pathPosition(l.path, l.times, t), l.times[0], l.times[l.times.length - 1]);
         if (!pos) continue;
@@ -3004,7 +3010,7 @@ class GalaxyView {
       }
     }
 
-    // ホバー中の星: 選択星からの距離と光速での所要年数
+    // ホバー中の星: 選択星からの距離と、通信 (光速) と船 (0.95c / 交易路の外 0.9c) の所要年数
     if (this.hover && this.hover.id !== sel.id) {
       const d = distance(sel, this.hover);
       const t = game.travelYears(sel.id, this.hover.id);
@@ -3013,7 +3019,7 @@ class GalaxyView {
       ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(hx, hy); ctx.stroke();
       const st = this.hover.stars[0];
       const lines = [this.hover.name, `${st.label}${this.hover.stars.length > 1 ? ` 他${this.hover.stars.length - 1}星` : ''}`,
-        `距離 ${d.toFixed(1)} ly (${t.toFixed(1)} 年)`];
+        `距離 ${d.toFixed(1)} ly (通信 ${t.toFixed(1)} 年・船 ${game.shipYears(sel.id, this.hover.id).toFixed(1)}〜${game.shipYears(sel.id, this.hover.id, false).toFixed(1)} 年)`];
       const [mx, my] = this.mouse || [hx, hy];
       ctx.font = '12px sans-serif';
       const bw = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 14;
@@ -3375,7 +3381,7 @@ function routeBox(app, sys) {
        ${costButton(g, `data-act="route" data-dest="${dest}"`, '交易路を開設', g.routeCost(sys.id, dest), sys.id)}`
     : '<p class="note">交易路を結べる相手(他の入植星系)がない</p>';
   return `<h3>交易路</h3>
-    <p class="note">余っている資源を、足りない星系へ自動で運ぶ (光速の貨物船)。交易路でつながっていれば、複数の交易路を乗り継いで届ける。荷は受け手が基準価格で買い取る (送り手の輸出収入になる)。代金を払えない星系は、主人から支援として無償で受け取れるが、そのぶん従属が深まる (忠誠度が上がる)。</p>
+    <p class="note">余っている資源を、足りない星系へ自動で運ぶ (0.95c の貨物船)。交易路でつながっていれば、複数の交易路を乗り継いで届ける。荷は受け手が基準価格で買い取る (送り手の輸出収入になる)。代金を払えない星系は、主人から支援として無償で受け取れるが、そのぶん従属が深まる (忠誠度が上がる)。</p>
     ${list}${open}`;
 }
 
@@ -3405,7 +3411,7 @@ function militaryBox(app, sys) {
     : '';
   const queued = g.projects.filter((j) => j.type === 'warship' && j.sys === sys.id).length;
   return `<h3>軍事</h3>
-    <p class="note">駐留艦隊 <b>${n}</b>${queued ? ` (編成中 ${queued})` : ''}。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1艦隊あたり維持費 ${WARSHIP_UPKEEP} cr/年。艦隊は直行し、交易路が直接結ぶ区間は光速、それ以外は 0.9c</p>
+    <p class="note">駐留艦隊 <b>${n}</b>${queued ? ` (編成中 ${queued})` : ''}。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1艦隊あたり維持費 ${WARSHIP_UPKEEP} cr/年。艦隊は直行し、交易路が直接結ぶ区間は 0.95c、それ以外は 0.9c</p>
     ${build}${send}${defenseToggle(g)}`;
 }
 
@@ -3612,7 +3618,7 @@ function dispatchBox(app, sys, b) {
   const sup = (kind) => g.shipSupplies(kind, sel, sys.id);
   return `<h3>入植船を送る</h3>
     <p class="note">入植船は地球政府が太陽系から送り出す (費用は地球の資金と太陽系の備蓄から。その場で出発の準備に入る)。新しい入植地は太陽系に従属する。ほかの星系の政府は自分の判断で入植する。</p>
-    <p class="note">入植船は交易路をたどって (光速) 目的地に最も近い星系まで行き、最後だけ交易路の外を 0.9c で直行する${v.path.length > 2 ? ` (経由: ${v.path.slice(1, -1).map((id) => esc(g.system(id).name)).join(' → ')})` : ''}。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>。</p>
+    <p class="note">入植船は交易路をたどって (0.95c) 目的地に最も近い星系まで行き、最後だけ交易路の外を 0.9c で直行する${v.path.length > 2 ? ` (経由: ${v.path.slice(1, -1).map((id) => esc(g.system(id).name)).join(' → ')})` : ''}。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>。</p>
     <p class="note">入植船は食料と水を約 ${Math.round(g.supplyYears(sel, sys.id))} 年分 (交易路を結んで物資が届き始めるまでの見込み、人口の伸びも見込んで2倍) 積んでいき、入植先の備蓄にする。
       惑星入植地: 食料 ${sup('planet').food}・水 ${sup('planet').water} / ステーション: 食料 ${sup('station').food}・水 ${sup('station').water}</p>
     ${(() => {
