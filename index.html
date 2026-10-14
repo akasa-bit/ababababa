@@ -673,7 +673,7 @@ const OUTPOST_RES = { 'gas-giant': ['water', 'fuel'], 'ice-giant': ['water', 'fu
 const OUTPOST_RATE = 25; // 埋蔵量1・Lv1あたりの年産量
 const outpostRes = (b) => (b && !b.label && OUTPOST_RES[b.type]) || [];
 const PIRATE_START = 2320;
-const LEDGER_LABEL = { tax: '税収', trade: '交易', export: '余剰の売却', natives: '先住民', tribute: '朝貢', upkeep: '軍の維持費' };
+const LEDGER_LABEL = { tax: '税収', trade: '輸出', import: '輸入', export: '余剰の売却', natives: '先住民', tribute: '朝貢', upkeep: '軍の維持費' };
 const TRIBUTE_RATE = 0.25;
 const LOYALTY_START = 70; // 新しい政府の忠誠度
 const BATTLE_RATE = 0.6; // 艦隊戦で1艦隊が1年に壊滅させる敵艦隊の数 (ランチェスターの係数)
@@ -802,7 +802,7 @@ class Game {
     const pop = (x) => this.coloniesIn(x).reduce((k, c) => k + c.pop, 0);
     const capital = this.system(this.realmOf(lord));
     return clamp(85 - 1.5 * distance(this.system(id), this.system(lord)) - 0.8 * distance(this.system(id), capital) - (pop(id) > pop(lord) ? 25 : 0)
-      - 3 * (gv.orders || 0) + Math.min(15, 2 * (this.garrison[lord] || 0)), 0, 100);
+      - 3 * (gv.orders || 0) + Math.min(15, 2 * (this.garrison[lord] || 0)) + Math.min(40, gv.dep || 0), 0, 100);
   }
   loyaltyYearly() {
     for (const [key, gv] of Object.entries(this.govs)) {
@@ -811,6 +811,9 @@ class Game {
       gv.loyalty ??= LOYALTY_START;
       gv.loyalty = clamp(gv.loyalty + clamp(this.loyaltyTarget(id) - gv.loyalty, -5, 5), 0, 100);
       gv.orders = (gv.orders || 0) * 0.7;
+      gv.dep = (gv.dep || 0) * 0.8;
+      gv.aid = gv.aidYear || 0; // 直近1年に受け取った支援の価値
+      gv.aidYear = 0;
       if (gv.loyalty < 20 && Math.random() < 0.2) this.declareIndependence(id);
     }
   }
@@ -1087,7 +1090,16 @@ class Game {
 
   // 建設資材の調達計画。地元の備蓄で足りない分は、近い入植星系から順に取り寄せる。
   // 取り寄せ元には1年分の需要を残す。eta は最も遠い取り寄せ元からの搬入年数 (0 なら即時)。
+  // 取り寄せる資材は買い取る (基準価格)。輸入費を払えなければ、主人の星系の備蓄だけから支援として無償で取り寄せる (従属が深まる)
   procure(cost, sysId) {
+    const p = this.procureFrom(cost, sysId);
+    if (!p.poor) return p;
+    const lord = this.gov(sysId).lord;
+    if (lord === null || lord === undefined) return { why: p.why };
+    const a = this.procureFrom(cost, sysId, lord);
+    return a.why ? { why: p.why } : { ...a, imp: 0, aid: a.imp };
+  }
+  procureFrom(cost, sysId, onlyFrom) {
     if ((cost.credits || 0) > this.gov(sysId ?? 0).credits) return { why: 'クレジット不足' };
     const plan = [];
     let eta = 0;
@@ -1101,7 +1113,7 @@ class Game {
       // 資材輸送船は交易路しか通れないので、交易路でつながった星系からだけ取り寄せる
       const { dist } = this.reach(sysId);
       const sources = this.colonizedSystems()
-        .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !this.atWar(this.realmOf(s.id), this.realmOf(sysId)))
+        .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !this.atWar(this.realmOf(s.id), this.realmOf(sysId)) && (onlyFrom === undefined || s.id === onlyFrom))
         .map((s) => ({ id: s.id, d: dist[s.id] + this.travelYears(sysId, s.id), spare: this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) }))
         .filter((x) => x.spare > 0)
         .sort((a, b) => a.d - b.d);
@@ -1114,14 +1126,20 @@ class Game {
       }
       if (need > 1e-6) return { why: `${RES_LABEL[r]}が不足 (交易路でつながった星系を含めても足りない)` };
     }
-    return { why: '', eta, plan };
+    const imp = plan.filter((x) => x.from !== sysId).reduce((k, x) => k + x.amt * PRICE[x.r], 0);
+    if (onlyFrom === undefined && imp > 0 && (cost.credits || 0) + imp > this.gov(sysId).credits) return { why: `資金不足 (資材の輸入費 ${Math.ceil(imp)} cr を含む)`, poor: true };
+    return { why: '', eta, plan, imp };
   }
   // 建設を発注する。費用はその場で払い、資材が届いた時点で完成する。
   order(cost, sysId, job) {
     const p = this.procure(cost, sysId);
     if (p.why) return fail(p.why);
     this.gov(sysId).credits -= cost.credits || 0;
-    for (const x of p.plan) this.stockOf(x.from)[x.r] -= x.amt;
+    for (const x of p.plan) {
+      this.stockOf(x.from)[x.r] -= x.amt;
+      if (x.from !== sysId && !p.aid) { this.earn('import', -x.amt * PRICE[x.r], sysId); this.earn('trade', x.amt * PRICE[x.r], x.from); }
+    }
+    if (p.aid) this.receiveAid(sysId, p.aid);
     if (p.eta <= 0) { this.finish({ ...job, sys: sysId }); return { ok: true }; }
     Object.assign(job, {
       id: this.nextShipId++, sys: sysId, start: this.year, ready: this.year + p.eta,
@@ -1137,7 +1155,7 @@ class Game {
       this.requests.push({ id: this.nextShipId++, kind: 'build', from: sysId, to: l.path[0], job: job.id, label: job.label, sent: this.year, arrive: l.times[0], state: 'sending' });
     }
     this.projects.push(job);
-    this.message(`${job.label}: 資材を周辺の星系から搬入中 (完成まで ${p.eta.toFixed(1)} 年)`, sysId);
+    this.message(`${job.label}: 資材を周辺の星系から搬入中 (${p.aid ? `主人の ${this.system(this.gov(sysId).lord).name} から支援 ${Math.ceil(p.aid)} cr 相当` : `輸入費 ${Math.ceil(p.imp || 0)} cr`}、完成まで ${p.eta.toFixed(1)} 年)`, sysId);
     return { ok: true };
   }
   pending(pred) { return this.projects.find(pred); }
@@ -1274,6 +1292,14 @@ class Game {
       for (const l of legs) amt = Math.min(amt, room[`${l.r.id}:${l.dir}`]);
       q.state = 'waiting';
       if (amt <= 0.001) continue;
+      // 受け手が代金を払う (基準価格)。払えない分は、送り手が受け手の主人なら支援として無償で送る。そうでなければ送らない
+      const price = PRICE[q.res];
+      const paid = Math.min(amt, Math.max(0, this.gov(q.from).credits) / price);
+      const aid = this.gov(q.from).lord === q.to ? amt - paid : 0;
+      amt = paid + aid;
+      if (amt <= 0.001) { q.amt = 0; continue; }
+      if (paid > 0) { this.earn('import', -paid * price, q.from); this.earn('trade', paid * price, q.to); }
+      if (aid > 0) this.receiveAid(q.from, aid * price);
       for (const l of legs) {
         const k = `${l.r.id}:${l.dir}`;
         room[k] -= amt;
@@ -1302,9 +1328,12 @@ class Game {
       const sources = Object.keys(dist).map(Number).filter((id) => id !== T).sort((x, y) => dist[x] - dist[y]);
       const inb = (this.inbound[T] ??= zeroRes());
       const sto = this.stockOf(T);
+      const lord = this.gov(T).lord;
       for (const res of needs) {
         const min = Math.max(0.5, 0.05 * ft.cons[res]);
-        for (const S of sources) {
+        // 代金を払えない星系は、主人にだけ支援を求める
+        const broke = this.gov(T).credits < min * PRICE[res];
+        for (const S of broke ? sources.filter((x) => x === lord) : sources) {
           const lead = dist[S] + this.travelYears(T, S);
           let want = Math.min((2 + lead) * ft.cons[res], 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked[`${T}|${res}`] || 0);
           if (want <= min) break;
@@ -2029,7 +2058,6 @@ class Game {
           st[res] += amt;
           inb[res] = Math.max(0, inb[res] - amt);
           for (const l of legs) l.r.transit[l.dir][res] = Math.max(0, l.r.transit[l.dir][res] - amt);
-          this.earn('trade', amt * PRICE[res] * 0.1, dest); // 運んだ荷の価値の1割が受け手の交易収入になる
         }
       }
     }
@@ -2037,6 +2065,14 @@ class Game {
   }
 
   // 収支を星系の政府につける。プラスの収入は朝貢の計算に使う
+  // 主人から支援物資を受け取る: 代金は払わないかわりに従属が深まる。
+  // 受け取った価値 10 cr ごとに忠誠度がすぐ +1 され、依存度 (年に2割ずつ薄れる) が忠誠度の目標を最大 +40 押し上げる
+  receiveAid(id, value) {
+    const gv = this.gov(id);
+    gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + value / 10);
+    gv.dep = (gv.dep || 0) + value / 10;
+    gv.aidYear = (gv.aidYear || 0) + value;
+  }
   earn(kind, amount, sys = 0) {
     const gv = this.gov(sys);
     gv.credits += amount;
@@ -2298,7 +2334,7 @@ class Game {
       outposts: this.outposts.filter((o) => o.sys === id).map((o) => ({ body: o.body, lv: o.lv })),
       natives: Object.fromEntries(this.system(id).bodies.filter((b) => this.natives[`${id}|${b.id}`]).map((b) => [b.id, { ...this.natives[`${id}|${b.id}`] }])),
       wars: this.wars.filter((w) => w.sys === id).map((w) => ({ body: w.body, progress: w.progress })),
-      loyalty: gv ? gv.loyalty ?? LOYALTY_START : null, realm: this.isColonized(id) ? this.realmOf(id) : null, independent: !!gv?.independent,
+      loyalty: gv ? gv.loyalty ?? LOYALTY_START : null, realm: this.isColonized(id) ? this.realmOf(id) : null, independent: !!gv?.independent, aid: gv ? gv.aid || 0 : 0, dep: gv ? gv.dep || 0 : 0,
       siege: (() => { const g = this.sieges.find((x) => x.sys === id); return g ? { realm: g.realm, ships: g.ships, progress: g.progress } : null; })(),
       battle: (() => { const b = this.battleAt(id); return b ? { realm: b.realm, a: b.a, d: b.d, a0: b.a0, d0: b.d0, start: b.start } : null; })(),
     };
@@ -3123,7 +3159,7 @@ function costButton(g, attrs, label, cost, sysId, extraReason = '') {
   }
   const p = cost && !extraReason ? g.procure(cost, sysId) : null;
   const why = extraReason || p?.why || '';
-  const sub = why || (cost ? costText(cost) + (p?.eta > 0 ? ` ・資材搬入 ${p.eta.toFixed(1)}年` : '') : '');
+  const sub = why || (cost ? costText(cost) + (p?.eta > 0 ? ` ・資材搬入 ${p.eta.toFixed(1)}年 (${p.aid ? '主人からの支援' : `輸入費 ${Math.ceil(p.imp || 0)} cr`})` : '') : '');
   return `<button ${attrs} ${why ? 'disabled' : ''}>${label}${sub ? `<small>${esc(sub)}</small>` : ''}</button>`;
 }
 
@@ -3179,7 +3215,7 @@ function govBox(g, id) {
   const siege = (k.siege ? `<p class="note bad">攻囲されている: ${esc(g.system(k.siege.realm).name)} の国の ${k.siege.ships} 艦隊・進捗 ${pct(k.siege.progress)}</p>` : '')
     + (k.battle ? `<p class="note bad">艦隊戦の最中: 攻撃 ${esc(g.system(k.battle.realm).name)} の国 ${Math.ceil(k.battle.a)} 艦隊 (投入 ${Math.round(k.battle.a0)}) 対 防衛 ${Math.ceil(k.battle.d)} 艦隊 (投入 ${Math.round(k.battle.d0)})・${k.battle.start.toFixed(1)}年から</p>` : '');
   return `<p class="note"><span class="dot" style="background:${realmColor(realm)}"></span>${status}。従属先: ${chain.map((l) => esc(g.system(l).name)).join(' → ') || 'なし'}・資金 ${fmtAmt(k.credits)} cr (収入 ${fmtAmt(k.income)}/年${k.lord !== null && k.lord !== undefined ? '、その25%を朝貢' : ''})。
-    資源に余裕があれば自分で施設を建て、交易路を引き、入植も行う。指示は光速の指令で送る${realm === 0 ? '' : ' (他国なので従わない)'}。</p>${siege}${btn}`;
+    ${k.aid > 0.5 ? `<b>主人から支援物資を受けている</b> (年 ${fmtAmt(k.aid)} cr 相当。代金のかわりに従属が深まり、忠誠度が上がる)。` : ''}輸入する物資は代金を払う。資源に余裕があれば自分で施設を建て、交易路を引き、入植も行う。指示は光速の指令で送る${realm === 0 ? '' : ' (他国なので従わない)'}。</p>${siege}${btn}`;
 }
 
 function autoToggle(g, sysId) {
@@ -3233,7 +3269,7 @@ function routeBox(app, sys) {
        ${costButton(g, `data-act="route" data-dest="${dest}"`, '交易路を開設', g.routeCost(sys.id, dest), sys.id)}`
     : '<p class="note">交易路を結べる相手(他の入植星系)がない</p>';
   return `<h3>交易路</h3>
-    <p class="note">余っている資源を、足りない星系へ自動で運ぶ (光速の貨物船)。交易路でつながっていれば、複数の交易路を乗り継いで届ける。運んだ荷の価値の1割が交易収入になる。</p>
+    <p class="note">余っている資源を、足りない星系へ自動で運ぶ (光速の貨物船)。交易路でつながっていれば、複数の交易路を乗り継いで届ける。荷は受け手が基準価格で買い取る (送り手の輸出収入になる)。代金を払えない星系は、主人から支援として無償で受け取れるが、そのぶん従属が深まる (忠誠度が上がる)。</p>
     ${list}${open}`;
 }
 
@@ -3556,7 +3592,8 @@ function routesSheet(app) {
     : '<p class="note">交易路を結ぶには入植星系が2つ以上必要。</p>';
   return `<div class="kpi">
       <div><span>交易路 (把握分)</span><b>${g.routes.filter((r) => g.routeKnown(r)).length} 本</b><span>各星系が自分で引く</span></div>
-      <div><span>地球の交易収入</span><b>${fmtAmt(g.ledger.trade || 0)} cr</b><span>年あたり</span></div>
+      <div><span>地球の輸出収入</span><b>${fmtAmt(g.ledger.trade || 0)} cr</b><span>年あたり</span></div>
+      <div><span>地球の輸入支出</span><b>${fmtAmt(-(g.ledger.import || 0))} cr</b><span>年あたり</span></div>
     </div>
     <h3>新しい交易路</h3>${open}
     ${requestsTable(g)}
@@ -3595,7 +3632,7 @@ function politicsSheet(app) {
     const status = k.independent && realm === x.id ? '<b class="bad">独立国 (首都)</b>' : realm !== 0 ? `<span class="bad">${esc(g.system(realm).name)} の国に属する</span>` : '地球の国';
     const loyal = k.lord === null || k.lord === undefined ? '—' : `<span class="${k.loyalty < 20 ? 'bad' : k.loyalty < 50 ? '' : 'hz'}">${Math.round(k.loyalty ?? LOYALTY_START)}</span>`;
     return `<tr><td><span class="dot" style="background:${realmColor(realm)}"></span>${goto(x)}</td><td>${k.lord === null || k.lord === undefined ? '—' : esc(g.system(k.lord).name)}</td>
-      <td>${loyal}</td><td>${status}</td><td>${ageBadge(g, x.id)}</td></tr>`;
+      <td>${loyal}</td><td>${k.aid > 0.5 ? `${fmtAmt(k.aid)} cr/年` : '<span class="muted">—</span>'}</td><td>${status}</td><td>${ageBadge(g, x.id)}</td></tr>`;
   }).join('');
   const roots = [...new Set(g.knownSystems().map((x) => g.known(x.id)?.realm).filter((r) => r !== null && r !== undefined && r !== 0))];
   const realms = roots.map((root) => {
@@ -3611,7 +3648,7 @@ function politicsSheet(app) {
     <td><span class="dot" style="background:${realmColor(bt.realm)}"></span>${esc(g.system(bt.realm).name)} の国</td><td>${Math.ceil(bt.a)} / ${Math.round(bt.a0)} 艦隊</td>
     <td>${Math.ceil(bt.d)} / ${Math.round(bt.d0)} 艦隊</td><td>${bt.start.toFixed(1)}年から</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
   return `<p class="note">星系の政府は忠誠度を持つ。忠誠度は主人の星系や国の首都から遠いほど、主人より大きくなるほど、指令が多いほど下がり、主人の星系に艦隊がいると上がる。
-      50未満だと指令を拒むことがあり、20未満だと独立を宣言することがある (従属する星系も一緒に離れる)。地球の国からの独立は、半々の確率でそのまま戦争になる。</p>
+      50未満だと指令を拒むことがあり、20未満だと独立を宣言することがある (従属する星系も一緒に離れる)。主人から支援物資を受けると上がる (代金を払えない星系は主人から無償で物資を受け取れる)。地球の国からの独立は、半々の確率でそのまま戦争になる。</p>
     <h3>独立国</h3>
     ${realms ? `<div class="scroll"><table class="tbl"><tr><th>首都</th><th>規模 (把握分)</th><th>状態</th><th></th></tr>${realms}</table></div>` : '<p class="note">いまのところ独立国はない。</p>'}
     <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) で進み、100%で降伏して地球の国に従属する。交戦中の国どうしでは物資をやり取りしない。</p>
@@ -3620,7 +3657,7 @@ function politicsSheet(app) {
     <h3>攻囲</h3>
     ${sieges ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>艦隊</th><th>進捗</th><th>情報</th></tr>${sieges}</table></div>` : '<p class="note">なし</p>'}
     <h3>星系の政府 (忠誠度の低い順)</h3>
-    ${rows ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>忠誠度</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : '<p class="note">まだ地球以外の政府はない。</p>'}`;
+    ${rows ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>忠誠度</th><th>主人からの支援</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : '<p class="note">まだ地球以外の政府はない。</p>'}`;
 }
 
 // 帝国 → 移民: 過密な入植地、受け入れ先、移動中の移民船、到着の記録
