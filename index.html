@@ -710,7 +710,7 @@ const BATTLE_RATE = 0.6; // 艦隊戦で1艦隊が1年に壊滅させる敵艦�
 const REALM_COLORS = ['#ff9f43', '#ee5aa8', '#a3e635', '#f5d142', '#60a5fa', '#c084fc', '#f87171', '#34d399'];
 const CMD_LABEL = {
   peace: '講和の申し入れ', send: '入植船を送る', candsend: '入植船を送る', upgrade: '施設の拡張', route: '交易路の開設', route2: '交易路の開設', uproute: '交易路の拡張',
-  warship: '艦隊の編成', fleet: '艦隊の派遣', gift: '先住民への贈り物', integrate: '先住民を市民に', conquer: '先住民の制圧', enslave: '奴隷化',
+  warship: '艦隊の編成', fleet: '艦隊の派遣', redirect: '艦隊の進路変更', gift: '先住民への贈り物', integrate: '先住民を市民に', conquer: '先住民の制圧', enslave: '奴隷化',
   slavetype: '奴隷の扱いの変更', liberate: '先住民の解放', train: '歩兵の訓練', troopsend: '歩兵の派遣', outpost: '採掘基地の建設', focus: '方針の変更',
 };
 const SEED_FUNDS = { planet: 200, station: 80 }; // 入植船が新しい政府に持っていく開拓資金 (入植船の費用に含まれる)
@@ -1544,12 +1544,45 @@ class Game {
     const owner = this.realmOf(from);
     const dest = this.isColonized(to) ? this.realmOf(to) : owner;
     const surprise = dest !== owner && !this.atWar(owner, dest);
-    this.fleets.push({ id: this.nextShipId++, from, to, n, owner, depart: this.year, arrive: this.year + years, auto: !!prefix, surprise });
+    this.fleets.push({ id: this.nextShipId++, from, to, n, owner, start: this.year, depart: this.year, arrive: this.year + years, auto: !!prefix, surprise });
     if (surprise) this.message(`${this.system(to).name} (${this.realmName(dest)}) への奇襲攻撃に ${n} 艦隊が出撃した。到着すると戦争になる`, from);
     this.message(`${prefix}${this.system(from).name} → ${this.system(to).name} へ ${n} 艦隊が出撃 (到着まで ${years.toFixed(2)} 年)`, from);
     return { ok: true };
   }
 
+  // 移動中の艦隊への進路変更の指令。地球から光速で送り、艦隊に追いついた時刻・地点で届く (艦隊は光より遅いので必ず追いつく)
+  sendRedirect(f, target) {
+    const E = this.system(0);
+    const t0 = this.year;
+    const gap = (t) => (t - t0) - Math.hypot(this.fleetPosition(f, t).x - E.x, this.fleetPosition(f, t).y - E.y);
+    let hi = t0 + 1;
+    for (let i = 0; i < 20 && gap(hi) < 0; i++) hi = t0 + (hi - t0) * 2;
+    let lo = t0;
+    for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (gap(m) < 0) lo = m; else hi = m; }
+    const p = this.fleetPosition(f, hi);
+    this.requests.push({ id: this.nextShipId++, kind: 'order', from: 0, to: f.to, act: 'redirect', label: CMD_LABEL.redirect,
+      d: { fleet: f.id, sys: target, from: f.to, n: f.n, x: p.x, y: p.y }, sent: t0, arrive: hi, state: 'sending' });
+    this.message(`移動中の ${f.n} 艦隊 (${this.system(f.from).name} → ${this.system(f.to).name}) へ、${this.system(target).name} への進路変更を命じた (指令が追いつくまで ${(hi - t0).toFixed(1)} 年)`);
+    return { ok: true, queued: true };
+  }
+  // 進路変更の指令が届いた: いまの位置から新しい行き先へ直行する (0.9c)。もう着いていれば、着いた星系から送り直す
+  redirectFleet(id, to, d = {}) {
+    const f = this.fleets.find((x) => x.id === id);
+    if (!f) return this.sendFleet(Number(d.from), to, Number(d.n) || Infinity);
+    if (f.to === to) return { ok: true };
+    const p = this.fleetPosition(f, this.year);
+    (f.prev ??= []).push({ from: f.from, fromXY: f.fromXY, to: f.to, depart: f.depart, arrive: f.arrive, cut: this.year });
+    f.fromXY = { x: p.x, y: p.y };
+    f.depart = this.year;
+    f.to = to;
+    f.arrive = this.year + Math.max(0.001, Math.hypot(this.system(to).x - p.x, this.system(to).y - p.y)) / OFFROUTE_SPEED;
+    const owner = f.owner ?? 0;
+    const dest = this.isColonized(to) ? this.realmOf(to) : owner;
+    f.surprise = dest !== owner && !this.atWar(owner, dest);
+    f.auto = false;
+    this.message(`${f.n} 艦隊が進路を ${this.system(to).name} へ変えた (到着まで ${(f.arrive - this.year).toFixed(1)} 年)`, to);
+    return { ok: true };
+  }
   // 他の星系に駐留する全艦をこの星系へ集める
   // --- 採掘基地 ---
   outpostAt(sysId, bodyId) { return this.outposts.find((o) => o.sys === sysId && o.body === bodyId); }
@@ -2298,7 +2331,8 @@ class Game {
     }
     for (const q of this.requests) {
       if (q.kind !== 'order' || q.arrive > this.year) continue;
-      const ob = q.act === 'peace' ? { ok: true } : this.obeys(q.to);
+      // 艦隊は地球の国の軍なので、その星系の政府の忠誠度に関係なく命令に従う
+      const ob = ['peace', 'fleet', 'redirect'].includes(q.act) ? { ok: true } : this.obeys(q.to);
       const r = ob.ok ? this.exec(q.act, q.d) : ob;
       this.message(r.ok ? `指令「${q.label}」が ${this.system(q.to).name} に届き、実行された` : `指令「${q.label}」は ${this.system(q.to).name} で実行できなかった: ${r.reason}`, q.to);
     }
@@ -2804,6 +2838,7 @@ class Game {
     const colSys = (key) => this.colonyByKey(key)?.sys;
     switch (act) {
       case 'send': case 'candsend': case 'fleet': return Number(d.from);
+      case 'redirect': return null; // 移動中の艦隊への指令は sendRedirect で送る
       case 'troopsend': return colSys(d.from);
       case 'route2': return Number(d.a);
       case 'uproute': return this.routes.find((r) => r.id === Number(d.route))?.a;
@@ -2852,7 +2887,12 @@ class Game {
       case 'route2': return this.openRoute(Number(d.a), Number(d.b));
       case 'uproute': { const r = this.routes.find((x) => x.id === Number(d.route)); return r ? this.upgradeRoute(r) : fail('交易路がない'); }
       case 'warship': return this.buildWarship(sys);
-      case 'fleet': return this.sendFleet(Number(d.from), sys, n);
+      case 'fleet': {
+        const from = Number(d.from);
+        if (this.isColonized(from) && this.realmOf(from) !== 0) return fail('他国の星系の艦隊には命令できない');
+        return this.sendFleet(from, sys, n);
+      }
+      case 'redirect': return this.redirectFleet(Number(d.fleet), sys, d);
       case 'gift': return this.gift(sys, body);
       case 'integrate': return this.integrate(sys, body);
       case 'conquer': return this.conquer(sys, body);
@@ -2920,8 +2960,13 @@ class Game {
   }
 
   // 船・艦隊の現在位置 (from→to を直線で移動)
+  // 艦隊の位置。進路を変えた艦隊は、それまでの区間 (prev) も覚えていて、昔の時刻ならその区間の位置を返す
+  fleetPosition(f, at = this.year) {
+    for (const leg of f.prev || []) if (at < leg.cut) return this.shipPosition(leg, at);
+    return this.shipPosition(f, at);
+  }
   shipPosition(s, at = this.year) {
-    const a = this.system(s.from);
+    const a = s.fromXY || this.system(s.from);
     const b = this.system(s.to);
     const f = clamp((at - s.depart) / Math.max(1e-9, s.arrive - s.depart), 0, 1);
     return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, f };
@@ -3061,13 +3106,13 @@ class GalaxyView {
         const moved = Math.hypot(x - this.rdown[0], y - this.rdown[1]) > 6;
         this.rdown = null;
         const s = this.pick(x, y);
-        if (e.type === 'pointerup' && !moved && s && this.app.fleetSel.size) orderFleets(s.id);
+        if (e.type === 'pointerup' && !moved && s && hasFleetSelection()) orderFleets(s.id);
         return;
       }
       const wasPinch = pts.size > 1;
       pts.delete(e.pointerId);
       if (pts.size < 2) pinch = null;
-      if (this.drag && !this.drag.moved && !wasPinch && e.type === 'pointerup') this.tap(this.pick(x, y), e);
+      if (this.drag && !this.drag.moved && !wasPinch && e.type === 'pointerup') this.tap(this.pick(x, y), e, this.pickFleet(x, y));
       if (pts.size === 0) this.drag = null;
     };
     c.addEventListener('pointerup', end);
@@ -3089,17 +3134,35 @@ class GalaxyView {
 
   // クリック・タップ。地球の艦隊がいる星系なら艦隊を選ぶ (Shift で追加・解除)。
   // タッチ操作では、艦隊を選んでいるときに別の星系をタップすると移動命令になる (マウスは右クリック)
-  tap(s, e) {
+  // 移動中の地球の艦隊 (画面上の三角) を選ぶ
+  pickFleet(sx, sy) {
+    let best = null;
+    let bd = 9;
+    for (const d of this.fleetDots || []) {
+      const k = Math.hypot(d.x - sx, d.y - sy);
+      if (k < bd) { bd = k; best = d; }
+    }
+    return best;
+  }
+  tap(s, e, fd = null) {
     const app = this.app;
     const sel = app.fleetSel;
+    const mv = app.fleetMove;
     const touch = e.pointerType !== 'mouse';
-    if (!s) { if (!e.shiftKey) sel.clear(); app.fleetConfirm = null; renderFleetBar(); return; }
-    if (touch && sel.size && !sel.has(s.id)) { orderFleets(s.id); return; }
+    if (fd) {
+      if (e.shiftKey || (touch && hasFleetSelection())) { if (mv.has(fd.id)) mv.delete(fd.id); else mv.add(fd.id); }
+      else { sel.clear(); mv.clear(); mv.add(fd.id); }
+      app.fleetConfirm = null;
+      renderFleetBar();
+      return;
+    }
+    if (!s) { if (!e.shiftKey) { sel.clear(); mv.clear(); } app.fleetConfirm = null; renderFleetBar(); return; }
+    if (touch && hasFleetSelection() && !sel.has(s.id)) { orderFleets(s.id); return; }
     if (isOwnStack(app.game, s.id)) {
       if (e.shiftKey) { if (sel.has(s.id)) sel.delete(s.id); else sel.add(s.id); }
       else if (touch && sel.has(s.id)) sel.delete(s.id);
-      else { sel.clear(); sel.add(s.id); }
-    } else if (!e.shiftKey) sel.clear();
+      else { sel.clear(); mv.clear(); sel.add(s.id); }
+    } else if (!e.shiftKey) { sel.clear(); mv.clear(); }
     app.fleetConfirm = null;
     app.selectSystem(s.id);
     renderFleetBar();
@@ -3111,6 +3174,7 @@ class GalaxyView {
       const [px, py] = this.toScreen(s.x, s.y);
       if (px >= x0 && px <= x1 && py >= y0 && py <= y1 && isOwnStack(this.app.game, s.id)) this.app.fleetSel.add(s.id);
     }
+    for (const d of this.fleetDots || []) if (d.x >= x0 && d.x <= x1 && d.y >= y0 && d.y <= y1) this.app.fleetMove.add(d.id);
     this.app.fleetConfirm = null;
     renderFleetBar();
   }
@@ -3164,11 +3228,21 @@ class GalaxyView {
       ctx.fillRect(px - 1.5, py - 1.5, 3, 3);
     }
 
-    // 艦隊
+    // 艦隊 (地球の艦隊は選べるように画面上の位置を覚える)
+    this.fleetDots = [];
     for (const f of [...game.fleets, ...game.ghosts.fleets]) {
-      const p = seenAt((t) => game.shipPosition(f, t), f.depart, f.arrive);
+      const p = seenAt((t) => game.fleetPosition(f, t), f.start ?? f.depart, f.arrive);
       if (!p) continue;
       const [px, py] = this.toScreen(p.x, p.y);
+      if ((f.owner ?? 0) === 0) {
+        this.fleetDots.push({ id: f.id, x: px, y: py });
+        if (this.app.fleetMove.has(f.id)) {
+          ctx.strokeStyle = '#4de3d0';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI * 2); ctx.stroke();
+          ctx.lineWidth = 1;
+        }
+      }
       ctx.fillStyle = '#ff7a6b';
       ctx.beginPath(); ctx.moveTo(px, py - 5); ctx.lineTo(px + 4, py + 3); ctx.lineTo(px - 4, py + 3); ctx.fill();
       // 地球の艦隊は行き先への矢印も描く
@@ -3182,6 +3256,25 @@ class GalaxyView {
         ctx.setLineDash([]);
         ctx.beginPath(); ctx.moveTo(tx - 9 * Math.cos(ang - 0.4), ty - 9 * Math.sin(ang - 0.4)); ctx.lineTo(tx, ty); ctx.lineTo(tx - 9 * Math.cos(ang + 0.4), ty - 9 * Math.sin(ang + 0.4)); ctx.stroke();
       }
+    }
+
+    // 送信中の艦隊への指令 (地球が出した指令なので、出したときから分かっている)
+    ctx.font = '10px sans-serif';
+    for (const q of game.requests) {
+      if (q.kind !== 'order' || (q.act !== 'fleet' && q.act !== 'redirect')) continue;
+      const tgt = game.system(Number(q.d.sys));
+      const o = q.act === 'fleet' ? game.system(Number(q.d.from)) : { x: q.d.x, y: q.d.y };
+      const [ox, oy] = this.toScreen(o.x, o.y);
+      const [tx, ty] = this.toScreen(tgt.x, tgt.y);
+      ctx.strokeStyle = 'rgba(170,220,255,0.75)';
+      ctx.setLineDash([2, 4]);
+      ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.setLineDash([]);
+      const ang = Math.atan2(ty - oy, tx - ox);
+      ctx.beginPath(); ctx.moveTo(tx - 8 * Math.cos(ang - 0.4), ty - 8 * Math.sin(ang - 0.4)); ctx.lineTo(tx, ty); ctx.lineTo(tx - 8 * Math.cos(ang + 0.4), ty - 8 * Math.sin(ang + 0.4)); ctx.stroke();
+      ctx.beginPath(); ctx.arc(ox, oy, 5, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#aadcff';
+      ctx.fillText(`指令 あと ${Math.max(0, q.arrive - game.year).toFixed(1)} 年`, ox + 7, oy - 7);
     }
 
     // 建設資材の輸送船
@@ -3377,7 +3470,7 @@ class GalaxyView {
       ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.stroke();
       ctx.lineWidth = 1;
     }
-    const target = this.hover && fsel.size && !fsel.has(this.hover.id) ? this.hover : (this.app.fleetConfirm !== null ? game.system(this.app.fleetConfirm) : null);
+    const target = this.hover && hasFleetSelection() && !fsel.has(this.hover.id) ? this.hover : (this.app.fleetConfirm !== null ? game.system(this.app.fleetConfirm) : null);
     if (target) {
       const [tx, ty] = this.toScreen(target.x, target.y);
       const surprise = isSurpriseTarget(game, target.id);
@@ -3390,6 +3483,13 @@ class GalaxyView {
         const [x, y] = this.toScreen(s.x, s.y);
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tx, ty); ctx.stroke();
         eta = Math.max(eta, game.lightDelay(id) + game.fleetYears(id, target.id));
+      }
+      for (const d of this.fleetDots || []) {
+        if (!this.app.fleetMove.has(d.id)) continue;
+        ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(tx, ty); ctx.stroke();
+        const f = game.fleets.find((x) => x.id === d.id);
+        const [wx, wy] = this.toWorld(d.x, d.y);
+        eta = Math.max(eta, Math.hypot(wx, wy) + Math.hypot(target.x - wx, target.y - wy) / OFFROUTE_SPEED - (f ? 0 : 0));
       }
       ctx.setLineDash([]);
       ctx.font = 'bold 11px sans-serif';
@@ -3804,10 +3904,12 @@ function isSurpriseTarget(g, id) {
   return realm !== null && realm !== undefined && realm !== 0 && !g.atWar(0, realm);
 }
 // 選んだ艦隊に移動命令を出す。太陽系以外の艦隊への命令は光速で届く。中立国の星系なら確認してから (奇襲攻撃)
+function hasFleetSelection() { return app.fleetSel.size > 0 || app.fleetMove.size > 0; }
 function orderFleets(target) {
   const g = app.game;
   const ids = [...app.fleetSel].filter((id) => id !== target);
-  if (!ids.length) return;
+  const moving = [...app.fleetMove];
+  if (!ids.length && !moving.length) return;
   if (isSurpriseTarget(g, target) && app.fleetConfirm !== target) {
     app.fleetConfirm = target;
     renderFleetBar();
@@ -3819,9 +3921,17 @@ function orderFleets(target) {
     const n = app.fleetAmount === 'all' ? 'all' : app.fleetAmount === 'half' ? Math.max(1, Math.floor(have / 2)) : 1;
     if (g.command('fleet', { from: id, sys: target, n }).ok) sent++;
   }
+  // 移動中の艦隊: 光速の指令が追いついた地点から進路を変える。地球にはまだ移動中に見えていても実はもう着いていれば、着いた星系から送り直す
+  for (const id of moving) {
+    const f = g.fleets.find((x) => x.id === id);
+    const ghost = f ? null : g.ghosts.fleets.find((x) => x.id === id);
+    if (f && f.to !== target && g.sendRedirect(f, target).ok) sent++;
+    else if (ghost && ghost.to !== target && g.command('fleet', { from: ghost.to, sys: target, n: ghost.n }).ok) sent++;
+  }
   g.message(`${sent} か所の艦隊に ${g.system(target).name} への移動を命じた`);
   g.live = null;
   app.fleetSel.clear();
+  app.fleetMove.clear();
   app.fleetConfirm = null;
   app.dirty = true;
   renderFleetBar();
@@ -3832,13 +3942,15 @@ function renderFleetBar() {
   const bar = $('fleetbar');
   const g = app.game;
   for (const id of [...app.fleetSel]) if (!isOwnStack(g, id)) app.fleetSel.delete(id);
-  if (app.view !== 'galaxy' || !app.fleetSel.size) { bar.hidden = true; app.fleetConfirm = null; return; }
-  const total = [...app.fleetSel].reduce((k, id) => k + g.knownGarrison(id), 0);
+  for (const id of [...app.fleetMove]) if (!g.fleets.some((f) => f.id === id) && !g.ghosts.fleets.some((f) => f.id === id)) app.fleetMove.delete(id);
+  if (app.view !== 'galaxy' || !hasFleetSelection()) { bar.hidden = true; app.fleetConfirm = null; return; }
+  const fleetOf = (id) => g.fleets.find((f) => f.id === id) || g.ghosts.fleets.find((f) => f.id === id);
+  const total = [...app.fleetSel].reduce((k, id) => k + g.knownGarrison(id), 0) + [...app.fleetMove].reduce((k, id) => k + (fleetOf(id)?.n || 0), 0);
   const conf = app.fleetConfirm !== null ? g.system(app.fleetConfirm) : null;
   const realm = conf ? g.known(conf.id)?.realm : null;
-  bar.innerHTML = `<b class="lbl">選択中の艦隊</b><span>${app.fleetSel.size} か所・${total} 艦隊</span>
+  bar.innerHTML = `<b class="lbl">選択中の艦隊</b><span>${app.fleetSel.size ? `${app.fleetSel.size} か所` : ''}${app.fleetSel.size && app.fleetMove.size ? '・' : ''}${app.fleetMove.size ? `移動中 ${app.fleetMove.size}` : ''}・${total} 艦隊</span>
     <span><span class="lbl">送る数</span> ${Object.entries(FLEET_AMOUNT).map(([k, l]) => `<button data-fa="amount" data-v="${k}" class="${app.fleetAmount === k ? 'on' : ''}">${l}</button>`).join('')}</span>
-    <span class="muted hint">移動先を右クリック (タッチ操作はタップ)・Shift+クリックで追加・Shift+ドラッグで範囲選択</span>
+    <span class="muted hint">移動先を右クリック (タッチ操作はタップ)・Shift+クリックで追加・Shift+ドラッグで範囲選択・移動中の艦隊 (三角) も選べる (指令は光速で追いついた地点から効く。送る数は全艦)</span>
     <button data-fa="clear">解除</button>
     ${conf ? `<div class="warn">⚠ ${esc(conf.name)} は${esc(g.realmName(realm))}の星系。奇襲攻撃になり、到着した時点で戦争状態に突入します。もう一度 ${esc(conf.name)} を右クリック (タップ) すると実行。 <button data-fa="cancel">やめる</button></div>` : ''}`;
   bar.classList.toggle('confirm', !!conf);
@@ -4410,7 +4522,14 @@ function militarySheet(app) {
     <div class="scroll"><table class="tbl"><tr><th>入植地</th><th>教練所</th><th>歩兵</th><th>奴隷兵</th><th>向かっている</th><th>訓練</th><th></th></tr>${troopRows}</table></div>
     <h3>征服戦争 (${g.wars.length})</h3>${warPolicyBox(g)}${warRows ? `<div class="scroll"><table class="tbl"><tr><th>惑星</th><th>先住民</th><th>進捗</th><th>情報</th></tr>${warRows}</table></div>` : '<p class="note">なし</p>'}
     <h3>移動中の歩兵</h3>${moves ? `<div class="scroll"><table class="tbl">${moves}</table></div>` : '<p class="note">なし</p>'}
-    <h3>移動中の艦隊</h3>${fleets ? `<div class="scroll"><table class="tbl">${fleets}</table></div>` : '<p class="note">なし</p>'}`;
+    <h3>移動中の艦隊</h3>${fleets ? `<div class="scroll"><table class="tbl">${fleets}</table></div>` : '<p class="note">なし</p>'}
+    <h3>艦隊への指令 (光速で送信中)</h3>${(() => {
+      const rows = g.requests.filter((q) => q.kind === 'order' && (q.act === 'fleet' || q.act === 'redirect')).map((q) => {
+        const who = q.act === 'fleet' ? `${esc(g.system(Number(q.d.from)).name)} の艦隊 (${q.d.n === 'all' ? '全艦' : `${q.d.n} 艦隊`})` : `移動中の ${q.d.n} 艦隊 (進路変更)`;
+        return `<tr><td>${who}</td><td>→ ${esc(g.system(Number(q.d.sys)).name)}</td><td>指令が届くまで あと ${Math.max(0, q.arrive - g.year).toFixed(1)} 年</td></tr>`;
+      }).join('');
+      return rows ? `<div class="scroll"><table class="tbl">${rows}</table></div>` : '<p class="note">なし</p>';
+    })()}`;
 }
 
 const EVENT_KIND = { famine: '飢餓・水不足', shortage: '資源不足', pirate: '海賊', natives: '先住民', war: '征服戦争', politics: '政治', battle: '戦闘', colony: '入植', migration: '移民' };
@@ -4539,6 +4658,7 @@ const app = {
   routeDest: undefined,
   fleetOrigin: undefined,
   fleetSel: new Set(), // 星間マップで選んだ地球の艦隊 (駐留している星系の id)
+  fleetMove: new Set(), // 星間マップで選んだ移動中の地球の艦隊 (艦隊の id)
   fleetAmount: 'all', // 送る数: all / half / one
   fleetConfirm: null, // 奇襲攻撃の確認待ちの行き先
   dirty: true,
@@ -4605,7 +4725,7 @@ $('fleetbar').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-fa]');
   if (!b) return;
   if (b.dataset.fa === 'amount') app.fleetAmount = b.dataset.v;
-  else if (b.dataset.fa === 'clear') app.fleetSel.clear();
+  else if (b.dataset.fa === 'clear') { app.fleetSel.clear(); app.fleetMove.clear(); }
   else if (b.dataset.fa === 'cancel') app.fleetConfirm = null;
   renderFleetBar();
 });
@@ -4799,7 +4919,7 @@ window.addEventListener('keydown', (e) => {
   else if (e.key === 'g') app.setView('galaxy');
   else if (e.key === 's') app.setView('system');
   else if (e.key === 'e') app.setView('empire');
-  else if (e.key === 'Escape') { app.fleetSel.clear(); app.fleetConfirm = null; app.setView('galaxy'); renderFleetBar(); }
+  else if (e.key === 'Escape') { app.fleetSel.clear(); app.fleetMove.clear(); app.fleetConfirm = null; app.setView('galaxy'); renderFleetBar(); }
 });
 
 const panel = $('panel');
@@ -4815,7 +4935,7 @@ function onPanelClick(e) {
   const body = btn.dataset.body ?? app.sel.body;
   if (act === 'open') return app.setView('system');
   if (act === 'goto') { app.selectSystem(sys); return app.setView('galaxy'); }
-  if (act === 'fleetsel') { app.fleetSel = new Set([sys]); app.fleetConfirm = null; app.setView('galaxy'); return renderFleetBar(); }
+  if (act === 'fleetsel') { app.fleetSel = new Set([sys]); app.fleetMove.clear(); app.fleetConfirm = null; app.setView('galaxy'); return renderFleetBar(); }
   if (act === 'gobody') { app.openSystem(sys); return app.selectBody(body); }
   if (act === 'etab') { app.empireTab = btn.dataset.t; app.dirty = true; return; }
   if (act === 'evfilter') { app.eventFilter = btn.dataset.f; app.dirty = true; return; }
@@ -4924,7 +5044,7 @@ function frame(now) {
     $('log').innerHTML = logHtml(game);
     $('treasury').innerHTML = treasuryHtml(game);
     $('ledger').innerHTML = ledgerHtml(game);
-    if (app.fleetSel.size) renderFleetBar();
+    if (hasFleetSelection()) renderFleetBar();
     if (app.view === 'events') app.seenTime = game.year;
     const unseen = game.knownEvents().filter((e) => !e.good && (e.seen ?? e.year) > (app.seenTime ?? -Infinity)).length;
     $('tab-events').textContent = unseen ? `イベント (${unseen})` : 'イベント';
