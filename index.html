@@ -840,6 +840,24 @@ class Game {
     return Object.keys(this.realmWars).map((k) => k.split('|').map(Number)).filter((p) => p.includes(root)).map((p) => (p[0] === root ? p[1] : p[0]));
   }
   realmName(root) { return root === 0 ? '地球の国' : `${this.system(root).name} の国`; }
+  // 地球 (プレイヤー) が知っている戦争: 開戦の知らせが光速で地球に届いたもの (観戦モードはすべて)
+  warKnown(key) {
+    if (this.realmWars[key] === undefined) return false;
+    if (this.spectate) return true;
+    const news = this.warNews[key];
+    return !news || this.year >= news.year + this.lightDelay(news.from);
+  }
+  knownAtWar(a, b) { return a !== b && this.warKnown(this.warKey(a, b)); }
+  knownEnemiesOf(root) { return this.enemiesOf(root).filter((e) => this.knownAtWar(root, e)); }
+  knownWarKeys() { return Object.keys(this.realmWars).filter((k) => this.warKnown(k)); }
+  // 地球から見た国の戦力: 把握している星系の駐留艦隊の合計
+  knownRealmShips(root) { return this.knownSystems().filter((x) => (x.id === 0 ? 0 : this.known(x.id)?.realm ?? 0) === root).reduce((k, x) => k + this.knownGarrison(x.id), 0); }
+  // 地球から見えている建設中の事業: 太陽系はいまのもの、ほかの星系は光が届いている記録のもの
+  knownProjects() {
+    const out = this.projects.filter((j) => j.sys === 0);
+    for (const x of this.knownSystems()) if (x.id !== 0) for (const j of this.known(x.id)?.projects || []) out.push({ ...j, sys: x.id });
+    return out;
+  }
   // 開戦。by = 仕掛けた国、target = 仕掛けられた国、from = 知らせが広がり始める星系
   beginWar(by, target, from = by) {
     const key = this.warKey(by, target);
@@ -1815,7 +1833,7 @@ class Game {
       const id = Number(key);
       const lord = gv.lord;
       if (lord === null || lord === undefined || !this.isColonized(id) || this.year - (gv.founded ?? this.year) > GRANT_YEARS) continue;
-      if (lord === 0 && !this.autoGrant) continue;
+      if (lord === 0 && (!this.autoGrant || (!this.spectate && !this.known(id)?.cols.length))) continue; // 地球は入植を知ってから送る
       if (this.realmOf(id) !== this.realmOf(lord)) continue;
       const amt = Math.min(GRANT_MAX, 0.03 * this.gov(lord).credits);
       if (amt >= 1) this.sendGrant(lord, id, amt, true);
@@ -1840,42 +1858,46 @@ class Game {
   // 自動防衛配備で目指す駐留数。太陽系は海賊に狙われないので1艦隊、他の入植星系は海賊の最大戦力ぶん (海賊が現れる前は1艦隊)
   defenseGoal(id) { return id === 0 || this.year < PIRATE_START ? 1 : this.pirateMax(); }
   incoming(id) { return this.fleets.filter((f) => f.to === id).reduce((k, f) => k + f.n, 0); }
-  defenseGap(id) { return Math.max(0, this.defenseGoal(id) - (this.garrison[id] || 0) - this.incoming(id)); }
+  defenseGap(id) { return Math.max(0, this.defenseGoal(id) - this.knownGarrison(id) - this.incoming(id)); } // 地球から見た不足
 
   // 自動防衛配備: 年に1回、目標に足りない入植星系へ、人口の多い順に、近くの余っている艦隊を回す。
   // 余っている = 入植星系なら自分の目標を超えた分、入植していない星系にいる艦は全部。ただし命令で送った艦隊 (held) は除く。
   // autoBuild なら、それでも足りない分を太陽系の軍事基地で編成する (資金が費用の2倍以上あるとき、年5艦隊まで)。
   autoDefend() {
     if (!this.autoDefense) return;
-    const pop = (id) => this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
-    // 命令で駐留している艦隊 (遠征・攻め落とした星系の守り) は動かさない
-    const spareOf = (id) => (this.garrison[id] || 0) - Math.max(this.isColonized(id) ? this.defenseGoal(id) : 0, Math.min(this.held[id] || 0, this.garrison[id] || 0));
-    // 地球の国の中だけで配備する
-    const targets = this.realmSystems(0).filter((s) => this.defenseGap(s.id) > 0).sort((a, b) => pop(b.id) - pop(a.id));
+    // 地球に届いている情報 (光の遅れぶん昔の様子) で判断し、太陽系以外の艦隊は光速の指令で動かす。
+    // 送った指令は届くまで数え、同じ指令を重ねない
+    const realmK = (id) => (id === 0 ? 0 : this.known(id)?.cols.length ? this.known(id).realm ?? 0 : null);
+    const pop = (id) => this.knownColonies(id).reduce((k, c) => k + c.pop, 0);
+    const orders = this.requests.filter((q) => q.kind === 'order' && q.act === 'fleet');
+    const orderedTo = (id) => orders.filter((q) => Number(q.d.sys) === id).reduce((k, q) => k + (Number(q.d.n) || 0), 0);
+    const orderedFrom = (id) => orders.filter((q) => Number(q.d.from) === id).reduce((k, q) => k + (Number(q.d.n) || 0), 0);
+    const heldK = (id) => (id === 0 ? this.held[0] || 0 : this.known(id)?.held || 0);
+    const gapK = (id) => Math.max(0, this.defenseGoal(id) - this.knownGarrison(id) - this.incoming(id) - orderedTo(id));
+    const spareK = (id) => this.knownGarrison(id) - orderedFrom(id) - Math.max(realmK(id) === 0 ? this.defenseGoal(id) : 0, Math.min(heldK(id), this.knownGarrison(id)));
+    const known = [0, ...Object.keys(this.snaps).map(Number).filter((id) => id !== 0)];
+    const targets = this.knownSystems().filter((s) => realmK(s.id) === 0 && gapK(s.id) > 0).sort((a, b) => pop(b.id) - pop(a.id));
     for (const t of targets) {
-      let gap = this.defenseGap(t.id);
-      const sources = Object.keys(this.garrison).map(Number)
-        .filter((id) => id !== t.id && spareOf(id) > 0 && (this.isColonized(id) ? this.realmOf(id) === 0 : true))
-        .sort((a, b) => this.fleetYears(a, t.id) - this.fleetYears(b, t.id));
+      let gap = gapK(t.id);
+      const sources = known.filter((id) => id !== t.id && spareK(id) > 0 && (realmK(id) === 0 || realmK(id) === null))
+        .sort((a, b) => this.lightDelay(a) + this.fleetYears(a, t.id) - this.lightDelay(b) - this.fleetYears(b, t.id));
       for (const id of sources) {
         if (gap <= 0) break;
-        const n = Math.min(gap, spareOf(id));
-        this.sendFleet(id, t.id, n, '[自動防衛] ');
+        const n = Math.min(gap, spareK(id));
+        this.command('fleet', { from: id, sys: t.id, n, auto: true });
         gap -= n;
       }
     }
     if (!this.autoBuild) return;
-    const short = this.realmSystems(0).reduce((k, s) => k + this.defenseGap(s.id), 0)
-      - this.projects.filter((j) => j.type === 'warship' && this.realmOf(j.sys) === 0).length;
-    // 他の星系に建造を命じることはせず、太陽系の軍事基地でだけ編成する (各星系は自分で海賊対策の建艦をする)
-    const yards = this.hasShipyard(0) ? [this.system(0)] : [];
-    for (let i = 0; i < Math.min(short, 5) && yards.length; i++) {
-      const yard = yards.find((s) => this.gov(s.id).credits >= 2 * WARSHIP_COST.credits && !this.procure(WARSHIP_COST, s.id).why);
-      if (!yard) break;
-      this.order(WARSHIP_COST, yard.id, { type: 'warship', label: `[自動防衛] ${yard.name} の艦隊` });
+    // 足りない分は太陽系の軍事基地で編成する
+    const short = this.knownSystems().filter((s) => realmK(s.id) === 0).reduce((k, s) => k + gapK(s.id), 0)
+      - this.projects.filter((j) => j.type === 'warship' && j.sys === 0).length;
+    for (let i = 0; i < Math.min(short, 5) && this.hasShipyard(0); i++) {
+      if (this.gov(0).credits < 2 * WARSHIP_COST.credits || this.procure(WARSHIP_COST, 0).why) break;
+      this.order(WARSHIP_COST, 0, { type: 'warship', label: '[自動防衛] 太陽系 (Sol) の艦隊' });
     }
   }
-  undefended() { return this.realmSystems(0).filter((s) => this.defenseGap(s.id) > 0); }
+  undefended() { return this.knownSystems().filter((s) => (s.id === 0 || (this.known(s.id)?.realm ?? 0) === 0) && this.defenseGap(s.id) > 0); }
 
   // --- 恒星間移民 ---
   // 人口が上限の90%を超えた入植地から、年に1回、人口の3% (上限超えなら5%) が移民船で出ていく。
@@ -2737,7 +2759,8 @@ class Game {
       })),
       stock: { ...this.stockOf(id) },
       prod: fl ? { ...fl.prod } : zeroRes(), cons: fl ? { ...fl.cons } : zeroRes(),
-      garrison: this.garrison[id] || 0,
+      garrison: this.garrison[id] || 0, held: this.held[id] || 0,
+      projects: this.projects.filter((j) => j.sys === id).map((j) => ({ type: j.type, col: j.col, fac: j.fac, body: j.body, to: j.to, kind: j.kind, start: j.start, ready: j.ready, label: j.label })),
       credits: gv ? gv.credits : 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null,
       outposts: this.outposts.filter((o) => o.sys === id).map((o) => ({ body: o.body, lv: o.lv })),
       natives: Object.fromEntries(this.system(id).bodies.filter((b) => this.natives[`${id}|${b.id}`]).map((b) => [b.id, { ...this.natives[`${id}|${b.id}`] }])),
@@ -2910,7 +2933,7 @@ class Game {
       case 'fleet': {
         const from = Number(d.from);
         if (this.isColonized(from) && this.realmOf(from) !== 0) return fail('他国の星系の艦隊には命令できない');
-        return this.sendFleet(from, sys, n, '', d.route);
+        return this.sendFleet(from, sys, n, d.auto ? '[自動防衛] ' : '', d.route);
       }
       case 'redirect': return this.redirectFleet(Number(d.fleet), sys, d);
       case 'gift': return this.gift(sys, body);
@@ -3515,7 +3538,7 @@ class GalaxyView {
         const parts = [];
         if (realm !== 0) parts.push([realmFleetKind(game, realm), ships]);
         else {
-          const own = s.id === 0 || !colonized ? ships : Math.min(ships, game.held[s.id] || 0);
+          const own = s.id === 0 || !colonized ? ships : Math.min(ships, k.held || 0);
           if (ships - own > 0) parts.push(['vassal', ships - own]);
           if (own > 0) parts.push(['own', own]);
         }
@@ -3560,7 +3583,7 @@ class GalaxyView {
         ctx.fillStyle = '#ff6b6b';
         ctx.fillText(`艦隊戦 ${Math.ceil(bt.a)}対${Math.ceil(bt.d)}`, x + rr + 4, y + rr);
       }
-      if (k && k.cols.length && k.realm !== null && k.realm !== undefined && this.app.game.enemiesOf(k.realm).length && (k.realm !== 0 || s.id === 0)) {
+      if (k && k.cols.length && k.realm !== null && k.realm !== undefined && this.app.game.knownEnemiesOf(k.realm).length && (k.realm !== 0 || s.id === 0)) {
         ctx.fillStyle = '#ff6b6b';
         ctx.font = 'bold 10px sans-serif';
         ctx.fillText('交戦中', x - r - 34, y - r - 4);
@@ -3978,8 +4001,8 @@ function govBox(g, id) {
   const chain = [];
   for (let l = k.lord; l !== null && l !== undefined && chain.length < 8; l = l === 0 ? null : (g.known(l)?.lord ?? null)) chain.push(l);
   const realm = k.realm ?? 0;
-  const war = realm !== 0 && g.atWar(0, realm);
-  const enemies = g.enemiesOf(realm);
+  const war = realm !== 0 && g.knownAtWar(0, realm);
+  const enemies = g.knownEnemiesOf(realm);
   const status = (realm === 0 ? `地球の国・忠誠度 <b class="${(k.loyalty ?? 70) < 20 ? 'bad' : ''}">${Math.round(k.loyalty ?? LOYALTY_START)}</b>`
     : `<b class="bad">${realm === id ? '独立国の首都' : `${esc(g.system(realm).name)} の国に属する`}</b>`)
     + (enemies.length ? ` (<span class="bad">${enemies.map((e) => esc(g.realmName(e))).join('・')}と交戦中</span>)` : '');
@@ -4061,7 +4084,7 @@ function defenseToggle(g) {
 // 艦隊の色: 自艦隊 (地球が動かす艦隊)・従属艦隊 (地球の国の従属星系の守り)・中立国・敵国
 const FLEET_COLOR = { own: '#5aa9ff', vassal: '#8be36a', neutral: '#f0c94a', enemy: '#ff5a5a' };
 const FLEET_KIND = { own: '自艦隊', vassal: '従属艦隊', neutral: '中立艦隊', enemy: '敵艦隊' };
-function realmFleetKind(g, realm) { return realm === 0 ? 'own' : g.atWar(0, realm) ? 'enemy' : 'neutral'; }
+function realmFleetKind(g, realm) { return realm === 0 ? 'own' : g.knownAtWar(0, realm) ? 'enemy' : 'neutral'; }
 // --- 星間マップでの艦隊の操作 (Hearts of Iron 風) ---
 // 地球の艦隊が (地球に届いている情報で) 駐留している星系か: 地球の国の星系か、入植していない星系
 function isOwnStack(g, id) {
@@ -4074,7 +4097,7 @@ function isOwnStack(g, id) {
 function isSurpriseTarget(g, id) {
   const k = id === 0 ? null : g.known(id);
   const realm = k && k.cols.length ? k.realm : null;
-  return realm !== null && realm !== undefined && realm !== 0 && !g.atWar(0, realm);
+  return realm !== null && realm !== undefined && realm !== 0 && !g.knownAtWar(0, realm);
 }
 // 選んだ艦隊に移動命令を出す。太陽系以外の艦隊への命令は光速で届く。中立国の星系なら確認してから (奇襲攻撃)
 function hasFleetSelection() { return app.fleetSel.size > 0 || app.fleetMove.size > 0; }
@@ -4140,23 +4163,24 @@ function militaryBox(app, sys) {
   const g = app.game;
   const n = g.knownGarrison(sys.id);
   // 送れるのは地球の国の艦隊 (地球の国の星系か、入植していない星系に置いた艦隊) だけ
-  const origins = Object.entries(g.garrison)
-    .map(([id, k]) => ({ s: g.system(Number(id)), k }))
-    .filter((o) => o.k > 0 && o.s.id !== sys.id && (!g.isColonized(o.s.id) || g.realmOf(o.s.id) === 0))
+  // (地球に届いている情報で)
+  const origins = [0, ...Object.keys(g.snaps).map(Number).filter((id) => id !== 0)]
+    .filter((id) => id !== sys.id && isOwnStack(g, id))
+    .map((id) => ({ s: g.system(id), k: g.knownGarrison(id) }))
     .sort((a, b) => distance(a.s, sys) - distance(b.s, sys));
   const from = origins.some((o) => o.s.id === app.fleetOrigin) ? app.fleetOrigin : origins[0]?.s.id;
   const build = g.knownColonized(sys.id)
-    ? costButton(g, 'data-act="warship"', '艦隊を編成', WARSHIP_COST, sys.id, g.hasShipyard(sys.id) ? '' : '軍事基地がない (入植地で建設できる)')
+    ? costButton(g, 'data-act="warship"', '艦隊を編成', WARSHIP_COST, sys.id, g.knownColonies(sys.id).some((c) => c.lv.shipyard >= 1) ? '' : '軍事基地がない (入植地で建設できる)')
     : '';
   // 交戦中でない他国の星系へ送ると奇襲攻撃になる
   const destRealm = g.known(sys.id)?.cols.length ? g.known(sys.id).realm : null;
-  const surprise = destRealm !== null && destRealm !== undefined && destRealm !== 0 && !g.atWar(0, destRealm);
+  const surprise = destRealm !== null && destRealm !== undefined && destRealm !== 0 && !g.knownAtWar(0, destRealm);
   const send = origins.length
     ? `${surprise ? `<p class="note bad">⚠ ${esc(g.realmName(destRealm))}の星系。ここへ艦隊を送ると奇襲攻撃になり、到着した時点で${esc(g.realmName(destRealm))}との戦争状態に突入し、そのまま艦隊戦になります。</p>` : ''}<label class="field">艦隊の出発地
         <select data-act="forigin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === from ? 'selected' : ''}>${esc(o.s.name)} (${o.k}艦隊・${g.fleetYears(o.s.id, sys.id).toFixed(1)} 年)</option>`).join('')}</select></label>
        <div class="btns"><button data-act="fleet" data-from="${from}" data-n="1">${surprise ? '奇襲攻撃 (1艦隊)' : '1艦隊をここへ'}</button><button data-act="fleet" data-from="${from}" data-n="all">${surprise ? '奇襲攻撃 (全艦隊)' : '全艦隊をここへ'}</button></div>`
     : '';
-  const queued = g.projects.filter((j) => j.type === 'warship' && j.sys === sys.id).length;
+  const queued = g.knownProjects().filter((j) => j.type === 'warship' && j.sys === sys.id).length;
   const pick = isOwnStack(g, sys.id) ? `<button data-act="fleetsel" data-sys="${sys.id}">この艦隊を選ぶ (星間マップで移動先を右クリック/タップ)</button>` : '';
   return `<h3>軍事</h3>
     ${pick}
@@ -4283,11 +4307,12 @@ function raceText(c) {
 function troopBox(g, c) {
   const key = colKey(c);
   const app = window.__app;
-  const origins = g.colonies.filter((o) => o !== c && o.troops + o.slaveTroops >= 1)
+  // 呼び寄せ元は、地球から見えている入植地の歩兵で選ぶ
+  const origins = g.knownSystems().flatMap((x) => g.knownColonies(x.id)).filter((o) => o.key !== colKey(c) && colKey(o) !== colKey(c) && o.troops + o.slaveTroops >= 1)
     .map((o) => ({ o, r: g.routePath(o.sys, c.sys) })).filter((x) => x.r)
     .sort((a, b) => a.r.years - b.r.years);
   const fromKey = origins.some((x) => colKey(x.o) === app?.troopOrigin) ? app.troopOrigin : origins[0] && colKey(origins[0].o);
-  const coming = g.troopMoves.filter((m) => m.to === key).reduce((k, m) => k + m.troops + m.slave, 0);
+  const coming = g.troopMoves.filter((m) => m.to === key && g.departSeen(m.path[0], m.times[0])).reduce((k, m) => k + m.troops + m.slave, 0);
   const train = costButton(g, `data-act="train" data-col="${key}"`, '歩兵を訓練', TROOP_COST, c.sys,
     c.lv.barracks < 1 ? '軍事教練所が必要' : busyText(g, (j) => j.type === 'troop' && j.col === key));
   const send = origins.length ? `<label class="field">歩兵を呼び寄せる (交易路経由)
@@ -4315,22 +4340,22 @@ function nativesBox(app, sys, b) {
   const warHtml = war ? `<p class="note bad">征服戦争中 — 進捗 ${pct(war.progress)}。入植地の戦力 ${fmt(g.warPower(war), 1)} (歩兵 + 星系の艦隊の半分 + 入植者の民兵) と先住民の残りの戦力 ${fmt(war.enemy ?? need * (1 - war.progress), 1)} が毎年削り合う (先住民は疲弊して年7%ずつも弱る)。劣勢になると入植船を送った星系が歩兵を送り込む。</p>
     <span class="bar"><i style="width:${(war.progress * 100).toFixed(0)}%"></i></span>` : '';
   const unityHtml = row('統一度', `${unity} ${n.def.tech >= 3 ? '<span class="bad">(統一国家・組織的な抵抗あり)</span>' : '<span class="muted">(分裂・組織的な抵抗なし)</span>'}`);
-  const presence = g.isColonized(sys.id);
+  const presence = g.knownColonized(sys.id);
   const col = g.knownColonyAt(sys.id, b.id, 'planet');
   const actions = ind ? `<div class="btns">
       ${costButton(g, 'data-act="gift"', '贈り物 (友好度+10)', GIFT_COST, undefined, presence ? '' : 'この星系に拠点が必要')}
       ${costButton(g, 'data-act="integrate"', '市民として迎える', null, undefined, !col ? '同じ惑星に入植地が必要' : n.st.rel < 80 ? '友好度80以上が必要' : '')}
     </div>
     ${(() => {
-      const ships = g.garrison[sys.id] || 0;
-      const power = ships + g.troopPower(sys.id);
+      const ships = g.knownGarrison(sys.id);
+      const power = ships + knownTroopPower(g, sys.id);
       const why = ships < 1 ? '制宙権のため艦隊が1つ以上必要' : power < need ? `戦力が足りない (艦隊+歩兵 ${fmt(power, 1)}/${need})` : '';
       return costButton(g, 'data-act="conquer"', `武力で制圧 (艦隊+歩兵の戦力 ${need} 以上)`, null, undefined, why);
     })()}` : '';
   const st = n.st.status;
   const noCol = col ? '' : '同じ惑星に入植地が必要';
   const yieldNow = g.nativeYield(sys.id, b.id, n.st);
-  const guard = (g.garrison[sys.id] || 0) + g.troopPower(sys.id);
+  const guard = g.knownGarrison(sys.id) + knownTroopPower(g, sys.id);
   const ruled = st === 'subjugated' ? `
     ${costButton(g, 'data-act="enslave"', '奴隷化する (市場奴隷)', null, undefined, noCol)}
     <p class="note">奴隷化すると市場奴隷になり、あとで軍事奴隷・家畜に切り替えられる。悪名 +15 (他の先住民の友好度が下がり、同じ惑星の入植地は不穏になる)。</p>` : '';
@@ -4382,8 +4407,10 @@ function dispatchBox(app, sys, b) {
 }
 
 // 建設中ならボタンに添える文言 (例: 建設中 あと 3.2 年)
+// 地球から見た星系の歩兵の戦力 (光が届いている記録の入植地から)
+function knownTroopPower(g, sysId) { return g.knownColonies(sysId).reduce((k, c) => k + c.troops + SLAVE_TROOP_POWER * c.slaveTroops, 0); }
 function busyText(g, pred) {
-  const j = g.pending(pred);
+  const j = g.knownProjects().find(pred); // 地球から見えている建設中の事業
   return j ? `建設中 あと ${(j.ready - g.year).toFixed(1)} 年` : '';
 }
 
@@ -4395,7 +4422,7 @@ function shipsHtml(game) {
   const seen = (sys, t) => game.departSeen(sys, t);
   const ships = game.ships.filter((s) => seen(s.from, s.depart)).map((s) => `<div class="ship">${esc(game.system(s.from).name)} → ${esc(game.system(s.to).name)} <span class="muted">${KIND_LABEL[s.kind]}</span>${bar(s)}</div>`);
   const fleets = game.fleets.filter((f) => seen(f.from, f.depart)).map((f) => `<div class="ship">${esc(game.system(f.from).name)} → ${esc(game.system(f.to).name)} <span class="bad">${f.n} 艦隊</span>${bar(f)}</div>`);
-  const jobs = game.projects.filter((j) => seen(j.sys, j.start)).map((j) => `<div class="ship">${esc(j.label)} <span class="muted">資材搬入中</span>${bar({ depart: j.start, arrive: j.ready })}</div>`);
+  const jobs = game.knownProjects().filter((j) => seen(j.sys, j.start)).map((j) => `<div class="ship">${esc(j.label)} <span class="muted">資材搬入中</span>${bar({ depart: j.start, arrive: j.ready })}</div>`);
   const vm = game.migrants.filter((m) => seen(m.fromSys, m.depart));
   const mig = vm.length
     ? [`<div class="ship"><span style="color:#8fd3ff">移民船 ${vm.length} 隻</span> <span class="muted">計 ${fmtPop(vm.reduce((k, m) => k + m.n, 0))} (帝国タブ → 移民)</span></div>`]
@@ -4469,7 +4496,7 @@ function requestsTable(g) {
   const rows = [...vis].sort((a, b) => a.arrive - b.arrive).slice(0, 40).map((q) => {
     const what = q.kind === 'build' ? `建設資材 (${esc(q.label)})` : q.kind === 'order' ? `指令「${esc(q.label)}」` : q.kind === 'tribute' ? `朝貢 ${fmtAmt(q.amt)} cr` : q.kind === 'grant' ? `資金援助 ${fmtAmt(q.amt)} cr${q.auto ? ' (自動)' : ''}`
       : `${RES_LABEL[q.res]} ${fmtAmt(q.amt)}${q.shipped ? ` <span class="muted">(発送済み ${fmtAmt(q.shipped)})</span>` : ''}`;
-    const st = q.arrive > g.year
+    const st = q.arrive + (g.spectate ? 0 : g.lightDelay(q.to)) > g.year
       ? `<span style="color:#c9a2ff">光速で送信中</span> あと ${(q.arrive - g.year).toFixed(1)} 年`
       : '<span class="hz">送り手で処理中</span> (交易路の空きを待って発送)';
     return `<tr><td>${name(q.from)} → ${name(q.to)}</td><td>${what}</td><td>${st}</td></tr>`;
@@ -4495,9 +4522,9 @@ function politicsSheet(app) {
   }).join('');
   const roots = [...new Set(g.knownSystems().map((x) => g.known(x.id)?.realm).filter((r) => r !== null && r !== undefined && r !== 0))];
   const realms = roots.map((root) => {
-    const war = g.atWar(0, root);
+    const war = g.knownAtWar(0, root);
     const n = g.knownSystems().filter((x) => g.known(x.id)?.realm === root).length;
-    const others = g.enemiesOf(root).filter((e) => e !== 0);
+    const others = g.knownEnemiesOf(root).filter((e) => e !== 0);
     return `<tr><td><span class="dot" style="background:${realmColor(root)}"></span>${goto(g.system(root))}</td><td>${n} 星系</td>
       <td>${war ? `<b class="bad">地球の国と交戦中</b> (${g.realmWars[g.warKey(0, root)].toFixed(0)}年から)` : '地球の国とは平和'}${others.length ? `<br><span class="bad">${others.map((e) => esc(g.realmName(e))).join('・')}と交戦中</span>` : ''}</td>
       <td>${war ? `<button data-act="peace" data-sys="${root}">講和を申し入れる<small>指令: 届くまで ${g.lightDelay(root).toFixed(1)} 年</small></button>` : `<button data-act="declarewar" data-sys="${root}">宣戦する</button>`}</td></tr>`;
@@ -4516,11 +4543,11 @@ function politicsSheet(app) {
     <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。独立して始まった戦争では、独立国は簡単には降伏しない: 開戦から5年以上たち、地球の国の戦力が5倍以上になると、国ごと降伏して地球の国に従属することがある。20年以上たっても決着がつかなければ講和 (独立は保たれる) になることもある。地球から宣戦した一方的な侵略では、相手は降伏も講和もせず、攻め落とされるまで戦う。独立国どうしも戦争をする (近くの弱い独立国に宣戦する)。仕掛けた側が大差で負ければ降伏し、仕掛けられた側は攻め落とされるまで戦う。交戦中でない国の星系へ艦隊を送ると奇襲攻撃になり、着いた時点で戦争が始まる。交戦中の国どうしでは物資をやり取りしない (各星系は開戦の知らせが光速で届いてから取引をやめる)。</p>
     <h3>戦争</h3>
     ${(() => {
-      const rows = Object.keys(g.realmWars).map((k) => {
+      const rows = g.knownWarKeys().map((k) => {
         const [a, b] = k.split('|').map(Number);
         const by = g.warBy[k];
         const att = by === b ? b : a, def = att === a ? b : a;
-        return `<tr><td><span class="dot" style="background:${realmColor(att)}"></span>${esc(g.realmName(att))}</td><td><span class="dot" style="background:${realmColor(def)}"></span>${esc(g.realmName(def))}</td><td>${g.realmWars[k].toFixed(0)}年から</td><td>${Math.round(g.realmShips(att))} 対 ${Math.round(g.realmShips(def))} 艦隊</td></tr>`;
+        return `<tr><td><span class="dot" style="background:${realmColor(att)}"></span>${esc(g.realmName(att))}</td><td><span class="dot" style="background:${realmColor(def)}"></span>${esc(g.realmName(def))}</td><td>${g.realmWars[k].toFixed(0)}年から</td><td>${Math.round(g.knownRealmShips(att))} 対 ${Math.round(g.knownRealmShips(def))} 艦隊 (把握分)</td></tr>`;
       }).join('');
       return rows ? `<div class="scroll"><table class="tbl"><tr><th>仕掛けた国</th><th>仕掛けられた国</th><th>開戦</th><th>戦力</th></tr>${rows}</table></div>` : '<p class="note">いま戦争はない。</p>';
     })()}
@@ -4674,7 +4701,7 @@ function militarySheet(app) {
 
   const troopRows = systems.flatMap((x) => g.knownColonies(x.id)).sort((a, b) => (b.troops + b.slaveTroops) - (a.troops + a.slaveTroops) || b.pop - a.pop).map((c) => {
     const key = colKey(c);
-    const coming = g.troopMoves.filter((m) => m.to === key).reduce((k, m) => k + m.troops + m.slave, 0);
+    const coming = g.troopMoves.filter((m) => m.to === key && g.departSeen(m.path[0], m.times[0])).reduce((k, m) => k + m.troops + m.slave, 0);
     const train = costButton(g, `data-act="train" data-col="${key}"`, '訓練', TROOP_COST, c.sys,
       c.lv.barracks < 1 ? '教練所なし' : busyText(g, (j) => j.type === 'troop' && j.col === key));
     return `<tr><td><button data-act="gobody" data-sys="${c.sys}" data-body="${esc(c.body)}">${esc(c.name)}</button></td>
@@ -4699,7 +4726,7 @@ function militarySheet(app) {
     <h3>歩兵</h3>
     <p class="note">歩兵は入植地ごとに駐留し、交易路を通って移動する。軍事教練所 (惑星・ステーションの施設) で訓練するか、軍事奴隷から徴集する。先住民の制圧、奴隷の反乱の抑止、海賊からの地上防衛に使う。</p>
     <div class="scroll"><table class="tbl"><tr><th>入植地</th><th>教練所</th><th>歩兵</th><th>奴隷兵</th><th>向かっている</th><th>訓練</th><th></th></tr>${troopRows}</table></div>
-    <h3>征服戦争 (${g.wars.length})</h3>${warPolicyBox(g)}${warRows ? `<div class="scroll"><table class="tbl"><tr><th>惑星</th><th>先住民</th><th>進捗</th><th>情報</th></tr>${warRows}</table></div>` : '<p class="note">なし</p>'}
+    <h3>征服戦争 (${systems.flatMap((x) => g.knownWars(x.id)).length})</h3>${warPolicyBox(g)}${warRows ? `<div class="scroll"><table class="tbl"><tr><th>惑星</th><th>先住民</th><th>進捗</th><th>情報</th></tr>${warRows}</table></div>` : '<p class="note">なし</p>'}
     <h3>移動中の歩兵</h3>${moves ? `<div class="scroll"><table class="tbl">${moves}</table></div>` : '<p class="note">なし</p>'}
     <h3>移動中の艦隊</h3>${fleets ? `<div class="scroll"><table class="tbl">${fleets}</table></div>` : '<p class="note">なし</p>'}
     <h3>艦隊への指令 (光速で送信中)</h3>${(() => {
@@ -4770,7 +4797,7 @@ function candidatesHtml(app) {
     const send = costButton(g, `data-act="candsend" data-sys="${sys.id}" data-body="${esc(b.id)}" data-kind="${kind}" data-from="${from.id}"`,
       kind === 'planet' ? '入植船' : 'ステーション', g.shipCost(kind, from.id, sys.id), from.id, c.ok ? '' : c.reason);
     const ship = g.ships.find((x) => x.to === sys.id && x.body === b.id && g.departSeen(x.from, x.depart));
-    const prep = g.projects.find((j) => j.type === 'ship' && j.to === sys.id && j.body === b.id);
+    const prep = g.knownProjects().find((j) => j.type === 'ship' && j.to === sys.id && j.body === b.id);
     const status = ship ? `<span class="tag colony">入植船 航行中</span> <span class="muted">あと ${(ship.arrive - g.year).toFixed(1)} 年</span>`
       : prep ? `<span class="tag shortage">入植船 準備中</span> <span class="muted">あと ${(prep.ready - g.year).toFixed(1)} 年</span>` : '';
     return `<tr class="${ship || prep ? 'enroute' : ''}"><td><button data-act="gobody" data-sys="${sys.id}" data-body="${esc(b.id)}">${esc(b.name)}</button>${status ? `<br>${status}` : ''}</td>
