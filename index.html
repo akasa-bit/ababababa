@@ -50,6 +50,11 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #legend summary { cursor:pointer; color:var(--muted); }
 #legend div { display:flex; align-items:center; gap:6px; margin:3px 0; }
 #legend i { display:inline-block; width:9px; height:9px; }
+#fleetbar { position:absolute; left:50%; top:8px; transform:translateX(-50%); z-index:2; max-width:calc(100% - 24px); background:rgba(13,18,29,.94); border:1px solid #2f6f66; border-radius:8px; padding:8px 12px; font-size:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; }
+#fleetbar[hidden] { display:none; }
+#fleetbar button { padding:3px 9px; min-height:0; }
+#fleetbar .warn { flex-basis:100%; color:#ff8a80; text-align:center; }
+@media (max-width: 700px) { #fleetbar { left:6px; right:6px; top:6px; transform:none; max-width:none; font-size:11px; padding:4px 6px; gap:4px; flex-wrap:nowrap; } #fleetbar .hint, #fleetbar .lbl { display:none; } #fleetbar button { padding:2px 6px; } #fleetbar.confirm { flex-wrap:wrap; } #fleetbar .warn { flex-basis:100%; } }
 #zoom { position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:6px; }
 #zoom button { min-width:46px; min-height:46px; font-size:18px; background:rgba(13,18,29,.85); }
 aside { width:340px; background:var(--panel); border-left:1px solid var(--line); padding:12px 14px; overflow-y:auto; }
@@ -151,6 +156,7 @@ html, body { height:100%; }
         <div><i style="border:2px solid #ffaa3c;border-radius:50%;width:7px;height:7px"></i>攻囲 (国家間の戦争)</div>
         <div><i style="border:2px solid #ff9f43;border-radius:50%;width:7px;height:7px"></i>入植星系の輪の色 = 所属する国 (青緑は地球の国)</div>
       </details>
+      <div id="fleetbar" hidden></div>
       <div id="zoom"><button id="zoom-in" aria-label="拡大">＋</button><button id="zoom-out" aria-label="縮小">－</button><button id="zoom-fit" aria-label="全体表示">全体</button></div>
     </div>
     <aside>
@@ -2994,8 +3000,17 @@ class GalaxyView {
     const pos = (e) => { const r = c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
     const pts = new Map();
     let pinch = null;
+    c.addEventListener('contextmenu', (e) => { if (this.app.view === 'galaxy') e.preventDefault(); });
     c.addEventListener('pointerdown', (e) => {
       if (this.app.view !== 'galaxy') return;
+      // 右クリック = 選んだ艦隊の移動先、Shift+ドラッグ = 範囲選択 (Hearts of Iron 風)
+      if (e.pointerType === 'mouse' && e.button === 2) { this.rdown = pos(e); return; }
+      if (e.pointerType === 'mouse' && e.button === 0 && e.shiftKey) {
+        const [x, y] = pos(e);
+        this.box = { x0: x, y0: y, x1: x, y1: y };
+        c.setPointerCapture(e.pointerId);
+        return;
+      }
       pts.set(e.pointerId, pos(e));
       c.setPointerCapture(e.pointerId);
       if (pts.size === 1) {
@@ -3010,6 +3025,7 @@ class GalaxyView {
     c.addEventListener('pointermove', (e) => {
       if (this.app.view !== 'galaxy') return;
       const [x, y] = pos(e);
+      if (this.box) { this.box.x1 = x; this.box.y1 = y; }
       if (pts.has(e.pointerId)) pts.set(e.pointerId, [x, y]);
       if (pinch && pts.size === 2) {
         const [a, b] = [...pts.values()];
@@ -3035,13 +3051,23 @@ class GalaxyView {
     const end = (e) => {
       if (this.app.view !== 'galaxy') return;
       const [x, y] = pos(e);
+      if (this.box) {
+        const b = this.box;
+        this.box = null;
+        if (e.type === 'pointerup') this.boxSelect(b);
+        return;
+      }
+      if (this.rdown) {
+        const moved = Math.hypot(x - this.rdown[0], y - this.rdown[1]) > 6;
+        this.rdown = null;
+        const s = this.pick(x, y);
+        if (e.type === 'pointerup' && !moved && s && this.app.fleetSel.size) orderFleets(s.id);
+        return;
+      }
       const wasPinch = pts.size > 1;
       pts.delete(e.pointerId);
       if (pts.size < 2) pinch = null;
-      if (this.drag && !this.drag.moved && !wasPinch && e.type === 'pointerup') {
-        const s = this.pick(x, y);
-        if (s) this.app.selectSystem(s.id);
-      }
+      if (this.drag && !this.drag.moved && !wasPinch && e.type === 'pointerup') this.tap(this.pick(x, y), e);
       if (pts.size === 0) this.drag = null;
     };
     c.addEventListener('pointerup', end);
@@ -3059,6 +3085,34 @@ class GalaxyView {
       const [x, y] = pos(e);
       this.zoomAt(Math.exp(-e.deltaY * 0.0015), x, y);
     }, { passive: false });
+  }
+
+  // クリック・タップ。地球の艦隊がいる星系なら艦隊を選ぶ (Shift で追加・解除)。
+  // タッチ操作では、艦隊を選んでいるときに別の星系をタップすると移動命令になる (マウスは右クリック)
+  tap(s, e) {
+    const app = this.app;
+    const sel = app.fleetSel;
+    const touch = e.pointerType !== 'mouse';
+    if (!s) { if (!e.shiftKey) sel.clear(); app.fleetConfirm = null; renderFleetBar(); return; }
+    if (touch && sel.size && !sel.has(s.id)) { orderFleets(s.id); return; }
+    if (isOwnStack(app.game, s.id)) {
+      if (e.shiftKey) { if (sel.has(s.id)) sel.delete(s.id); else sel.add(s.id); }
+      else if (touch && sel.has(s.id)) sel.delete(s.id);
+      else { sel.clear(); sel.add(s.id); }
+    } else if (!e.shiftKey) sel.clear();
+    app.fleetConfirm = null;
+    app.selectSystem(s.id);
+    renderFleetBar();
+  }
+  boxSelect(b) {
+    const [x0, x1] = [Math.min(b.x0, b.x1), Math.max(b.x0, b.x1)];
+    const [y0, y1] = [Math.min(b.y0, b.y1), Math.max(b.y0, b.y1)];
+    for (const s of this.app.game.galaxy.systems) {
+      const [px, py] = this.toScreen(s.x, s.y);
+      if (px >= x0 && px <= x1 && py >= y0 && py <= y1 && isOwnStack(this.app.game, s.id)) this.app.fleetSel.add(s.id);
+    }
+    this.app.fleetConfirm = null;
+    renderFleetBar();
   }
 
   centerOn(sys) { this.cam.x = sys.x; this.cam.y = sys.y; }
@@ -3117,6 +3171,17 @@ class GalaxyView {
       const [px, py] = this.toScreen(p.x, p.y);
       ctx.fillStyle = '#ff7a6b';
       ctx.beginPath(); ctx.moveTo(px, py - 5); ctx.lineTo(px + 4, py + 3); ctx.lineTo(px - 4, py + 3); ctx.fill();
+      // 地球の艦隊は行き先への矢印も描く
+      if ((f.owner ?? 0) === 0) {
+        const d = game.system(f.to);
+        const [tx, ty] = this.toScreen(d.x, d.y);
+        const ang = Math.atan2(ty - py, tx - px);
+        ctx.strokeStyle = f.surprise ? 'rgba(255,90,90,0.55)' : 'rgba(255,122,107,0.4)';
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(tx, ty); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(tx - 9 * Math.cos(ang - 0.4), ty - 9 * Math.sin(ang - 0.4)); ctx.lineTo(tx, ty); ctx.lineTo(tx - 9 * Math.cos(ang + 0.4), ty - 9 * Math.sin(ang + 0.4)); ctx.stroke();
+      }
     }
 
     // 建設資材の輸送船
@@ -3300,6 +3365,43 @@ class GalaxyView {
         ctx.font = '11px sans-serif';
         ctx.fillText(s.name, x + r + 7, y + 4);
       }
+    }
+
+    // 艦隊の選択と移動先のプレビュー (Hearts of Iron 風)
+    const fsel = this.app.fleetSel;
+    for (const id of fsel) {
+      const s = game.system(id);
+      const [x, y] = this.toScreen(s.x, s.y);
+      ctx.strokeStyle = '#4de3d0';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+    const target = this.hover && fsel.size && !fsel.has(this.hover.id) ? this.hover : (this.app.fleetConfirm !== null ? game.system(this.app.fleetConfirm) : null);
+    if (target) {
+      const [tx, ty] = this.toScreen(target.x, target.y);
+      const surprise = isSurpriseTarget(game, target.id);
+      let eta = 0;
+      ctx.strokeStyle = surprise ? 'rgba(255,90,90,0.9)' : 'rgba(77,227,208,0.85)';
+      ctx.setLineDash([6, 4]);
+      for (const id of fsel) {
+        if (id === target.id) continue;
+        const s = game.system(id);
+        const [x, y] = this.toScreen(s.x, s.y);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tx, ty); ctx.stroke();
+        eta = Math.max(eta, game.lightDelay(id) + game.fleetYears(id, target.id));
+      }
+      ctx.setLineDash([]);
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = surprise ? '#ff8a80' : '#4de3d0';
+      ctx.fillText(`${surprise ? '奇襲攻撃 ' : '移動 '}到着まで ${eta.toFixed(1)} 年`, tx + 12, ty - 12);
+    }
+    if (this.box) {
+      const b = this.box;
+      ctx.strokeStyle = 'rgba(77,227,208,0.9)';
+      ctx.fillStyle = 'rgba(77,227,208,0.08)';
+      ctx.fillRect(Math.min(b.x0, b.x1), Math.min(b.y0, b.y1), Math.abs(b.x1 - b.x0), Math.abs(b.y1 - b.y0));
+      ctx.strokeRect(Math.min(b.x0, b.x1), Math.min(b.y0, b.y1), Math.abs(b.x1 - b.x0), Math.abs(b.y1 - b.y0));
     }
 
     // ホバー中の星: 選択星からの距離と、通信 (光速) と船 (0.95c / 交易路の外 0.9c) の所要年数
@@ -3687,6 +3789,62 @@ function defenseToggle(g) {
     <p class="note">年に1回、各入植星系の駐留艦隊を海賊の最大戦力 (いま <b>${goal}</b> 艦隊、${PIRATE_START}年から40年ごとに増える) まで増やす。余っている艦隊を近くから回し、足りなければ太陽系の軍事基地で編成する (資金が費用の2倍以上あるとき、年5艦隊まで。ほかの星系は自分で海賊対策の建艦をする)。命令で送った艦隊 (遠征・攻め落とした星系の守り) は動かさない。太陽系と、海賊が現れる前は1艦隊。目標に届いていない入植星系: ${bare} か所</p>`;
 }
 
+// --- 星間マップでの艦隊の操作 (Hearts of Iron 風) ---
+// 地球の艦隊が (地球に届いている情報で) 駐留している星系か: 地球の国の星系か、入植していない星系
+function isOwnStack(g, id) {
+  if (g.knownGarrison(id) < 1) return false;
+  if (id === 0) return true;
+  const k = g.known(id);
+  return !k || !k.cols.length || (k.realm ?? 0) === 0;
+}
+// 交戦中でない他国の星系 (送ると奇襲攻撃になる)
+function isSurpriseTarget(g, id) {
+  const k = id === 0 ? null : g.known(id);
+  const realm = k && k.cols.length ? k.realm : null;
+  return realm !== null && realm !== undefined && realm !== 0 && !g.atWar(0, realm);
+}
+// 選んだ艦隊に移動命令を出す。太陽系以外の艦隊への命令は光速で届く。中立国の星系なら確認してから (奇襲攻撃)
+function orderFleets(target) {
+  const g = app.game;
+  const ids = [...app.fleetSel].filter((id) => id !== target);
+  if (!ids.length) return;
+  if (isSurpriseTarget(g, target) && app.fleetConfirm !== target) {
+    app.fleetConfirm = target;
+    renderFleetBar();
+    return;
+  }
+  let sent = 0;
+  for (const id of ids) {
+    const have = g.knownGarrison(id);
+    const n = app.fleetAmount === 'all' ? 'all' : app.fleetAmount === 'half' ? Math.max(1, Math.floor(have / 2)) : 1;
+    if (g.command('fleet', { from: id, sys: target, n }).ok) sent++;
+  }
+  g.message(`${sent} か所の艦隊に ${g.system(target).name} への移動を命じた`);
+  g.live = null;
+  app.fleetSel.clear();
+  app.fleetConfirm = null;
+  app.dirty = true;
+  renderFleetBar();
+  save();
+}
+const FLEET_AMOUNT = { all: '全艦', half: '半数', one: '1艦隊' };
+function renderFleetBar() {
+  const bar = $('fleetbar');
+  const g = app.game;
+  for (const id of [...app.fleetSel]) if (!isOwnStack(g, id)) app.fleetSel.delete(id);
+  if (app.view !== 'galaxy' || !app.fleetSel.size) { bar.hidden = true; app.fleetConfirm = null; return; }
+  const total = [...app.fleetSel].reduce((k, id) => k + g.knownGarrison(id), 0);
+  const conf = app.fleetConfirm !== null ? g.system(app.fleetConfirm) : null;
+  const realm = conf ? g.known(conf.id)?.realm : null;
+  bar.innerHTML = `<b class="lbl">選択中の艦隊</b><span>${app.fleetSel.size} か所・${total} 艦隊</span>
+    <span><span class="lbl">送る数</span> ${Object.entries(FLEET_AMOUNT).map(([k, l]) => `<button data-fa="amount" data-v="${k}" class="${app.fleetAmount === k ? 'on' : ''}">${l}</button>`).join('')}</span>
+    <span class="muted hint">移動先を右クリック (タッチ操作はタップ)・Shift+クリックで追加・Shift+ドラッグで範囲選択</span>
+    <button data-fa="clear">解除</button>
+    ${conf ? `<div class="warn">⚠ ${esc(conf.name)} は${esc(g.realmName(realm))}の星系。奇襲攻撃になり、到着した時点で戦争状態に突入します。もう一度 ${esc(conf.name)} を右クリック (タップ) すると実行。 <button data-fa="cancel">やめる</button></div>` : ''}`;
+  bar.classList.toggle('confirm', !!conf);
+  bar.hidden = false;
+}
+
 function militaryBox(app, sys) {
   const g = app.game;
   const n = g.knownGarrison(sys.id);
@@ -3708,7 +3866,9 @@ function militaryBox(app, sys) {
        <div class="btns"><button data-act="fleet" data-from="${from}" data-n="1">${surprise ? '奇襲攻撃 (1艦隊)' : '1艦隊をここへ'}</button><button data-act="fleet" data-from="${from}" data-n="all">${surprise ? '奇襲攻撃 (全艦隊)' : '全艦隊をここへ'}</button></div>`
     : '';
   const queued = g.projects.filter((j) => j.type === 'warship' && j.sys === sys.id).length;
+  const pick = isOwnStack(g, sys.id) ? `<button data-act="fleetsel" data-sys="${sys.id}">この艦隊を選ぶ (星間マップで移動先を右クリック/タップ)</button>` : '';
   return `<h3>軍事</h3>
+    ${pick}
     <p class="note">駐留艦隊 <b>${n}</b>${queued ? ` (編成中 ${queued})` : ''}。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1艦隊あたり維持費 ${WARSHIP_UPKEEP} cr/年。艦隊は直行し、交易路が直接結ぶ区間は 0.95c、それ以外は 0.9c</p>
     ${build}${send}${defenseToggle(g)}`;
 }
@@ -4378,6 +4538,9 @@ const app = {
   speed: 1,
   routeDest: undefined,
   fleetOrigin: undefined,
+  fleetSel: new Set(), // 星間マップで選んだ地球の艦隊 (駐留している星系の id)
+  fleetAmount: 'all', // 送る数: all / half / one
+  fleetConfirm: null, // 奇襲攻撃の確認待ちの行き先
   dirty: true,
   selectSystem(id) {
     this.sel = { sys: id, body: null };
@@ -4394,6 +4557,7 @@ const app = {
     if (v === 'events') this.seenTime = this.game.year;
     canvas.style.cursor = 'default';
     $('zoom').hidden = v !== 'galaxy';
+    if (typeof renderFleetBar === 'function') renderFleetBar();
     $('legend').hidden = v !== 'galaxy';
     this.dirty = true;
   },
@@ -4437,6 +4601,14 @@ $('tab-system').onclick = () => app.setView('system');
 $('tab-empire').onclick = () => app.setView('empire');
 $('tab-events').onclick = () => app.setView('events');
 $('tab-cands').onclick = () => app.setView('cands');
+$('fleetbar').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-fa]');
+  if (!b) return;
+  if (b.dataset.fa === 'amount') app.fleetAmount = b.dataset.v;
+  else if (b.dataset.fa === 'clear') app.fleetSel.clear();
+  else if (b.dataset.fa === 'cancel') app.fleetConfirm = null;
+  renderFleetBar();
+});
 $('zoom-in').onclick = () => galaxyView.zoomAt(1.5, w / 2, h / 2);
 $('zoom-out').onclick = () => galaxyView.zoomAt(1 / 1.5, w / 2, h / 2);
 $('zoom-fit').onclick = () => galaxyView.fit();
@@ -4627,7 +4799,7 @@ window.addEventListener('keydown', (e) => {
   else if (e.key === 'g') app.setView('galaxy');
   else if (e.key === 's') app.setView('system');
   else if (e.key === 'e') app.setView('empire');
-  else if (e.key === 'Escape') app.setView('galaxy');
+  else if (e.key === 'Escape') { app.fleetSel.clear(); app.fleetConfirm = null; app.setView('galaxy'); renderFleetBar(); }
 });
 
 const panel = $('panel');
@@ -4643,6 +4815,7 @@ function onPanelClick(e) {
   const body = btn.dataset.body ?? app.sel.body;
   if (act === 'open') return app.setView('system');
   if (act === 'goto') { app.selectSystem(sys); return app.setView('galaxy'); }
+  if (act === 'fleetsel') { app.fleetSel = new Set([sys]); app.fleetConfirm = null; app.setView('galaxy'); return renderFleetBar(); }
   if (act === 'gobody') { app.openSystem(sys); return app.selectBody(body); }
   if (act === 'etab') { app.empireTab = btn.dataset.t; app.dirty = true; return; }
   if (act === 'evfilter') { app.eventFilter = btn.dataset.f; app.dirty = true; return; }
@@ -4751,6 +4924,7 @@ function frame(now) {
     $('log').innerHTML = logHtml(game);
     $('treasury').innerHTML = treasuryHtml(game);
     $('ledger').innerHTML = ledgerHtml(game);
+    if (app.fleetSel.size) renderFleetBar();
     if (app.view === 'events') app.seenTime = game.year;
     const unseen = game.knownEvents().filter((e) => !e.good && (e.seen ?? e.year) > (app.seenTime ?? -Infinity)).length;
     $('tab-events').textContent = unseen ? `イベント (${unseen})` : 'イベント';
