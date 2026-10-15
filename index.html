@@ -144,7 +144,7 @@ html, body { height:100%; }
         <div><i style="background:radial-gradient(#aadcff,transparent 70%)"></i>地球からの指令</div>
         <div><i style="background:radial-gradient(#a0e678,transparent 70%)"></i>朝貢 (主人の星系への送金)</div>
         <div><i style="background:radial-gradient(#ffd778,transparent 70%)"></i>資金援助 (主人の星系からの送金)</div>
-        <div class="muted" style="max-width:220px">通信の描き方はヘッダーの「通信」ボタンで切り替える (表示しない・波紋・光の点)。</div>
+        <div class="muted" style="max-width:220px">通信の描き方はヘッダーの「通信」ボタンで切り替える (表示しない・光の点)。</div>
         <div class="muted" style="max-width:220px">地図は地球に届いている光で描く。遠くの星系は昔の様子で、船は見かけの位置に見える。</div>
         <div><i style="border:2px solid #ff5a5a;border-radius:50%;width:7px;height:7px"></i>征服戦争 (赤い輪と ⚔ の数字が進捗)</div>
         <div><i style="border:2px dashed #ff5a5a;border-radius:50%;width:7px;height:7px"></i>艦隊戦 (下の棒が両軍の残りの比)</div>
@@ -2960,49 +2960,9 @@ class GalaxyView {
     }
 
     // 光速の通信 (物資移送要求・指令・朝貢・送金)。表示は設定で切り替える:
-    // off = 描かない / rings = 送り手から同心円に広がる波紋 (相手に届くまで) / dots = 見かけの位置に光の点と点線
+    // off = 描かない / dots = 見かけの位置に光の点と点線
     const SIGNAL = { build: '255,210,77', trade: '201,162,255', order: '170,220,255', tribute: '160,230,120', grant: '255,215,120' };
     const sigMode = this.app.signalMode;
-    if (sigMode === 'rings') {
-      // 地球から見た光の波面: 送り手 S を出た光の球面のうち、いま地球 E に光が届いている点の集まりは
-      // |SP| + |PE| = 経過年数 τ の楕円 (S と E が焦点)。地球へ向かう側ほど速く広がって見える。
-      // 送り手からの出発が見えてから (τ ≥ |SE|)、相手 B への到着が見えるまで (τ ≤ |SB| + |BE|) 描く。
-      // 観戦モードは実際の波面 (送り手を中心とする円、相手に届くまで)。色と濃さごとに1本のパスにまとめる
-      const paths = new Map();
-      const E = game.system(0);
-      for (const q of game.spectate ? game.requests : [...game.requests, ...game.ghosts.requests]) {
-        const a = game.system(q.from);
-        const bsys = game.system(q.to);
-        const tau = game.year - q.sent;
-        const se = distance(a, E);
-        const end = game.spectate ? distance(a, bsys) : distance(a, bsys) + distance(bsys, E);
-        if (tau <= 0 || tau > end || (!game.spectate && tau < se)) continue;
-        const level = Math.min(3, Math.floor((tau / Math.max(1e-6, end)) * 4));
-        const key = `${SIGNAL[q.kind] || SIGNAL.trade}|${level}`;
-        if (!paths.has(key)) paths.set(key, new Path2D());
-        const path = paths.get(key);
-        if (game.spectate) {
-          const [ax, ay] = this.toScreen(a.x, a.y);
-          const pr = Math.max(0.5, tau * z);
-          path.moveTo(ax + pr, ay);
-          path.arc(ax, ay, pr, 0, Math.PI * 2);
-        } else {
-          const semiA = tau / 2;
-          const semiB = Math.sqrt(Math.max(0, semiA * semiA - (se / 2) ** 2));
-          const th = Math.atan2(a.y - E.y, a.x - E.x);
-          const [mx, my] = this.toScreen((a.x + E.x) / 2, (a.y + E.y) / 2);
-          const ra = Math.max(0.5, semiA * z), rb = Math.max(0.5, semiB * z);
-          path.moveTo(mx + ra * Math.cos(th), my + ra * Math.sin(th));
-          path.ellipse(mx, my, ra, rb, th, 0, Math.PI * 2);
-        }
-      }
-      ctx.lineWidth = 1;
-      for (const [key, path] of paths) {
-        const [color, level] = key.split('|');
-        ctx.strokeStyle = `rgba(${color},${[0.5, 0.32, 0.18, 0.08][level]})`;
-        ctx.stroke(path);
-      }
-    }
     for (const q of sigMode === 'dots' ? [...game.requests, ...game.ghosts.requests] : []) {
       const a = game.system(q.from);
       const b = game.system(q.to);
@@ -3885,7 +3845,7 @@ function requestsTable(g) {
     return `<tr><td>${name(q.from)} → ${name(q.to)}</td><td>${what}</td><td>${st}</td></tr>`;
   }).join('');
   return `<h3>通信 (物資移送要求・指令・朝貢) ${vis.length} 件</h3>
-    <p class="note">情報は光速でしか伝わらない。資源が足りない星系や建設地は、交易路でつながった送り手へ物資移送要求を送り、要求が届いてから荷が出発する。地図での表示はヘッダーの「通信」ボタンで切り替える: 表示しない / 波紋 (送り手から光速で広がる波面を地球から見た形。地球へ向かう側ほど速く広がって見えるので、送り手と地球を焦点とする楕円になる。相手への到着が見えると消える。観戦モードでは実際の円) / 光の点 (見かけの位置の点と点線。届いて処理中の要求は送り手に輪)。色は紫: 交易、黄: 建設資材、水色: 指令、緑: 朝貢、金: 資金援助。</p>
+    <p class="note">情報は光速でしか伝わらない。資源が足りない星系や建設地は、交易路でつながった送り手へ物資移送要求を送り、要求が届いてから荷が出発する。地図での表示はヘッダーの「通信」ボタンで切り替える: 表示しない / 光の点 (見かけの位置の点と点線。届いて処理中の要求は送り手に輪)。色は紫: 交易、黄: 建設資材、水色: 指令、緑: 朝貢、金: 資金援助。</p>
     ${rows ? `<div class="scroll"><table class="tbl"><tr><th>要求元 → 送り手</th><th>内容</th><th>状況</th></tr>${rows}</table></div>` : '<p class="note">いま動いている要求はない。</p>'}`;
 }
 
@@ -4441,8 +4401,8 @@ $('home').onclick = (e) => {
   app.homeArmed = null;
   renderHome();
 };
-// 通信の表示 (表示しない / 波紋 / 光の点)。見る人ごとの好みなのでブラウザに覚えておく
-const SIGNAL_MODES = { off: '表示しない', rings: '波紋', dots: '光の点' };
+// 通信の表示 (表示しない / 光の点)。見る人ごとの好みなのでブラウザに覚えておく
+const SIGNAL_MODES = { off: '表示しない', dots: '光の点' };
 try { const m = localStorage.getItem('moribin-signals'); if (SIGNAL_MODES[m]) app.signalMode = m; } catch { /* 保存できない環境では既定値 */ }
 app.signalMode ??= 'off';
 function updateSigBtn() { $('sigbtn').textContent = `通信: ${SIGNAL_MODES[app.signalMode]}`; $('sigbtn').classList.toggle('on', app.signalMode !== 'off'); }
