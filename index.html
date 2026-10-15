@@ -1541,8 +1541,8 @@ class Game {
   // --- 星系政府の判断 (太陽系以外) ---
   // 交易路: 交易路が3本未満なら、まだ直接結んでいない近くの入植星系 (12光年以内) へ1本引く。
   //   交易路が1本もなければ距離に関係なく最寄りへ。資金が費用の1.5倍以上あるとき、年1本まで
-  // 入植: 人口500万以上で、15年に1回まで。10光年以内の未入植で入植できる惑星のうち、適性が高く近いところへ
-  //   (同意が要る文明の惑星は避ける)。資金が入植船の費用の1.2倍以上あるとき
+  // 入植: canColonize (人口300万以上、10年に1回まで) のとき、colonyTarget (ふだん10光年以内) へ
+  //   (同意が要る文明の惑星は避ける)。資金が入植船の費用の1.2倍以上あるとき。星系内の開発より優先する
   govsYearly() {
     for (const s of this.colonizedSystems()) {
       const id = s.id;
@@ -1560,24 +1560,81 @@ class Game {
           if (gv.credits >= 1.5 * cost.credits) this.openRoute(id, near.o.id);
         }
       }
-      const pop = this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
-      const busy = this.projects.some((j) => j.type === 'ship' && j.sys === id) || this.ships.some((x) => x.from === id);
-      if (pop < 5 || busy || this.year - (gv.lastColony ?? gv.founded) < (id === 0 ? 5 : 15)) continue;
-      let best = null;
-      for (const t of this.galaxy.systems) {
-        const d = distance(t, s);
-        if (d > (id === 0 ? 20 : 10) || t.id === id || this.isColonized(t.id)) continue; // 観戦モードの地球政府は遠くまで
-        for (const b of t.bodies) {
-          const grade = b.settle?.grade || 0;
-          if (grade < 1 || !this.check(t.id, b.id, 'planet').ok) continue;
-          const score = grade * 10 - d;
-          if (!best || score > best.score) best = { t, b, score };
-        }
-      }
+      if (!this.canColonize(id)) continue;
+      const best = this.colonyTarget(id);
       if (!best) continue;
       const cost = this.shipCost('planet', id, best.t.id);
       if (gv.credits < 1.2 * cost.credits || this.procure(cost, id).why) continue;
       if (this.dispatch(id, best.t.id, best.b.id, 'planet').ok) gv.lastColony = this.year;
+    }
+  }
+  // 入植できる状態か: 人口300万以上、入植船を準備・航行中でなく、前の入植から10年 (観戦モードの地球政府は5年) たっている
+  canColonize(id) {
+    const gv = this.gov(id);
+    const pop = this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
+    const busy = this.projects.some((j) => j.type === 'ship' && j.sys === id) || this.ships.some((x) => x.from === id);
+    return pop >= 3 && !busy && this.year - (gv.lastColony ?? gv.founded) >= (id === 0 ? 5 : 10);
+  }
+  // 入植先: 未入植で入植できる惑星のうち、適性が高く近いところ。ふだんは10光年以内 (観戦モードの地球政府は20)、
+  // 星系内に手の届く建設がなくなった政府 (far) は25光年まで探す
+  colonyTarget(id) {
+    const s = this.system(id);
+    const range = id === 0 ? 20 : this.gov(id).far ? 25 : 10;
+    let best = null;
+    for (const t of this.galaxy.systems) {
+      const d = distance(t, s);
+      if (d > range || t.id === id || this.isColonized(t.id)) continue;
+      for (const b of t.bodies) {
+        const grade = b.settle?.grade || 0;
+        if (grade < 1 || !this.check(t.id, b.id, 'planet').ok) continue;
+        const score = grade * 10 - d;
+        if (!best || score > best.score) best = { t, b, score };
+      }
+    }
+    return best;
+  }
+  // 星系政府の開発 (年1回、入植の判断のあと): 他の星系には建設を頼まず、自分の星系の中だけで建てる。
+  // 1) 近くに入植先があれば、その入植船の費用 (1.2倍) を取っておく (入植を優先)
+  // 2) 残りの資金で、星系内の施設 (農場・鉱山・工場、過密なら居住区) と採掘基地を積極的に建て増す。いちばん安いものから年1件
+  //    (資金が取り置きのほかに費用の1.5倍以上あるとき)
+  // 3) 手の届く建設がなくなったら (最も安いものでも収入の15年分を超える、またはすべて最大) far になり、
+  //    忠誠度85未満の従属星系があれば最も低いところへ資金援助を送り、なければ遠くの星系 (25光年まで) への入植を目指す
+  govDevelopYearly() {
+    for (const s of this.colonizedSystems()) {
+      const id = s.id;
+      if (id === 0 && !this.spectate) continue;
+      const gv = this.gov(id);
+      if (this.projects.filter((j) => j.sys === id && j.label.startsWith('[自動]')).length >= 3) continue;
+      const target = this.canColonize(id) ? this.colonyTarget(id) : null;
+      const reserve = target ? 1.2 * this.shipCost('planet', id, target.t.id).credits : 0;
+      const tag = '[自動] ';
+      const cands = [];
+      for (const c of this.coloniesIn(id)) {
+        for (const fac of ['farm', 'mine', 'factory', 'habitat']) {
+          if (c.lv[fac] >= FACILITY_MAX[fac] || this.pending((j) => j.type === 'upgrade' && j.col === colKey(c) && j.fac === fac)) continue;
+          if (fac === 'habitat' && c.pop < 0.6 * this.capOf(c)) continue;
+          if (fac === 'mine' && c.kind === 'station') continue;
+          const cost = this.upgradeCost(c, fac);
+          cands.push({ cost, run: () => this.order(cost, id, { type: 'upgrade', col: colKey(c), fac, label: `${tag}${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` }) });
+        }
+      }
+      for (const b of s.bodies) {
+        if (!this.outpostCheck(id, b.id).ok) continue;
+        const cost = this.outpostCost(this.outpostAt(id, b.id));
+        cands.push({ cost, run: () => this.buildOutpost(id, b.id, tag) });
+      }
+      cands.sort((a, b) => a.cost.credits - b.cost.credits);
+      const cheapest = cands[0];
+      gv.far = !cheapest || cheapest.cost.credits > 15 * Math.max(10, this.income(id));
+      if (!gv.far) {
+        if (gv.credits >= reserve + 1.5 * cheapest.cost.credits && !this.procure(cheapest.cost, id).why) cheapest.run();
+        continue;
+      }
+      const vassals = Object.entries(this.govs)
+        .filter(([k, v]) => v.lord === id && this.isColonized(Number(k)) && this.realmOf(Number(k)) === this.realmOf(id) && (v.loyalty ?? LOYALTY_START) < 85)
+        .sort((a, b) => (a[1].loyalty ?? LOYALTY_START) - (b[1].loyalty ?? LOYALTY_START));
+      const spare = gv.credits - reserve;
+      if (vassals.length && spare > 100) this.sendGrant(id, Number(vassals[0][0]), Math.min(500, 0.2 * spare));
     }
   }
   // 星系内の拡張: 人口が2百万人以上で資金に余裕 (費用の2倍) のある星系の政府は、自分の星系の空いている天体
@@ -1646,7 +1703,7 @@ class Game {
 
   // 自動防衛配備: 年に1回、目標に足りない入植星系へ、人口の多い順に、近くの余っている艦隊を回す。
   // 余っている = 入植星系なら自分の目標を超えた分、入植していない星系にいる艦は全部。
-  // autoBuild なら、それでも足りない分を軍事基地で編成する (資金が費用の2倍以上あるとき、年5艦隊まで)。
+  // autoBuild なら、それでも足りない分を太陽系の軍事基地で編成する (資金が費用の2倍以上あるとき、年5艦隊まで)。
   autoDefend() {
     if (!this.autoDefense) return;
     const pop = (id) => this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
@@ -1668,7 +1725,8 @@ class Game {
     if (!this.autoBuild) return;
     const short = this.realmSystems(0).reduce((k, s) => k + this.defenseGap(s.id), 0)
       - this.projects.filter((j) => j.type === 'warship' && this.realmOf(j.sys) === 0).length;
-    const yards = this.realmSystems(0).filter((s) => this.hasShipyard(s.id));
+    // 他の星系に建造を命じることはせず、太陽系の軍事基地でだけ編成する (各星系は自分で海賊対策の建艦をする)
+    const yards = this.hasShipyard(0) ? [this.system(0)] : [];
     for (let i = 0; i < Math.min(short, 5) && yards.length; i++) {
       const yard = yards.find((s) => this.gov(s.id).credits >= 2 * WARSHIP_COST.credits && !this.procure(WARSHIP_COST, s.id).why);
       if (!yard) break;
@@ -2105,7 +2163,7 @@ class Game {
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
       this.keepGhosts(before);
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.stationsYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); if (this.spectate) this.earthWarYearly(); this.siegesYearly(); this.recordSnapshots(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); if (this.spectate) this.earthWarYearly(); this.siegesYearly(); this.recordSnapshots(); }
     }
     return changed;
   }
@@ -3510,7 +3568,7 @@ function defenseToggle(g) {
   const goal = g.pirateMax();
   return `<label class="check auto"><input type="checkbox" data-act="autodefense" ${g.autoDefense ? 'checked' : ''}> 自動防衛配備</label>
     <label class="check auto"><input type="checkbox" data-act="autobuild" ${g.autoBuild ? 'checked' : ''} ${g.autoDefense ? '' : 'disabled'}> 足りない艦隊は自動で編成</label>
-    <p class="note">年に1回、各入植星系の駐留艦隊を海賊の最大戦力 (いま <b>${goal}</b> 艦隊、${PIRATE_START}年から40年ごとに増える) まで増やす。余っている艦隊を近くから回し、足りなければ軍事基地で編成する (資金が費用の2倍以上あるとき、年5艦隊まで)。太陽系と、海賊が現れる前は1艦隊。目標に届いていない入植星系: ${bare} か所</p>`;
+    <p class="note">年に1回、各入植星系の駐留艦隊を海賊の最大戦力 (いま <b>${goal}</b> 艦隊、${PIRATE_START}年から40年ごとに増える) まで増やす。余っている艦隊を近くから回し、足りなければ太陽系の軍事基地で編成する (資金が費用の2倍以上あるとき、年5艦隊まで。ほかの星系は自分で海賊対策の建艦をする)。太陽系と、海賊が現れる前は1艦隊。目標に届いていない入植星系: ${bare} か所</p>`;
 }
 
 function militaryBox(app, sys) {
