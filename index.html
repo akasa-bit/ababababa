@@ -920,8 +920,8 @@ class Game {
 
   // --- 忠誠と独立 ---
   // 忠誠度は年に最大5ずつ目標値へ動く。目標 = 85 − 1.5×主人との距離[ly] − 0.8×国の首都との距離[ly] − 主人より人口が多ければ25
-  //   − 最近の指令の数×3 + 主人の星系の駐留艦隊×2 (最大15) + その星系に駐留する地球の艦隊 (反乱時の推定艦隊と同数で+15、2倍で+30)。
-  //   50未満だと指令を拒むことがあり、20未満だと独立を宣言することがある
+  //   − 最近の指令の数×3 + 主人の星系の駐留艦隊×2 (最大15)。50未満だと指令を拒むことがあり、20未満だと独立を宣言することがある
+  //   (独立のしやすさは、忠誠度とは別の恐怖度でも下がる: fearTarget)
   loyaltyTarget(id) {
     const gv = this.gov(id);
     const lord = gv.lord;
@@ -929,7 +929,7 @@ class Game {
     const pop = (x) => this.coloniesIn(x).reduce((k, c) => k + c.pop, 0);
     const capital = this.system(this.realmOf(lord));
     return clamp(85 - 1.5 * distance(this.system(id), this.system(lord)) - 0.8 * distance(this.system(id), capital) - (pop(id) > pop(lord) ? 25 : 0)
-      - 3 * (gv.orders || 0) + Math.min(15, 2 * (this.garrison[lord] || 0)) + Math.min(40, gv.dep || 0) + this.aweBonus(id), 0, 100);
+      - 3 * (gv.orders || 0) + Math.min(15, 2 * (this.garrison[lord] || 0)) + Math.min(40, gv.dep || 0), 0, 100);
   }
   // 星系に駐留している地球の国の艦隊 (命令で駐留している分と威圧の分。太陽系はすべて)
   earthFleetAt(id) {
@@ -944,11 +944,14 @@ class Game {
   }
   rebelFleet(id) { return this.rebelFleetOf(this.coloniesIn(id), this.gov(id).credits); }
   knownRebelFleet(id) { const k = this.known(id); return this.rebelFleetOf(this.knownColonies(id), k?.credits); }
-  // 駐留する地球の艦隊による忠誠度の上乗せ (地球の国の星系だけ)
-  aweBonus(id) {
+  // 恐怖度 (0〜100): 忠誠度とは別のパラメータ。その星系に駐留する地球の艦隊 (命令で駐留している分と威圧の分) が多いほど高い。
+  // 目標 = 50 × 地球の艦隊 / 反乱したときの推定艦隊 (同数で50、2倍で100)。年に最大10ずつ目標へ動く。地球の国の星系だけ
+  fearTarget(id) {
     if (id === 0 || this.realmOf(id) !== 0) return 0;
-    return Math.min(30, 15 * this.earthFleetAt(id) / this.rebelFleet(id));
+    return Math.min(100, 50 * this.earthFleetAt(id) / this.rebelFleet(id));
   }
+  // 恐怖度が高いほど独立を宣言しにくい (恐怖度100で確率が1/10)
+  fearFactor(fear) { return 1 - 0.9 * clamp(fear || 0, 0, 100) / 100; }
   loyaltyYearly() {
     for (const [key, gv] of Object.entries(this.govs)) {
       const id = Number(key);
@@ -959,9 +962,9 @@ class Game {
       gv.dep = (gv.dep || 0) * 0.8;
       gv.aid = gv.aidYear || 0; // 直近1年に受け取った支援の価値
       gv.aidYear = 0;
-      // 地球の艦隊が駐留していると独立しにくい (反乱時の推定艦隊と同数で確率が半分、2倍で1/3)
-      const rebel = this.rebelFleet(id);
-      if (gv.loyalty < 20 && Math.random() < 0.2 * rebel / (rebel + (this.realmOf(id) === 0 ? this.earthFleetAt(id) : 0))) this.declareIndependence(id);
+      gv.fear = clamp((gv.fear || 0) + clamp(this.fearTarget(id) - (gv.fear || 0), -10, 10), 0, 100);
+      // 忠誠度が20未満だと年20%で独立を宣言する。恐怖度が高いほど確率が下がる
+      if (gv.loyalty < 20 && Math.random() < 0.2 * this.fearFactor(gv.fear)) this.declareIndependence(id);
     }
   }
   declareIndependence(id) {
@@ -971,6 +974,7 @@ class Game {
     gv.lord = null;
     gv.independent = true;
     gv.loyalty = 0;
+    gv.fear = 0;
     const members = this.colonizedSystems().filter((x) => this.realmOf(x.id) === id);
     const followers = members.length - 1;
     // 地球の国からの独立は、半々の確率で、また地球の艦隊が駐留していれば必ず、そのまま戦争 (独立戦争) になる
@@ -2029,10 +2033,11 @@ class Game {
     }
   }
   // 反乱防止の威圧: 年に1回、地球の直属の従属星系 (主人が太陽系) に、反乱したときの推定艦隊の2倍の地球の艦隊を駐留させる。
-  // 海賊対策の駐留とは別に数える。地球に届いている情報で判断し、忠誠度の低い順に太陽系の艦隊を送る
-  // (太陽系には1艦隊残す)。足りなければ「足りない艦隊は自動で編成」がオンのとき太陽系で編成する (資金が費用の2倍以上、年3艦隊まで)
+  // 海賊対策の駐留とは別に数える。忠誠度が50以上の星系には送らない。地球に届いている情報で判断し、忠誠度の低い順に太陽系の艦隊を送る
+  // (太陽系には1艦隊残す)。足りなければ「足りない艦隊は自動で編成」がオンのとき、太陽系で資金と資源の続く限り編成する
   aweGoal(id) { return 2 * this.knownRebelFleet(id); }
-  aweTargets() { return this.knownSystems().filter((s) => s.id !== 0 && this.known(s.id)?.cols.length && (this.known(s.id).realm ?? 0) === 0 && this.known(s.id).lord === 0); }
+  aweTargets() { return this.knownSystems().filter((s) => s.id !== 0 && this.known(s.id)?.cols.length && (this.known(s.id).realm ?? 0) === 0 && this.known(s.id).lord === 0
+    && (this.known(s.id).loyalty ?? LOYALTY_START) < 50); }
   aweGap(id) {
     // 向かっている艦隊と、着いたがその知らせがまだ地球に届いていない艦隊 (ghosts) も数える
     const coming = [...this.fleets, ...this.ghosts.fleets].filter((f) => f.awe && f.to === id).reduce((k, f) => k + f.n, 0)
@@ -2053,9 +2058,9 @@ class Game {
     }
     if (!this.autoBuild || short <= 0) return;
     short -= this.projects.filter((j) => j.type === 'warship' && j.sys === 0).length;
-    for (let i = 0; i < Math.min(short, 3) && this.hasShipyard(0); i++) {
-      if (this.gov(0).credits < 2 * WARSHIP_COST.credits || this.procure(WARSHIP_COST, 0).why) break;
-      this.order(WARSHIP_COST, 0, { type: 'warship', label: '[威圧] 太陽系 (Sol) の艦隊' });
+    for (let i = 0; i < Math.min(short, 1000) && this.hasShipyard(0); i++) {
+      if (this.gov(0).credits < WARSHIP_COST.credits) break;
+      if (!this.order(WARSHIP_COST, 0, { type: 'warship', label: '[威圧] 太陽系 (Sol) の艦隊' }).ok) break;
     }
   }
   undefended() { return this.knownSystems().filter((s) => (s.id === 0 || (this.known(s.id)?.realm ?? 0) === 0) && this.defenseGap(s.id) > 0); }
@@ -2929,7 +2934,7 @@ class Game {
       outposts: this.outposts.filter((o) => o.sys === id).map((o) => ({ body: o.body, lv: o.lv })),
       natives: Object.fromEntries(this.system(id).bodies.filter((b) => this.natives[`${id}|${b.id}`]).map((b) => [b.id, { ...this.natives[`${id}|${b.id}`] }])),
       wars: this.wars.filter((w) => w.sys === id).map((w) => ({ body: w.body, progress: w.progress, enemy: w.enemy })),
-      loyalty: gv ? gv.loyalty ?? LOYALTY_START : null, realm: this.isColonized(id) ? this.realmOf(id) : null, independent: !!gv?.independent, founded: gv ? gv.founded : undefined, aid: gv ? gv.aid || 0 : 0, dep: gv ? gv.dep || 0 : 0,
+      loyalty: gv ? gv.loyalty ?? LOYALTY_START : null, fear: gv ? gv.fear || 0 : 0, realm: this.isColonized(id) ? this.realmOf(id) : null, independent: !!gv?.independent, founded: gv ? gv.founded : undefined, aid: gv ? gv.aid || 0 : 0, dep: gv ? gv.dep || 0 : 0,
       siege: (() => { const g = this.sieges.find((x) => x.sys === id); return g ? { realm: g.realm, ships: g.ships, progress: g.progress } : null; })(),
       battle: (() => { const b = this.battleAt(id); return b ? { realm: b.realm, a: b.a, d: b.d, a0: b.a0, d0: b.d0, start: b.start } : null; })(),
     };
@@ -4170,7 +4175,7 @@ function govBox(g, id) {
   const realm = k.realm ?? 0;
   const war = realm !== 0 && g.knownAtWar(0, realm);
   const enemies = g.knownEnemiesOf(realm);
-  const status = (realm === 0 ? `地球の国・忠誠度 <b class="${(k.loyalty ?? 70) < 20 ? 'bad' : ''}">${Math.round(k.loyalty ?? LOYALTY_START)}</b>`
+  const status = (realm === 0 ? `地球の国・忠誠度 <b class="${(k.loyalty ?? 70) < 20 ? 'bad' : ''}">${Math.round(k.loyalty ?? LOYALTY_START)}</b>${k.lord !== null && k.lord !== undefined ? `・恐怖度 <b>${Math.round(k.fear || 0)}</b>` : ''}`
     : `<b class="bad">${realm === id ? '独立国の首都' : `${esc(g.system(realm).name)} の国に属する`}</b>`)
     + (enemies.length ? ` (<span class="bad">${enemies.map((e) => esc(g.realmName(e))).join('・')}と交戦中</span>)` : '');
   const young = k.founded !== undefined && g.year - k.founded <= GRANT_YEARS;
@@ -4255,7 +4260,7 @@ function aweToggle(g) {
   const ts = g.aweTargets();
   const short = ts.filter((s) => g.knownAwe(s.id) < g.aweGoal(s.id)).length;
   return `<label class="check auto"><input type="checkbox" data-act="autoawe" ${g.autoAwe ? 'checked' : ''}> 反乱防止のための威圧</label>
-    <p class="note">年に1回、地球の直属の従属星系に、反乱 (独立戦争) を起こしたときにその星系が持つであろう艦隊 (人口と経済の規模から推定) の<b>2倍</b>の艦隊を太陽系から送って駐留させる (海賊対策の駐留とは別に数える。忠誠度の低い順。足りない艦隊は「足りない艦隊は自動で編成」がオンなら太陽系で編成)。地球の艦隊が駐留している星系は忠誠度が上がり (推定艦隊と同数で+15、2倍で+30)、独立も宣言しにくくなる。それでも独立されたら、駐留していた艦隊はその場で独立軍と艦隊戦になり、勝てば攻囲に移る。直属の従属星系 ${ts.length} か所のうち、目標に届いていない: ${short} か所</p>`;
+    <p class="note">年に1回、地球の直属の従属星系に、反乱 (独立戦争) を起こしたときにその星系が持つであろう艦隊 (人口と経済の規模から推定) の<b>2倍</b>の艦隊を太陽系から送って駐留させる (海賊対策の駐留とは別に数える。忠誠度が50以上の星系には送らない。忠誠度の低い順。足りない艦隊は「足りない艦隊は自動で編成」がオンなら、太陽系で資金と資源の続く限り編成)。地球の艦隊が駐留している星系は<b>恐怖度</b> (忠誠度とは別) が上がり (推定艦隊と同数で50、2倍で100。年に最大10ずつ動く)、恐怖度が高いほど独立を宣言しにくくなる (100で確率が1/10)。それでも独立されたら、駐留していた艦隊はその場で独立軍と艦隊戦になり、勝てば攻囲に移る。威圧の対象 (直属で忠誠度50未満) ${ts.length} か所のうち、目標に届いていない: ${short} か所</p>`;
 }
 
 // 艦隊の色: 自艦隊 (地球が動かす艦隊)・従属艦隊 (地球の国の従属星系の守り)・中立国・敵国
@@ -4402,8 +4407,8 @@ function aweLine(g, id) {
   if (!k || !k.cols.length || (k.realm ?? 0) !== 0) return '';
   const rebel = g.knownRebelFleet(id);
   const earth = Math.min(g.knownGarrison(id), (k.held || 0) + (k.awe || 0));
-  const direct = k.lord === 0;
-  return `<p class="note">反乱したときの推定艦隊 <b>${rebel}</b> (人口と経済の規模から)。駐留する地球の艦隊 <b>${earth}</b> (うち威圧 ${g.knownAwe(id)}${direct ? ` / 目標 ${g.aweGoal(id)}` : '・直属でないので威圧の対象外'})。</p>`;
+  const why = k.lord !== 0 ? '・直属でないので威圧の対象外' : (k.loyalty ?? LOYALTY_START) >= 50 ? '・忠誠度50以上なので威圧の対象外' : ` / 目標 ${g.aweGoal(id)}`;
+  return `<p class="note">恐怖度 <b>${Math.round(k.fear || 0)}</b>。反乱したときの推定艦隊 <b>${rebel}</b> (人口と経済の規模から)。駐留する地球の艦隊 <b>${earth}</b> (うち威圧 ${g.knownAwe(id)}${why})。</p>`;
 }
 
 function nativesSummary(g, sys) {
@@ -4736,7 +4741,7 @@ function politicsSheet(app) {
     const status = k.independent && realm === x.id ? '<b class="bad">独立国 (首都)</b>' : realm !== 0 ? `<span class="bad">${esc(g.system(realm).name)} の国に属する</span>` : '地球の国';
     const loyal = k.lord === null || k.lord === undefined ? '—' : `<span class="${k.loyalty < 20 ? 'bad' : k.loyalty < 50 ? '' : 'hz'}">${Math.round(k.loyalty ?? LOYALTY_START)}</span>`;
     return `<tr><td><span class="dot" style="background:${realmColor(realm)}"></span>${goto(x)}</td><td>${k.lord === null || k.lord === undefined ? '—' : esc(g.system(k.lord).name)}</td>
-      <td>${loyal}</td><td>${k.aid > 0.5 ? `${fmtAmt(k.aid)} cr/年` : '<span class="muted">—</span>'}</td><td>${status}</td><td>${ageBadge(g, x.id)}</td></tr>`;
+      <td>${loyal}</td><td>${k.lord === null || k.lord === undefined ? '—' : Math.round(k.fear || 0)}</td><td>${k.aid > 0.5 ? `${fmtAmt(k.aid)} cr/年` : '<span class="muted">—</span>'}</td><td>${status}</td><td>${ageBadge(g, x.id)}</td></tr>`;
   }).join('');
   const roots = [...new Set(g.knownSystems().map((x) => g.known(x.id)?.realm).filter((r) => r !== null && r !== undefined && r !== 0))];
   const realms = roots.map((root) => {
@@ -4752,7 +4757,7 @@ function politicsSheet(app) {
   const battles = g.knownSystems().map((x) => ({ x, bt: g.known(x.id)?.battle })).filter((v) => v.bt).map(({ x, bt }) => `<tr><td>${goto(x)}</td>
     <td><span class="dot" style="background:${realmColor(bt.realm)}"></span>${esc(g.system(bt.realm).name)} の国</td><td>${Math.ceil(bt.a)} / ${Math.round(bt.a0)} 艦隊</td>
     <td>${Math.ceil(bt.d)} / ${Math.round(bt.d0)} 艦隊</td><td>${bt.start.toFixed(1)}年から</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
-  return `<p class="note">星系の政府は忠誠度を持つ。忠誠度は主人の星系や国の首都から遠いほど、主人より大きくなるほど、指令が多いほど下がり、主人の星系に艦隊がいると上がる。その星系に地球の艦隊が駐留していると大きく上がり (反乱したときの推定艦隊と同数で+15、2倍で+30)、独立も宣言しにくくなる。
+  return `<p class="note">星系の政府は忠誠度を持つ。忠誠度は主人の星系や国の首都から遠いほど、主人より大きくなるほど、指令が多いほど下がり、主人の星系に艦隊がいると上がる。忠誠度とは別に恐怖度も持ち、その星系に地球の艦隊が駐留していると上がる (反乱したときの推定艦隊と同数で50、2倍で100)。恐怖度が高いほど独立を宣言しにくい (100で確率が1/10)。
       50未満だと指令を拒むことがあり、20未満だと独立を宣言することがある (従属する星系も一緒に離れる)。主人から支援物資を受けると上がる (代金を払えない星系は主人から無償で物資を受け取れる)。地球の国からの独立は、半々の確率で (地球の艦隊が駐留していれば必ず) そのまま独立戦争になる。独立戦争では、各星系が人口と経済の規模に応じた艦隊を持ち、駐留していた地球の艦隊とその場で艦隊戦になる (勝てば攻囲に移る)。</p>
     <label class="check auto"><input type="checkbox" data-act="autogrant" ${g.autoGrant ? 'checked' : ''}> 入植後${GRANT_YEARS}年の自動資金援助 (地球から)</label>
     <p class="note">入植して${GRANT_YEARS}年以内の星系には、主人の星系が毎年、資金の3% (最大 ${GRANT_MAX} cr) を自動で送る。資金援助は支援物資と同じく忠誠度を上げる。チェックを外すと地球からの自動送金だけが止まる (ほかの星系どうしは続く)。個別の資金援助は星系の詳細欄から送れる。</p>
@@ -4774,7 +4779,7 @@ function politicsSheet(app) {
     <h3>攻囲</h3>
     ${sieges ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>艦隊</th><th>進捗</th><th>情報</th></tr>${sieges}</table></div>` : '<p class="note">なし</p>'}
     <h3>星系の政府 (忠誠度の低い順)</h3>
-    ${rows ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>忠誠度</th><th>主人からの支援</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : '<p class="note">まだ地球以外の政府はない。</p>'}`;
+    ${rows ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>忠誠度</th><th>恐怖度</th><th>主人からの支援</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : '<p class="note">まだ地球以外の政府はない。</p>'}`;
 }
 
 // 帝国 → 移民: 過密な入植地、受け入れ先、移動中の移民船、到着の記録
