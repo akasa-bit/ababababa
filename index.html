@@ -963,28 +963,45 @@ class Game {
       }
     }
   }
-  // 攻囲: 年に、攻囲艦隊 ÷ (艦隊 + 地上の抵抗) × 0.3 ずつ進み、100% で降伏。地上の抵抗 = 歩兵 + 2×log10(1+人口)
-  // 降伏した星系は、攻めた国の最寄りの星系に従属する (その星系に従属していた星系も一緒に移る)
+  // 攻囲: 年に、攻囲艦隊 ÷ (艦隊 + 地上の抵抗) × 0.12 ずつ進み、100% で降伏。地上の抵抗 = 歩兵 + 4×log10(1+人口)
+  // 降伏した星系は、攻めた国の首都に直接従属する (その星系に従属していた星系も一緒に移る)
   siegesYearly() {
     for (const g of [...this.sieges]) {
       if (!this.atWar(g.realm, this.realmOf(g.sys)) || g.ships < 1) { this.withdraw(g); continue; }
       // 守りの艦隊が造られたり届いたりしたら、攻囲を中断して艦隊戦になる (進捗は艦隊戦に勝てば引き継ぐ)
       if ((this.garrison[g.sys] || 0) > 0) { this.sieges = this.sieges.filter((x) => x !== g); this.startBattle(g.sys, g.realm, g.ships, g.progress); continue; }
       const pop = this.coloniesIn(g.sys).reduce((k, c) => k + c.pop, 0);
-      const ground = this.troopPower(g.sys) + 2 * Math.log10(1 + pop);
-      g.progress = Math.min(1, g.progress + 0.3 * g.ships / (g.ships + ground));
+      const ground = this.troopPower(g.sys) + 4 * Math.log10(1 + pop);
+      g.progress = Math.min(1, g.progress + 0.12 * g.ships / (g.ships + ground));
       if (this.troopPower(g.sys) >= 1) this.loseTroops(g.sys, 1);
       if (g.progress < 1) continue;
       const oldRealm = this.realmOf(g.sys);
-      const nearest = this.realmSystems(g.realm).sort((a, b) => distance(a, this.system(g.sys)) - distance(b, this.system(g.sys)))[0];
       const gv = this.gov(g.sys);
-      gv.lord = nearest ? nearest.id : g.realm;
+      gv.lord = g.realm;
       gv.independent = false;
-      gv.loyalty = 40;
+      gv.loyalty = 30;
       this.garrison[g.sys] = g.ships;
       this.sieges = this.sieges.filter((x) => x !== g);
-      this.event('battle', g.sys, `${this.system(g.sys).name} が降伏し、${this.system(gv.lord).name} に従属した`, g.realm === 0);
+      this.event('battle', g.sys, `${this.system(g.sys).name} が降伏し、${g.realm === 0 ? '地球の国 (太陽系)' : `${this.system(g.realm).name} の国`}に従属した`, g.realm === 0);
       if (oldRealm === g.sys) delete this.realmWars[g.sys];
+    }
+  }
+  // 海賊対策の建艦 (年1回、星系政府の自動開発より先): 海賊が現れる5年前から、各星系の政府は自分の資金で
+  // 軍事基地を建て、駐留艦隊 + 向かっている艦隊 + 編成中が海賊の最大戦力に届くまで年1艦隊ずつ編成する
+  // (海賊対策を優先するので、資金が費用の1.2倍以上あれば)。太陽系は海賊に狙われないので対象外 (観戦モードの地球政府は自動防衛配備で対応する)
+  pirateDefenseYearly() {
+    if (this.year < PIRATE_START - 5) return;
+    const goal = Math.max(1, this.pirateMax());
+    for (const s of this.colonizedSystems()) {
+      const id = s.id;
+      if (id === 0) continue;
+      const gv = this.gov(id);
+      const have = (this.garrison[id] || 0) + this.incoming(id) + this.projects.filter((j) => j.type === 'warship' && j.sys === id).length;
+      if (have >= goal) continue;
+      if (!this.hasShipyard(id)) {
+        const big = this.coloniesIn(id).sort((a, b) => b.pop - a.pop)[0];
+        if (big && gv.credits >= 1.2 * this.upgradeCost(big, 'shipyard').credits && !this.procure(this.upgradeCost(big, 'shipyard'), id).why) this.upgrade(big, 'shipyard');
+      } else if (gv.credits >= 1.2 * WARSHIP_COST.credits && !this.procure(WARSHIP_COST, id).why) this.buildWarship(id);
     }
   }
   // 独立国の軍備 (年1回、星系政府の自動開発より先): どの独立国も星系ごとに軍事基地を建て、平時は守りの艦隊 (首都5・他3) を保つ。
@@ -1003,7 +1020,18 @@ class Game {
       }
     }
   }
-  // 独立国の戦争の判断 (年1回): 地球の国の手薄な星系を攻める。弱ければ講和を申し出る
+  // 国ごとの降伏: 首都が地球 (太陽系) に従属し、配下の星系もそのまま地球の国に戻る
+  surrender(root) {
+    const n = this.realmSystems(root).length;
+    this.endWar(root);
+    const gv = this.gov(root);
+    gv.lord = 0;
+    gv.independent = false;
+    gv.loyalty = 30;
+    gv.orders = 0;
+    this.event('politics', root, `${this.system(root).name} の国が降伏し、地球の国に従属した${n > 1 ? ` (配下の ${n - 1} 星系も従う)` : ''}`, true);
+  }
+  // 独立国の戦争の判断 (年1回): 地球の国の手薄な星系を攻める。大差で負けていれば降伏する
   realmsYearly() {
     for (const key of Object.keys(this.realmWars)) {
       const root = Number(key);
@@ -1016,9 +1044,13 @@ class Game {
           .sort((a, b) => distance(a, strong) - distance(b, strong))[0];
         if (target && distance(target, strong) <= 20) this.sendFleet(strong.id, target.id, n);
       }
-      if (this.realmShips(root) * 3 < this.realmShips(0) && Math.random() < 0.15) {
+      // 降伏はしぶとい: 開戦から5年以上たち、地球の国の戦力が5倍以上のときだけ、年8%の確率で国ごと降伏して地球の国に従属する。
+      // 20年以上たっても互いに2倍の差がつかなければ、年5%の確率で講和 (独立は保たれる)
+      const ours = this.realmShips(0), theirs = this.realmShips(root), years = this.year - this.realmWars[root];
+      if (years >= 5 && ours >= 5 * Math.max(1, theirs) && Math.random() < 0.08) this.surrender(root);
+      else if (years >= 20 && ours < 2 * theirs && theirs < 2 * ours && Math.random() < 0.05) {
         this.endWar(root);
-        this.event('politics', root, `${this.system(root).name} の国が講和を申し出て、戦争が終わった (独立は保たれる)`, true);
+        this.event('politics', root, `${this.system(root).name} の国と講和し、戦争が終わった (独立は保たれる)`, true);
       }
     }
   }
@@ -2073,7 +2105,7 @@ class Game {
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
       this.keepGhosts(before);
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.govsYearly(); this.stationsYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); if (this.spectate) this.earthWarYearly(); this.siegesYearly(); this.recordSnapshots(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.stationsYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); if (this.spectate) this.earthWarYearly(); this.siegesYearly(); this.recordSnapshots(); }
     }
     return changed;
   }
@@ -2932,22 +2964,37 @@ class GalaxyView {
     const SIGNAL = { build: '255,210,77', trade: '201,162,255', order: '170,220,255', tribute: '160,230,120', grant: '255,215,120' };
     const sigMode = this.app.signalMode;
     if (sigMode === 'rings') {
-      // 色と濃さごとに1本のパスにまとめて描く (届く直前ほど薄く)
+      // 地球から見た光の波面: 送り手 S を出た光の球面のうち、いま地球 E に光が届いている点の集まりは
+      // |SP| + |PE| = 経過年数 τ の楕円 (S と E が焦点)。地球へ向かう側ほど速く広がって見える。
+      // 送り手からの出発が見えてから (τ ≥ |SE|)、相手 B への到着が見えるまで (τ ≤ |SB| + |BE|) 描く。
+      // 観戦モードは実際の波面 (送り手を中心とする円、相手に届くまで)。色と濃さごとに1本のパスにまとめる
       const paths = new Map();
-      for (const q of game.requests) {
-        if (q.sent > game.year || !game.departSeen(q.from, q.sent)) continue;
+      const E = game.system(0);
+      for (const q of game.spectate ? game.requests : [...game.requests, ...game.ghosts.requests]) {
         const a = game.system(q.from);
-        const d = Math.max(1e-6, distance(a, game.system(q.to)));
-        const r = game.year - q.sent;
-        if (r > d) continue;
-        const level = Math.min(3, Math.floor((r / d) * 4));
+        const bsys = game.system(q.to);
+        const tau = game.year - q.sent;
+        const se = distance(a, E);
+        const end = game.spectate ? distance(a, bsys) : distance(a, bsys) + distance(bsys, E);
+        if (tau <= 0 || tau > end || (!game.spectate && tau < se)) continue;
+        const level = Math.min(3, Math.floor((tau / Math.max(1e-6, end)) * 4));
         const key = `${SIGNAL[q.kind] || SIGNAL.trade}|${level}`;
         if (!paths.has(key)) paths.set(key, new Path2D());
-        const [ax, ay] = this.toScreen(a.x, a.y);
-        const pr = Math.max(0.5, r * z);
         const path = paths.get(key);
-        path.moveTo(ax + pr, ay);
-        path.arc(ax, ay, pr, 0, Math.PI * 2);
+        if (game.spectate) {
+          const [ax, ay] = this.toScreen(a.x, a.y);
+          const pr = Math.max(0.5, tau * z);
+          path.moveTo(ax + pr, ay);
+          path.arc(ax, ay, pr, 0, Math.PI * 2);
+        } else {
+          const semiA = tau / 2;
+          const semiB = Math.sqrt(Math.max(0, semiA * semiA - (se / 2) ** 2));
+          const th = Math.atan2(a.y - E.y, a.x - E.x);
+          const [mx, my] = this.toScreen((a.x + E.x) / 2, (a.y + E.y) / 2);
+          const ra = Math.max(0.5, semiA * z), rb = Math.max(0.5, semiB * z);
+          path.moveTo(mx + ra * Math.cos(th), my + ra * Math.sin(th));
+          path.ellipse(mx, my, ra, rb, th, 0, Math.PI * 2);
+        }
       }
       ctx.lineWidth = 1;
       for (const [key, path] of paths) {
@@ -3838,7 +3885,7 @@ function requestsTable(g) {
     return `<tr><td>${name(q.from)} → ${name(q.to)}</td><td>${what}</td><td>${st}</td></tr>`;
   }).join('');
   return `<h3>通信 (物資移送要求・指令・朝貢) ${vis.length} 件</h3>
-    <p class="note">情報は光速でしか伝わらない。資源が足りない星系や建設地は、交易路でつながった送り手へ物資移送要求を送り、要求が届いてから荷が出発する。地図での表示はヘッダーの「通信」ボタンで切り替える: 表示しない / 波紋 (送り手から同心円に広がり、相手に届くと消える) / 光の点 (見かけの位置の点と点線。届いて処理中の要求は送り手に輪)。色は紫: 交易、黄: 建設資材、水色: 指令、緑: 朝貢、金: 資金援助。</p>
+    <p class="note">情報は光速でしか伝わらない。資源が足りない星系や建設地は、交易路でつながった送り手へ物資移送要求を送り、要求が届いてから荷が出発する。地図での表示はヘッダーの「通信」ボタンで切り替える: 表示しない / 波紋 (送り手から光速で広がる波面を地球から見た形。地球へ向かう側ほど速く広がって見えるので、送り手と地球を焦点とする楕円になる。相手への到着が見えると消える。観戦モードでは実際の円) / 光の点 (見かけの位置の点と点線。届いて処理中の要求は送り手に輪)。色は紫: 交易、黄: 建設資材、水色: 指令、緑: 朝貢、金: 資金援助。</p>
     ${rows ? `<div class="scroll"><table class="tbl"><tr><th>要求元 → 送り手</th><th>内容</th><th>状況</th></tr>${rows}</table></div>` : '<p class="note">いま動いている要求はない。</p>'}`;
 }
 
@@ -3875,7 +3922,7 @@ function politicsSheet(app) {
     <p class="note">入植して${GRANT_YEARS}年以内の星系には、主人の星系が毎年、資金の3% (最大 ${GRANT_MAX} cr) を自動で送る。資金援助は支援物資と同じく忠誠度を上げる。チェックを外すと地球からの自動送金だけが止まる (ほかの星系どうしは続く)。個別の資金援助は星系の詳細欄から送れる。</p>
     <h3>独立国</h3>
     ${realms ? `<div class="scroll"><table class="tbl"><tr><th>首都</th><th>規模 (把握分)</th><th>状態</th><th></th></tr>${realms}</table></div>` : '<p class="note">いまのところ独立国はない。</p>'}
-    <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) で進み、100%で降伏して地球の国に従属する。交戦中の国どうしでは物資をやり取りしない。</p>
+    <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。独立国は簡単には降伏しない: 開戦から5年以上たち、地球の国の戦力が5倍以上になると、国ごと降伏して地球の国に従属することがある。20年以上たっても決着がつかなければ講和 (独立は保たれる) になることもある。交戦中の国どうしでは物資をやり取りしない。</p>
     <h3>艦隊戦</h3>
     ${battles ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>攻撃側 (残り / 投入)</th><th>防衛側 (残り / 投入)</th><th>開始</th><th>情報</th></tr>${battles}</table></div>` : '<p class="note">なし</p>'}
     <h3>攻囲</h3>
