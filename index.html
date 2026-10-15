@@ -708,7 +708,7 @@ const PIRATE_START = 2320;
 const LEDGER_LABEL = { tax: '税収', trade: '輸出', import: '輸入', export: '余剰の売却', natives: '先住民', tribute: '朝貢', grant: '資金援助', upkeep: '軍の維持費' };
 const TRIBUTE_RATE = 0.25;
 const LOYALTY_START = 70; // 新しい政府の忠誠度
-const FRIEND_SAFE = 60; // 主人との友好度がこれ以上なら、忠誠度や恐怖度が低くても反乱 (独立) しない
+const FRIEND_SAFE = 50; // 主人との友好度がこれ以上なら、忠誠度や恐怖度が低くても反乱 (独立) しない (それ未満でも友好度に比例して反乱しにくい)
 const GRANT_YEARS = 50; // 入植後この年数のあいだ、主人の星系が自動で資金援助を送る
 const GRANT_MAX = 300; // 自動の資金援助の上限 [cr/年]。主人の資金の3%まで
 const BATTLE_RATE = 0.6; // 艦隊戦で1艦隊が1年に壊滅させる敵艦隊の数 (ランチェスターの係数)
@@ -953,16 +953,20 @@ class Game {
   }
   // 恐怖度が高いほど独立を宣言しにくい (恐怖度100で確率が1/10)
   fearFactor(fear) { return 1 - 0.9 * clamp(fear || 0, 0, 100) / 100; }
-  // 主人との友好度 (0〜100): 主人の星系との貿易 (代金を払った取引。両方向) の大きさで上下する。
-  // 目標 = 25 × log10(1 + 貿易額[cr/年、ここ5年ほどの平均] / 10) (100 cr/年で約26、1000で約50、1万で約75)。年に最大5ずつ目標へ動く。
-  // FRIEND_SAFE (60) 以上なら、忠誠度や恐怖度が低くても反乱しない
-  friendTarget(trade) { return clamp(25 * Math.log10(1 + Math.max(0, trade || 0) / 10), 0, 100); }
-  // 主人と家臣のあいだの取引を数える (a, b のどちらかがもう一方の主人なら、家臣の側に記録する)
+  // 主人との友好度 (0〜100): 主人筋 (主人、その主人…首都まで) との貿易 (両方向。支援として無償で受け取った物資も含む) の大きさで上下する。
+  // 目標 = 50 × log10(1 + 貿易額[cr/年、ここ5年ほどの平均] / 2) (5 cr/年で約27、10で約39、20で約52、50で約71、100で約85)。年に最大10ずつ目標へ動く。
+  // 反乱の確率は友好度に比例して下がり (× (1 − 友好度/50))、FRIEND_SAFE (50) 以上なら、忠誠度や恐怖度が低くても反乱しない
+  friendTarget(trade) { return clamp(50 * Math.log10(1 + Math.max(0, trade || 0) / 2), 0, 100); }
+  friendFactor(friend) { return Math.max(0, 1 - (friend || 0) / FRIEND_SAFE); }
+  // 主人筋 (主人、その主人…首都まで) との取引を数える。a, b のどちらかがもう一方の主人筋なら、家臣の側に記録する
+  isLordOf(x, id) {
+    for (let g = this.govs[id], n = 0; g && g.lord !== null && g.lord !== undefined && n < 50; g = this.govs[g.lord], n++) if (g.lord === x) return true;
+    return false;
+  }
   noteLordTrade(a, b, value) {
     if (!(value > 0) || a === b) return;
-    const ga = this.govs[a], gb = this.govs[b];
-    if (ga && ga.lord === b) ga.lordTradeYear = (ga.lordTradeYear || 0) + value;
-    else if (gb && gb.lord === a) gb.lordTradeYear = (gb.lordTradeYear || 0) + value;
+    if (this.isLordOf(b, a)) this.govs[a].lordTradeYear = (this.govs[a].lordTradeYear || 0) + value;
+    else if (this.isLordOf(a, b)) this.govs[b].lordTradeYear = (this.govs[b].lordTradeYear || 0) + value;
   }
   loyaltyYearly() {
     for (const [key, gv] of Object.entries(this.govs)) {
@@ -978,9 +982,9 @@ class Game {
       // 主人との貿易額[cr/年]。取引は時々まとめて起きるので、ならした値 (指数移動平均、ここ5年ほどの平均) を使う
       gv.lordTrade = 0.8 * (gv.lordTrade || 0) + 0.2 * (gv.lordTradeYear || 0);
       gv.lordTradeYear = 0;
-      gv.friend = clamp((gv.friend || 0) + clamp(this.friendTarget(gv.lordTrade) - (gv.friend || 0), -5, 5), 0, 100);
+      gv.friend = clamp((gv.friend || 0) + clamp(this.friendTarget(gv.lordTrade) - (gv.friend || 0), -10, 10), 0, 100);
       // 忠誠度が20未満だと年20%で独立を宣言する。恐怖度が高いほど確率が下がり、主人との友好度が十分高ければ反乱しない
-      if (gv.loyalty < 20 && (gv.friend || 0) < FRIEND_SAFE && Math.random() < 0.2 * this.fearFactor(gv.fear)) this.declareIndependence(id);
+      if (gv.loyalty < 20 && Math.random() < 0.2 * this.fearFactor(gv.fear) * this.friendFactor(gv.friend)) this.declareIndependence(id);
     }
   }
   declareIndependence(id) {
@@ -1403,7 +1407,8 @@ class Game {
     this.gov(sysId).credits -= cost.credits || 0;
     for (const x of p.plan) {
       this.stockOf(x.from)[x.r] -= x.amt;
-      if (x.from !== sysId && !p.aid) { this.earn('import', -x.amt * PRICE[x.r], sysId); this.earn('trade', x.amt * PRICE[x.r], x.from); this.noteLordTrade(sysId, x.from, x.amt * PRICE[x.r]); }
+      if (x.from !== sysId && !p.aid) { this.earn('import', -x.amt * PRICE[x.r], sysId); this.earn('trade', x.amt * PRICE[x.r], x.from); }
+      if (x.from !== sysId) this.noteLordTrade(sysId, x.from, x.amt * PRICE[x.r]); // 主人との友好度: 支援として無償で受け取った資材も数える
     }
     if (p.aid) this.receiveAid(sysId, p.aid);
     if (p.eta <= 0) { this.finish({ ...job, sys: sysId }); return { ok: true }; }
@@ -1573,7 +1578,7 @@ class Game {
       amt = paid + aid;
       if (amt <= 0.001) { q.amt = 0; continue; }
       if (paid > 0) { this.earn('import', -paid * price, q.from); this.earn('trade', paid * price, q.to); this.noteLordTrade(q.from, q.to, paid * price); }
-      if (aid > 0) this.receiveAid(q.from, aid * price);
+      if (aid > 0) { this.receiveAid(q.from, aid * price); this.noteLordTrade(q.from, q.to, aid * price); }
       for (const l of legs) {
         const k = `${l.r.id}:${l.dir}`;
         room[k] -= amt;
@@ -4801,7 +4806,7 @@ function politicsSheet(app) {
   const battles = g.knownSystems().map((x) => ({ x, bt: g.known(x.id)?.battle })).filter((v) => v.bt).map(({ x, bt }) => `<tr><td>${goto(x)}</td>
     <td><span class="dot" style="background:${realmColor(bt.realm)}"></span>${esc(g.system(bt.realm).name)} の国</td><td>${Math.ceil(bt.a)} / ${Math.round(bt.a0)} 艦隊</td>
     <td>${Math.ceil(bt.d)} / ${Math.round(bt.d0)} 艦隊</td><td>${bt.start.toFixed(1)}年から</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
-  return `<p class="note">星系の政府は忠誠度を持つ。忠誠度は主人の星系や国の首都から遠いほど、主人より大きくなるほど、指令が多いほど下がり、主人の星系に艦隊がいると上がる。忠誠度とは別に恐怖度も持ち、その星系に地球の艦隊が駐留していると上がる (反乱したときの推定艦隊と同数で50、2倍で100)。恐怖度が高いほど独立を宣言しにくい (100で確率が1/10)。主人の星系との友好度も持ち、主人との貿易 (代金を払った取引) が大きいほど上がり、小さいと下がる (ここ5年ほどの平均の貿易額が 100 cr/年で約26、1000で約50、1万で約75を目指して年5ずつ動く)。友好度が${FRIEND_SAFE}以上なら、忠誠度や恐怖度が低くても反乱しない。
+  return `<p class="note">星系の政府は忠誠度を持つ。忠誠度は主人の星系や国の首都から遠いほど、主人より大きくなるほど、指令が多いほど下がり、主人の星系に艦隊がいると上がる (距離の影響が大きく、主人も首都も太陽系の星系では、およそ30〜35光年より遠いと20を下回りやすい)。忠誠度とは別に恐怖度も持ち、その星系に地球の艦隊が駐留していると上がる (反乱したときの推定艦隊と同数で50、2倍で100)。恐怖度が高いほど独立を宣言しにくい (100で確率が1/10)。主人との友好度も持ち、主人筋 (主人、その主人…首都まで) との貿易 (支援として無償で受け取った物資も含む) が大きいほど上がり、小さいと下がる (ここ5年ほどの平均の貿易額が年5 cr で約27、10で約39、20で約52、50で約71を目指して年10ずつ動く)。友好度が高いほど反乱しにくく (友好度25で確率が半分)、友好度が${FRIEND_SAFE}以上なら、忠誠度や恐怖度が低くても反乱しない。
       50未満だと指令を拒むことがあり、20未満だと独立を宣言することがある (従属する星系も一緒に離れる)。主人から支援物資を受けると上がる (代金を払えない星系は主人から無償で物資を受け取れる)。地球の国からの独立は、半々の確率で (地球の艦隊が駐留していれば必ず) そのまま独立戦争になる。独立戦争では、各星系が人口と経済の規模に応じた艦隊を持ち、駐留していた地球の艦隊とその場で艦隊戦になる (勝てば攻囲に移る)。</p>
     <label class="check auto"><input type="checkbox" data-act="autogrant" ${g.autoGrant ? 'checked' : ''}> 入植後${GRANT_YEARS}年の自動資金援助 (地球から)</label>
     <p class="note">入植して${GRANT_YEARS}年以内の星系には、主人の星系が毎年、資金の3% (最大 ${GRANT_MAX} cr) を自動で送る。資金援助は支援物資と同じく忠誠度を上げる。チェックを外すと地球からの自動送金だけが止まる (ほかの星系どうしは続く)。個別の資金援助は星系の詳細欄から送れる。</p>
