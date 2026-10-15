@@ -874,6 +874,11 @@ class Game {
     return !rec.news || rec.news.year + this.lightDelay(rec.news.from) <= this.year;
   }
   knownAtWar(a, b) { return a !== b && this.warKnown(this.warKey(a, b)); }
+  // 地球の知る限り、星系 a と b の国が交戦中か (交易路の開設先の候補から外すのに使う)
+  knownHostile(a, b) {
+    const realm = (id) => (id === 0 ? 0 : this.known(id)?.realm ?? 0);
+    return this.knownAtWar(realm(a), realm(b));
+  }
   knownWarKeys() { return [...new Set([...Object.keys(this.realmWars), ...this.peaces.map((r) => r.key)])].filter((k) => this.warKnown(k)); }
   knownEnemiesOf(root) {
     return this.knownWarKeys().map((k) => k.split('|').map(Number)).filter((p) => p.includes(root)).map((p) => (p[0] === root ? p[1] : p[0]));
@@ -1460,6 +1465,8 @@ class Game {
   openRoute(a, b) {
     if (a === b || !this.isColonized(a) || !this.isColonized(b)) return fail('両端に入植地が必要');
     if (this.routeBetween(a, b)) return fail('開設済み');
+    // 交戦中の国の星系とは新しく結べない (a が開戦の知らせを受け取ってから。既存の交易路は残る)
+    if (this.realmOf(a) !== this.realmOf(b) && this.tradeBlocked(a, b)) return fail('交戦中の国とは交易路を結べない');
     const paid = this.pay(this.routeCost(a, b), undefined, a);
     if (!paid.ok) return paid;
     this.routes.push({ id: this.nextShipId++, a, b, lv: 1, transit: [zeroRes(), zeroRes()], vol: [0, 0], built: this.year, by: a });
@@ -1741,7 +1748,7 @@ class Game {
       const mine = this.routes.filter((r) => r.a === id || r.b === id);
       if (mine.length < 3) {
         const near = this.colonizedSystems()
-          .filter((o) => o.id !== id && !this.routeBetween(o.id, id))
+          .filter((o) => o.id !== id && !this.routeBetween(o.id, id) && !this.tradeBlocked(id, o.id))
           .map((o) => ({ o, d: distance(o, s) }))
           .filter((x) => !mine.length || x.d <= 12)
           .sort((a, b) => a.d - b.d)[0];
@@ -4094,7 +4101,7 @@ function routeBox(app, sys) {
   const g = app.game;
   const mine = g.routes.filter((r) => (r.a === sys.id || r.b === sys.id) && g.routeKnown(r));
   const others = g.knownSystems()
-    .filter((s) => s.id !== sys.id && !g.routeBetween(s.id, sys.id))
+    .filter((s) => s.id !== sys.id && !g.routeBetween(s.id, sys.id) && !g.knownHostile(sys.id, s.id))
     .sort((a, b) => distance(a, sys) - distance(b, sys));
   const list = mine.map((r) => {
     const out = r.a === sys.id ? 0 : 1;
@@ -4109,9 +4116,11 @@ function routeBox(app, sys) {
         <select data-act="rdest">${others.map((s) => `<option value="${s.id}" ${s.id === dest ? 'selected' : ''}>${esc(s.name)} (${distance(s, sys).toFixed(1)} ly)</option>`).join('')}</select></label>
        ${costButton(g, `data-act="route" data-dest="${dest}"`, '交易路を開設', g.routeCost(sys.id, dest), sys.id)}`
     : '<p class="note">交易路を結べる相手(他の入植星系)がない</p>';
+  const warNote = g.knownSystems().some((s) => s.id !== sys.id && !g.routeBetween(s.id, sys.id) && g.knownHostile(sys.id, s.id))
+    ? '<p class="note">交戦中の国の星系とは交易路を結べない (既存の交易路は残る)。</p>' : '';
   return `<h3>交易路</h3>
     <p class="note">余っている資源を、足りない星系へ自動で運ぶ (0.95c の貨物船)。交易路でつながっていれば、複数の交易路を乗り継いで届ける。荷は受け手が基準価格で買い取る (送り手の輸出収入になる)。代金を払えない星系は、主人から支援として無償で受け取れるが、そのぶん従属が深まる (忠誠度が上がる)。</p>
-    ${list}${open}`;
+    ${list}${open}${warNote}`;
 }
 
 function defenseToggle(g) {
@@ -4507,7 +4516,7 @@ function routesSheet(app) {
   }).join('');
   const cols = g.knownSystems().sort((x, y) => x.name.localeCompare(y.name));
   const a = cols.some((s) => s.id === app.routeA) ? app.routeA : cols[0]?.id;
-  const others = cols.filter((s) => s.id !== a && !g.routeBetween(s.id, a)).sort((x, y) => distance(x, g.system(a)) - distance(y, g.system(a)));
+  const others = cols.filter((s) => s.id !== a && !g.routeBetween(s.id, a) && !g.knownHostile(s.id, a)).sort((x, y) => distance(x, g.system(a)) - distance(y, g.system(a)));
   const b = others.some((s) => s.id === app.routeB) ? app.routeB : others[0]?.id;
   const opt = (list, sel, f = () => '') => list.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}${f(s)}</option>`).join('');
   const open = cols.length > 1
