@@ -140,7 +140,11 @@ html, body { height:100%; }
       <div id="empire" hidden></div>
       <details id="legend"><summary>凡例</summary>
         <div><i style="background:#ffb347;border-radius:50%"></i>入植船</div>
-        <div><i style="background:#ff7a6b;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>艦隊</div>
+        <div><i style="background:#5aa9ff;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>自艦隊 (地球が動かす)</div>
+        <div><i style="background:#8be36a;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>従属艦隊 (従属星系の守り)</div>
+        <div><i style="background:#f0c94a;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>中立艦隊</div>
+        <div><i style="background:#ff5a5a;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>敵艦隊</div>
+        <div><i style="border:2px solid #4de3d0;width:9px;height:9px;border-radius:2px"></i>国境 (国ごとの色。地球の国は太線)</div>
         <div><i style="background:#6fdc96"></i>交易の貨物船 (緑の線は交易路)</div>
         <div><i style="background:#ffd24d;transform:rotate(45deg) scale(.8)"></i>資材輸送船</div>
         <div><i style="background:#8fd3ff;border-radius:50%;transform:scale(.7)"></i>移民船</div>
@@ -1040,7 +1044,11 @@ class Game {
       this.held[g.sys] = (this.held[g.sys] || 0) + g.ships; // 攻め落とした艦隊はそのまま駐留する
       this.sieges = this.sieges.filter((x) => x !== g);
       this.event('battle', g.sys, `${this.system(g.sys).name} が降伏し、${g.realm === 0 ? '地球の国 (太陽系)' : `${this.system(g.realm).name} の国`}に従属した`, g.realm === 0);
-      if (g.route?.length) this.continueRoute(g.sys, g.ships, g.route); // 経由地の指令が残っていれば次へ
+      // 経由地の指令が残っていれば次へ。攻め落とした星系には守りとして2割 (最低1艦隊) を残す
+      if (g.route?.length) {
+        const keep = g.ships >= 2 ? Math.max(1, Math.round(g.ships * 0.2)) : 0;
+        if (g.ships - keep >= 1) this.continueRoute(g.sys, g.ships - keep, g.route);
+      }
       if (oldRealm === g.sys) this.cleanWars(); // 首都が落ちればその国は終わり、戦争も終わる
     }
   }
@@ -3265,6 +3273,51 @@ class GalaxyView {
     const known = new Map();
     const K = (id) => { if (!known.has(id)) known.set(id, id === 0 ? game.snapshot(0) : game.known(id)); return known.get(id); };
 
+    // 国境: 国ごとに、入植星系のまわり 3.5 光年の円を合わせた領域の外周を描く (地球の国は太線)。
+    // 円の和の外周は、別のキャンバスに塗った領域から少し小さい領域をくり抜いて作り、国の色で塗る
+    const groups = new Map();
+    for (const sx of game.knownSystems()) {
+      const k = K(sx.id);
+      if (!k || !k.cols.length) continue;
+      const realm = k.realm ?? 0;
+      if (!groups.has(realm)) groups.set(realm, []);
+      groups.get(realm).push(this.toScreen(sx.x, sx.y));
+    }
+    if (groups.size) {
+      const dpr = this.canvas.width / Math.max(1, w);
+      this.off ??= document.createElement('canvas');
+      if (this.off.width !== this.canvas.width || this.off.height !== this.canvas.height) { this.off.width = this.canvas.width; this.off.height = this.canvas.height; }
+      const oc = this.off.getContext('2d');
+      const R = 3.5 * z;
+      const circles = (c, pts, rad) => { c.beginPath(); for (const [x, y] of pts) { c.moveTo(x + rad, y); c.arc(x, y, rad, 0, Math.PI * 2); } };
+      for (const [realm, pts] of groups) {
+        const color = realmColor(realm);
+        const lw = realm === 0 ? 2.5 : 1.5;
+        ctx.globalAlpha = realm === 0 ? 0.07 : 0.05;
+        ctx.fillStyle = color;
+        circles(ctx, pts, R);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        oc.setTransform(1, 0, 0, 1, 0, 0);
+        oc.clearRect(0, 0, this.off.width, this.off.height);
+        oc.setTransform(dpr, 0, 0, dpr, 0, 0);
+        oc.globalCompositeOperation = 'source-over';
+        oc.fillStyle = '#000';
+        circles(oc, pts, R);
+        oc.fill();
+        oc.globalCompositeOperation = 'destination-out';
+        circles(oc, pts, Math.max(0.5, R - lw));
+        oc.fill();
+        oc.globalCompositeOperation = 'source-in';
+        oc.fillStyle = color;
+        oc.fillRect(0, 0, w, h);
+        oc.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = realm === 0 ? 0.85 : 0.6;
+        ctx.drawImage(this.off, 0, 0, w, h);
+        ctx.globalAlpha = 1;
+      }
+    }
+
     // 交易路と輸送中の貨物
     ctx.lineWidth = 1.5;
     for (const r of game.routes) {
@@ -3289,6 +3342,7 @@ class GalaxyView {
       const p = seenAt((t) => game.fleetPosition(f, t), f.start ?? f.depart, f.arrive);
       if (!p) continue;
       const [px, py] = this.toScreen(p.x, p.y);
+      const fcolor = FLEET_COLOR[realmFleetKind(game, f.owner ?? 0)];
       if ((f.owner ?? 0) === 0) {
         this.fleetDots.push({ id: f.id, x: px, y: py });
         if (this.app.fleetMove.has(f.id)) {
@@ -3298,14 +3352,14 @@ class GalaxyView {
           ctx.lineWidth = 1;
         }
       }
-      ctx.fillStyle = '#ff7a6b';
+      ctx.fillStyle = fcolor;
       ctx.beginPath(); ctx.moveTo(px, py - 5); ctx.lineTo(px + 4, py + 3); ctx.lineTo(px - 4, py + 3); ctx.fill();
       // 地球の艦隊は行き先への矢印も描く
       if ((f.owner ?? 0) === 0) {
         const d = game.system(f.to);
         const [tx, ty] = this.toScreen(d.x, d.y);
         const ang = Math.atan2(ty - py, tx - px);
-        ctx.strokeStyle = f.surprise ? 'rgba(255,90,90,0.55)' : 'rgba(255,122,107,0.4)';
+        ctx.strokeStyle = f.surprise ? 'rgba(255,90,90,0.6)' : 'rgba(90,169,255,0.5)';
         ctx.setLineDash([5, 4]);
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(tx, ty); ctx.stroke();
         ctx.setLineDash([]);
@@ -3455,9 +3509,25 @@ class GalaxyView {
       }
       const ships = k ? k.garrison || 0 : 0;
       if (ships) {
-        ctx.fillStyle = '#ff7a6b';
+        // 駐留艦隊を持ち主の色で: 地球の国の星系は、命令で駐留している分 (と太陽系・無人の星系) が自艦隊、残りは従属艦隊
+        const colonized = k.cols && k.cols.length;
+        const realm = colonized ? k.realm ?? 0 : 0;
+        const parts = [];
+        if (realm !== 0) parts.push([realmFleetKind(game, realm), ships]);
+        else {
+          const own = s.id === 0 || !colonized ? ships : Math.min(ships, game.held[s.id] || 0);
+          if (ships - own > 0) parts.push(['vassal', ships - own]);
+          if (own > 0) parts.push(['own', own]);
+        }
         ctx.font = '10px sans-serif';
-        ctx.fillText(`▲${ships}`, x - r - 8 - ctx.measureText(`▲${ships}`).width, y + 4);
+        let lx = x - r - 8;
+        for (const [kind, n] of parts) {
+          const t = `▲${n}`;
+          lx -= ctx.measureText(t).width;
+          ctx.fillStyle = FLEET_COLOR[kind];
+          ctx.fillText(t, lx, y + 4);
+          lx -= 3;
+        }
       }
       if (k && k.siege) {
         const rr = r + 15;
@@ -3988,6 +4058,10 @@ function defenseToggle(g) {
     <p class="note">年に1回、各入植星系の駐留艦隊を海賊の最大戦力 (いま <b>${goal}</b> 艦隊、${PIRATE_START}年から40年ごとに増える) まで増やす。余っている艦隊を近くから回し、足りなければ太陽系の軍事基地で編成する (資金が費用の2倍以上あるとき、年5艦隊まで。ほかの星系は自分で海賊対策の建艦をする)。命令で送った艦隊 (遠征・攻め落とした星系の守り) は動かさない。太陽系と、海賊が現れる前は1艦隊。目標に届いていない入植星系: ${bare} か所</p>`;
 }
 
+// 艦隊の色: 自艦隊 (地球が動かす艦隊)・従属艦隊 (地球の国の従属星系の守り)・中立国・敵国
+const FLEET_COLOR = { own: '#5aa9ff', vassal: '#8be36a', neutral: '#f0c94a', enemy: '#ff5a5a' };
+const FLEET_KIND = { own: '自艦隊', vassal: '従属艦隊', neutral: '中立艦隊', enemy: '敵艦隊' };
+function realmFleetKind(g, realm) { return realm === 0 ? 'own' : g.atWar(0, realm) ? 'enemy' : 'neutral'; }
 // --- 星間マップでの艦隊の操作 (Hearts of Iron 風) ---
 // 地球の艦隊が (地球に届いている情報で) 駐留している星系か: 地球の国の星系か、入植していない星系
 function isOwnStack(g, id) {
