@@ -741,6 +741,7 @@ class Game {
     this.realmWars = {}; // 交戦中の国の組 { [key]: 開戦年 }
     this.warNews = {}; // 開戦の知らせ { [key]: { year, from } }。各星系は知らせが光速で届いてから交易をやめる
     this.held = {}; // 命令で送られて駐留している艦隊の数 { [星系]: n }。自動防衛配備はこの分を動かさない
+    this.peaces = []; // 終わった戦争 { key, a, b, year, from, start, by, news }。終戦の知らせが光速で広がるまで使う
     this.warBy = {}; // 戦争を仕掛けた国 { [key]: 首都 }。仕掛けられた側は降伏せず、攻め落とされるまで戦う
     this.sieges = []; // 攻囲 { sys, realm (攻める国の首都), ships, progress, start }
     // 到着して消えたあとも、その到着の光が地球に届くまでは地図に見えている動くもの (表示用、セーブしない)
@@ -827,11 +828,30 @@ class Game {
   }
   realmSystems(root) { return this.colonizedSystems().filter((x) => this.realmOf(x.id) === root); }
   // 星系 x の政府が、相手の星系 other の国と交戦中だと知っているか (開戦の知らせが光速で x に届いたか)。交易をやめるのはそれから
+  // 終戦後も、終戦の知らせが光速で x に届くまでは取引をやめたまま
   tradeBlocked(x, other) {
     const a = this.realmOf(x), b = this.realmOf(other);
-    if (!this.atWar(a, b)) return false;
+    if (!this.atWar(a, b)) {
+      const rec = this.lastPeace(this.warKey(a, b));
+      return !!rec && this.year < rec.year + distance(this.system(rec.from), this.system(x));
+    }
     const news = this.warNews[this.warKey(a, b)];
     return !news || this.year >= news.year + distance(this.system(news.from), this.system(x));
+  }
+  lastPeace(key) {
+    let best = null;
+    for (const r of this.peaces) if (r.key === key && (!best || r.year > best.year)) best = r;
+    return best;
+  }
+  // 戦っている (と、その場の軍が思っている) か: 戦争中か、終戦の知らせがまだ届いていない。
+  // 知らせは講和の結ばれた星系から owner の主星 (首都) へ光速で届き、そこから星系 x の艦隊へ光速で伝えられる
+  fightingAt(owner, target, x) {
+    if (this.atWar(owner, target)) return true;
+    if (owner === target) return false;
+    const rec = this.lastPeace(this.warKey(owner, target));
+    if (!rec) return false;
+    const cap = this.system(owner);
+    return this.year < rec.year + distance(this.system(rec.from), cap) + distance(cap, this.system(x));
   }
   warKey(a, b) { return a < b ? `${a}|${b}` : `${b}|${a}`; }
   atWar(a, b) { return a !== b && this.realmWars[this.warKey(a, b)] !== undefined; }
@@ -841,15 +861,26 @@ class Game {
   }
   realmName(root) { return root === 0 ? '地球の国' : `${this.system(root).name} の国`; }
   // 地球 (プレイヤー) が知っている戦争: 開戦の知らせが光速で地球に届いたもの (観戦モードはすべて)
+  // 終わった戦争も、終戦の知らせが地球に届くまでは交戦中に見える (開戦を知っていた場合)
   warKnown(key) {
-    if (this.realmWars[key] === undefined) return false;
-    if (this.spectate) return true;
-    const news = this.warNews[key];
-    return !news || this.year >= news.year + this.lightDelay(news.from);
+    if (this.realmWars[key] !== undefined) {
+      if (this.spectate) return true;
+      const news = this.warNews[key];
+      return !news || this.year >= news.year + this.lightDelay(news.from);
+    }
+    if (this.spectate) return false;
+    const rec = this.lastPeace(key);
+    if (!rec || this.year >= rec.year + this.lightDelay(rec.from)) return false;
+    return !rec.news || rec.news.year + this.lightDelay(rec.news.from) <= this.year;
   }
   knownAtWar(a, b) { return a !== b && this.warKnown(this.warKey(a, b)); }
-  knownEnemiesOf(root) { return this.enemiesOf(root).filter((e) => this.knownAtWar(root, e)); }
-  knownWarKeys() { return Object.keys(this.realmWars).filter((k) => this.warKnown(k)); }
+  knownWarKeys() { return [...new Set([...Object.keys(this.realmWars), ...this.peaces.map((r) => r.key)])].filter((k) => this.warKnown(k)); }
+  knownEnemiesOf(root) {
+    return this.knownWarKeys().map((k) => k.split('|').map(Number)).filter((p) => p.includes(root)).map((p) => (p[0] === root ? p[1] : p[0]));
+  }
+  // 戦争の開戦年・仕掛けた国 (終わったが知らせが届いていない戦争も)
+  warStart(key) { return this.realmWars[key] ?? this.lastPeace(key)?.start; }
+  warAggressor(key) { return this.realmWars[key] !== undefined ? this.warBy[key] : this.lastPeace(key)?.by; }
   // 地球から見た国の戦力: 把握している星系の駐留艦隊の合計
   knownRealmShips(root) { return this.knownSystems().filter((x) => (x.id === 0 ? 0 : this.known(x.id)?.realm ?? 0) === root).reduce((k, x) => k + this.knownGarrison(x.id), 0); }
   // 地球から見えている建設中の事業: 太陽系はいまのもの、ほかの星系は光が届いている記録のもの
@@ -943,19 +974,23 @@ class Game {
   offerPeace(root) {
     if (!this.atWar(0, root) || this.realmOf(root) !== root) return fail('交戦中ではない');
     if (this.realmShips(root) < this.realmShips(0) || Math.random() < 0.3) {
-      this.endWar(0, root);
+      this.endWar(0, root, root); // 講和の申し入れを受けた相手の首都で結ばれる
       this.event('politics', root, `${this.system(root).name} の国が講和を受け入れた (独立を認めた)`, true);
       return { ok: true };
     }
     return fail('講和を拒否された');
   }
-  endWar(a, b) {
+  // 終戦。from = 講和の結ばれた星系 (終戦の知らせはここから光速で広がる)。
+  // 各地の艦隊戦・攻囲は、終戦の知らせが攻める側の主星を経て届くまで続く (fightingAt)
+  endWar(a, b, from = a === 0 ? b : a) {
     const key = this.warKey(a, b);
+    if (this.realmWars[key] !== undefined) {
+      this.peaces.push({ key, a, b, year: this.year, from, start: this.realmWars[key], by: this.warBy[key], news: this.warNews[key] });
+    }
+    this.peaces = this.peaces.filter((r) => this.year - r.year < 400);
     delete this.realmWars[key];
     delete this.warBy[key];
     delete this.warNews[key];
-    // 攻囲していた艦隊は自国の最寄りの星系へ引き揚げる
-    for (const g of this.sieges.filter((x) => (x.realm === a && this.realmOf(x.sys) === b) || (x.realm === b && this.realmOf(x.sys) === a))) this.withdraw(g);
   }
   withdraw(g) {
     this.sieges = this.sieges.filter((x) => x !== g);
@@ -978,12 +1013,12 @@ class Game {
       this.continueRoute(f.to, f.n, f.route);
       return;
     }
-    if (!this.atWar(owner, destRealm) && f.surprise) {
+    if (!this.fightingAt(owner, destRealm, f.to) && f.surprise) {
       // 奇襲攻撃: 着いた時点で戦争を始め、そのまま艦隊戦 (守りがいなければ攻囲) に入る。開戦の知らせはこの星系から広がる
       this.beginWar(owner, destRealm, f.to);
       this.event('battle', f.to, `${this.realmName(owner)}の ${f.n} 艦隊が ${name} に奇襲攻撃をかけた。${this.realmName(destRealm)}との戦争が始まった`, false);
     }
-    if (!this.atWar(owner, destRealm)) {
+    if (!this.fightingAt(owner, destRealm, f.to)) {
       this.fleets.push({ ...f, id: this.nextShipId++, from: f.to, to: f.from, depart: this.year, arrive: this.year + this.fleetYears(f.to, f.from), surprise: false, route: undefined });
       this.message(`${f.n} 艦隊は ${name} (${this.system(destRealm).name} の国) と交戦中ではないので入れず、引き返した (攻め込むには先に宣戦する)`, f.to);
       return;
@@ -1012,7 +1047,8 @@ class Game {
   }
   battlesStep(dt) {
     for (const b of [...this.battles]) {
-      if (!this.atWar(b.realm, this.realmOf(b.sys))) { // 講和: 防衛側は駐留に戻り、攻撃側は引き揚げる
+      if (!this.fightingAt(b.realm, this.realmOf(b.sys), b.sys)) { // 終戦の知らせが届いた: 防衛側は駐留に戻り、攻撃側は引き揚げる
+        this.event('battle', b.sys, `${this.system(b.sys).name} の艦隊戦は、終戦の知らせが届いて終わった`, b.realm === 0 || this.realmOf(b.sys) === 0);
         this.battles = this.battles.filter((x) => x !== b);
         this.garrison[b.sys] = (this.garrison[b.sys] || 0) + Math.round(b.d);
         this.withdraw({ sys: b.sys, realm: b.realm, ships: Math.round(b.a) });
@@ -1045,7 +1081,11 @@ class Game {
   // 降伏した星系は、攻めた国の首都に直接従属する (その星系に従属していた星系も一緒に移る)
   siegesYearly() {
     for (const g of [...this.sieges]) {
-      if (!this.atWar(g.realm, this.realmOf(g.sys)) || g.ships < 1) { this.withdraw(g); continue; }
+      if (!this.fightingAt(g.realm, this.realmOf(g.sys), g.sys) || g.ships < 1) {
+        if (g.ships >= 1) this.event('battle', g.sys, `終戦の知らせが届き、${this.system(g.sys).name} の攻囲を解いて引き揚げた`, g.realm === 0 || this.realmOf(g.sys) === 0);
+        this.withdraw(g);
+        continue;
+      }
       // 守りの艦隊が造られたり届いたりしたら、攻囲を中断して艦隊戦になる (進捗は艦隊戦に勝てば引き継ぐ)
       if ((this.garrison[g.sys] || 0) > 0) { this.sieges = this.sieges.filter((x) => x !== g); this.startBattle(g.sys, g.realm, g.ships, g.progress, g.route); continue; }
       const pop = this.coloniesIn(g.sys).reduce((k, c) => k + c.pop, 0);
@@ -1107,7 +1147,7 @@ class Game {
   // 国ごとの降伏: 首都が勝った国の首都に従属し、配下の星系もそのまま移る
   surrender(root, winner = 0) {
     const n = this.realmSystems(root).length;
-    this.endWar(root, winner);
+    this.endWar(root, winner, root);
     const gv = this.gov(root);
     gv.lord = winner;
     gv.independent = false;
@@ -1140,7 +1180,7 @@ class Game {
         const ours = this.realmShips(root), theirs = this.realmShips(e), years = this.year - this.realmWars[key];
         if (this.warBy[key] === root && years >= 5 && theirs >= 5 * Math.max(1, ours) && Math.random() < 0.08) { this.surrender(root, e); break; }
         if (this.warBy[key] !== 0 && years >= 20 && ours < 2 * theirs && theirs < 2 * ours && Math.random() < 0.05) {
-          this.endWar(root, e);
+          this.endWar(root, e, root);
           this.event('politics', root, `${this.realmName(root)}と${this.realmName(e)}が講和し、戦争が終わった`, e === 0);
         }
       }
@@ -2641,6 +2681,7 @@ class Game {
     if (obj(d.realmWars)) this.realmWars = d.realmWars;
     if (obj(d.warBy)) this.warBy = d.warBy;
     if (obj(d.warNews)) this.warNews = d.warNews;
+    if (Array.isArray(d.peaces)) this.peaces = d.peaces.filter((x) => x && typeof x.key === 'string' && Number.isFinite(x.year));
     // 旧形式 (地球の国との戦争だけ。キーは独立国の首都、warBy は 'earth') を国の組のキーに直す
     for (const k of Object.keys(this.realmWars)) {
       if (k.includes('|')) continue;
@@ -4526,7 +4567,7 @@ function politicsSheet(app) {
     const n = g.knownSystems().filter((x) => g.known(x.id)?.realm === root).length;
     const others = g.knownEnemiesOf(root).filter((e) => e !== 0);
     return `<tr><td><span class="dot" style="background:${realmColor(root)}"></span>${goto(g.system(root))}</td><td>${n} 星系</td>
-      <td>${war ? `<b class="bad">地球の国と交戦中</b> (${g.realmWars[g.warKey(0, root)].toFixed(0)}年から)` : '地球の国とは平和'}${others.length ? `<br><span class="bad">${others.map((e) => esc(g.realmName(e))).join('・')}と交戦中</span>` : ''}</td>
+      <td>${war ? `<b class="bad">地球の国と交戦中</b> (${(g.warStart(g.warKey(0, root)) ?? g.year).toFixed(0)}年から)` : '地球の国とは平和'}${others.length ? `<br><span class="bad">${others.map((e) => esc(g.realmName(e))).join('・')}と交戦中</span>` : ''}</td>
       <td>${war ? `<button data-act="peace" data-sys="${root}">講和を申し入れる<small>指令: 届くまで ${g.lightDelay(root).toFixed(1)} 年</small></button>` : `<button data-act="declarewar" data-sys="${root}">宣戦する</button>`}</td></tr>`;
   }).join('');
   const sieges = g.knownSystems().map((x) => ({ x, sg: g.known(x.id)?.siege })).filter((v) => v.sg).map(({ x, sg }) => `<tr><td>${goto(x)}</td>
@@ -4540,14 +4581,14 @@ function politicsSheet(app) {
     <p class="note">入植して${GRANT_YEARS}年以内の星系には、主人の星系が毎年、資金の3% (最大 ${GRANT_MAX} cr) を自動で送る。資金援助は支援物資と同じく忠誠度を上げる。チェックを外すと地球からの自動送金だけが止まる (ほかの星系どうしは続く)。個別の資金援助は星系の詳細欄から送れる。</p>
     <h3>独立国</h3>
     ${realms ? `<div class="scroll"><table class="tbl"><tr><th>首都</th><th>規模 (把握分)</th><th>状態</th><th></th></tr>${realms}</table></div>` : '<p class="note">いまのところ独立国はない。</p>'}
-    <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。独立して始まった戦争では、独立国は簡単には降伏しない: 開戦から5年以上たち、地球の国の戦力が5倍以上になると、国ごと降伏して地球の国に従属することがある。20年以上たっても決着がつかなければ講和 (独立は保たれる) になることもある。地球から宣戦した一方的な侵略では、相手は降伏も講和もせず、攻め落とされるまで戦う。独立国どうしも戦争をする (近くの弱い独立国に宣戦する)。仕掛けた側が大差で負ければ降伏し、仕掛けられた側は攻め落とされるまで戦う。交戦中でない国の星系へ艦隊を送ると奇襲攻撃になり、着いた時点で戦争が始まる。交戦中の国どうしでは物資をやり取りしない (各星系は開戦の知らせが光速で届いてから取引をやめる)。</p>
+    <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。独立して始まった戦争では、独立国は簡単には降伏しない: 開戦から5年以上たち、地球の国の戦力が5倍以上になると、国ごと降伏して地球の国に従属することがある。20年以上たっても決着がつかなければ講和 (独立は保たれる) になることもある。地球から宣戦した一方的な侵略では、相手は降伏も講和もせず、攻め落とされるまで戦う。独立国どうしも戦争をする (近くの弱い独立国に宣戦する)。仕掛けた側が大差で負ければ降伏し、仕掛けられた側は攻め落とされるまで戦う。交戦中でない国の星系へ艦隊を送ると奇襲攻撃になり、着いた時点で戦争が始まる。交戦中の国どうしでは物資をやり取りしない (各星系は開戦の知らせが光速で届いてから取引をやめる)。講和・降伏で戦争が終わっても、終戦の知らせが主星 (首都) を経て光速で届くまで、各地の艦隊は戦い続け攻囲も続く。</p>
     <h3>戦争</h3>
     ${(() => {
       const rows = g.knownWarKeys().map((k) => {
         const [a, b] = k.split('|').map(Number);
-        const by = g.warBy[k];
+        const by = g.warAggressor(k);
         const att = by === b ? b : a, def = att === a ? b : a;
-        return `<tr><td><span class="dot" style="background:${realmColor(att)}"></span>${esc(g.realmName(att))}</td><td><span class="dot" style="background:${realmColor(def)}"></span>${esc(g.realmName(def))}</td><td>${g.realmWars[k].toFixed(0)}年から</td><td>${Math.round(g.knownRealmShips(att))} 対 ${Math.round(g.knownRealmShips(def))} 艦隊 (把握分)</td></tr>`;
+        return `<tr><td><span class="dot" style="background:${realmColor(att)}"></span>${esc(g.realmName(att))}</td><td><span class="dot" style="background:${realmColor(def)}"></span>${esc(g.realmName(def))}</td><td>${(g.warStart(k) ?? g.year).toFixed(0)}年から</td><td>${Math.round(g.knownRealmShips(att))} 対 ${Math.round(g.knownRealmShips(def))} 艦隊 (把握分)</td></tr>`;
       }).join('');
       return rows ? `<div class="scroll"><table class="tbl"><tr><th>仕掛けた国</th><th>仕掛けられた国</th><th>開戦</th><th>戦力</th></tr>${rows}</table></div>` : '<p class="note">いま戦争はない。</p>';
     })()}
@@ -4944,7 +4985,7 @@ const SAVE_KEY = 'moribin-save-v1';
 function buildSave(game, extra = {}) {
   return {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
-    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, warBy: game.warBy, warNews: game.warNews, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
+    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, warBy: game.warBy, warNews: game.warNews, peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
