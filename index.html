@@ -4512,16 +4512,33 @@ function onPanelChange(e) {
   e.target.blur();
   app.dirty = true;
 }
-// 数値は刻々と変わるのでパネルを定期的に描き直す。ただし操作中(押している・選択肢を開いている)は待つ
+// 数値は刻々と変わるのでパネルを定期的に描き直す。ただし操作中 (押している・指を置いている・スクロール中・選択肢を開いている) は待つ。
+// タッチでスクロールが始まるとブラウザは pointercancel を送るので、指の有無は touch イベントで、スクロール中かは scroll イベントで見る
 let panelHeld = false;
+let touching = false;
+let lastScroll = 0;
 for (const el of [panel, empire]) {
   el.addEventListener('click', onPanelClick);
   el.addEventListener('change', onPanelChange);
   el.addEventListener('pointerdown', () => { panelHeld = true; });
+  el.addEventListener('touchstart', () => { touching = true; }, { passive: true });
+  // 表の横スクロール (.scroll) の scroll イベントは泡立たないので capture で拾う
+  el.addEventListener('scroll', () => { lastScroll = performance.now(); }, { capture: true, passive: true });
 }
 window.addEventListener('pointerup', () => { panelHeld = false; });
 window.addEventListener('pointercancel', () => { panelHeld = false; });
-const panelBusy = () => panelHeld || document.activeElement?.tagName === 'SELECT';
+window.addEventListener('touchend', (e) => { if (!e.touches.length) touching = false; }, { passive: true });
+window.addEventListener('touchcancel', (e) => { if (!e.touches.length) touching = false; }, { passive: true });
+const panelBusy = () => panelHeld || touching || performance.now() - lastScroll < 800 || document.activeElement?.tagName === 'SELECT';
+// 描き直しても、表の横スクロール位置はそのまま残す
+// (別の画面・タブに切り替えたときは引き継がない)
+function setHtmlKeepScroll(el, html) {
+  const key = `${app.view}|${app.empireTab}|${app.sel.sys}|${app.sel.body}`;
+  const xs = el.dataset.key === key ? [...el.querySelectorAll('.scroll')].map((x) => x.scrollLeft) : [];
+  el.dataset.key = key;
+  el.innerHTML = html;
+  el.querySelectorAll('.scroll').forEach((x, i) => { if (xs[i]) x.scrollLeft = xs[i]; });
+}
 // --- メインループ ---
 let last = performance.now();
 let acc = 0;
@@ -4551,8 +4568,8 @@ function frame(now) {
   }
   if (app.dirty && !panelBusy()) {
     app.dirty = false;
-    panel.innerHTML = app.view === 'system' && app.sel.body ? bodyPanel(app) : systemPanel(app);
-    if (SHEETS[app.view]) empire.innerHTML = SHEETS[app.view](app);
+    setHtmlKeepScroll(panel, app.view === 'system' && app.sel.body ? bodyPanel(app) : systemPanel(app));
+    if (SHEETS[app.view]) setHtmlKeepScroll(empire, SHEETS[app.view](app));
   }
   requestAnimationFrame(frame);
 }
