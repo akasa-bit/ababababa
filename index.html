@@ -567,10 +567,10 @@ const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 // 資源の埋蔵量と先住民の生成。銀河本体とは別の乱数列を使うので、既存のセーブと同じ銀河になる。
 
-const RES = ['food', 'water', 'metal', 'fuel', 'rare', 'goods'];
+const RES = ['food', 'water', 'metal', 'fuel', 'rare', 'goods', 'slaves'];
 const MINED = ['water', 'metal', 'fuel', 'rare'];
-const RES_LABEL = { food: '食料', water: '水', metal: '金属', fuel: '燃料', rare: '希少元素', goods: '工業品', credits: 'cr' };
-const PRICE = { food: 1, water: 0.8, metal: 1.5, fuel: 2, rare: 8, goods: 4 };
+const RES_LABEL = { food: '食料', water: '水', metal: '金属', fuel: '燃料', rare: '希少元素', goods: '工業品', slaves: '奴隷', credits: 'cr' };
+const PRICE = { food: 1, water: 0.8, metal: 1.5, fuel: 2, rare: 8, goods: 4, slaves: 3 };
 const TECH_LABEL = ['石器時代', '農耕時代', '産業時代', '情報時代'];
 const KANA_A = ['カ', 'ヴェ', 'ロ', 'リ', 'サ', 'トゥ', 'ネ', 'ミ', 'ゾ', 'アル', 'エル', 'オル', 'ダ', 'フィ', 'ゼ', 'ユ', 'ハ', 'ボ', 'ギ', 'セ'];
 const KANA_B = ['ラ', 'タ', 'ニス', 'ロン', 'ドール', 'リア', 'ソル', 'ヴェン', 'ムス', 'タン', 'リス', 'ガル', 'ファ', 'コン', 'ディス', 'リクス'];
@@ -667,9 +667,15 @@ const FOCUS = {
   mine: { label: '鉱業', farm: 0.2, mine: 0.7, ind: 0.1 },
   ind: { label: '工業', farm: 0.2, mine: 0.1, ind: 0.7 },
 };
-const FACILITY = { farm: '農場', mine: '鉱山', factory: '工場', habitat: '居住区', shipyard: '軍事基地', barracks: '軍事教練所' };
-const FACILITY_MAX = { farm: 10, mine: 10, factory: 10, habitat: 10, shipyard: 1, barracks: 5 };
-const LV0 = () => ({ farm: 0, mine: 0, factory: 0, habitat: 0, shipyard: 0, barracks: 0 });
+const FACILITY = { farm: '農場', mine: '鉱山', factory: '工場', habitat: '居住区', slaveworks: '奴隷工房', shipyard: '軍事基地', barracks: '軍事教練所' };
+const FACILITY_MAX = { farm: 10, mine: 10, factory: 10, habitat: 10, slaveworks: 10, shipyard: 1, barracks: 5 };
+const LV0 = () => ({ farm: 0, mine: 0, factory: 0, habitat: 0, slaveworks: 0, shipyard: 0, barracks: 0 });
+// 奴隷工房: 奴隷 (市場で取引される先住民) を働かせて工業品を作る。Lv1 ごとに奴隷を年 SLAVEWORKS_USE 人使いつぶし
+// (寿命で死ぬ分)、工業品を SLAVEWORKS_OUT 作る。奴隷が足りなければそのぶん減産
+const SLAVEWORKS_USE = 1;
+const SLAVEWORKS_OUT = 5;
+// 市場奴隷にした先住民は、毎年その人口の SLAVE_SALE (1.5%) が奴隷として市場に出る (備蓄に入り、交易路で取引される)
+const SLAVE_SALE = 0.015;
 // 歩兵 (連隊)。軍事教練所で市民から訓練するか、軍事奴隷から徴集する。交易路を通って惑星間を移動する
 const TROOP_COST = { credits: 30, goods: 10 };
 const TROOP_DRAFT = 0.05; // 1連隊に徴集する人口[百万人]
@@ -722,6 +728,7 @@ class Game {
     this.govs = { 0: { lord: null, credits: START_CREDITS, founded: START_YEAR } };
     this.snaps = {}; // 星系ごとの様子の記録 (地球から見えるのは光が届いた分だけ)
     this.realmWars = {}; // 地球の国と交戦中の独立国 { [独立国の首都の星系]: 開戦年 }
+    this.warBy = {}; // 地球から仕掛けた戦争 { [独立国の首都]: 'earth' }。この戦争では相手は降伏も講和の申し出もせず、攻め落とされるまで戦う
     this.sieges = []; // 攻囲 { sys, realm (攻める国の首都), ships, progress, start }
     // 到着して消えたあとも、その到着の光が地球に届くまでは地図に見えている動くもの (表示用、セーブしない)
     this.ghosts = { cargo: [], fleets: [], requests: [], troopMoves: [], migrants: [], ships: [], legs: [] };
@@ -870,7 +877,8 @@ class Game {
   declareWar(root) {
     if (root === 0 || this.realmOf(root) !== root || this.realmWars[root] !== undefined) return fail('宣戦できない');
     this.realmWars[root] = this.year;
-    this.event('politics', 0, `${this.system(root).name} の国に宣戦した`);
+    this.warBy[root] = 'earth';
+    this.event('politics', 0, `${this.system(root).name} の国に宣戦した (相手は攻め落とされるまで降伏しない)`);
     return { ok: true };
   }
   // 講和の申し入れ (光速の指令として相手の首都へ届く)。相手の艦隊が地球の国より少なければ受け入れ、そうでなくても30%
@@ -885,6 +893,7 @@ class Game {
   }
   endWar(root) {
     delete this.realmWars[root];
+    delete this.warBy[root];
     // 攻囲していた艦隊は自国の最寄りの星系へ引き揚げる
     for (const g of this.sieges.filter((x) => x.realm === root || this.realmOf(x.sys) === root)) this.withdraw(g);
   }
@@ -983,7 +992,7 @@ class Game {
       this.garrison[g.sys] = g.ships;
       this.sieges = this.sieges.filter((x) => x !== g);
       this.event('battle', g.sys, `${this.system(g.sys).name} が降伏し、${g.realm === 0 ? '地球の国 (太陽系)' : `${this.system(g.realm).name} の国`}に従属した`, g.realm === 0);
-      if (oldRealm === g.sys) delete this.realmWars[g.sys];
+      if (oldRealm === g.sys) { delete this.realmWars[g.sys]; delete this.warBy[g.sys]; }
     }
   }
   // 海賊対策の建艦 (年1回、星系政府の自動開発より先): 海賊が現れる5年前から、各星系の政府は自分の資金で
@@ -1035,7 +1044,7 @@ class Game {
   realmsYearly() {
     for (const key of Object.keys(this.realmWars)) {
       const root = Number(key);
-      if (this.realmOf(root) !== root || !this.isColonized(root)) { delete this.realmWars[root]; continue; }
+      if (this.realmOf(root) !== root || !this.isColonized(root)) { delete this.realmWars[root]; delete this.warBy[root]; continue; }
       const mine = this.realmSystems(root);
       const strong = mine.filter((x) => (this.garrison[x.id] || 0) >= 3).sort((a, b) => (this.garrison[b.id] || 0) - (this.garrison[a.id] || 0))[0];
       if (strong) {
@@ -1047,6 +1056,7 @@ class Game {
       // 降伏はしぶとい: 開戦から5年以上たち、地球の国の戦力が5倍以上のときだけ、年8%の確率で国ごと降伏して地球の国に従属する。
       // 20年以上たっても互いに2倍の差がつかなければ、年5%の確率で講和 (独立は保たれる)
       const ours = this.realmShips(0), theirs = this.realmShips(root), years = this.year - this.realmWars[root];
+      if (this.warBy[root] === 'earth') continue; // 一方的な侵略では降伏も講和もせず、攻め落とされるまで戦う
       if (years >= 5 && ours >= 5 * Math.max(1, theirs) && Math.random() < 0.08) this.surrender(root);
       else if (years >= 20 && ours < 2 * theirs && theirs < 2 * ours && Math.random() < 0.05) {
         this.endWar(root);
@@ -1593,6 +1603,11 @@ class Game {
     }
     return best;
   }
+  // 使い道のない奴隷 [人/年]: 自分の星系と交易路でつながった星系の、奴隷の生産 − 需要の合計
+  slaveSurplus(id) {
+    const ids = [id, ...Object.keys(this.reach(id).dist).map(Number).filter((x) => x !== id)];
+    return ids.reduce((k, x) => k + (this.flow[x]?.prod.slaves || 0) - (this.flow[x]?.cons.slaves || 0), 0);
+  }
   // 星系政府の開発 (年1回、入植の判断のあと): 他の星系には建設を頼まず、自分の星系の中だけで建てる。
   // 1) 近くに入植先があれば、その入植船の費用 (1.2倍) を取っておく (入植を優先)
   // 2) 残りの資金で、星系内の施設 (農場・鉱山・工場、過密なら居住区) と採掘基地を積極的に建て増す。いちばん安いものから年1件
@@ -1610,20 +1625,24 @@ class Game {
       const tag = '[自動] ';
       const cands = [];
       for (const c of this.coloniesIn(id)) {
-        for (const fac of ['farm', 'mine', 'factory', 'habitat']) {
+        for (const fac of ['farm', 'mine', 'factory', 'habitat', 'slaveworks']) {
           if (c.lv[fac] >= FACILITY_MAX[fac] || this.pending((j) => j.type === 'upgrade' && j.col === colKey(c) && j.fac === fac)) continue;
           if (fac === 'habitat' && c.pop < 0.6 * this.capOf(c)) continue;
           if (fac === 'mine' && c.kind === 'station') continue;
+          // 奴隷工房は、自分の星系か交易路でつながった星系に、使い道のない奴隷 (生産 − 需要) がもう1工房ぶんあるときだけ
+          if (fac === 'slaveworks' && this.slaveSurplus(id) < SLAVEWORKS_USE) continue;
           const cost = this.upgradeCost(c, fac);
-          cands.push({ cost, run: () => this.order(cost, id, { type: 'upgrade', col: colKey(c), fac, label: `${tag}${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` }) });
+          cands.push({ cost, w: fac === 'slaveworks' ? 0.5 : 1, run: () => this.order(cost, id, { type: 'upgrade', col: colKey(c), fac, label: `${tag}${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` }) });
         }
       }
+      // 採掘基地は施設より高くつくが産出も大きいので、費用を割り引いて比べる (新設はさらに優先)
       for (const b of s.bodies) {
         if (!this.outpostCheck(id, b.id).ok) continue;
-        const cost = this.outpostCost(this.outpostAt(id, b.id));
-        cands.push({ cost, run: () => this.buildOutpost(id, b.id, tag) });
+        const o = this.outpostAt(id, b.id);
+        const cost = this.outpostCost(o);
+        cands.push({ cost, w: o ? 0.5 : 0.3, run: () => this.buildOutpost(id, b.id, tag) });
       }
-      cands.sort((a, b) => a.cost.credits - b.cost.credits);
+      cands.sort((a, b) => a.cost.credits * a.w - b.cost.credits * b.w);
       const cheapest = cands[0];
       gv.far = !cheapest || cheapest.cost.credits > 15 * Math.max(10, this.income(id));
       if (!gv.far) {
@@ -1997,12 +2016,19 @@ class Game {
 
   // 年1回: 奴隷の人口の増加、軍事奴隷の徴集、反乱
   nativesYearly() {
+    // 星系の政府は、支配下に置いた先住民を自分の判断で奴隷化する (市場奴隷)。太陽系はプレイヤーが決める (観戦モードでは自動)
+    for (const [key, st] of Object.entries(this.natives)) {
+      const [sysStr, bodyId] = key.split('|');
+      const sys = Number(sysStr);
+      if (st.status === 'subjugated' && (sys !== 0 || this.spectate) && this.colonyAt(sys, bodyId, 'planet')) this.enslave(sys, bodyId);
+    }
     for (const [key, st] of Object.entries(this.natives)) {
       const [sysStr, bodyId] = key.split('|');
       const sys = Number(sysStr);
       const n = this.nativeOf(sys, bodyId);
       if (!n || st.status !== 'enslaved') continue;
       st.pop = Math.min(n.def.pop * 2, st.pop * 1.015);
+      if (st.slave === 'market') st.pop *= 1 - SLAVE_SALE; // 市場に出た分 (備蓄の奴隷になる)
       const col = this.colonyAt(sys, bodyId, 'planet');
       if (st.slave === 'military' && col && st.pop >= 2) {
         const levy = Math.min(Math.max(1, Math.floor(st.pop / 25)), Math.max(0, Math.floor(st.pop / 5) - col.slaveTroops));
@@ -2025,7 +2051,7 @@ class Game {
     const d = this.target(sys, bodyId)?.deposits || {};
     if (st.slave === 'livestock') return { food: 1.5 * st.pop };
     if (st.slave === 'military') return { food: 0.3 * st.pop };
-    return { food: 0.4 * st.pop, metal: 0.3 * st.pop * Math.max(0.3, d.metal || 0), rare: 0.05 * st.pop * (d.rare || 0), goods: 0.1 * st.pop };
+    return { food: 0.4 * st.pop, metal: 0.3 * st.pop * Math.max(0.3, d.metal || 0), rare: 0.05 * st.pop * (d.rare || 0), goods: 0.1 * st.pop, slaves: SLAVE_SALE * st.pop };
   }
 
   // --- 歩兵 ---
@@ -2344,6 +2370,16 @@ class Game {
       fl.cons.fuel += 0.2 * c.plan;
       fl.prod.goods += c.plan * k;
       c.industry = k;
+      const L = c.lv.slaveworks || 0;
+      if (L) {
+        const use = SLAVEWORKS_USE * L * h;
+        const ks = clamp(st.slaves / use, 0, 1);
+        st.slaves -= use * ks;
+        st.goods += SLAVEWORKS_OUT * L * h * ks;
+        fl.cons.slaves += SLAVEWORKS_USE * L;
+        fl.prod.goods += SLAVEWORKS_OUT * L * ks;
+        c.slaveWork = ks;
+      }
       if (c.pop >= 1 && c.plan > 0) {
         this.watch(c, 'industry', k, 'shortage', () => `${c.name} の工場が原料 (金属・燃料) 不足で減産 (稼働 ${pct(k)})`, `${c.name} の工場の原料不足が解消した`);
       }
@@ -2457,6 +2493,7 @@ class Game {
     this.govs[0].lord = null;
     if (obj(d.snaps)) this.snaps = d.snaps;
     if (obj(d.realmWars)) this.realmWars = d.realmWars;
+    if (obj(d.warBy)) this.warBy = d.warBy;
     if (Array.isArray(d.sieges)) this.sieges = d.sieges.filter((g) => g && sysOk(g.sys));
     if (Array.isArray(d.battles)) this.battles = d.battles.filter((b) => b && sysOk(b.sys) && Number.isFinite(b.a) && Number.isFinite(b.d));
     // 記録のない星系 (旧セーブ) は、いまの様子が光の遅れぶん前に見えたものとして始める
@@ -2561,7 +2598,7 @@ class Game {
       cols: this.coloniesIn(id).map((c) => ({
         key: colKey(c), name: c.name, kind: c.kind, body: c.body, pop: c.pop, cap: this.capOf(c), growth: c.growth || 0,
         sat: c.sat ? { ...c.sat } : null, focus: c.focus, lv: { ...c.lv }, troops: c.troops, slaveTroops: c.slaveTroops,
-        races: { ...(c.races || {}) }, alerts: { ...(c.alerts || {}) }, industry: c.industry,
+        races: { ...(c.races || {}) }, alerts: { ...(c.alerts || {}) }, industry: c.industry, slaveWork: c.slaveWork,
       })),
       stock: { ...this.stockOf(id) },
       prod: fl ? { ...fl.prod } : zeroRes(), cons: fl ? { ...fl.cons } : zeroRes(),
@@ -2602,6 +2639,8 @@ class Game {
     const seenYear = this.year - this.lightDelay(id);
     let best = null;
     for (const x of list) if (x.year <= seenYear) best = x;
+    // 古い記録には新しい資源 (奴隷) がない
+    if (best) for (const o of [best.stock, best.prod, best.cons]) for (const r of RES) if (o && !Number.isFinite(o[r])) o[r] = 0;
     return best;
   }
   knownSystems() { return this.galaxy.systems.filter((x) => x.id === 0 || this.known(x.id)?.cols.length); }
@@ -3693,6 +3732,7 @@ function colonyBox(g, c) {
       ${row('人口増加', `<span class="${(c.growth || 0) < 0 ? 'bad' : 'hz'}">${((c.growth || 0) * 100).toFixed(1)}%/年</span>`)}
       ${row('充足率', `食料 ${pct(s.food)}${g.needsWater(c) ? `・水 ${pct(s.water)}` : ''}・工業品 ${pct(s.goods)}`)}
       ${row('工場の稼働', pct(c.industry ?? 1))}
+      ${c.lv.slaveworks ? row('奴隷工房', `稼働 ${pct(c.slaveWork ?? 0)} (奴隷 ${fmtAmt(SLAVEWORKS_USE * c.lv.slaveworks)}人/年を使い、工業品 ${fmtAmt(SLAVEWORKS_OUT * c.lv.slaveworks)}/年)`) : ''}
       ${row('種族', raceText(c))}
     </table>
     ${warn.length ? `<p class="note bad">${warn.join('・')}が足りず人口が減っている。方針を変えるか、交易路で運び込もう。</p>` : ''}
@@ -3940,7 +3980,7 @@ function politicsSheet(app) {
     <p class="note">入植して${GRANT_YEARS}年以内の星系には、主人の星系が毎年、資金の3% (最大 ${GRANT_MAX} cr) を自動で送る。資金援助は支援物資と同じく忠誠度を上げる。チェックを外すと地球からの自動送金だけが止まる (ほかの星系どうしは続く)。個別の資金援助は星系の詳細欄から送れる。</p>
     <h3>独立国</h3>
     ${realms ? `<div class="scroll"><table class="tbl"><tr><th>首都</th><th>規模 (把握分)</th><th>状態</th><th></th></tr>${realms}</table></div>` : '<p class="note">いまのところ独立国はない。</p>'}
-    <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。独立国は簡単には降伏しない: 開戦から5年以上たち、地球の国の戦力が5倍以上になると、国ごと降伏して地球の国に従属することがある。20年以上たっても決着がつかなければ講和 (独立は保たれる) になることもある。交戦中の国どうしでは物資をやり取りしない。</p>
+    <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。独立して始まった戦争では、独立国は簡単には降伏しない: 開戦から5年以上たち、地球の国の戦力が5倍以上になると、国ごと降伏して地球の国に従属することがある。20年以上たっても決着がつかなければ講和 (独立は保たれる) になることもある。地球から宣戦した一方的な侵略では、相手は降伏も講和もせず、攻め落とされるまで戦う。交戦中の国どうしでは物資をやり取りしない。</p>
     <h3>艦隊戦</h3>
     ${battles ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>攻撃側 (残り / 投入)</th><th>防衛側 (残り / 投入)</th><th>開始</th><th>情報</th></tr>${battles}</table></div>` : '<p class="note">なし</p>'}
     <h3>攻囲</h3>
@@ -4313,7 +4353,7 @@ const SAVE_KEY = 'moribin-save-v1';
 function buildSave(game, extra = {}) {
   return {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
-    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
+    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, warBy: game.warBy, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
