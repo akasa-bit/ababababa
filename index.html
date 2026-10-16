@@ -4382,10 +4382,63 @@ class GalaxyView {
 
   centerOn(sys) { this.cam.x = sys.x; this.cam.y = sys.y; }
 
+  // 視点に依存する重いレイヤー (星・国境) を、画面より一回り大きく (上下左右に余白 m) 描いて使い回す。
+  // 視点が動いているあいだは前に描いたものをずらして (ズームなら拡大縮小して) 貼るだけにし、動きが止まってから描き直す。
+  // 中身 (key)・画面の大きさが変わったとき、ずらすと端が足りなくなるとき、ズームが2倍以上変わったときはすぐ描き直す。
+  // render(lc, m) は画面の座標 (toScreen) で描く。描ける範囲は −m〜w+m
+  viewLayer(name, w, h, key, render) {
+    const L = ((this.layers ??= {})[name] ??= { c: document.createElement('canvas') });
+    const s = this.canvas.width / Math.max(1, w); // レイヤーの解像度 (画面と同じ。貼るときに拡大縮小しないので速い)
+    const m = Math.round(Math.max(w, h) * 0.12); // 余白 (広いほど描き直しが減るが、メモリを食う)
+    const cam = this.cam;
+    const place = () => {
+      const k = cam.zoom / L.cam.zoom;
+      const left = k * (-m - w / 2) + w / 2 + (L.cam.x - cam.x) * cam.zoom;
+      const top = k * (-m - h / 2) + h / 2 + (L.cam.y - cam.y) * cam.zoom;
+      return { k, left, top, right: left + k * (w + 2 * m), bottom: top + k * (h + 2 * m) };
+    };
+    let fresh = !L.cam || L.key !== key || L.w !== w || L.h !== h || L.s !== s;
+    if (!fresh && (L.cam.x !== cam.x || L.cam.y !== cam.y || L.cam.zoom !== cam.zoom)) {
+      const p = place();
+      const settled = performance.now() - (this.camMovedAt || 0) > 180;
+      if (settled || p.left > 0 || p.top > 0 || p.right < w || p.bottom < h || p.k < 0.5 || p.k > 2) fresh = true;
+    }
+    if (fresh) {
+      const cw = Math.ceil((w + 2 * m) * s), ch = Math.ceil((h + 2 * m) * s);
+      if (L.c.width !== cw || L.c.height !== ch) { L.c.width = cw; L.c.height = ch; }
+      const lc = L.c.getContext('2d');
+      lc.setTransform(1, 0, 0, 1, 0, 0);
+      lc.clearRect(0, 0, cw, ch);
+      lc.setTransform(s, 0, 0, s, m * s, m * s);
+      render(lc, m, s);
+      Object.assign(L, { key, w, h, s, cam: { ...cam } });
+    }
+    // 見えている部分だけを切り出して貼る (余白まで貼ると重い)。ずらすだけのときは画面の画素にそろえて 1:1 で写す
+    // (半端な位置に貼ると、毎フレーム補間が入って重い)
+    const p = place();
+    const dpr = this.canvas.width / Math.max(1, w);
+    const ctx = this.ctx;
+    if (p.k === 1 && L.s === dpr) {
+      const ox = Math.round(-p.left * dpr), oy = Math.round(-p.top * dpr);
+      const cw = Math.min(this.canvas.width, L.c.width - ox), chh = Math.min(this.canvas.height, L.c.height - oy);
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (cw > 0 && chh > 0) ctx.drawImage(L.c, ox, oy, cw, chh, 0, 0, cw, chh);
+      ctx.restore();
+    } else {
+      const f = L.s / p.k; // 画面1px あたりのレイヤーの画素
+      const sx = Math.max(0, -p.left * f), sy = Math.max(0, -p.top * f);
+      const sw = Math.min(L.c.width - sx, w * f), sh = Math.min(L.c.height - sy, h * f);
+      if (sw > 0 && sh > 0) ctx.drawImage(L.c, sx, sy, sw, sh, p.left + sx / f, p.top + sy / f, sw / f, sh / f);
+    }
+  }
+
   draw(w, h) {
     this.w = w;
     this.h = h;
     const { ctx } = this;
+    const camKey = `${this.cam.x},${this.cam.y},${this.cam.zoom}`;
+    if (camKey !== this.lastCamKey) { this.lastCamKey = camKey; this.camMovedAt = performance.now(); }
     const game = this.app.game;
     const sel = game.system(this.app.sel.sys);
     const z = this.cam.zoom;
@@ -4425,23 +4478,23 @@ class GalaxyView {
       members.push(`${realm}:${sx.id}`);
     }
     if (groups.size) {
-      const dpr = this.canvas.width / Math.max(1, w);
-      const sig = `${this.canvas.width}x${this.canvas.height}|${w}x${h}|${this.cam.x},${this.cam.y},${z}|${members.join(',')}`;
-      this.borderLayer ??= document.createElement('canvas');
-      const L = this.borderLayer;
-      if (this.borderSig !== sig) {
-        this.borderSig = sig;
-        if (L.width !== this.canvas.width || L.height !== this.canvas.height) { L.width = this.canvas.width; L.height = this.canvas.height; }
-        const lc = L.getContext('2d');
-        lc.setTransform(1, 0, 0, 1, 0, 0);
-        lc.clearRect(0, 0, L.width, L.height);
-        lc.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // 国境は、国ごとの星系 (members) が変わったときと、視点が止まったときだけ描き直す (動かしているあいだは貼り直すだけ)
+      this.viewLayer('border', w, h, members.join(','), (lc, m, s) => {
         this.off ??= document.createElement('canvas');
-        if (this.off.width !== this.canvas.width || this.off.height !== this.canvas.height) { this.off.width = this.canvas.width; this.off.height = this.canvas.height; }
+        if (this.off.width !== lc.canvas.width || this.off.height !== lc.canvas.height) { this.off.width = lc.canvas.width; this.off.height = lc.canvas.height; }
         const oc = this.off.getContext('2d');
-        const R = 3.5 * z;
-        const circles = (c, pts, rad) => { c.beginPath(); for (const [x, y] of pts) { c.moveTo(x + rad, y); c.arc(x, y, rad, 0, Math.PI * 2); } };
-        for (const [realm, pts] of groups) {
+        const R = 3.5 * this.cam.zoom;
+        // 点はいまの視点で取り直す (groups は描き直す前の視点のことがある)
+        const pts0 = new Map();
+        for (const sx of game.knownSystems()) {
+          const k = K(sx.id);
+          if (!k || !k.cols.length) continue;
+          const realm = k.realm ?? 0;
+          if (!pts0.has(realm)) pts0.set(realm, []);
+          pts0.get(realm).push(this.toScreen(sx.x, sx.y));
+        }
+        const circles = (c, pts, rad) => { c.beginPath(); for (const [x, y] of pts) { if (x < -m - rad || y < -m - rad || x > w + m + rad || y > h + m + rad) continue; c.moveTo(x + rad, y); c.arc(x, y, rad, 0, Math.PI * 2); } };
+        for (const [realm, pts] of pts0) {
           const color = realmColor(realm);
           const lw = realm === 0 ? 2.5 : 1.5;
           lc.globalAlpha = realm === 0 ? 0.07 : 0.05;
@@ -4451,7 +4504,7 @@ class GalaxyView {
           lc.globalAlpha = 1;
           oc.setTransform(1, 0, 0, 1, 0, 0);
           oc.clearRect(0, 0, this.off.width, this.off.height);
-          oc.setTransform(dpr, 0, 0, dpr, 0, 0);
+          oc.setTransform(s, 0, 0, s, m * s, m * s);
           oc.globalCompositeOperation = 'source-over';
           oc.fillStyle = '#000';
           circles(oc, pts, R);
@@ -4461,14 +4514,15 @@ class GalaxyView {
           oc.fill();
           oc.globalCompositeOperation = 'source-in';
           oc.fillStyle = color;
-          oc.fillRect(0, 0, w, h);
+          oc.fillRect(-m, -m, w + 2 * m, h + 2 * m);
           oc.globalCompositeOperation = 'source-over';
           lc.globalAlpha = realm === 0 ? 0.85 : 0.6;
-          lc.drawImage(this.off, 0, 0, w, h);
+          lc.drawImage(this.off, -m, -m, w + 2 * m, h + 2 * m);
           lc.globalAlpha = 1;
         }
-      }
-      ctx.drawImage(L, 0, 0, w, h);
+        // 作業用のキャンバスは描き終えたら小さくしてメモリを返す (タブレットでは大きなキャンバスが重なると表示が乱れる)
+        this.off.width = this.off.height = 1;
+      });
     }
 
     // 交易路と輸送中の貨物
@@ -4636,42 +4690,30 @@ class GalaxyView {
     // 星
     const scale = clamp(z / 6, 0.8, 2.5);
     const starR = (s) => (1.5 + 1.1 * Math.log10(1 + s.stars[0].lum * 20)) * scale;
-    // 星そのもの (光の輪・本体・伴星) は動かないので 1 枚のレイヤーに貯め、視点か画面の大きさが変わったときだけ描き直す
-    {
-      const dpr = this.canvas.width / Math.max(1, w);
-      const sig = `${this.canvas.width}x${this.canvas.height}|${w}x${h}|${this.cam.x},${this.cam.y},${z}`;
-      this.starLayer ??= document.createElement('canvas');
-      const L = this.starLayer;
-      if (this.starSig !== sig) {
-        this.starSig = sig;
-        if (L.width !== this.canvas.width || L.height !== this.canvas.height) { L.width = this.canvas.width; L.height = this.canvas.height; }
-        const lc = L.getContext('2d');
-        lc.setTransform(1, 0, 0, 1, 0, 0);
-        lc.clearRect(0, 0, L.width, L.height);
-        lc.setTransform(dpr, 0, 0, dpr, 0, 0);
-        for (const s of game.galaxy.systems) {
-          const [x, y] = this.toScreen(s.x, s.y);
-          if (x < -20 || y < -20 || x > this.w + 20 || y > this.h + 20) continue;
-          const star = s.stars[0];
-          const r = starR(s);
-          const glow = lc.createRadialGradient(x, y, 0, x, y, r * 3);
-          glow.addColorStop(0, star.color);
-          glow.addColorStop(0.35, star.color);
-          glow.addColorStop(1, 'rgba(0,0,0,0)');
-          lc.globalAlpha = 0.9;
-          lc.fillStyle = glow;
-          lc.beginPath(); lc.arc(x, y, r * 3, 0, Math.PI * 2); lc.fill();
-          lc.globalAlpha = 1;
-          lc.fillStyle = star.color;
-          lc.beginPath(); lc.arc(x, y, r, 0, Math.PI * 2); lc.fill();
-          if (s.stars.length > 1) {
-            lc.fillStyle = s.stars[1].color;
-            lc.beginPath(); lc.arc(x + r * 1.1, y - r * 0.9, r * 0.5, 0, Math.PI * 2); lc.fill();
-          }
+    // 星そのもの (光の輪・本体・伴星) は動かないので 1 枚のレイヤーに貯め、視点が止まったときだけ描き直す (動かしているあいだは貼り直すだけ)
+    this.viewLayer('stars', w, h, '', (lc, m) => {
+      const sc = clamp(this.cam.zoom / 6, 0.8, 2.5);
+      for (const s of game.galaxy.systems) {
+        const [x, y] = this.toScreen(s.x, s.y);
+        if (x < -m - 20 || y < -m - 20 || x > this.w + m + 20 || y > this.h + m + 20) continue;
+        const star = s.stars[0];
+        const r = (1.5 + 1.1 * Math.log10(1 + star.lum * 20)) * sc;
+        const glow = lc.createRadialGradient(x, y, 0, x, y, r * 3);
+        glow.addColorStop(0, star.color);
+        glow.addColorStop(0.35, star.color);
+        glow.addColorStop(1, 'rgba(0,0,0,0)');
+        lc.globalAlpha = 0.9;
+        lc.fillStyle = glow;
+        lc.beginPath(); lc.arc(x, y, r * 3, 0, Math.PI * 2); lc.fill();
+        lc.globalAlpha = 1;
+        lc.fillStyle = star.color;
+        lc.beginPath(); lc.arc(x, y, r, 0, Math.PI * 2); lc.fill();
+        if (s.stars.length > 1) {
+          lc.fillStyle = s.stars[1].color;
+          lc.beginPath(); lc.arc(x + r * 1.1, y - r * 0.9, r * 0.5, 0, Math.PI * 2); lc.fill();
         }
       }
-      ctx.drawImage(L, 0, 0, w, h);
-    }
+    });
     // 星ごとの表示 (所属の輪・駐留艦隊・戦争・名前など)
     for (const s of game.galaxy.systems) {
       const [x, y] = this.toScreen(s.x, s.y);
