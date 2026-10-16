@@ -37,6 +37,13 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 .age.now { color:var(--accent); }
 #home { position:fixed; inset:0; z-index:20; background:rgba(5,7,13,.94); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
 #home[hidden] { display:none; }
+#memobox { position:fixed; top:58px; right:12px; z-index:15; width:min(360px, calc(100vw - 24px)); background:var(--panel); border:1px solid #4de3d0; border-radius:8px; padding:10px 12px; box-shadow:0 6px 24px rgba(0,0,0,.5); }
+#memobox[hidden] { display:none; }
+#memobox .tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
+#memobox .tags button.on { border-color:#4de3d0; color:#4de3d0; }
+#memobox textarea { width:100%; box-sizing:border-box; background:#0b1120; color:inherit; border:1px solid var(--line); border-radius:5px; padding:6px; font:inherit; }
+#memobox .row { display:flex; gap:8px; margin-top:6px; }
+#home .log td, #home .log th { padding:2px 6px; font-size:12px; text-align:left; }
 #home .card { width:min(660px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:22px 24px 26px; }
 #home h1 { font-size:34px; margin-bottom:2px; }
 #home section { margin-top:14px; }
@@ -133,6 +140,7 @@ html, body { height:100%; }
     <button id="homebtn">ホーム</button>
     <button id="sigbtn" title="地図に光速の通信 (物資移送要求・指令・朝貢・送金) をどう描くか">通信: 表示しない</button>
     <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
+    <button id="memobtn" title="いま感じたことを、その時点のゲームの状態と一緒に記録する (プレイ記録。ホーム画面で見られる)">メモ</button>
     <input id="importfile" type="file" accept="application/json,.json" hidden>
     <span id="savestat" class="muted"></span>
   </header>
@@ -177,6 +185,12 @@ html, body { height:100%; }
     </aside>
   </main>
   <div id="home" hidden></div>
+  <div id="memobox" hidden>
+    <div class="tags"><button data-tag="bored">退屈</button><button data-tag="confused">分からない</button><button data-tag="torn">迷う</button><button data-tag="fun">面白い</button></div>
+    <textarea id="memotext" rows="3" placeholder="いま感じたこと・したかったこと (書かなくてもよい)"></textarea>
+    <div class="row"><button id="memosave">記録する</button><button id="memoclose" class="ghost">やめる</button></div>
+    <p class="muted" style="font-size:11px;margin:6px 0 0">開いた時点のゲームの状態も一緒に残る (ホーム →「プレイ記録」からその時点をロードできる)。開いているあいだは時間を止める。</p>
+  </div>
   
 <script>
 // シード付き乱数 (mulberry32)。同じシードなら同じ銀河が生成される。
@@ -583,6 +597,18 @@ const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const RES = ['food', 'water', 'metal', 'fuel', 'rare', 'goods', 'slaves'];
 const MINED = ['water', 'metal', 'fuel', 'rare'];
 const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番号 (計算用のキーに使う)
+// 忠誠度の目標の内訳。目標 = 先頭から順に足した値 (0〜100 に収める)
+function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep }) {
+  return [
+    { label: '基準', v: 85 },
+    { label: '主人との距離', v: -(1.5 * dLord), note: `${dLord.toFixed(1)} ly` },
+    { label: '首都との距離', v: -(0.8 * dCapital), note: `${dCapital.toFixed(1)} ly` },
+    { label: '主人より人口が多い', v: -(bigger ? 25 : 0) },
+    { label: '最近の指令', v: -(3 * orders) },
+    { label: '主人の星系の艦隊', v: Math.min(15, 2 * lordShips) },
+    { label: '支援で深まった従属', v: Math.min(40, dep) },
+  ];
+}
 const RES_LABEL = { food: '食料', water: '水', metal: '金属', fuel: '燃料', rare: '希少元素', goods: '工業品', slaves: '奴隷', credits: 'cr' };
 const PRICE = { food: 1, water: 0.8, metal: 1.5, fuel: 2, rare: 8, goods: 4, slaves: 3 };
 const TECH_LABEL = ['石器時代', '農耕時代', '産業時代', '情報時代'];
@@ -965,13 +991,30 @@ class Game {
   //   − 最近の指令の数×3 + 主人の星系の駐留艦隊×2 (最大15)。50未満だと指令を拒むことがあり、20未満だと独立を宣言することがある
   //   (独立のしやすさは、忠誠度とは別の恐怖度でも下がる: fearTarget)
   loyaltyTarget(id) {
+    const terms = this.loyaltyTerms(id);
+    if (!terms) return 100;
+    let v = 0;
+    for (const t of terms) v += t.v; // 先頭から順に足す (式の順と同じ)
+    return clamp(v, 0, 100);
+  }
+  // 忠誠度の目標の内訳 (いまの実際の値で)。主人がいなければ null
+  loyaltyTerms(id) {
     const gv = this.gov(id);
     const lord = gv.lord;
-    if (lord === null || lord === undefined) return 100;
+    if (lord === null || lord === undefined) return null;
     const pop = (x) => this.coloniesIn(x).reduce((k, c) => k + c.pop, 0);
-    const capital = this.system(this.realmOf(lord));
-    return clamp(85 - 1.5 * distance(this.system(id), this.system(lord)) - 0.8 * distance(this.system(id), capital) - (pop(id) > pop(lord) ? 25 : 0)
-      - 3 * (gv.orders || 0) + Math.min(15, 2 * (this.garrison[lord] || 0)) + Math.min(40, gv.dep || 0), 0, 100);
+    return loyaltyTermsOf({ dLord: distance(this.system(id), this.system(lord)), dCapital: distance(this.system(id), this.system(this.realmOf(lord))),
+      bigger: pop(id) > pop(lord), orders: gv.orders || 0, lordShips: this.garrison[lord] || 0, dep: gv.dep || 0 });
+  }
+  // 地球の知る限りの内訳 (地球に届いている記録で。表示用)
+  knownLoyaltyTerms(id) {
+    const k = id === 0 ? null : this.known(id);
+    if (!k || k.lord === null || k.lord === undefined) return null;
+    const lord = k.lord;
+    const pop = (x) => this.knownColonies(x).reduce((a, c) => a + c.pop, 0);
+    const capital = lord === 0 ? 0 : this.known(lord)?.realm ?? k.realm ?? 0;
+    return loyaltyTermsOf({ dLord: distance(this.system(id), this.system(lord)), dCapital: distance(this.system(id), this.system(capital)),
+      bigger: pop(id) > pop(lord), orders: k.orders || 0, lordShips: this.knownGarrison(lord), dep: k.dep || 0 });
   }
   // 星系に駐留している地球の国の艦隊 (命令で駐留している分と威圧の分。太陽系はすべて)
   earthFleetAt(id) {
@@ -1032,6 +1075,10 @@ class Game {
     const gv = this.gov(id);
     const formerRealm = this.realmOf(id);
     const lord = gv.lord;
+    // 原因: 忠誠度の目標を最も下げていた2つの要因 (イベントの文に添える)
+    const why = (this.loyaltyTerms(id) || []).filter((t) => t.v < -0.5).sort((a, b) => a.v - b.v).slice(0, 2)
+      .map((t) => `${t.label} −${(-t.v).toFixed(0)}`).join('・');
+    const cause = `。忠誠度 ${Math.round(gv.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(gv.fear || 0)}・友好度 ${Math.round(gv.friend || 0)}${why ? ` (主な原因: ${why})` : ''}`;
     gv.lord = null;
     gv.independent = true;
     gv.loyalty = 0;
@@ -1058,7 +1105,7 @@ class Game {
         if (earth >= 1) clashes.push([x.id, earth]);
       }
     }
-    this.event('politics', id, `${this.system(id).name} が ${this.system(lord).name} への従属をやめ、独立を宣言した${followers ? ` (従属する ${followers} 星系も従う)` : ''}${war ? `。地球の国と戦争状態に入った (独立軍 ${raised} 艦隊)` : ''}`);
+    this.event('politics', id, `${this.system(id).name} が ${this.system(lord).name} への従属をやめ、独立を宣言した${followers ? ` (従属する ${followers} 星系も従う)` : ''}${cause}${war ? `。地球の国と戦争状態に入った (独立軍 ${raised} 艦隊)` : ''}`);
     for (const [x, earth] of clashes) this.startBattle(x, 0, earth, 0);
   }
   // 指令が届いたとき: 地球の国の外なら拒否、忠誠度が50未満なら (50−忠誠度)/50 の確率で拒否
@@ -3053,7 +3100,7 @@ class Game {
       outposts: this.outposts.filter((o) => o.sys === id).map((o) => ({ body: o.body, lv: o.lv })),
       natives: Object.fromEntries(this.system(id).bodies.filter((b) => this.natives[`${id}|${b.id}`]).map((b) => [b.id, { ...this.natives[`${id}|${b.id}`] }])),
       wars: this.wars.filter((w) => w.sys === id).map((w) => ({ body: w.body, progress: w.progress, enemy: w.enemy })),
-      loyalty: gv ? gv.loyalty ?? LOYALTY_START : null, fear: gv ? gv.fear || 0 : 0, friend: gv ? gv.friend || 0 : 0, lordTrade: gv ? gv.lordTrade || 0 : 0, realm: this.isColonized(id) ? this.realmOf(id) : null, independent: !!gv?.independent, founded: gv ? gv.founded : undefined, aid: gv ? gv.aid || 0 : 0, dep: gv ? gv.dep || 0 : 0,
+      loyalty: gv ? gv.loyalty ?? LOYALTY_START : null, orders: gv ? gv.orders || 0 : 0, fear: gv ? gv.fear || 0 : 0, friend: gv ? gv.friend || 0 : 0, lordTrade: gv ? gv.lordTrade || 0 : 0, realm: this.isColonized(id) ? this.realmOf(id) : null, independent: !!gv?.independent, founded: gv ? gv.founded : undefined, aid: gv ? gv.aid || 0 : 0, dep: gv ? gv.dep || 0 : 0,
       siege: (() => { const g = this.sieges.find((x) => x.sys === id); return g ? { realm: g.realm, ships: g.ships, progress: g.progress } : null; })(),
       battle: (() => { const b = this.battleAt(id); return b ? { realm: b.realm, a: b.a, d: b.d, a0: b.a0, d0: b.d0, start: b.start } : null; })(),
     };
@@ -4512,6 +4559,7 @@ function systemPanel(app) {
     <h2>${esc(sys.name)}</h2>
     <p class="sub">太陽系から ${distance(home, sys).toFixed(1)} ly ・ 惑星 ${planets} ・ ${sys.stars.length > 1 ? `${sys.stars.length}重星系` : '単独星'} ${ageBadge(g, sys.id)}</p>
     ${govBox(g, sys.id)}
+    ${loyaltyBox(g, sys.id)}
     <table class="tbl"><tr><th>恒星</th><th>型</th><th>質量</th><th>表面温度</th><th>光度</th></tr>${sys.stars.map(starRow).join('')}</table>
     ${sys.stars.slice(1).map((s) => `<p class="note">${esc(s.name)} は主星から約 ${fmt(s.sep)} AU</p>`).join('')}
     <h3>入植地</h3>
@@ -4523,6 +4571,44 @@ function systemPanel(app) {
     ${colonized ? stockBox(g, sys.id) + routeBox(app, sys) : ''}
     ${militaryBox(app, sys)}
     ${nativesSummary(g, sys)}`;
+}
+
+// 独立の見通し (地球に届いている記録で): 忠誠度の目標と内訳、忠誠度が20を割るまでの年数、そのあとの年あたりの確率。
+// 忠誠度は年に最大5ずつ目標へ動き、20未満なら年 20% × (恐怖度の効き) × (友好度の効き) で独立を宣言する
+function independenceOutlook(g, id) {
+  const k = id === 0 ? null : g.known(id);
+  const terms = k ? g.knownLoyaltyTerms(id) : null;
+  if (!terms) return null;
+  let target = 0;
+  for (const t of terms) target += t.v;
+  target = clamp(target, 0, 100);
+  const loyalty = k.loyalty ?? LOYALTY_START;
+  const p = 0.2 * g.fearFactor(k.fear) * g.friendFactor(k.friend);
+  const years = loyalty < 20 ? 0 : target < 20 ? Math.floor((loyalty - 20) / 5) + 1 : null;
+  return { k, terms, target, loyalty, p, years };
+}
+function outlookText(o, short = false) {
+  if (!o) return '';
+  if (o.p <= 0) return short ? '独立しない (友好度)' : `友好度が${FRIEND_SAFE}以上なので独立しない`;
+  if (o.years === 0) return short ? `いま年${pct(o.p)}` : `忠誠度が20を割っている。いま年${pct(o.p)}の確率で独立を宣言するおそれ (平均で約${Math.round(1 / o.p)}年)`;
+  if (o.years !== null) return short ? `約${o.years}年後から年${pct(o.p)}` : `このままなら約${o.years}年で忠誠度が20を割り、その後は年${pct(o.p)}の確率で独立を宣言するおそれ`;
+  return short ? 'なし' : `このままなら独立しない (忠誠度の目標 ${Math.round(o.target)})`;
+}
+// 星系の詳細欄: 忠誠度の内訳・恐怖度・友好度・独立の見通し
+function loyaltyBox(g, id) {
+  const o = independenceOutlook(g, id);
+  if (!o) return '';
+  const k = o.k;
+  const sign = (v) => (v > 0.05 ? `+${v.toFixed(0)}` : v < -0.05 ? `−${(-v).toFixed(0)}` : '0');
+  const rows = o.terms.filter((t) => Math.abs(t.v) > 0.05).map((t) => `<tr><td>${esc(t.label)}${t.note ? ` <span class="muted">${esc(t.note)}</span>` : ''}</td><td class="${t.v < 0 ? 'bad' : ''}">${sign(t.v)}</td></tr>`).join('');
+  const rebel = g.knownRebelFleet(id);
+  const earth = Math.min(g.knownGarrison(id), (k.held || 0) + (k.awe || 0));
+  const fearT = (k.realm ?? 0) === 0 ? Math.min(100, 50 * earth / rebel) : 0;
+  const friendT = g.friendTarget(k.lordTrade || 0);
+  return `<h3>忠誠と独立</h3>
+    <div class="scroll"><table class="tbl"><tr><th>忠誠度の目標の内訳</th><th></th></tr>${rows}<tr><th>目標</th><th>${Math.round(o.target)}</th></tr></table></div>
+    <p class="note">いまの忠誠度 <b>${Math.round(o.loyalty)}</b> (年に最大5ずつ目標へ動く)。恐怖度 <b>${Math.round(k.fear || 0)}</b> → 目標 ${Math.round(fearT)} (駐留する地球の艦隊 ${earth} / 反乱時の推定艦隊 ${rebel})。友好度 <b>${Math.round(k.friend || 0)}</b> → 目標 ${Math.round(friendT)} (主人筋との貿易 ${fmtAmt(k.lordTrade || 0)} cr/年)。</p>
+    <p class="note ${o.years !== null && o.p > 0 ? 'bad' : ''}">${esc(outlookText(o))}</p>`;
 }
 
 // 情報の古さの表示
@@ -4669,6 +4755,7 @@ function orderFleets(target) {
     renderFleetBar();
     return;
   }
+  PlayLog.add('fleet', { from: ids, moving: moving.length, route, amount: app.fleetAmount });
   let sent = 0;
   for (const id of ids) {
     const have = g.knownGarrison(id);
@@ -4695,6 +4782,7 @@ function orderFleets(target) {
 // 取り消した艦隊は自動防衛配備に任せる。移動中の艦隊は、いまの行き先までは進む
 function clearFleetSelOrders() {
   const g = app.game;
+  PlayLog.add('fleetclear', { from: [...app.fleetSel], moving: app.fleetMove.size });
   let sent = 0;
   for (const id of app.fleetSel) if (g.command('fleetclear', { sys: id }).ok) sent++;
   for (const id of app.fleetMove) {
@@ -5114,7 +5202,8 @@ function politicsSheet(app) {
     const loyal = k.lord === null || k.lord === undefined ? '—' : `<span class="${k.loyalty < 20 ? 'bad' : k.loyalty < 50 ? '' : 'hz'}">${Math.round(k.loyalty ?? LOYALTY_START)}</span>`;
     return `<tr><td><span class="dot" style="background:${realmColor(realm)}"></span>${goto(x)}</td><td>${k.lord === null || k.lord === undefined ? '—' : esc(g.system(k.lord).name)}</td>
       <td>${loyal}</td><td>${k.lord === null || k.lord === undefined ? '—' : Math.round(k.fear || 0)}</td>
-      <td>${k.lord === null || k.lord === undefined ? '—' : `<span class="${(k.friend || 0) >= FRIEND_SAFE ? 'hz' : ''}">${Math.round(k.friend || 0)}</span> <span class="muted">(貿易 ${fmtAmt(k.lordTrade || 0)} cr/年)</span>`}</td><td>${k.aid > 0.5 ? `${fmtAmt(k.aid)} cr/年` : '<span class="muted">—</span>'}</td><td>${status}</td><td>${ageBadge(g, x.id)}</td></tr>`;
+      <td>${k.lord === null || k.lord === undefined ? '—' : `<span class="${(k.friend || 0) >= FRIEND_SAFE ? 'hz' : ''}">${Math.round(k.friend || 0)}</span> <span class="muted">(貿易 ${fmtAmt(k.lordTrade || 0)} cr/年)</span>`}</td><td>${k.aid > 0.5 ? `${fmtAmt(k.aid)} cr/年` : '<span class="muted">—</span>'}</td>
+      <td>${(() => { const o = independenceOutlook(g, x.id); return o ? `<span class="${o.years !== null && o.p > 0 ? 'bad' : 'muted'}">${esc(outlookText(o, true))}</span>` : '—'; })()}</td><td>${status}</td><td>${ageBadge(g, x.id)}</td></tr>`;
   }).join('');
   const roots = [...new Set(g.knownSystems().map((x) => g.known(x.id)?.realm).filter((r) => r !== null && r !== undefined && r !== 0))];
   const realms = roots.map((root) => {
@@ -5152,7 +5241,7 @@ function politicsSheet(app) {
     <h3>攻囲</h3>
     ${sieges ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>艦隊</th><th>進捗</th><th>情報</th></tr>${sieges}</table></div>` : '<p class="note">なし</p>'}
     <h3>星系の政府 (忠誠度の低い順)</h3>
-    ${rows ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>忠誠度</th><th>恐怖度</th><th>主人との友好度</th><th>主人からの支援</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : '<p class="note">まだ地球以外の政府はない。</p>'}`;
+    ${rows ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>忠誠度</th><th>恐怖度</th><th>主人との友好度</th><th>主人からの支援</th><th>独立の見通し</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : '<p class="note">まだ地球以外の政府はない。</p>'}`;
 }
 
 // 帝国 → 移民: 過密な入植地、受け入れ先、移動中の移民船、到着の記録
@@ -5347,13 +5436,20 @@ function eventsHtml(app) {
   const kc = g.knownSystems().flatMap((x) => g.knownColonies(x.id));
   const now = kc.flatMap((c) => Object.entries(c.alerts || {}).filter(([k, on]) => on && ALERT[k]).map(([k]) => ({ c, k })));
   const kwars = g.knownSystems().flatMap((x) => g.knownWars(x.id));
+  // 独立のおそれ (地球の国の星系で、忠誠度が20を割っているか、このままだと15年以内に割る)
+  const risks = g.knownSystems().filter((x) => x.id !== 0 && (g.known(x.id)?.realm ?? 0) === 0)
+    .map((x) => ({ x, o: independenceOutlook(g, x.id) })).filter(({ o }) => o && o.p > 0 && o.years !== null && o.years <= 15)
+    .sort((a, b) => a.o.years - b.o.years || b.o.p - a.o.p);
+  const riskHtml = risks.map(({ x, o }) => `<div class="ev"><span class="tag politics">独立のおそれ</span><span class="txt">${esc(x.name)}
+      <span class="muted">${esc(outlookText(o, true))}・忠誠度 ${Math.round(o.loyalty)} → 目標 ${Math.round(o.target)} ${ageBadge(g, x.id)}</span></span>
+      <button data-act="goto" data-sys="${x.id}">地図</button></div>`).join('');
   const wars = kwars.map((w) => {
     const n = g.nativeOf(w.sys, w.body);
     return `<div class="ev"><span class="tag war">征服戦争</span><span class="txt">${esc(g.target(w.sys, w.body).name)} 対 ${esc(n?.def.species || '?')}
       <span class="muted">進捗 ${pct(w.progress)} ${ageBadge(g, w.sys)}</span></span>
       <button data-act="gobody" data-sys="${w.sys}" data-body="${esc(w.body)}">表示</button></div>`;
   }).join('');
-  const nowHtml = (now.length || wars) ? wars + now.map(({ c, k }) => `<div class="ev"><span class="tag ${ALERT[k][0]}">${ALERT[k][1]}</span><span class="txt">${esc(c.name)}
+  const nowHtml = (now.length || wars || riskHtml) ? riskHtml + wars + now.map(({ c, k }) => `<div class="ev"><span class="tag ${ALERT[k][0]}">${ALERT[k][1]}</span><span class="txt">${esc(c.name)}
         <span class="muted">人口 ${fmtPop(c.pop)}・${((c.growth || 0) * 100).toFixed(1)}%/年</span></span>
         <button data-act="gobody" data-sys="${c.sys}" data-body="${esc(c.body)}">表示</button></div>`).join('')
     : '<p class="note">いま問題が起きている入植地はない。</p>';
@@ -5363,7 +5459,7 @@ function eventsHtml(app) {
       <span class="txt">${esc(e.text)}</span>${e.sys !== undefined && g.system(e.sys) ? `<button data-act="goto" data-sys="${e.sys}">地図</button>` : ''}</div>`).join('');
   return `<h2>イベント</h2>
     <p class="note">遠い星系の出来事は、光が地球に届いてから表示される (年は起きた年)。</p>
-    <h3>いま起きている問題 (把握分 ${now.length + kwars.length})</h3>${nowHtml}
+    <h3>いま起きている問題 (把握分 ${now.length + kwars.length + risks.length})</h3>${nowHtml}
     <h3>履歴</h3><div class="chips">${chips}</div>${list || '<p class="note">まだ記録はない。</p>'}`;
 }
 
@@ -5475,6 +5571,7 @@ const app = {
   openSystem(id) { this.selectSystem(id); this.setView('system'); },
   selectBody(id) { this.sel.body = id; this.dirty = true; },
   setView(v) {
+    if (v !== this.view && typeof PlayLog !== 'undefined') PlayLog.add('view', { v });
     this.view = v;
     for (const t of ['galaxy', 'system', 'empire', 'events', 'cands']) $(`tab-${t}`).classList.toggle('on', v === t);
     $('empire').hidden = !SHEETS[v];
@@ -5543,13 +5640,78 @@ $('zoom-fit').onclick = () => galaxyView.fit();
 function updateVassalBtn() { $('vassalbtn').classList.toggle('on', app.mapMode === 'vassal'); }
 $('vassalbtn').onclick = () => {
   app.mapMode = app.mapMode === 'vassal' ? 'normal' : 'vassal';
+  PlayLog.add('ui', { act: 'mapmode', v: app.mapMode });
   if (app.view !== 'galaxy') app.setView('galaxy');
   if (app.mapMode === 'vassal') galaxyView.fitColonies();
   updateVassalBtn();
   app.dirty = true;
 };
-// --- セーブ(localStorage) ---
+// --- セーブ ---
+// 保存先は IndexedDB (大きなセーブも入る。localStorage は全部で約500万文字までで、大きな帝国では入りきらない)。
+// IndexedDB が使えない環境では localStorage を使う。古い版が localStorage に残したセーブは、起動時に IndexedDB へ移す
 const SAVE_KEY = 'moribin-save-v1';
+const Store = {
+  db: null,
+  ready: false,
+  meta: {}, // スロットの概要 { [キー]: { year, sys, seed, spectate, savedAt } } (ホーム画面で毎回セーブ全体を読まないように)
+  async init() {
+    try {
+      this.db = await new Promise((res, rej) => {
+        const r = indexedDB.open('moribin', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('kv');
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      });
+      navigator.storage?.persist?.().catch(() => {}); // 消されにくくする (できれば)
+    } catch { this.db = null; }
+    if (this.db) {
+      for (const k of [SAVE_KEY, ...SLOT_KEYS]) {
+        let t = null;
+        try { t = localStorage.getItem(k); } catch { /* 使えない環境 */ }
+        if (t && await this.put(k, t)) { try { localStorage.removeItem(k); } catch { /* 使えない環境 */ } }
+      }
+    }
+    for (const k of SLOT_KEYS) { const t = await this.get(k); this.meta[k] = t ? saveMeta(parseSave(t)) : null; }
+    this.ready = true;
+  },
+  get(k) {
+    if (!this.db) { try { return Promise.resolve(localStorage.getItem(k)); } catch { return Promise.resolve(null); } }
+    return new Promise((res) => {
+      try {
+        const r = this.db.transaction('kv').objectStore('kv').get(k);
+        r.onsuccess = () => res(r.result ?? null);
+        r.onerror = () => res(null);
+      } catch { res(null); }
+    });
+  },
+  put(k, v) {
+    if (!this.db) { try { localStorage.setItem(k, v); return Promise.resolve(true); } catch { return Promise.resolve(false); } }
+    return new Promise((res) => {
+      try {
+        const t = this.db.transaction('kv', 'readwrite');
+        t.objectStore('kv').put(v, k);
+        t.oncomplete = () => res(true);
+        t.onerror = t.onabort = () => res(false);
+      } catch { res(false); }
+    });
+  },
+  del(k) {
+    if (!this.db) { try { localStorage.removeItem(k); } catch { /* 使えない環境 */ } return Promise.resolve(true); }
+    return new Promise((res) => {
+      try {
+        const t = this.db.transaction('kv', 'readwrite');
+        t.objectStore('kv').delete(k);
+        t.oncomplete = () => res(true);
+        t.onerror = t.onabort = () => res(false);
+      } catch { res(false); }
+    });
+  },
+};
+// セーブの概要 (ホーム画面の表示用)
+function saveMeta(d) {
+  if (!d) return null;
+  return { year: d.year, sys: new Set((d.colonies || []).map((c) => c.sys)).size, seed: d.seed, spectate: !!d.spectate, savedAt: d.savedAt };
+}
 function buildSave(game, extra = {}) {
   return {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
@@ -5583,22 +5745,152 @@ function parseSave(text) {
 }
 // 自動セーブ。前に書いた中身と同じ (一時停止中など) なら書き込みを省く (大きなセーブの書き込みは重いので)。
 // 比べるときは保存時刻 (savedAt) を除き、書くときに今の時刻を入れる
+// 保存先の準備ができるまでは書かない (起動直後の仮のゲームで、本当のセーブを上書きしないように)。
+// 書き込みは非同期で、失敗したら次の自動セーブで書き直す
 let lastSaved = null;
+let saveFailed = false;
 function writeSave(game, extra) {
+  if (!Store.ready) return true;
   try {
     const cmp = saveJSON(game, { ...extra, savedAt: 0 });
-    if (cmp === lastSaved) return true;
-    localStorage.setItem(SAVE_KEY, cmp.replace(/"savedAt":0(?=[,}])/, () => `"savedAt":${Date.now()}`));
+    if (cmp === lastSaved) return !saveFailed;
     lastSaved = cmp;
-    return true;
+    Store.put(SAVE_KEY, cmp.replace(/"savedAt":0(?=[,}])/, () => `"savedAt":${Date.now()}`)).then((ok) => {
+      saveFailed = !ok;
+      if (!ok) { lastSaved = null; $('savestat').textContent = 'セーブできなかった (保存容量が足りないか、この環境では保存できない)'; }
+    });
+    return !saveFailed;
   } catch { lastSaved = null; return false; }
 }
-function readSave() {
+// 古い版が localStorage に残した自動セーブ (起動時にすぐ読めるもの)
+function readLegacySave() {
   try { const t = localStorage.getItem(SAVE_KEY); return t ? parseSave(t) : null; } catch { return null; }
 }
 function clearSave() {
   lastSaved = null;
-  try { localStorage.removeItem(SAVE_KEY); } catch { /* 保存できない環境では無視 */ }
+  Store.del(SAVE_KEY);
+}
+// --- プレイ記録: 自分がどう遊んだかを、感想ではなく行動として残す (このブラウザの中だけに保存し、外には送らない) ---
+// 操作・速さの切り替え・見ていた画面・操作のない時間・メモを記録する。メモにはその時点のゲームの状態も残す
+const MEMO_TAGS = { bored: '退屈', confused: '分からない', torn: '迷う', fun: '面白い' };
+const PLAYLOG_KEY = 'moribin-playlog';
+const PlayLog = {
+  on: true,
+  sessions: [], // 過去のセッション (新しいものが後ろ)
+  cur: null,
+  t0: performance.now(),
+  lastInput: performance.now(),
+  start() {
+    this.t0 = performance.now();
+    this.cur = { id: Date.now(), startedAt: Date.now(), seed: String(app.game.galaxy.seed), y0: app.game.year, y1: app.game.year, entries: [], visibleMs: 0, runningMs: 0, pausedMs: 0, idleMs: 0, views: {} };
+  },
+  add(k, data = {}) {
+    if (!this.on || !this.cur || this.cur.entries.length >= 5000) return;
+    this.cur.entries.push({ t: Math.round((performance.now() - this.t0) / 100) / 10, y: Math.round(app.game.year * 100) / 100, k, ...data });
+  },
+  // 毎フレーム: 見ていた時間・進めていた時間・止めていた時間・画面ごとの時間・操作のない時間 (30秒以上) を足す
+  tick(ms) {
+    if (!this.on || !this.cur || document.hidden) return;
+    const c = this.cur;
+    c.visibleMs += ms;
+    if (app.speed && !app.homeOpen) c.runningMs += ms; else c.pausedMs += ms;
+    const v = app.homeOpen ? 'home' : app.view === 'empire' ? `empire/${app.empireTab || 'overview'}` : app.view;
+    c.views[v] = (c.views[v] || 0) + ms;
+    if (performance.now() - this.lastInput > 30000) c.idleMs += ms;
+    c.y1 = app.game.year;
+  },
+  input() {
+    const gap = performance.now() - this.lastInput;
+    if (gap > 30000) this.add('idle', { s: Math.round(gap / 1000) });
+    this.lastInput = performance.now();
+  },
+  // セッションの要約: 実時間・進めた年数・止めていた割合・1分あたりの操作・操作のない時間・メモ
+  summary(c) {
+    const acts = c.entries.filter((e) => ['act', 'set', 'fleet', 'fleetclear'].includes(e.k)).length;
+    const min = c.visibleMs / 60000;
+    const memos = c.entries.filter((e) => e.k === 'memo');
+    const tags = {};
+    for (const m of memos) if (m.tag) tags[m.tag] = (tags[m.tag] || 0) + 1;
+    return { startedAt: c.startedAt, minutes: min, years: c.y1 - c.y0, pausedShare: c.visibleMs ? c.pausedMs / c.visibleMs : 0, actsPerMin: min ? acts / min : 0, acts, idleMin: c.idleMs / 60000, memos: memos.length, tags,
+      topViews: Object.entries(c.views).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([v, ms]) => [v, c.visibleMs ? ms / c.visibleMs : 0]) };
+  },
+  all() { return this.cur ? [...this.sessions, this.cur] : [...this.sessions]; },
+  persist() {
+    if (!Store.ready) return;
+    const sessions = this.all().filter((c) => c.visibleMs > 5000 || c.entries.length).slice(-30);
+    Store.put(PLAYLOG_KEY, JSON.stringify({ on: this.on, sessions }));
+  },
+  async init() {
+    try {
+      const d = JSON.parse((await Store.get(PLAYLOG_KEY)) || 'null');
+      if (d && Array.isArray(d.sessions)) { this.sessions = d.sessions.filter((c) => c && Array.isArray(c.entries)); this.on = d.on !== false; }
+    } catch { /* 壊れた記録は捨てる */ }
+  },
+  memos() { return this.all().flatMap((c) => c.entries.filter((e) => e.k === 'memo').map((e) => ({ ...e, session: c.id }))); },
+};
+// メモ: 開いた時点のゲームの状態を取っておき、記録するときにメモと一緒に保存する (残すのは新しい30件まで)
+let memoSnap = null;
+let memoSpeed = 0;
+function openMemo() {
+  memoSnap = { text: saveJSON(app.game, { speed: app.speed }), year: app.game.year, view: app.view };
+  memoSpeed = app.speed;
+  app.speed = 0;
+  updateSpeedButtons();
+  document.querySelectorAll('#memobox [data-tag]').forEach((b) => b.classList.remove('on'));
+  $('memotext').value = '';
+  $('memobox').hidden = false;
+}
+function closeMemo() {
+  $('memobox').hidden = true;
+  memoSnap = null;
+  app.speed = memoSpeed;
+  updateSpeedButtons();
+}
+async function saveMemo() {
+  const tag = document.querySelector('#memobox [data-tag].on')?.dataset.tag || null;
+  const text = $('memotext').value.trim();
+  const snap = memoSnap;
+  closeMemo();
+  if (!tag && !text) return;
+  const key = `moribin-memo-${Date.now()}`;
+  const ok = snap ? await Store.put(key, snap.text) : false;
+  PlayLog.add('memo', { tag, text, snap: ok ? key : null, at: snap ? Math.round(snap.year * 100) / 100 : undefined, view: snap?.view });
+  // 古いメモの状態は消す (容量のため。メモの文は残る)
+  const keys = PlayLog.memos().map((m) => m.snap).filter(Boolean);
+  for (const k of keys.slice(0, Math.max(0, keys.length - 30))) {
+    Store.del(k);
+    for (const c of PlayLog.all()) for (const e of c.entries) if (e.snap === k) e.snap = null;
+  }
+  PlayLog.persist();
+  app.game.message(`メモを記録した${tag ? ` (${MEMO_TAGS[tag]})` : ''}`);
+}
+function exportPlayLog() {
+  const sessions = PlayLog.all().map((c) => ({ ...c, summary: PlayLog.summary(c) }));
+  const blob = new Blob([JSON.stringify({ app: 'moribin', kind: 'playlog', exportedAt: Date.now(), sessions }, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `moribin-playlog-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+// ホーム画面の「プレイ記録」
+function playLogHtml() {
+  const fmtMin = (m) => (m >= 60 ? `${(m / 60).toFixed(1)} 時間` : `${m.toFixed(0)} 分`);
+  const VIEW_LABEL = { galaxy: '星間マップ', system: '星系マップ', events: 'イベント', cands: '候補地', home: 'ホーム', 'empire/overview': '帝国・概要', 'empire/routes': '帝国・交易路', 'empire/migration': '帝国・移民', 'empire/military': '帝国・軍事', 'empire/politics': '帝国・政治' };
+  const rows = PlayLog.all().slice(-8).reverse().map((c) => {
+    const m = PlayLog.summary(c);
+    return `<tr><td>${esc(new Date(m.startedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}</td><td>${fmtMin(m.minutes)}</td><td>${m.years.toFixed(0)} 年</td>
+      <td>${Math.round(m.pausedShare * 100)}%</td><td>${m.actsPerMin.toFixed(1)}</td><td>${fmtMin(m.idleMin)}</td>
+      <td>${m.topViews.map(([v, f]) => `${esc(VIEW_LABEL[v] || v)} ${Math.round(f * 100)}%`).join('・')}</td><td>${m.memos}${Object.keys(m.tags).length ? ` (${Object.entries(m.tags).map(([t, n]) => `${MEMO_TAGS[t]}${n}`).join('・')})` : ''}</td></tr>`;
+  }).join('');
+  const memos = PlayLog.memos().slice(-10).reverse().map((e) => `<div class="row"><div class="info">${e.tag ? `<b>${MEMO_TAGS[e.tag]}</b> ` : ''}${esc(e.text || '')}<br><span class="muted">西暦 ${Math.floor(e.at ?? e.y)}年</span></div>
+    ${e.snap ? `<button data-home="memoload" data-k="${esc(e.snap)}">この時点をロード</button>` : '<span class="muted">状態は残っていない</span>'}</div>`).join('');
+  return `<section><h3>プレイ記録</h3>
+    <p class="muted">自分がどう遊んだかを記録する (このブラウザの中だけ)。ヘッダーの「メモ」で、退屈・分からない・迷う・面白いと感じた瞬間を、その時点の状態と一緒に残せる。</p>
+    <div class="row"><button data-home="logtoggle">${PlayLog.on ? '記録: オン' : '記録: オフ'}</button><button data-home="logexport">記録を書き出す</button><button class="ghost" data-home="logclear">${app.homeArmed === 'logclear' ? '本当に消す?' : '記録を消す'}</button></div>
+    ${rows ? `<div class="scroll"><table class="log"><tr><th>開始</th><th>遊んだ時間</th><th>進めた</th><th>止めていた</th><th>操作/分</th><th>操作なし</th><th>よく見た画面</th><th>メモ</th></tr>${rows}</table></div>` : ''}
+    ${memos ? `<h4 style="margin:8px 0 2px">最近のメモ</h4>${memos}` : ''}
+  </section>`;
 }
 // セーブデータを読み込んで現在のゲームに反映する。失敗時は現在の状態を保つ。
 function loadSave(d) {
@@ -5614,11 +5906,12 @@ function loadSave(d) {
 }
 
 function save() {
+  if (!Store.ready) return;
   const ok = writeSave(app.game, { speed: app.speed });
-  $('savestat').textContent = ok ? `自動セーブ済み ${app.game.year.toFixed(1)}年` : 'セーブ不可(この環境では保存できません)';
+  $('savestat').textContent = ok ? `自動セーブ済み ${app.game.year.toFixed(1)}年` : 'セーブできなかった (保存容量が足りないか、この環境では保存できない)';
 }
 
-$('savenow').onclick = () => { save(); app.game.message('セーブした。'); };
+$('savenow').onclick = () => { save(); PlayLog.add('ui', { act: 'savenow' }); app.game.message('セーブした。'); };
 function exportSave() {
   const blob = new Blob([saveJSON(app.game, { speed: app.speed })], { type: 'application/json' });
   const a = document.createElement('a');
@@ -5637,19 +5930,18 @@ $('importfile').onchange = async (e) => {
 };
 
 // --- ホーム画面 (新しいゲーム・続きから・セーブスロット・ファイル) ---
-// ホーム画面を開いているあいだは時間を止める。スロットは自動セーブとは別に localStorage に保存する
+// ホーム画面を開いているあいだは時間を止める。スロットは自動セーブとは別に保存する
 const SLOT_KEYS = [1, 2, 3].map((i) => `moribin-slot-${i}`);
-const readKey = (k) => { try { const t = localStorage.getItem(k); return t ? parseSave(t) : null; } catch { return null; } };
-function saveInfo(d) {
-  if (!d) return '<span class="muted">空き</span>';
-  const sys = new Set((d.colonies || []).map((c) => c.sys)).size;
-  return `西暦 ${Math.floor(d.year)}年・入植星系 ${sys}・銀河 #${esc(String(d.seed))}${d.spectate ? '・<b>観戦</b>' : ''}
-    ${d.savedAt ? `<br><span class="muted">${esc(new Date(d.savedAt).toLocaleString('ja-JP'))}</span>` : ''}`;
+// m = セーブの概要 (saveMeta)
+function saveInfo(m) {
+  if (!m) return '<span class="muted">空き</span>';
+  return `西暦 ${Math.floor(m.year)}年・入植星系 ${m.sys}・銀河 #${esc(String(m.seed))}${m.spectate ? '・<b>観戦</b>' : ''}
+    ${m.savedAt ? `<br><span class="muted">${esc(new Date(m.savedAt).toLocaleString('ja-JP'))}</span>` : ''}`;
 }
 function homeHtml() {
   const armed = (k) => app.homeArmed === k;
   const slots = SLOT_KEYS.map((k, i) => {
-    const d = readKey(k);
+    const d = Store.meta[k];
     return `<div class="row"><div class="info"><b>スロット ${i + 1}</b><br>${saveInfo(d)}</div>
       <button data-home="slotsave" data-i="${i}">${armed(`save${i}`) ? '上書きする?' : 'ここにセーブ'}</button>
       <button data-home="slotload" data-i="${i}" ${d ? '' : 'disabled'}>ロード</button>
@@ -5659,7 +5951,7 @@ function homeHtml() {
     <h1>Moribin</h1><p class="muted">光速の壁の向こうへ広がる恒星間植民</p>
     ${app.homeNote ? `<p class="note bad">${esc(app.homeNote)}</p>` : ''}
     <section><h3>いまのゲーム</h3>
-      <div class="row"><div class="info">${saveInfo(buildSave(app.game))}</div><button class="big" data-home="resume">${app.started ? 'ゲームに戻る' : '続きから'}</button></div>
+      <div class="row"><div class="info">${saveInfo(saveMeta(buildSave(app.game)))}</div><button class="big" data-home="resume">${app.started ? 'ゲームに戻る' : '続きから'}</button></div>
     </section>
     <section><h3>新しいゲーム</h3>
       <div class="row"><label>銀河の番号 <input id="home-seed" type="text" inputmode="numeric" placeholder="空欄ならランダム" value="${esc(app.homeSeed || '')}"></label>
@@ -5670,6 +5962,7 @@ function homeHtml() {
     </section>
     <section><h3>セーブスロット</h3>${slots}</section>
     <section><h3>ファイル</h3><div class="row"><button data-home="export">ファイルに書き出し</button><button data-home="import">ファイルから読み込み</button></div></section>
+    ${playLogHtml()}
   </div>`;
 }
 function renderHome() { $('home').innerHTML = homeHtml(); }
@@ -5702,6 +5995,27 @@ $('home').onclick = (e) => {
   app.homeNote = '';
   // 取り返しのつかない操作は2回押して確定する (confirm() は使えない環境がある)
   const confirm2 = (k) => { if (app.homeArmed === k) { app.homeArmed = null; return true; } app.homeArmed = k; renderHome(); return false; };
+  PlayLog.add('home', { act });
+  if (act === 'logtoggle') { PlayLog.on = !PlayLog.on; PlayLog.persist(); return renderHome(); }
+  if (act === 'logexport') return exportPlayLog();
+  if (act === 'logclear') {
+    if (!confirm2('logclear')) return;
+    for (const m of PlayLog.memos()) if (m.snap) Store.del(m.snap);
+    PlayLog.sessions = [];
+    PlayLog.start();
+    PlayLog.persist();
+    return renderHome();
+  }
+  if (act === 'memoload') {
+    app.homeNote = 'ロード中…';
+    Store.get(b.dataset.k).then((t) => {
+      const d = t ? parseSave(t) : null;
+      if (d && loadSave(d)) { save(); app.game.message('メモの時点をロードした (一時停止中)。'); closeHome(); return setSpeed(0); }
+      app.homeNote = 'ロードできなかった';
+      if (app.homeOpen) renderHome();
+    });
+    return;
+  }
   if (act === 'resume') return closeHome();
   if (act === 'new') {
     if (!confirm2('new')) return;
@@ -5710,16 +6024,27 @@ $('home').onclick = (e) => {
     save();
     return closeHome(1);
   }
+  const k = SLOT_KEYS[i];
   if (act === 'slotsave') {
-    if (readKey(SLOT_KEYS[i]) && !confirm2(`save${i}`)) return;
-    try { localStorage.setItem(SLOT_KEYS[i], saveJSON(app.game, { speed: app.homeSpeed })); } catch { app.homeNote = 'セーブできなかった (保存容量が足りないか、この環境では保存できない)'; }
+    if (Store.meta[k] && !confirm2(`save${i}`)) return;
+    const text = saveJSON(app.game, { speed: app.homeSpeed });
+    const meta = saveMeta(buildSave(app.game));
+    app.homeNote = 'セーブ中…';
+    Store.put(k, text).then((ok) => {
+      if (ok) { Store.meta[k] = meta; app.homeNote = `スロット ${i + 1} にセーブした`; } else app.homeNote = 'セーブできなかった (保存容量が足りないか、この環境では保存できない)';
+      if (app.homeOpen) renderHome();
+    });
   } else if (act === 'slotload') {
-    const d = readKey(SLOT_KEYS[i]);
-    if (d && loadSave(d)) { save(); app.game.message(`スロット ${i + 1} をロードした。`); return closeHome(d.speed); }
-    app.homeNote = 'ロードできなかった';
+    app.homeNote = 'ロード中…';
+    Store.get(k).then((t) => {
+      const d = t ? parseSave(t) : null;
+      if (d && loadSave(d)) { save(); app.game.message(`スロット ${i + 1} をロードした。`); return closeHome(d.speed); }
+      app.homeNote = 'ロードできなかった';
+      if (app.homeOpen) renderHome();
+    });
   } else if (act === 'slotdel') {
     if (!confirm2(`del${i}`)) return;
-    try { localStorage.removeItem(SLOT_KEYS[i]); } catch { /* 保存できない環境では無視 */ }
+    Store.del(k).then(() => { Store.meta[k] = null; if (app.homeOpen) renderHome(); });
   } else if (act === 'export') exportSave();
   else if (act === 'import') return $('importfile').click();
   app.homeArmed = null;
@@ -5733,17 +6058,27 @@ function updateSigBtn() { $('sigbtn').textContent = `通信: ${SIGNAL_MODES[app.
 $('sigbtn').onclick = () => {
   const keys = Object.keys(SIGNAL_MODES);
   app.signalMode = keys[(keys.indexOf(app.signalMode) + 1) % keys.length];
+  PlayLog.add('ui', { act: 'signals', v: app.signalMode });
   try { localStorage.setItem('moribin-signals', app.signalMode); } catch { /* 保存できない環境では無視 */ }
   updateSigBtn();
 };
 updateSigBtn();
 function updateSpectateBtn() { $('spectatebtn').classList.toggle('on', !!app.game.spectate); }
-$('spectatebtn').onclick = () => { app.game.setSpectate(!app.game.spectate); updateSpectateBtn(); app.dirty = true; };
+$('spectatebtn').onclick = () => { app.game.setSpectate(!app.game.spectate); PlayLog.add('ui', { act: 'spectate', v: app.game.spectate }); updateSpectateBtn(); app.dirty = true; };
 setInterval(save, 5000);
-window.addEventListener('pagehide', save);
-document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+setInterval(() => PlayLog.persist(), 30000);
+window.addEventListener('pagehide', () => { save(); PlayLog.persist(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); PlayLog.persist(); } });
+// プレイ記録: 操作の有無 (操作のない時間を測る)
+for (const ev of ['pointerdown', 'keydown', 'wheel']) window.addEventListener(ev, () => PlayLog.input(), { passive: true, capture: true });
+// メモ
+$('memobtn').onclick = () => ($('memobox').hidden ? openMemo() : closeMemo());
+$('memoclose').onclick = closeMemo;
+$('memosave').onclick = saveMemo;
+document.querySelectorAll('#memobox [data-tag]').forEach((b) => { b.onclick = () => { const on = !b.classList.contains('on'); document.querySelectorAll('#memobox [data-tag]').forEach((x) => x.classList.remove('on')); b.classList.toggle('on', on); }; });
 const setSpeed = (v) => {
   if (app.speed) app.lastSpeed = app.speed;
+  if (v !== app.speed) PlayLog.add('speed', { v });
   app.speed = v;
   updateSpeedButtons();
 };
@@ -5773,6 +6108,7 @@ function onPanelClick(e) {
   const btn = e.target.closest('button[data-act]');
   if (!btn) return;
   const { act, kind } = btn.dataset;
+  PlayLog.add('act', { ...btn.dataset, ...(btn.dataset.sys === undefined && app.sel.sys !== undefined ? { at: app.sel.sys } : {}) });
   const g = app.game;
   const sys = btn.dataset.sys !== undefined ? Number(btn.dataset.sys) : app.sel.sys;
   const body = btn.dataset.body ?? app.sel.body;
@@ -5802,6 +6138,7 @@ function onPanelClick(e) {
 function onPanelChange(e) {
   const { act, col } = e.target.dataset;
   const v = e.target.value;
+  if (act) PlayLog.add('set', { act, v: e.target.type === 'checkbox' ? e.target.checked : v, ...(col ? { col } : {}), ...(e.target.dataset.sys !== undefined ? { sys: e.target.dataset.sys } : {}) });
   if (act === 'rdest') app.routeDest = Number(v);
   else if (act === 'forigin') app.fleetOrigin = Number(v);
   else if (act === 'bulkfocus') app.bulkFocus = v;
@@ -5881,6 +6218,7 @@ function setHtmlKeepScroll(el, html) {
 let last = performance.now();
 let acc = 0;
 function frame(now) {
+  PlayLog.tick(Math.min(1000, now - last));
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   const game = app.game;
@@ -5914,21 +6252,34 @@ function frame(now) {
 }
 
 resize();
-const saved = readSave();
+// 起動: 古い版の localStorage のセーブがあればすぐ読む。なければ仮のゲームで始め、IndexedDB のセーブが読めたら差し替える
+const legacy = readLegacySave();
 const wanted = params.get('seed');
-if (saved && (wanted === null || wanted === String(saved.seed))) {
-  if (loadSave(saved)) app.game.message('セーブデータをロードした。');
-  else newGame(wanted || String(Math.floor(Math.random() * 1e6))); // 壊れたデータは破棄
-} else {
-  newGame(wanted || String(Math.floor(Math.random() * 1e6)));
-}
+const seedOk = (d) => d && (wanted === null || wanted === String(d.seed));
+if (seedOk(legacy) && loadSave(legacy)) app.game.message('セーブデータをロードした。');
+else newGame(wanted || String(Math.floor(Math.random() * 1e6))); // 壊れたデータは破棄
 updateSpeedButtons();
 updateSpectateBtn();
-save();
 // 起動時はホーム画面から (?home=0 なら出さない)
 if (params.get('home') !== '0') openHome();
 requestAnimationFrame(frame);
 window.__app = app; // デバッグ用
+PlayLog.start();
+app.storeReady = Store.init().then(async () => {
+  await PlayLog.init();
+  if (!seedOk(legacy)) {
+    const t = await Store.get(SAVE_KEY);
+    const d = t ? parseSave(t) : null;
+    if (seedOk(d) && loadSave(d)) {
+      app.game.message('セーブデータをロードした。');
+      updateSpectateBtn();
+      if (app.homeOpen) { app.homeSpeed = app.speed; app.speed = 0; updateSpeedButtons(); }
+    }
+  }
+  save();
+  if (app.homeOpen) renderHome();
+  app.dirty = true;
+});
 
 </script>
 
