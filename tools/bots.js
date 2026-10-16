@@ -45,6 +45,18 @@ const fs = require('fs');
           for (const [k, gv] of Object.entries(this.govs)) { const id = Number(k); if (id === 0 || gv.lord !== 0 || !this.isColonized(id) || (gv.loyalty ?? 70) >= 50) continue; if (this.gov(0).credits > 2000) this.sendGrant(0, id, 300); }
         };
       }
+      // 新しい梃子の比較: 委任方針と国家方針をそろえる (拡張に振る / 内政と整備に振る)
+      if (strategy === 'mandexpand' || strategy === 'manddevelop') {
+        const [mand, pol] = strategy === 'mandexpand' ? ['expand', 'expand'] : ['develop', 'consolidate'];
+        g.aiPolicy = pol;
+        const orig = g.earthPoliticsYearly.bind(g);
+        g.earthPoliticsYearly = function () {
+          orig();
+          for (const [k, gv] of Object.entries(this.govs)) { const id = Number(k); if (id !== 0 && this.isColonized(id) && this.realmOf(id) === 0 && gv.mandate !== mand && !this.requests.some((q) => q.act === 'mandate' && Number(q.d.sys) === id) && this.pc >= this.pcCost('mandate', { sys: id }) + 10) this.command('mandate', { sys: id, value: mand }); }
+        };
+      }
+      // 放置: 政治に手を出さない (視察しない、要求には返事をしない、語り手の出来事も放っておく)。ほかは放任と同じ
+      if (strategy === 'neglect') g.earthPoliticsYearly = function () {};
       if (strategy === 'expansion') {
         const origC = g.canColonize.bind(g);
         g.canColonize = function (id) { if (id === 0) this.gov(0).lastColony = -1e9; return origC(id); };
@@ -66,6 +78,15 @@ const fs = require('fs');
       wrap('buildWarship'); wrap('upgrade', { post: (r) => { if (r?.ok) add('upgrade_ok'); } });
       wrap('startWar'); wrap('enslave'); wrap('integrate'); wrap('conquer'); wrap('gift');
       wrap('sendFleet', { post: (r, a) => { if (r?.ok) add('fleet_sent'); } });
+      // 政治 (不満の段階・要求・決めること・語り手・時代の課題)
+      wrap('raiseDemand', { pre: (id) => ({ earth: g.gov(id).lord === 0 }), post: (r, a, pre) => add(pre.earth ? 'demand_earth' : 'demand_other') });
+      wrap('grantDemand'); wrap('refuseDemand'); wrap('calmUnrest'); wrap('pirateRaid');
+      wrap('unrestYearly', { pre: (id, gv) => gv.unrest?.stage || 0, post: (r, [id, gv], before) => { if (!before && gv.unrest?.stage === 1) add('unrest_start'); } });
+      for (const [type, def] of Object.entries(STORY)) { const o = def.start; def.start = (gg, sys) => { add(`story_${type}`); return o(gg, sys); }; }
+      wrap('sendDecision', { post: (r) => { if (r?.ok) add('decision_reply'); } });
+      wrap('resolveDecision', { post: (r, [id, k, local]) => { if (local) add('decision_default'); } });
+      wrap('setPolicy', { post: (r) => { if (r?.ok) add('policy_set'); } });
+      wrap('command', { post: (r, [act]) => { if (r?.ok) add(`cmd_${act}`); else if (/政治力/.test(r?.reason || '')) add('cmd_no_pc'); } });
       // 年ごとの記録
       const series = [];
       const quiet = []; // 年ごとの重要な出来事の数
@@ -82,7 +103,9 @@ const fs = require('fs');
           fearAvg: vass.length ? vass.reduce((k, v) => k + (v.fear || 0), 0) / vass.length : null, friendAvg: vass.length ? vass.reduce((k, v) => k + (v.friend || 0), 0) / vass.length : null,
           friend50: vass.filter((v) => (v.friend || 0) >= 50).length, blockedByFriend: vass.filter((v) => (v.loyalty ?? 70) < 20 && (v.friend || 0) >= 50).length,
           wars: Object.keys(g.realmWars).length, earthWars: Object.keys(g.realmWars).filter((k) => k.split('|').map(Number).includes(0)).length,
-          ships: g.realmShips(0), awe: Object.values(g.awe).reduce((k, v) => k + v, 0), maxDist: Math.max(0, ...earthSys.map((x) => dist0(x.id))) };
+          ships: g.realmShips(0), awe: Object.values(g.awe).reduce((k, v) => k + v, 0), maxDist: Math.max(0, ...earthSys.map((x) => dist0(x.id))),
+          pc: g.pc, council: g.council, unrest: vass.filter((v) => (v.unrest?.stage || 0) >= 1).length, ultimatum: vass.filter((v) => v.unrest?.stage === 3).length,
+          tasksDone: g.stats?.tasksDone || 0, score: g.score ? g.score().total : 0, policy: g.policy?.id || null };
       };
       const t0 = performance.now();
       const timing = [];
@@ -96,7 +119,8 @@ const fs = require('fs');
         yearly.push({ y, n: newEv.length, bad: newEv.filter((e) => !e.good).length, kinds });
         if (y % 10 === 0) { series.push(sample()); timing.push({ y, ms: performance.now() - ty, heap: performance.memory?.usedJSHeapSize || 0 }); }
       }
-      return { strategy, seed: g.galaxy.seed, counts, indep, series, yearly, timing, ms: performance.now() - t0 };
+      const challenges = { sixty: g.realmSystems(0).length >= 60, loyal: (g.stats?.indepFromEarth || 0) === 0, unify: g.independentRealms ? g.independentRealms() === 0 : null };
+      return { strategy, seed: g.galaxy.seed, counts, indep, series, yearly, timing, ms: performance.now() - t0, era: g.era, stats: g.stats, challenges };
     }, [strategy, years]);
     res.errors = errs;
     fs.writeFileSync(out, JSON.stringify(res));
