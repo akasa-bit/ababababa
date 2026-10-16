@@ -57,6 +57,8 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 @media (max-width: 700px) { #fleetbar { left:6px; right:6px; top:6px; transform:none; max-width:none; font-size:11px; padding:4px 6px; gap:4px; flex-wrap:nowrap; } #fleetbar .hint, #fleetbar .lbl, #fleetbar button small { display:none; } #fleetbar button, #fleetbar > span { white-space:nowrap; } #fleetbar button { padding:2px 6px; } #fleetbar.confirm { flex-wrap:wrap; } #fleetbar .warn { flex-basis:100%; } }
 #zoom { position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:6px; }
 #zoom button { min-width:46px; min-height:46px; font-size:18px; background:rgba(13,18,29,.85); }
+#zoom #vassalbtn { font-size:13px; }
+#zoom #vassalbtn.on { border-color:#4de3d0; color:#4de3d0; }
 aside { width:340px; background:var(--panel); border-left:1px solid var(--line); padding:12px 14px; overflow-y:auto; }
 button { background:#17213a; color:var(--fg); border:1px solid #2a3a60; border-radius:5px; padding:5px 10px; font:inherit; cursor:pointer; }
 button:hover:not(:disabled) { background:#1f2d4f; }
@@ -154,6 +156,7 @@ html, body { height:100%; }
         <div><i style="background:radial-gradient(#a0e678,transparent 70%)"></i>朝貢 (主人の星系への送金)</div>
         <div><i style="background:radial-gradient(#ffd778,transparent 70%)"></i>資金援助 (主人の星系からの送金)</div>
         <div class="muted" style="max-width:220px">通信の描き方はヘッダーの「通信」ボタンで切り替える (表示しない・光の点)。</div>
+        <div class="muted" style="max-width:220px">左下の「従属」で従属マップ (家臣 → 主人の矢印) に切り替える。</div>
         <div class="muted" style="max-width:220px">地図は地球に届いている光で描く。遠くの星系は昔の様子で、船は見かけの位置に見える。</div>
         <div><i style="border:2px solid #ff5a5a;border-radius:50%;width:7px;height:7px"></i>征服戦争 (赤い輪と ⚔ の数字が進捗)</div>
         <div><i style="border:2px dashed #ff5a5a;border-radius:50%;width:7px;height:7px"></i>艦隊戦 (下の棒が両軍の残りの比)</div>
@@ -161,7 +164,7 @@ html, body { height:100%; }
         <div><i style="border:2px solid #ff9f43;border-radius:50%;width:7px;height:7px"></i>入植星系の輪の色 = 所属する国 (青緑は地球の国)</div>
       </details>
       <div id="fleetbar" hidden></div>
-      <div id="zoom"><button id="zoom-in" aria-label="拡大">＋</button><button id="zoom-out" aria-label="縮小">－</button><button id="zoom-fit" aria-label="全体表示">全体</button></div>
+      <div id="zoom"><button id="zoom-in" aria-label="拡大">＋</button><button id="zoom-out" aria-label="縮小">－</button><button id="zoom-fit" aria-label="全体表示">全体</button><button id="vassalbtn" title="誰が誰に従属しているかを矢印で表示する (家臣 → 主人)">従属</button></div>
     </div>
     <aside>
       <div id="panel"></div>
@@ -3276,6 +3279,18 @@ class GalaxyView {
     this.cam.y = 0;
   }
 
+  // 地球の知っている入植星系がすべて収まるように寄せる (従属マップを開いたとき)
+  fitColonies() {
+    const game = this.app.game;
+    const pts = game.knownSystems().filter((s) => s.id === 0 || game.known(s.id)?.cols.length);
+    if (pts.length < 2) return this.fit();
+    const xs = pts.map((s) => s.x), ys = pts.map((s) => s.y);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    this.cam.x = (x0 + x1) / 2;
+    this.cam.y = (y0 + y1) / 2;
+    this.cam.zoom = clamp(Math.min(this.w / (x1 - x0 + 8), this.h / (y1 - y0 + 8)) * 0.85, 1.5, 80);
+  }
+
   toScreen(x, y) {
     return [(x - this.cam.x) * this.cam.zoom + this.w / 2, (y - this.cam.y) * this.cam.zoom + this.h / 2];
   }
@@ -3880,6 +3895,8 @@ class GalaxyView {
       ctx.fillStyle = surprise ? '#ff8a80' : '#4de3d0';
       ctx.fillText(`${surprise ? '奇襲攻撃 ' : '移動 '}到着まで ${eta.toFixed(1)} 年`, tx + 12, ty - 12);
     }
+    // 従属マップ: ほかの描画を暗くして、家臣 → 主人 を矢印で結ぶ
+    if (this.app.mapMode === 'vassal') this.drawVassals(K);
     // 経由地の線: 長押し中の線引き (指まで矢印) と、確認待ちの経由地
     const drawRoute = (pts, color) => {
       ctx.strokeStyle = color;
@@ -3925,19 +3942,106 @@ class GalaxyView {
       const st = this.hover.stars[0];
       const lines = [this.hover.name, `${st.label}${this.hover.stars.length > 1 ? ` 他${this.hover.stars.length - 1}星` : ''}`,
         `距離 ${d.toFixed(1)} ly (通信 ${t.toFixed(1)} 年・船 ${game.shipYears(sel.id, this.hover.id).toFixed(1)}〜${game.shipYears(sel.id, this.hover.id, false).toFixed(1)} 年)`];
+      if (this.app.mapMode === 'vassal') lines.push(...vassalHoverLines(game, this.hover.id));
       const [mx, my] = this.mouse || [hx, hy];
       ctx.font = '12px sans-serif';
       const bw = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 14;
       const bx = Math.min(mx + 14, this.w - bw - 4);
       const by = Math.min(my + 14, this.h - 60);
       ctx.fillStyle = 'rgba(10,14,24,0.9)';
-      ctx.fillRect(bx, by, bw, 52);
+      const bh = 7 + lines.length * 15;
+      const byy = Math.min(by, this.h - bh - 4);
+      ctx.fillRect(bx, byy, bw, bh);
       ctx.strokeStyle = '#345';
-      ctx.strokeRect(bx, by, bw, 52);
+      ctx.strokeRect(bx, byy, bw, bh);
       ctx.fillStyle = '#dfe8f7';
-      lines.forEach((l, i) => ctx.fillText(l, bx + 7, by + 16 + i * 15));
+      lines.forEach((l, i) => ctx.fillText(l, bx + 7, byy + 16 + i * 15));
     }
   }
+
+  // 従属マップ: 地球に届いている情報で、入植星系を所属する国の色の点で描き、家臣から主人へ矢印を引く。
+  // 国の首都 (主人のいない星系) は太い輪。忠誠度20未満で友好度も50未満 (独立のおそれ) の家臣は赤い破線
+  drawVassals(K) {
+    const { ctx } = this;
+    const game = this.app.game;
+    ctx.fillStyle = 'rgba(6,9,16,0.9)';
+    ctx.fillRect(0, 0, this.w, this.h);
+    const nodes = [];
+    for (const sx of game.knownSystems()) {
+      const k = K(sx.id);
+      if (!k || !k.cols.length) continue;
+      nodes.push({ s: sx, k, realm: k.realm ?? 0, lord: sx.id === 0 ? null : k.lord ?? null, p: this.toScreen(sx.x, sx.y) });
+    }
+    const R = 6;
+    for (const n of nodes) {
+      if (n.lord === null) continue;
+      const ls = game.system(n.lord);
+      const [x0, y0] = n.p;
+      const [x1, y1] = this.toScreen(ls.x, ls.y);
+      const len = Math.hypot(x1 - x0, y1 - y0);
+      if (len < 2 * R + 6) continue;
+      const ux = (x1 - x0) / len, uy = (y1 - y0) / len;
+      const ax = x0 + ux * (R + 2), ay = y0 + uy * (R + 2);
+      const bx = x1 - ux * (R + 5), by = y1 - uy * (R + 5);
+      const risk = (n.k.loyalty ?? LOYALTY_START) < 20 && (n.k.friend || 0) < FRIEND_SAFE;
+      const color = risk ? '#ff5a5a' : realmColor(n.realm);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash(risk ? [6, 4] : []);
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx - ux * 6, by - uy * 6); ctx.stroke();
+      ctx.setLineDash([]);
+      const ang = Math.atan2(uy, ux);
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx - 11 * Math.cos(ang - 0.42), by - 11 * Math.sin(ang - 0.42));
+      ctx.lineTo(bx - 11 * Math.cos(ang + 0.42), by - 11 * Math.sin(ang + 0.42));
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.lineWidth = 1;
+    ctx.font = '11px sans-serif';
+    for (const n of nodes) {
+      const [x, y] = n.p;
+      const color = realmColor(n.realm);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(x, y, n.lord === null ? R : R - 2, 0, Math.PI * 2); ctx.fill();
+      if (n.lord === null) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(x, y, R + 4, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 1;
+      }
+      ctx.fillStyle = n.lord === null ? '#ffffff' : '#c8d4e8';
+      ctx.font = n.lord === null ? 'bold 12px sans-serif' : '11px sans-serif';
+      ctx.fillText(n.s.name, x + R + 5, y - R - 2);
+    }
+    // 説明
+    const narrow = this.w < 560;
+    const lines = narrow ? ['従属マップ', '矢印: 家臣 → 主人', '太い輪: 首都・赤破線: 独立のおそれ']
+      : ['従属マップ (地球に届いている情報)', '矢印: 家臣 → 主人 ・ 色: 所属する国', '太い輪: 国の首都 ・ 赤い破線: 独立のおそれ (忠誠度20未満)'];
+    ctx.font = '12px sans-serif';
+    const bw = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 16;
+    const bx = narrow ? this.w - bw - 8 : 8, by = 8;
+    ctx.fillStyle = 'rgba(10,14,24,0.9)';
+    ctx.fillRect(bx, by, bw, 54);
+    ctx.strokeStyle = '#345';
+    ctx.strokeRect(bx, by, bw, 54);
+    ctx.fillStyle = '#dfe8f7';
+    lines.forEach((l, i) => ctx.fillText(l, bx + 8, by + 17 + i * 16));
+  }
+}
+
+// 従属マップのホバー: 主人・家臣の数・忠誠度など (地球に届いている情報)
+function vassalHoverLines(g, id) {
+  const k = id === 0 ? g.snapshot(0) : g.known(id);
+  if (!k || !k.cols.length) return [];
+  const realm = k.realm ?? 0;
+  const lord = id === 0 ? null : k.lord ?? null;
+  const vassals = g.knownSystems().filter((x) => x.id !== id && x.id !== 0 && g.known(x.id)?.cols.length && g.known(x.id).lord === id).length;
+  const out = [`${realm === 0 ? '地球の国' : `${g.realmName(realm)}`}${lord === null ? ' の首都' : ''}・家臣 ${vassals}`];
+  if (lord !== null) out.push(`主人: ${g.system(lord).name} ・ 忠誠度 ${Math.round(k.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(k.fear || 0)}・友好度 ${Math.round(k.friend || 0)}`);
+  return out;
 }
 
 // 星系マップ: 恒星・伴星・惑星・小惑星帯を軌道上に表示。軌道半径は対数スケール。
@@ -5215,6 +5319,15 @@ $('fleetbar').addEventListener('click', (e) => {
 $('zoom-in').onclick = () => galaxyView.zoomAt(1.5, w / 2, h / 2);
 $('zoom-out').onclick = () => galaxyView.zoomAt(1 / 1.5, w / 2, h / 2);
 $('zoom-fit').onclick = () => galaxyView.fit();
+// 従属マップの切り替え (家臣 → 主人の矢印)
+function updateVassalBtn() { $('vassalbtn').classList.toggle('on', app.mapMode === 'vassal'); }
+$('vassalbtn').onclick = () => {
+  app.mapMode = app.mapMode === 'vassal' ? 'normal' : 'vassal';
+  if (app.view !== 'galaxy') app.setView('galaxy');
+  if (app.mapMode === 'vassal') galaxyView.fitColonies();
+  updateVassalBtn();
+  app.dirty = true;
+};
 // --- セーブ(localStorage) ---
 const SAVE_KEY = 'moribin-save-v1';
 function buildSave(game, extra = {}) {
