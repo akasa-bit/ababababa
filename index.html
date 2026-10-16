@@ -156,7 +156,7 @@ html, body { height:100%; }
         <div><i style="background:radial-gradient(#a0e678,transparent 70%)"></i>朝貢 (主人の星系への送金)</div>
         <div><i style="background:radial-gradient(#ffd778,transparent 70%)"></i>資金援助 (主人の星系からの送金)</div>
         <div class="muted" style="max-width:220px">通信の描き方はヘッダーの「通信」ボタンで切り替える (表示しない・光の点)。</div>
-        <div class="muted" style="max-width:220px">左下の「従属」で従属マップ (家臣 → 主人の矢印) に切り替える。</div>
+        <div class="muted" style="max-width:220px">左下の「従属」で従属マップ (家臣 → 主人の矢印。色は従属の深さのグラデーション) に切り替える。</div>
         <div class="muted" style="max-width:220px">地図は地球に届いている光で描く。遠くの星系は昔の様子で、船は見かけの位置に見える。</div>
         <div><i style="border:2px solid #ff5a5a;border-radius:50%;width:7px;height:7px"></i>征服戦争 (赤い輪と ⚔ の数字が進捗)</div>
         <div><i style="border:2px dashed #ff5a5a;border-radius:50%;width:7px;height:7px"></i>艦隊戦 (下の棒が両軍の残りの比)</div>
@@ -3959,8 +3959,10 @@ class GalaxyView {
     }
   }
 
-  // 従属マップ: 地球に届いている情報で、入植星系を所属する国の色の点で描き、家臣から主人へ矢印を引く。
-  // 国の首都 (主人のいない星系) は太い輪。忠誠度20未満で友好度も50未満 (独立のおそれ) の家臣は赤い破線
+  // 従属マップ: 地球に届いている情報で、入植星系を点で描き、家臣から主人へ矢印を引く。
+  // 色は国ごとの色から始まり、従属の深さ (首都=0、直属=1、その家臣=2…) ごとに色相がずれていくグラデーション。
+  // 矢印も家臣の色から主人の色へのグラデーション。国の首都 (主人のいない星系) は太い輪。
+  // 忠誠度20未満で友好度も50未満 (独立のおそれ) の家臣は、破線の矢印と赤い輪
   drawVassals(K) {
     const { ctx } = this;
     const game = this.app.game;
@@ -3972,6 +3974,14 @@ class GalaxyView {
       if (!k || !k.cols.length) continue;
       nodes.push({ s: sx, k, realm: k.realm ?? 0, lord: sx.id === 0 ? null : k.lord ?? null, p: this.toScreen(sx.x, sx.y) });
     }
+    // 従属の深さ: 主人をたどって首都 (主人なし) に着くまでの段数
+    const byId = new Map(nodes.map((n) => [n.s.id, n]));
+    const depthOf = (n) => {
+      let d = 0;
+      for (let x = n; x && x.lord !== null && d < 20; x = byId.get(x.lord)) d++;
+      return d;
+    };
+    for (const n of nodes) { n.depth = depthOf(n); n.color = vassalDepthColor(n.realm, n.depth); }
     const R = 6;
     for (const n of nodes) {
       if (n.lord === null) continue;
@@ -3984,10 +3994,13 @@ class GalaxyView {
       const ax = x0 + ux * (R + 2), ay = y0 + uy * (R + 2);
       const bx = x1 - ux * (R + 5), by = y1 - uy * (R + 5);
       const risk = (n.k.loyalty ?? LOYALTY_START) < 20 && (n.k.friend || 0) < FRIEND_SAFE;
-      const color = risk ? '#ff5a5a' : realmColor(n.realm);
-      ctx.strokeStyle = color;
-      ctx.fillStyle = color;
-      ctx.lineWidth = 2;
+      const lordColor = byId.get(n.lord)?.color ?? vassalDepthColor(n.realm, Math.max(0, n.depth - 1));
+      const grad = ctx.createLinearGradient(ax, ay, bx, by);
+      grad.addColorStop(0, n.color);
+      grad.addColorStop(1, lordColor);
+      ctx.strokeStyle = grad;
+      ctx.fillStyle = lordColor;
+      ctx.lineWidth = 2.5;
       ctx.setLineDash(risk ? [6, 4] : []);
       ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx - ux * 6, by - uy * 6); ctx.stroke();
       ctx.setLineDash([]);
@@ -4003,9 +4016,15 @@ class GalaxyView {
     ctx.font = '11px sans-serif';
     for (const n of nodes) {
       const [x, y] = n.p;
-      const color = realmColor(n.realm);
+      const color = n.color;
       ctx.fillStyle = color;
-      ctx.beginPath(); ctx.arc(x, y, n.lord === null ? R : R - 2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, n.lord === null ? R : R - 1, 0, Math.PI * 2); ctx.fill();
+      if (n.lord !== null && (n.k.loyalty ?? LOYALTY_START) < 20 && (n.k.friend || 0) < FRIEND_SAFE) {
+        ctx.strokeStyle = '#ff5a5a';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, y, R + 2, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 1;
+      }
       if (n.lord === null) {
         ctx.strokeStyle = color;
         ctx.lineWidth = 2.5;
@@ -4018,18 +4037,45 @@ class GalaxyView {
     }
     // 説明
     const narrow = this.w < 560;
-    const lines = narrow ? ['従属マップ', '矢印: 家臣 → 主人', '太い輪: 首都・赤破線: 独立のおそれ']
-      : ['従属マップ (地球に届いている情報)', '矢印: 家臣 → 主人 ・ 色: 所属する国', '太い輪: 国の首都 ・ 赤い破線: 独立のおそれ (忠誠度20未満)'];
+    const lines = narrow ? ['従属マップ', '矢印: 家臣 → 主人', '太い輪: 首都・破線と赤い輪: 独立のおそれ']
+      : ['従属マップ (地球に届いている情報)', '矢印: 家臣 → 主人 ・ 色: 国ごとの色から従属の深さでずれる', '太い輪: 国の首都 ・ 破線と赤い輪: 独立のおそれ (忠誠度20未満)'];
     ctx.font = '12px sans-serif';
-    const bw = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 16;
+    const bw = Math.max(...lines.map((l) => ctx.measureText(l).width), 250) + 16;
+    const bh = 17 + lines.length * 16 + 18;
     const bx = narrow ? this.w - bw - 8 : 8, by = 8;
     ctx.fillStyle = 'rgba(10,14,24,0.9)';
-    ctx.fillRect(bx, by, bw, 54);
+    ctx.fillRect(bx, by, bw, bh);
     ctx.strokeStyle = '#345';
-    ctx.strokeRect(bx, by, bw, 54);
+    ctx.strokeRect(bx, by, bw, bh);
     ctx.fillStyle = '#dfe8f7';
     lines.forEach((l, i) => ctx.fillText(l, bx + 8, by + 17 + i * 16));
+    // 深さのグラデーションの見本 (地球の国の色で): 首都 → 直属 → 2次 → 3次 → 4次以下
+    const sy = by + 17 + lines.length * 16 + 2;
+    const labels = ['首都', '直属', '2次', '3次', '4次〜'];
+    let sx = bx + 8;
+    for (let d = 0; d < labels.length; d++) {
+      ctx.fillStyle = vassalDepthColor(0, d);
+      ctx.beginPath(); ctx.arc(sx + 5, sy - 4, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#c8d4e8';
+      ctx.fillText(labels[d], sx + 13, sy);
+      sx += 13 + ctx.measureText(labels[d]).width + 10;
+    }
   }
+}
+
+// 従属マップの色: 国の色 (首都) から、従属の深さ1段ごとに色相を38度ずらす (4段まで)
+function vassalDepthColor(realm, depth) {
+  const hex = realmColor(realm);
+  const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0;
+  if (max !== min) {
+    const d = max - min;
+    h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h *= 60;
+  }
+  const hue = (h + 38 * Math.min(depth, 4) + 360) % 360;
+  return `hsl(${hue.toFixed(0)}, ${depth ? 85 : 75}%, ${depth ? 64 : 60}%)`;
 }
 
 // 従属マップのホバー: 主人・家臣の数・忠誠度など (地球に届いている情報)
@@ -4040,7 +4086,9 @@ function vassalHoverLines(g, id) {
   const lord = id === 0 ? null : k.lord ?? null;
   const vassals = g.knownSystems().filter((x) => x.id !== id && x.id !== 0 && g.known(x.id)?.cols.length && g.known(x.id).lord === id).length;
   const out = [`${realm === 0 ? '地球の国' : `${g.realmName(realm)}`}${lord === null ? ' の首都' : ''}・家臣 ${vassals}`];
-  if (lord !== null) out.push(`主人: ${g.system(lord).name} ・ 忠誠度 ${Math.round(k.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(k.fear || 0)}・友好度 ${Math.round(k.friend || 0)}`);
+  let depth = 0;
+  for (let l = lord; l !== null && l !== undefined && depth < 20; l = l === 0 ? null : g.known(l)?.lord ?? null) depth++;
+  if (lord !== null) out.push(`主人: ${g.system(lord).name} (${depth === 1 ? '直属' : `${depth}次の家臣`}) ・ 忠誠度 ${Math.round(k.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(k.fear || 0)}・友好度 ${Math.round(k.friend || 0)}`);
   return out;
 }
 
