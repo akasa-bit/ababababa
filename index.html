@@ -582,6 +582,7 @@ const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 const RES = ['food', 'water', 'metal', 'fuel', 'rare', 'goods', 'slaves'];
 const MINED = ['water', 'metal', 'fuel', 'rare'];
+const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番号 (計算用のキーに使う)
 const RES_LABEL = { food: '食料', water: '水', metal: '金属', fuel: '燃料', rare: '希少元素', goods: '工業品', slaves: '奴隷', credits: 'cr' };
 const PRICE = { food: 1, water: 0.8, metal: 1.5, fuel: 2, rare: 8, goods: 4, slaves: 3 };
 const TECH_LABEL = ['石器時代', '農耕時代', '産業時代', '情報時代'];
@@ -725,8 +726,18 @@ const SEED_FUNDS = { planet: 200, station: 80 }; // 入植船が新しい政府�
 const BASE_TAX = { planet: 5, station: 2 }; // 入植地ごとの基本の税収 [cr/年] (小さな入植地の政府を回すため) // 従属する星系が主人に納める、年間収入の割合
 
 const stockCap = (pop) => 500 + 5 * pop; // 星系の備蓄上限 (資源ごと)
-const zeroRes = () => Object.fromEntries(RES.map((r) => [r, 0]));
+const zeroRes = () => { const o = {}; for (const r of RES) o[r] = 0; return o; };
 const colKey = (c) => `${c.sys}|${c.body}|${c.kind}`;
+// 星系の記録 (snaps) の JSON の使い回し。記録は取ったあと変わらないので、記録ごとに一度だけ JSON にする
+// (変わるのは Game.known が古い記録の欠けた資源を 0 で補うときだけで、そのときは捨てて作り直す)
+const SNAP_JSON = new WeakMap();
+const TARGET_INDEX = new WeakMap(); // 星系 → 天体の索引 (Game.target)
+function snapJSON(x) {
+  if (x === null || typeof x !== 'object') return x === undefined ? 'null' : JSON.stringify(x);
+  let t = SNAP_JSON.get(x);
+  if (t === undefined) { t = JSON.stringify(x); SNAP_JSON.set(x, t); }
+  return t;
+}
 const relLabel = (r) => (r >= 60 ? '友好' : r >= 20 ? '好意的' : r >= -20 ? '中立' : r >= -60 ? '警戒' : '敵対');
 const fail = (reason) => ({ ok: false, reason });
 
@@ -791,14 +802,40 @@ class Game {
 
   // 星系内の入植対象: 惑星・小惑星帯・恒星
   targetsOf(sys) { return [...sys.bodies, ...sys.stars]; }
-  target(sysId, bodyId) { return this.targetsOf(this.system(sysId)).find((b) => b.id === bodyId); }
-
-  coloniesIn(sysId) { return this.colonies.filter((c) => c.sys === sysId); }
-  colonyAt(sysId, bodyId, kind) {
-    return this.colonies.find((c) => c.sys === sysId && c.body === bodyId && c.kind === kind);
+  // 天体・恒星を番号で引く (星系ごとに索引を作って使い回す。天体の一覧は銀河を作ったあと変わらない)
+  target(sysId, bodyId) {
+    const sys = this.system(sysId);
+    const n = sys.bodies.length + sys.stars.length;
+    let ix = TARGET_INDEX.get(sys);
+    if (!ix || ix.n !== n) {
+      ix = { n, map: new Map() };
+      for (const b of this.targetsOf(sys)) if (!ix.map.has(b.id)) ix.map.set(b.id, b);
+      TARGET_INDEX.set(sys, ix);
+    }
+    return ix.map.get(bodyId);
   }
-  colonyByKey(key) { return this.colonies.find((c) => colKey(c) === key); }
-  isColonized(sysId) { return this.colonies.some((c) => c.sys === sysId); }
+
+  // 入植地の索引 (星系ごとの入植地・キーから入植地)。入植地の一覧は push か丸ごとの置き換えでしか変わらず、
+  // 入植地の星系・天体・種類も変わらないので、一覧と件数が同じあいだは使い回す
+  colIndex() {
+    const list = this.colonies;
+    if (this.colIdx?.list !== list || this.colIdx.n !== list.length) {
+      const bySys = new Map();
+      const byKey = new Map();
+      for (const c of list) {
+        if (!bySys.has(c.sys)) bySys.set(c.sys, []);
+        bySys.get(c.sys).push(c);
+        const k = colKey(c);
+        if (!byKey.has(k)) byKey.set(k, c);
+      }
+      this.colIdx = { list, n: list.length, bySys, byKey };
+    }
+    return this.colIdx;
+  }
+  coloniesIn(sysId) { return this.colIndex().bySys.get(sysId)?.slice() ?? []; } // 呼び出し側が並べ替えてもよいように写しを返す
+  colonyAt(sysId, bodyId, kind) { return this.colIndex().byKey.get(`${sysId}|${bodyId}|${kind}`); }
+  colonyByKey(key) { return this.colIndex().byKey.get(key); }
+  isColonized(sysId) { return this.colIndex().bySys.has(sysId); }
   colonizedSystems() { return [...new Set(this.colonies.map((c) => c.sys))].map((i) => this.system(i)); }
   shipTo(sysId, bodyId, kind) {
     return this.ships.find((s) => s.to === sysId && s.body === bodyId && s.kind === kind);
@@ -835,8 +872,9 @@ class Game {
   realmSystems(root) { return this.colonizedSystems().filter((x) => this.realmOf(x.id) === root); }
   // 星系 x の政府が、相手の星系 other の国と交戦中だと知っているか (開戦の知らせが光速で x に届いたか)。交易をやめるのはそれから
   // 終戦後も、終戦の知らせが光速で x に届くまでは取引をやめたまま
-  tradeBlocked(x, other) {
-    const a = this.realmOf(x), b = this.realmOf(other);
+  tradeBlocked(x, other) { return this.tradeBlockedIn(x, this.realmOf(x), this.realmOf(other)); }
+  // a, b = x と相手の国 (首都)。何度も調べるときに国を先に求めておけるように分けてある
+  tradeBlockedIn(x, a, b) {
     if (!this.atWar(a, b)) {
       const rec = this.lastPeace(this.warKey(a, b));
       return !!rec && this.year < rec.year + distance(this.system(rec.from), this.system(x));
@@ -1465,7 +1503,12 @@ class Game {
 
   // 光 (通信) が届くまでの年数
   travelYears(fromId, toId) {
-    return Math.max(distance(this.system(fromId), this.system(toId)), 0.001);
+    // 星系は動かないので、組ごとに一度だけ計算して覚えておく
+    const k = Number(fromId) * 65536 + Number(toId);
+    const tc = (this.travelCache ??= new Map());
+    let v = tc.get(k);
+    if (v === undefined) { v = Math.max(distance(this.system(fromId), this.system(toId)), 0.001); tc.set(k, v); }
+    return v;
   }
   // 船で行く年数 (交易路上は SHIP_SPEED、交易路の外は OFFROUTE_SPEED)
   shipYears(fromId, toId, onRoute = true) {
@@ -1532,7 +1575,23 @@ class Game {
   }
 
   // --- 交易路 ---
-  routeBetween(a, b) { return this.routes.find((r) => (r.a === a && r.b === b) || (r.a === b && r.b === a)); }
+  // 2つの星系を結ぶ交易路 (最初に見つかるもの)。交易路は追加か丸ごとの置き換えでしか変わらないので、
+  // 交易路の数と最後の番号が同じあいだは索引を使い回す
+  routeBetween(a, b) {
+    const sig = `${this.routes.length}:${this.routes[this.routes.length - 1]?.id}`;
+    if (this.routeIx?.sig !== sig || this.routeIx.list !== this.routes) {
+      const map = new Map();
+      for (const r of this.routes) {
+        if (typeof r.a !== 'number' || typeof r.b !== 'number') continue;
+        const k1 = r.a * 65536 + r.b, k2 = r.b * 65536 + r.a;
+        if (!map.has(k1)) map.set(k1, r);
+        if (!map.has(k2)) map.set(k2, r);
+      }
+      this.routeIx = { sig, list: this.routes, map };
+    }
+    if (typeof a !== 'number' || typeof b !== 'number') return this.routes.find((r) => (r.a === a && r.b === b) || (r.a === b && r.b === a));
+    return this.routeIx.map.get(a * 65536 + b);
+  }
   routeCap(r) { return 200 * r.lv; } // 片道あたりの輸送量[単位/年]
   routeCost(a, b) { return { credits: Math.round(100 + 10 * distance(this.system(a), this.system(b))) }; }
   routeUpCost(r) { return { credits: 150 * r.lv, metal: 50 * r.lv }; }
@@ -1558,9 +1617,10 @@ class Game {
   // 受け手の目標 = 需要 × (2年 + 要求の往復と航行の年数)。輸送中の荷と未処理の要求も数え、備蓄上限の8割は超えない。
   trade(h, flow) {
     if (!this.routes.length) { this.requests = this.requests.filter((q) => q.kind !== 'trade'); return; }
-    const room = {};
-    for (const r of this.routes) room[`${r.id}:0`] = room[`${r.id}:1`] = this.routeCap(r) * h;
-    const sent = {};
+    // 交易路の向きごとの残りの輸送量と送った量 (キーは 交易路の番号×2+向き)
+    const room = new Map();
+    for (const r of this.routes) { const c = this.routeCap(r) * h; room.set(r.id * 2, c); room.set(r.id * 2 + 1, c); }
+    const sent = new Map();
     const spareOf = (id, res) => this.stockOf(id)[res] - 2 * (flow[id]?.cons[res] || 0);
     // 届いた要求を処理する
     for (const q of this.requests) {
@@ -1571,7 +1631,7 @@ class Game {
       if (!rp || spare <= 0.001) { q.amt = 0; continue; }
       const legs = this.legsOf(rp.path).map((l, i) => ({ ...l, next: rp.path[i + 1] }));
       let amt = Math.min(q.amt, spare);
-      for (const l of legs) amt = Math.min(amt, room[`${l.r.id}:${l.dir}`]);
+      for (const l of legs) amt = Math.min(amt, room.get(l.r.id * 2 + l.dir));
       q.state = 'waiting';
       if (amt <= 0.001) continue;
       // 受け手が代金を払う (基準価格)。払えない分は、送り手が受け手の主人なら支援として無償で送る。そうでなければ送らない
@@ -1583,31 +1643,50 @@ class Game {
       if (paid > 0) { this.earn('import', -paid * price, q.from); this.earn('trade', paid * price, q.to); this.noteLordTrade(q.from, q.to, paid * price); }
       if (aid > 0) { this.receiveAid(q.from, aid * price); this.noteLordTrade(q.from, q.to, aid * price); }
       for (const l of legs) {
-        const k = `${l.r.id}:${l.dir}`;
-        room[k] -= amt;
-        sent[k] = (sent[k] || 0) + amt;
+        const k = l.r.id * 2 + l.dir;
+        room.set(k, room.get(k) - amt);
+        sent.set(k, (sent.get(k) || 0) + amt);
       }
       this.shipCargo(q.to, legs, q.res, amt);
       q.amt -= amt;
       q.shipped = (q.shipped || 0) + amt;
     }
     this.requests = this.requests.filter((q) => q.kind !== 'trade' || q.amt > 0.001);
-    // 未処理の要求の量 (受け手ごと・送り手ごと)
-    const asked = {};
-    const promised = {};
+    // 未処理の要求の量 (受け手ごと・送り手ごと) と、要求の組 (受け手・送り手・資源。同じ要求を重ねないため)。
+    // 何度も引くので、キーは文字列でなく数 (星系の番号と資源の番号から作る)
+    const sysRes = (sys, res) => Number(sys) * 8 + RES_INDEX[res];
+    const pairKey = (from, to, res) => (Number(from) * 65536 + Number(to)) * 8 + RES_INDEX[res];
+    const asked = new Map();
+    const promised = new Map();
+    const pendingPair = new Set();
     for (const q of this.requests) {
       if (q.kind !== 'trade') continue;
-      asked[`${q.from}|${q.res}`] = (asked[`${q.from}|${q.res}`] || 0) + q.amt;
-      promised[`${q.to}|${q.res}`] = (promised[`${q.to}|${q.res}`] || 0) + q.amt;
+      const ka = sysRes(q.from, q.res), kp = sysRes(q.to, q.res);
+      asked.set(ka, (asked.get(ka) || 0) + q.amt);
+      promised.set(kp, (promised.get(kp) || 0) + q.amt);
+      pendingPair.add(pairKey(q.from, q.to, q.res));
     }
-    // 新しい要求を送る
+    // 新しい要求を送る (このあいだ戦争の状態は変わらないので、取引できるかは組ごとに一度だけ調べる)
+    const blockMemo = new Map();
+    const realmMemo = new Map();
+    const realmQ = (id) => {
+      let r = realmMemo.get(id);
+      if (r === undefined) { r = this.realmOf(id); realmMemo.set(id, r); }
+      return r;
+    };
+    const blocked = (x, y) => {
+      const k = Number(x) * 65536 + Number(y);
+      let v = blockMemo.get(k);
+      if (v === undefined) { v = this.tradeBlockedIn(x, realmQ(x), realmQ(y)); blockMemo.set(k, v); }
+      return v;
+    };
     for (const T of [...new Set(this.routes.flatMap((r) => [r.a, r.b]))]) {
       const ft = flow[T];
       if (!ft) continue;
       const needs = RES.filter((res) => ft.prod[res] < ft.cons[res]);
       if (!needs.length) continue;
       const { dist } = this.reach(T);
-      const sources = Object.keys(dist).map(Number).filter((id) => id !== T).sort((x, y) => dist[x] - dist[y]);
+      const sources = this.reachSorted(T);
       const inb = (this.inbound[T] ??= zeroRes());
       const sto = this.stockOf(T);
       const lord = this.gov(T).lord;
@@ -1615,22 +1694,26 @@ class Game {
         const min = Math.max(0.5, 0.05 * ft.cons[res]);
         // 代金を払えない星系は、主人にだけ支援を求める
         const broke = this.gov(T).credits < min * PRICE[res];
+        const ka = sysRes(T, res);
         for (const S of broke ? sources.filter((x) => x === lord) : sources) {
           const lead = dist[S] + this.travelYears(T, S);
-          let want = Math.min((2 + lead) * ft.cons[res], 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked[`${T}|${res}`] || 0);
+          let want = Math.min((2 + lead) * ft.cons[res], 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked.get(ka) || 0);
           if (want <= min) break;
-          if (this.requests.some((q) => q.kind === 'trade' && q.from === T && q.to === S && q.res === res)) continue;
-          if (this.tradeBlocked(T, S)) continue; // 交戦中の国どうしでは取引しない (開戦を知ってから)
-          const amt = Math.min(want, spareOf(S, res) - (promised[`${S}|${res}`] || 0));
+          const kpair = pairKey(T, S, res);
+          if (pendingPair.has(kpair)) continue;
+          if (blocked(T, S)) continue; // 交戦中の国どうしでは取引しない (開戦を知ってから)
+          const kp = sysRes(S, res);
+          const amt = Math.min(want, spareOf(S, res) - (promised.get(kp) || 0));
           if (amt <= min) continue;
           this.requests.push({ id: this.nextShipId++, kind: 'trade', from: T, to: S, res, amt, sent: this.year, arrive: this.year + this.travelYears(T, S), state: 'sending' });
-          asked[`${T}|${res}`] = (asked[`${T}|${res}`] || 0) + amt;
-          promised[`${S}|${res}`] = (promised[`${S}|${res}`] || 0) + amt;
+          pendingPair.add(kpair);
+          asked.set(ka, (asked.get(ka) || 0) + amt);
+          promised.set(kp, (promised.get(kp) || 0) + amt);
         }
       }
     }
     for (const r of this.routes) {
-      for (const dir of [0, 1]) r.vol[dir] += ((sent[`${r.id}:${dir}`] || 0) / h - r.vol[dir]) * Math.min(1, h);
+      for (const dir of [0, 1]) r.vol[dir] += ((sent.get(r.id * 2 + dir) || 0) / h - r.vol[dir]) * Math.min(1, h);
     }
   }
   // 貨物を積み出す。path は経由する星系の列、times は各星系に着く年
@@ -2119,6 +2202,10 @@ class Game {
   }
   migrantsTo(c) { const k = colKey(c); return this.migrants.filter((m) => m.to === k).reduce((s, m) => s + m.n, 0); }
   migrate() {
+    // 向かっている移民の数 (行き先ごと)。一覧を毎回数え直す migrantsTo と同じ値を、送り出すたびに足して保つ
+    const incoming = new Map();
+    for (const m of this.migrants) incoming.set(m.to, (incoming.get(m.to) || 0) + m.n);
+    const migrantsTo = (d) => incoming.get(colKey(d)) || 0;
     for (const c of this.colonies) {
       const ratio = c.pop / this.capOf(c);
       if (!c.alerts) c.alerts = {};
@@ -2134,7 +2221,7 @@ class Game {
       const want = c.pop * (ratio >= 1 ? 0.05 : 0.03);
       const dests = this.colonies
         .filter((d) => d !== c && (d.sat?.food ?? 1) >= 0.99 && (!this.needsWater(d) || (d.sat?.water ?? 1) >= 0.99))
-        .map((d) => ({ d, room: this.capOf(d) * 0.8 - d.pop - this.migrantsTo(d), t: this.voyage(c.sys, d.sys).years }))
+        .map((d) => ({ d, room: this.capOf(d) * 0.8 - d.pop - migrantsTo(d), t: this.voyage(c.sys, d.sys).years }))
         .filter((x) => x.room > 0.001)
         .sort((a, b) => b.room / (1 + b.t / 10) - a.room / (1 + a.t / 10));
       if (!dests.length) continue;
@@ -2146,6 +2233,7 @@ class Game {
       const v = this.voyage(c.sys, d.sys);
       this.migrants.push({ id: this.nextShipId++, from: colKey(c), to: colKey(d), fromSys: c.sys, toSys: d.sys, n, races: { ...(c.races || { [HUMAN]: 1 }) },
         path: v.path, times: v.times.map((x) => this.year + x), depart: this.year, arrive: this.year + t });
+      incoming.set(colKey(d), (incoming.get(colKey(d)) || 0) + n);
     }
   }
 
@@ -2435,25 +2523,13 @@ class Game {
       }
     }
   }
-  // 交易路網上の最短経路 (航行年数の合計)。つながっていなければ null
+  // 交易路網上の最短経路 (航行年数の合計)。つながっていなければ null。
+  // 出発地からの最短経路木 (reach、キャッシュあり) をたどる (同じダイクストラ法なので、途中で打ち切る計算と結果は同じ)
   routePath(a, b) {
     if (a === b) return { path: [a], years: 0 };
-    const dist = { [a]: 0 };
-    const prev = {};
-    const done = new Set();
-    for (;;) {
-      let u = null;
-      for (const k of Object.keys(dist)) if (!done.has(+k) && (u === null || dist[k] < dist[u])) u = +k;
-      if (u === null) return null;
-      if (u === b) break;
-      done.add(u);
-      for (const r of this.routes) {
-        const v = r.a === u ? r.b : r.b === u ? r.a : null;
-        if (v === null) continue;
-        const d = dist[u] + this.shipYears(u, v);
-        if (dist[v] === undefined || d < dist[v]) { dist[v] = d; prev[v] = u; }
-      }
-    }
+    if (typeof a !== 'number' || typeof b !== 'number') return null; // 星系の番号は数 (数でなければ、もとの計算でもつながらない)
+    const { dist, prev } = this.reach(a);
+    if (dist[b] === undefined) return null;
     const path = [b];
     while (path[0] !== a) path.unshift(prev[path[0]]);
     return { path, years: dist[b] };
@@ -2530,7 +2606,9 @@ class Game {
     while (dt > 1e-9) {
       const h = Math.min(STEP, dt);
       dt -= h;
-      const before = Object.fromEntries(GHOST_KINDS.map((k) => [k, [...this[k]]]));
+      // 1歩の前の一覧 (写しは取らず、配列と件数を覚える。これらの一覧は末尾への追加か、別の配列への置き換えでしか変わらないので、
+      // 前の配列の先頭から件数ぶんが、1歩の前の中身そのもの)
+      const before = GHOST_KINDS.map((k) => [k, this[k], this[k].length]);
       this.year += h;
       for (const gv of Object.values(this.govs)) gv.led = {};
       if (this.arrivals()) changed = true;
@@ -2550,9 +2628,11 @@ class Game {
       cargo: (p) => p.path[p.path.length - 1], fleets: (f) => f.to, requests: (q) => q.to, troopMoves: (m) => m.path[m.path.length - 1],
       migrants: (m) => m.toSys, ships: (s) => s.to,
     };
-    for (const k of GHOST_KINDS) {
+    for (const [k, arr, n] of before) {
+      if (this[k] === arr) continue; // 同じ配列のままなら追加しかされておらず、消えたものはない
       const now = new Set(this[k]);
-      for (const o of before[k]) {
+      for (let i = 0; i < n; i++) {
+        const o = arr[i];
         if (now.has(o)) continue;
         if (k === 'projects') {
           for (const l of o.legs || []) {
@@ -2979,6 +3059,7 @@ class Game {
     };
   }
   recordSnapshots() {
+    this.snapVer = (this.snapVer || 0) + 1; // 記録が変わった (knownSystems の使い回しをやめる)
     const ids = new Set([...this.colonizedSystems().map((x) => x.id), ...Object.keys(this.garrison).filter((k) => this.garrison[k] > 0).map(Number)]);
     for (const id of ids) {
       if (id === 0) continue;
@@ -3006,10 +3087,19 @@ class Game {
     let best = null;
     for (const x of list) if (x.year <= seenYear) best = x;
     // 古い記録には新しい資源 (奴隷) がない
-    if (best) for (const o of [best.stock, best.prod, best.cons]) for (const r of RES) if (o && !Number.isFinite(o[r])) o[r] = 0;
+    if (best) for (const o of [best.stock, best.prod, best.cons]) for (const r of RES) if (o && !Number.isFinite(o[r])) { o[r] = 0; SNAP_JSON.delete(best); }
     return best;
   }
-  knownSystems() { return this.galaxy.systems.filter((x) => x.id === 0 || this.known(x.id)?.cols.length); }
+  // 地球の知っている入植星系 (太陽系を含む)。known の結果は、年・記録・観戦モードの「いまの様子」が同じなら変わらないので、
+  // そのあいだは一覧を使い回す (地図・パネル・自動化で何度も呼ぶので)。呼び出し側が並べ替えてもよいように写しを返す
+  knownSystems() {
+    const live = this.spectate ? this.live : null;
+    const c = this.ksCache;
+    if (c && c.year === this.year && c.spectate === this.spectate && c.snaps === this.snaps && c.ver === this.snapVer && c.live === live && (live !== null) === this.spectate) return c.list.slice();
+    const list = this.galaxy.systems.filter((x) => x.id === 0 || this.known(x.id)?.cols.length);
+    this.ksCache = { year: this.year, spectate: this.spectate, snaps: this.snaps, ver: this.snapVer, live: this.spectate ? this.live : null, list };
+    return list.slice();
+  }
   knownColonies(id) {
     if (id === 0) return this.coloniesIn(0);
     const k = this.known(id);
@@ -3044,6 +3134,29 @@ class Game {
     let hi = t1;
     for (let i = 0; i < 16; i++) { const m = (lo + hi) / 2; if (f(m) > 0) hi = m; else lo = m; }
     return posAt(lo);
+  }
+  // apparent((t) => this.pathPosition(path, times, t), t0, t1) と同じ計算を、途中で物を作らずに行う
+  // (地図で毎フレーム、輸送中の荷や船の数だけ呼ぶので)。式と順番は pathPosition・shipPosition と同じ
+  apparentPath(path, times, t0, t1) {
+    if (this.spectate || path.length < 2) return this.apparent((t) => this.pathPosition(path, times, t), t0, t1);
+    const E = this.system(0);
+    let px = 0, py = 0;
+    const place = (t) => {
+      let i = 0;
+      while (i < path.length - 2 && t >= times[i + 1]) i++;
+      const a = this.system(path[i]);
+      const b = this.system(path[i + 1]);
+      const f = clamp((t - times[i]) / Math.max(1e-9, times[i + 1] - times[i]), 0, 1);
+      px = a.x + (b.x - a.x) * f;
+      py = a.y + (b.y - a.y) * f;
+    };
+    const f = (t) => { place(t); return t + Math.hypot(px - E.x, py - E.y) - this.year; };
+    if (f(t0) > 0 || f(t1) <= 0) return null;
+    let lo = t0;
+    let hi = t1;
+    for (let i = 0; i < 16; i++) { const m = (lo + hi) / 2; if (f(m) > 0) hi = m; else lo = m; }
+    place(lo);
+    return { x: px, y: py };
   }
   departSeen(sys, t) { return t + (this.spectate ? 0 : this.lightDelay(sys)) <= this.year; }
   // 観戦モードの切り替え。オンにすると地球政府の自動化 (開発・防衛配備・居住区・資金援助) もすべてオンにする
@@ -3173,27 +3286,48 @@ class Game {
     }
   }
 
-  // 交易路網での最短距離 (出発地ごとにキャッシュ。交易路が増えたら作り直す)
+  // 交易路網での最短距離 (出発地ごとにキャッシュ。交易路が増えたら作り直す)。
+  // ダイクストラ法: 未確定の星系のうち距離が最小 (同じなら番号の小さい方) を確定し、交易路の並び順に隣を緩和する
   reach(a) {
-    const sig = this.routes.length;
-    if (this.reachCache?.sig !== sig) this.reachCache = { sig, map: {} };
+    a = Number(a);
+    const sig = `${this.routes.length}:${this.routes[this.routes.length - 1]?.id}`;
+    if (this.reachCache?.sig !== sig) {
+      // 隣接リスト (交易路の並び順) と区間の航行年数を、交易路が変わるたびに作り直す
+      const adj = new Map();
+      for (const r of this.routes) {
+        if (!adj.has(r.a)) adj.set(r.a, []);
+        if (!adj.has(r.b)) adj.set(r.b, []);
+        adj.get(r.a).push([r.b, this.shipYears(r.a, r.b)]);
+        if (r.b !== r.a) adj.get(r.b).push([r.a, this.shipYears(r.b, r.a)]);
+      }
+      this.reachCache = { sig, map: {}, adj };
+    }
     if (this.reachCache.map[a]) return this.reachCache.map[a];
+    const adj = this.reachCache.adj;
     const dist = { [a]: 0 };
     const prev = {};
-    const done = new Set();
-    for (;;) {
-      let u = null;
-      for (const k of Object.keys(dist)) if (!done.has(+k) && (u === null || dist[k] < dist[u])) u = +k;
-      if (u === null) break;
-      done.add(u);
-      for (const r of this.routes) {
-        const v = r.a === u ? r.b : r.b === u ? r.a : null;
-        if (v === null) continue;
-        const d = dist[u] + this.shipYears(u, v);
-        if (dist[v] === undefined || d < dist[v]) { dist[v] = d; prev[v] = u; }
+    const open = [a];
+    while (open.length) {
+      let bi = 0;
+      for (let i = 1; i < open.length; i++) {
+        const k = open[i], u0 = open[bi];
+        if (dist[k] < dist[u0] || (dist[k] === dist[u0] && k < u0)) bi = i;
+      }
+      const u = open[bi];
+      open[bi] = open[open.length - 1];
+      open.pop();
+      for (const [v, w] of adj.get(u) || []) {
+        const d = dist[u] + w;
+        if (dist[v] === undefined) { dist[v] = d; prev[v] = u; open.push(v); }
+        else if (d < dist[v]) { dist[v] = d; prev[v] = u; }
       }
     }
     return (this.reachCache.map[a] = { dist, prev });
+  }
+  // 交易路でつながった星系を、交易路網での近い順に (自分は除く。reach と同じく交易路が変わるまで使い回す)
+  reachSorted(a) {
+    const r = this.reach(a);
+    return (r.sorted ??= Object.keys(r.dist).map(Number).filter((id) => id !== a).sort((x, y) => r.dist[x] - r.dist[y]));
   }
   // 軍事以外の船の航路: 交易路をたどり、目的地に最も近い星系まで行ってから最後だけ直行する。
   // 目的地が交易路網の中なら全区間が交易路。戻り値の times は出発からの経過年数
@@ -3531,48 +3665,63 @@ class GalaxyView {
     const K = (id) => { if (!known.has(id)) known.set(id, id === 0 ? game.snapshot(0) : game.known(id)); return known.get(id); };
 
     // 国境: 国ごとに、入植星系のまわり 3.5 光年の円を合わせた領域の外周を描く (地球の国は太線)。
-    // 円の和の外周は、別のキャンバスに塗った領域から少し小さい領域をくり抜いて作り、国の色で塗る
+    // 円の和の外周は、別のキャンバスに塗った領域から少し小さい領域をくり抜いて作り、国の色で塗る。
+    // 描いた国境は 1 枚のレイヤーに貯めておき、視点・画面の大きさ・国ごとの星系が変わったときだけ描き直す (重いので)
     const groups = new Map();
+    const members = [];
     for (const sx of game.knownSystems()) {
       const k = K(sx.id);
       if (!k || !k.cols.length) continue;
       const realm = k.realm ?? 0;
       if (!groups.has(realm)) groups.set(realm, []);
       groups.get(realm).push(this.toScreen(sx.x, sx.y));
+      members.push(`${realm}:${sx.id}`);
     }
     if (groups.size) {
       const dpr = this.canvas.width / Math.max(1, w);
-      this.off ??= document.createElement('canvas');
-      if (this.off.width !== this.canvas.width || this.off.height !== this.canvas.height) { this.off.width = this.canvas.width; this.off.height = this.canvas.height; }
-      const oc = this.off.getContext('2d');
-      const R = 3.5 * z;
-      const circles = (c, pts, rad) => { c.beginPath(); for (const [x, y] of pts) { c.moveTo(x + rad, y); c.arc(x, y, rad, 0, Math.PI * 2); } };
-      for (const [realm, pts] of groups) {
-        const color = realmColor(realm);
-        const lw = realm === 0 ? 2.5 : 1.5;
-        ctx.globalAlpha = realm === 0 ? 0.07 : 0.05;
-        ctx.fillStyle = color;
-        circles(ctx, pts, R);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        oc.setTransform(1, 0, 0, 1, 0, 0);
-        oc.clearRect(0, 0, this.off.width, this.off.height);
-        oc.setTransform(dpr, 0, 0, dpr, 0, 0);
-        oc.globalCompositeOperation = 'source-over';
-        oc.fillStyle = '#000';
-        circles(oc, pts, R);
-        oc.fill();
-        oc.globalCompositeOperation = 'destination-out';
-        circles(oc, pts, Math.max(0.5, R - lw));
-        oc.fill();
-        oc.globalCompositeOperation = 'source-in';
-        oc.fillStyle = color;
-        oc.fillRect(0, 0, w, h);
-        oc.globalCompositeOperation = 'source-over';
-        ctx.globalAlpha = realm === 0 ? 0.85 : 0.6;
-        ctx.drawImage(this.off, 0, 0, w, h);
-        ctx.globalAlpha = 1;
+      const sig = `${this.canvas.width}x${this.canvas.height}|${w}x${h}|${this.cam.x},${this.cam.y},${z}|${members.join(',')}`;
+      this.borderLayer ??= document.createElement('canvas');
+      const L = this.borderLayer;
+      if (this.borderSig !== sig) {
+        this.borderSig = sig;
+        if (L.width !== this.canvas.width || L.height !== this.canvas.height) { L.width = this.canvas.width; L.height = this.canvas.height; }
+        const lc = L.getContext('2d');
+        lc.setTransform(1, 0, 0, 1, 0, 0);
+        lc.clearRect(0, 0, L.width, L.height);
+        lc.setTransform(dpr, 0, 0, dpr, 0, 0);
+        this.off ??= document.createElement('canvas');
+        if (this.off.width !== this.canvas.width || this.off.height !== this.canvas.height) { this.off.width = this.canvas.width; this.off.height = this.canvas.height; }
+        const oc = this.off.getContext('2d');
+        const R = 3.5 * z;
+        const circles = (c, pts, rad) => { c.beginPath(); for (const [x, y] of pts) { c.moveTo(x + rad, y); c.arc(x, y, rad, 0, Math.PI * 2); } };
+        for (const [realm, pts] of groups) {
+          const color = realmColor(realm);
+          const lw = realm === 0 ? 2.5 : 1.5;
+          lc.globalAlpha = realm === 0 ? 0.07 : 0.05;
+          lc.fillStyle = color;
+          circles(lc, pts, R);
+          lc.fill();
+          lc.globalAlpha = 1;
+          oc.setTransform(1, 0, 0, 1, 0, 0);
+          oc.clearRect(0, 0, this.off.width, this.off.height);
+          oc.setTransform(dpr, 0, 0, dpr, 0, 0);
+          oc.globalCompositeOperation = 'source-over';
+          oc.fillStyle = '#000';
+          circles(oc, pts, R);
+          oc.fill();
+          oc.globalCompositeOperation = 'destination-out';
+          circles(oc, pts, Math.max(0.5, R - lw));
+          oc.fill();
+          oc.globalCompositeOperation = 'source-in';
+          oc.fillStyle = color;
+          oc.fillRect(0, 0, w, h);
+          oc.globalCompositeOperation = 'source-over';
+          lc.globalAlpha = realm === 0 ? 0.85 : 0.6;
+          lc.drawImage(this.off, 0, 0, w, h);
+          lc.globalAlpha = 1;
+        }
       }
+      ctx.drawImage(L, 0, 0, w, h);
     }
 
     // 交易路と輸送中の貨物
@@ -3587,7 +3736,7 @@ class GalaxyView {
     ctx.lineWidth = 1;
     ctx.fillStyle = '#6fdc96';
     for (const p of [...game.cargo, ...game.ghosts.cargo]) {
-      const pos = seenAt((t) => game.pathPosition(p.path, p.times, t), p.times[0], p.arrive);
+      const pos = game.apparentPath(p.path, p.times, p.times[0], p.arrive);
       if (!pos) continue;
       const [px, py] = this.toScreen(pos.x, pos.y);
       ctx.fillRect(px - 1.5, py - 1.5, 3, 3);
@@ -3664,7 +3813,7 @@ class GalaxyView {
     for (const j of [...game.projects, { legs: game.ghosts.legs }]) {
       const legs = j.legs || j.from.map((from) => ({ path: [from, j.sys], times: [j.start, j.start + game.shipYears(from, j.sys)] }));
       for (const l of legs) {
-        const pos = seenAt((t) => game.pathPosition(l.path, l.times, t), l.times[0], l.times[l.times.length - 1]);
+        const pos = game.apparentPath(l.path, l.times, l.times[0], l.times[l.times.length - 1]);
         if (!pos) continue;
         const [px, py] = this.toScreen(pos.x, pos.y);
         ctx.beginPath(); ctx.moveTo(px, py - 3); ctx.lineTo(px + 3, py); ctx.lineTo(px, py + 3); ctx.lineTo(px - 3, py); ctx.fill();
@@ -3703,7 +3852,7 @@ class GalaxyView {
     // 移動中の歩兵 (交易路をたどる)
     ctx.fillStyle = '#ff9f8f';
     for (const m of [...game.troopMoves, ...game.ghosts.troopMoves]) {
-      const pos = seenAt((t) => game.pathPosition(m.path, m.times, t), m.times[0], m.arrive);
+      const pos = game.apparentPath(m.path, m.times, m.times[0], m.arrive);
       if (!pos) continue;
       const [px, py] = this.toScreen(pos.x, pos.y);
       ctx.fillRect(px - 2.5, py - 2.5, 5, 5);
@@ -3713,8 +3862,8 @@ class GalaxyView {
     ctx.fillStyle = '#8fd3ff';
     for (const m of [...game.migrants, ...game.ghosts.migrants]) {
       if (m.fromSys === m.toSys) continue;
-      const at = (t) => (m.path ? game.pathPosition(m.path, m.times, t) : game.shipPosition({ from: m.fromSys, to: m.toSys, depart: m.depart, arrive: m.arrive }, t));
-      const pos = seenAt(at, m.depart, m.arrive);
+      const pos = m.path ? game.apparentPath(m.path, m.times, m.depart, m.arrive)
+        : seenAt((t) => game.shipPosition({ from: m.fromSys, to: m.toSys, depart: m.depart, arrive: m.arrive }, t), m.depart, m.arrive);
       if (!pos) continue;
       const [px, py] = this.toScreen(pos.x, pos.y);
       ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI * 2); ctx.fill();
@@ -3724,7 +3873,7 @@ class GalaxyView {
     for (const s of [...game.ships, ...game.ghosts.ships]) {
       const path = s.path || [s.from, s.to];
       const times = s.times || [s.depart, s.arrive];
-      const p = seenAt((t) => game.pathPosition(path, times, t), times[0], s.arrive);
+      const p = game.apparentPath(path, times, times[0], s.arrive);
       if (!p) continue;
       const [px, py] = this.toScreen(p.x, p.y);
       ctx.strokeStyle = 'rgba(255,170,60,0.45)';
@@ -3739,25 +3888,48 @@ class GalaxyView {
 
     // 星
     const scale = clamp(z / 6, 0.8, 2.5);
+    const starR = (s) => (1.5 + 1.1 * Math.log10(1 + s.stars[0].lum * 20)) * scale;
+    // 星そのもの (光の輪・本体・伴星) は動かないので 1 枚のレイヤーに貯め、視点か画面の大きさが変わったときだけ描き直す
+    {
+      const dpr = this.canvas.width / Math.max(1, w);
+      const sig = `${this.canvas.width}x${this.canvas.height}|${w}x${h}|${this.cam.x},${this.cam.y},${z}`;
+      this.starLayer ??= document.createElement('canvas');
+      const L = this.starLayer;
+      if (this.starSig !== sig) {
+        this.starSig = sig;
+        if (L.width !== this.canvas.width || L.height !== this.canvas.height) { L.width = this.canvas.width; L.height = this.canvas.height; }
+        const lc = L.getContext('2d');
+        lc.setTransform(1, 0, 0, 1, 0, 0);
+        lc.clearRect(0, 0, L.width, L.height);
+        lc.setTransform(dpr, 0, 0, dpr, 0, 0);
+        for (const s of game.galaxy.systems) {
+          const [x, y] = this.toScreen(s.x, s.y);
+          if (x < -20 || y < -20 || x > this.w + 20 || y > this.h + 20) continue;
+          const star = s.stars[0];
+          const r = starR(s);
+          const glow = lc.createRadialGradient(x, y, 0, x, y, r * 3);
+          glow.addColorStop(0, star.color);
+          glow.addColorStop(0.35, star.color);
+          glow.addColorStop(1, 'rgba(0,0,0,0)');
+          lc.globalAlpha = 0.9;
+          lc.fillStyle = glow;
+          lc.beginPath(); lc.arc(x, y, r * 3, 0, Math.PI * 2); lc.fill();
+          lc.globalAlpha = 1;
+          lc.fillStyle = star.color;
+          lc.beginPath(); lc.arc(x, y, r, 0, Math.PI * 2); lc.fill();
+          if (s.stars.length > 1) {
+            lc.fillStyle = s.stars[1].color;
+            lc.beginPath(); lc.arc(x + r * 1.1, y - r * 0.9, r * 0.5, 0, Math.PI * 2); lc.fill();
+          }
+        }
+      }
+      ctx.drawImage(L, 0, 0, w, h);
+    }
+    // 星ごとの表示 (所属の輪・駐留艦隊・戦争・名前など)
     for (const s of game.galaxy.systems) {
       const [x, y] = this.toScreen(s.x, s.y);
       if (x < -20 || y < -20 || x > this.w + 20 || y > this.h + 20) continue;
-      const star = s.stars[0];
-      const r = (1.5 + 1.1 * Math.log10(1 + star.lum * 20)) * scale;
-      const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
-      glow.addColorStop(0, star.color);
-      glow.addColorStop(0.35, star.color);
-      glow.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.globalAlpha = 0.9;
-      ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2); ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = star.color;
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-      if (s.stars.length > 1) {
-        ctx.fillStyle = s.stars[1].color;
-        ctx.beginPath(); ctx.arc(x + r * 1.1, y - r * 0.9, r * 0.5, 0, Math.PI * 2); ctx.fill();
-      }
+      const r = starR(s);
       const k = K(s.id);
       if (k && k.cols.length) {
         ctx.strokeStyle = realmColor(s.id === 0 ? 0 : k.realm ?? 0);
@@ -4557,12 +4729,12 @@ function renderFleetBar() {
   const heldK = [...app.fleetSel].filter((id) => (id === 0 ? g.held[0] : g.known(id)?.held) > 0).length;
   const routeK = [...app.fleetMove].filter((id) => fleetOf(id)?.route?.length).length;
   const orders = [heldK ? `駐留命令 ${heldK} か所` : '', routeK ? `経由地つき ${routeK}` : ''].filter(Boolean).join('・');
-  bar.innerHTML = `<b class="lbl">選択中の艦隊</b><span>${app.fleetSel.size ? `${app.fleetSel.size} か所` : ''}${app.fleetSel.size && app.fleetMove.size ? '・' : ''}${app.fleetMove.size ? `移動中 ${app.fleetMove.size}` : ''}・${total} 艦隊</span>
+  setHtml(bar, `<b class="lbl">選択中の艦隊</b><span>${app.fleetSel.size ? `${app.fleetSel.size} か所` : ''}${app.fleetSel.size && app.fleetMove.size ? '・' : ''}${app.fleetMove.size ? `移動中 ${app.fleetMove.size}` : ''}・${total} 艦隊</span>
     <span><span class="lbl">送る数</span> ${Object.entries(FLEET_AMOUNT).map(([k, l]) => `<button data-fa="amount" data-v="${k}" class="${app.fleetAmount === k ? 'on' : ''}">${l}</button>`).join('')}</span>
     <span class="muted hint">移動先を右クリック (タッチ操作はタップ)・Shift+クリックで追加・Shift+ドラッグで範囲選択・移動中の艦隊 (三角) も選べる (指令は光速で追いついた地点から効く。送る数は全艦)・長押し (右ドラッグ) で線を引くと、触れた星系を順に回る</span>
     <button data-fa="clear">選択を解除</button>
     <button data-fa="orders" title="命令による駐留と経由地をやめ、自動防衛配備に任せる (Delete キー)。移動中の艦隊はいまの行き先までは進む">指令を取り消す${orders ? ` <small>(${orders})</small>` : ''}</button>
-    ${conf ? `<div class="warn">⚠ ${esc(conf.name)} は${esc(g.realmName(realm))}の星系。奇襲攻撃になり、到着した時点で戦争状態に突入します。${confRoute.length > 1 ? `経由地: ${confRoute.map((id) => esc(g.system(id).name)).join(' → ')}。` : `もう一度 ${esc(conf.name)} を右クリック (タップ) しても実行。`} <button data-fa="go">実行</button> <button data-fa="cancel">やめる</button></div>` : ''}`;
+    ${conf ? `<div class="warn">⚠ ${esc(conf.name)} は${esc(g.realmName(realm))}の星系。奇襲攻撃になり、到着した時点で戦争状態に突入します。${confRoute.length > 1 ? `経由地: ${confRoute.map((id) => esc(g.system(id).name)).join(' → ')}。` : `もう一度 ${esc(conf.name)} を右クリック (タップ) しても実行。`} <button data-fa="go">実行</button> <button data-fa="cancel">やめる</button></div>` : ''}`);
   bar.classList.toggle('confirm', !!conf);
   bar.hidden = false;
 }
@@ -5387,19 +5559,45 @@ function buildSave(game, extra = {}) {
     surveyed: game.surveyed, savedAt: Date.now(), ...extra,
   };
 }
+// セーブデータの JSON (JSON.stringify(buildSave(...)) と同じ文字列)。いちばん大きい星系の記録は、記録ごとの JSON を使い回してつなぐ
+function saveJSON(game, extra) {
+  const d = buildSave(game, extra);
+  const snaps = d.snaps;
+  if (!snaps || typeof snaps !== 'object') return JSON.stringify(d);
+  d.snaps = '\u0000SNAPS\u0000';
+  const head = JSON.stringify(d);
+  const parts = [];
+  for (const k of Object.keys(snaps)) {
+    const v = snaps[k];
+    if (Array.isArray(v)) parts.push(`${JSON.stringify(k)}:[${v.map(snapJSON).join(',')}]`);
+    else { const t = JSON.stringify(v); if (t !== undefined) parts.push(`${JSON.stringify(k)}:${t}`); }
+  }
+  const body = `{${parts.join(',')}}`;
+  return head.replace('"\\u0000SNAPS\\u0000"', () => body);
+}
 function parseSave(text) {
   try {
     const d = JSON.parse(text);
     return d && typeof d === 'object' && d.seed !== undefined && Number.isFinite(d.year) ? d : null;
   } catch { return null; }
 }
+// 自動セーブ。前に書いた中身と同じ (一時停止中など) なら書き込みを省く (大きなセーブの書き込みは重いので)。
+// 比べるときは保存時刻 (savedAt) を除き、書くときに今の時刻を入れる
+let lastSaved = null;
 function writeSave(game, extra) {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave(game, extra))); return true; } catch { return false; }
+  try {
+    const cmp = saveJSON(game, { ...extra, savedAt: 0 });
+    if (cmp === lastSaved) return true;
+    localStorage.setItem(SAVE_KEY, cmp.replace(/"savedAt":0(?=[,}])/, () => `"savedAt":${Date.now()}`));
+    lastSaved = cmp;
+    return true;
+  } catch { lastSaved = null; return false; }
 }
 function readSave() {
   try { const t = localStorage.getItem(SAVE_KEY); return t ? parseSave(t) : null; } catch { return null; }
 }
 function clearSave() {
+  lastSaved = null;
   try { localStorage.removeItem(SAVE_KEY); } catch { /* 保存できない環境では無視 */ }
 }
 // セーブデータを読み込んで現在のゲームに反映する。失敗時は現在の状態を保つ。
@@ -5422,7 +5620,7 @@ function save() {
 
 $('savenow').onclick = () => { save(); app.game.message('セーブした。'); };
 function exportSave() {
-  const blob = new Blob([JSON.stringify(buildSave(app.game, { speed: app.speed }))], { type: 'application/json' });
+  const blob = new Blob([saveJSON(app.game, { speed: app.speed })], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `moribin-${app.game.year.toFixed(0)}.json`;
@@ -5514,7 +5712,7 @@ $('home').onclick = (e) => {
   }
   if (act === 'slotsave') {
     if (readKey(SLOT_KEYS[i]) && !confirm2(`save${i}`)) return;
-    try { localStorage.setItem(SLOT_KEYS[i], JSON.stringify(buildSave(app.game, { speed: app.homeSpeed }))); } catch { app.homeNote = 'セーブできなかった (保存容量が足りないか、この環境では保存できない)'; }
+    try { localStorage.setItem(SLOT_KEYS[i], saveJSON(app.game, { speed: app.homeSpeed })); } catch { app.homeNote = 'セーブできなかった (保存容量が足りないか、この環境では保存できない)'; }
   } else if (act === 'slotload') {
     const d = readKey(SLOT_KEYS[i]);
     if (d && loadSave(d)) { save(); app.game.message(`スロット ${i + 1} をロードした。`); return closeHome(d.speed); }
@@ -5662,10 +5860,18 @@ window.addEventListener('pointercancel', () => { panelHeld = false; });
 window.addEventListener('touchend', (e) => { if (!e.touches.length) touching = false; }, { passive: true });
 window.addEventListener('touchcancel', (e) => { if (!e.touches.length) touching = false; }, { passive: true });
 const panelBusy = () => panelHeld || touching || performance.now() - lastScroll < 800 || document.activeElement?.tagName === 'SELECT';
+// 中身が変わったときだけ書き換える (同じ HTML を入れ直すとレイアウトの計算が走って重い)
+function setHtml(el, html) {
+  if (el.lastHtml === html) return;
+  el.lastHtml = html;
+  el.innerHTML = html;
+}
 // 描き直しても、表の横スクロール位置はそのまま残す
 // (別の画面・タブに切り替えたときは引き継がない)
 function setHtmlKeepScroll(el, html) {
   const key = `${app.view}|${app.empireTab}|${app.sel.sys}|${app.sel.body}`;
+  if (el.dataset.key === key && el.lastHtml === html) return; // 中身が同じなら描き直さない (重いレイアウトの計算を省く)
+  el.lastHtml = html;
   const xs = el.dataset.key === key ? [...el.querySelectorAll('.scroll')].map((x) => x.scrollLeft) : [];
   el.dataset.key = key;
   el.innerHTML = html;
@@ -5689,10 +5895,10 @@ function frame(now) {
   acc += dt;
   if (acc > 0.5) {
     acc = 0;
-    $('ships').innerHTML = shipsHtml(game);
-    $('log').innerHTML = logHtml(game);
-    $('treasury').innerHTML = treasuryHtml(game);
-    $('ledger').innerHTML = ledgerHtml(game);
+    setHtml($('ships'), shipsHtml(game));
+    setHtml($('log'), logHtml(game));
+    setHtml($('treasury'), treasuryHtml(game));
+    setHtml($('ledger'), ledgerHtml(game));
     if (hasFleetSelection()) renderFleetBar();
     if (app.view === 'events') app.seenTime = game.year;
     const unseen = game.knownEvents().filter((e) => !e.good && (e.seen ?? e.year) > (app.seenTime ?? -Infinity)).length;
