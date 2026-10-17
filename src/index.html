@@ -314,7 +314,7 @@ body.fx .jit { animation:fx-jit .6s steps(1) 1; }
 /* 星系を選んでいないときは、右 (狭い画面では下) の欄そのものを出さず、地図を広げる */
 body.nosel aside { display:none; }
 /* 宇宙の背景: 星間マップは天の川の全天星図 (NASA SVS の Deep Star Maps 2020、銀河の中心のあたり)、
-   星系マップはスピッツァー望遠鏡の北アメリカ星雲 (色を抑えて暗くしたもの)。地図 (canvas) は透明にして、その後ろに置く。
+   星系マップは太陽系がスピッツァー望遠鏡の北アメリカ星雲、ほかの星系は星系ごとに決まった1枚 (systemBg。どれも色を抑えて暗くしたもの)。地図 (canvas) は透明にして、その後ろに置く。
    文字と星が読めるよう暗くかぶせ、星間マップでは視点の動きにわずかに遅れて動かす (奥行き) */
 #sky { position:absolute; inset:0; overflow:hidden; background:var(--map-bg); pointer-events:none; }
 #sky > div { position:absolute; inset:-12%; background:center / cover no-repeat; opacity:0; transition:opacity .4s; will-change:transform; }
@@ -404,7 +404,7 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
         <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
         <button id="fxbtn" title="文字がときどき色ずれしてぶれる">画面の動き: 入</button>
         <span id="savestat" class="muted"></span>
-        <span id="credits" class="muted">背景画像: 天の川の星図 NASA/Goddard Space Flight Center Scientific Visualization Studio・Gaia DR2: ESA/Gaia/DPAC ／ 北アメリカ星雲 NASA/JPL-Caltech</span>
+        <span id="credits" class="muted">背景画像: 天の川の星図 NASA/Goddard Space Flight Center Scientific Visualization Studio・Gaia DR2: ESA/Gaia/DPAC ／ 北アメリカ星雲 NASA/JPL-Caltech ／ 星系ごとの背景 NASA, ESA, JPL-Caltech, STScI ほか (詳しくは README)</span>
       </div>
     </div>
     <input id="importfile" type="file" accept="application/json,.json" hidden>
@@ -7849,13 +7849,17 @@ let last = performance.now();
 // 背景の層: 画面に合わせて画像を切り替え、星間マップでは視点の 4% だけ動かす (ズームでもわずかに大きく)
 const sky = $('sky');
 let lastSkyKey = '';
+// 星系マップの背景: 太陽系は北アメリカ星雲、ほかの星系は assets/systems/ の 17 枚から星系ごとに決まった1枚 (使い回し)
+const SYSTEM_BG_COUNT = 17;
+const systemBg = (id) => (id === 0 ? 'assets/space-system.jpg' : `assets/systems/${String(1 + (hashSeed(`bg${id}`) % SYSTEM_BG_COUNT)).padStart(2, '0')}.jpg`);
 function updateSky() {
   const v = app.view === 'system' ? 'system' : 'galaxy';
   const c = galaxyView.cam;
-  const key = v === 'galaxy' ? `g|${c.x}|${c.y}|${c.zoom}` : 's';
+  const key = v === 'galaxy' ? `g|${c.x}|${c.y}|${c.zoom}` : `s|${app.sel.sys}`;
   if (key === lastSkyKey) return;
   lastSkyKey = key;
   sky.dataset.view = v;
+  if (v === 'system' && app.sel.sys != null) sky.lastElementChild.style.backgroundImage = `linear-gradient(rgba(11,12,13,.5), rgba(11,12,13,.5)), url("${systemBg(app.sel.sys)}")`;
   if (v === 'galaxy') {
     const k = 0.04, sc = Math.min(1.1, Math.max(1, 1 + Math.log(c.zoom / 6) * 0.03));
     // 端が見えないよう、ずらす量は背景の余白 (12%) の 8 割まで

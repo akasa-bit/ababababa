@@ -198,7 +198,7 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 - **説明**: 長い説明文は「説明」ボタンの中にしまってある (押すと開く)
 - **選択を外す**: 右の欄の星系名の横の ✕、Esc、または星間マップの何もないところを押すと、星系の選択が外れる (艦隊を選んでいるときは、まず艦隊の選択が外れる)。何も選んでいないときは右 (狭い画面では下) の欄そのものが隠れ、地図が広がる。星を押すと欄が戻る。「星系」タブを押すと、最後に選んだ星系が開く
 - **見た目**: 黒鉛色の地に白と赤橙 (NASA の 1975 年のグラフィック標準書にならう)。ボタンとタブの縁は絵画の額縁 (面取りの光と影、玉縁の粒、四隅の花形の飾り。選んでいるものは明るい銀の額)。見出しと数字はタイプライター体 (Special Elite) と古い活字の明朝 (Zen Antique) で少し掠れさせ、本文は Courier Prime と Zen Old Mincho。書体は Google Fonts から読み、通信できないときは端末の明朝に戻る
-- **宇宙の背景**: 星間マップの後ろには実際の天の川の全天星図 (銀河の中心のあたり)、星系マップの後ろにはスピッツァー宇宙望遠鏡の北アメリカ星雲 (色を抑えて暗くしたもの) を置く。星間マップでは視点の動きにわずかに遅れて動き、奥行きが出る。画像は `assets/` (合わせて約 2.5 MB) → [画像の出典](#画像の出典)
+- **宇宙の背景**: 星間マップの後ろには実際の天の川の全天星図 (銀河の中心のあたり)、星系マップの後ろには、太陽系ならスピッツァー宇宙望遠鏡の北アメリカ星雲、ほかの星系なら NASA の星雲・銀河・星団の写真 17 枚から星系ごとに決まった1枚を置く (どれも色を抑えて暗くしたもの)。星間マップでは視点の動きにわずかに遅れて動き、奥行きが出る。画像は `assets/` (合わせて約 9 MB。星系マップの背景は開いた星系の1枚だけ読む) → [画像の出典](#画像の出典)
 - **走査線と文字のぶれ**: ボタンには昔のレーダー画面のような、動かない白く淡い横線が入る。文字はときどき色ずれしてぶれる (「≡」メニューの「画面の動き」で切れる。端末で動きを減らす設定をオンにしていれば出ない)
 - **情報の古さ**: 星間マップの星は、地球に届いている情報が古いほど薄く描く (80年で最も薄くなる)。右の欄の名前の横にも「最新 / ○年前」が出る
 - **色の意味** (ヘッダー・右の欄・知らせの帯): 白は自分 (地球の国)、赤橙は敵・危険、黄は中立、橙は注意、緑は良いこと、青は情報。出来事の種類の札はゴム印のように枠と文字の色だけ。文字は4段階の大きさ、タッチ画面ではボタンを44px以上にする
@@ -240,3 +240,21 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 
 - `assets/space-galaxy.jpg`: Deep Star Maps 2020 (`starmap_2020_8k_gal.exr` の銀河中心付近を切り出し、明るさを調整)。Credit: NASA/Goddard Space Flight Center Scientific Visualization Studio. Gaia DR2: ESA/Gaia/DPAC. https://svs.gsfc.nasa.gov/4851/
 - `assets/space-system.jpg`: North America Nebula in Different Lights (PIA13845、可視光の Digitized Sky Survey とスピッツァー宇宙望遠鏡の赤外線を合成)。縮小し、彩度と明るさを落として使用。Credit: NASA/JPL-Caltech. https://images.nasa.gov/details/PIA13845
+- `assets/systems/01.jpg`〜`17.jpg` (太陽系以外の星系マップの背景。星系ごとに1枚が決まる): NASA の画像ライブラリ (images.nasa.gov) から。縮小し、彩度と明るさを落として使用
+  - `01.jpg`: The Case of the Disappearing Continent (北アメリカ星雲の赤外線像 (消えた大陸))。Credit: NASA/JPL-Caltech. https://images.nasa.gov/details/PIA13843
+  - `02.jpg`: Into the Depths of the Lagoon Nebula (干潟星雲 M8 の奥)。Credit: NASA/JPL-Caltech. https://images.nasa.gov/details/PIA14728
+  - `03.jpg`: Tarantula Nebula Spitzer 2-Color Image (タランチュラ星雲 (2色))。Credit: NASA/JPL-Caltech. https://images.nasa.gov/details/PIA23646
+  - `04.jpg`: Hubble's High-Definition Panoramic View of the Andromeda Galaxy (アンドロメダ銀河 (一部))。Credit: NASA, ESA, and G. Bacon (STScI). https://images.nasa.gov/details/GSFC_20171208_Archive_e000833
+  - `05.jpg`: Pink Pleiades (プレアデス星団 (すばる))。Credit: NASA/JPL-Caltech. https://images.nasa.gov/details/PIA09262
+  - `06.jpg`: Hubble Sees Hidden Treasure in Large Magellanic Cloud (大マゼラン雲の星団)。Credit: ESA/Hubble & NASA. https://images.nasa.gov/details/GSFC_20171208_Archive_e001642
+  - `07.jpg`: Hubble Sees Turquoise-Tinted Plumes in Large Magellanic Cloud (大マゼラン雲の青緑の雲)。Credit: ESA/Hubble & NASA: acknowledgement: Josh Barrington. https://images.nasa.gov/details/GSFC_20171208_Archive_e000933
+  - `08.jpg`: Soul Nebula (胎児星雲)。Credit: NASA/JPL-Caltech/UCLA. https://images.nasa.gov/details/PIA13014
+  - `09.jpg`: Hubble Peers into the Storm (大マゼラン雲の嵐)。Credit: ESA/Hubble & NASA. https://images.nasa.gov/details/GSFC_20171208_Archive_e000226
+  - `10.jpg`: Towering Infernos (そびえる炎の柱)。Credit: IRAC Image: NASA/JPL-Caltech/Harvard-Smithsonian CfA/ESA/STScI Visible Light Image: NASA/JPL-Caltech/Harvard-Smithsonian CfA/DSS. https://images.nasa.gov/details/PIA03096
+  - `11.jpg`: Blowin in the Stellar Wind (恒星風に吹かれた雲)。Credit: NASA/JPL-Caltech/UCLA. https://images.nasa.gov/details/PIA14103
+  - `12.jpg`: Dragon Lair (竜の巣)。Credit: NASA/JPL-Caltech/Penn State/DSS. https://images.nasa.gov/details/PIA13240
+  - `13.jpg`: Hubble Space Telescope Celebrates 25 Years of Unveiling the Universe (ウェスターランド2 (25周年))。Credit: NASA, ESA, G. Bacon, L. Frattare, Z. Levay, and F. Summers (Viz3D Team, STScI), and J. Anderson (STScI). https://images.nasa.gov/details/GSFC_20171208_Archive_e000742
+  - `14.jpg`: WISE Unveils a Treasure Trove of Beauty (WISE の宝箱)。Credit: NASA/JPL-Caltech/UCLA. https://images.nasa.gov/details/PIA13974
+  - `15.jpg`: Close-up of M27, the Dumbbell Nebula (亜鈴状星雲 M27)。Credit: NASA/JPL/STScI. https://images.nasa.gov/details/PIA04249
+  - `16.jpg`: Celestial Sea of Stars (星の海 (銀河面))。Credit: NASA/JPL-Caltech/Univ. of Wisc.. https://images.nasa.gov/details/PIA12071
+  - `17.jpg`: Dragonfish Coming At You in Infrared (ドラゴンフィッシュ星雲)。Credit: NASA/JPL-Caltech/Univ. of Toronto. https://images.nasa.gov/details/PIA14885
