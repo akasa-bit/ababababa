@@ -4474,7 +4474,8 @@ class GalaxyView {
         if (e.pointerType !== 'mouse') this.lp = setTimeout(() => { if (this.drag && !this.drag.moved && pts.size === 1) this.startPath(x, y); }, 450);
       } else if (pts.size === 2) {
         const [a, b] = [...pts.values()];
-        pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), zoom: this.cam.zoom };
+        const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+        pinch = { d: Math.max(1, Math.hypot(a[0] - b[0], a[1] - b[1])), zoom: this.cam.zoom, world: this.toWorld(mx, my) };
         clearTimeout(this.lp);
         this.path = null;
         if (this.drag) this.drag.moved = true;
@@ -4491,7 +4492,12 @@ class GalaxyView {
       if (pinch && pts.size === 2) {
         const [a, b] = [...pts.values()];
         const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-        this.zoomAt((pinch.zoom * d / pinch.d) / this.cam.zoom, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+        const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+        // 倍率は指の間隔の比。ピンチを始めたとき指の中点の下にあった地点が、いまの中点の下に来るよう視点を動かす
+        // (中身が指に貼りついたまま拡大・移動し、ずれていかない)
+        this.cam.zoom = clamp(pinch.zoom * d / pinch.d, 1.5, 80);
+        this.cam.x = pinch.world[0] - (mx - this.w / 2) / this.cam.zoom;
+        this.cam.y = pinch.world[1] - (my - this.h / 2) / this.cam.zoom;
         return;
       }
       if (this.drag) {
@@ -4538,6 +4544,10 @@ class GalaxyView {
       const wasPinch = pts.size > 1;
       pts.delete(e.pointerId);
       if (pts.size < 2) pinch = null;
+      if (wasPinch && pts.size === 1 && this.drag) {
+        const [rx, ry] = [...pts.values()][0];
+        this.drag = { x: rx, y: ry, cx: this.cam.x, cy: this.cam.y, moved: true };
+      }
       if (this.drag && !this.drag.moved && !wasPinch && e.type === 'pointerup') this.tap(this.pick(x, y), e, this.pickFleet(x, y));
       if (pts.size === 0) this.drag = null;
     };
@@ -7674,7 +7684,7 @@ function setHtmlKeepScroll(el, html) {
 }
 // --- メインループ ---
 let last = performance.now();
-let lastNosel = false, lastMapKey = '', lastMapGame = null, lastDrawYear = NaN, lastMapDraw = -Infinity, mapPending = false, lastDateText = '', mapActiveUntil = 0, lastTickYear = NaN, lastFullTick = 0;
+let lastNosel = false, lastMapKey = '', lastMapGame = null, lastDrawYear = NaN, lastDateText = '', mapActiveUntil = 0, lastTickYear = NaN, lastFullTick = 0;
 // 知らせの帯に、届いたばかりで薄れていく知らせがあるか (10 秒で消える)
 const railFading = (now) => now - (app.railNewest ?? -Infinity) < 11000;
 // 操作のあとしばらくは、地図を毎フレーム描き直す (なぞり・ホバー・ズーム・長押しの線など)
@@ -7697,18 +7707,13 @@ function frame(now) {
   // 見かけの速さは光速の 20 倍 (0.95c で近づくとき 1/(1−0.95)) まで。星系図は惑星が回るので毎フレーム描く
   const yearMoved = app.view === 'galaxy' ? Math.abs(game.year - lastDrawYear) * 20 * cam.zoom >= 0.25 : game.year !== lastDrawYear;
   const mapKey = `${app.view}|${w}|${h}|${cam.x}|${cam.y}|${cam.zoom}|${app.sel.sys}|${app.sel.body}|${app.fleetSel.size}|${app.fleetMove.size}|${app.signalMode}`;
-  // 描き直しは毎秒 60 回まで (間に合わなかった分は次のフレームに持ち越す。120Hz の画面でも 60 回に抑える)
-  if (mapPending || app.dirty || yearMoved || mapKey !== lastMapKey || game !== lastMapGame || now < mapActiveUntil || now - (galaxyView.camMovedAt || 0) < 400 || galaxyView.animating || systemView.animating) {
-    if (now - lastMapDraw < 1000 / 60 - 1) mapPending = true;
-    else {
-      mapPending = false; lastMapDraw = now;
-      lastMapKey = mapKey; lastMapGame = game; lastDrawYear = game.year; galaxyView.animating = systemView.animating = false;
-      const ctx = galaxyView.ctx;
-      ctx.fillStyle = app.mapBg || '#05070d';
-      ctx.fillRect(0, 0, w, h);
-      if (app.view === 'galaxy') galaxyView.draw(w, h);
-      else if (app.view === 'system') systemView.draw(w, h);
-    }
+  if (app.dirty || yearMoved || mapKey !== lastMapKey || game !== lastMapGame || now < mapActiveUntil || now - (galaxyView.camMovedAt || 0) < 400 || galaxyView.animating || systemView.animating) {
+    lastMapKey = mapKey; lastMapGame = game; lastDrawYear = game.year; galaxyView.animating = systemView.animating = false;
+    const ctx = galaxyView.ctx;
+    ctx.fillStyle = app.mapBg || '#05070d';
+    ctx.fillRect(0, 0, w, h);
+    if (app.view === 'galaxy') galaxyView.draw(w, h);
+    else if (app.view === 'system') systemView.draw(w, h);
   }
 
   const dateText = `西暦 ${Math.floor(game.year)}年 ${Math.floor((game.year % 1) * 12) + 1}月`;
