@@ -238,6 +238,35 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 
 `tools/` に、戦略ボットでゲームを何百年も自動で回し、仕組みが実際に働いているか・プレイヤーの選び方で結果が変わるかを数字で確かめる道具がある。使い方は [tools/README.md](tools/README.md)。
 
+### アイコンの出典
+
+ゲームの中のアイコン (白一色で表示) は、Iconify (https://iconify.design) を通して次のアイコン集から取った。game-icons.net のアイコンは https://game-icons.net の作者 (Lorc, Delapouite) による CC BY 3.0。
+
+  - 食料: `game-icons:grain` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 水: `iconoven:droplet` — IconOven (Appic Marketing)、MIT
+  - 金属: `game-icons:metal-bar` — game-icons.net (Lorc)、CC-BY-3.0
+  - 燃料: `andrsrxn:fuel` — andrsrxn/icons (Andrés Raxón)、MIT
+  - 希少元素: `tabler:atom` — Tabler Icons (Paweł Kuna)、MIT
+  - 工業品: `fa:gears` — Font Awesome 4 (Dave Gandy)、OFL-1.1
+  - 奴隷: `game-icons:manacles` — game-icons.net (Lorc)、CC-BY-3.0
+  - 駐留艦隊: `iconoven:space-shuttle` — IconOven (Appic Marketing)、MIT
+  - 歩兵: `fa6-solid:person-military-rifle` — Font Awesome 6 Solid (Dave Gandy)、CC-BY-4.0
+  - 農場: `lucide-lab:farm` — Lucide Lab (Lucide Contributors)、ISC
+  - 鉱山: `game-icons:mine-truck` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 工場: `game-icons:factory` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 居住区: `solar:city-bold` — Solar (480 Design)、CC-BY-4.0
+  - 軍事基地: `game-icons:military-fort` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 軍事教練所: `game-icons:barracks-tent` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 奴隷工房: `mdi:anvil` — Material Design Icons (Pictogrammers)、Apache-2.0
+  - 採掘基地: `game-icons:defense-satellite` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 入植: `ic:baseline-flag` — Google Material Icons (Material Design Authors)、Apache-2.0
+  - 開発: `game-icons:crane` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 防衛配備: `material-symbols:shield` — Material Symbols (Google)、Apache-2.0
+  - 資金援助: `streamline-ultimate:begging-hand-coin-2` — Ultimate free icons (Streamline)、CC-BY-4.0
+  - 戦争: `material-symbols:swords` — Material Symbols (Google)、Apache-2.0
+  - 資金: `game-icons:coins` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 政治力: `iconoven:balance-scale` — IconOven (Appic Marketing)、MIT
+
 ### 画像の出典
 
 - `assets/space-galaxy.jpg`: Deep Star Maps 2020 (`starmap_2020_8k_gal.exr` の銀河中心付近を切り出し、明るさを調整)。Credit: NASA/Goddard Space Flight Center Scientific Visualization Studio. Gaia DR2: ESA/Gaia/DPAC. https://svs.gsfc.nasa.gov/4851/
