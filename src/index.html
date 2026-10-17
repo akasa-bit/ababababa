@@ -126,6 +126,8 @@ ul.bodies li:hover, ul.bodies li.sel { background:#16213a; }
 .grade.g1 { background:#5a4320; } .grade.g2 { background:#2f5a2a; } .grade.g3 { background:#1d6a5d; }
 .field { display:block; font-size:12px; color:var(--muted); } select { width:100%; margin-top:2px; background:#111a2e; color:var(--fg); border:1px solid #2a3a60; border-radius:4px; padding:4px; }
 .btns { display:flex; gap:8px; } .btns button { flex:1; text-align:left; }
+.btns.batch { flex-wrap:wrap; } .btns.batch button { flex:1 1 130px; }
+td .btns.batch { flex-wrap:nowrap; } td .btns.batch button { flex:0 0 auto; width:10em; } td .btns.batch button, td .btns.batch button small { white-space:normal; } td .btns.batch button small { display:block; }
 .ship { font-size:12px; margin-bottom:6px; }
 .bar { display:block; height:3px; background:#1d2840; margin:2px 0; } .bar i { display:block; height:100%; background:#ffb347; }
 #log { font-size:12px; }
@@ -312,12 +314,12 @@ body.fx .jit { animation:fx-jit .6s steps(1) 1; }
 /* 星系を選んでいないときは、右 (狭い画面では下) の欄そのものを出さず、地図を広げる */
 body.nosel aside { display:none; }
 /* 宇宙の背景: 星間マップは天の川の全天星図 (NASA SVS の Deep Star Maps 2020、銀河の中心のあたり)、
-   星系マップはウェッブ望遠鏡のカリーナ星雲。地図 (canvas) は透明にして、その後ろに置く。
+   星系マップはスピッツァー望遠鏡の北アメリカ星雲 (色を抑えて暗くしたもの)。地図 (canvas) は透明にして、その後ろに置く。
    文字と星が読めるよう暗くかぶせ、星間マップでは視点の動きにわずかに遅れて動かす (奥行き) */
 #sky { position:absolute; inset:0; overflow:hidden; background:var(--map-bg); pointer-events:none; }
 #sky > div { position:absolute; inset:-12%; background:center / cover no-repeat; opacity:0; transition:opacity .4s; will-change:transform; }
 #sky .sky-galaxy { background-image:linear-gradient(rgba(11,12,13,.28), rgba(11,12,13,.28)), url("assets/space-galaxy.jpg"); }
-#sky .sky-system { background-image:linear-gradient(rgba(11,12,13,.58), rgba(11,12,13,.58)), url("assets/space-system.jpg"); }
+#sky .sky-system { background-image:linear-gradient(rgba(11,12,13,.5), rgba(11,12,13,.5)), url("assets/space-system.jpg"); }
 #sky[data-view="galaxy"] .sky-galaxy, #sky[data-view="system"] .sky-system { opacity:1; }
 #sky::after { content:""; position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 45%, rgba(11,12,13,.6) 100%); }
 #menu #credits { display:block; font-size:var(--fs1); padding:0 8px; max-width:260px; line-height:1.5; }
@@ -365,7 +367,7 @@ nav button.hot { box-shadow:inset 0 0 0 2px var(--warn); }
 .ev .tag { background:transparent !important; border:1px solid currentColor; border-radius:2px; letter-spacing:.08em; font-family:var(--font-display); }
 .tag.famine, .tag.battle, .tag.war, .tag.pirate { color:var(--enemy); }
 .tag.shortage, .tag.demand, .tag.politics { color:var(--warn); }
-.tag.natives, .tag.colony, .tag.migration, .tag.story { color:var(--info); }
+.tag.natives, .tag.colony, .tag.migration, .tag.trade, .tag.story { color:var(--info); }
 .tag.goal { color:var(--good); }
 #home { background:color-mix(in srgb, var(--bg) 94%, transparent); }
 /* 掠れ: 見出しと数字だけ (動くものには掛けない) */
@@ -402,7 +404,7 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
         <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
         <button id="fxbtn" title="文字がときどき色ずれしてぶれる">画面の動き: 入</button>
         <span id="savestat" class="muted"></span>
-        <span id="credits" class="muted">背景画像: 天の川の星図 NASA/Goddard Space Flight Center Scientific Visualization Studio・Gaia DR2: ESA/Gaia/DPAC ／ カリーナ星雲 (宇宙の断崖) NASA, ESA, CSA, and STScI</span>
+        <span id="credits" class="muted">背景画像: 天の川の星図 NASA/Goddard Space Flight Center Scientific Visualization Studio・Gaia DR2: ESA/Gaia/DPAC ／ 北アメリカ星雲 NASA/JPL-Caltech</span>
       </div>
     </div>
     <input id="importfile" type="file" accept="application/json,.json" hidden>
@@ -1000,6 +1002,14 @@ const SHIP_COST = { planet: { credits: 300, goods: 100, fuel: 100 }, station: { 
 const SETTLERS = { planet: 0.2, station: 0.02 }; // 入植船が運ぶ人口[百万人]
 const WARSHIP_COST = { credits: 150, metal: 100, fuel: 50, rare: 10 };
 const WARSHIP_UPKEEP = 5; // cr/年
+// 兵站: 1艦隊が1年に使う補給物資。駐留する星系 (攻撃中や入植していない星系なら、その国の最も近い星系) の備蓄から出す
+const FLEET_SUPPLY = { fuel: 2, metal: 1 };
+// 補給線: 補給の拠点からこの距離 [光年] までは戦力そのまま、遠いほど落ち、SUPPLY_FAR で半分 (それより先も半分)
+const SUPPLY_NEAR = 6, SUPPLY_FAR = 30;
+const WARSHIP_BATCH = [1, 5, 10, 20]; // 一括編成の数
+// 編成中の艦隊の数 (一括編成は1件で n 艦隊)
+const queuedWarships = (list, sys) => list.reduce((k, j) => k + (j.type === 'warship' && j.sys === sys ? j.n || 1 : 0), 0);
+const mulCost = (cost, n) => Object.fromEntries(Object.entries(cost).map(([k, v]) => [k, v * n]));
 const GIFT_COST = { credits: 100 };
 // 採掘基地: 無人の基地で、ガス惑星からは水と燃料、岩石の天体からは金属と希少元素を採る
 const OUTPOST_RES = { 'gas-giant': ['water', 'fuel'], 'ice-giant': ['water', 'fuel'], 'mini-neptune': ['water', 'fuel'], rocky: ['metal', 'rare'], dwarf: ['metal', 'rare'], belt: ['metal', 'rare'] };
@@ -1236,6 +1246,8 @@ class Game {
     this.spectate = false; // 観戦モード: 地図とタブを光の遅れなしの実際の様子で見せ、地球政府も自動で動く
     this.autoTimer = 0;
     this.migration = true; // 過密な入植地からの恒星間移民
+    this.autoRoutes = true;
+    this.supplied = {}; // 駐留艦隊の補給の状態 { 星系: { k: 補給の充足率 (1年ほどでならす), d: 補給の拠点までの距離 } } // 混んだ交易路を自動で拡張する (太陽系と直轄の星系の交易路。ほかの星系の政府はいつも自分で拡張する)
     this.autoHabitat = true; // 過密な入植地の居住区を自動で拡張する
     this.wars = []; // 征服戦争 { sys, body, start, progress }
     this.warThreshold = 40; // 戦争方針: 統一されていない先住民の友好度がこの値未満なら征服戦争 (-1000 で戦争しない、1000 で常に戦争)
@@ -2075,10 +2087,12 @@ class Game {
       b.d += this.garrison[b.sys] || 0;
       b.d0 += this.garrison[b.sys] || 0;
       this.garrison[b.sys] = 0;
+      // 兵站: 攻撃側は補給線の長さと補給の充足率、防衛側は補給の充足率で戦力が変わる
+      const ea = this.fleetEff(b.sup, b.line), ed = this.fleetEff(b.dsup, 0);
       for (let i = 0; i < 5; i++) {
         const a = b.a, d = b.d, h = dt / 5;
-        b.a = Math.max(0, a - BATTLE_RATE * d * h);
-        b.d = Math.max(0, d - BATTLE_RATE * a * h);
+        b.a = Math.max(0, a - BATTLE_RATE * d * ed * h);
+        b.d = Math.max(0, d - BATTLE_RATE * a * ea * h);
       }
       if (b.a >= 0.5 && b.d >= 0.5) continue;
       this.battles = this.battles.filter((x) => x !== b);
@@ -2108,7 +2122,18 @@ class Game {
       if ((this.garrison[g.sys] || 0) > 0) { this.sieges = this.sieges.filter((x) => x !== g); this.startBattle(g.sys, g.realm, g.ships, g.progress, g.route); continue; }
       const pop = this.coloniesIn(g.sys).reduce((k, c) => k + c.pop, 0);
       const ground = this.troopPower(g.sys) + 4 * Math.log10(1 + pop);
-      g.progress = Math.min(1, g.progress + 0.12 * g.ships / (g.ships + ground));
+      // 兵站: 補給線が長いほど・補給が足りないほど攻囲は遅れる。戦力が6割を切ると、年に5%ずつ艦隊が脱落する
+      const eff = this.fleetEff(g.sup, g.line);
+      if (eff < 0.6) {
+        g.wear = (g.wear || 0) + 0.05 * g.ships;
+        while (g.wear >= 1 && g.ships >= 1) { g.wear -= 1; g.ships -= 1; }
+        if (g.ships < 1) {
+          this.event('battle', g.sys, `補給が続かず、${this.system(g.sys).name} を攻囲していた ${this.system(g.realm).name} の国の艦隊が崩れた`, g.realm === 0 || this.realmOf(g.sys) === 0);
+          this.sieges = this.sieges.filter((x) => x !== g);
+          continue;
+        }
+      }
+      g.progress = Math.min(1, g.progress + 0.12 * eff * g.ships / (g.ships + ground));
       if (this.troopPower(g.sys) >= 1) this.loseTroops(g.sys, 1);
       if (g.progress < 1) continue;
       const oldRealm = this.realmOf(g.sys);
@@ -2142,7 +2167,7 @@ class Game {
       if (this.year < PIRATE_START - 5 && gv.mandate !== 'arm') continue;
       const goal = base + (gv.mandate === 'arm' ? 2 : 0);
       const g = this.garrison[id] || 0;
-      const have = g - Math.min(g, this.awe[id] || 0) + this.incoming(id) + this.projects.filter((j) => j.type === 'warship' && j.sys === id).length;
+      const have = g - Math.min(g, this.awe[id] || 0) + this.incoming(id) + queuedWarships(this.projects, id);
       if (have >= goal) continue;
       if (!this.hasShipyard(id)) {
         const big = this.coloniesIn(id).sort((a, b) => b.pop - a.pop)[0];
@@ -2162,7 +2187,7 @@ class Game {
         const big = this.coloniesIn(x.id).sort((a, b) => b.pop - a.pop)[0];
         const goal = x.id === root ? 5 : 3;
         if (!this.hasShipyard(x.id)) { if (big && gv.credits >= 2 * this.upgradeCost(big, 'shipyard').credits) this.upgrade(big, 'shipyard'); }
-        else if (gv.credits >= 2 * WARSHIP_COST.credits && (war || (this.garrison[x.id] || 0) + this.projects.filter((j) => j.type === 'warship' && j.sys === x.id).length < goal)) this.buildWarship(x.id);
+        else if (gv.credits >= 2 * WARSHIP_COST.credits && (war || (this.garrison[x.id] || 0) + queuedWarships(this.projects, x.id) < goal)) this.buildWarship(x.id);
       }
     }
   }
@@ -2388,8 +2413,9 @@ class Game {
       c.lv[job.fac]++;
       this.message(`${c.name} の${FACILITY[job.fac]}を Lv${c.lv[job.fac]} に拡張した`, c.sys);
     } else if (job.type === 'warship') {
-      this.garrison[job.sys] = (this.garrison[job.sys] || 0) + 1;
-      this.message(`${this.system(job.sys).name} で艦隊を編成した (駐留 ${this.garrison[job.sys]} 艦隊)`, job.sys);
+      const n = job.n || 1;
+      this.garrison[job.sys] = (this.garrison[job.sys] || 0) + n;
+      this.message(`${this.system(job.sys).name} で${n > 1 ? ` ${n} ` : ''}艦隊を編成した (駐留 ${this.garrison[job.sys]} 艦隊)`, job.sys);
     } else if (job.type === 'route') {
       const r = this.routes.find((x) => x.id === job.route);
       if (!r) return;
@@ -2520,9 +2546,31 @@ class Game {
     this.message(`${this.system(a).name} ⇄ ${this.system(b).name} の交易路を開設した`, a);
     return { ok: true };
   }
-  upgradeRoute(r) {
+  upgradeRoute(r, tag = '') {
     if (this.pending((j) => j.type === 'route' && j.route === r.id)) return fail('拡張中');
-    return this.order(this.routeUpCost(r), r.a, { type: 'route', route: r.id, label: `${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路 Lv${r.lv + 1}` });
+    return this.order(this.routeUpCost(r), r.a, { type: 'route', route: r.id, label: `${tag}${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路 Lv${r.lv + 1}` });
+  }
+  routeUse(r) { return Math.max(r.vol[0], r.vol[1]) / this.routeCap(r); }
+  // 交易路の混雑 (年1回): 片道の輸送量が容量の9割を超えたら知らせ、端の星系 (r.a) の政府が自動で拡張する。
+  // 太陽系と直轄の星系の交易路は「交易路の自動拡張」がオンのときだけ。資金が費用の1.5倍以上あり、資材が手に入るとき。
+  // 知らせは混み始めたときに1回 (8割を下回ったら数え直す)、地球の国の星系がかかわる交易路だけ
+  routesYearly() {
+    const home = this.realmOf(0);
+    for (const r of this.routes) {
+      const use = this.routeUse(r);
+      if (use < 0.8) { r.hot = false; continue; }
+      if (use < 0.9) continue;
+      if (!r.hot) {
+        r.hot = true;
+        if (this.realmOf(r.a) === home || this.realmOf(r.b) === home) this.event('trade', r.a, `${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路が混んでいる (容量の ${pct(use)})`);
+      }
+      const gv = this.gov(r.a);
+      if ((r.a === 0 && !this.spectate) || gv.direct ? !this.autoRoutes : false) continue;
+      if (this.pending((j) => j.type === 'route' && j.route === r.id)) continue;
+      const cost = this.routeUpCost(r);
+      if (gv.credits < 1.5 * cost.credits || this.procure(cost, r.a).why) continue;
+      this.upgradeRoute(r, '[自動] ');
+    }
   }
 
   // 交易網による自動輸送。情報は光速でしか伝わらないので、物資移送要求を介して動く。
@@ -2674,10 +2722,23 @@ class Game {
 
   // --- 軍事 ---
   hasShipyard(sysId) { return this.coloniesIn(sysId).some((c) => c.lv.shipyard >= 1); }
-  buildWarship(sysId) {
+  // n 艦隊をまとめて編成する (費用は n 倍、指令の政治力は1回ぶん)
+  buildWarship(sysId, n = 1) {
     if (!this.hasShipyard(sysId)) return fail('軍事基地がない');
-    return this.order(WARSHIP_COST, sysId, { type: 'warship', label: `${this.system(sysId).name} の艦隊` });
+    n = clamp(Math.floor(n) || 1, 1, 100);
+    return this.order(mulCost(WARSHIP_COST, n), sysId, { type: 'warship', n, label: `${this.system(sysId).name} の艦隊${n > 1 ? ` ×${n}` : ''}` });
   }
+  // 補給の拠点: その国の入植星系のうち sys に最も近いところ (sys 自身がその国の星系ならそこ)
+  supplyBase(realm, sys) {
+    if (this.isColonized(sys) && this.realmOf(sys) === realm) return { id: sys, d: 0 };
+    let best = null;
+    for (const x of this.realmSystems(realm)) { const d = this.sysDist(x.id, sys); if (!best || d < best.d) best = { id: x.id, d }; }
+    return best;
+  }
+  // 補給線の効き: 拠点から SUPPLY_NEAR 光年までは1、遠いほど下がって SUPPLY_FAR 光年で 0.5 (それより先も 0.5)
+  lineEff(d) { return d <= SUPPLY_NEAR ? 1 : Math.max(0.5, 1 - (0.5 * (d - SUPPLY_NEAR)) / (SUPPLY_FAR - SUPPLY_NEAR)); }
+  // 艦隊の戦力の倍率: 補給線の効き × (0.5 + 0.5 × 補給の充足率)。補給がまったくなければ半分
+  fleetEff(k = 1, d = 0) { return this.lineEff(d) * (0.5 + 0.5 * k); }
   // 艦隊は直行する。交易路が直接結ぶ区間なら 0.95c、それ以外は 0.9c
   fleetYears(from, to) { return this.shipYears(from, to, !!this.routeBetween(from, to)); }
   // route = 着いたあとに順に回る経由地 (星系の id の列)。艦隊戦・攻囲をまたいでも保たれる
@@ -2870,9 +2931,9 @@ class Game {
       if (!this.canColonize(id) || gv.mandate === 'develop') continue;
       const best = this.colonyTarget(id);
       if (!best) continue;
-      const cost = this.shipCost('planet', id, best.t.id);
+      const cost = this.shipCost(best.kind, id, best.t.id);
       if (gv.credits < (gv.mandate === 'expand' ? 1 : 1.2) * cost.credits || this.procure(cost, id).why) continue;
-      if (this.dispatch(id, best.t.id, best.b.id, 'planet').ok) gv.lastColony = this.year;
+      if (this.dispatch(id, best.t.id, best.b.id, best.kind).ok) gv.lastColony = this.year;
     }
   }
   // 入植できる状態か: 人口300万以上、入植船を準備・航行中でなく、前の入植から10年 (観戦モードの地球政府は5年) たっている。
@@ -2886,7 +2947,8 @@ class Game {
     return pop >= 3 && !busy && this.year - (gv.lastColony ?? gv.founded) >= wait;
   }
   // 入植先: 未入植で入植できる惑星のうち、適性が高く近いところ。ふだんは10光年以内 (観戦モードの地球政府は20)、
-  // 星系内に手の届く建設がなくなった政府 (far) は25光年まで探す
+  // 星系内に手の届く建設がなくなった政府 (far) は25光年まで探す。
+  // 住める惑星のない星系も、主星を回る宇宙ステーションで押さえる (適性1の惑星より6光年ぶん近いときだけ選ぶ)
   colonyTarget(id) {
     const range = id === 0 ? 20 : this.gov(id).far ? 25 : this.gov(id).mandate === 'expand' ? 15 : 10;
     let best = null;
@@ -2897,8 +2959,10 @@ class Game {
         const grade = b.settle?.grade || 0;
         if (grade < 1 || !this.check(t.id, b.id, 'planet').ok) continue;
         const score = grade * 10 - d;
-        if (!best || score > best.score) best = { t, b, score };
+        if (!best || score > best.score) best = { t, b, kind: 'planet', score };
       }
+      const st = t.stars[0];
+      if ((!best || 4 - d > best.score) && this.check(t.id, st.id, 'station').ok) best = { t, b: st, kind: 'station', score: 4 - d };
     }
     return best;
   }
@@ -2922,7 +2986,7 @@ class Game {
       if (gv.direct) continue; // 直轄の星系は地球が動かす
       if (this.projects.filter((j) => j.sys === id && j.label.startsWith('[自動]')).length >= 3) continue;
       const target = this.canColonize(id) && gv.mandate !== 'develop' ? this.colonyTarget(id) : null;
-      const reserve = target ? 1.2 * this.shipCost('planet', id, target.t.id).credits : 0;
+      const reserve = target ? 1.2 * this.shipCost(target.kind, id, target.t.id).credits : 0;
       const tag = '[自動] ';
       const cands = [];
       for (const c of this.coloniesIn(id)) {
@@ -2958,8 +3022,8 @@ class Game {
       if (vassals.length && spare > 100) this.sendGrant(id, Number(vassals[0][0]), Math.min(500, 0.2 * spare));
     }
   }
-  // 星系内の拡張: 人口が2百万人以上で資金に余裕 (費用の2倍) のある星系の政府は、自分の星系の空いている天体
-  // (入植地も先住民もいない) に宇宙ステーションを建てる。10年に1つまで。資源の埋蔵が多い天体ほど優先する。
+  // 星系内の拡張: 人口が2百万人以上で資金に余裕 (費用の2倍) のある星系の政府は、自分の星系の空いている天体や恒星
+  // (入植地も先住民もいない) に宇宙ステーションを建てる。10年に1つまで。資源の埋蔵が多い天体ほど優先し、恒星はそのあと。
   // 星系内なので入植船はすぐ着く。太陽系は自動開発がオンのときだけ
   stationsYearly() {
     for (const s of this.colonizedSystems()) {
@@ -2970,8 +3034,8 @@ class Game {
       if (this.year - (gv.lastStation ?? gv.founded ?? -1e9) < 10) continue;
       if (this.coloniesIn(id).reduce((k, c) => k + c.pop, 0) < 2) continue;
       if (this.projects.some((j) => j.type === 'ship' && j.sys === id && j.to === id) || this.ships.some((x) => x.from === id && x.to === id)) continue;
-      const score = (b) => Object.values(b.deposits || {}).reduce((k, v) => k + v, 0) + (b.type === 'gas' ? 0.5 : 0);
-      const free = s.bodies
+      const score = (b) => Object.values(b.deposits || {}).reduce((k, v) => k + v, 0) + (b.type === 'gas' ? 0.5 : 0) - (b.cls ? 0.01 : 0);
+      const free = this.targetsOf(s)
         .filter((b) => !this.colonies.some((c) => c.sys === id && c.body === b.id) && !b.natives && this.check(id, b.id, 'station').ok)
         .sort((a, b) => score(b) - score(a));
       if (!free.length) continue;
@@ -3058,7 +3122,7 @@ class Game {
     if (!this.autoBuild) return;
     // 足りない分は太陽系の軍事基地で編成する
     const short = this.knownSystems().filter((s) => realmK(s.id) === 0).reduce((k, s) => k + gapK(s.id), 0)
-      - this.projects.filter((j) => j.type === 'warship' && j.sys === 0).length;
+      - queuedWarships(this.projects, 0);
     for (let i = 0; i < Math.min(short, 5) && this.hasShipyard(0); i++) {
       if (this.gov(0).credits < 2 * WARSHIP_COST.credits || this.procure(WARSHIP_COST, 0).why) break;
       this.order(WARSHIP_COST, 0, { type: 'warship', label: '[自動防衛] 太陽系 (Sol) の艦隊' });
@@ -3101,7 +3165,7 @@ class Game {
       short += gap - n;
     }
     if (!this.autoBuild || short <= 0) return;
-    short -= this.projects.filter((j) => j.type === 'warship' && j.sys === 0).length;
+    short -= queuedWarships(this.projects, 0);
     for (let i = 0; i < Math.min(short, 1000) && this.hasShipyard(0); i++) {
       if (this.gov(0).credits < WARSHIP_COST.credits) break;
       if (!this.order(WARSHIP_COST, 0, { type: 'warship', label: '[威圧] 太陽系 (Sol) の艦隊' }).ok) break;
@@ -3184,7 +3248,8 @@ class Game {
   // 海賊の襲撃 (戦力 power)。駐留艦隊が戦力以上なら撃退、足りなければ略奪される
   pirateRaid(sys, power) {
     const g = this.garrison[sys.id] || 0;
-    if (g >= power) {
+    // 兵站: 補給不足の艦隊は戦力が落ちる
+    if (g * this.fleetEff(this.supplied[sys.id]?.k) >= power) {
       const loss = Math.floor((power / 3) * Math.random());
       this.garrison[sys.id] = g - loss;
       this.event('pirate', sys.id, `${sys.name} で宇宙海賊 (戦力${power}) を撃退した${loss ? ` (${loss} 艦隊を喪失)` : ''}`, true);
@@ -3543,7 +3608,7 @@ class Game {
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
       this.keepGhosts(before);
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.aweYearly(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); if (this.spectate) this.earthWarYearly(); this.siegesYearly(); this.politicsYearly(); this.recordSnapshots(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.aweYearly(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.routesYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); if (this.spectate) this.earthWarYearly(); this.siegesYearly(); this.politicsYearly(); this.recordSnapshots(); }
     }
     return changed;
   }
@@ -3829,6 +3894,43 @@ class Game {
       if (u) this.earn('upkeep', -u * h, c.sys);
     }
     for (const m of this.troopMoves) this.earn('upkeep', -(TROOP_UPKEEP * m.troops + SLAVE_TROOP_UPKEEP * m.slave) * h, 0);
+    // 8. 兵站: 艦隊は1艦隊あたり年に FLEET_SUPPLY の燃料と金属を使う。駐留する星系の備蓄から出す
+    //    (入植していない星系に置いた艦隊と攻撃中の艦隊は、その国の最も近い星系 = 補給の拠点から)。
+    //    需要に数えるので、足りなければ交易路で運ばれてくる。備蓄で足りないぶんは資金で現地調達し (基準価格の2倍。
+    //    駐留艦隊は拠点の政府、攻撃中の艦隊は国の首都の政府が払う)、資金も尽きれば補給不足になって戦力が落ちる
+    const supply = (realm, sys, n, payer) => {
+      const base = this.supplyBase(realm, sys);
+      if (!base) return { k: 0, d: Infinity };
+      const st = this.stockOf(base.id), fl = F(base.id), pid = payer ?? base.id, gv = this.gov(pid);
+      let k = 1;
+      for (const [r, v] of Object.entries(FLEET_SUPPLY)) {
+        fl.cons[r] += v * n;
+        const want = v * n * h;
+        let got = Math.min(Math.max(st[r], 0), want);
+        st[r] -= got;
+        const cost = (want - got) * PRICE[r] * 2;
+        if (cost > 0) {
+          const pay = Math.min(cost, Math.max(0, gv.credits));
+          if (pay > 0) this.earn('upkeep', -pay, pid);
+          got += (want - got) * (pay / cost);
+        }
+        if (want > 0) k = Math.min(k, got / want);
+      }
+      return { k, d: base.d };
+    };
+    const smooth = (old, k) => (old === undefined ? k : old + (k - old) * Math.min(1, h)); // 1年ほどでならす
+    for (const id of Object.keys(this.supplied)) if (!this.garrison[id]) delete this.supplied[id];
+    for (const [id, n] of Object.entries(this.garrison)) {
+      if (!n) continue;
+      const sys = Number(id);
+      const sp = supply(this.isColonized(sys) ? this.realmOf(sys) : 0, sys, n);
+      this.supplied[id] = { k: smooth(this.supplied[id]?.k, sp.k), d: sp.d };
+    }
+    for (const b of this.battles) {
+      const sa = supply(b.realm, b.sys, b.a, b.realm), sd = supply(this.realmOf(b.sys), b.sys, b.d);
+      b.sup = smooth(b.sup, sa.k); b.line = sa.d; b.dsup = smooth(b.dsup, sd.k);
+    }
+    for (const g of this.sieges) { const sp = supply(g.realm, g.sys, g.ships, g.realm); g.sup = smooth(g.sup, sp.k); g.line = sp.d; }
 
     this.flow = flow;
     const a = Math.min(1, h);
@@ -3918,6 +4020,7 @@ class Game {
     this.autoGrant = d.autoGrant === undefined ? true : !!d.autoGrant;
     if (typeof d.autoBuild === 'boolean') this.autoBuild = d.autoBuild;
     if (typeof d.migration === 'boolean') this.migration = d.migration;
+    if (typeof d.autoRoutes === 'boolean') this.autoRoutes = d.autoRoutes;
     if (Array.isArray(d.wars)) this.wars = d.wars.filter((w) => w && ok(w.sys, w.body));
     if (Number.isFinite(d.warThreshold)) this.warThreshold = d.warThreshold;
     if (Array.isArray(d.troopMoves)) this.troopMoves = d.troopMoves.filter((m) => m && Array.isArray(m.path) && m.path.every(sysOk));
@@ -4021,8 +4124,8 @@ class Game {
       })),
       stock: { ...this.stockOf(id) },
       prod: fl ? { ...fl.prod } : zeroRes(), cons: fl ? { ...fl.cons } : zeroRes(),
-      garrison: this.garrison[id] || 0, held: this.held[id] || 0, awe: this.awe[id] || 0,
-      projects: this.projects.filter((j) => j.sys === id).map((j) => ({ type: j.type, col: j.col, fac: j.fac, body: j.body, to: j.to, kind: j.kind, start: j.start, ready: j.ready, label: j.label })),
+      garrison: this.garrison[id] || 0, held: this.held[id] || 0, awe: this.awe[id] || 0, supply: this.supplied[id]?.k,
+      projects: this.projects.filter((j) => j.sys === id).map((j) => ({ type: j.type, n: j.n, col: j.col, fac: j.fac, body: j.body, to: j.to, kind: j.kind, start: j.start, ready: j.ready, label: j.label })),
       credits: gv ? gv.credits : 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null,
       outposts: this.outposts.filter((o) => o.sys === id).map((o) => ({ body: o.body, lv: o.lv })),
       natives: Object.fromEntries(this.system(id).bodies.filter((b) => this.natives[`${id}|${b.id}`]).map((b) => [b.id, { ...this.natives[`${id}|${b.id}`] }])),
@@ -4030,8 +4133,8 @@ class Game {
       unrest: gv?.unrest?.stage ? { ...gv.unrest } : null, attended: gv ? gv.attended ?? gv.founded : undefined, direct: !!gv?.direct, mandate: gv?.mandate || 'balanced', governor: gv?.governor || 'ask',
       taxFree: gv?.taxFree || 0, autonomy: gv?.autonomy || 0, policy: this.isColonized(id) ? this.policyAt(id) : null,
       loyalty: gv ? gv.loyalty ?? LOYALTY_START : null, orders: gv ? gv.orders || 0 : 0, fear: gv ? gv.fear || 0 : 0, friend: gv ? gv.friend || 0 : 0, lordTrade: gv ? gv.lordTrade || 0 : 0, realm: this.isColonized(id) ? this.realmOf(id) : null, independent: !!gv?.independent, founded: gv ? gv.founded : undefined, aid: gv ? gv.aid || 0 : 0, dep: gv ? gv.dep || 0 : 0,
-      siege: (() => { const g = this.sieges.find((x) => x.sys === id); return g ? { realm: g.realm, ships: g.ships, progress: g.progress } : null; })(),
-      battle: (() => { const b = this.battleAt(id); return b ? { realm: b.realm, a: b.a, d: b.d, a0: b.a0, d0: b.d0, start: b.start } : null; })(),
+      siege: (() => { const g = this.sieges.find((x) => x.sys === id); return g ? { realm: g.realm, ships: g.ships, progress: g.progress, eff: this.fleetEff(g.sup, g.line), line: g.line } : null; })(),
+      battle: (() => { const b = this.battleAt(id); return b ? { realm: b.realm, a: b.a, d: b.d, a0: b.a0, d0: b.d0, start: b.start, ea: this.fleetEff(b.sup, b.line), ed: this.fleetEff(b.dsup, 0), line: b.line } : null; })(),
     };
   }
   recordSnapshots() {
@@ -4247,7 +4350,7 @@ class Game {
       case 'route': return this.openRoute(sys, Number(d.dest));
       case 'route2': return this.openRoute(Number(d.a), Number(d.b));
       case 'uproute': { const r = this.routes.find((x) => x.id === Number(d.route)); return r ? this.upgradeRoute(r) : fail('交易路がない'); }
-      case 'warship': return this.buildWarship(sys);
+      case 'warship': return this.buildWarship(sys, Number(d.n) || 1);
       case 'fleet': {
         const from = Number(d.from);
         if (this.isColonized(from) && this.realmOf(from) !== 0) return fail('他国の星系の艦隊には命令できない');
@@ -5597,7 +5700,7 @@ function costButton(g, attrs, label, cost, sysId, extraReason = '') {
 
 // 右の欄: いちばん上に要約 (名前・所属・情報の古さ・数字・いまの状態・よく使う操作)、そのあとは開け閉めできる節。
 // 節の見出しの右には、開かなくても分かる一言 (要約) を出す
-const EVENT_TONE = { battle: 'enemy', war: 'enemy', pirate: 'enemy', famine: 'enemy', politics: 'warn', demand: 'warn', shortage: 'warn', story: 'info', goal: 'info', natives: 'info', colony: 'good', migration: 'info' };
+const EVENT_TONE = { battle: 'enemy', war: 'enemy', pirate: 'enemy', famine: 'enemy', politics: 'warn', demand: 'warn', shortage: 'warn', story: 'info', goal: 'info', natives: 'info', colony: 'good', migration: 'info', trade: 'info' };
 function sec(key, title, syn, html, cls = '') {
   if (!html) return '';
   const open = app.secOpen?.[key] ?? false;
@@ -5890,7 +5993,8 @@ function routeBox(app, sys) {
   const list = mine.map((r) => {
     const out = r.a === sys.id ? 0 : 1;
     const other = g.system(r.a === sys.id ? r.b : r.a);
-    return `<div class="route"><div><b>⇄ ${esc(other.name)}</b> <span class="muted">${distance(sys, other).toFixed(1)} ly ・ Lv${r.lv} (片道 ${fmtAmt(g.routeCap(r))}/年)</span><br>
+    const use = g.routeUse(r);
+    return `<div class="route"><div><b>⇄ ${esc(other.name)}</b> <span class="muted">${distance(sys, other).toFixed(1)} ly ・ Lv${r.lv} (片道 ${fmtAmt(g.routeCap(r))}/年)</span> <span class="${use > 0.9 ? 'bad' : 'muted'}">稼働率 ${pct(Math.min(use, 1))}</span><br>
       <span class="muted">送り ${fmtAmt(r.vol[out])}/年 ・ 受け取り ${fmtAmt(r.vol[1 - out])}/年</span></div>
       ${costButton(g, `data-act="uproute" data-route="${r.id}"`, '拡張', g.routeUpCost(r), r.a, busyText(g, (j) => j.type === 'route' && j.route === r.id))}</div>`;
   }).join('');
@@ -5905,6 +6009,10 @@ function routeBox(app, sys) {
   return `<h3>交易路</h3>
     <p class="note">余っている資源を、足りない星系へ自動で運ぶ (0.95c の貨物船)。交易路でつながっていれば、複数の交易路を乗り継いで届ける。荷は受け手が基準価格で買い取る (送り手の輸出収入になる)。代金を払えない星系は、主人から支援として無償で受け取れるが、そのぶん従属が深まる (忠誠度が上がる)。</p>
     ${list}${open}${warNote}`;
+}
+
+function autoRoutesToggle(g) {
+  return `<label class="check auto"><input type="checkbox" data-act="autoroutes" ${g.autoRoutes ? 'checked' : ''}> 太陽系と直轄の星系の混んだ交易路 (稼働率9割超) を自動で拡張する</label>`;
 }
 
 function defenseToggle(g) {
@@ -6040,8 +6148,10 @@ function militaryBox(app, sys) {
     .map((id) => ({ s: g.system(id), k: g.knownGarrison(id) }))
     .sort((a, b) => distance(a.s, sys) - distance(b.s, sys));
   const from = origins.some((o) => o.s.id === app.fleetOrigin) ? app.fleetOrigin : origins[0]?.s.id;
+  // 一括編成: 1・5・10・20 艦隊をまとめて (費用は数の倍、指令の政治力は1回ぶん)
+  const noYard = g.knownColonies(sys.id).some((c) => c.lv.shipyard >= 1) ? '' : '軍事基地がない (入植地で建設できる)';
   const build = g.knownColonized(sys.id)
-    ? costButton(g, 'data-act="warship"', '艦隊を編成', WARSHIP_COST, sys.id, g.knownColonies(sys.id).some((c) => c.lv.shipyard >= 1) ? '' : '軍事基地がない (入植地で建設できる)')
+    ? `<div class="btns batch">${WARSHIP_BATCH.map((n) => costButton(g, `data-act="warship" data-n="${n}"`, n === 1 ? '艦隊を編成' : `${n} 艦隊を一括編成`, mulCost(WARSHIP_COST, n), sys.id, noYard)).join('')}</div>`
     : '';
   // 交戦中でない他国の星系へ送ると奇襲攻撃になる
   const destRealm = g.known(sys.id)?.cols.length ? g.known(sys.id).realm : null;
@@ -6051,7 +6161,7 @@ function militaryBox(app, sys) {
         <select data-act="forigin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === from ? 'selected' : ''}>${esc(o.s.name)} (${o.k}艦隊・${g.fleetYears(o.s.id, sys.id).toFixed(1)} 年)</option>`).join('')}</select></label>
        <div class="btns"><button data-act="fleet" data-from="${from}" data-n="1">${surprise ? '奇襲攻撃 (1艦隊)' : '1艦隊をここへ'}</button><button data-act="fleet" data-from="${from}" data-n="all">${surprise ? '奇襲攻撃 (全艦隊)' : '全艦隊をここへ'}</button></div>`
     : '';
-  const queued = g.knownProjects().filter((j) => j.type === 'warship' && j.sys === sys.id).length;
+  const queued = queuedWarships(g.knownProjects(), sys.id);
   const pick = isOwnStack(g, sys.id) ? `<button data-act="fleetsel" data-sys="${sys.id}">この艦隊を選ぶ (星間マップで移動先を右クリック/タップ)</button>` : '';
   const heldN = sys.id === 0 ? g.held[0] || 0 : g.known(sys.id)?.held || 0;
   const unhold = isOwnStack(g, sys.id) && heldN > 0
@@ -6059,8 +6169,21 @@ function militaryBox(app, sys) {
   return `<h3>軍事</h3>
     ${pick}${unhold}
     ${aweLine(g, sys.id)}
+    ${supplyLine(g, sys.id, n)}
     <p class="note">駐留艦隊 <b>${n}</b>${queued ? ` (編成中 ${queued})` : ''}。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1艦隊あたり維持費 ${WARSHIP_UPKEEP} cr/年。艦隊は直行し、交易路が直接結ぶ区間は 0.95c、それ以外は 0.9c</p>
     ${build}${send}${defenseToggle(g)}`;
+}
+
+// 兵站の表示: 戦力の倍率 (補給線の長さと補給の充足率から)。8割を切ったら赤
+function supplyCell(eff = 1, line = 0) {
+  return `<span class="${eff < 0.8 ? 'bad' : ''}">${pct(eff)}</span>${line > SUPPLY_NEAR && Number.isFinite(line) ? ` <span class="muted">(拠点まで ${line.toFixed(1)} ly)</span>` : ''}`;
+}
+// 星系の欄の兵站: 駐留艦隊が使う補給物資と、いまの充足率 (地球に届いている情報で)
+function supplyLine(g, id, n) {
+  if (!n) return '';
+  const k = id === 0 ? g.supplied[0]?.k : g.known(id)?.supply;
+  const use = Object.entries(FLEET_SUPPLY).map(([r, v]) => `${RES_LABEL[r]} ${fmtAmt(v * n)}`).join('・');
+  return `<p class="note">兵站: 駐留艦隊が年に ${use} を備蓄から使う。補給 <b class="${k !== undefined && k < 0.8 ? 'bad' : ''}">${k === undefined ? '—' : pct(k)}</b>${k !== undefined && k < 0.8 ? ' (補給不足。戦力が落ちている)' : ''}</p>`;
 }
 
 // 星系の詳細欄: 反乱時の推定艦隊と、駐留する地球の艦隊 (威圧)
@@ -6346,7 +6469,7 @@ function routesSheet(app) {
     const use = Math.max(r.vol[0], r.vol[1]) / cap;
     const busy = busyText(g, (j) => j.type === 'route' && j.route === r.id);
     return `<tr><td>${goto(a)} ⇄ ${goto(b)}</td><td>${distance(a, b).toFixed(1)} ly</td><td>Lv${r.lv} <span class="muted">(${fmtAmt(cap)}/年)</span></td>
-      <td>${fmtAmt(r.vol[0])}/年</td><td>${fmtAmt(r.vol[1])}/年</td><td class="${use > 0.95 ? 'bad' : ''}">${pct(Math.min(use, 1))}</td>
+      <td>${fmtAmt(r.vol[0])}/年</td><td>${fmtAmt(r.vol[1])}/年</td><td class="${use > 0.9 ? 'bad' : ''}">${pct(Math.min(use, 1))}</td>
       <td>${top(r.transit[0])}</td><td>${top(r.transit[1])}</td>
       <td>${costButton(g, `data-act="uproute" data-route="${r.id}"`, '拡張', g.routeUpCost(r), r.a, busy)}</td></tr>`;
   }).join('');
@@ -6372,7 +6495,8 @@ function routesSheet(app) {
     <h3>交易路の一覧</h3>
     ${rows ? `<div class="scroll"><table class="tbl">
       <tr><th>区間 (A ⇄ B)</th><th>距離</th><th>規模</th><th>A→B</th><th>B→A</th><th>稼働率</th><th>通過中の荷 A→B</th><th>通過中の荷 B→A</th><th></th></tr>${rows}</table></div>
-      <p class="note">稼働率が100%近い交易路は、拡張すると運べる量が増える。</p>` : '<p class="note">まだ交易路はない。</p>'}`;
+      <p class="note">稼働率が100%近い交易路は、拡張すると運べる量が増える。稼働率が9割を超えると知らせが出て、端の星系 (A) の政府が自動で拡張する (資金が費用の1.5倍以上あるとき)。</p>` : '<p class="note">まだ交易路はない。</p>'}
+    ${autoRoutesToggle(g)}`;
 }
 
 // 物資移送要求の一覧。情報は光速でしか伝わらないので、要求が届くまでの時間と処理状況を見せる
@@ -6425,10 +6549,10 @@ function politicsSheet(app) {
       <td>${war ? `<button data-act="peace" data-sys="${root}">講和を申し入れる<small>指令: 届くまで ${g.lightDelay(root).toFixed(1)} 年</small></button>` : `<button data-act="declarewar" data-sys="${root}">宣戦する</button>`}</td></tr>`;
   }).join('');
   const sieges = g.knownSystems().map((x) => ({ x, sg: g.known(x.id)?.siege })).filter((v) => v.sg).map(({ x, sg }) => `<tr><td>${goto(x)}</td>
-    <td><span class="dot" style="background:${realmColor(sg.realm)}"></span>${esc(g.system(sg.realm).name)} の国</td><td>${sg.ships} 艦隊</td><td>${pct(sg.progress)}</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
+    <td><span class="dot" style="background:${realmColor(sg.realm)}"></span>${esc(g.system(sg.realm).name)} の国</td><td>${sg.ships} 艦隊</td><td>${pct(sg.progress)}</td><td>${supplyCell(sg.eff, sg.line)}</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
   const battles = g.knownSystems().map((x) => ({ x, bt: g.known(x.id)?.battle })).filter((v) => v.bt).map(({ x, bt }) => `<tr><td>${goto(x)}</td>
     <td><span class="dot" style="background:${realmColor(bt.realm)}"></span>${esc(g.system(bt.realm).name)} の国</td><td>${Math.ceil(bt.a)} / ${Math.round(bt.a0)} 艦隊</td>
-    <td>${Math.ceil(bt.d)} / ${Math.round(bt.d0)} 艦隊</td><td>${bt.start.toFixed(1)}年から</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
+    <td>${Math.ceil(bt.d)} / ${Math.round(bt.d0)} 艦隊</td><td>攻 ${supplyCell(bt.ea, bt.line)}<br>防 ${supplyCell(bt.ed)}</td><td>${bt.start.toFixed(1)}年から</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
   return `<p class="note">星系の政府は忠誠度を持つ。忠誠度の目標は、主人の関与 (地球からの指令・主人からの資金援助・地球が命じた艦隊の来訪・視察団) が途絶えて${NEGLECT_GRACE}年を過ぎると年${NEGLECT_RATE}ずつ下がり (最大 −${NEGLECT_MAX})、主人や首都から遠いほど少し下がる (1光年あたり 0.6 と 0.3)。主人より人口が多い、指令が多すぎても下がり、主人の星系の艦隊・支援・直轄・認めた要求・国家方針で上下する。遠い星系ほど関与が届くのに時間と政治力がかかる。
       忠誠度が${UNREST_AT}を割ると<b>不満</b>が高まり、${UNREST_YEARS}年続くと主人へ<b>要求</b> (朝貢の免除か自治) を出す。主人が地球なら要求は光速で地球に届き (イベントタブの「決めること」)、返事も光速で戻る。総督の方針を前もって預けておけば、現地ですぐ決まる。のめば不満は収まる。拒めば<b>最後通牒</b>になり、${ULTIMATUM_YEARS}年後に独立を宣言するおそれがある (恐怖度が高いほど、主人との友好度が高いほど確率が下がり、友好度${FRIEND_SAFE}以上なら独立しない)。途中で忠誠度が${UNREST_CALM}以上 (最後通牒では${UNREST_CALM + 10}以上) に戻れば収まる。
       恐怖度は、その星系に地球の艦隊が駐留していると上がる (反乱したときの推定艦隊と同数で50、2倍で100)。主人との友好度は、主人筋との貿易が大きいほど上がる。忠誠度が50未満だと指令を拒むことがある。地球の国からの独立は、半々の確率で (地球の艦隊が駐留していれば必ず) そのまま独立戦争になる。</p>
@@ -6448,9 +6572,9 @@ function politicsSheet(app) {
       return rows ? `<div class="scroll"><table class="tbl"><tr><th>仕掛けた国</th><th>仕掛けられた国</th><th>開戦</th><th>戦力</th></tr>${rows}</table></div>` : '<p class="note">いま戦争はない。</p>';
     })()}
     <h3>艦隊戦</h3>
-    ${battles ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>攻撃側 (残り / 投入)</th><th>防衛側 (残り / 投入)</th><th>開始</th><th>情報</th></tr>${battles}</table></div>` : '<p class="note">なし</p>'}
+    ${battles ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>攻撃側 (残り / 投入)</th><th>防衛側 (残り / 投入)</th><th>戦力 (兵站)</th><th>開始</th><th>情報</th></tr>${battles}</table></div>` : '<p class="note">なし</p>'}
     <h3>攻囲</h3>
-    ${sieges ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>艦隊</th><th>進捗</th><th>情報</th></tr>${sieges}</table></div>` : '<p class="note">なし</p>'}
+    ${sieges ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>艦隊</th><th>進捗</th><th>戦力 (兵站)</th><th>情報</th></tr>${sieges}</table></div>` : '<p class="note">なし</p>'}
     <h3>星系の政府 (忠誠度の低い順)</h3>
     ${rows ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>統治</th><th>放っておかれた</th><th>不満</th><th>忠誠度</th><th>恐怖度</th><th>主人との友好度</th><th>主人からの支援</th><th>見通し</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : '<p class="note">まだ地球以外の政府はない。</p>'}`;
 }
@@ -6586,7 +6710,7 @@ function militarySheet(app) {
     const coming = g.fleets.filter((f) => f.to === id && g.departSeen(f.from, f.depart)).reduce((k, f) => k + f.n, 0);
     const yard = g.knownColonies(id).some((c) => c.lv.shipyard >= 1);
     const build = yard
-      ? costButton(g, `data-act="warship" data-sys="${id}"`, '編成', WARSHIP_COST, id)
+      ? `<div class="btns batch">${[1, 5, 10].map((k) => costButton(g, `data-act="warship" data-sys="${id}" data-n="${k}"`, k === 1 ? '編成' : `×${k}`, mulCost(WARSHIP_COST, k), id)).join('')}</div>`
       : '<span class="muted">軍事基地なし</span>';
     const awe = g.knownAwe(id);
     const aweT = g.known(id)?.lord === 0 && (g.known(id)?.realm ?? 0) === 0 && g.known(id)?.cols.length ? g.aweGoal(id) : 0;
@@ -6637,9 +6761,9 @@ function militarySheet(app) {
     })()}`;
 }
 
-const EVENT_KIND = { famine: '飢餓・水不足', shortage: '資源不足', pirate: '海賊', natives: '先住民', war: '征服戦争', politics: '政治', demand: '要求', battle: '戦闘', colony: '入植', migration: '移民', story: '出来事', goal: '目標' };
+const EVENT_KIND = { famine: '飢餓・水不足', shortage: '資源不足', pirate: '海賊', natives: '先住民', war: '征服戦争', politics: '政治', demand: '要求', battle: '戦闘', colony: '入植', migration: '移民', trade: '交易路', story: '出来事', goal: '目標' };
 // 通知の段: 3 = 重大 (目立たせる)、2 = 普通 (記録に出す)、1 = 細事 (既定では隠す。種類で絞り込めば見える)
-const EVENT_TIER = { politics: 3, demand: 3, battle: 3, famine: 3, goal: 3, war: 2, colony: 2, pirate: 2, natives: 2, story: 2, shortage: 1, migration: 1 };
+const EVENT_TIER = { politics: 3, demand: 3, battle: 3, famine: 3, goal: 3, war: 2, colony: 2, pirate: 2, natives: 2, story: 2, trade: 2, shortage: 1, migration: 1 };
 const TIER_LABEL = { 3: '重大', 2: '普通', 1: '細事' };
 const MERGE_KINDS = new Set(['shortage', 'migration', 'famine']); // 一覧で、同じ星系の同じ種類をまとめる
 // 種類ごとの表示の好み (見る人ごとなのでブラウザに覚えておく)。未設定なら段で決まる (普通以上を出す)
@@ -7073,7 +7197,7 @@ function buildSave(game, extra = {}) {
     v: 1, seed: game.galaxy.seed, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, warBy: game.warBy, warNews: game.warNews, peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
-    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+    outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, pc: game.pc, council: game.council, policy: game.policy, decisions: game.decisions, story: game.story, era: game.era, challenges: game.challenges,
     acked: game.acked, endYear: game.endYear, ended: game.ended, endShown: game.endShown, finalScore: game.finalScore, stats: game.stats, savedAt: Date.now(), ...extra,
   };
@@ -7619,6 +7743,9 @@ function onPanelChange(e) {
   } else if (act === 'autohabitat') {
     app.game.autoHabitat = e.target.checked;
     app.game.message(`過密時の居住区の自動拡張を${e.target.checked ? 'オン' : 'オフ'}にした`);
+  } else if (act === 'autoroutes') {
+    app.game.autoRoutes = e.target.checked;
+    app.game.message(`混んだ交易路の自動拡張を${e.target.checked ? 'オン' : 'オフ'}にした`);
   } else if (act === 'migration') {
     app.game.migration = e.target.checked;
     app.game.message(`恒星間移民を${e.target.checked ? '許可' : '停止'}した`);
