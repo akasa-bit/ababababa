@@ -285,41 +285,12 @@ details.help[open] > summary { margin-bottom:8px; }
 #rail { max-height:calc(100% - 16px); }
 @media (max-width: 700px) { #fleetbar { top:auto; bottom:6px; } }
 
-/* 信号の模様: ボタンと数字の札の地に、ちらつく粒状のノイズと走査線 (::before)、下の縁を横へ流れる波形 (::after)。
-   表には走査の帯を通す。文字はときどき (1〜3つずつ) 色ずれしてぶれる。「≡ → 画面の動き」で切れる。
-   動きを減らす設定の端末では止める。どれも合成だけで動かす (transform) ので、毎フレームの再計算を増やさない */
-:root { --fx-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40' preserveAspectRatio='none'%3E%3Cpath d='M0 20 Q15 2 30 20 T60 20 T90 20 T120 20' fill='none' stroke='%23fff' stroke-width='1.4'/%3E%3Cpath d='M0 20 Q3.75 30 7.5 20 T15 20 T22.5 20 T30 20 T37.5 20 T45 20 T52.5 20 T60 20 T67.5 20 T75 20 T82.5 20 T90 20 T97.5 20 T105 20 T112.5 20 T120 20' fill='none' stroke='%23fff' stroke-opacity='.6' stroke-width='1'/%3E%3C/svg%3E"); --fx-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.6 0 0 0 -.62'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); --fx-tint: #4de3d0; --fx-tint2: #8fb4ff; --fx-grain-op: .16;
-  --fx-scan: repeating-linear-gradient(0deg, rgba(143,180,255,.09) 0 1px, transparent 1px 3px); }
-:where(body.fx) :where(button, .stats > div, .kpi > div) { position:relative; isolation:isolate; overflow:hidden; }
-:where(body.fx) :where(button, .stats > div, .kpi > div)::before {
-  content:""; position:absolute; inset:-80px; z-index:-1; pointer-events:none;
-  background:var(--fx-grain) 0 0 / 160px 160px, var(--fx-scan);
-  opacity:var(--fx-grain-op); will-change:transform; animation:fx-grain .7s steps(1) infinite;
-}
-:where(body.fx) :where(button, .stats > div, .kpi > div)::after {
-  content:""; position:absolute; bottom:1px; height:18px; left:-120px; right:0; z-index:-1; pointer-events:none;
-  background:linear-gradient(90deg, var(--fx-tint), var(--fx-tint2), var(--fx-tint)) 0 0 / 240px 100%;
-  -webkit-mask:var(--fx-wave) repeat-x 0 0 / 120px 100%; mask:var(--fx-wave) repeat-x 0 0 / 120px 100%;
-  opacity:.75; will-change:transform; animation:fx-wave 4s linear infinite;
-}
-:where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(3n+1)::after { animation-delay:-1.7s; animation-duration:5.5s; }
-:where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(3n+2)::after { animation-delay:-3.3s; animation-duration:3.2s; }
-:where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(2n)::before { animation-delay:-.35s; }
-@keyframes fx-wave { to { transform:translateX(120px); } }
-/* 2行以上のボタンは、波形が文字に重ならないよう下を空ける */
-body.fx :is(button:has(small), button:has(.m), #rail .dec .opts button) { padding-bottom:18px; }
-@keyframes fx-grain {
-  0% { transform:translate(0, 0); } 17% { transform:translate(-37px, 21px); } 33% { transform:translate(23px, -45px); }
-  50% { transform:translate(-61px, -13px); } 67% { transform:translate(41px, 33px); } 83% { transform:translate(-11px, 57px); }
-}
-:where(body.fx) table { position:relative; isolation:isolate; background-image:var(--fx-scan); }
-:where(body.fx) table::after {
-  content:""; position:absolute; left:0; right:0; top:-32px; height:32px; pointer-events:none; z-index:-1;
-  background:linear-gradient(180deg, transparent, color-mix(in srgb, var(--fx-tint) 10%, transparent) 55%, color-mix(in srgb, var(--fx-tint) 26%, transparent) 92%, transparent);
-  animation:fx-sweep 5s steps(60) infinite;
-}
-@keyframes fx-sweep { to { top:100%; } }
-:where(body.fx) th { background-image:var(--fx-grain), var(--fx-scan); background-size:160px 160px, auto; box-shadow:inset 0 -2px 0 color-mix(in srgb, var(--fx-tint) 40%, transparent); }
+/* 走査線: 昔のレーダー画面のような、動かない白く淡い横線をボタンに入れる (動かないので、毎フレームの計算はない)。
+   選んでいる白い地のボタンには、黒く淡い線。文字はときどき (1〜3つずつ) 色ずれしてぶれる (「≡ → 画面の動き」で切れる) */
+:root { --scan:repeating-linear-gradient(180deg, rgba(255,255,255,.075) 0 1px, transparent 1px 3px); --scan-on:repeating-linear-gradient(180deg, rgba(0,0,0,.07) 0 1px, transparent 1px 3px); }
+button { position:relative; isolation:isolate; }
+button::before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background:var(--scan); }
+button.on::before { background:var(--scan-on); }
 @keyframes fx-jit {
   0% { text-shadow:-2.5px 0 rgba(255,107,107,.7), 2.5px 0 rgba(201,204,209,.7); }
   15% { text-shadow:1.5px 0 rgba(255,107,107,.7), -1.5px 0 rgba(201,204,209,.7); }
@@ -331,7 +302,7 @@ body.fx :is(button:has(small), button:has(.m), #rail .dec .opts button) { paddin
 }
 body.fx .jit { animation:fx-jit .6s steps(1) 1; }
 @media (prefers-reduced-motion: reduce) {
-  :where(body.fx) *, :where(body.fx) *::after { animation:none !important; }
+  :where(body.fx) * { animation:none !important; }
 }
 /* 選択を外すボタン・何も選んでいないときの欄 */
 .syshead h2 { display:flex; align-items:center; gap:8px; }
@@ -353,7 +324,7 @@ body.fx .jit { animation:fx-jit .6s steps(1) 1; }
   --bg:#111214; --panel:#18191c; --raise:#212226; --line:#3b3d42; --fg:#f2f2f0; --muted:#b5b6b9; --dim:#97989c;
   --own:#ffffff; --enemy:#f0533a; --neutral:#e0da7f; --warn:#f89a2b; --good:#7cc790; --info:#8fb1e6; --accent:var(--own);
   --hover:color-mix(in oklab, var(--raise), var(--fg) 7%); --on-bg:var(--own); --glass:color-mix(in srgb, var(--panel) 92%, transparent);
-  --map-bg:#0b0c0d; --radius:0; --fx-tint:#c9ccd1; --fx-tint2:#6f7278; --fx-grain-op:.14;
+  --map-bg:#0b0c0d; --radius:0;
   --frame:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23c3c6cc'/%3E%3Cstop offset='1' stop-color='%236f7278'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0' y1='1' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%23151619'/%3E%3Cstop offset='1' stop-color='%2334363a'/%3E%3C/linearGradient%3E%3ClinearGradient id='l' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23a3a6ac'/%3E%3Cstop offset='1' stop-color='%235d6066'/%3E%3C/linearGradient%3E%3ClinearGradient id='r' x1='1' y1='0' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%231c1d20'/%3E%3Cstop offset='1' stop-color='%233a3c41'/%3E%3C/linearGradient%3E%3CradialGradient id='k'%3E%3Cstop offset='0' stop-color='%23d2d5da'/%3E%3Cstop offset='1' stop-color='%233e4146'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpolygon points='0,0 48,0 32,16 16,16' fill='url%28%23t%29'/%3E%3Cpolygon points='0,48 48,48 32,32 16,32' fill='url%28%23b%29'/%3E%3Cpolygon points='0,0 16,16 16,32 0,48' fill='url%28%23l%29'/%3E%3Cpolygon points='48,0 32,16 32,32 48,48' fill='url%28%23r%29'/%3E%3Crect x='.5' y='.5' width='47' height='47' fill='none' stroke='%2308080a'/%3E%3Crect x='14.5' y='14.5' width='19' height='19' fill='none' stroke='%2308080a'/%3E%3Crect x='13.5' y='13.5' width='21' height='21' fill='none' stroke='%23e4e6ea' stroke-opacity='.55'/%3E%3Crect x='7' y='7' width='34' height='34' fill='none' stroke='%23eef0f3' stroke-width='1.7' stroke-linecap='round' stroke-dasharray='0 3.2' stroke-opacity='.7'/%3E%3Crect x='2' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='8' cy='8' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='8' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='8' cy='3.4000000000000004' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='12.6' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='12.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='3.4000000000000004' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Crect x='34' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='40' cy='8' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='8' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='40' cy='3.4000000000000004' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='44.6' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='12.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='35.4' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Crect x='2' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='8' cy='40' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='40' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='8' cy='35.4' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='12.6' cy='40' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='44.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='3.4000000000000004' cy='40' r='1.1' fill='%23d2d5da'/%3E%3Crect x='34' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='40' cy='40' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='40' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='40' cy='35.4' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='44.6' cy='40' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='44.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='35.4' cy='40' r='1.1' fill='%23d2d5da'/%3E%3C/svg%3E"); --frame-on:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23c9ccd1'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0' y1='1' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%236f7278'/%3E%3Cstop offset='1' stop-color='%23a3a6ac'/%3E%3C/linearGradient%3E%3ClinearGradient id='l' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23f2f3f5'/%3E%3Cstop offset='1' stop-color='%23b4b7bc'/%3E%3C/linearGradient%3E%3ClinearGradient id='r' x1='1' y1='0' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%237d8086'/%3E%3Cstop offset='1' stop-color='%23b9bcc1'/%3E%3C/linearGradient%3E%3CradialGradient id='k'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%239da0a6'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpolygon points='0,0 48,0 32,16 16,16' fill='url%28%23t%29'/%3E%3Cpolygon points='0,48 48,48 32,32 16,32' fill='url%28%23b%29'/%3E%3Cpolygon points='0,0 16,16 16,32 0,48' fill='url%28%23l%29'/%3E%3Cpolygon points='48,0 32,16 32,32 48,48' fill='url%28%23r%29'/%3E%3Crect x='.5' y='.5' width='47' height='47' fill='none' stroke='%232a2c30'/%3E%3Crect x='14.5' y='14.5' width='19' height='19' fill='none' stroke='%232a2c30'/%3E%3Crect x='13.5' y='13.5' width='21' height='21' fill='none' stroke='%23ffffff' stroke-opacity='.55'/%3E%3Crect x='7' y='7' width='34' height='34' fill='none' stroke='%23ffffff' stroke-width='1.7' stroke-linecap='round' stroke-dasharray='0 3.2' stroke-opacity='.7'/%3E%3Crect x='2' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='8' cy='8' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='8' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='8' cy='3.4000000000000004' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='12.6' cy='8' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='12.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='3.4000000000000004' cy='8' r='1.1' fill='%23ffffff'/%3E%3Crect x='34' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='40' cy='8' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='8' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='40' cy='3.4000000000000004' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='44.6' cy='8' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='12.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='35.4' cy='8' r='1.1' fill='%23ffffff'/%3E%3Crect x='2' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='8' cy='40' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='40' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='8' cy='35.4' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='12.6' cy='40' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='44.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='3.4000000000000004' cy='40' r='1.1' fill='%23ffffff'/%3E%3Crect x='34' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='40' cy='40' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='40' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='40' cy='35.4' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='44.6' cy='40' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='44.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='35.4' cy='40' r='1.1' fill='%23ffffff'/%3E%3C/svg%3E");
   --font-ui:"Courier Prime", "Zen Old Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
   --font-display:"Special Elite", "Zen Antique", "Zen Old Mincho", "Hiragino Mincho ProN", serif;
@@ -423,7 +394,7 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
         <button id="savenow">セーブ</button>
         <button id="sigbtn" title="地図に光速の通信 (物資移送要求・指令・朝貢・送金) をどう描くか">通信: 表示しない</button>
         <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
-        <button id="fxbtn" title="ボタンや表に流れる信号の模様と、文字のぶれ">画面の動き: 入</button>
+        <button id="fxbtn" title="文字がときどき色ずれしてぶれる">画面の動き: 入</button>
         <span id="savestat" class="muted"></span>
       </div>
     </div>
@@ -7728,7 +7699,7 @@ function setHtmlKeepScroll(el, html) {
 }
 // --- メインループ ---
 let last = performance.now();
-let lastMapKey = '', lastMapGame = null, lastDrawYear = NaN, lastDateText = '', mapActiveUntil = 0, lastTickYear = NaN, lastFullTick = 0;
+let lastMapKey = '', lastMapGame = null, lastDrawYear = NaN, lastMapDraw = -Infinity, mapPending = false, lastDateText = '', mapActiveUntil = 0, lastTickYear = NaN, lastFullTick = 0;
 // 知らせの帯に、届いたばかりで薄れていく知らせがあるか (10 秒で消える)
 const railFading = (now) => now - (app.railNewest ?? -Infinity) < 11000;
 // 操作のあとしばらくは、地図を毎フレーム描き直す (なぞり・ホバー・ズーム・長押しの線など)
@@ -7749,13 +7720,18 @@ function frame(now) {
   // 見かけの速さは光速の 20 倍 (0.95c で近づくとき 1/(1−0.95)) まで。星系図は惑星が回るので毎フレーム描く
   const yearMoved = app.view === 'galaxy' ? Math.abs(game.year - lastDrawYear) * 20 * cam.zoom >= 0.25 : game.year !== lastDrawYear;
   const mapKey = `${app.view}|${w}|${h}|${cam.x}|${cam.y}|${cam.zoom}|${app.sel.sys}|${app.sel.body}|${app.fleetSel.size}|${app.fleetMove.size}|${app.signalMode}`;
-  if (app.dirty || yearMoved || mapKey !== lastMapKey || game !== lastMapGame || now < mapActiveUntil || now - (galaxyView.camMovedAt || 0) < 400 || galaxyView.animating || systemView.animating) {
-    lastMapKey = mapKey; lastMapGame = game; lastDrawYear = game.year; galaxyView.animating = systemView.animating = false;
-    const ctx = galaxyView.ctx;
-    ctx.fillStyle = app.mapBg || '#05070d';
-    ctx.fillRect(0, 0, w, h);
-    if (app.view === 'galaxy') galaxyView.draw(w, h);
-    else if (app.view === 'system') systemView.draw(w, h);
+  // 描き直しは毎秒 30 回まで (間に合わなかった分は次のフレームに持ち越す)
+  if (mapPending || app.dirty || yearMoved || mapKey !== lastMapKey || game !== lastMapGame || now < mapActiveUntil || now - (galaxyView.camMovedAt || 0) < 400 || galaxyView.animating || systemView.animating) {
+    if (now - lastMapDraw < 1000 / 30 - 1) mapPending = true;
+    else {
+      mapPending = false; lastMapDraw = now;
+      lastMapKey = mapKey; lastMapGame = game; lastDrawYear = game.year; galaxyView.animating = systemView.animating = false;
+      const ctx = galaxyView.ctx;
+      ctx.fillStyle = app.mapBg || '#05070d';
+      ctx.fillRect(0, 0, w, h);
+      if (app.view === 'galaxy') galaxyView.draw(w, h);
+      else if (app.view === 'system') systemView.draw(w, h);
+    }
   }
 
   const dateText = `西暦 ${Math.floor(game.year)}年 ${Math.floor((game.year % 1) * 12) + 1}月`;
