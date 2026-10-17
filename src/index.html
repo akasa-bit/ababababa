@@ -411,7 +411,7 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
         <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
         <button id="fxbtn" title="文字がときどき色ずれしてぶれる">画面の動き: 入</button>
         <span id="savestat" class="muted"></span>
-        <span id="credits" class="muted">背景画像: 天の川の星図 NASA/Goddard Space Flight Center Scientific Visualization Studio・Gaia DR2: ESA/Gaia/DPAC ／ 北アメリカ星雲 NASA/JPL-Caltech ／ 星系ごとの背景 NASA, ESA, JPL-Caltech, STScI ほか ／ アイコン: game-icons.net (Lorc, Delapouite ほか, CC BY 3.0)、Font Awesome・Solar・Streamline (CC BY 4.0)、Material・MDI (Apache 2.0)・Tabler・Lucide Lab ほか (詳しくは README)</span>
+        <span id="credits" class="muted">背景画像: 天の川の星図 NASA/Goddard Space Flight Center Scientific Visualization Studio・Gaia DR2: ESA/Gaia/DPAC ／ 北アメリカ星雲 NASA/JPL-Caltech ／ 星系ごとの背景 NASA, ESA, JPL-Caltech, STScI ほか ／ アイコン: game-icons.net (Lorc, Delapouite ほか, CC BY 3.0)、Font Awesome・Solar・Streamline (CC BY 4.0)、Material・MDI・MingCute (Apache 2.0)・Tabler・Boxicons・Lucide Lab・Pinhead ほか (詳しくは README)</span>
       </div>
     </div>
     <input id="importfile" type="file" accept="application/json,.json" hidden>
@@ -1027,6 +1027,26 @@ function iconImg(k, color) {
   }
   return im?.complete && im.naturalWidth ? im : null;
 }
+Object.assign(ICONS, {
+  pop: ['0 0 24 24', '<path fill="currentColor" d="M16 17v2H2v-2s0-4 7-4s7 4 7 4m-3.5-9.5A3.5 3.5 0 1 0 9 11a3.5 3.5 0 0 0 3.5-3.5m3.44 5.5A5.32 5.32 0 0 1 18 17v2h4v-2s0-3.63-6.06-4M15 4a3.4 3.4 0 0 0-1.93.59a5 5 0 0 1 0 5.82A3.4 3.4 0 0 0 15 11a3.5 3.5 0 0 0 0-7"/>'],
+  loyalty: ['0 0 24 24', '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m8.5 21.25l-3.25-5A1.4 1.4 0 0 1 7.5 14.6L8.75 16V6.25a1.5 1.5 0 0 1 3 0v5.25v-7a1.5 1.5 0 0 1 3 0v7v-5.75a1.5 1.5 0 0 1 3 0v5.75v-3.25a1.5 1.5 0 0 1 3 0v6.25c0 3.75-2.5 6.75-6 6.75ZM4.87 4.27l.38.85q.12.27.42.3l.92.1q.3.03.08.24l-.69.62q-.22.2-.16.49l.19.91q.06.29-.2.14l-.8-.46q-.26-.15-.52 0l-.8.46q-.26.15-.2-.14l.19-.91q.06-.29-.16-.49l-.69-.62q-.22-.21.08-.24l.92-.1q.3-.03.42-.3l.38-.85q.12-.27.24 0"/>'],
+  fear: ['0 0 512 512', '<path fill="currentColor" d="M257.656 19.625c-65.485.31-130.968 43.688-156.375 129.563C177.4 179.51 212.086 215.23 208.47 236v.063c-2.34 13.46-20.787 20.62-54.47 16.093c-6.255-.098-12.713-1.27-19.094-3.5c-11.202-2.527-23.665-6.108-37.344-10.844c24.63 22.796 53.14 39.59 83.47 50.125c5.516 101.8 24.05 168.38 46.437 199.407c.95-143.2 15.592-215.647 30.186-216.063c14.642-.425 29.205 71.648 30.063 217.314c22.446-30.322 40.966-96.94 46.436-200.28c28.115-9.725 54.978-25.102 79.03-46.345c-9.928 3.08-19.13 5.504-27.592 7.31c-5.366 1.7-10.762 2.68-16.03 2.876c-33.8 4.578-52.314-2.61-54.658-16.094V236c-2.255-12.955 10.413-31.72 38.72-51.375c15.652-10.87 36.077-22.02 61.437-32.594c-24.647-88.774-91.028-132.72-157.407-132.405zM132.47 191.655c-.922.003-1.822.05-2.69.126c-6.93.6-11.378 3.226-13.436 6.564s-2.198 7.545.562 13.156c2.76 5.61 8.615 11.848 16.875 16.313s17.1 6.16 24.032 5.562c6.933-.598 11.38-3.225 13.438-6.563s2.167-7.545-.594-13.156c-2.76-5.61-8.583-11.816-16.844-16.28c-7.227-3.908-14.895-5.73-21.343-5.72zm257.467 0a39 39 0 0 0-2.843.126c-5.796.44-12.305 2.246-18.5 5.595c-8.26 4.465-14.115 10.67-16.875 16.28c-2.762 5.612-2.622 9.82-.564 13.157c2.058 3.338 6.506 5.965 13.438 6.563s15.77-1.098 24.03-5.563s14.084-10.7 16.845-16.312c2.76-5.61 2.65-9.82.592-13.156c-2.058-3.338-6.505-5.965-13.437-6.563a32 32 0 0 0-2.688-.124z"/>'],
+  friend: ['0 0 24 24', '<path fill="currentColor" d="M16.48 10.41c-.39.39-1.04.39-1.43 0l-4.47-4.46l-7.05 7.04l-.66-.63a3 3 0 0 1 0-4.24l4.24-4.24a3 3 0 0 1 4.24 0L16.48 9c.39.39.39 1.02 0 1.41m.7-2.12c.78.78.78 2.05 0 2.83c-1.27 1.27-2.61.22-2.83 0l-3.76-3.76l-5.57 5.57a.996.996 0 0 0 0 1.41c.39.39 1.02.39 1.42 0l4.62-4.62l.71.71l-4.62 4.62a.996.996 0 0 0 0 1.41c.39.39 1.02.39 1.42 0l4.62-4.62l.71.71l-4.62 4.62a.996.996 0 1 0 1.41 1.41l4.62-4.62l.71.71l-4.62 4.62a.996.996 0 1 0 1.41 1.41l8.32-8.34a3 3 0 0 0 0-4.24l-4.24-4.24a3 3 0 0 0-4.18-.06z"/>'],
+  council: ['0 0 24 24', '<path fill="currentColor" d="M4 15L3 8h3q0-1.225.675-2.225T8.5 4.3q.075-.775.65-1.287T10.5 2.5q.825 0 1.413.588T12.5 4.5t-.587 1.413T10.5 6.5q-.325 0-.6-.088t-.55-.287q-.6.2-.962.725T8.025 8H21l-1 7h-2.675l.175-1.725q.125-1.225-.687-2.125t-2.038-.9h-5.55q-1.225 0-2.037.9T6.5 13.275L6.675 15zm4.675 5.25L8 13.125q-.05-.55.3-.962t.925-.413h5.55q.575 0 .925.413t.3.962l-.675 7.125z"/>'],
+  goal: ['0 0 24 24', '<path fill="currentColor" fill-rule="evenodd" d="M8.04832 2.48826C8.33094 2.79108 8.31458 3.26567 8.01176 3.54829L3.72605 7.54829C3.57393 7.69027 3.36967 7.76267 3.1621 7.74818C2.95453 7.7337 2.7623 7.63363 2.63138 7.4719L1.41709 5.9719C1.15647 5.64996 1.20618 5.17769 1.52813 4.91707C1.85007 4.65645 2.32234 4.70616 2.58296 5.0281L3.29089 5.90261L6.98829 2.45171C7.2911 2.16909 7.76569 2.18545 8.04832 2.48826ZM11.25 5C11.25 4.58579 11.5858 4.25 12 4.25H22C22.4142 4.25 22.75 4.58579 22.75 5C22.75 5.41422 22.4142 5.75 22 5.75H12C11.5858 5.75 11.25 5.41422 11.25 5ZM8.04832 9.48826C8.33094 9.79108 8.31458 10.2657 8.01176 10.5483L3.72605 14.5483C3.57393 14.6903 3.36967 14.7627 3.1621 14.7482C2.95453 14.7337 2.7623 14.6336 2.63138 14.4719L1.41709 12.9719C1.15647 12.65 1.20618 12.1777 1.52813 11.9171C1.85007 11.6564 2.32234 11.7062 2.58296 12.0281L3.29089 12.9026L6.98829 9.45171C7.2911 9.16909 7.76569 9.18545 8.04832 9.48826ZM11.25 12C11.25 11.5858 11.5858 11.25 12 11.25H22C22.4142 11.25 22.75 11.5858 22.75 12C22.75 12.4142 22.4142 12.75 22 12.75H12C11.5858 12.75 11.25 12.4142 11.25 12ZM8.04832 16.4883C8.33094 16.7911 8.31458 17.2657 8.01176 17.5483L3.72605 21.5483C3.57393 21.6903 3.36967 21.7627 3.1621 21.7482C2.95453 21.7337 2.7623 21.6336 2.63138 21.4719L1.41709 19.9719C1.15647 19.65 1.20618 19.1777 1.52813 18.9171C1.85007 18.6564 2.32234 18.7062 2.58296 19.0281L3.29089 19.9026L6.98829 16.4517C7.2911 16.1691 7.76569 16.1855 8.04832 16.4883ZM11.25 19C11.25 18.5858 11.5858 18.25 12 18.25H22C22.4142 18.25 22.75 18.5858 22.75 19C22.75 19.4142 22.4142 19.75 22 19.75H12C11.5858 19.75 11.25 19.4142 11.25 19Z" clip-rule="evenodd"/>'],
+  route: ['0 0 24 24', '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 18a2 2 0 1 0 4 0a2 2 0 1 0-4 0M17 6a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M19 8v5a5 5 0 0 1-5 5h-3l3-3m0 6l-3-3m-6-2v-5a5 5 0 0 1 5-5h3l-3-3m0 6l3-3"/></g>'],
+  migration: ['0 0 24 24', '<path fill="currentColor" d="M14 2a2 2 0 1 0 0 4a2 2 0 1 0 0-4m-3.47 4.83L7.94 7.94c-.44.19-.79.52-1 .94L5.1 12.55l1.79.89l1.84-3.67l2.07-.89l-1.71 8.54l-3.69 2.77l1.2 1.6l3.69-2.77c.39-.3.67-.72.76-1.21l.44-2.2l2.6 1.95l.93 4.63l1.96-.39l-.92-4.62c-.1-.48-.37-.91-.76-1.21l-2.14-1.6l.83-3.87l.95 1.67c.25.43.64.75 1.1.9l2.64.88l.63-1.9l-2.64-.88l-1.55-2.72c-.28-.49-.72-.87-1.24-1.08l-1.44-.57a2.48 2.48 0 0 0-1.91.02Z"/>'],
+  supply: ['0 0 24 24', '<g fill="currentColor"><path d="M9.56443 8.73049L10.0789 10.5926C10.5639 12.3481 10.8064 13.2259 11.5194 13.6252C12.2323 14.0244 13.1374 13.7892 14.9474 13.3188L16.8673 12.8199C18.6774 12.3495 19.5824 12.1143 19.9941 11.4227C20.4057 10.7312 20.1632 9.85344 19.6782 8.09788L19.1638 6.2358C18.6788 4.48023 18.4363 3.60244 17.7233 3.20319C17.0103 2.80394 16.1052 3.03915 14.2952 3.50955L12.3753 4.00849C10.5652 4.47889 9.66021 4.71409 9.24856 5.40562C8.83692 6.09714 9.07943 6.97493 9.56443 8.73049Z"/><path d="M2.27749 5.24694C2.38823 4.84781 2.80157 4.61402 3.2007 4.72476L4.9044 5.19744C5.82129 5.45183 6.5469 6.15866 6.80003 7.07489L8.95106 14.8609L9.10935 15.4075C9.74249 15.6438 10.2863 16.0866 10.6314 16.6747L10.9414 16.579L19.8115 14.2739C20.2124 14.1697 20.6219 14.4102 20.7261 14.8111C20.8303 15.212 20.5897 15.6214 20.1888 15.7256L11.3515 18.0223L11.0228 18.1238C11.0161 19.3947 10.1392 20.5555 8.81236 20.9003C7.22189 21.3136 5.58709 20.3982 5.16092 18.8556C4.73476 17.313 5.67861 15.7274 7.26908 15.3141C7.3479 15.2936 7.42682 15.2764 7.5057 15.2623L5.35419 7.47433C5.24592 7.08242 4.92897 6.76092 4.50338 6.64284L2.79968 6.17016C2.40054 6.05942 2.16675 5.64608 2.27749 5.24694Z"/></g>'],
+  pirate: ['0 0 512 512', '<path fill="currentColor" d="M256 31.203c-96 .797-117.377 76.692-79.434 135.133c-6.397 6.534-10.344 15.886-.566 25.664c16 16 32 16 39.852 32.42h80.296C304 208 320 208 336 192c9.778-9.778 5.831-19.13-.566-25.664C373.377 107.896 352 32 256 31.203m-42.146 101.049q.64-.005 1.306.03c28.404 1.442 40.84 59.718-10.83 51.095c-10.412-1.738-17.355-50.963 9.524-51.125m84.292 0c26.88.162 19.936 49.387 9.524 51.125C256 192 268.436 133.724 296.84 132.28q.666-.033 1.306-.03zM32 144c7.406 88.586 64.475 175.544 156.623 236.797c17.959-7.251 35.767-15.322 50.424-23.877C180.254 319.737 104.939 255.465 32 144m448 0C359.2 328.605 231.863 383.797 183.908 400.797c3.177 5.374 5.997 10.98 8.711 16.432c3.878 7.789 7.581 15.251 11.184 20.986A518 518 0 0 0 256 417.973l.168.076a885 885 0 0 0 9.652-4.65C391.488 353.263 471.156 249.79 480 144m-224 27.725l20.074 40.15L256 199.328l-20.074 12.547zm-65.604 57.11l15.76 51.042s31.268 24.92 49.844 24.92s49.844-24.92 49.844-24.92l15.76-51.041l-27.086 19.236l-8.063 16.248S267.35 279.547 256 279.547s-30.455-15.227-30.455-15.227l-8.063-16.248l-27.086-19.236zm-59.984 152.976a33 33 0 0 0-2.375.027l.856 17.978c6.36-.302 10.814 2.416 16.11 8.64c5.298 6.222 10.32 15.707 15.24 25.589c4.918 9.882 9.707 20.12 16.122 28.45c6.415 8.327 16.202 15.446 27.969 13.89l-2.36-17.844c-4.094.541-6.78-1.099-11.349-7.031c-4.57-5.933-9.275-15.46-14.268-25.489c-4.992-10.029-10.297-20.604-17.644-29.234c-6.888-8.09-16.556-14.686-28.3-14.976zm251.176 0c-11.745.29-21.413 6.885-28.3 14.976c-7.348 8.63-12.653 19.205-17.645 29.234c-4.993 10.03-9.698 19.556-14.268 25.489s-7.255 7.572-11.35 7.031l-2.359 17.844c11.767 1.556 21.554-5.563 27.969-13.89c6.415-8.33 11.204-18.568 16.123-28.45s9.94-19.367 15.238-25.59c5.297-6.223 9.75-8.941 16.111-8.639l.856-17.978a33 33 0 0 0-2.375-.027m-55.928 18.107c-13.97 10.003-30.13 18.92-47.424 27.478a525 525 0 0 0 29.961 10.819c3.603-5.735 7.306-13.197 11.184-20.986c2.714-5.453 5.534-11.058 8.71-16.432c-.77-.273-1.62-.586-2.43-.879zm-191.808 23.371l-27.67 10.352l7.904 31.771l36.424-11.707c-1.418-2.814-2.81-5.649-4.207-8.457c-4.048-8.131-8.169-15.961-12.451-21.959m244.296 0c-4.282 5.998-8.403 13.828-12.45 21.959c-1.399 2.808-2.79 5.643-4.208 8.457l36.424 11.707l7.904-31.771zM78.271 435.438a10 10 0 0 0-1.32.12a7 7 0 0 0-1.217.313c-11.544 4.201-25.105 18.04-21.648 29.828c3.07 10.472 19.675 13.359 30.492 11.916c3.828-.51 8.415-3.761 12.234-7.086l-8.124-32.648c-3.238-1.285-7.214-2.528-10.417-2.443m355.458 0c-3.203-.085-7.179 1.158-10.416 2.443l-8.125 32.648c3.819 3.325 8.406 6.576 12.234 7.086c10.817 1.443 27.422-1.444 30.492-11.916c3.457-11.788-10.104-25.627-21.648-29.828a7 7 0 0 0-1.217-.312a10 10 0 0 0-1.32-.122z"/>'],
+  natives: ['0 0 15 15', '<path fill="currentColor" d="M6.85 3.54L5 .5h1.5l1 1.84L8.5.5H10L8.15 3.54l4.44 8.17l.16.29h.75c.28 0 .5.22.5.5v1c0 .28-.22.5-.5.5h-12c-.28 0-.5-.22-.5-.5v-1c0-.28.22-.5.5-.5h.75zM7.5 7L5 12h5z"/>'],
+  peace: ['0 0 512 512', '<path fill="currentColor" d="M372 22.41c-6.4 33.89 6.8 54.39 32.6 66.3c4.6 8.17 8.4 16.29 11.4 24.39c-15.3-17.02-33.3-25.31-58-13.12c14.1 27.62 35.6 32.42 61.5 23.42c6.2 21 7.7 41.6 6.3 62.4c0 .2 0 .4-.1.6c1 .6 2 1.1 2.9 1.7c4.9 2.9 9.7 5.9 14.3 8.9c.4-3.3.7-6.7.9-10c1.2-17.6.4-35.4-3.3-53.5c26.8 5.1 43-8.6 52.8-33.62c-24.2-2.6-44.9 1.22-55.3 22.92c-2.6-9.4-6-18.9-10.3-28.46c23.7-15.85 37.7-36.07 26-67.62c-22.5 8.53-33.5 22.13-36.3 39.47C412.8 44.33 400.3 28 372 22.41M190.7 62.63C183.4 82.89 176.4 110 172 136.8c-3.2 19.9-5.3 39.7-5.7 56.9c30.4 25.9 63.3 44.6 99.8 46.3c-33.2-52.5-63-120-75.4-177.37M56.82 102.2c3.08 75.4 32.03 178.7 110.68 233.2l5.5 3.8l-2 6.3c-3.2 10.1-7.8 19-15 25.8c-7.3 6.8-16.9 11.2-28.7 13.3c-22.5 4-54.14.8-101.89-7.7c-9.6 24.1-8.29 50.6.43 72.1c8.72 21.3 24.29 36.6 42.1 40.6c24.85-31.8 62.26-70.4 113.56-68.1c52 2.3 111.5-12.1 146.9-47.6c12.5-12.4 23.2-42.3 29.4-68.6s8.7-49 8.7-49l.6-6.1l6-1.6c21.6-5.6 47.6-10.7 76.7-25.4c-8.6-5.8-18.7-12.6-30.4-19.6c-17.9-10.6-37.6-19.8-47.3-20.9c-16.6-1.7-26 1.3-32.5 6.1c-6.4 4.8-10.6 12.2-14.3 21.1c-3.6 8.9-6.4 19-11.4 28.1c-5.1 9.2-14 17.8-26.8 19.2c-56 6.5-103.8-22.9-143.9-60.1c-33-30.6-61.58-66.8-86.38-94.9m376.08 148c-7.1 2.6-13.9 4.9-20.4 6.8c-1.8 6.9-3.7 13.8-5.6 20.7l17.4 4.8c3-10.7 5.9-21.5 8.6-32.3"/>'],
+  inspect: ['0 0 512 512', '<path fill="currentColor" d="m479.6 399.716l-81.084-81.084l-62.368-25.767A175 175 0 0 0 368 192c0-97.047-78.953-176-176-176S16 94.953 16 192s78.953 176 176 176a175.03 175.03 0 0 0 101.619-32.377l25.7 62.2l81.081 81.088a56 56 0 1 0 79.2-79.195M48 192c0-79.4 64.6-144 144-144s144 64.6 144 144s-64.6 144-144 144S48 271.4 48 192m408.971 264.284a24.03 24.03 0 0 1-33.942 0l-76.572-76.572l-23.894-57.835l57.837 23.894l76.573 76.572a24.03 24.03 0 0 1-.002 33.941"/>'],
+  awe: ['0 0 512 512', '<path fill="currentColor" d="M17.87 18.84v49.25C38.19 111.9 58.49 155.7 78.81 199.5c29.69-1.2 59.49-2.3 89.19-3.4c14.5-15.4 30.1-29.5 48-44L101.1 74.97L86.91 18.84H17.88zm94.63 0c6.1 16.15 12.2 32.33 18.4 48.47c23.5 1.98 47.1 3.9 70.6 5.85l22.8 72.34c5-4 10.3-8.1 15.7-12.2c-8.2-25.9-16.2-51.83-24.4-77.71c-23.8-1.99-47.6-3.94-71.4-5.9l-11.7-30.85zM65.37 126.1l42.23 2L152 178l-61.47 2.3zm196.93 13.6c-48.9 36.6-79.3 62.9-109.2 103.6c3.8 12 9.1 24.2 15.6 36.3l100.4-88.5l12.4 14l-103.1 90.8c7 11 15 21.7 23.8 31.8l107.2-88.6l11.9 14.4l-106.4 87.8c8 8 16.5 15.5 25.4 22.2L344 287.9l11 15.1l-98.4 71.7c10.2 6.4 20.8 11.7 31.7 15.9c41.1-16.8 77.9-50.1 105.8-82.6c6-7 8.3-14 7.5-20.3c-.9-6.3-4.9-13.2-15.7-20.1l-5.2-3.3l1-6.1c2.5-15.2-1.2-22.1-6.5-26.8c-5.2-4.6-13.7-6.8-21.1-6.8l-15-.1l6.7-13.5c4.4-8.9 3.5-18.5-1.9-25.8s-15.6-12.9-32.5-11.4l-12.7 1l2.8-12.4c3.1-14.2-2.2-21-10.7-25.1c-9.4-3.9-20.4-3-28.5 2.4M132.5 240c-8.9 10.1-16.6 21.1-22.4 32.6c8.4 20.9 19.7 36 33 44.9c10.1 6.8 21.4 10.3 34.4 10.4c-20.1-29.1-36.2-58-45-87.9m262.7 94.8c-4.2 4.5-8.5 8.9-13 13.4l23.7 20.6l-18 15.7l-16.9-25.8c-12.3 11.1-25.6 21.5-39.8 30.6l14.2 32.1c-17.7 15.4-35.4 30.7-53.1 46.1c12.9 8.9 25.7 17.8 38.5 26.7h32.8l-40.9-28.4l30.6-26.5l11.7 26.6l20.1-3.3l11.7 31.6h20l-13-34.8l60.9-10.3l-13.3 45.1h41.8v-91l-86.6 9.7l-8.3-12.7c12.1-10.4 24.1-20.9 36.1-31.3c-13.3-11.6-27.5-24.1-39.2-34.1"/>'],
+  station: ['0 0 24 24', '<path fill="currentColor" d="M8.11 1.75C9.3 1.25 10.62 1 12 1c6.08 0 11 4.92 11 11s-4.92 11-11 11S1 18.08 1 12c0-1.38.25-2.7.72-3.92a4.5 4.5 0 0 0 1.73 1.1C3.16 10.07 3 11 3 12a9 9 0 0 0 9 9a9 9 0 0 0 9-9a9 9 0 0 0-9-9c-1 0-1.93.16-2.82.45c-.22-.62-.57-1.21-1.07-1.7M4.93 2.93a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2c0-1.11.89-2 2-2M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5"/>'],
+  planetcol: ['0 0 512 512', '<path fill="currentColor" d="M215 32v140c5.9-1.4 11.9-2.6 18-3.4v-42.9c45-8 90 32.3 135 2.3V48c-45 30-90-10.31-135-2.29V32zm41 153c-83.5 0-151 67.5-151 151s67.5 151 151 151s151-67.5 151-151s-67.5-151-151-151m-20.6 25.8l77.4 119.3l-83.7 27.6l-22.8-54.1l-24.4 21.2l-57.9-12.5l48.3-50l41.4 7.9zm103.2 6.1l-10.2 34.9l38.3-.7l-36.4 31.1l-31.1-24.8l12.7-23.6zm33.6 148.4l-26.5 42.9l-21.2-36.1zM316 398l15.9 46.7c-35.1 28.4-87.1 35.9-115.6 16.9l38.2-60.9l29.2 30.7z"/>'],
+  light: ['0 0 24 24', '<path fill="currentColor" d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2m0 4a1 1 0 0 0-1 1v5a1 1 0 0 0 .293.707l3 3a1 1 0 1 0 1.414-1.414L13 11.586V7a1 1 0 0 0-1-1"/>'],
+  memo: ['0 0 24 24', '<path fill="currentColor" d="M4 14v-2h7v2zm0-4V8h11v2zm0-4V4h11v2zm9 14v-3.075l5.525-5.5q.225-.225.5-.325t.55-.1q.3 0 .575.113t.5.337l.925.925q.2.225.313.5t.112.55t-.1.563t-.325.512l-5.5 5.5zm6.575-5.6l.925-.975l-.925-.925l-.95.95z"/>'],
+});
 const ico = (k) => (ICONS[k] ? `<svg class="ico" viewBox="${ICONS[k][0]}" aria-hidden="true">${ICONS[k][1]}</svg>` : '');
 const FACILITY = { farm: '農場', mine: '鉱山', factory: '工場', habitat: '居住区', slaveworks: '奴隷工房', shipyard: '軍事基地', barracks: '軍事教練所' };
 const FACILITY_MAX = { farm: 10, mine: 10, factory: 10, habitat: 10, slaveworks: 10, shipyard: 1, barracks: 5 };
@@ -5760,13 +5780,14 @@ class SystemView {
       else { ctx.fillStyle = '#ffb347'; ctx.font = '10px sans-serif'; ctx.fillText('⛏', x - r - 12, y - r); }
     }
     if (game.knownColonyAt(sys, b.id, 'planet')) {
-      const ci = iconImg('colony', OWN.hex);
+      const ci = iconImg('planetcol', OWN.hex);
       if (ci) ctx.drawImage(ci, x - 6, y - r - 15, 12, 12);
       else { ctx.fillStyle = OWN.hex; ctx.beginPath(); ctx.moveTo(x, y - r - 9); ctx.lineTo(x + 4, y - r - 3); ctx.lineTo(x - 4, y - r - 3); ctx.fill(); }
     }
     if (game.knownColonyAt(sys, b.id, 'station')) {
-      ctx.fillStyle = '#ffd24d';
-      ctx.fillRect(x + r + 2, y - r - 6, 5, 5);
+      const si = iconImg('station', '#ffd24d');
+      if (si) ctx.drawImage(si, b.cls ? x - r - 13 : x + r + 1, y - r - 12, 12, 12); // 恒星は名前が右上にあるので左上に
+      else { ctx.fillStyle = '#ffd24d'; ctx.fillRect(x + r + 2, y - r - 6, 5, 5); }
     }
     if (game.ships.some((x) => x.to === sys && x.body === b.id && game.departSeen(x.from, x.depart))) {
       ctx.strokeStyle = '#ffb347';
@@ -5808,7 +5829,7 @@ const costText = (cost) => Object.entries(cost).map(([k, v]) => (k === 'credits'
 const resText = (r) => `${ico(r)}${RES_LABEL[r]}`;
 const costHtml = (cost) => Object.entries(cost).map(([k, v]) => (k === 'credits' ? `${ico('credits')}${fmtAmt(v)} cr` : `${resText(k)} ${fmtAmt(v)}`)).join('・');
 // 出来事の種類のアイコン (種類の札・知らせの帯)
-const KIND_ICON = { battle: 'war', war: 'war', famine: 'food', shortage: 'goods', colony: 'colony' };
+const KIND_ICON = { battle: 'war', war: 'war', famine: 'food', shortage: 'goods', colony: 'colony', pirate: 'pirate', natives: 'natives', politics: 'loyalty', demand: 'council', migration: 'migration', trade: 'route', goal: 'goal' };
 const tagIco = (kind) => ico(KIND_ICON[kind]);
 
 // 費用つきボタン。払えないときは理由を添えて無効化する
@@ -5872,9 +5893,9 @@ function sysHead(g, sys, k, cols) {
   const vassal = id !== 0 && k && k.lord !== null && k.lord !== undefined;
   const owner = cols.length ? (realm === 0 ? '地球の国' : realm === id && k?.independent ? '独立国の首都' : `${g.system(realm).name} の国`) : '未入植';
   const tiles = [];
-  if (cols.length) tiles.push(['人口', fmtPop(pop)]);
+  if (cols.length) tiles.push([`${ico('pop')}人口`, fmtPop(pop)]);
   const flags = sysFlags(g, sys, k, cols);
-  if (vassal && realm === 0) tiles.push(['忠誠度', `<span class="${(k.loyalty ?? LOYALTY_START) < UNREST_AT ? 'bad' : ''}">${Math.round(k.loyalty ?? LOYALTY_START)}</span>`]);
+  if (vassal && realm === 0) tiles.push([`${ico('loyalty')}忠誠度`, `<span class="${(k.loyalty ?? LOYALTY_START) < UNREST_AT ? 'bad' : ''}">${Math.round(k.loyalty ?? LOYALTY_START)}</span>`]);
   tiles.push([`${ico('fleet')}艦隊`, g.knownGarrison(id)]);
   if (cols.length) tiles.push([id === 0 ? `${ico('credits')}収入/年` : `${ico('credits')}資金`, id === 0 ? fmtAmt(g.income()) : fmtAmt(k?.credits || 0)]);
   const dot = cols.length ? `<span class="dot big" style="background:${realmColor(realm)}"></span>` : '';
@@ -5896,10 +5917,10 @@ function systemPanel(app) {
   const acts = [`<button data-act="open">星系マップを開く</button>`];
   if (isOwnStack(g, id)) acts.push(`<button data-act="fleetsel" data-sys="${id}">この艦隊を選ぶ<small>地図で移動先を右クリック/タップ</small></button>`);
   if (colonized && realm !== 0 && realm !== null) {
-    acts.push(g.knownAtWar(0, realm) ? `<button data-act="peace" data-sys="${realm}">講和を申し入れる<small>届くまで ${g.lightDelay(realm).toFixed(1)} 年・政治力 ${PC_DIPLOMACY}</small></button>`
+    acts.push(g.knownAtWar(0, realm) ? `<button data-act="peace" data-sys="${realm}">${ico('peace')}講和を申し入れる<small>届くまで ${g.lightDelay(realm).toFixed(1)} 年・政治力 ${PC_DIPLOMACY}</small></button>`
       : `<button data-act="declarewar" data-sys="${realm}">${ico('war')}${esc(g.system(realm).name)} の国に宣戦<small>政治力 ${PC_DIPLOMACY}</small></button>`);
   }
-  if (colonized && realm === 0 && id !== 0 && k?.lord !== null && k?.lord !== undefined) acts.push(`<button data-act="inspect" data-sys="${id}" ${g.pc < g.pcCost('inspect', { sys: id }) ? 'disabled' : ''}>視察団を送る<small>関与になる・政治力 ${g.pcCost('inspect', { sys: id })}・届くまで ${g.lightDelay(id).toFixed(1)} 年</small></button>`);
+  if (colonized && realm === 0 && id !== 0 && k?.lord !== null && k?.lord !== undefined) acts.push(`<button data-act="inspect" data-sys="${id}" ${g.pc < g.pcCost('inspect', { sys: id }) ? 'disabled' : ''}>${ico('inspect')}視察団を送る<small>関与になる・政治力 ${g.pcCost('inspect', { sys: id })}・届くまで ${g.lightDelay(id).toFixed(1)} 年</small></button>`);
   const o = colonized && id !== 0 ? independenceOutlook(g, id) : null;
   const pop = cols.reduce((a, c) => a + c.pop, 0);
   const st = k?.stock;
@@ -5911,12 +5932,12 @@ function systemPanel(app) {
     <div class="acts">${acts.join('')}</div>
     ${app.view === 'system' ? bodyList(app, sys) : ''}
     ${sec('gov', `${ico('credits')}政府と資金`, colonized ? (id === 0 ? `資金 ${fmtAmt(g.credits)} cr` : `資金 ${fmtAmt(k?.credits || 0)} cr・収入 ${fmtAmt(k?.income || 0)}/年`) : '', govHtml)}
-    ${o ? sec('loyal', '忠誠と統治', outlookText(o, true), loyaltyBox(g, id), o.warn ? 'warn' : '') : ''}
+    ${o ? sec('loyal', `${ico('loyalty')}忠誠と統治`, outlookText(o, true), loyaltyBox(g, id), o.warn ? 'warn' : '') : ''}
     ${colonized ? sec('cols', `${ico('colony')}入植地と採掘基地`, `${cols.length} か所・${fmtPop(pop)}`, `<ul>${cols.map((c) => `<li>${esc(c.name)} — ${KIND_LABEL[c.kind]} <span class="muted">人口 ${fmtPop(c.pop)}</span></li>`).join('')}</ul>${outpostList(g, sys)}${id === 0 ? `${autoToggle(g, id)}<p class="note">オンにすると、生産が需要に届かない資源を年に1回選び、惑星上の施設 (農場・鉱山・工場) や採掘基地を自動で建てる。過密な入植地では居住区も拡張し、太陽系の空いている天体には宇宙ステーションも建てる (10年に1つまで。資金が費用の2倍以上あるとき)。</p>` : ''}`) : ''}
     ${colonized ? sec('stock', `${ico('goods')}備蓄`, lacking.length ? `足りない: ${lacking.join('・')}` : '足りている', stockBox(g, id), lacking.length ? 'warn' : '') : ''}
-    ${colonized ? sec('routes', '交易路', `${nRoutes} 本`, routeBox(app, sys)) : ''}
+    ${colonized ? sec('routes', `${ico('route')}交易路`, `${nRoutes} 本`, routeBox(app, sys)) : ''}
     ${sec('mil', `${ico('war')}軍事`, `駐留 ${g.knownGarrison(id)} 艦隊`, militaryBox(app, sys))}
-    ${natives ? sec('natives', '先住民', `${natives} つ`, nativesSummary(g, sys)) : ''}
+    ${natives ? sec('natives', `${ico('natives')}先住民`, `${natives} つ`, nativesSummary(g, sys)) : ''}
     ${sec('star', '恒星', `${sys.stars[0].label} ${sys.stars.length > 1 ? `${sys.stars.length}重星系` : '単独星'}・惑星 ${sys.bodies.filter((b) => b.type !== 'belt').length}`, `<table class="tbl"><tr><th>恒星</th><th>型</th><th>質量</th><th>表面温度</th><th>光度</th></tr>${sys.stars.map(starRow).join('')}</table>${sys.stars.slice(1).map((s) => `<p class="note">${esc(s.name)} は主星から約 ${fmt(s.sep)} AU</p>`).join('')}`)}`;
 }
 // 説明文は「説明」を押したときだけ開く (短い注意書きと、赤・緑の状態の文はそのまま出す)。開いたかは覚えておく
@@ -6051,8 +6072,8 @@ function ruleBox(g, id, k) {
 function ageBadge(g, id) {
   const age = g.dataAge(id);
   if (id === 0) return '<span class="age now">最新</span>';
-  if (age === null) return `<span class="age">情報なし (光で ${g.lightDelay(id).toFixed(1)} 年)</span>`;
-  return `<span class="age">${age.toFixed(1)} 年前の情報</span>`;
+  if (age === null) return `<span class="age">${ico('light')}情報なし (光で ${g.lightDelay(id).toFixed(1)} 年)</span>`;
+  return `<span class="age">${ico('light')}${age.toFixed(1)} 年前の情報</span>`;
 }
 
 // 星系の政府: 従属先・資金・従属している星系
@@ -6131,7 +6152,7 @@ function routeBox(app, sys) {
   const open = others.length
     ? `<label class="field">相手の星系
         <select data-act="rdest">${others.map((s) => `<option value="${s.id}" ${s.id === dest ? 'selected' : ''}>${esc(s.name)} (${distance(s, sys).toFixed(1)} ly)</option>`).join('')}</select></label>
-       ${costButton(g, `data-act="route" data-dest="${dest}"`, '交易路を開設', g.routeCost(sys.id, dest), sys.id)}`
+       ${costButton(g, `data-act="route" data-dest="${dest}"`, `${ico('route')}交易路を開設`, g.routeCost(sys.id, dest), sys.id)}`
     : '<p class="note">交易路を結べる相手(他の入植星系)がない</p>';
   const warNote = g.knownSystems().some((s) => s.id !== sys.id && !g.routeBetween(s.id, sys.id) && g.knownHostile(sys.id, s.id))
     ? '<p class="note">交戦中の国の星系とは交易路を結べない (既存の交易路は残る)。</p>' : '';
@@ -6156,7 +6177,7 @@ function defenseToggle(g) {
 function aweToggle(g) {
   const ts = g.aweTargets();
   const short = ts.filter((s) => g.knownAwe(s.id) < g.aweGoal(s.id)).length;
-  return `<label class="check auto"><input type="checkbox" data-act="autoawe" ${g.autoAwe ? 'checked' : ''}> 反乱防止のための威圧</label>
+  return `<label class="check auto"><input type="checkbox" data-act="autoawe" ${g.autoAwe ? 'checked' : ''}> ${ico('awe')}反乱防止のための威圧</label>
     <p class="note">年に1回、地球の直属の従属星系に、反乱 (独立戦争) を起こしたときにその星系が持つであろう艦隊 (人口と経済の規模から推定) の<b>2倍</b>の艦隊を太陽系から送って駐留させる (海賊対策の駐留とは別に数える。忠誠度が50以上か、主人との友好度が${FRIEND_SAFE}以上の星系には送らず、そうなった星系からは威圧の艦隊を太陽系へ引き揚げる。忠誠度の低い順。足りない艦隊は「足りない艦隊は自動で編成」がオンなら、太陽系で資金と資源の続く限り編成)。地球の艦隊が駐留している星系は<b>恐怖度</b> (忠誠度とは別) が上がり (推定艦隊と同数で50、2倍で100。年に最大10ずつ動く)、恐怖度が高いほど独立を宣言しにくくなる (100で確率が1/10)。それでも独立されたら、駐留していた艦隊はその場で独立軍と艦隊戦になり、勝てば攻囲に移る。威圧の対象 (直属で忠誠度50未満・友好度${FRIEND_SAFE}未満) ${ts.length} か所のうち、目標に届いていない: ${short} か所</p>`;
 }
 
@@ -6312,7 +6333,7 @@ function supplyLine(g, id, n) {
   if (!n) return '';
   const k = id === 0 ? g.supplied[0]?.k : g.known(id)?.supply;
   const use = Object.entries(FLEET_SUPPLY).map(([r, v]) => `${RES_LABEL[r]} ${fmtAmt(v * n)}`).join('・');
-  return `<p class="note">兵站: 駐留艦隊が年に ${use} を備蓄から使う。補給 <b class="${k !== undefined && k < 0.8 ? 'bad' : ''}">${k === undefined ? '—' : pct(k)}</b>${k !== undefined && k < 0.8 ? ' (補給不足。戦力が落ちている)' : ''}</p>`;
+  return `<p class="note">${ico('supply')}兵站: 駐留艦隊が年に ${use} を備蓄から使う。補給 <b class="${k !== undefined && k < 0.8 ? 'bad' : ''}">${k === undefined ? '—' : pct(k)}</b>${k !== undefined && k < 0.8 ? ' (補給不足。戦力が落ちている)' : ''}</p>`;
 }
 
 // 星系の詳細欄: 反乱時の推定艦隊と、駐留する地球の艦隊 (威圧)
@@ -6526,7 +6547,7 @@ function dispatchBox(app, sys, b) {
   const t = v.years;
   const btn = (kind) => {
     const c = g.check(sys.id, b.id, kind);
-    return costButton(g, `data-act="send" data-kind="${kind}"`, `${ico('colony')}${KIND_LABEL[kind]}を建設`, g.shipCost(kind, sel, sys.id), sel, c.ok ? '' : c.reason);
+    return costButton(g, `data-act="send" data-kind="${kind}"`, `${ico(kind === 'planet' ? 'planetcol' : 'station')}${KIND_LABEL[kind]}を建設`, g.shipCost(kind, sel, sys.id), sel, c.ok ? '' : c.reason);
   };
   const sup = (kind) => g.shipSupplies(kind, sel, sys.id);
   return `<h3>入植船を送る</h3>
@@ -6611,7 +6632,7 @@ function routesSheet(app) {
     ? `<div class="bulk">
         <select data-act="ra">${opt(cols, a)}</select> ⇄
         ${others.length ? `<select data-act="rb">${opt(others, b, (s) => ` (${distance(s, g.system(a)).toFixed(1)} ly)`)}</select>
-        ${costButton(g, `data-act="route2" data-a="${a}" data-b="${b}"`, '交易路を開設', g.routeCost(a, b), a)}` : '<span class="muted">結べる相手がない</span>'}
+        ${costButton(g, `data-act="route2" data-a="${a}" data-b="${b}"`, `${ico('route')}交易路を開設`, g.routeCost(a, b), a)}` : '<span class="muted">結べる相手がない</span>'}
       </div>`
     : '<p class="note">交易路を結ぶには入植星系が2つ以上必要。</p>';
   return `<div class="kpi">
@@ -6621,7 +6642,7 @@ function routesSheet(app) {
     </div>
     <h3>新しい交易路</h3>${open}
     ${requestsTable(g)}
-    <h3>交易路の一覧</h3>
+    <h3>${ico('route')}交易路の一覧</h3>
     ${rows ? `<div class="scroll"><table class="tbl">
       <tr><th>区間 (A ⇄ B)</th><th>距離</th><th>規模</th><th>A→B</th><th>B→A</th><th>稼働率</th><th>通過中の荷 A→B</th><th>通過中の荷 B→A</th><th></th></tr>${rows}</table></div>
       <p class="note">稼働率が100%近い交易路は、拡張すると運べる量が増える。稼働率が9割を超えると知らせが出て、端の星系 (A) の政府が自動で拡張する (資金が費用の1.5倍以上あるとき)。</p>` : '<p class="note">まだ交易路はない。</p>'}
@@ -6675,7 +6696,7 @@ function politicsSheet(app) {
     const others = g.knownEnemiesOf(root).filter((e) => e !== 0);
     return `<tr><td><span class="dot" style="background:${realmColor(root)}"></span>${goto(g.system(root))}</td><td>${n} 星系</td>
       <td>${war ? `<b class="bad">地球の国と交戦中</b> (${(g.warStart(g.warKey(0, root)) ?? g.year).toFixed(0)}年から)` : '地球の国とは平和'}${others.length ? `<br><span class="bad">${others.map((e) => esc(g.realmName(e))).join('・')}と交戦中</span>` : ''}</td>
-      <td>${war ? `<button data-act="peace" data-sys="${root}">講和を申し入れる<small>指令: 届くまで ${g.lightDelay(root).toFixed(1)} 年</small></button>` : `<button data-act="declarewar" data-sys="${root}">${ico('war')}宣戦する</button>`}</td></tr>`;
+      <td>${war ? `<button data-act="peace" data-sys="${root}">${ico('peace')}講和を申し入れる<small>指令: 届くまで ${g.lightDelay(root).toFixed(1)} 年</small></button>` : `<button data-act="declarewar" data-sys="${root}">${ico('war')}宣戦する</button>`}</td></tr>`;
   }).join('');
   const sieges = g.knownSystems().map((x) => ({ x, sg: g.known(x.id)?.siege })).filter((v) => v.sg).map(({ x, sg }) => `<tr><td>${goto(x)}</td>
     <td><span class="dot" style="background:${realmColor(sg.realm)}"></span>${esc(g.system(sg.realm).name)} の国</td><td>${sg.ships} 艦隊</td><td>${pct(sg.progress)}</td><td>${supplyCell(sg.eff, sg.line)}</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
@@ -6701,11 +6722,11 @@ function politicsSheet(app) {
       return rows ? `<div class="scroll"><table class="tbl"><tr><th>仕掛けた国</th><th>仕掛けられた国</th><th>開戦</th><th>戦力</th></tr>${rows}</table></div>` : '<p class="note">いま戦争はない。</p>';
     })()}
     <h3>艦隊戦</h3>
-    ${battles ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>攻撃側 (残り / 投入)</th><th>防衛側 (残り / 投入)</th><th>戦力 (兵站)</th><th>開始</th><th>情報</th></tr>${battles}</table></div>` : '<p class="note">なし</p>'}
+    ${battles ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>攻撃側 (残り / 投入)</th><th>防衛側 (残り / 投入)</th><th>${ico('supply')}戦力 (兵站)</th><th>開始</th><th>情報</th></tr>${battles}</table></div>` : '<p class="note">なし</p>'}
     <h3>攻囲</h3>
-    ${sieges ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>艦隊</th><th>進捗</th><th>戦力 (兵站)</th><th>情報</th></tr>${sieges}</table></div>` : '<p class="note">なし</p>'}
+    ${sieges ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>艦隊</th><th>進捗</th><th>${ico('supply')}戦力 (兵站)</th><th>情報</th></tr>${sieges}</table></div>` : '<p class="note">なし</p>'}
     <h3>星系の政府 (忠誠度の低い順)</h3>
-    ${rows ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>統治</th><th>放っておかれた</th><th>不満</th><th>忠誠度</th><th>恐怖度</th><th>主人との友好度</th><th>主人からの支援</th><th>見通し</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : '<p class="note">まだ地球以外の政府はない。</p>'}`;
+    ${rows ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>統治</th><th>放っておかれた</th><th>不満</th><th>${ico('loyalty')}忠誠度</th><th>${ico('fear')}恐怖度</th><th>${ico('friend')}主人との友好度</th><th>主人からの支援</th><th>見通し</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : '<p class="note">まだ地球以外の政府はない。</p>'}`;
 }
 
 // 帝国 → 移民: 過密な入植地、受け入れ先、移動中の移民船、到着の記録
@@ -6734,7 +6755,7 @@ function migrationSheet(app) {
   const mlog = g.migLog.filter((m) => (m.seen ?? m.year) <= g.year);
   const total = mlog.reduce((k, m) => k + m.n, 0);
   const log = mlog.slice(0, 30).map((m) => `<tr><td class="muted">${m.year.toFixed(1)}</td><td>${esc(m.from)} → ${esc(m.to)}</td><td>${fmtPop(m.n)}</td></tr>`).join('');
-  return `<label class="check auto"><input type="checkbox" data-act="migration" ${g.migration ? 'checked' : ''}> 恒星間移民を許可する</label>
+  return `<label class="check auto"><input type="checkbox" data-act="migration" ${g.migration ? 'checked' : ''}> ${ico('migration')}恒星間移民を許可する</label>
     <label class="check auto"><input type="checkbox" data-act="autohabitat" ${g.autoHabitat ? 'checked' : ''}> 過密な入植地の居住区を自動で拡張する</label>
     <p class="note">人口が上限の90%を超えた入植地では、居住区の拡張 (オンのとき) と移民が同時に進む。年に1回、人口の3% (上限を超えていれば5%) が移民船で出ていく。行き先は食料と水が足りている入植地のうち、空き (上限の80%まで) が大きく、近いところ。</p>
     <div class="kpi">
@@ -6870,7 +6891,7 @@ function militarySheet(app) {
   return `<div class="kpi">
       <div><span>${ico('fleet')}艦隊 (把握分)</span><b>${milIds.reduce((k, id) => k + g.knownGarrison(id), 0)} 艦隊</b><span>駐留している分</span></div>
       <div><span>${ico('troops')}歩兵 (把握分)</span><b>${systems.flatMap((x) => g.knownColonies(x.id)).reduce((k, c) => k + c.troops + c.slaveTroops, 0)} 連隊</b><span>駐留している分</span></div>
-      <div><span>海賊の最大戦力</span><b>${g.year < PIRATE_START ? '—' : g.pirateMax()}</b><span>${g.year < PIRATE_START ? `${PIRATE_START}年から出現` : '40年ごとに増える'}</span></div>
+      <div><span>${ico('pirate')}海賊の最大戦力</span><b>${g.year < PIRATE_START ? '—' : g.pirateMax()}</b><span>${g.year < PIRATE_START ? `${PIRATE_START}年から出現` : '40年ごとに増える'}</span></div>
       <div><span>悪名</span><b>${g.infamy}</b><span>先住民の友好度に影響</span></div>
     </div>
     ${milTable}
@@ -7059,7 +7080,7 @@ function goalsSheet(app) {
   const councilNote = g.council < 25 ? '<span class="bad">15を割ると政権交代</span>' : g.council >= 70 ? '<span class="hz">政治力が増えやすい</span>' : '';
   return `<div class="kpi">
       <div><span>政治力</span><b>${Math.floor(g.pc)} / ${PC_CAP}</b><span>${inc.total >= 0 ? '+' : ''}${inc.total}/年</span></div>
-      <div><span>議会の支持</span><b>${Math.round(g.council)}</b><span>${councilNote || '毎年 −0.25'}</span></div>
+      <div><span>${ico('council')}議会の支持</span><b>${Math.round(g.council)}</b><span>${councilNote || '毎年 −0.25'}</span></div>
       <div><span>点数${g.ended ? ' (確定)' : ''}</span><b>${sc.total}</b><span>${g.endYear ? `${Math.round(g.endYear)}年で確定` : '終わりなし'}</span></div>
       <div><span>直轄</span><b>${g.directCount()} / ${g.directMax()}</b><span>星系</span></div>
     </div>
@@ -7069,10 +7090,10 @@ function goalsSheet(app) {
     <h3>政治力 (地球の意志)</h3>
     <p class="note">星系の政府への指令 (施設・交易路・方針・視察・要求への返事など) には政治力が要る。遠い星系ほど多く (距離 d 光年で 2 + 0.15d、直轄の星系は半分)。宣戦・講和は ${PC_DIPLOMACY}。太陽系の中の行動 (太陽系からの入植船・施設) と艦隊への指令は要らない。年ごとに貯まり、${PC_CAP} で頭打ちになる。</p>
     <table class="tbl">${inc.parts.map(([l, v]) => `<tr><td>${esc(l)}</td><td class="${v < 0 ? 'bad' : ''}">${v >= 0 ? '+' : ''}${v}/年</td></tr>`).join('')}<tr class="total"><td>合計</td><td>${inc.total >= 0 ? '+' : ''}${inc.total}/年</td></tr></table>
-    <h3>議会の支持</h3>
+    <h3>${ico('council')}議会の支持</h3>
     ${councilChart(g.council)}
     <p class="note">地球議会の支持は毎年0.25ずつ下がる (成果を待ついら立ち)。時代の課題を果たすと +15、果たせないと −10、独立を許すと −8、独立国を降伏させると +10、地球の入植船で新しい星系を拓くと +1。50より高ければ政治力の増え方が増え、低ければ減る (10ごとに年 ±1)。15を割ると政権交代で、国家方針が白紙に戻り、貯めた政治力を失う。</p>
-    <h3>時代の課題 ${era ? `(${START_YEAR + ERA_YEARS * era.n}〜${START_YEAR + ERA_YEARS * (era.n + 1)}年)` : ''}</h3>
+    <h3>${ico('goal')}時代の課題 ${era ? `(${START_YEAR + ERA_YEARS * era.n}〜${START_YEAR + ERA_YEARS * (era.n + 1)}年)` : ''}</h3>
     <p class="note">${ERA_YEARS}年ごとに課題が2つ出る。果たすと議会の支持 +15、次の時代は果たした数 × 2 だけ政治力が年に多く増える。</p>
     ${taskRows ? `<div class="scroll"><table class="tbl"><tr><th>課題</th><th>いま</th><th>状況</th></tr>${taskRows}</table></div>` : '<p class="note">最初の年の終わりに出る。</p>'}
     <h3>挑戦</h3>
@@ -7111,7 +7132,7 @@ function candidatesHtml(app) {
     const kind = grade >= 1 ? 'planet' : 'station';
     const c = g.check(sys.id, b.id, kind);
     const send = costButton(g, `data-act="candsend" data-sys="${sys.id}" data-body="${esc(b.id)}" data-kind="${kind}" data-from="${from.id}"`,
-      `${ico('colony')}${kind === 'planet' ? '入植船' : 'ステーション'}`, g.shipCost(kind, from.id, sys.id), from.id, c.ok ? '' : c.reason);
+      `${ico(kind === 'planet' ? 'planetcol' : 'station')}${kind === 'planet' ? '入植船' : 'ステーション'}`, g.shipCost(kind, from.id, sys.id), from.id, c.ok ? '' : c.reason);
     const ship = g.ships.find((x) => x.to === sys.id && x.body === b.id && g.departSeen(x.from, x.depart));
     const prep = g.knownProjects().find((j) => j.type === 'ship' && j.to === sys.id && j.body === b.id);
     const status = ship ? `<span class="tag colony">${ico('colony')}入植船 航行中</span> <span class="muted">あと ${(ship.arrive - g.year).toFixed(1)} 年</span>`
@@ -7143,7 +7164,7 @@ function treasuryHtml(g) {
   const sg = (v) => `${v >= 0 ? '+' : '−'}${fmtAmt(Math.abs(v))}`;
   return `<span class="k">${ico('credits')}資金</span><span class="v">${fmtAmt(g.credits)} cr</span> <span class="${inc < 0 ? 'bad' : 'muted'}">${sg(inc)}</span>
     <span class="k" style="margin-left:16px" title="政治力 (地球の意志): 星系の政府への指令に使う。年ごとに貯まる">${ico('pc')}政治力</span><span class="v">${Math.floor(g.pc)}</span> <span class="muted">${sg(pci)}</span>
-    <span class="k" style="margin-left:16px" title="地球議会の支持: 15を割ると政権交代">議会</span><span class="v ${g.council < 25 ? 'bad' : ''}">${Math.round(g.council)}</span>`;
+    <span class="k" style="margin-left:16px" title="地球議会の支持: 15を割ると政権交代">${ico('council')}議会</span><span class="v ${g.council < 25 ? 'bad' : ''}">${Math.round(g.council)}</span>`;
 }
 
 function ledgerHtml(g) {
@@ -7753,6 +7774,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { sav
 // プレイ記録: 操作の有無 (操作のない時間を測る)
 for (const ev of ['pointerdown', 'keydown', 'wheel']) window.addEventListener(ev, () => PlayLog.input(), { passive: true, capture: true });
 // メモ
+$('memobtn').innerHTML = `${ico('memo')}メモ`;
 $('memobtn').onclick = () => ($('memobox').hidden ? openMemo() : closeMemo());
 $('memoclose').onclick = closeMemo;
 $('memosave').onclick = saveMemo;
