@@ -274,36 +274,49 @@ details.help[open] > summary { margin-bottom:8px; }
 #rail { max-height:calc(100% - 16px); }
 @media (max-width: 700px) { #fleetbar { top:auto; bottom:6px; } }
 
-/* 信号の模様: ボタンと数字の札の地に、下の縁を横へ流れる波形と走査線を敷き、表には走査の帯を通す。
-   文字はときどき (どれか1つずつ) 色ずれしてぶれる。「≡ → 画面の動き」で切れる。動きを減らす設定の端末では止める。
-   波形は合成だけで動かす (transform) ので、毎フレームの再計算を増やさない */
-:root { --fx-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40' preserveAspectRatio='none'%3E%3Cpath d='M0 20 Q15 4 30 20 T60 20 T90 20 T120 20' fill='none' stroke='%234de3d0' stroke-opacity='.6' stroke-width='1'/%3E%3Cpath d='M0 20 Q3.75 28 7.5 20 T15 20 T22.5 20 T30 20 T37.5 20 T45 20 T52.5 20 T60 20 T67.5 20 T75 20 T82.5 20 T90 20 T97.5 20 T105 20 T112.5 20 T120 20' fill='none' stroke='%238fb4ff' stroke-opacity='.4' stroke-width='.8'/%3E%3C/svg%3E"); --fx-scan: repeating-linear-gradient(0deg, rgba(143,180,255,.06) 0 1px, transparent 1px 3px); }
+/* 信号の模様: ボタンと数字の札の地に、ちらつく粒状のノイズと走査線 (::before)、下の縁を横へ流れる波形 (::after)。
+   表には走査の帯を通す。文字はときどき (1〜3つずつ) 色ずれしてぶれる。「≡ → 画面の動き」で切れる。
+   動きを減らす設定の端末では止める。どれも合成だけで動かす (transform) ので、毎フレームの再計算を増やさない */
+:root { --fx-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40' preserveAspectRatio='none'%3E%3Cpath d='M0 20 Q15 2 30 20 T60 20 T90 20 T120 20' fill='none' stroke='%23fff' stroke-width='1.4'/%3E%3Cpath d='M0 20 Q3.75 30 7.5 20 T15 20 T22.5 20 T30 20 T37.5 20 T45 20 T52.5 20 T60 20 T67.5 20 T75 20 T82.5 20 T90 20 T97.5 20 T105 20 T112.5 20 T120 20' fill='none' stroke='%23fff' stroke-opacity='.6' stroke-width='1'/%3E%3C/svg%3E"); --fx-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.6 0 0 0 -.62'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); --fx-tint: #4de3d0; --fx-tint2: #8fb4ff; --fx-grain-op: .16;
+  --fx-scan: repeating-linear-gradient(0deg, rgba(143,180,255,.09) 0 1px, transparent 1px 3px); }
 :where(body.fx) :where(button, .stats > div, .kpi > div) { position:relative; isolation:isolate; overflow:hidden; }
-:where(body.fx) :where(button, .stats > div, .kpi > div)::after {
-  content:""; position:absolute; top:0; bottom:0; left:-120px; right:0; z-index:-1; pointer-events:none;
-  background:var(--fx-wave) repeat-x 0 calc(100% - 2px) / 120px 14px, var(--fx-scan);
-  opacity:.7; will-change:transform; animation:fx-wave 5s linear infinite;
+:where(body.fx) :where(button, .stats > div, .kpi > div)::before {
+  content:""; position:absolute; inset:-80px; z-index:-1; pointer-events:none;
+  background:var(--fx-grain) 0 0 / 160px 160px, var(--fx-scan);
+  opacity:var(--fx-grain-op); will-change:transform; animation:fx-grain .7s steps(1) infinite;
 }
-:where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(3n+1)::after { animation-delay:-1.7s; animation-duration:6.5s; }
-:where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(3n+2)::after { animation-delay:-3.3s; animation-duration:4s; }
+:where(body.fx) :where(button, .stats > div, .kpi > div)::after {
+  content:""; position:absolute; bottom:1px; height:18px; left:-120px; right:0; z-index:-1; pointer-events:none;
+  background:linear-gradient(90deg, var(--fx-tint), var(--fx-tint2), var(--fx-tint)) 0 0 / 240px 100%;
+  -webkit-mask:var(--fx-wave) repeat-x 0 0 / 120px 100%; mask:var(--fx-wave) repeat-x 0 0 / 120px 100%;
+  opacity:.75; will-change:transform; animation:fx-wave 4s linear infinite;
+}
+:where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(3n+1)::after { animation-delay:-1.7s; animation-duration:5.5s; }
+:where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(3n+2)::after { animation-delay:-3.3s; animation-duration:3.2s; }
+:where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(2n)::before { animation-delay:-.35s; }
 @keyframes fx-wave { to { transform:translateX(120px); } }
+@keyframes fx-grain {
+  0% { transform:translate(0, 0); } 17% { transform:translate(-37px, 21px); } 33% { transform:translate(23px, -45px); }
+  50% { transform:translate(-61px, -13px); } 67% { transform:translate(41px, 33px); } 83% { transform:translate(-11px, 57px); }
+}
 :where(body.fx) table { position:relative; isolation:isolate; background-image:var(--fx-scan); }
 :where(body.fx) table::after {
-  content:""; position:absolute; left:0; right:0; top:-24px; height:24px; pointer-events:none; z-index:-1;
-  background:linear-gradient(180deg, transparent, rgba(77,227,208,.08) 60%, rgba(77,227,208,.16) 92%, transparent);
-  animation:fx-sweep 7s steps(70) infinite;
+  content:""; position:absolute; left:0; right:0; top:-32px; height:32px; pointer-events:none; z-index:-1;
+  background:linear-gradient(180deg, transparent, color-mix(in srgb, var(--fx-tint) 10%, transparent) 55%, color-mix(in srgb, var(--fx-tint) 26%, transparent) 92%, transparent);
+  animation:fx-sweep 5s steps(60) infinite;
 }
 @keyframes fx-sweep { to { top:100%; } }
-:where(body.fx) th { background-image:var(--fx-wave); background-repeat:repeat-x; background-size:120px 10px; background-position:0 100%; }
+:where(body.fx) th { background-image:var(--fx-grain), var(--fx-scan); background-size:160px 160px, auto; box-shadow:inset 0 -2px 0 color-mix(in srgb, var(--fx-tint) 40%, transparent); }
 @keyframes fx-jit {
-  0% { text-shadow:-1.5px 0 rgba(255,107,107,.6), 1.5px 0 rgba(77,227,208,.6); }
-  20% { text-shadow:1px 0 rgba(255,107,107,.6), -1px 0 rgba(77,227,208,.6); }
-  40% { text-shadow:-2px 0 rgba(255,107,107,.45), 2px 0 rgba(77,227,208,.45), 0 0 3px rgba(227,233,243,.5); }
-  60% { text-shadow:none; }
-  80% { text-shadow:.8px 0 rgba(255,107,107,.55), -.8px 0 rgba(77,227,208,.55); }
-  100% { text-shadow:none; }
+  0% { text-shadow:-2.5px 0 rgba(255,107,107,.7), 2.5px 0 rgba(77,227,208,.7); }
+  15% { text-shadow:1.5px 0 rgba(255,107,107,.7), -1.5px 0 rgba(77,227,208,.7); }
+  30% { text-shadow:-3px 0 rgba(255,107,107,.55), 3px 0 rgba(77,227,208,.55), 0 0 4px rgba(227,233,243,.6); }
+  45% { text-shadow:none; }
+  60% { text-shadow:2px 0 rgba(255,107,107,.65), -2px 0 rgba(77,227,208,.65); }
+  75% { text-shadow:-1px 0 rgba(255,107,107,.5), 1px 0 rgba(77,227,208,.5); }
+  90%, 100% { text-shadow:none; }
 }
-body.fx .jit { animation:fx-jit .5s steps(1) 1; }
+body.fx .jit { animation:fx-jit .6s steps(1) 1; }
 @media (prefers-reduced-motion: reduce) {
   :where(body.fx) *, :where(body.fx) *::after { animation:none !important; }
 }
@@ -7350,7 +7363,7 @@ $('fxbtn').onclick = () => {
   PlayLog.add('ui', { act: 'fx', v: app.fx });
   try { localStorage.setItem('moribin-fx', app.fx ? 'on' : 'off'); } catch { /* 保存できない環境では無視 */ }
   updateFxBtn();
-// 文字のぶれ: 0.35秒ごとに、見えている文字のどれか1つ (ときどき2つ) を短くぶらす
+// 文字のぶれ: 0.26秒ごとに、見えている文字のどれか1つ (ときどき2〜3つ) を短くぶらす
 const FX_JIT = 'button, th, .stats b, .kpi b, #treasury .v, #date, #rail .t, .syshead h2';
 const fxReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 // ゲームの乱数 (Math.random) を使わない: 見た目のために試合の流れを変えないように
@@ -7360,13 +7373,14 @@ setInterval(() => {
   if (!app.fx || document.hidden || fxReduced?.matches) return;
   const els = document.querySelectorAll(FX_JIT);
   if (!els.length) return;
-  for (let n = fxRand() < 0.25 ? 2 : 1; n > 0; n--) {
+  const r = fxRand();
+  for (let n = r < 0.1 ? 3 : r < 0.4 ? 2 : 1; n > 0; n--) {
     const el = els[Math.floor(fxRand() * els.length)];
     if (!el.checkVisibility?.() || el.classList.contains('jit')) continue;
     el.classList.add('jit');
-    setTimeout(() => el.classList.remove('jit'), 520);
+    setTimeout(() => el.classList.remove('jit'), 620);
   }
-}, 350);
+}, 260);
 };
 updateFxBtn();
 function updateSpectateBtn() { $('spectatebtn').classList.toggle('on', !!app.game.spectate); }
