@@ -322,6 +322,11 @@ body.nosel aside { display:none; }
 #sky .sky-system { background-image:linear-gradient(rgba(11,12,13,.5), rgba(11,12,13,.5)), url("assets/space-system.jpg"); }
 #sky[data-view="galaxy"] .sky-galaxy, #sky[data-view="system"] .sky-system { opacity:1; }
 #sky::after { content:""; position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 45%, rgba(11,12,13,.6) 100%); }
+.council { margin:4px 0 8px; max-width:420px; }
+.council svg { display:block; width:100%; height:auto; }
+.council .num { font-family:var(--font-num); }
+.council figcaption { font-size:var(--fs1); color:var(--muted); display:flex; gap:6px; align-items:center; justify-content:center; }
+.council .sw { display:inline-block; width:10px; height:10px; border-radius:50%; } .council .sw.own { background:var(--own); } .council .sw.opp { background:var(--enemy); margin-left:10px; }
 #menu #credits { display:block; font-size:var(--fs1); padding:0 8px; max-width:260px; line-height:1.5; }
 </style>
 <style id="theme">
@@ -6953,6 +6958,31 @@ function decisionsHtml(g) {
   return `<h3>決めること (${list.length})</h3>${rows || '<p class="note">いま決めることはない。</p>'}${sentRows}`;
 }
 
+// 議会の議席図 (政治でよく見る扇形)。100 議席を同心の半円に並べ、支持の数だけ左から白 (地球の色)、残りを赤橙で塗る。
+// 15 (割ると政権交代) と 50 (政治力の増え方の境目) に目印を引く
+const COUNCIL_SEATS = (() => {
+  const rows = 6, seats = [], radii = Array.from({ length: rows }, (_, i) => 0.42 + (0.58 * i) / (rows - 1));
+  const sum = radii.reduce((k, r) => k + r, 0);
+  const counts = radii.map((r) => Math.round((100 * r) / sum));
+  counts[rows - 1] += 100 - counts.reduce((k, n) => k + n, 0);
+  radii.forEach((r, i) => { for (let j = 0; j < counts[i]; j++) { const a = Math.PI * (1 - j / (counts[i] - 1)); seats.push({ a, x: 100 + 92 * r * Math.cos(a), y: 100 - 92 * r * Math.sin(a) }); } });
+  return seats.sort((p, q) => q.a - p.a);
+})();
+function councilChart(v) {
+  const n = clamp(Math.round(v), 0, 100);
+  const dots = COUNCIL_SEATS.map((p, i) => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.6" fill="${i < n ? 'var(--own)' : 'var(--enemy)'}" opacity="${i < n ? 1 : 0.75}"/>`).join('');
+  const mark = (k, label) => {
+    const a = Math.PI * (1 - k / 100), c = Math.cos(a), sn = Math.sin(a);
+    return `<line x1="${(100 + 30 * c).toFixed(1)}" y1="${(100 - 30 * sn).toFixed(1)}" x2="${(100 + 99 * c).toFixed(1)}" y2="${(100 - 99 * sn).toFixed(1)}" stroke="var(--muted)" stroke-width="0.6" stroke-dasharray="2 2"/>
+      <text x="${(100 + 102 * c).toFixed(1)}" y="${(100 - 102 * sn).toFixed(1)}" fill="var(--muted)" font-size="7" text-anchor="${c < -0.1 ? 'end' : c > 0.1 ? 'start' : 'middle'}">${label}</text>`;
+  };
+  return `<figure class="council"><svg viewBox="-40 -12 280 120" role="img" aria-label="議会の支持 ${n} / 100 議席">
+      ${dots}${mark(15, '15 政権交代')}${mark(50, '50')}
+      <text x="100" y="92" fill="var(--fg)" font-size="22" text-anchor="middle" class="num">${n}</text>
+      <text x="100" y="104" fill="var(--muted)" font-size="7" text-anchor="middle">/ 100 議席が支持</text>
+    </svg><figcaption><span class="sw own"></span>支持 ${n} <span class="sw opp"></span>不支持 ${100 - n}</figcaption></figure>`;
+}
+
 // 帝国 → 目標: 国家方針・政治力・議会の支持・時代の課題・挑戦・点数・直轄の星系
 function goalsSheet(app) {
   const g = app.game;
@@ -6988,6 +7018,7 @@ function goalsSheet(app) {
     <p class="note">星系の政府への指令 (施設・交易路・方針・視察・要求への返事など) には政治力が要る。遠い星系ほど多く (距離 d 光年で 2 + 0.15d、直轄の星系は半分)。宣戦・講和は ${PC_DIPLOMACY}。太陽系の中の行動 (太陽系からの入植船・施設) と艦隊への指令は要らない。年ごとに貯まり、${PC_CAP} で頭打ちになる。</p>
     <table class="tbl">${inc.parts.map(([l, v]) => `<tr><td>${esc(l)}</td><td class="${v < 0 ? 'bad' : ''}">${v >= 0 ? '+' : ''}${v}/年</td></tr>`).join('')}<tr class="total"><td>合計</td><td>${inc.total >= 0 ? '+' : ''}${inc.total}/年</td></tr></table>
     <h3>議会の支持</h3>
+    ${councilChart(g.council)}
     <p class="note">地球議会の支持は毎年0.25ずつ下がる (成果を待ついら立ち)。時代の課題を果たすと +15、果たせないと −10、独立を許すと −8、独立国を降伏させると +10、地球の入植船で新しい星系を拓くと +1。50より高ければ政治力の増え方が増え、低ければ減る (10ごとに年 ±1)。15を割ると政権交代で、国家方針が白紙に戻り、貯めた政治力を失う。</p>
     <h3>時代の課題 ${era ? `(${START_YEAR + ERA_YEARS * era.n}〜${START_YEAR + ERA_YEARS * (era.n + 1)}年)` : ''}</h3>
     <p class="note">${ERA_YEARS}年ごとに課題が2つ出る。果たすと議会の支持 +15、次の時代は果たした数 × 2 だけ政治力が年に多く増える。</p>
