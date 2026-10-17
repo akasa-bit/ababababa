@@ -30,7 +30,7 @@ canvas { position:absolute; inset:0; width:100%; height:100%; display:block; tou
 .ev .yr { color:var(--muted); font-variant-numeric:tabular-nums; min-width:4.5em; }
 .ev .tag { font-size:11px; border-radius:3px; padding:0 5px; white-space:nowrap; }
 .tag.famine { background:#5a2020; } .tag.shortage { background:#5a4320; } .tag.pirate { background:#4a2050; }
-.tag.natives { background:#3a2f60; } .tag.politics { background:#5a4a10; } .tag.battle { background:#7a1f1f; } .tag.war { background:#6a2030; } tr.enroute td { background:rgba(77,227,208,0.06); } .tag.migration { background:#1d3f5a; } .tag.colony { background:#1d4a45; }
+.tag.natives { background:#3a2f60; } .tag.politics { background:#5a4a10; } .tag.battle { background:#7a1f1f; } .tag.war { background:#6a2030; } tr.enroute td { background:color-mix(in srgb, var(--own) 6%, transparent); } .tag.migration { background:#1d3f5a; } .tag.colony { background:#1d4a45; }
 .ev.good .txt { color:#9fe0b4; }
 .ev.major { border-left:3px solid #ffb347; padding-left:6px; }
 .yearrep { border-bottom:1px solid var(--line); padding:4px 0 6px; }
@@ -54,10 +54,10 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 .age.now { color:var(--accent); }
 #home { position:fixed; inset:0; z-index:20; background:rgba(5,7,13,.94); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
 #home[hidden] { display:none; }
-#memobox { position:fixed; top:58px; right:12px; z-index:15; width:min(360px, calc(100vw - 24px)); background:var(--panel); border:1px solid #4de3d0; border-radius:8px; padding:10px 12px; box-shadow:0 6px 24px rgba(0,0,0,.5); }
+#memobox { position:fixed; top:58px; right:12px; z-index:15; width:min(360px, calc(100vw - 24px)); background:var(--panel); border:1px solid var(--own); border-radius:8px; padding:10px 12px; box-shadow:0 6px 24px rgba(0,0,0,.5); }
 #memobox[hidden] { display:none; }
 #memobox .tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
-#memobox .tags button.on { border-color:#4de3d0; color:#4de3d0; }
+#memobox .tags button.on { border-color:var(--own); color:var(--own); }
 #memobox textarea { width:100%; box-sizing:border-box; background:#0b1120; color:inherit; border:1px solid var(--line); border-radius:5px; padding:6px; font:inherit; }
 #memobox .row { display:flex; gap:8px; margin-top:6px; }
 #home .log td, #home .log th { padding:2px 6px; font-size:12px; text-align:left; }
@@ -82,7 +82,7 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #zoom { position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:6px; }
 #zoom button { min-width:46px; min-height:46px; font-size:18px; background:rgba(13,18,29,.85); }
 #zoom #vassalbtn { font-size:13px; }
-#zoom #vassalbtn.on { border-color:#4de3d0; color:#4de3d0; }
+#zoom #vassalbtn.on { border-color:var(--own); color:var(--own); }
 aside { width:340px; background:var(--panel); border-left:1px solid var(--line); padding:12px 14px; overflow-y:auto; }
 button { background:#17213a; color:var(--fg); border:1px solid #2a3a60; border-radius:5px; padding:5px 10px; font:inherit; cursor:pointer; }
 button:hover:not(:disabled) { background:#1f2d4f; }
@@ -149,7 +149,14 @@ html, body { height:100%; }
   --bg:#070a11; --panel:#0e131d; --raise:#151c2a; --line:#243048; --fg:#e3e9f3; --muted:#a3aec0; --dim:#8794a8;
   --own:#4de3d0; --enemy:#ff6b6b; --neutral:#f0c94a; --warn:#ffb347; --good:#6fdc96; --info:#8fb4ff; --accent:var(--own);
   --fs1:12px; --fs2:14px; --fs3:16px; --fs4:20px;
+  --hover:#1c2537; --on-bg:#122a2e; --glass:rgba(14,19,29,.92); --radius:6px; --map-bg:#05070d;
+  --font-ui:system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; --font-display:var(--font-ui); --font-num:var(--font-ui);
 }
+body { font-family:var(--font-ui); }
+h1, h2, .syshead h2, #home h1 { font-family:var(--font-display); }
+.stats b, .kpi b, #treasury .v, #date { font-family:var(--font-num); }
+#legend, #fleetbar, #zoom button { background:var(--glass); }
+#fleetbar { border-color:var(--line); }
 html, body { background:var(--bg); color:var(--fg); font-size:var(--fs2); }
 h1 { font-size:var(--fs3); letter-spacing:.08em; }
 h2 { font-size:var(--fs4); margin:0; }
@@ -163,9 +170,9 @@ h3 { font-size:var(--fs1); letter-spacing:.04em; margin:16px 0 8px; padding-bott
 .age { color:var(--dim); border-color:var(--line); padding:0 4px; }
 .age.now { color:var(--own); }
 /* ボタン: 灰色が基本。選んでいるものだけ自国の色。指で押せる高さ (タッチ 44px) */
-button { background:var(--raise); border:1px solid var(--line); border-radius:6px; padding:8px 16px; color:var(--fg); }
-button:hover:not(:disabled) { background:#1c2537; }
-button.on, #speed button.on, .chips button.on { background:#122a2e; border-color:var(--own); color:var(--own); }
+button { background:var(--raise); border:1px solid var(--line); border-radius:var(--radius); padding:8px 16px; color:var(--fg); }
+button:hover:not(:disabled) { background:var(--hover); }
+button.on, #speed button.on, .chips button.on { background:var(--on-bg); border-color:var(--own); color:var(--own); }
 button small { color:var(--muted); }
 select { background:var(--raise); border-color:var(--line); }
 @media (pointer: coarse) {
@@ -185,13 +192,15 @@ header nav button { padding:8px 16px; }
 #ctrl { display:flex; gap:8px; align-items:center; position:relative; flex-wrap:nowrap; }
 #speed { display:flex; gap:0; flex-wrap:nowrap; }
 #speed button { border-radius:0; padding:8px 8px; min-width:44px; margin-left:-1px; }
-#speed button:first-child { border-radius:6px 0 0 6px; margin-left:0; }
-#speed button:last-child { border-radius:0 6px 6px 0; }
+#speed button:first-child { border-radius:var(--radius) 0 0 var(--radius); margin-left:0; }
+#speed button:last-child { border-radius:0 var(--radius) var(--radius) 0; }
 #skipbtn, #menubtn { min-width:44px; padding:8px 8px; }
 #menu { position:absolute; right:0; top:calc(100% + 8px); z-index:30; display:flex; flex-direction:column; gap:8px; padding:8px; background:var(--panel); border:1px solid var(--line); border-radius:8px; min-width:200px; box-shadow:0 8px 24px rgba(0,0,0,.5); }
 #menu[hidden] { display:none; }
 #menu button { text-align:left; }
 #menu #savestat { display:block; font-size:var(--fs1); padding:0 8px; }
+#menu .field { display:grid; gap:4px; font-size:var(--fs1); color:var(--muted); padding:0 8px; }
+#menu .field select { font-size:var(--fs2); }
 @media (max-width: 900px) {
   header { gap:8px; padding:8px; }
   #status { flex-basis:100%; order:3; }
@@ -223,7 +232,7 @@ aside { padding:16px; }
 .syshead h2 { display:flex; align-items:center; gap:8px; }
 .syshead .meta { color:var(--muted); font-size:var(--fs1); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(64px, 1fr)); gap:8px; }
-.stats div { background:var(--raise); border-radius:6px; padding:8px; }
+.stats div { background:var(--raise); border-radius:var(--radius); padding:8px; }
 .stats b { display:block; font-size:var(--fs3); font-variant-numeric:tabular-nums; }
 .stats span { color:var(--muted); font-size:var(--fs1); }
 .flags { display:grid; gap:8px; margin:8px 0; padding:0; list-style:none; }
@@ -248,13 +257,13 @@ details.help[open] > summary { margin-bottom:8px; }
 /* 地図の左上の知らせの帯: 決めることと重大な知らせは残り、普通の知らせは流れて消える。押すと地図がそこへ飛ぶ */
 #rail { position:absolute; left:8px; top:8px; z-index:2; width:min(320px, calc(100% - 96px)); max-height:calc(100% - 16px); overflow-y:auto; display:grid; gap:8px; align-content:start; pointer-events:none; }
 #rail > * { pointer-events:auto; }
-#rail .ri { display:grid; grid-template-columns:1fr auto; background:rgba(14,19,29,.92); border:1px solid var(--line); border-left:3px solid var(--dim); border-radius:6px; }
+#rail .ri { display:grid; grid-template-columns:1fr auto; background:var(--glass); border:1px solid var(--line); border-left:3px solid var(--dim); border-radius:var(--radius); }
 #rail .ri.enemy { border-left-color:var(--enemy); } #rail .ri.warn { border-left-color:var(--warn); } #rail .ri.good { border-left-color:var(--good); } #rail .ri.info { border-left-color:var(--info); } #rail .ri.own { border-left-color:var(--own); }
 #rail .ri > button { background:transparent; border:0; border-radius:0; text-align:left; padding:8px; min-height:44px; display:grid; gap:0; color:var(--fg); }
 #rail .ri .t { font-size:var(--fs2); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 #rail .ri .m { font-size:var(--fs1); color:var(--muted); }
 #rail .ri .ack { color:var(--muted); padding:8px; min-width:44px; border-left:1px solid var(--line); }
-#rail .dec { background:rgba(14,19,29,.96); border:1px solid var(--warn); border-radius:6px; padding:8px; display:grid; gap:8px; }
+#rail .dec { background:var(--glass); border:1px solid var(--warn); border-radius:var(--radius); padding:8px; display:grid; gap:8px; }
 #rail .dec .t { font-size:var(--fs2); }
 #rail .dec .m { font-size:var(--fs1); color:var(--muted); }
 #rail .dec .opts { display:grid; gap:8px; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); }
@@ -262,7 +271,7 @@ details.help[open] > summary { margin-bottom:8px; }
 #rail .clamp2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 #rail .dec .opts button { text-align:left; padding:8px; }
 #rail .railbar { display:flex; gap:8px; }
-#rail .railbar button { background:rgba(14,19,29,.92); font-size:var(--fs1); padding:8px; min-height:44px; }
+#rail .railbar button { background:var(--glass); font-size:var(--fs1); padding:8px; min-height:44px; }
 #rail .railbar button.due { border-color:var(--warn); color:var(--warn); }
 #rail .more { font-size:var(--fs1); color:var(--muted); padding:0 8px; }
 #fleetbar { top:auto; bottom:12px; max-width:calc(100% - 160px); }
@@ -295,6 +304,8 @@ details.help[open] > summary { margin-bottom:8px; }
 :where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(3n+2)::after { animation-delay:-3.3s; animation-duration:3.2s; }
 :where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(2n)::before { animation-delay:-.35s; }
 @keyframes fx-wave { to { transform:translateX(120px); } }
+/* 2行以上のボタンは、波形が文字に重ならないよう下を空ける */
+body.fx :is(button:has(small), button:has(.m), #rail .dec .opts button) { padding-bottom:18px; }
 @keyframes fx-grain {
   0% { transform:translate(0, 0); } 17% { transform:translate(-37px, 21px); } 33% { transform:translate(23px, -45px); }
   50% { transform:translate(-61px, -13px); } 67% { transform:translate(41px, 33px); } 83% { transform:translate(-11px, 57px); }
@@ -332,6 +343,101 @@ body.fx .jit { animation:fx-jit .6s steps(1) 1; }
 .flags.watch li.warn button { border-left-color:var(--warn); }
 .flags.watch small { color:var(--muted); font-size:var(--fs1); }
 </style>
+<style id="skins">
+/* --- 配色の試し (≡ → 配色、または ?skin=名前) ---
+   色の決まりは同じ (色は意味にだけ)。案ごとに地の色・文字の色・意味の色・書体・素材 (縁・光・質感) を変える。
+   意味の色は、並んで出る組 (敵と注意、注意と中立、自分と良い知らせ・情報・注意) を OKLab で離してある */
+html[data-skin] { --hover:color-mix(in oklab, var(--raise), var(--fg) 7%); --on-bg:color-mix(in oklab, var(--panel), var(--own) 14%); --glass:color-mix(in srgb, var(--panel) 92%, transparent); --fx-tint:var(--own); }
+html[data-skin] body { background:var(--bg); }
+html[data-skin] h1 { color:var(--own); }
+html[data-skin="tuned"] { --bg:#0a0d12; --panel:#10141a; --raise:#171c24; --line:#2a313c; --fg:#e6e8ec; --muted:#a9afb9; --dim:#8d939d; --own:#63cdc0; --enemy:#e8716a; --neutral:#dbd892; --warn:#e99a3d; --good:#85ae67; --info:#8ea9d8; --accent:var(--own); --map-bg:#06080c; --fx-tint2:var(--info); --fx-grain-op:0.14; --radius:4px;
+  --font-ui:"IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"IBM Plex Mono", "IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+html[data-skin="tuned"] button { box-shadow:inset 0 1px 0 rgba(255,255,255,.04); }
+html[data-skin="tuned"] h3 { color:var(--muted); letter-spacing:.08em; }
+html[data-skin="brass"] { --bg:#0d0c0a; --panel:#151310; --raise:#1e1b17; --line:#3a332a; --fg:#ede5d6; --muted:#b5aa97; --dim:#988c79; --own:#dcbd64; --enemy:#d85e4a; --neutral:#e9e2c4; --warn:#e28a16; --good:#8bb68f; --info:#93aecb; --accent:var(--own); --map-bg:#080706; --fx-tint2:var(--warn); --fx-grain-op:0.16; --radius:2px;
+  --font-ui:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Shippori Mincho B1", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"IBM Plex Mono", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+html[data-skin="brass"] header, html[data-skin="brass"] aside { background-image:repeating-linear-gradient(90deg, rgba(255,240,210,.014) 0 1px, transparent 1px 3px); }
+html[data-skin="brass"] header { border-bottom:3px double var(--line); }
+html[data-skin="brass"] button { background:linear-gradient(180deg, color-mix(in oklab, var(--raise), #fff 4%), color-mix(in oklab, var(--raise), #000 25%)); box-shadow:inset 0 1px 0 color-mix(in srgb, var(--own) 22%, transparent), 0 1px 0 rgba(0,0,0,.6); border-color:color-mix(in oklab, var(--line), var(--own) 25%); }
+html[data-skin="brass"] button.on, html[data-skin="brass"] #speed button.on, html[data-skin="brass"] .chips button.on { background:linear-gradient(180deg, color-mix(in oklab, var(--panel), var(--own) 22%), color-mix(in oklab, var(--panel), var(--own) 8%)); }
+html[data-skin="brass"] h1 { letter-spacing:.2em; }
+html[data-skin="brass"] h2, html[data-skin="brass"] .syshead h2 { font-weight:700; letter-spacing:.04em; }
+html[data-skin="brass"] h3 { color:var(--own); letter-spacing:.2em; font-weight:600; }
+html[data-skin="brass"] .stats div, html[data-skin="brass"] .kpi div { box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--own) 14%, transparent); }
+html[data-skin="urushi"] { --bg:#0c0807; --panel:#150e0c; --raise:#1f1512; --line:#432d23; --fg:#f1e7dc; --muted:#bdab9b; --dim:#9f8c7d; --own:#e0c26e; --enemy:#e0533f; --neutral:#ece3c8; --warn:#e8905b; --good:#91b790; --info:#93abc8; --accent:var(--own); --map-bg:#070403; --fx-tint2:var(--enemy); --fx-grain-op:0.12; --radius:3px;
+  --font-ui:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Shippori Mincho B1", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"Shippori Mincho B1", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+html[data-skin="urushi"] aside, html[data-skin="urushi"] header { background:radial-gradient(120% 80% at 30% 0%, #241310 0%, var(--panel) 55%); }
+html[data-skin="urushi"] header { border-bottom:1px solid color-mix(in srgb, var(--own) 45%, transparent); box-shadow:0 1px 0 rgba(0,0,0,.8); }
+html[data-skin="urushi"] button { background:linear-gradient(180deg, rgba(255,236,220,.06), transparent 45%), var(--raise); border-color:color-mix(in oklab, var(--line), var(--own) 30%); }
+html[data-skin="urushi"] button.on, html[data-skin="urushi"] #speed button.on, html[data-skin="urushi"] .chips button.on { box-shadow:inset 0 -2px 0 var(--own); }
+html[data-skin="urushi"] h1 { letter-spacing:.24em; }
+html[data-skin="urushi"] h2, html[data-skin="urushi"] .syshead h2 { font-weight:800; }
+html[data-skin="urushi"] h3 { color:var(--own); letter-spacing:.16em; border-bottom:1px solid color-mix(in srgb, var(--own) 25%, transparent); padding-bottom:4px; }
+html[data-skin="urushi"] details.sec { border-color:color-mix(in srgb, var(--own) 18%, var(--line)); }
+html[data-skin="amber"] { --bg:#0a0906; --panel:#110f0a; --raise:#1a1710; --line:#3b3323; --fg:#f3dcaa; --muted:#bca26f; --dim:#9a845b; --own:#f0a933; --enemy:#ff5c3c; --neutral:#a9b8ae; --warn:#ffe38f; --good:#a0d48b; --info:#92bccd; --accent:var(--own); --map-bg:#060503; --fx-tint2:var(--own); --fx-grain-op:0.2; --radius:0;
+  --font-ui:"IBM Plex Mono", "M PLUS 1 Code", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"IBM Plex Mono", "M PLUS 1 Code", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"IBM Plex Mono", "M PLUS 1 Code", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+html[data-skin="amber"] body { text-shadow:0 0 6px color-mix(in srgb, var(--own) 22%, transparent); }
+html[data-skin="amber"] button { background:transparent; border-color:color-mix(in srgb, var(--own) 35%, transparent); }
+html[data-skin="amber"] button:hover:not(:disabled) { background:color-mix(in srgb, var(--own) 10%, transparent); }
+html[data-skin="amber"] button.on, html[data-skin="amber"] #speed button.on, html[data-skin="amber"] .chips button.on { background:var(--own); color:#120d03; text-shadow:none; }
+html[data-skin="amber"] h1, html[data-skin="amber"] h3 { text-transform:uppercase; letter-spacing:.2em; }
+html[data-skin="amber"] h3 { color:var(--own); }
+html[data-skin="amber"] .stats div, html[data-skin="amber"] .kpi div { background:transparent; border:1px solid color-mix(in srgb, var(--own) 25%, transparent); }
+html[data-skin="chart"] { --bg:#09111e; --panel:#0e192a; --raise:#152337; --line:#2c405f; --fg:#f0e7d3; --muted:#bdb5a3; --dim:#a0988a; --own:#7fcaaf; --enemy:#dd78a9; --neutral:#e2cf95; --warn:#e3914e; --good:#92a757; --info:#aac0f0; --accent:var(--own); --map-bg:#060c16; --fx-tint2:var(--info); --fx-grain-op:0.12; --radius:0;
+  --font-ui:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Zen Old Mincho", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"IBM Plex Mono", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+html[data-skin="chart"] aside { background-image:linear-gradient(color-mix(in srgb, var(--info) 6%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--info) 6%, transparent) 1px, transparent 1px); background-size:24px 24px; }
+html[data-skin="chart"] header { border-bottom:1px solid var(--line); box-shadow:0 3px 0 -2px var(--line); }
+html[data-skin="chart"] button { box-shadow:inset 0 0 0 2px var(--raise), inset 0 0 0 3px color-mix(in srgb, var(--fg) 10%, transparent); }
+html[data-skin="chart"] h2, html[data-skin="chart"] .syshead h2 { font-weight:700; letter-spacing:.02em; }
+html[data-skin="chart"] h3 { color:var(--neutral); letter-spacing:.14em; font-weight:500; }
+html[data-skin="nasa"] { --bg:#111214; --panel:#18191c; --raise:#212226; --line:#3b3d42; --fg:#f2f2f0; --muted:#b5b6b9; --dim:#97989c; --own:#ffffff; --enemy:#f0533a; --neutral:#e0da7f; --warn:#f89a2b; --good:#7cc790; --info:#8fb1e6; --accent:var(--own); --map-bg:#0b0c0d; --fx-tint2:var(--enemy); --fx-grain-op:0.12; --radius:0;
+  --font-ui:"Archivo", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Archivo", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"Archivo", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+html[data-skin="nasa"] header { border-bottom:3px solid var(--enemy); }
+html[data-skin="nasa"] button { font-weight:600; letter-spacing:.02em; }
+html[data-skin="nasa"] button.on, html[data-skin="nasa"] #speed button.on, html[data-skin="nasa"] .chips button.on { background:var(--own); color:#111; border-color:var(--own); }
+html[data-skin="nasa"] h1 { text-transform:uppercase; letter-spacing:.3em; font-weight:800; color:var(--fg); }
+html[data-skin="nasa"] h3 { text-transform:uppercase; letter-spacing:.16em; border-top:2px solid var(--fg); padding-top:6px; color:var(--fg); }
+html[data-skin="nasa"] .stats div, html[data-skin="nasa"] .kpi div { border-top:2px solid var(--line); }
+html[data-skin="deco"] { --bg:#0b0a0c; --panel:#131115; --raise:#1c191f; --line:#3d3642; --fg:#f4ebd9; --muted:#bfb4a2; --dim:#a19682; --own:#dcc58f; --enemy:#d65a52; --neutral:#c4cfa4; --warn:#e49356; --good:#7fb8a4; --info:#93acd3; --accent:var(--own); --map-bg:#070608; --fx-tint2:var(--own); --fx-grain-op:0.12; --radius:0;
+  --font-ui:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Kaisei Decol", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"Kaisei Decol", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+html[data-skin="deco"] header { border-bottom:1px solid var(--own); box-shadow:0 4px 0 -3px var(--own); }
+html[data-skin="deco"] button:focus-visible { clip-path:none; }
+html[data-skin="deco"] button { clip-path:polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px); border-color:color-mix(in srgb, var(--own) 40%, transparent); letter-spacing:.06em; }
+html[data-skin="deco"] button.on, html[data-skin="deco"] #speed button.on, html[data-skin="deco"] .chips button.on { background:color-mix(in oklab, var(--panel), var(--own) 18%); }
+html[data-skin="deco"] h1 { letter-spacing:.3em; }
+html[data-skin="deco"] h2, html[data-skin="deco"] .syshead h2 { letter-spacing:.08em; font-weight:700; }
+html[data-skin="deco"] h3 { color:var(--own); letter-spacing:.24em; text-align:left; }
+html[data-skin="deco"] .stats div, html[data-skin="deco"] .kpi div { box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--own) 22%, transparent), inset 0 0 0 3px var(--raise), inset 0 0 0 4px color-mix(in srgb, var(--own) 12%, transparent); }
+html[data-skin="nostromo"] { --bg:#040906; --panel:#07100a; --raise:#0c1a10; --line:#1f3d27; --fg:#bff7cb; --muted:#86c697; --dim:#69a578; --own:#e2ffe8; --enemy:#ff6650; --neutral:#c9f4b3; --warn:#ffbe3f; --good:#6fe08f; --info:#80d9d2; --accent:var(--own); --map-bg:#020503; --fx-tint2:var(--good); --fx-grain-op:0.26; --radius:0;
+  --font-ui:"M PLUS 1 Code", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"DotGothic16", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"VT323", "M PLUS 1 Code", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+html[data-skin="nostromo"] body { text-shadow:0 0 5px color-mix(in srgb, var(--fg) 35%, transparent); }
+html[data-skin="nostromo"] main { background:radial-gradient(130% 100% at 50% 50%, transparent 60%, rgba(0,0,0,.55) 100%); }
+html[data-skin="nostromo"] aside, html[data-skin="nostromo"] header { background-image:repeating-linear-gradient(0deg, rgba(160,255,190,.035) 0 1px, transparent 1px 3px); }
+html[data-skin="nostromo"] button { background:transparent; border-color:color-mix(in srgb, var(--fg) 30%, transparent); }
+html[data-skin="nostromo"] button.on, html[data-skin="nostromo"] #speed button.on, html[data-skin="nostromo"] .chips button.on { background:var(--fg); color:#031006; text-shadow:none; }
+html[data-skin="nostromo"] h1, html[data-skin="nostromo"] h3 { letter-spacing:.16em; }
+html[data-skin="nostromo"] .stats b, html[data-skin="nostromo"] .kpi b { font-size:var(--fs4); line-height:1; }
+html[data-skin="obsidian"] { --bg:#08090b; --panel:#0f1114; --raise:#16191d; --line:#2b2f36; --fg:#eceef1; --muted:#a9aeb6; --dim:#8c929b; --own:#c3d2e4; --enemy:#e8716d; --neutral:#dee2a3; --warn:#e8a463; --good:#8cc8a1; --info:#8eb0e6; --accent:var(--own); --map-bg:#050607; --fx-tint2:var(--info); --fx-grain-op:0.07; --radius:10px;
+  --font-ui:"IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+html[data-skin="obsidian"] #rail .ri, html[data-skin="obsidian"] #rail .dec, html[data-skin="obsidian"] #legend, html[data-skin="obsidian"] #zoom button, html[data-skin="obsidian"] #fleetbar { backdrop-filter:blur(14px) saturate(120%); -webkit-backdrop-filter:blur(14px) saturate(120%); background:color-mix(in srgb, var(--panel) 72%, transparent); }
+html[data-skin="obsidian"] button { background:linear-gradient(180deg, color-mix(in oklab, var(--raise), #fff 5%), var(--raise)); box-shadow:inset 0 1px 0 rgba(255,255,255,.07); border-color:rgba(255,255,255,.07); font-weight:500; }
+html[data-skin="obsidian"] button.on, html[data-skin="obsidian"] #speed button.on, html[data-skin="obsidian"] .chips button.on { background:color-mix(in oklab, var(--raise), var(--own) 16%); color:#fff; border-color:color-mix(in srgb, var(--own) 50%, transparent); }
+html[data-skin="obsidian"] h1 { font-weight:300; letter-spacing:.4em; color:var(--fg); }
+html[data-skin="obsidian"] h2, html[data-skin="obsidian"] .syshead h2 { font-weight:300; letter-spacing:.02em; }
+html[data-skin="obsidian"] .stats b, html[data-skin="obsidian"] .kpi b { font-weight:300; font-size:var(--fs4); }
+html[data-skin="obsidian"] h3 { color:var(--dim); letter-spacing:.12em; font-weight:500; }
+html[data-skin="bronze"] { --bg:#121211; --panel:#1a1a18; --raise:#24241f; --line:#403f37; --fg:#ebe7dc; --muted:#b4b0a2; --dim:#979385; --own:#5daa97; --enemy:#d86955; --neutral:#d8d495; --warn:#da9843; --good:#a3be6b; --info:#a3b4ce; --accent:var(--own); --map-bg:#0c0c0b; --fx-tint2:var(--warn); --fx-grain-op:0.18; --radius:0;
+  --font-ui:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"Barlow Semi Condensed", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+html[data-skin="bronze"] header, html[data-skin="bronze"] aside { background-image:var(--fx-grain); background-size:160px 160px; background-blend-mode:soft-light; }
+html[data-skin="bronze"] header { border-bottom:2px solid var(--line); }
+html[data-skin="bronze"] button { border-width:2px; font-weight:700; box-shadow:0 2px 0 rgba(0,0,0,.55); }
+html[data-skin="bronze"] button.on, html[data-skin="bronze"] #speed button.on, html[data-skin="bronze"] .chips button.on { background:color-mix(in oklab, var(--panel), var(--own) 22%); }
+html[data-skin="bronze"] h1 { font-weight:900; letter-spacing:.18em; }
+html[data-skin="bronze"] h2, html[data-skin="bronze"] .syshead h2 { font-weight:900; text-shadow:0 -1px 0 rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.06); }
+html[data-skin="bronze"] h3 { font-weight:900; letter-spacing:.14em; color:var(--dim); }
+html[data-skin="bronze"] .stats b, html[data-skin="bronze"] .kpi b { font-weight:600; font-size:var(--fs4); letter-spacing:.02em; }
+html[data-skin="bronze"] .stats div, html[data-skin="bronze"] .kpi div { border:2px solid var(--line); }
+</style>
 
   <header>
     <h1>Moribin</h1>
@@ -362,6 +468,7 @@ body.fx .jit { animation:fx-jit .6s steps(1) 1; }
         <button id="sigbtn" title="地図に光速の通信 (物資移送要求・指令・朝貢・送金) をどう描くか">通信: 表示しない</button>
         <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
         <button id="fxbtn" title="ボタンや表に流れる信号の模様と、文字のぶれ">画面の動き: 入</button>
+        <label class="field" id="skinfield">配色 (試し) <select id="skinsel" title="色と書体と素材の案を試す。ブラウザに覚える"></select></label>
         <span id="savestat" class="muted"></span>
       </div>
     </div>
@@ -378,7 +485,7 @@ body.fx .jit { animation:fx-jit .6s steps(1) 1; }
         <div><i style="background:#8be36a;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>従属艦隊 (従属星系の守り)</div>
         <div><i style="background:#f0c94a;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>中立艦隊</div>
         <div><i style="background:#ff5a5a;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>敵艦隊</div>
-        <div><i style="border:2px solid #4de3d0;width:9px;height:9px;border-radius:2px"></i>国境 (国ごとの色。地球の国は太線)</div>
+        <div><i style="border:2px solid var(--own);width:9px;height:9px;border-radius:2px"></i>国境 (国ごとの色。地球の国は太線)</div>
         <div><i style="background:#6fdc96"></i>交易の貨物船 (緑の線は交易路)</div>
         <div><i style="background:#ffd24d;transform:rotate(45deg) scale(.8)"></i>資材輸送船</div>
         <div><i style="background:#8fd3ff;border-radius:50%;transform:scale(.7)"></i>移民船</div>
@@ -4670,7 +4777,7 @@ class GalaxyView {
     }
     if (groups.size) {
       // 国境は、国ごとの星系 (members) が変わったときと、視点が止まったときだけ描き直す (動かしているあいだは貼り直すだけ)
-      this.viewLayer('border', w, h, members.join(','), (lc, m, s) => {
+      this.viewLayer('border', w, h, OWN.hex + members.join(','), (lc, m, s) => {
         this.off ??= document.createElement('canvas');
         if (this.off.width !== lc.canvas.width || this.off.height !== lc.canvas.height) { this.off.width = lc.canvas.width; this.off.height = lc.canvas.height; }
         const oc = this.off.getContext('2d');
@@ -4744,7 +4851,7 @@ class GalaxyView {
       if ((f.owner ?? 0) === 0) {
         this.fleetDots.push({ id: f.id, x: px, y: py });
         if (this.app.fleetMove.has(f.id)) {
-          ctx.strokeStyle = '#4de3d0';
+          ctx.strokeStyle = OWN.hex;
           ctx.lineWidth = 2;
           ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI * 2); ctx.stroke();
           ctx.lineWidth = 1;
@@ -4764,7 +4871,7 @@ class GalaxyView {
         ctx.beginPath(); ctx.moveTo(tx - 9 * Math.cos(ang - 0.4), ty - 9 * Math.sin(ang - 0.4)); ctx.lineTo(tx, ty); ctx.lineTo(tx - 9 * Math.cos(ang + 0.4), ty - 9 * Math.sin(ang + 0.4)); ctx.stroke();
         // その先の経由地
         if (f.route?.length) {
-          ctx.strokeStyle = 'rgba(77,227,208,0.45)';
+          ctx.strokeStyle = `rgba(${OWN.rgb},0.45)`;
           ctx.setLineDash([3, 5]);
           ctx.beginPath(); ctx.moveTo(tx, ty);
           for (const id of f.route) { const [rx, ry] = this.toScreen(game.system(id).x, game.system(id).y); ctx.lineTo(rx, ry); }
@@ -5037,7 +5144,7 @@ class GalaxyView {
     for (const id of fsel) {
       const s = game.system(id);
       const [x, y] = this.toScreen(s.x, s.y);
-      ctx.strokeStyle = '#4de3d0';
+      ctx.strokeStyle = OWN.hex;
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.stroke();
       ctx.lineWidth = 1;
@@ -5048,7 +5155,7 @@ class GalaxyView {
       const [tx, ty] = this.toScreen(target.x, target.y);
       const surprise = isSurpriseTarget(game, target.id);
       let eta = 0;
-      ctx.strokeStyle = surprise ? 'rgba(255,90,90,0.9)' : 'rgba(77,227,208,0.85)';
+      ctx.strokeStyle = surprise ? 'rgba(255,90,90,0.9)' : `rgba(${OWN.rgb},0.85)`;
       ctx.setLineDash([6, 4]);
       for (const id of fsel) {
         if (id === target.id) continue;
@@ -5066,7 +5173,7 @@ class GalaxyView {
       }
       ctx.setLineDash([]);
       ctx.font = 'bold 11px sans-serif';
-      ctx.fillStyle = surprise ? '#ff8a80' : '#4de3d0';
+      ctx.fillStyle = surprise ? '#ff8a80' : OWN.hex;
       ctx.fillText(`${surprise ? '奇襲攻撃 ' : '移動 '}到着まで ${eta.toFixed(1)} 年`, tx + 12, ty - 12);
     }
     // 従属マップ: ほかの描画を暗くして、家臣 → 主人 を矢印で結ぶ
@@ -5090,18 +5197,18 @@ class GalaxyView {
       const wps = plan.map((id) => this.toScreen(game.system(id).x, game.system(id).y));
       const tail = this.path ? [[this.path.x, this.path.y]] : [];
       const danger = plan.some((id) => isSurpriseTarget(game, id));
-      const color = danger ? 'rgba(255,110,100,0.95)' : 'rgba(77,227,208,0.95)';
+      const color = danger ? 'rgba(255,110,100,0.95)' : `rgba(${OWN.rgb},0.95)`;
       const sources = [...fsel].map((id) => this.toScreen(game.system(id).x, game.system(id).y))
         .concat((this.fleetDots || []).filter((d) => this.app.fleetMove.has(d.id)).map((d) => [d.x, d.y]));
       for (const src of sources) drawRoute([src, ...wps, ...tail], color);
       ctx.font = 'bold 12px sans-serif';
-      ctx.fillStyle = danger ? '#ff8a80' : '#4de3d0';
+      ctx.fillStyle = danger ? '#ff8a80' : OWN.hex;
       wps.forEach(([x, y], i) => ctx.fillText(String(i + 1), x + 9, y - 9));
     }
     if (this.box) {
       const b = this.box;
-      ctx.strokeStyle = 'rgba(77,227,208,0.9)';
-      ctx.fillStyle = 'rgba(77,227,208,0.08)';
+      ctx.strokeStyle = `rgba(${OWN.rgb},0.9)`;
+      ctx.fillStyle = `rgba(${OWN.rgb},0.08)`;
       ctx.fillRect(Math.min(b.x0, b.x1), Math.min(b.y0, b.y1), Math.abs(b.x1 - b.x0), Math.abs(b.y1 - b.y0));
       ctx.strokeRect(Math.min(b.x0, b.x1), Math.min(b.y0, b.y1), Math.abs(b.x1 - b.x0), Math.abs(b.y1 - b.y0));
     }
@@ -5446,7 +5553,7 @@ class SystemView {
       ctx.fillText('⛏', x - r - 12, y - r);
     }
     if (game.knownColonyAt(sys, b.id, 'planet')) {
-      ctx.fillStyle = '#4de3d0';
+      ctx.fillStyle = OWN.hex;
       ctx.beginPath(); ctx.moveTo(x, y - r - 9); ctx.lineTo(x + 4, y - r - 3); ctx.lineTo(x - 4, y - r - 3); ctx.fill();
     }
     if (game.knownColonyAt(sys, b.id, 'station')) {
@@ -6323,7 +6430,9 @@ function requestsTable(g) {
 }
 
 // 国の色 (地球の国は青緑、独立国は首都ごとの色)
-function realmColor(root) { return root === 0 || root === null || root === undefined ? '#4de3d0' : REALM_COLORS[root % REALM_COLORS.length]; }
+// 地球の国の色 (地図)。配色の案で変わる
+const OWN = { hex: '#4de3d0', rgb: '77,227,208' };
+function realmColor(root) { return root === 0 || root === null || root === undefined ? OWN.hex : REALM_COLORS[root % REALM_COLORS.length]; }
 
 // 帝国 → 政治: 各星系の政府の忠誠度、独立国と戦争
 function politicsSheet(app) {
@@ -7355,6 +7464,48 @@ $('sigbtn').onclick = () => {
   updateSigBtn();
 };
 updateSigBtn();
+// 配色の試し: 10 の案を切り替える (?skin=名前 でも選べる)。書体は Google Fonts から、選んだときだけ読む
+const SKINS = {
+  std: { label: '標準 (いま)' },
+  tuned: { label: '1 調律', fonts: ['IBM+Plex+Sans+JP:wght@300;400;500;700', 'IBM+Plex+Mono:wght@400;500'] },
+  brass: { label: '2 黒鉄と真鍮', fonts: ['Zen+Kaku+Gothic+New:wght@400;500;700', 'Shippori+Mincho+B1:wght@600;700;800', 'IBM+Plex+Mono:wght@400;500'] },
+  urushi: { label: '3 漆と金', fonts: ['Zen+Kaku+Gothic+New:wght@400;500;700', 'Shippori+Mincho+B1:wght@600;700;800'] },
+  amber: { label: '4 管制室の琥珀', fonts: ['IBM+Plex+Mono:wght@400;500;600', 'M+PLUS+1+Code:wght@400;500;700'] },
+  chart: { label: '5 海図局', fonts: ['Zen+Kaku+Gothic+New:wght@400;500;700', 'Zen+Old+Mincho:wght@600;700', 'IBM+Plex+Mono:wght@400;500'] },
+  nasa: { label: '6 標準書 1975', fonts: ['Archivo:wght@400;600;800', 'Zen+Kaku+Gothic+New:wght@400;500;700'] },
+  deco: { label: '7 アール・デコ', fonts: ['Zen+Kaku+Gothic+New:wght@400;500;700', 'Kaisei+Decol:wght@500;700'] },
+  nostromo: { label: '8 ノストロモ 1979', fonts: ['M+PLUS+1+Code:wght@400;500;700', 'DotGothic16', 'VT323'] },
+  obsidian: { label: '9 黒曜石', fonts: ['IBM+Plex+Sans+JP:wght@300;400;500;700'] },
+  bronze: { label: '10 青銅の記念碑', fonts: ['Zen+Kaku+Gothic+New:wght@400;500;700;900', 'Barlow+Semi+Condensed:wght@500;600;700'] },
+};
+function applySkin(id) {
+  if (!SKINS[id]) id = 'std';
+  app.skin = id;
+  if (id === 'std') delete document.documentElement.dataset.skin; else document.documentElement.dataset.skin = id;
+  const f = SKINS[id].fonts;
+  let link = document.getElementById('skinfonts');
+  if (f) {
+    if (!link) { link = document.createElement('link'); link.id = 'skinfonts'; link.rel = 'stylesheet'; document.head.appendChild(link); }
+    link.href = `https://fonts.googleapis.com/css2?${f.map((x) => `family=${x}`).join('&')}&display=swap`;
+  } else if (link) link.remove();
+  const cs = getComputedStyle(document.documentElement);
+  app.mapBg = cs.getPropertyValue('--map-bg').trim() || '#05070d';
+  const own = cs.getPropertyValue('--own').trim();
+  if (/^#[0-9a-f]{6}$/i.test(own)) { OWN.hex = own; OWN.rgb = [1, 3, 5].map((i) => parseInt(own.slice(i, i + 2), 16)).join(','); }
+  $('skinsel').value = id;
+  app.dirty = true;
+}
+$('skinsel').innerHTML = Object.entries(SKINS).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
+$('skinsel').onchange = (e) => {
+  applySkin(e.target.value);
+  PlayLog.add('ui', { act: 'skin', v: app.skin });
+  try { localStorage.setItem('moribin-skin', app.skin); } catch { /* 保存できない環境では無視 */ }
+};
+{
+  let id = params.get('skin');
+  if (!id) try { id = localStorage.getItem('moribin-skin'); } catch { /* 既定値 */ }
+  applySkin(id || 'std');
+}
 // 画面の動き (信号の模様と文字のぶれ)。見る人ごとの好みなのでブラウザに覚えておく
 try { app.fx = localStorage.getItem('moribin-fx') !== 'off'; } catch { app.fx = true; }
 function updateFxBtn() { document.body.classList.toggle('fx', app.fx); $('fxbtn').textContent = `画面の動き: ${app.fx ? '入' : '切'}`; $('fxbtn').classList.toggle('on', app.fx); }
@@ -7628,7 +7779,7 @@ function frame(now) {
   if (app.speed && game.advance(dt * app.speed)) app.dirty = true;
   if (app.skip) checkSkip();
   const ctx = galaxyView.ctx;
-  ctx.fillStyle = '#05070d';
+  ctx.fillStyle = app.mapBg || '#05070d';
   ctx.fillRect(0, 0, w, h);
   if (app.view === 'galaxy') galaxyView.draw(w, h);
   else if (app.view === 'system') systemView.draw(w, h);
