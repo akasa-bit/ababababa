@@ -307,14 +307,8 @@ body.fx .jit { animation:fx-jit .6s steps(1) 1; }
 /* 選択を外すボタン・何も選んでいないときの欄 */
 .syshead h2 { display:flex; align-items:center; gap:8px; }
 .syshead h2 .x { margin-left:auto; min-width:44px; min-height:44px; padding:0; font-size:var(--fs3); color:var(--muted); background:transparent; }
-.syshead.idle h2 { color:var(--muted); }
-.idle-h { margin:16px 0 8px; font-size:var(--fs3); }
-.flags.watch { list-style:none; padding:0; display:grid; gap:8px; }
-.flags.watch li { padding:0; }
-.flags.watch li button { width:100%; text-align:left; display:grid; gap:0; padding:8px; border-left:3px solid var(--dim); }
-.flags.watch li.enemy button { border-left-color:var(--enemy); }
-.flags.watch li.warn button { border-left-color:var(--warn); }
-.flags.watch small { color:var(--muted); font-size:var(--fs1); }
+/* 星系を選んでいないときは、右 (狭い画面では下) の欄そのものを出さず、地図を広げる */
+body.nosel aside { display:none; }
 </style>
 <style id="theme">
 /* --- 見た目: 黒鉛色・白・赤橙ひとつ (NASA の 1975 年の標準書にならう) と、額縁の縁、掠れた報告書の書体 ---
@@ -5633,27 +5627,8 @@ function sysHead(g, sys, k, cols) {
     <div class="stats">${tiles.map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join('')}</div>
     ${flags.length ? `<ul class="flags">${flags.map(([c, a, b]) => `<li class="${c}">${esc(a)}${b ? `<small>${esc(b)}</small>` : ''}</li>`).join('')}</ul>` : ''}</div>`;
 }
-// 何も選んでいないとき: 気にかけたい地球の国の星系 (危険・警告の印があるもの) を並べ、押すとそこへ飛ぶ
-function idlePanel(app) {
-  const g = app.game;
-  const rank = { enemy: 0, warn: 1 };
-  const rows = [];
-  for (const sys of g.realmSystems(0)) {
-    const k = g.known(sys.id);
-    const cols = g.knownColonies(sys.id);
-    const f = sysFlags(g, sys, k, cols).filter(([c]) => c in rank).sort((a, b) => rank[a[0]] - rank[b[0]]);
-    if (f.length) rows.push([rank[f[0][0]], sys, f]);
-  }
-  rows.sort((a, b) => a[0] - b[0] || distance(g.system(0), a[1]) - distance(g.system(0), b[1]));
-  const items = rows.slice(0, 8).map(([, sys, f]) => `<li class="${f[0][0]}"><button data-act="fly" data-sys="${sys.id}"><b>${esc(sys.name)}</b><small>${esc(f.map((x) => x[1]).join('・'))}</small></button></li>`).join('');
-  return `<div class="syshead idle"><h2>星系を選んでいません</h2>
-    <div class="meta"><span>地図の星を押すと、ここにその星系が出る</span></div></div>
-    <div class="acts"><button data-act="fly" data-sys="0">太陽系を選ぶ</button>${app.lastSys !== undefined && app.lastSys !== 0 && g.system(app.lastSys) ? `<button data-act="fly" data-sys="${app.lastSys}">${esc(g.system(app.lastSys).name)} に戻る</button>` : ''}</div>
-    <h3 class="idle-h">気にかけたい星系${rows.length ? ` (${rows.length})` : ''}</h3>
-    ${items ? `<ul class="flags watch">${items}</ul>${rows.length > 8 ? `<div class="muted">ほかに ${rows.length - 8} 星系</div>` : ''}` : '<p class="muted">いまは目立った問題のある星系はない</p>'}`;
-}
 function systemPanel(app) {
-  if (app.sel.sys === null) return idlePanel(app);
+  if (app.sel.sys === null) return ''; // 選んでいないときは欄ごと隠れている
   const g = app.game;
   const sys = g.system(app.sel.sys);
   const id = sys.id;
@@ -7699,7 +7674,7 @@ function setHtmlKeepScroll(el, html) {
 }
 // --- メインループ ---
 let last = performance.now();
-let lastMapKey = '', lastMapGame = null, lastDrawYear = NaN, lastMapDraw = -Infinity, mapPending = false, lastDateText = '', mapActiveUntil = 0, lastTickYear = NaN, lastFullTick = 0;
+let lastNosel = false, lastMapKey = '', lastMapGame = null, lastDrawYear = NaN, lastMapDraw = -Infinity, mapPending = false, lastDateText = '', mapActiveUntil = 0, lastTickYear = NaN, lastFullTick = 0;
 // 知らせの帯に、届いたばかりで薄れていく知らせがあるか (10 秒で消える)
 const railFading = (now) => now - (app.railNewest ?? -Infinity) < 11000;
 // 操作のあとしばらくは、地図を毎フレーム描き直す (なぞり・ホバー・ズーム・長押しの線など)
@@ -7711,6 +7686,8 @@ function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   const game = app.game;
+  const nosel = app.sel.sys === null;
+  if (nosel !== lastNosel) { lastNosel = nosel; document.body.classList.toggle('nosel', nosel); app.dirty = true; } // 欄の幅が変わると ResizeObserver が地図を合わせる
   if (app.speed && game.advance(dt * app.speed)) app.dirty = true;
   if (app.skip) checkSkip();
   // 地図は、変わりうるときだけ描き直す: 動くものが見える距離だけ動いた・画面や表示が変わった・操作の直後 (0.6 秒)・視点が動いた直後 (止まってからの描き直しのため)・点滅しているもの・
@@ -7720,9 +7697,9 @@ function frame(now) {
   // 見かけの速さは光速の 20 倍 (0.95c で近づくとき 1/(1−0.95)) まで。星系図は惑星が回るので毎フレーム描く
   const yearMoved = app.view === 'galaxy' ? Math.abs(game.year - lastDrawYear) * 20 * cam.zoom >= 0.25 : game.year !== lastDrawYear;
   const mapKey = `${app.view}|${w}|${h}|${cam.x}|${cam.y}|${cam.zoom}|${app.sel.sys}|${app.sel.body}|${app.fleetSel.size}|${app.fleetMove.size}|${app.signalMode}`;
-  // 描き直しは毎秒 30 回まで (間に合わなかった分は次のフレームに持ち越す)
+  // 描き直しは毎秒 60 回まで (間に合わなかった分は次のフレームに持ち越す。120Hz の画面でも 60 回に抑える)
   if (mapPending || app.dirty || yearMoved || mapKey !== lastMapKey || game !== lastMapGame || now < mapActiveUntil || now - (galaxyView.camMovedAt || 0) < 400 || galaxyView.animating || systemView.animating) {
-    if (now - lastMapDraw < 1000 / 30 - 1) mapPending = true;
+    if (now - lastMapDraw < 1000 / 60 - 1) mapPending = true;
     else {
       mapPending = false; lastMapDraw = now;
       lastMapKey = mapKey; lastMapGame = game; lastDrawYear = game.year; galaxyView.animating = systemView.animating = false;
