@@ -96,13 +96,8 @@ button small { display:block; font-size:11px; color:var(--muted); }
 @media (max-width: 900px) {
   header { gap:4px 10px; padding:6px 8px; }
   header h1 { font-size:15px; }
-  header nav button { padding:4px 9px; min-height:34px; }
-  #date { min-width:0; font-size:13px; }
-  #treasury { font-size:12px; width:100%; }
-  #ctrl { flex-wrap:nowrap; overflow-x:auto; width:100%; gap:6px; scrollbar-width:none; }
-  #speed, #tools { flex-wrap:nowrap; }
-  #ctrl button { white-space:nowrap; padding:4px 9px; min-height:34px; }
-  #savestat { display:none; }
+  #date { min-width:0; }
+  #treasury { width:100%; }
 }
 #speed button.on { border-color:var(--accent); color:var(--accent); }
 h2 { margin:0 0 2px; font-size:17px; }
@@ -145,44 +140,179 @@ aside > div > button, #panel > button { margin-top:6px; } #log div { margin-bott
 html, body { height:100%; }
 [hidden] { display:none!important; }
 </style>
+<style id="ds">
+/* --- デザインの決まり ---
+   色は意味にだけ使う: 自国 (青緑)・敵 (赤)・中立 (黄)・警告 (橙)・良い知らせ (緑)・情報 (青)。それ以外は灰色の濃淡。
+   文字の大きさは4段階 (12・14・16・20px)。余白は8pxの倍数。説明文は「説明」を押したときだけ開く。
+   情報の古さは薄さで表す (古いほど薄い) とともに、年数を文字で添える */
+:root {
+  --bg:#070a11; --panel:#0e131d; --raise:#151c2a; --line:#243048; --fg:#e3e9f3; --muted:#a3aec0; --dim:#8794a8;
+  --own:#4de3d0; --enemy:#ff6b6b; --neutral:#f0c94a; --warn:#ffb347; --good:#6fdc96; --info:#8fb4ff; --accent:var(--own);
+  --fs1:12px; --fs2:14px; --fs3:16px; --fs4:20px;
+}
+html, body { background:var(--bg); color:var(--fg); font-size:var(--fs2); }
+h1 { font-size:var(--fs3); letter-spacing:.08em; }
+h2 { font-size:var(--fs4); margin:0; }
+h3 { font-size:var(--fs1); letter-spacing:.04em; margin:16px 0 8px; padding-bottom:0; }
+.note, .sub, .tbl, .ship, #log, .age, button small, .kpi span, #legend, .field, label.check.auto, #empire label.check, #empire .bulk, .ev .tag, .ev .yr, details.evkinds summary, .yearrep .yh, .yearrep details summary, .chips .muted, #fleetbar, .route, .fac, .nat { font-size:var(--fs1); }
+.ev, #empire .tbl, #treasury, #date, #home .row .info, #home label, .decide p { font-size:var(--fs2); }
+.kpi b { font-size:var(--fs4); }
+#home h1 { font-size:var(--fs4); }
+.muted, .sub, .note { color:var(--muted); }
+.bad { color:var(--enemy); } .hz { color:var(--good); }
+.age { color:var(--dim); border-color:var(--line); padding:0 4px; }
+.age.now { color:var(--own); }
+/* ボタン: 灰色が基本。選んでいるものだけ自国の色。指で押せる高さ (タッチ 44px) */
+button { background:var(--raise); border:1px solid var(--line); border-radius:6px; padding:8px 16px; color:var(--fg); }
+button:hover:not(:disabled) { background:#1c2537; }
+button.on, #speed button.on, .chips button.on { background:#122a2e; border-color:var(--own); color:var(--own); }
+button small { color:var(--muted); }
+select { background:var(--raise); border-color:var(--line); }
+@media (pointer: coarse) {
+  button, select, #empire .tbl button, #fleetbar button, #empire .tbl select { min-height:44px; }
+  #zoom button { min-width:48px; min-height:48px; }
+  details > summary { min-height:44px; }
+}
+/* ヘッダー: 1行に、見る頻度の高いものだけ */
+header { gap:8px 16px; padding:8px 16px; flex-wrap:wrap; }
+header nav { display:flex; gap:8px; }
+header nav button { padding:8px 16px; }
+#status { display:flex; gap:16px; align-items:center; min-width:0; flex:1 1 320px; }
+#date { min-width:0; white-space:nowrap; }
+#treasury { flex:1 1 auto; }
+#treasury .k { color:var(--muted); font-size:var(--fs1); margin-right:4px; }
+#treasury .v { font-variant-numeric:tabular-nums; }
+#ctrl { display:flex; gap:8px; align-items:center; position:relative; flex-wrap:nowrap; }
+#speed { display:flex; gap:0; flex-wrap:nowrap; }
+#speed button { border-radius:0; padding:8px 8px; min-width:44px; margin-left:-1px; }
+#speed button:first-child { border-radius:6px 0 0 6px; margin-left:0; }
+#speed button:last-child { border-radius:0 6px 6px 0; }
+#skipbtn, #menubtn { min-width:44px; padding:8px 8px; }
+#menu { position:absolute; right:0; top:calc(100% + 8px); z-index:30; display:flex; flex-direction:column; gap:8px; padding:8px; background:var(--panel); border:1px solid var(--line); border-radius:8px; min-width:200px; box-shadow:0 8px 24px rgba(0,0,0,.5); }
+#menu[hidden] { display:none; }
+#menu button { text-align:left; }
+#menu #savestat { display:block; font-size:var(--fs1); padding:0 8px; }
+@media (max-width: 900px) {
+  header { gap:8px; padding:8px; }
+  #status { flex-basis:100%; order:3; }
+  #ctrl { overflow-x:visible; width:auto; }
+  #speed button { padding:8px 4px; }
+  header h1 { font-size:var(--fs3); }
+}
+/* 電話の幅: 題名を外し、1段目にタブとメモ・メニュー、2段目に速さ、3段目に日付と資金 */
+@media (max-width: 560px) {
+  header { position:relative; }
+  header h1 { display:none; }
+  header nav { order:1; flex:1 1 auto; gap:4px; }
+  header nav button { flex:1 1 auto; padding:8px 2px; min-width:44px; white-space:nowrap; }
+  #memobtn { padding:8px 4px; min-width:44px; }
+  #ctrl { display:contents; }
+  #memobtn { order:2; } #menubtn { order:3; }
+  #speed { order:4; flex:1 1 calc(100% - 60px); min-width:0; } #speed button { flex:1 1 0; padding:8px 0; }
+  #skipbtn { order:5; }
+  #status { order:6; flex-wrap:wrap; gap:4px 16px; }
+  #date { font-size:var(--fs2); }
+}
+#rail .railbar button, #legend summary { min-width:44px; }
+#legend summary { min-height:44px; display:flex; align-items:center; padding:0 8px; }
+label.check, label.check.auto { min-height:44px; }
+label.check input, label.check.auto input { width:20px; height:20px; }
+/* 右の欄: いちばん上に要約、そのあとは開け閉めできる節 */
+aside { padding:16px; }
+.syshead { display:grid; gap:8px; margin-bottom:8px; }
+.syshead h2 { display:flex; align-items:center; gap:8px; }
+.syshead .meta { color:var(--muted); font-size:var(--fs1); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(64px, 1fr)); gap:8px; }
+.stats div { background:var(--raise); border-radius:6px; padding:8px; }
+.stats b { display:block; font-size:var(--fs3); font-variant-numeric:tabular-nums; }
+.stats span { color:var(--muted); font-size:var(--fs1); }
+.flags { display:grid; gap:8px; margin:8px 0; padding:0; list-style:none; }
+.flags li { border-left:3px solid var(--dim); padding:0 8px; font-size:var(--fs2); }
+.flags li.enemy { border-color:var(--enemy); } .flags li.warn { border-color:var(--warn); } .flags li.good { border-color:var(--good); } .flags li.info { border-color:var(--info); }
+.flags li small { display:block; color:var(--muted); font-size:var(--fs1); }
+.acts { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+.acts button { flex:1 1 140px; text-align:left; }
+details.sec { border-top:1px solid var(--line); }
+details.sec > summary { cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; padding:8px 0; font-size:var(--fs2); }
+details.sec > summary::-webkit-details-marker { display:none; }
+details.sec > summary::before { content:'▸'; color:var(--dim); width:12px; }
+details.sec[open] > summary::before { content:'▾'; }
+details.sec > summary .syn { margin-left:auto; color:var(--muted); font-size:var(--fs1); text-align:right; }
+details.sec > summary .syn.bad { color:var(--enemy); } details.sec > summary .syn.warn { color:var(--warn); }
+details.sec > :not(summary) { margin-bottom:8px; }
+details.help { margin:8px 0; }
+details.help > summary { cursor:pointer; display:inline-flex; align-items:center; color:var(--info); font-size:var(--fs1); list-style:none; padding:0 8px; border:1px solid var(--line); border-radius:12px; min-height:24px; }
+details.help > summary::-webkit-details-marker { display:none; }
+details.help[open] > summary { margin-bottom:8px; }
+@media (pointer: coarse) { details.help > summary { min-height:44px; padding:0 16px; } }
+/* 地図の左上の知らせの帯: 決めることと重大な知らせは残り、普通の知らせは流れて消える。押すと地図がそこへ飛ぶ */
+#rail { position:absolute; left:8px; top:8px; z-index:2; width:min(320px, calc(100% - 96px)); max-height:calc(100% - 16px); overflow-y:auto; display:grid; gap:8px; align-content:start; pointer-events:none; }
+#rail > * { pointer-events:auto; }
+#rail .ri { display:grid; grid-template-columns:1fr auto; background:rgba(14,19,29,.92); border:1px solid var(--line); border-left:3px solid var(--dim); border-radius:6px; }
+#rail .ri.enemy { border-left-color:var(--enemy); } #rail .ri.warn { border-left-color:var(--warn); } #rail .ri.good { border-left-color:var(--good); } #rail .ri.info { border-left-color:var(--info); } #rail .ri.own { border-left-color:var(--own); }
+#rail .ri > button { background:transparent; border:0; border-radius:0; text-align:left; padding:8px; min-height:44px; display:grid; gap:0; color:var(--fg); }
+#rail .ri .t { font-size:var(--fs2); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+#rail .ri .m { font-size:var(--fs1); color:var(--muted); }
+#rail .ri .ack { color:var(--muted); padding:8px; min-width:44px; border-left:1px solid var(--line); }
+#rail .dec { background:rgba(14,19,29,.96); border:1px solid var(--warn); border-radius:6px; padding:8px; display:grid; gap:8px; }
+#rail .dec .t { font-size:var(--fs2); }
+#rail .dec .m { font-size:var(--fs1); color:var(--muted); }
+#rail .dec .opts { display:grid; gap:8px; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); }
+#rail .clamp3 { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+#rail .clamp2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+#rail .dec .opts button { text-align:left; padding:8px; }
+#rail .railbar { display:flex; gap:8px; }
+#rail .railbar button { background:rgba(14,19,29,.92); font-size:var(--fs1); padding:8px; min-height:44px; }
+#rail .railbar button.due { border-color:var(--warn); color:var(--warn); }
+#rail .more { font-size:var(--fs1); color:var(--muted); padding:0 8px; }
+#fleetbar { top:auto; bottom:12px; max-width:calc(100% - 160px); }
+/* 拡大縮小は右下 (知らせの帯は左上)。凡例はその下 */
+#zoom { left:auto; right:8px; bottom:64px; }
+#zoom button { font-size:var(--fs4); }
+#zoom #vassalbtn { font-size:var(--fs2); }
+#legend { right:8px; bottom:8px; }
+#rail { max-height:calc(100% - 16px); }
+@media (max-width: 700px) { #fleetbar { top:auto; bottom:6px; } }
+</style>
 
   <header>
     <h1>Moribin</h1>
     <nav>
-      <button id="tab-galaxy" class="tab on">星間マップ</button>
-      <button id="tab-system" class="tab">星系マップ</button>
+      <button id="tab-galaxy" class="tab on" title="星間マップ">星間</button>
+      <button id="tab-system" class="tab" title="星系マップ">星系</button>
       <button id="tab-empire" class="tab">帝国</button>
-      <button id="tab-events" class="tab">イベント</button>
+      <button id="tab-events" class="tab" title="出来事の履歴 (いまの知らせは地図の左上に出る)">イベント</button>
       <button id="tab-cands" class="tab">候補地</button>
     </nav>
-    <div id="date">西暦 2300年 1月</div>
-    <div id="treasury"></div>
+    <div id="status"><div id="date">西暦 2300年 1月</div><div id="treasury"></div></div>
     <div id="ctrl">
-    <div id="speed">
-      <button data-speed="0" aria-label="一時停止">⏸</button>
-      <button data-speed="1">1ヶ月/秒</button>
-      <button data-speed="2">3ヶ月</button>
-      <button data-speed="3">1年</button>
-      <button data-speed="4">4年</button>
-      <button data-speed="5">16年</button>
-      <button data-speed="6">64年</button>
-    </div>
-    <div id="tools">
-    <button id="skipbtn" title="速く進め、知らせ (重大・普通の出来事、決めること) が届いたら止める (最長100年)">⏭ 次の知らせまで</button>
-    <button id="savenow">セーブ</button>
-    <button id="homebtn">ホーム</button>
-    <button id="sigbtn" title="地図に光速の通信 (物資移送要求・指令・朝貢・送金) をどう描くか">通信: 表示しない</button>
-    <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
-    <button id="memobtn" title="いま感じたことを、その時点のゲームの状態と一緒に記録する (プレイ記録。ホーム画面で見られる)">メモ</button>
-    </div>
+      <div id="speed" role="group" aria-label="速さ (1秒あたり)">
+        <button data-speed="0" aria-label="一時停止">⏸</button>
+        <button data-speed="1" title="1秒で1ヶ月">1月</button>
+        <button data-speed="2" title="1秒で3ヶ月">3月</button>
+        <button data-speed="3" title="1秒で1年">1年</button>
+        <button data-speed="4" title="1秒で4年">4年</button>
+        <button data-speed="5" title="1秒で16年">16年</button>
+        <button data-speed="6" title="1秒で64年">64年</button>
+      </div>
+      <button id="skipbtn" title="速く進め、知らせ (重大・普通の出来事、決めること) が届いたら止める (最長100年)" aria-label="次の知らせまで進む">⏭</button>
+      <button id="memobtn" title="いま感じたことを、その時点のゲームの状態と一緒に記録する (プレイ記録。ホーム画面で見られる)">メモ</button>
+      <button id="menubtn" aria-label="メニュー" aria-expanded="false">≡</button>
+      <div id="menu" hidden>
+        <button id="homebtn">ホーム</button>
+        <button id="savenow">セーブ</button>
+        <button id="sigbtn" title="地図に光速の通信 (物資移送要求・指令・朝貢・送金) をどう描くか">通信: 表示しない</button>
+        <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
+        <span id="savestat" class="muted"></span>
+      </div>
     </div>
     <input id="importfile" type="file" accept="application/json,.json" hidden>
-    <span id="savestat" class="muted"></span>
   </header>
   <main>
     <div id="stage">
       <canvas id="map"></canvas>
       <div id="empire" hidden></div>
+      <div id="rail" aria-live="polite"></div>
       <details id="legend"><summary>凡例</summary>
         <div><i style="background:#ffb347;border-radius:50%"></i>入植船</div>
         <div><i style="background:#5aa9ff;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>自艦隊 (地球が動かす)</div>
@@ -211,12 +341,9 @@ html, body { height:100%; }
     </div>
     <aside>
       <div id="panel"></div>
-      <h3>財政</h3>
-      <table id="ledger" class="tbl"></table>
-      <h3>航行中の船</h3>
-      <div id="ships"></div>
-      <h3>ログ</h3>
-      <div id="log"></div>
+      <details class="sec" id="sec-ledger"><summary>地球政府の収支</summary><table id="ledger" class="tbl"></table></details>
+      <details class="sec" id="sec-ships"><summary>航行中の船</summary><div id="ships"></div></details>
+      <details class="sec" id="sec-log"><summary>ログ</summary><div id="log"></div></details>
     </aside>
   </main>
   <div id="home" hidden></div>
@@ -3696,6 +3823,7 @@ class Game {
     if (Array.isArray(d.challenges)) this.challenges = d.challenges.filter((c) => c && CHALLENGES[c.id]);
     this.endYear = d.endYear === undefined ? Math.max(START_YEAR + 500, Math.ceil(this.year / 100) * 100 + 100) : d.endYear;
     this.ended = !!d.ended;
+    if (Array.isArray(d.acked)) this.acked = d.acked.filter(Number.isFinite);
     this.endShown = !!d.endShown;
     if (obj(d.finalScore)) this.finalScore = d.finalScore;
     if (obj(d.stats)) this.stats = { ...this.stats, ...d.stats };
@@ -4720,6 +4848,9 @@ class GalaxyView {
       if (x < -20 || y < -20 || x > this.w + 20 || y > this.h + 20) continue;
       const r = starR(s);
       const k = K(s.id);
+      // 情報の古さ: 光が届いてからの年数が長い星系ほど薄く描く (80年で最も薄い 45%)
+      const age = s.id === 0 || game.spectate || !k ? 0 : game.year - k.year;
+      ctx.globalAlpha = clamp(1 - age / 80 * 0.55, 0.45, 1);
       if (k && k.cols.length) {
         ctx.strokeStyle = realmColor(s.id === 0 ? 0 : k.realm ?? 0);
         ctx.lineWidth = 1.5;
@@ -4823,18 +4954,20 @@ class GalaxyView {
         ctx.fillStyle = '#c9a2ff';
         ctx.beginPath(); ctx.arc(x, y + r + 6, 2.5, 0, Math.PI * 2); ctx.fill();
       }
-      if (s.id === this.app.sel.sys) {
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x - r - 8, y - r - 8, (r + 8) * 2, (r + 8) * 2);
-      }
       const labeled = z >= 10 || (k && k.cols.length) || s.id === this.app.sel.sys || s === this.hover;
       if (labeled) {
         ctx.fillStyle = s === this.hover ? '#fff' : 'rgba(200,215,240,0.8)';
         ctx.font = '11px sans-serif';
         ctx.fillText(s.name, x + r + 7, y + 4);
       }
+      ctx.globalAlpha = 1;
+      if (s.id === this.app.sel.sys) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - r - 8, y - r - 8, (r + 8) * 2, (r + 8) * 2);
+      }
     }
+    ctx.globalAlpha = 1;
 
     // 艦隊の選択と移動先のプレビュー (Hearts of Iron 風)
     const fsel = this.app.fleetSel;
@@ -5310,29 +5443,142 @@ function costButton(g, attrs, label, cost, sysId, extraReason = '') {
   return `<button ${attrs} ${why ? 'disabled' : ''}>${label}${sub ? `<small>${esc(sub)}</small>` : ''}</button>`;
 }
 
+// 右の欄: いちばん上に要約 (名前・所属・情報の古さ・数字・いまの状態・よく使う操作)、そのあとは開け閉めできる節。
+// 節の見出しの右には、開かなくても分かる一言 (要約) を出す
+const EVENT_TONE = { battle: 'enemy', war: 'enemy', pirate: 'enemy', famine: 'enemy', politics: 'warn', demand: 'warn', shortage: 'warn', story: 'info', goal: 'info', natives: 'info', colony: 'good', migration: 'info' };
+function sec(key, title, syn, html, cls = '') {
+  if (!html) return '';
+  const open = app.secOpen?.[key] ?? false;
+  return `<details class="sec" data-sec="${key}" ${open ? 'open' : ''}><summary>${title}<span class="syn ${cls}">${syn}</span></summary>${html.replace(/^\s*<h3>[\s\S]*?<\/h3>/, '')}</details>`;
+}
+function sysHead(g, sys, k, cols) {
+  const id = sys.id;
+  const realm = id === 0 ? 0 : k?.realm ?? null;
+  const pop = cols.reduce((a, c) => a + c.pop, 0);
+  const vassal = id !== 0 && k && k.lord !== null && k.lord !== undefined;
+  const owner = cols.length ? (realm === 0 ? '地球の国' : realm === id && k?.independent ? '独立国の首都' : `${g.system(realm).name} の国`) : '未入植';
+  const tiles = [];
+  if (cols.length) tiles.push(['人口', fmtPop(pop)]);
+  if (vassal && realm === 0) tiles.push(['忠誠度', `<span class="${(k.loyalty ?? LOYALTY_START) < UNREST_AT ? 'bad' : ''}">${Math.round(k.loyalty ?? LOYALTY_START)}</span>`]);
+  tiles.push(['艦隊', g.knownGarrison(id)]);
+  if (cols.length) tiles.push([id === 0 ? '収入/年' : '資金', id === 0 ? fmtAmt(g.income()) : fmtAmt(k?.credits || 0)]);
+  // いまの状態 (色は意味: 赤 = 敵・危険、橙 = 警告、青 = 情報、緑 = 良い)
+  const flags = [];
+  if (cols.length && realm !== null) {
+    const enemies = g.knownEnemiesOf(realm);
+    if (enemies.length && (realm !== 0 || id === 0)) flags.push(['enemy', `${enemies.map((e) => g.realmName(e)).join('・')}と交戦中`]);
+  }
+  if (k?.siege) flags.push(['enemy', `攻囲されている: ${g.system(k.siege.realm).name} の国 ${k.siege.ships} 艦隊・${pct(k.siege.progress)}`]);
+  if (k?.battle) flags.push(['enemy', `艦隊戦: ${Math.ceil(k.battle.a)} 対 ${Math.ceil(k.battle.d)} 艦隊`]);
+  if (vassal && realm === 0) {
+    const o = independenceOutlook(g, id);
+    if (o?.stage) flags.push([o.stage >= 3 ? 'enemy' : 'warn', UNREST_LABEL[o.stage], outlookText(o, true)]);
+    else if (o?.warn) flags.push(['warn', '不満の兆し', outlookText(o, true)]);
+    const neglect = Math.max(0, g.year - (k.attended ?? k.founded ?? k.year));
+    if (neglect > NEGLECT_GRACE) flags.push(['warn', `放っておかれて ${Math.floor(neglect)} 年`, '視察団・指令・資金援助で戻る']);
+    if ((k.autonomy || 0) > g.year) flags.push(['info', `自治を認めている (${Math.round(k.autonomy)}年まで)`]);
+    else if ((k.taxFree || 0) > g.year) flags.push(['info', `朝貢を免除している (${Math.round(k.taxFree)}年まで)`]);
+    if (k.direct) flags.push(['own', '直轄']);
+  }
+  const famine = cols.filter((c) => c.alerts?.food || c.alerts?.water).length;
+  const short = cols.filter((c) => c.alerts?.goods || c.alerts?.industry).length;
+  if (famine) flags.push(['enemy', `飢餓・水不足 (${famine} か所)`]);
+  else if (short) flags.push(['warn', `工業品・原料の不足 (${short} か所)`]);
+  const wars = k?.wars?.length || 0;
+  if (wars) flags.push(['warn', `先住民との征服戦争 (${wars})`]);
+  const dot = cols.length ? `<span class="dot big" style="background:${realmColor(realm)}"></span>` : '';
+  return `<div class="syshead"><h2>${dot}${esc(sys.name)}</h2>
+    <div class="meta"><span>${esc(owner)}</span><span>太陽系から ${distance(g.system(0), sys).toFixed(1)} ly</span>${ageBadge(g, id)}</div>
+    <div class="stats">${tiles.map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join('')}</div>
+    ${flags.length ? `<ul class="flags">${flags.map(([c, a, b]) => `<li class="${c}">${esc(a)}${b ? `<small>${esc(b)}</small>` : ''}</li>`).join('')}</ul>` : ''}</div>`;
+}
 function systemPanel(app) {
   const g = app.game;
   const sys = g.system(app.sel.sys);
-  const home = g.system(0);
-  const cols = g.knownColonies(sys.id);
-  const planets = sys.bodies.filter((b) => b.type !== 'belt').length;
+  const id = sys.id;
+  const k = g.known(id);
+  const cols = g.knownColonies(id);
   const colonized = cols.length > 0;
-  return `
-    <h2>${esc(sys.name)}</h2>
-    <p class="sub">太陽系から ${distance(home, sys).toFixed(1)} ly ・ 惑星 ${planets} ・ ${sys.stars.length > 1 ? `${sys.stars.length}重星系` : '単独星'} ${ageBadge(g, sys.id)}</p>
-    ${govBox(g, sys.id)}
-    ${loyaltyBox(g, sys.id)}
-    <table class="tbl"><tr><th>恒星</th><th>型</th><th>質量</th><th>表面温度</th><th>光度</th></tr>${sys.stars.map(starRow).join('')}</table>
-    ${sys.stars.slice(1).map((s) => `<p class="note">${esc(s.name)} は主星から約 ${fmt(s.sep)} AU</p>`).join('')}
-    <h3>入植地</h3>
-    ${cols.length ? `<ul>${cols.map((c) => `<li>${esc(c.name)} — ${KIND_LABEL[c.kind]} <span class="muted">人口 ${fmtPop(c.pop)}</span></li>`).join('')}</ul>` : '<p class="note">まだ入植していない</p>'}
-    ${outpostList(g, sys)}
-    ${sys.id === 0 ? `${autoToggle(g, sys.id)}<p class="note">オンにすると、生産が需要に届かない資源を年に1回選び、惑星上の施設 (農場・鉱山・工場) や採掘基地を自動で建てる。過密な入植地では居住区も拡張し、太陽系の空いている天体には宇宙ステーションも建てる (10年に1つまで。資金が費用の2倍以上あるとき)。</p>` : ''}
-    <button data-act="open">星系マップを開く</button>
+  const realm = id === 0 ? 0 : k?.realm ?? null;
+  // よく使う操作: 星系マップ、この艦隊を選ぶ、他国なら講和・宣戦
+  const acts = [`<button data-act="open">星系マップを開く</button>`];
+  if (isOwnStack(g, id)) acts.push(`<button data-act="fleetsel" data-sys="${id}">この艦隊を選ぶ<small>地図で移動先を右クリック/タップ</small></button>`);
+  if (colonized && realm !== 0 && realm !== null) {
+    acts.push(g.knownAtWar(0, realm) ? `<button data-act="peace" data-sys="${realm}">講和を申し入れる<small>届くまで ${g.lightDelay(realm).toFixed(1)} 年・政治力 ${PC_DIPLOMACY}</small></button>`
+      : `<button data-act="declarewar" data-sys="${realm}">${esc(g.system(realm).name)} の国に宣戦<small>政治力 ${PC_DIPLOMACY}</small></button>`);
+  }
+  if (colonized && realm === 0 && id !== 0 && k?.lord !== null && k?.lord !== undefined) acts.push(`<button data-act="inspect" data-sys="${id}" ${g.pc < g.pcCost('inspect', { sys: id }) ? 'disabled' : ''}>視察団を送る<small>関与になる・政治力 ${g.pcCost('inspect', { sys: id })}・届くまで ${g.lightDelay(id).toFixed(1)} 年</small></button>`);
+  const o = colonized && id !== 0 ? independenceOutlook(g, id) : null;
+  const pop = cols.reduce((a, c) => a + c.pop, 0);
+  const st = k?.stock;
+  const lacking = st && k.cons ? RES.filter((r) => k.prod[r] < k.cons[r] - 0.001 && st[r] < k.cons[r]).map((r) => RES_LABEL[r]) : [];
+  const nRoutes = g.routes.filter((r) => (r.a === id || r.b === id) && g.routeKnown(r)).length;
+  const natives = g.isSurveyed(id) ? sys.bodies.filter((b) => b.natives).length : 0;
+  const govHtml = govBox(g, id);
+  return `${sysHead(g, sys, k, cols)}
+    <div class="acts">${acts.join('')}</div>
     ${app.view === 'system' ? bodyList(app, sys) : ''}
-    ${colonized ? stockBox(g, sys.id) + routeBox(app, sys) : ''}
-    ${militaryBox(app, sys)}
-    ${nativesSummary(g, sys)}`;
+    ${sec('gov', '政府と資金', colonized ? (id === 0 ? `資金 ${fmtAmt(g.credits)} cr` : `資金 ${fmtAmt(k?.credits || 0)} cr・収入 ${fmtAmt(k?.income || 0)}/年`) : '', govHtml)}
+    ${o ? sec('loyal', '忠誠と統治', outlookText(o, true), loyaltyBox(g, id), o.warn ? 'warn' : '') : ''}
+    ${colonized ? sec('cols', '入植地と採掘基地', `${cols.length} か所・${fmtPop(pop)}`, `<ul>${cols.map((c) => `<li>${esc(c.name)} — ${KIND_LABEL[c.kind]} <span class="muted">人口 ${fmtPop(c.pop)}</span></li>`).join('')}</ul>${outpostList(g, sys)}${id === 0 ? `${autoToggle(g, id)}<p class="note">オンにすると、生産が需要に届かない資源を年に1回選び、惑星上の施設 (農場・鉱山・工場) や採掘基地を自動で建てる。過密な入植地では居住区も拡張し、太陽系の空いている天体には宇宙ステーションも建てる (10年に1つまで。資金が費用の2倍以上あるとき)。</p>` : ''}`) : ''}
+    ${colonized ? sec('stock', '備蓄', lacking.length ? `足りない: ${lacking.join('・')}` : '足りている', stockBox(g, id), lacking.length ? 'warn' : '') : ''}
+    ${colonized ? sec('routes', '交易路', `${nRoutes} 本`, routeBox(app, sys)) : ''}
+    ${sec('mil', '軍事', `駐留 ${g.knownGarrison(id)} 艦隊`, militaryBox(app, sys))}
+    ${natives ? sec('natives', '先住民', `${natives} つ`, nativesSummary(g, sys)) : ''}
+    ${sec('star', '恒星', `${sys.stars[0].label} ${sys.stars.length > 1 ? `${sys.stars.length}重星系` : '単独星'}・惑星 ${sys.bodies.filter((b) => b.type !== 'belt').length}`, `<table class="tbl"><tr><th>恒星</th><th>型</th><th>質量</th><th>表面温度</th><th>光度</th></tr>${sys.stars.map(starRow).join('')}</table>${sys.stars.slice(1).map((s) => `<p class="note">${esc(s.name)} は主星から約 ${fmt(s.sep)} AU</p>`).join('')}`)}`;
+}
+// 説明文は「説明」を押したときだけ開く (短い注意書きと、赤・緑の状態の文はそのまま出す)。開いたかは覚えておく
+function helpify(html) {
+  return html.replace(/<p class="note">([\s\S]*?)<\/p>/g, (all, inner) => {
+    const plain = inner.replace(/<[^>]+>/g, '');
+    if (plain.length < 50) return all;
+    let h = 0;
+    for (let i = 0; i < Math.min(plain.length, 80); i++) h = (h * 31 + plain.charCodeAt(i)) | 0;
+    const key = `h${h}`;
+    return `<details class="help" data-h="${key}" ${app.helpOpen?.has(key) ? 'open' : ''}><summary>説明</summary><p class="note">${inner}</p></details>`;
+  });
+}
+// 地図の左上の知らせの帯: 決めること (返事のボタンつき)、まだ確かめていない重大な知らせ (✓ で消す)、新しい普通の知らせ (10秒ほどで流れて消える)。
+// 押すと地図がその星系へ飛ぶ。古い知らせほど薄い
+const railHidden = () => app.railHidden ?? $('stage').clientWidth < 480;
+function railHtml(g) {
+  const now = performance.now();
+  // 新しいゲーム・ロードのときは数え直す (それまでの出来事は「新しい知らせ」として流さない)
+  if (app.railGame !== g) { app.railGame = g; app.railFirst = new Map(); app.railSince = g.year; }
+  const acked = new Set(g.acked || []);
+  const evs = g.knownEvents();
+  for (const e of evs) if ((e.seen ?? e.year) > app.railSince && !app.railFirst.has(e.id)) app.railFirst.set(e.id, now);
+  const decs = g.visibleDecisions().sort((a, b) => (a.deadline ?? 0) - (b.deadline ?? 0));
+  const decSys = new Set(decs.filter((d) => d.kind === 'demand').map((d) => d.sys)); // 返事待ちの要求は、知らせではなく「決めること」として出す
+  const majors = evs.filter((e) => evTier(e.kind) >= 3 && !e.good && evShown(e.kind) && !acked.has(e.id) && g.year - (e.seen ?? e.year) < 60 && !(e.kind === 'demand' && decSys.has(e.sys)));
+  const recent = evs.filter((e) => !majors.includes(e) && !(e.kind === 'demand' && decSys.has(e.sys)) && evShown(e.kind) && evTier(e.kind) >= 2 && now - (app.railFirst.get(e.id) ?? -1e9) < 10000).slice(0, 3);
+  const n = decs.length + majors.length;
+  // 地図が狭いときは、帯を畳んだ形 (件数だけのボタン) から始める。帯が地図を覆ってタップを邪魔しないように
+  if (railHidden()) return `<div class="railbar"><button data-act="railtoggle"${decs.length ? ' class="due"' : ''}>${n ? `知らせ ${n} 件を出す` : '知らせを出す'}</button></div>`;
+  if (!n && !recent.length) return '';
+  const place = (sys) => (sys !== undefined && g.system(sys) ? g.system(sys).name : '');
+  const when = (e) => {
+    const ago = g.year - e.year, late = (e.seen ?? e.year) - e.year;
+    return `${place(e.sys)}・${ago < 0.5 ? 'いま' : `${Math.round(ago)}年前`}${late >= 0.5 ? ` (${Math.round(late)}年遅れで届いた)` : ''}`;
+  };
+  const item = (e, major) => {
+    const fade = major ? 1 : clamp((10000 - (now - (app.railFirst.get(e.id) ?? now))) / 3000, 0.35, 1);
+    return `<div class="ri ${e.good ? 'good' : EVENT_TONE[e.kind] || ''}" style="opacity:${fade.toFixed(2)}">
+      <button data-act="fly" data-sys="${e.sys ?? 0}"><span class="t">${esc(e.text)}</span><span class="m">${esc(when(e))}</span></button>
+      ${major ? `<button class="ack" data-act="ack" data-id="${e.id}" aria-label="確かめた">✓</button>` : '<span></span>'}</div>`;
+  };
+  const dec = (d) => `<div class="dec"><div class="m">${d.kind === 'demand' ? '要求' : '出来事'}・${esc(place(d.sys))}${d.kind === 'demand' ? '' : `・${Math.round(d.deadline)}年までに返事`}${d.sys === 0 ? '' : `・返事は ${g.lightDelay(d.sys).toFixed(0)} 年で届く`}</div>
+    <div class="t clamp3">${esc(d.text)}</div>
+    <div class="opts">${d.opts.map((o) => {
+      const pc = g.pcCost('decide', { sys: d.sys, id: d.id, opt: o.k });
+      const why = (o.cr || 0) > g.credits ? '資金が足りない' : pc > g.pc ? '政治力が足りない' : '';
+      return `<button data-act="decide" data-sys="${d.sys}" data-id="${d.id}" data-opt="${o.k}" ${why ? 'disabled' : ''} title="${esc(o.note || '')}">${esc(o.label)}<small>${esc(why || [o.cr ? `${o.cr} cr` : '', pc ? `政治力 ${pc}` : ''].filter(Boolean).join('・') || '費用なし')}</small><small class="clamp2">${esc(o.note || '')}</small></button>`;
+    }).join('')}</div></div>`;
+  const shownMajors = majors.slice(0, 3);
+  return `${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
+    ${shownMajors.map((e) => item(e, true)).join('')}${majors.length > shownMajors.length ? `<div class="more">ほかに重大な知らせ ${majors.length - shownMajors.length} 件</div>` : ''}
+    ${recent.map((e) => item(e, false)).join('')}
+    <div class="railbar">${majors.length > 1 ? '<button data-act="ackall">重大な知らせをすべて確かめた</button>' : ''}<button data-act="railtoggle">隠す</button></div>`;
 }
 
 // 独立の見通し (地球に届いている記録で): 忠誠度の目標と内訳、不満の段階、忠誠度が UNREST_AT を割るまでの年数、
@@ -5437,9 +5683,7 @@ function govBox(g, id) {
   const gpc = g.pcCost('grant', { sys: id });
   const grant = realm === 0 && id !== 0 ? `<div class="btns">${[100, 500, 2000].map((a) => `<button data-act="grant" data-sys="${id}" data-amt="${a}" ${g.credits < a || g.pc < gpc ? 'disabled' : ''}>資金援助 ${a} cr<small>光速の送金: 届くまで ${g.travelYears(0, id).toFixed(1)} 年・政治力 ${gpc}</small></button>`).join('')}</div>
     <p class="note">資金援助は地球の資金から送る。届くと${esc(g.system(id).name)}の政府の資金になり、忠誠度が上がる (10 cr ごとに +1)。${young && k.lord !== null && k.lord !== undefined ? `入植後${GRANT_YEARS}年 (${(k.founded + GRANT_YEARS).toFixed(0)}年まで) は主人の星系から毎年自動でも届く。` : ''}</p>` : '';
-  const btn = realm === 0 ? grant : war
-    ? `<button data-act="peace" data-sys="${realm}">講和を申し入れる<small>指令: 届くまで ${g.lightDelay(realm).toFixed(1)} 年</small></button>`
-    : `<button data-act="declarewar" data-sys="${realm}">${esc(g.system(realm).name)} の国に宣戦する</button>`;
+  const btn = realm === 0 ? grant : ''; // 他国への講和・宣戦は欄の上の「よく使う操作」にある
   const siege = (k.siege ? `<p class="note bad">攻囲されている: ${esc(g.system(k.siege.realm).name)} の国の ${k.siege.ships} 艦隊・進捗 ${pct(k.siege.progress)}</p>` : '')
     + (k.battle ? `<p class="note bad">艦隊戦の最中: 攻撃 ${esc(g.system(k.battle.realm).name)} の国 ${Math.ceil(k.battle.a)} 艦隊 (投入 ${Math.round(k.battle.a0)}) 対 防衛 ${Math.ceil(k.battle.d)} 艦隊 (投入 ${Math.round(k.battle.d0)})・${k.battle.start.toFixed(1)}年から</p>` : '');
   return `<p class="note"><span class="dot" style="background:${realmColor(realm)}"></span>${status}。従属先: ${chain.map((l) => esc(g.system(l).name)).join(' → ') || 'なし'}・資金 ${fmtAmt(k.credits)} cr (収入 ${fmtAmt(k.income)}/年${k.lord !== null && k.lord !== undefined ? '、その25%を朝貢' : ''})。
@@ -6451,12 +6695,14 @@ function candidatesHtml(app) {
 
 const SHEETS = { empire: empireHtml, events: eventsHtml, cands: candidatesHtml };
 
+// ヘッダーの数字: 資金・政治力・議会の支持 (人口と星系の数は帝国 → 概要へ)。色は意味があるときだけ (赤字・議会が危うい)
 function treasuryHtml(g) {
   const inc = g.income();
-  // 資金は地球政府のもの。人口は光が届いている範囲で把握している合計
-  const pop = g.knownSystems().reduce((k, x) => k + g.knownColonies(x.id).reduce((a, c) => a + c.pop, 0), 0);
   const pci = g.pcLast || g.pcIncome().total;
-  return `💰 ${fmtAmt(g.credits)} cr <span class="${inc < 0 ? 'bad' : 'hz'}">(${inc >= 0 ? '+' : ''}${fmtAmt(inc)})</span> ・ <span title="政治力 (地球の意志): 星系の政府への指令に使う。年ごとに貯まる">政治力 <b>${Math.floor(g.pc)}</b> <span class="muted">(${pci >= 0 ? '+' : ''}${pci})</span></span> ・ <span title="地球議会の支持: 15を割ると政権交代" class="${g.council < 25 ? 'bad' : ''}">議会 ${Math.round(g.council)}</span> ・ 人口 ${fmtPop(pop)} ・ ${g.knownSystems().length} 星系`;
+  const sg = (v) => `${v >= 0 ? '+' : '−'}${fmtAmt(Math.abs(v))}`;
+  return `<span class="k">資金</span><span class="v">${fmtAmt(g.credits)} cr</span> <span class="${inc < 0 ? 'bad' : 'muted'}">${sg(inc)}</span>
+    <span class="k" style="margin-left:16px" title="政治力 (地球の意志): 星系の政府への指令に使う。年ごとに貯まる">政治力</span><span class="v">${Math.floor(g.pc)}</span> <span class="muted">${sg(pci)}</span>
+    <span class="k" style="margin-left:16px" title="地球議会の支持: 15を割ると政権交代">議会</span><span class="v ${g.council < 25 ? 'bad' : ''}">${Math.round(g.council)}</span>`;
 }
 
 function ledgerHtml(g) {
@@ -6519,6 +6765,7 @@ const app = {
     $('zoom').hidden = v !== 'galaxy';
     if (typeof renderFleetBar === 'function') renderFleetBar();
     $('legend').hidden = v !== 'galaxy';
+    $('rail').hidden = !!SHEETS[v];
     this.dirty = true;
   },
 };
@@ -6657,7 +6904,7 @@ function buildSave(game, extra = {}) {
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, pc: game.pc, council: game.council, policy: game.policy, decisions: game.decisions, story: game.story, era: game.era, challenges: game.challenges,
-    endYear: game.endYear, ended: game.ended, endShown: game.endShown, finalScore: game.finalScore, stats: game.stats, savedAt: Date.now(), ...extra,
+    acked: game.acked, endYear: game.endYear, ended: game.ended, endShown: game.endShown, finalScore: game.finalScore, stats: game.stats, savedAt: Date.now(), ...extra,
   };
 }
 // セーブデータの JSON (JSON.stringify(buildSave(...)) と同じ文字列)。いちばん大きい星系の記録は、記録ごとの JSON を使い回してつなぐ
@@ -7052,6 +7299,11 @@ function checkSkip() {
   app.dirty = true;
 }
 $('skipbtn').onclick = () => (app.skip ? setSpeed(0) : startSkip());
+// メニュー (ホーム・セーブ・通信の表示・観戦)
+function setMenu(open) { $('menu').hidden = !open; $('menubtn').setAttribute('aria-expanded', String(open)); $('menubtn').classList.toggle('on', open); }
+$('menubtn').onclick = (e) => { e.stopPropagation(); setMenu($('menu').hidden); };
+$('menu').addEventListener('click', (e) => { if (e.target.closest('button')) setTimeout(() => setMenu(false), 0); });
+window.addEventListener('pointerdown', (e) => { if (!$('menu').hidden && !e.target.closest('#menu, #menubtn')) setMenu(false); });
 // 終わりの年: 点数を見せる (続けて遊べる)
 function showEnd() {
   const g = app.game;
@@ -7103,6 +7355,17 @@ function onPanelClick(e) {
   if (act === 'gobody') { app.openSystem(sys); return app.selectBody(body); }
   if (act === 'etab') { app.empireTab = btn.dataset.t; app.dirty = true; return; }
   if (act === 'evfilter') { app.eventFilter = btn.dataset.f; app.dirty = true; return; }
+  // 知らせの帯
+  if (act === 'fly') { const s = g.system(sys); if (s) { app.selectSystem(sys); app.setView('galaxy'); galaxyView.centerOn(s); } return; }
+  if (act === 'ack' || act === 'ackall') {
+    g.acked ??= [];
+    const ids = act === 'ack' ? [Number(btn.dataset.id)] : g.knownEvents().filter((e) => evTier(e.kind) >= 3).map((e) => e.id);
+    for (const i of ids) if (!g.acked.includes(i)) g.acked.push(i);
+    g.acked = g.acked.slice(-300);
+    setHtml($('rail'), railHtml(g));
+    return;
+  }
+  if (act === 'railtoggle') { app.railHidden = !railHidden(); setHtml($('rail'), railHtml(g)); return; }
   if (act === 'evmode') { EvPrefs.mode = btn.dataset.m; saveEvPrefs(); app.dirty = true; return; }
   if (act === 'evtier') {
     // 段ごとにまとめて切り替える (全部出ていれば隠し、そうでなければ全部出す)
@@ -7186,7 +7449,16 @@ function onPanelChange(e) {
 let panelHeld = false;
 let touching = false;
 let lastScroll = 0;
+// 開け閉めした節・説明は覚えておく (描き直しても開いたまま)
+function onToggle(e) {
+  const d = e.target;
+  if (!(d instanceof HTMLDetailsElement)) return;
+  if (d.dataset.sec) (app.secOpen ??= {})[d.dataset.sec] = d.open;
+  else if (d.dataset.h) { app.helpOpen ??= new Set(); if (d.open) app.helpOpen.add(d.dataset.h); else app.helpOpen.delete(d.dataset.h); }
+}
+$('rail').addEventListener('click', onPanelClick);
 for (const el of [panel, empire]) {
+  el.addEventListener('toggle', onToggle, true);
   el.addEventListener('click', onPanelClick);
   el.addEventListener('change', onPanelChange);
   el.addEventListener('pointerdown', () => { panelHeld = true; });
@@ -7238,6 +7510,7 @@ function frame(now) {
     acc = 0;
     setHtml($('ships'), shipsHtml(game));
     setHtml($('log'), logHtml(game));
+    if (!SHEETS[app.view]) setHtml($('rail'), railHtml(game));
     setHtml($('treasury'), treasuryHtml(game));
     setHtml($('ledger'), ledgerHtml(game));
     if (hasFleetSelection()) renderFleetBar();
@@ -7253,8 +7526,8 @@ function frame(now) {
   }
   if (app.dirty && !panelBusy()) {
     app.dirty = false;
-    setHtmlKeepScroll(panel, app.view === 'system' && app.sel.body ? bodyPanel(app) : systemPanel(app));
-    if (SHEETS[app.view]) setHtmlKeepScroll(empire, SHEETS[app.view](app));
+    setHtmlKeepScroll(panel, helpify(app.view === 'system' && app.sel.body ? bodyPanel(app) : systemPanel(app)));
+    if (SHEETS[app.view]) setHtmlKeepScroll(empire, helpify(SHEETS[app.view](app)));
   }
   requestAnimationFrame(frame);
 }
