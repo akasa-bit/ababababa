@@ -1,4 +1,11 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Moribin</title></head><body>
+<!doctype html><html><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Moribin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Special+Elite&family=Zen+Antique&family=Zen+Old+Mincho:wght@400;700&display=swap"></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="worn" x="-2%" y="-10%" width="104%" height="120%" color-interpolation-filters="sRGB">
+  <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="11" result="n"/>
+  <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -7 4.6" result="holes"/>
+  <feComposite in="SourceGraphic" in2="holes" operator="in" result="eroded"/>
+  <feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="1" seed="3" result="w"/>
+  <feDisplacementMap in="eroded" in2="w" scale="1.2" xChannelSelector="R" yChannelSelector="G"/>
+</filter></svg>
 
 <style>:root { color-scheme: dark; --bg:#05070d; --panel:#0d121d; --line:#1d2840; --fg:#d7e1f3; --muted:#7f8da8; --accent:#4de3d0; }
 * { box-sizing: border-box; }
@@ -146,10 +153,7 @@ html, body { height:100%; }
    文字の大きさは4段階 (12・14・16・20px)。余白は8pxの倍数。説明文は「説明」を押したときだけ開く。
    情報の古さは薄さで表す (古いほど薄い) とともに、年数を文字で添える */
 :root {
-  --bg:#070a11; --panel:#0e131d; --raise:#151c2a; --line:#243048; --fg:#e3e9f3; --muted:#a3aec0; --dim:#8794a8;
-  --own:#4de3d0; --enemy:#ff6b6b; --neutral:#f0c94a; --warn:#ffb347; --good:#6fdc96; --info:#8fb4ff; --accent:var(--own);
   --fs1:12px; --fs2:14px; --fs3:16px; --fs4:20px;
-  --hover:#1c2537; --on-bg:#122a2e; --glass:rgba(14,19,29,.92); --radius:6px; --map-bg:#05070d;
   --font-ui:system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; --font-display:var(--font-ui); --font-num:var(--font-ui);
 }
 body { font-family:var(--font-ui); }
@@ -199,8 +203,6 @@ header nav button { padding:8px 16px; }
 #menu[hidden] { display:none; }
 #menu button { text-align:left; }
 #menu #savestat { display:block; font-size:var(--fs1); padding:0 8px; }
-#menu .field { display:grid; gap:4px; font-size:var(--fs1); color:var(--muted); padding:0 8px; }
-#menu .field select { font-size:var(--fs2); }
 @media (max-width: 900px) {
   header { gap:8px; padding:8px; }
   #status { flex-basis:100%; order:3; }
@@ -319,12 +321,12 @@ body.fx :is(button:has(small), button:has(.m), #rail .dec .opts button) { paddin
 @keyframes fx-sweep { to { top:100%; } }
 :where(body.fx) th { background-image:var(--fx-grain), var(--fx-scan); background-size:160px 160px, auto; box-shadow:inset 0 -2px 0 color-mix(in srgb, var(--fx-tint) 40%, transparent); }
 @keyframes fx-jit {
-  0% { text-shadow:-2.5px 0 rgba(255,107,107,.7), 2.5px 0 rgba(77,227,208,.7); }
-  15% { text-shadow:1.5px 0 rgba(255,107,107,.7), -1.5px 0 rgba(77,227,208,.7); }
-  30% { text-shadow:-3px 0 rgba(255,107,107,.55), 3px 0 rgba(77,227,208,.55), 0 0 4px rgba(227,233,243,.6); }
+  0% { text-shadow:-2.5px 0 rgba(255,107,107,.7), 2.5px 0 rgba(201,204,209,.7); }
+  15% { text-shadow:1.5px 0 rgba(255,107,107,.7), -1.5px 0 rgba(201,204,209,.7); }
+  30% { text-shadow:-3px 0 rgba(255,107,107,.55), 3px 0 rgba(201,204,209,.55), 0 0 4px rgba(227,233,243,.6); }
   45% { text-shadow:none; }
-  60% { text-shadow:2px 0 rgba(255,107,107,.65), -2px 0 rgba(77,227,208,.65); }
-  75% { text-shadow:-1px 0 rgba(255,107,107,.5), 1px 0 rgba(77,227,208,.5); }
+  60% { text-shadow:2px 0 rgba(255,107,107,.65), -2px 0 rgba(201,204,209,.65); }
+  75% { text-shadow:-1px 0 rgba(255,107,107,.5), 1px 0 rgba(201,204,209,.5); }
   90%, 100% { text-shadow:none; }
 }
 body.fx .jit { animation:fx-jit .6s steps(1) 1; }
@@ -343,100 +345,54 @@ body.fx .jit { animation:fx-jit .6s steps(1) 1; }
 .flags.watch li.warn button { border-left-color:var(--warn); }
 .flags.watch small { color:var(--muted); font-size:var(--fs1); }
 </style>
-<style id="skins">
-/* --- 配色の試し (≡ → 配色、または ?skin=名前) ---
-   色の決まりは同じ (色は意味にだけ)。案ごとに地の色・文字の色・意味の色・書体・素材 (縁・光・質感) を変える。
-   意味の色は、並んで出る組 (敵と注意、注意と中立、自分と良い知らせ・情報・注意) を OKLab で離してある */
-html[data-skin] { --hover:color-mix(in oklab, var(--raise), var(--fg) 7%); --on-bg:color-mix(in oklab, var(--panel), var(--own) 14%); --glass:color-mix(in srgb, var(--panel) 92%, transparent); --fx-tint:var(--own); }
-html[data-skin] body { background:var(--bg); }
-html[data-skin] h1 { color:var(--own); }
-html[data-skin="tuned"] { --bg:#0a0d12; --panel:#10141a; --raise:#171c24; --line:#2a313c; --fg:#e6e8ec; --muted:#a9afb9; --dim:#8d939d; --own:#63cdc0; --enemy:#e8716a; --neutral:#dbd892; --warn:#e99a3d; --good:#85ae67; --info:#8ea9d8; --accent:var(--own); --map-bg:#06080c; --fx-tint2:var(--info); --fx-grain-op:0.14; --radius:4px;
-  --font-ui:"IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"IBM Plex Mono", "IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-html[data-skin="tuned"] button { box-shadow:inset 0 1px 0 rgba(255,255,255,.04); }
-html[data-skin="tuned"] h3 { color:var(--muted); letter-spacing:.08em; }
-html[data-skin="brass"] { --bg:#0d0c0a; --panel:#151310; --raise:#1e1b17; --line:#3a332a; --fg:#ede5d6; --muted:#b5aa97; --dim:#988c79; --own:#dcbd64; --enemy:#d85e4a; --neutral:#e9e2c4; --warn:#e28a16; --good:#8bb68f; --info:#93aecb; --accent:var(--own); --map-bg:#080706; --fx-tint2:var(--warn); --fx-grain-op:0.16; --radius:2px;
-  --font-ui:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Shippori Mincho B1", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"IBM Plex Mono", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-html[data-skin="brass"] header, html[data-skin="brass"] aside { background-image:repeating-linear-gradient(90deg, rgba(255,240,210,.014) 0 1px, transparent 1px 3px); }
-html[data-skin="brass"] header { border-bottom:3px double var(--line); }
-html[data-skin="brass"] button { background:linear-gradient(180deg, color-mix(in oklab, var(--raise), #fff 4%), color-mix(in oklab, var(--raise), #000 25%)); box-shadow:inset 0 1px 0 color-mix(in srgb, var(--own) 22%, transparent), 0 1px 0 rgba(0,0,0,.6); border-color:color-mix(in oklab, var(--line), var(--own) 25%); }
-html[data-skin="brass"] button.on, html[data-skin="brass"] #speed button.on, html[data-skin="brass"] .chips button.on { background:linear-gradient(180deg, color-mix(in oklab, var(--panel), var(--own) 22%), color-mix(in oklab, var(--panel), var(--own) 8%)); }
-html[data-skin="brass"] h1 { letter-spacing:.2em; }
-html[data-skin="brass"] h2, html[data-skin="brass"] .syshead h2 { font-weight:700; letter-spacing:.04em; }
-html[data-skin="brass"] h3 { color:var(--own); letter-spacing:.2em; font-weight:600; }
-html[data-skin="brass"] .stats div, html[data-skin="brass"] .kpi div { box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--own) 14%, transparent); }
-html[data-skin="urushi"] { --bg:#0c0807; --panel:#150e0c; --raise:#1f1512; --line:#432d23; --fg:#f1e7dc; --muted:#bdab9b; --dim:#9f8c7d; --own:#e0c26e; --enemy:#e0533f; --neutral:#ece3c8; --warn:#e8905b; --good:#91b790; --info:#93abc8; --accent:var(--own); --map-bg:#070403; --fx-tint2:var(--enemy); --fx-grain-op:0.12; --radius:3px;
-  --font-ui:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Shippori Mincho B1", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"Shippori Mincho B1", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-html[data-skin="urushi"] aside, html[data-skin="urushi"] header { background:radial-gradient(120% 80% at 30% 0%, #241310 0%, var(--panel) 55%); }
-html[data-skin="urushi"] header { border-bottom:1px solid color-mix(in srgb, var(--own) 45%, transparent); box-shadow:0 1px 0 rgba(0,0,0,.8); }
-html[data-skin="urushi"] button { background:linear-gradient(180deg, rgba(255,236,220,.06), transparent 45%), var(--raise); border-color:color-mix(in oklab, var(--line), var(--own) 30%); }
-html[data-skin="urushi"] button.on, html[data-skin="urushi"] #speed button.on, html[data-skin="urushi"] .chips button.on { box-shadow:inset 0 -2px 0 var(--own); }
-html[data-skin="urushi"] h1 { letter-spacing:.24em; }
-html[data-skin="urushi"] h2, html[data-skin="urushi"] .syshead h2 { font-weight:800; }
-html[data-skin="urushi"] h3 { color:var(--own); letter-spacing:.16em; border-bottom:1px solid color-mix(in srgb, var(--own) 25%, transparent); padding-bottom:4px; }
-html[data-skin="urushi"] details.sec { border-color:color-mix(in srgb, var(--own) 18%, var(--line)); }
-html[data-skin="amber"] { --bg:#0a0906; --panel:#110f0a; --raise:#1a1710; --line:#3b3323; --fg:#f3dcaa; --muted:#bca26f; --dim:#9a845b; --own:#f0a933; --enemy:#ff5c3c; --neutral:#a9b8ae; --warn:#ffe38f; --good:#a0d48b; --info:#92bccd; --accent:var(--own); --map-bg:#060503; --fx-tint2:var(--own); --fx-grain-op:0.2; --radius:0;
-  --font-ui:"IBM Plex Mono", "M PLUS 1 Code", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"IBM Plex Mono", "M PLUS 1 Code", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"IBM Plex Mono", "M PLUS 1 Code", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-html[data-skin="amber"] body { text-shadow:0 0 6px color-mix(in srgb, var(--own) 22%, transparent); }
-html[data-skin="amber"] button { background:transparent; border-color:color-mix(in srgb, var(--own) 35%, transparent); }
-html[data-skin="amber"] button:hover:not(:disabled) { background:color-mix(in srgb, var(--own) 10%, transparent); }
-html[data-skin="amber"] button.on, html[data-skin="amber"] #speed button.on, html[data-skin="amber"] .chips button.on { background:var(--own); color:#120d03; text-shadow:none; }
-html[data-skin="amber"] h1, html[data-skin="amber"] h3 { text-transform:uppercase; letter-spacing:.2em; }
-html[data-skin="amber"] h3 { color:var(--own); }
-html[data-skin="amber"] .stats div, html[data-skin="amber"] .kpi div { background:transparent; border:1px solid color-mix(in srgb, var(--own) 25%, transparent); }
-html[data-skin="chart"] { --bg:#09111e; --panel:#0e192a; --raise:#152337; --line:#2c405f; --fg:#f0e7d3; --muted:#bdb5a3; --dim:#a0988a; --own:#7fcaaf; --enemy:#dd78a9; --neutral:#e2cf95; --warn:#e3914e; --good:#92a757; --info:#aac0f0; --accent:var(--own); --map-bg:#060c16; --fx-tint2:var(--info); --fx-grain-op:0.12; --radius:0;
-  --font-ui:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Zen Old Mincho", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"IBM Plex Mono", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-html[data-skin="chart"] aside { background-image:linear-gradient(color-mix(in srgb, var(--info) 6%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--info) 6%, transparent) 1px, transparent 1px); background-size:24px 24px; }
-html[data-skin="chart"] header { border-bottom:1px solid var(--line); box-shadow:0 3px 0 -2px var(--line); }
-html[data-skin="chart"] button { box-shadow:inset 0 0 0 2px var(--raise), inset 0 0 0 3px color-mix(in srgb, var(--fg) 10%, transparent); }
-html[data-skin="chart"] h2, html[data-skin="chart"] .syshead h2 { font-weight:700; letter-spacing:.02em; }
-html[data-skin="chart"] h3 { color:var(--neutral); letter-spacing:.14em; font-weight:500; }
-html[data-skin="nasa"] { --bg:#111214; --panel:#18191c; --raise:#212226; --line:#3b3d42; --fg:#f2f2f0; --muted:#b5b6b9; --dim:#97989c; --own:#ffffff; --enemy:#f0533a; --neutral:#e0da7f; --warn:#f89a2b; --good:#7cc790; --info:#8fb1e6; --accent:var(--own); --map-bg:#0b0c0d; --fx-tint2:var(--enemy); --fx-grain-op:0.12; --radius:0;
-  --font-ui:"Archivo", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Archivo", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"Archivo", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-html[data-skin="nasa"] header { border-bottom:3px solid var(--enemy); }
-html[data-skin="nasa"] button { font-weight:600; letter-spacing:.02em; }
-html[data-skin="nasa"] button.on, html[data-skin="nasa"] #speed button.on, html[data-skin="nasa"] .chips button.on { background:var(--own); color:#111; border-color:var(--own); }
-html[data-skin="nasa"] h1 { text-transform:uppercase; letter-spacing:.3em; font-weight:800; color:var(--fg); }
-html[data-skin="nasa"] h3 { text-transform:uppercase; letter-spacing:.16em; border-top:2px solid var(--fg); padding-top:6px; color:var(--fg); }
-html[data-skin="nasa"] .stats div, html[data-skin="nasa"] .kpi div { border-top:2px solid var(--line); }
-html[data-skin="deco"] { --bg:#0b0a0c; --panel:#131115; --raise:#1c191f; --line:#3d3642; --fg:#f4ebd9; --muted:#bfb4a2; --dim:#a19682; --own:#dcc58f; --enemy:#d65a52; --neutral:#c4cfa4; --warn:#e49356; --good:#7fb8a4; --info:#93acd3; --accent:var(--own); --map-bg:#070608; --fx-tint2:var(--own); --fx-grain-op:0.12; --radius:0;
-  --font-ui:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Kaisei Decol", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"Kaisei Decol", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-html[data-skin="deco"] header { border-bottom:1px solid var(--own); box-shadow:0 4px 0 -3px var(--own); }
-html[data-skin="deco"] button:focus-visible { clip-path:none; }
-html[data-skin="deco"] button { clip-path:polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px); border-color:color-mix(in srgb, var(--own) 40%, transparent); letter-spacing:.06em; }
-html[data-skin="deco"] button.on, html[data-skin="deco"] #speed button.on, html[data-skin="deco"] .chips button.on { background:color-mix(in oklab, var(--panel), var(--own) 18%); }
-html[data-skin="deco"] h1 { letter-spacing:.3em; }
-html[data-skin="deco"] h2, html[data-skin="deco"] .syshead h2 { letter-spacing:.08em; font-weight:700; }
-html[data-skin="deco"] h3 { color:var(--own); letter-spacing:.24em; text-align:left; }
-html[data-skin="deco"] .stats div, html[data-skin="deco"] .kpi div { box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--own) 22%, transparent), inset 0 0 0 3px var(--raise), inset 0 0 0 4px color-mix(in srgb, var(--own) 12%, transparent); }
-html[data-skin="nostromo"] { --bg:#040906; --panel:#07100a; --raise:#0c1a10; --line:#1f3d27; --fg:#bff7cb; --muted:#86c697; --dim:#69a578; --own:#e2ffe8; --enemy:#ff6650; --neutral:#c9f4b3; --warn:#ffbe3f; --good:#6fe08f; --info:#80d9d2; --accent:var(--own); --map-bg:#020503; --fx-tint2:var(--good); --fx-grain-op:0.26; --radius:0;
-  --font-ui:"M PLUS 1 Code", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"DotGothic16", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"VT323", "M PLUS 1 Code", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-html[data-skin="nostromo"] body { text-shadow:0 0 5px color-mix(in srgb, var(--fg) 35%, transparent); }
-html[data-skin="nostromo"] main { background:radial-gradient(130% 100% at 50% 50%, transparent 60%, rgba(0,0,0,.55) 100%); }
-html[data-skin="nostromo"] aside, html[data-skin="nostromo"] header { background-image:repeating-linear-gradient(0deg, rgba(160,255,190,.035) 0 1px, transparent 1px 3px); }
-html[data-skin="nostromo"] button { background:transparent; border-color:color-mix(in srgb, var(--fg) 30%, transparent); }
-html[data-skin="nostromo"] button.on, html[data-skin="nostromo"] #speed button.on, html[data-skin="nostromo"] .chips button.on { background:var(--fg); color:#031006; text-shadow:none; }
-html[data-skin="nostromo"] h1, html[data-skin="nostromo"] h3 { letter-spacing:.16em; }
-html[data-skin="nostromo"] .stats b, html[data-skin="nostromo"] .kpi b { font-size:var(--fs4); line-height:1; }
-html[data-skin="obsidian"] { --bg:#08090b; --panel:#0f1114; --raise:#16191d; --line:#2b2f36; --fg:#eceef1; --muted:#a9aeb6; --dim:#8c929b; --own:#c3d2e4; --enemy:#e8716d; --neutral:#dee2a3; --warn:#e8a463; --good:#8cc8a1; --info:#8eb0e6; --accent:var(--own); --map-bg:#050607; --fx-tint2:var(--info); --fx-grain-op:0.07; --radius:10px;
-  --font-ui:"IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-html[data-skin="obsidian"] #rail .ri, html[data-skin="obsidian"] #rail .dec, html[data-skin="obsidian"] #legend, html[data-skin="obsidian"] #zoom button, html[data-skin="obsidian"] #fleetbar { backdrop-filter:blur(14px) saturate(120%); -webkit-backdrop-filter:blur(14px) saturate(120%); background:color-mix(in srgb, var(--panel) 72%, transparent); }
-html[data-skin="obsidian"] button { background:linear-gradient(180deg, color-mix(in oklab, var(--raise), #fff 5%), var(--raise)); box-shadow:inset 0 1px 0 rgba(255,255,255,.07); border-color:rgba(255,255,255,.07); font-weight:500; }
-html[data-skin="obsidian"] button.on, html[data-skin="obsidian"] #speed button.on, html[data-skin="obsidian"] .chips button.on { background:color-mix(in oklab, var(--raise), var(--own) 16%); color:#fff; border-color:color-mix(in srgb, var(--own) 50%, transparent); }
-html[data-skin="obsidian"] h1 { font-weight:300; letter-spacing:.4em; color:var(--fg); }
-html[data-skin="obsidian"] h2, html[data-skin="obsidian"] .syshead h2 { font-weight:300; letter-spacing:.02em; }
-html[data-skin="obsidian"] .stats b, html[data-skin="obsidian"] .kpi b { font-weight:300; font-size:var(--fs4); }
-html[data-skin="obsidian"] h3 { color:var(--dim); letter-spacing:.12em; font-weight:500; }
-html[data-skin="bronze"] { --bg:#121211; --panel:#1a1a18; --raise:#24241f; --line:#403f37; --fg:#ebe7dc; --muted:#b4b0a2; --dim:#979385; --own:#5daa97; --enemy:#d86955; --neutral:#d8d495; --warn:#da9843; --good:#a3be6b; --info:#a3b4ce; --accent:var(--own); --map-bg:#0c0c0b; --fx-tint2:var(--warn); --fx-grain-op:0.18; --radius:0;
-  --font-ui:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-display:"Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; --font-num:"Barlow Semi Condensed", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-html[data-skin="bronze"] header, html[data-skin="bronze"] aside { background-image:var(--fx-grain); background-size:160px 160px; background-blend-mode:soft-light; }
-html[data-skin="bronze"] header { border-bottom:2px solid var(--line); }
-html[data-skin="bronze"] button { border-width:2px; font-weight:700; box-shadow:0 2px 0 rgba(0,0,0,.55); }
-html[data-skin="bronze"] button.on, html[data-skin="bronze"] #speed button.on, html[data-skin="bronze"] .chips button.on { background:color-mix(in oklab, var(--panel), var(--own) 22%); }
-html[data-skin="bronze"] h1 { font-weight:900; letter-spacing:.18em; }
-html[data-skin="bronze"] h2, html[data-skin="bronze"] .syshead h2 { font-weight:900; text-shadow:0 -1px 0 rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.06); }
-html[data-skin="bronze"] h3 { font-weight:900; letter-spacing:.14em; color:var(--dim); }
-html[data-skin="bronze"] .stats b, html[data-skin="bronze"] .kpi b { font-weight:600; font-size:var(--fs4); letter-spacing:.02em; }
-html[data-skin="bronze"] .stats div, html[data-skin="bronze"] .kpi div { border:2px solid var(--line); }
+<style id="theme">
+/* --- 見た目: 黒鉛色・白・赤橙ひとつ (NASA の 1975 年の標準書にならう) と、額縁の縁、掠れた報告書の書体 ---
+   色は意味にだけ (赤橙は敵・危険)。ボタンとタブの縁は額縁 (外の縁・面取りの光と影・内側の細い線・四隅の飾り)。
+   見出しと数字はタイプライター体と古い活字の明朝で、少し掠れさせる */
+:root {
+  --bg:#111214; --panel:#18191c; --raise:#212226; --line:#3b3d42; --fg:#f2f2f0; --muted:#b5b6b9; --dim:#97989c;
+  --own:#ffffff; --enemy:#f0533a; --neutral:#e0da7f; --warn:#f89a2b; --good:#7cc790; --info:#8fb1e6; --accent:var(--own);
+  --hover:color-mix(in oklab, var(--raise), var(--fg) 7%); --on-bg:var(--own); --glass:color-mix(in srgb, var(--panel) 92%, transparent);
+  --map-bg:#0b0c0d; --radius:0; --fx-tint:#c9ccd1; --fx-tint2:#6f7278; --fx-grain-op:.14;
+  --frame:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23c3c6cc'/%3E%3Cstop offset='1' stop-color='%236f7278'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0' y1='1' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%23151619'/%3E%3Cstop offset='1' stop-color='%2334363a'/%3E%3C/linearGradient%3E%3ClinearGradient id='l' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23a3a6ac'/%3E%3Cstop offset='1' stop-color='%235d6066'/%3E%3C/linearGradient%3E%3ClinearGradient id='r' x1='1' y1='0' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%231c1d20'/%3E%3Cstop offset='1' stop-color='%233a3c41'/%3E%3C/linearGradient%3E%3CradialGradient id='k'%3E%3Cstop offset='0' stop-color='%23d2d5da'/%3E%3Cstop offset='1' stop-color='%233e4146'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpolygon points='0,0 48,0 32,16 16,16' fill='url%28%23t%29'/%3E%3Cpolygon points='0,48 48,48 32,32 16,32' fill='url%28%23b%29'/%3E%3Cpolygon points='0,0 16,16 16,32 0,48' fill='url%28%23l%29'/%3E%3Cpolygon points='48,0 32,16 32,32 48,48' fill='url%28%23r%29'/%3E%3Crect x='.5' y='.5' width='47' height='47' fill='none' stroke='%2308080a'/%3E%3Crect x='14.5' y='14.5' width='19' height='19' fill='none' stroke='%2308080a'/%3E%3Crect x='13.5' y='13.5' width='21' height='21' fill='none' stroke='%23e4e6ea' stroke-opacity='.55'/%3E%3Crect x='7' y='7' width='34' height='34' fill='none' stroke='%23eef0f3' stroke-width='1.7' stroke-linecap='round' stroke-dasharray='0 3.2' stroke-opacity='.7'/%3E%3Crect x='2' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='8' cy='8' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='8' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='8' cy='3.4000000000000004' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='12.6' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='12.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='3.4000000000000004' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Crect x='34' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='40' cy='8' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='8' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='40' cy='3.4000000000000004' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='44.6' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='12.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='35.4' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Crect x='2' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='8' cy='40' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='40' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='8' cy='35.4' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='12.6' cy='40' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='44.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='3.4000000000000004' cy='40' r='1.1' fill='%23d2d5da'/%3E%3Crect x='34' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='40' cy='40' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='40' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='40' cy='35.4' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='44.6' cy='40' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='44.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='35.4' cy='40' r='1.1' fill='%23d2d5da'/%3E%3C/svg%3E"); --frame-on:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23c9ccd1'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0' y1='1' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%236f7278'/%3E%3Cstop offset='1' stop-color='%23a3a6ac'/%3E%3C/linearGradient%3E%3ClinearGradient id='l' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23f2f3f5'/%3E%3Cstop offset='1' stop-color='%23b4b7bc'/%3E%3C/linearGradient%3E%3ClinearGradient id='r' x1='1' y1='0' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%237d8086'/%3E%3Cstop offset='1' stop-color='%23b9bcc1'/%3E%3C/linearGradient%3E%3CradialGradient id='k'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%239da0a6'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpolygon points='0,0 48,0 32,16 16,16' fill='url%28%23t%29'/%3E%3Cpolygon points='0,48 48,48 32,32 16,32' fill='url%28%23b%29'/%3E%3Cpolygon points='0,0 16,16 16,32 0,48' fill='url%28%23l%29'/%3E%3Cpolygon points='48,0 32,16 32,32 48,48' fill='url%28%23r%29'/%3E%3Crect x='.5' y='.5' width='47' height='47' fill='none' stroke='%232a2c30'/%3E%3Crect x='14.5' y='14.5' width='19' height='19' fill='none' stroke='%232a2c30'/%3E%3Crect x='13.5' y='13.5' width='21' height='21' fill='none' stroke='%23ffffff' stroke-opacity='.55'/%3E%3Crect x='7' y='7' width='34' height='34' fill='none' stroke='%23ffffff' stroke-width='1.7' stroke-linecap='round' stroke-dasharray='0 3.2' stroke-opacity='.7'/%3E%3Crect x='2' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='8' cy='8' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='8' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='8' cy='3.4000000000000004' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='12.6' cy='8' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='12.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='3.4000000000000004' cy='8' r='1.1' fill='%23ffffff'/%3E%3Crect x='34' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='40' cy='8' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='8' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='40' cy='3.4000000000000004' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='44.6' cy='8' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='12.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='35.4' cy='8' r='1.1' fill='%23ffffff'/%3E%3Crect x='2' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='8' cy='40' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='40' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='8' cy='35.4' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='12.6' cy='40' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='44.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='3.4000000000000004' cy='40' r='1.1' fill='%23ffffff'/%3E%3Crect x='34' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='40' cy='40' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='40' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='40' cy='35.4' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='44.6' cy='40' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='44.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='35.4' cy='40' r='1.1' fill='%23ffffff'/%3E%3C/svg%3E");
+  --font-ui:"Courier Prime", "Zen Old Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  --font-display:"Special Elite", "Zen Antique", "Zen Old Mincho", "Hiragino Mincho ProN", serif;
+  --font-num:"Special Elite", "Zen Old Mincho", "Hiragino Mincho ProN", serif;
+}
+body { background:var(--bg); }
+header { border-bottom:3px double var(--line); }
+h1 { text-transform:uppercase; letter-spacing:.3em; color:var(--fg); }
+h3 { text-transform:uppercase; letter-spacing:.16em; border-top:2px solid var(--fg); padding-top:6px; color:var(--fg); }
+.stats div, .kpi div { border-top:2px solid var(--line); }
+.stats { gap:4px; } .stats div { padding:8px 6px; } .stats b { white-space:nowrap; }
+nav button, .chips button, h3, .syshead h2 { font-family:var(--font-display); }
+/* 額縁: 9 分割の絵。面取りの帯 (上と左が明るく、下と右が暗い)、帯の中の粒 (玉縁)、内側の段、四隅の花形の飾り。
+   辺は繰り返して敷く (粒が伸びないように)。選んでいるものは明るい銀の額に白い地 */
+button { border:7px solid transparent; border-image:var(--frame) 16 / 7px round; padding:4px 12px; letter-spacing:.02em; }
+button.on, #speed button.on, .chips button.on { border-image-source:var(--frame-on); background:var(--own); color:#111; }
+nav button, .chips button { border-width:8px; border-image-width:8px; padding:4px 14px; }
+nav button.hot { box-shadow:inset 0 0 0 2px var(--warn); }
+#speed button { white-space:nowrap; }
+/* 電話の幅では額を細くする (速さのボタンが1段に収まるように) */
+@media (max-width: 560px) {
+  button { border-width:4px; border-image-width:4px; padding:4px 8px; }
+  nav button, .chips button { border-width:5px; border-image-width:5px; padding:4px 4px; }
+  #speed button { padding:4px 0; }
+}
+#speed { gap:0; } #speed button { margin-left:0; padding:4px 4px; }
+/* 額にしないもの: 表の中の小さなボタン、知らせの札の中、閉じるボタン */
+.tbl button, #rail .ri button, .syshead h2 .x { border-image:none; }
+.tbl button { border:1px solid var(--line); }
+.syshead h2 .x { border:1px solid var(--line); }
+/* 出来事の種類の札は、ゴム印のように枠と文字の色だけで */
+.ev .tag { background:transparent !important; border:1px solid currentColor; border-radius:2px; letter-spacing:.08em; font-family:var(--font-display); }
+.tag.famine, .tag.battle, .tag.war, .tag.pirate { color:var(--enemy); }
+.tag.shortage, .tag.demand, .tag.politics { color:var(--warn); }
+.tag.natives, .tag.colony, .tag.migration, .tag.story { color:var(--info); }
+.tag.goal { color:var(--good); }
+#home { background:color-mix(in srgb, var(--bg) 94%, transparent); }
+/* 掠れ: 見出しと数字だけ (動くものには掛けない) */
+h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url(#worn); }
 </style>
 
   <header>
@@ -468,7 +424,6 @@ html[data-skin="bronze"] .stats div, html[data-skin="bronze"] .kpi div { border:
         <button id="sigbtn" title="地図に光速の通信 (物資移送要求・指令・朝貢・送金) をどう描くか">通信: 表示しない</button>
         <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
         <button id="fxbtn" title="ボタンや表に流れる信号の模様と、文字のぶれ">画面の動き: 入</button>
-        <label class="field" id="skinfield">配色 (試し) <select id="skinsel" title="色と書体と素材の案を試す。ブラウザに覚える"></select></label>
         <span id="savestat" class="muted"></span>
       </div>
     </div>
@@ -7464,47 +7419,12 @@ $('sigbtn').onclick = () => {
   updateSigBtn();
 };
 updateSigBtn();
-// 配色の試し: 10 の案を切り替える (?skin=名前 でも選べる)。書体は Google Fonts から、選んだときだけ読む
-const SKINS = {
-  std: { label: '標準 (いま)' },
-  tuned: { label: '1 調律', fonts: ['IBM+Plex+Sans+JP:wght@300;400;500;700', 'IBM+Plex+Mono:wght@400;500'] },
-  brass: { label: '2 黒鉄と真鍮', fonts: ['Zen+Kaku+Gothic+New:wght@400;500;700', 'Shippori+Mincho+B1:wght@600;700;800', 'IBM+Plex+Mono:wght@400;500'] },
-  urushi: { label: '3 漆と金', fonts: ['Zen+Kaku+Gothic+New:wght@400;500;700', 'Shippori+Mincho+B1:wght@600;700;800'] },
-  amber: { label: '4 管制室の琥珀', fonts: ['IBM+Plex+Mono:wght@400;500;600', 'M+PLUS+1+Code:wght@400;500;700'] },
-  chart: { label: '5 海図局', fonts: ['Zen+Kaku+Gothic+New:wght@400;500;700', 'Zen+Old+Mincho:wght@600;700', 'IBM+Plex+Mono:wght@400;500'] },
-  nasa: { label: '6 標準書 1975', fonts: ['Archivo:wght@400;600;800', 'Zen+Kaku+Gothic+New:wght@400;500;700'] },
-  deco: { label: '7 アール・デコ', fonts: ['Zen+Kaku+Gothic+New:wght@400;500;700', 'Kaisei+Decol:wght@500;700'] },
-  nostromo: { label: '8 ノストロモ 1979', fonts: ['M+PLUS+1+Code:wght@400;500;700', 'DotGothic16', 'VT323'] },
-  obsidian: { label: '9 黒曜石', fonts: ['IBM+Plex+Sans+JP:wght@300;400;500;700'] },
-  bronze: { label: '10 青銅の記念碑', fonts: ['Zen+Kaku+Gothic+New:wght@400;500;700;900', 'Barlow+Semi+Condensed:wght@500;600;700'] },
-};
-function applySkin(id) {
-  if (!SKINS[id]) id = 'std';
-  app.skin = id;
-  if (id === 'std') delete document.documentElement.dataset.skin; else document.documentElement.dataset.skin = id;
-  const f = SKINS[id].fonts;
-  let link = document.getElementById('skinfonts');
-  if (f) {
-    if (!link) { link = document.createElement('link'); link.id = 'skinfonts'; link.rel = 'stylesheet'; document.head.appendChild(link); }
-    link.href = `https://fonts.googleapis.com/css2?${f.map((x) => `family=${x}`).join('&')}&display=swap`;
-  } else if (link) link.remove();
+// 地図の背景と地球の国の色は、CSS の色 (--map-bg・--own) から読む
+{
   const cs = getComputedStyle(document.documentElement);
   app.mapBg = cs.getPropertyValue('--map-bg').trim() || '#05070d';
   const own = cs.getPropertyValue('--own').trim();
   if (/^#[0-9a-f]{6}$/i.test(own)) { OWN.hex = own; OWN.rgb = [1, 3, 5].map((i) => parseInt(own.slice(i, i + 2), 16)).join(','); }
-  $('skinsel').value = id;
-  app.dirty = true;
-}
-$('skinsel').innerHTML = Object.entries(SKINS).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
-$('skinsel').onchange = (e) => {
-  applySkin(e.target.value);
-  PlayLog.add('ui', { act: 'skin', v: app.skin });
-  try { localStorage.setItem('moribin-skin', app.skin); } catch { /* 保存できない環境では無視 */ }
-};
-{
-  let id = params.get('skin');
-  if (!id) try { id = localStorage.getItem('moribin-skin'); } catch { /* 既定値 */ }
-  applySkin(id || 'std');
 }
 // 画面の動き (信号の模様と文字のぶれ)。見る人ごとの好みなのでブラウザに覚えておく
 try { app.fx = localStorage.getItem('moribin-fx') !== 'off'; } catch { app.fx = true; }
