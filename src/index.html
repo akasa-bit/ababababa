@@ -132,7 +132,9 @@ ul.bodies li:hover, ul.bodies li.sel { background:#16213a; }
 #treasury { font-variant-numeric:tabular-nums; font-size:13px; }
 .bad { color:#ff7a6b; } .nat { font-size:11px; color:#c9a2ff; border:1px solid #6a4fa0; border-radius:3px; padding:0 4px; }
 .route { font-size:12px; margin:6px 0; padding:6px 8px; background:#111a2e; border-radius:5px; }
-.route button { margin-top:4px; }
+/* 拡張ボタンは文章の下に欄いっぱいの幅で置く。数字の桁が変わって文章の折り返しが変わっても横には動かない (縦のずれは keepAnchor が戻す) */
+.route button { display:block; width:100%; margin-top:4px; }
+td > button[data-act="uproute"] { width:11em; }
 .facs { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px; }
 .fac { display:flex; flex-direction:column; gap:3px; font-size:12px; background:#111a2e; border-radius:5px; padding:6px; }
 .fac button { text-align:left; }
@@ -5888,8 +5890,8 @@ function routeBox(app, sys) {
   const list = mine.map((r) => {
     const out = r.a === sys.id ? 0 : 1;
     const other = g.system(r.a === sys.id ? r.b : r.a);
-    return `<div class="route"><b>⇄ ${esc(other.name)}</b> <span class="muted">${distance(sys, other).toFixed(1)} ly ・ Lv${r.lv} (片道 ${fmtAmt(g.routeCap(r))}/年)</span><br>
-      <span class="muted">送り ${fmtAmt(r.vol[out])}/年 ・ 受け取り ${fmtAmt(r.vol[1 - out])}/年</span>
+    return `<div class="route"><div><b>⇄ ${esc(other.name)}</b> <span class="muted">${distance(sys, other).toFixed(1)} ly ・ Lv${r.lv} (片道 ${fmtAmt(g.routeCap(r))}/年)</span><br>
+      <span class="muted">送り ${fmtAmt(r.vol[out])}/年 ・ 受け取り ${fmtAmt(r.vol[1 - out])}/年</span></div>
       ${costButton(g, `data-act="uproute" data-route="${r.id}"`, '拡張', g.routeUpCost(r), r.a, busyText(g, (j) => j.type === 'route' && j.route === r.id))}</div>`;
   }).join('');
   const dest = others.some((s) => s.id === app.routeDest) ? app.routeDest : others[0]?.id;
@@ -7549,6 +7551,7 @@ function onPanelClick(e) {
   if (li) return app.selectBody(li.dataset.body);
   const btn = e.target.closest('button[data-act]');
   if (!btn) return;
+  rememberAnchor(btn);
   const { act, kind } = btn.dataset;
   PlayLog.add('act', { ...btn.dataset, ...(btn.dataset.sys === undefined && app.sel.sys !== undefined ? { at: app.sel.sys } : {}) });
   const g = app.game;
@@ -7670,12 +7673,32 @@ for (const el of [panel, empire]) {
   el.addEventListener('pointerdown', () => { panelHeld = true; });
   el.addEventListener('touchstart', () => { touching = true; }, { passive: true });
   // 表の横スクロール (.scroll) の scroll イベントは泡立たないので capture で拾う
-  el.addEventListener('scroll', () => { lastScroll = performance.now(); }, { capture: true, passive: true });
+  // (keepAnchor が自分で合わせたスクロールは数えない。連打のたびに書き換えが遅れないように)
+  el.addEventListener('scroll', () => { if (performance.now() - anchorScrollAt > 150) lastScroll = performance.now(); }, { capture: true, passive: true });
 }
 window.addEventListener('pointerup', () => { panelHeld = false; });
 window.addEventListener('pointercancel', () => { panelHeld = false; });
 window.addEventListener('touchend', (e) => { if (!e.touches.length) touching = false; }, { passive: true });
 window.addEventListener('touchcancel', (e) => { if (!e.touches.length) touching = false; }, { passive: true });
+// 押したボタンを、書き換えのあとも同じ位置に残す: 上の中身が増えても、欄のスクロールを合わせて中身が上へ逃げるようにする
+// (「拡張」などを同じ場所で続けて押せるように)。3 秒たつか、自分で欄をスクロールしたら忘れる
+let anchor = null, anchorScrollAt = 0;
+function rememberAnchor(btn) {
+  const box = btn.closest('aside, #empire');
+  if (!box) return;
+  const sel = Object.entries(btn.dataset).map(([k, v]) => `[data-${k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}="${CSS.escape(v)}"]`).join('');
+  // 同じボタンが欄に複数あるときは、押したのが何番目かも覚えておく
+  const i = [...box.querySelectorAll(`button${sel}`)].indexOf(btn);
+  anchor = { box, sel: `button${sel}`, i, top: btn.getBoundingClientRect().top, until: performance.now() + 3000 };
+}
+function keepAnchor() {
+  if (!anchor || performance.now() > anchor.until) { anchor = null; return; }
+  const el = anchor.box.querySelectorAll(anchor.sel)[anchor.i];
+  if (!el) return;
+  const d = el.getBoundingClientRect().top - anchor.top;
+  if (Math.abs(d) > 0.5) { anchorScrollAt = performance.now(); anchor.box.scrollTop += d; }
+}
+for (const box of [document.querySelector('aside'), empire]) box.addEventListener('scroll', () => { if (performance.now() - anchorScrollAt > 150) anchor = null; }, { passive: true });
 const panelBusy = () => panelHeld || touching || performance.now() - lastScroll < 800 || document.activeElement?.tagName === 'SELECT';
 // 中身が変わったときだけ書き換える (同じ HTML を入れ直すとレイアウトの計算が走って重い)
 function setHtml(el, html) {
@@ -7773,6 +7796,7 @@ function frame(now) {
     app.dirty = false;
     setHtmlKeepScroll(panel, helpify(app.view === 'system' && app.sel.body ? bodyPanel(app) : systemPanel(app)));
     if (SHEETS[app.view]) setHtmlKeepScroll(empire, helpify(SHEETS[app.view](app)));
+    keepAnchor();
   }
   requestAnimationFrame(frame);
 }
