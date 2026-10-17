@@ -5472,18 +5472,85 @@ class SystemView {
     this.ctx = canvas.getContext('2d');
     this.hit = [];
     this.hover = null;
-    canvas.addEventListener('pointermove', (e) => {
-      if (app.view !== 'system') return;
-      const r = canvas.getBoundingClientRect();
-      this.hover = this.pick(e.clientX - r.left, e.clientY - r.top);
-      canvas.style.cursor = this.hover ? 'pointer' : 'default';
+    // 視点: 倍率と、画面の中心からのずれ [px]。別の星系を開くと全体表示に戻る
+    this.cam = { zoom: 1, x: 0, y: 0 };
+    this.camSys = null;
+    this.w = this.h = 1;
+    this.bind();
+  }
+
+  // 画面上の点 (sx, sy) の下にあるものを動かさずに拡大・縮小する
+  zoomAt(factor, sx, sy) {
+    const c = this.cam, cx = this.w / 2 + c.x, cy = this.h / 2 + c.y;
+    const z = clamp(c.zoom * factor, 0.6, 40);
+    c.x = sx - this.w / 2 - ((sx - cx) * z) / c.zoom;
+    c.y = sy - this.h / 2 - ((sy - cy) * z) / c.zoom;
+    c.zoom = z;
+  }
+  fit() { this.cam = { zoom: 1, x: 0, y: 0 }; }
+
+  // マウス・タッチ共通: 1本指 (左ボタン) でドラッグ移動、2本指でピンチ、ホイールで拡大・縮小、タップで天体を選ぶ
+  bind() {
+    const c = this.canvas, app = this.app;
+    const pos = (e) => { const r = c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    const pts = new Map();
+    let pinch = null, drag = null;
+    c.addEventListener('pointerdown', (e) => {
+      if (app.view !== 'system' || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      pts.set(e.pointerId, pos(e));
+      try { c.setPointerCapture(e.pointerId); } catch { /* 合成されたイベントなど */ }
+      if (pts.size === 1) {
+        const [x, y] = pos(e);
+        drag = { x, y, cx: this.cam.x, cy: this.cam.y, moved: false };
+      } else if (pts.size === 2) {
+        const [a, b] = [...pts.values()];
+        pinch = { d: Math.max(1, Math.hypot(a[0] - b[0], a[1] - b[1])), zoom: this.cam.zoom, mx: (a[0] + b[0]) / 2, my: (a[1] + b[1]) / 2, x: this.cam.x, y: this.cam.y };
+        if (drag) drag.moved = true;
+      }
     });
-    canvas.addEventListener('click', (e) => {
+    c.addEventListener('pointermove', (e) => {
       if (app.view !== 'system') return;
-      const r = canvas.getBoundingClientRect();
-      const b = this.pick(e.clientX - r.left, e.clientY - r.top);
-      app.selectBody(b ? b.id : null);
+      const [x, y] = pos(e);
+      if (pts.has(e.pointerId)) pts.set(e.pointerId, [x, y]);
+      if (pinch && pts.size === 2) {
+        // ピンチを始めたとき指の中点の下にあった地点が、いまの中点の下に来るようにする (指に貼りついて動く)
+        const [a, b] = [...pts.values()];
+        const z = clamp((pinch.zoom * Math.hypot(a[0] - b[0], a[1] - b[1])) / pinch.d, 0.6, 40);
+        const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, k = z / pinch.zoom;
+        this.cam.x = mx - this.w / 2 - (pinch.mx - this.w / 2 - pinch.x) * k;
+        this.cam.y = my - this.h / 2 - (pinch.my - this.h / 2 - pinch.y) * k;
+        this.cam.zoom = z;
+        return;
+      }
+      if (drag && pts.has(e.pointerId)) {
+        const dx = x - drag.x, dy = y - drag.y;
+        if (Math.hypot(dx, dy) > 6) drag.moved = true;
+        if (drag.moved) { this.cam.x = drag.cx + dx; this.cam.y = drag.cy + dy; }
+      }
+      if (e.pointerType === 'mouse') {
+        this.hover = this.pick(x, y);
+        c.style.cursor = this.hover ? 'pointer' : drag?.moved ? 'grabbing' : 'default';
+      }
     });
+    const end = (e) => {
+      if (app.view !== 'system' || !pts.has(e.pointerId)) return;
+      const [x, y] = pos(e);
+      const wasPinch = pts.size > 1;
+      pts.delete(e.pointerId);
+      if (pts.size < 2) pinch = null;
+      // ピンチから1本指に戻ったら、残った指でそのままドラッグを続ける
+      if (wasPinch && pts.size === 1) { const [rx, ry] = [...pts.values()][0]; drag = { x: rx, y: ry, cx: this.cam.x, cy: this.cam.y, moved: true }; }
+      if (drag && !drag.moved && !wasPinch && e.type === 'pointerup') { const b = this.pick(x, y); app.selectBody(b ? b.id : null); }
+      if (pts.size === 0) drag = null;
+    };
+    c.addEventListener('pointerup', end);
+    c.addEventListener('pointercancel', end);
+    c.addEventListener('wheel', (e) => {
+      if (app.view !== 'system') return;
+      e.preventDefault();
+      const [x, y] = pos(e);
+      this.zoomAt(Math.exp(-e.deltaY * 0.0015), x, y);
+    }, { passive: false });
   }
 
   pick(x, y) {
@@ -5500,12 +5567,17 @@ class SystemView {
     const { ctx } = this;
     const game = this.app.game;
     const sys = game.system(this.app.sel.sys);
-    const cx = w / 2;
-    const cy = h / 2;
+    if (this.camSys !== sys.id) { this.camSys = sys.id; this.fit(); }
+    this.w = w; this.h = h;
+    const z = this.cam.zoom;
+    const cx = w / 2 + this.cam.x;
+    const cy = h / 2 + this.cam.y;
     const outer = Math.max(...sys.bodies.map((b) => b.a), ...sys.stars.map((s) => s.sep), 1);
     const aMax = outer * 1.15;
-    const rMax = Math.min(w, h) * 0.46;
-    const R = (a) => (a <= 0 ? 0 : 22 + ((rMax - 22) * Math.log(1 + a / A0)) / Math.log(1 + aMax / A0));
+    // 軌道半径は対数スケール。倍率をかけるのは位置だけで、天体の印や文字の大きさは変えない
+    const rBase = Math.min(w, h) * 0.46;
+    const rMax = rBase * z;
+    const R = (a) => (a <= 0 ? 0 : z * (22 + ((rBase - 22) * Math.log(1 + a / A0)) / Math.log(1 + aMax / A0)));
     const primary = sys.stars[0];
     this.hit = [];
 
@@ -7057,7 +7129,8 @@ const app = {
     document.body.classList.toggle('sheet-view', !!SHEETS[v]);
     if (v === 'events') this.seenTime = this.game.year;
     canvas.style.cursor = 'default';
-    $('zoom').hidden = v !== 'galaxy';
+    $('zoom').hidden = v !== 'galaxy' && v !== 'system';
+    $('vassalbtn').hidden = v !== 'galaxy';
     if (typeof renderFleetBar === 'function') renderFleetBar();
     $('legend').hidden = v !== 'galaxy';
     $('rail').hidden = !!SHEETS[v];
@@ -7113,9 +7186,11 @@ $('fleetbar').addEventListener('click', (e) => {
   else if (b.dataset.fa === 'orders') return clearFleetSelOrders();
   renderFleetBar();
 });
-$('zoom-in').onclick = () => galaxyView.zoomAt(1.5, w / 2, h / 2);
-$('zoom-out').onclick = () => galaxyView.zoomAt(1 / 1.5, w / 2, h / 2);
-$('zoom-fit').onclick = () => galaxyView.fit();
+// ＋・－・全体は、開いている地図 (星間マップか星系マップ) に効く
+const mapView = () => (app.view === 'system' ? systemView : galaxyView);
+$('zoom-in').onclick = () => mapView().zoomAt(1.5, w / 2, h / 2);
+$('zoom-out').onclick = () => mapView().zoomAt(1 / 1.5, w / 2, h / 2);
+$('zoom-fit').onclick = () => mapView().fit();
 // 従属マップの切り替え (家臣 → 主人の矢印)
 function updateVassalBtn() { $('vassalbtn').classList.toggle('on', app.mapMode === 'vassal'); }
 $('vassalbtn').onclick = () => {
@@ -7890,7 +7965,7 @@ function frame(now) {
   // 星図では、年が進んでも動くものが 0.25 ピクセル動くまでは描き直さない。いちばん速く見えるのは地球へ近づく船で、
   // 見かけの速さは光速の 20 倍 (0.95c で近づくとき 1/(1−0.95)) まで。星系図は惑星が回るので毎フレーム描く
   const yearMoved = app.view === 'galaxy' ? Math.abs(game.year - lastDrawYear) * 20 * cam.zoom >= 0.25 : game.year !== lastDrawYear;
-  const mapKey = `${app.view}|${w}|${h}|${cam.x}|${cam.y}|${cam.zoom}|${app.sel.sys}|${app.sel.body}|${app.fleetSel.size}|${app.fleetMove.size}|${app.signalMode}`;
+  const mapKey = `${app.view}|${w}|${h}|${cam.x}|${cam.y}|${cam.zoom}|${app.sel.sys}|${app.sel.body}|${app.fleetSel.size}|${app.fleetMove.size}|${app.signalMode}|${systemView.cam.x}|${systemView.cam.y}|${systemView.cam.zoom}`;
   if (app.dirty || yearMoved || mapKey !== lastMapKey || game !== lastMapGame || now < mapActiveUntil || now - (galaxyView.camMovedAt || 0) < 400 || galaxyView.animating || systemView.animating) {
     lastMapKey = mapKey; lastMapGame = game; lastDrawYear = game.year; galaxyView.animating = systemView.animating = false;
     const ctx = galaxyView.ctx;
