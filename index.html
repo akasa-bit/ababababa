@@ -273,6 +273,51 @@ details.help[open] > summary { margin-bottom:8px; }
 #legend { right:8px; bottom:8px; }
 #rail { max-height:calc(100% - 16px); }
 @media (max-width: 700px) { #fleetbar { top:auto; bottom:6px; } }
+
+/* 信号の模様: ボタンと数字の札の地に、下の縁を横へ流れる波形と走査線を敷き、表には走査の帯を通す。
+   文字はときどき (どれか1つずつ) 色ずれしてぶれる。「≡ → 画面の動き」で切れる。動きを減らす設定の端末では止める。
+   波形は合成だけで動かす (transform) ので、毎フレームの再計算を増やさない */
+:root { --fx-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40' preserveAspectRatio='none'%3E%3Cpath d='M0 20 Q15 4 30 20 T60 20 T90 20 T120 20' fill='none' stroke='%234de3d0' stroke-opacity='.6' stroke-width='1'/%3E%3Cpath d='M0 20 Q3.75 28 7.5 20 T15 20 T22.5 20 T30 20 T37.5 20 T45 20 T52.5 20 T60 20 T67.5 20 T75 20 T82.5 20 T90 20 T97.5 20 T105 20 T112.5 20 T120 20' fill='none' stroke='%238fb4ff' stroke-opacity='.4' stroke-width='.8'/%3E%3C/svg%3E"); --fx-scan: repeating-linear-gradient(0deg, rgba(143,180,255,.06) 0 1px, transparent 1px 3px); }
+:where(body.fx) :where(button, .stats > div, .kpi > div) { position:relative; isolation:isolate; overflow:hidden; }
+:where(body.fx) :where(button, .stats > div, .kpi > div)::after {
+  content:""; position:absolute; top:0; bottom:0; left:-120px; right:0; z-index:-1; pointer-events:none;
+  background:var(--fx-wave) repeat-x 0 calc(100% - 2px) / 120px 14px, var(--fx-scan);
+  opacity:.7; will-change:transform; animation:fx-wave 5s linear infinite;
+}
+:where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(3n+1)::after { animation-delay:-1.7s; animation-duration:6.5s; }
+:where(body.fx) :where(button, .stats > div, .kpi > div):nth-child(3n+2)::after { animation-delay:-3.3s; animation-duration:4s; }
+@keyframes fx-wave { to { transform:translateX(120px); } }
+:where(body.fx) table { position:relative; isolation:isolate; background-image:var(--fx-scan); }
+:where(body.fx) table::after {
+  content:""; position:absolute; left:0; right:0; top:-24px; height:24px; pointer-events:none; z-index:-1;
+  background:linear-gradient(180deg, transparent, rgba(77,227,208,.08) 60%, rgba(77,227,208,.16) 92%, transparent);
+  animation:fx-sweep 7s steps(70) infinite;
+}
+@keyframes fx-sweep { to { top:100%; } }
+:where(body.fx) th { background-image:var(--fx-wave); background-repeat:repeat-x; background-size:120px 10px; background-position:0 100%; }
+@keyframes fx-jit {
+  0% { text-shadow:-1.5px 0 rgba(255,107,107,.6), 1.5px 0 rgba(77,227,208,.6); }
+  20% { text-shadow:1px 0 rgba(255,107,107,.6), -1px 0 rgba(77,227,208,.6); }
+  40% { text-shadow:-2px 0 rgba(255,107,107,.45), 2px 0 rgba(77,227,208,.45), 0 0 3px rgba(227,233,243,.5); }
+  60% { text-shadow:none; }
+  80% { text-shadow:.8px 0 rgba(255,107,107,.55), -.8px 0 rgba(77,227,208,.55); }
+  100% { text-shadow:none; }
+}
+body.fx .jit { animation:fx-jit .5s steps(1) 1; }
+@media (prefers-reduced-motion: reduce) {
+  :where(body.fx) *, :where(body.fx) *::after { animation:none !important; }
+}
+/* 選択を外すボタン・何も選んでいないときの欄 */
+.syshead h2 { display:flex; align-items:center; gap:8px; }
+.syshead h2 .x { margin-left:auto; min-width:44px; min-height:44px; padding:0; font-size:var(--fs3); color:var(--muted); background:transparent; }
+.syshead.idle h2 { color:var(--muted); }
+.idle-h { margin:16px 0 8px; font-size:var(--fs3); }
+.flags.watch { list-style:none; padding:0; display:grid; gap:8px; }
+.flags.watch li { padding:0; }
+.flags.watch li button { width:100%; text-align:left; display:grid; gap:0; padding:8px; border-left:3px solid var(--dim); }
+.flags.watch li.enemy button { border-left-color:var(--enemy); }
+.flags.watch li.warn button { border-left-color:var(--warn); }
+.flags.watch small { color:var(--muted); font-size:var(--fs1); }
 </style>
 
   <header>
@@ -303,6 +348,7 @@ details.help[open] > summary { margin-bottom:8px; }
         <button id="savenow">セーブ</button>
         <button id="sigbtn" title="地図に光速の通信 (物資移送要求・指令・朝貢・送金) をどう描くか">通信: 表示しない</button>
         <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
+        <button id="fxbtn" title="ボタンや表に流れる信号の模様と、文字のぶれ">画面の動き: 入</button>
         <span id="savestat" class="muted"></span>
       </div>
     </div>
@@ -4485,7 +4531,11 @@ class GalaxyView {
       renderFleetBar();
       return;
     }
-    if (!s) { if (!e.shiftKey) { sel.clear(); mv.clear(); } app.fleetConfirm = null; renderFleetBar(); return; }
+    if (!s) {
+      // 何もないところ: 艦隊を選んでいればその選択を外し、なければ星系の選択を外す
+      if (!e.shiftKey) { if (hasFleetSelection()) { sel.clear(); mv.clear(); } else app.deselect(); }
+      app.fleetConfirm = null; renderFleetBar(); return;
+    }
     if (touch && hasFleetSelection() && !sel.has(s.id)) { orderFleets(s.id); return; }
     if (isOwnStack(app.game, s.id)) {
       if (e.shiftKey) { if (sel.has(s.id)) sel.delete(s.id); else sel.add(s.id); }
@@ -4568,7 +4618,7 @@ class GalaxyView {
     const camKey = `${this.cam.x},${this.cam.y},${this.cam.zoom}`;
     if (camKey !== this.lastCamKey) { this.lastCamKey = camKey; this.camMovedAt = performance.now(); }
     const game = this.app.game;
-    const sel = game.system(this.app.sel.sys);
+    const sel = game.system(this.app.sel.sys ?? 0);
     const z = this.cam.zoom;
 
     // 選択中の星からの距離リング
@@ -5451,18 +5501,11 @@ function sec(key, title, syn, html, cls = '') {
   const open = app.secOpen?.[key] ?? false;
   return `<details class="sec" data-sec="${key}" ${open ? 'open' : ''}><summary>${title}<span class="syn ${cls}">${syn}</span></summary>${html.replace(/^\s*<h3>[\s\S]*?<\/h3>/, '')}</details>`;
 }
-function sysHead(g, sys, k, cols) {
+// いまの状態 (色は意味: 赤 = 敵・危険、橙 = 警告、青 = 情報、緑 = 良い)
+function sysFlags(g, sys, k, cols) {
   const id = sys.id;
   const realm = id === 0 ? 0 : k?.realm ?? null;
-  const pop = cols.reduce((a, c) => a + c.pop, 0);
   const vassal = id !== 0 && k && k.lord !== null && k.lord !== undefined;
-  const owner = cols.length ? (realm === 0 ? '地球の国' : realm === id && k?.independent ? '独立国の首都' : `${g.system(realm).name} の国`) : '未入植';
-  const tiles = [];
-  if (cols.length) tiles.push(['人口', fmtPop(pop)]);
-  if (vassal && realm === 0) tiles.push(['忠誠度', `<span class="${(k.loyalty ?? LOYALTY_START) < UNREST_AT ? 'bad' : ''}">${Math.round(k.loyalty ?? LOYALTY_START)}</span>`]);
-  tiles.push(['艦隊', g.knownGarrison(id)]);
-  if (cols.length) tiles.push([id === 0 ? '収入/年' : '資金', id === 0 ? fmtAmt(g.income()) : fmtAmt(k?.credits || 0)]);
-  // いまの状態 (色は意味: 赤 = 敵・危険、橙 = 警告、青 = 情報、緑 = 良い)
   const flags = [];
   if (cols.length && realm !== null) {
     const enemies = g.knownEnemiesOf(realm);
@@ -5486,13 +5529,47 @@ function sysHead(g, sys, k, cols) {
   else if (short) flags.push(['warn', `工業品・原料の不足 (${short} か所)`]);
   const wars = k?.wars?.length || 0;
   if (wars) flags.push(['warn', `先住民との征服戦争 (${wars})`]);
+  return flags;
+}
+function sysHead(g, sys, k, cols) {
+  const id = sys.id;
+  const realm = id === 0 ? 0 : k?.realm ?? null;
+  const pop = cols.reduce((a, c) => a + c.pop, 0);
+  const vassal = id !== 0 && k && k.lord !== null && k.lord !== undefined;
+  const owner = cols.length ? (realm === 0 ? '地球の国' : realm === id && k?.independent ? '独立国の首都' : `${g.system(realm).name} の国`) : '未入植';
+  const tiles = [];
+  if (cols.length) tiles.push(['人口', fmtPop(pop)]);
+  const flags = sysFlags(g, sys, k, cols);
+  if (vassal && realm === 0) tiles.push(['忠誠度', `<span class="${(k.loyalty ?? LOYALTY_START) < UNREST_AT ? 'bad' : ''}">${Math.round(k.loyalty ?? LOYALTY_START)}</span>`]);
+  tiles.push(['艦隊', g.knownGarrison(id)]);
+  if (cols.length) tiles.push([id === 0 ? '収入/年' : '資金', id === 0 ? fmtAmt(g.income()) : fmtAmt(k?.credits || 0)]);
   const dot = cols.length ? `<span class="dot big" style="background:${realmColor(realm)}"></span>` : '';
-  return `<div class="syshead"><h2>${dot}${esc(sys.name)}</h2>
+  return `<div class="syshead"><h2>${dot}${esc(sys.name)}<button class="x" data-act="deselect" title="選択を外す (Esc・地図の何もないところを押しても外れる)" aria-label="選択を外す">✕</button></h2>
     <div class="meta"><span>${esc(owner)}</span><span>太陽系から ${distance(g.system(0), sys).toFixed(1)} ly</span>${ageBadge(g, id)}</div>
     <div class="stats">${tiles.map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join('')}</div>
     ${flags.length ? `<ul class="flags">${flags.map(([c, a, b]) => `<li class="${c}">${esc(a)}${b ? `<small>${esc(b)}</small>` : ''}</li>`).join('')}</ul>` : ''}</div>`;
 }
+// 何も選んでいないとき: 気にかけたい地球の国の星系 (危険・警告の印があるもの) を並べ、押すとそこへ飛ぶ
+function idlePanel(app) {
+  const g = app.game;
+  const rank = { enemy: 0, warn: 1 };
+  const rows = [];
+  for (const sys of g.realmSystems(0)) {
+    const k = g.known(sys.id);
+    const cols = g.knownColonies(sys.id);
+    const f = sysFlags(g, sys, k, cols).filter(([c]) => c in rank).sort((a, b) => rank[a[0]] - rank[b[0]]);
+    if (f.length) rows.push([rank[f[0][0]], sys, f]);
+  }
+  rows.sort((a, b) => a[0] - b[0] || distance(g.system(0), a[1]) - distance(g.system(0), b[1]));
+  const items = rows.slice(0, 8).map(([, sys, f]) => `<li class="${f[0][0]}"><button data-act="fly" data-sys="${sys.id}"><b>${esc(sys.name)}</b><small>${esc(f.map((x) => x[1]).join('・'))}</small></button></li>`).join('');
+  return `<div class="syshead idle"><h2>星系を選んでいません</h2>
+    <div class="meta"><span>地図の星を押すと、ここにその星系が出る</span></div></div>
+    <div class="acts"><button data-act="fly" data-sys="0">太陽系を選ぶ</button>${app.lastSys !== undefined && app.lastSys !== 0 && g.system(app.lastSys) ? `<button data-act="fly" data-sys="${app.lastSys}">${esc(g.system(app.lastSys).name)} に戻る</button>` : ''}</div>
+    <h3 class="idle-h">気にかけたい星系${rows.length ? ` (${rows.length})` : ''}</h3>
+    ${items ? `<ul class="flags watch">${items}</ul>${rows.length > 8 ? `<div class="muted">ほかに ${rows.length - 8} 星系</div>` : ''}` : '<p class="muted">いまは目立った問題のある星系はない</p>'}`;
+}
 function systemPanel(app) {
+  if (app.sel.sys === null) return idlePanel(app);
   const g = app.game;
   const sys = g.system(app.sel.sys);
   const id = sys.id;
@@ -6749,12 +6826,21 @@ const app = {
   dirty: true,
   selectSystem(id) {
     this.sel = { sys: id, body: null };
+    this.lastSys = id;
     this.routeDest = this.fleetOrigin = undefined;
     this.dirty = true;
   },
   openSystem(id) { this.selectSystem(id); this.setView('system'); },
+  // 星系の選択を外す (右の欄は「何も選んでいない」になる。星系マップを開いていれば星間マップへ戻る)
+  deselect() {
+    this.sel = { sys: null, body: null };
+    this.routeDest = this.fleetOrigin = undefined;
+    if (this.view === 'system') this.setView('galaxy');
+    this.dirty = true;
+  },
   selectBody(id) { this.sel.body = id; this.dirty = true; },
   setView(v) {
+    if (v === 'system' && this.sel.sys === null) this.selectSystem(this.lastSys ?? 0);
     if (v !== this.view && typeof PlayLog !== 'undefined') PlayLog.add('view', { v });
     this.view = v;
     for (const t of ['galaxy', 'system', 'empire', 'events', 'cands']) $(`tab-${t}`).classList.toggle('on', v === t);
@@ -7256,6 +7342,33 @@ $('sigbtn').onclick = () => {
   updateSigBtn();
 };
 updateSigBtn();
+// 画面の動き (信号の模様と文字のぶれ)。見る人ごとの好みなのでブラウザに覚えておく
+try { app.fx = localStorage.getItem('moribin-fx') !== 'off'; } catch { app.fx = true; }
+function updateFxBtn() { document.body.classList.toggle('fx', app.fx); $('fxbtn').textContent = `画面の動き: ${app.fx ? '入' : '切'}`; $('fxbtn').classList.toggle('on', app.fx); }
+$('fxbtn').onclick = () => {
+  app.fx = !app.fx;
+  PlayLog.add('ui', { act: 'fx', v: app.fx });
+  try { localStorage.setItem('moribin-fx', app.fx ? 'on' : 'off'); } catch { /* 保存できない環境では無視 */ }
+  updateFxBtn();
+// 文字のぶれ: 0.35秒ごとに、見えている文字のどれか1つ (ときどき2つ) を短くぶらす
+const FX_JIT = 'button, th, .stats b, .kpi b, #treasury .v, #date, #rail .t, .syshead h2';
+const fxReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+// ゲームの乱数 (Math.random) を使わない: 見た目のために試合の流れを変えないように
+let fxSeed = 7;
+const fxRand = () => (fxSeed = (fxSeed * 16807) % 2147483647) / 2147483647;
+setInterval(() => {
+  if (!app.fx || document.hidden || fxReduced?.matches) return;
+  const els = document.querySelectorAll(FX_JIT);
+  if (!els.length) return;
+  for (let n = fxRand() < 0.25 ? 2 : 1; n > 0; n--) {
+    const el = els[Math.floor(fxRand() * els.length)];
+    if (!el.checkVisibility?.() || el.classList.contains('jit')) continue;
+    el.classList.add('jit');
+    setTimeout(() => el.classList.remove('jit'), 520);
+  }
+}, 350);
+};
+updateFxBtn();
 function updateSpectateBtn() { $('spectatebtn').classList.toggle('on', !!app.game.spectate); }
 $('spectatebtn').onclick = () => { app.game.setSpectate(!app.game.spectate); PlayLog.add('ui', { act: 'spectate', v: app.game.spectate }); updateSpectateBtn(); app.dirty = true; };
 setInterval(save, 5000);
@@ -7334,6 +7447,7 @@ window.addEventListener('keydown', (e) => {
   else if (e.key === 's') app.setView('system');
   else if (e.key === 'e') app.setView('empire');
   else if ((e.key === 'Delete' || e.key === 'Backspace') && hasFleetSelection()) { clearFleetSelOrders(); e.preventDefault(); }
+  else if (e.key === 'Escape' && app.view === 'galaxy' && !hasFleetSelection() && app.sel.sys !== null) app.deselect();
   else if (e.key === 'Escape') { app.fleetSel.clear(); app.fleetMove.clear(); app.fleetConfirm = null; app.setView('galaxy'); renderFleetBar(); }
 });
 
@@ -7356,6 +7470,7 @@ function onPanelClick(e) {
   if (act === 'etab') { app.empireTab = btn.dataset.t; app.dirty = true; return; }
   if (act === 'evfilter') { app.eventFilter = btn.dataset.f; app.dirty = true; return; }
   // 知らせの帯
+  if (act === 'deselect') return app.deselect();
   if (act === 'fly') { const s = g.system(sys); if (s) { app.selectSystem(sys); app.setView('galaxy'); galaxyView.centerOn(s); } return; }
   if (act === 'ack' || act === 'ackall') {
     g.acked ??= [];
