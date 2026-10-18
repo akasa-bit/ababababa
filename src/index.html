@@ -541,8 +541,11 @@ const STORE = EDITION === 'sim' ? 'nlu-sim' : 'moribin';
 const brandHtml = () => `${GAME_NAME}${EDITION === 'sim' ? `<span class="ed">${EDITION_LABEL.sim}</span>` : ''}`;
 // 版ごとに違う値 (ここにあるものだけが違う)。根拠は docs/reality-check.md
 const EDITIONS = {
-  game: { generation: 100 },
-  sim: { generation: 28 },
+  // hazardBase = 離反のハザードの基準 [/年] (植民地の存続年数の中央値に合わせて自動対戦で決めた)、delayExp = 通信の遅れ ÷ 1 世代のべき指数 (Cox モデル)、
+  // regimeDelay = 統治体制ごとの遠さへの敏感さを使うか、garrisonWar = 艦隊が駐留していれば独立がかならず戦争になるか、growthCap = 人口の増え方の上限 [/年]、
+  // declareDamp = 最後通牒の期限に独立する確率を、友好度と忠誠度でも下げるか
+  game: { generation: 100, hazardBase: 0.6, delayExp: 0.33, regimeDelay: true, garrisonWar: true, growthCap: Infinity, declareDamp: true },
+  sim: { generation: 28, hazardBase: 1.3, delayExp: -0.15, regimeDelay: false, garrisonWar: false, growthCap: 0.042, declareDamp: false },
 };
 const ED = EDITIONS[EDITION];
 // シード付き乱数 (mulberry32)。同じシードなら同じ銀河が生成される。
@@ -689,7 +692,14 @@ const PLANETS_MEAN = { M: 3.2, K: 3.5, G: 3.5, F: 3, A: 2, B: 0.8, O: 0, WD: 1.2
 const eqTemp = (lum, a, albedo) => (278.6 * ((1 - albedo) * lum) ** 0.25) / Math.sqrt(a);
 
 const frostLine = (star) => (star.wd ? 3 : 2.7 * Math.sqrt(star.lum));
-const habitableZone = (star) => ({ inner: 0.95 * Math.sqrt(star.lum), outer: 1.37 * Math.sqrt(star.lum) });
+// 保守的なハビタブルゾーン (Kopparapu ほか 2014、地球質量): 内側 = 暴走温室、外側 = 最大温室。
+// 有効日射量 Seff = Seff☉ + aT + bT² + cT³ + dT⁴ (T = 表面温度 − 5780 K、2600〜7200 K で有効)。距離 = √(光度 ÷ Seff) [AU]
+const HZ_COEF = { inner: [1.107, 1.332e-4, 1.58e-8, -8.308e-12, -1.931e-15], outer: [0.356, 6.171e-5, 1.698e-9, -3.198e-12, -5.575e-16] };
+const hzSeff = (c, T) => c[0] + T * (c[1] + T * (c[2] + T * (c[3] + T * c[4])));
+const habitableZone = (star) => {
+  const T = clamp((star.temp || 5780) - 5780, 2600 - 5780, 7200 - 5780);
+  return { inner: Math.sqrt(star.lum / hzSeff(HZ_COEF.inner, T)), outer: Math.sqrt(star.lum / hzSeff(HZ_COEF.outer, T)) };
+};
 
 function pickType(rng, x) {
   const table =
@@ -953,7 +963,12 @@ function knownPlanet(rng, [plName, a, mass, radius], star) { // star = 惑星が
   if (type === 'rocky' || type === 'dwarf') { b.pressure = atmosphere(rng, b.mass, b.radius, eqTemp(star.lum, a, b.albedo)); b.water = rng.next() ** 1.5; }
   return b;
 }
-function generateRealGalaxy(seed) {
+// 実在の銀河の版。2: FGK 型の主星に、保守的なハビタブルゾーンの地球型惑星 (0.5〜1.5 地球半径) を確率 ETA_EXTRA で足す。
+// 版 1 の手続きの惑星だけでは、FGK 型星あたりの η⊕ が 0.21 で、観測 (Bryson ほか 2021: 0.37〜0.60、目標 R05) より少なかった。
+// 足す惑星は別の乱数列で作り、残りの記号を付けるので、ほかの惑星・資源・先住民は版 1 と同じ (古いセーブは版 1 のまま読む)
+const GALAXY_GEN = 2;
+const ETA_EXTRA = 0.45;
+function generateRealGalaxy(seed, gen = 1) {
   const rng = new Rng(hashSeed(`${seed}/real`));
   const namer = makeNamer(rng);
   const sol = makeSol();
@@ -982,15 +997,32 @@ function generateRealGalaxy(seed) {
       b.name = `${name} ${l}`;
       finalizeBody(b, b.host ? stars.find((x) => x.id === b.host) : primary);
     }
+    if (gen >= 2 && 'FGK'.includes(primary.cls) && /[^I]V$/.test(primary.label)) {
+      const er = new Rng(hashSeed(`${seed}/eta/${i}`));
+      const hz = habitableZone(primary);
+      const a = er.logUniform(hz.inner, hz.outer);
+      if (er.chance(ETA_EXTRA) && a <= maxA && bodies.every((b) => Math.abs(Math.log(b.a / a)) > Math.log(1.3))) {
+        const mass = er.logUniform(0.1, 4.5); // 0.5〜1.5 地球半径になる質量
+        const b = { type: 'rocky', a, phase: er.range(0, Math.PI * 2), mass, radius: mass < 1 ? mass ** 0.3 : mass ** 0.27, albedo: er.range(0.1, 0.45) };
+        b.pressure = atmosphere(er, b.mass, b.radius, eqTemp(primary.lum, a, b.albedo));
+        b.water = er.next() ** 1.5;
+        while (used.has(String.fromCharCode(letter))) letter++;
+        b.id = String.fromCharCode(letter);
+        b.name = `${name} ${b.id}`;
+        finalizeBody(b, primary);
+        bodies.push(b);
+        bodies.sort((p, q) => p.a - q.a);
+      }
+    }
     systems.push({ id: i + 1, name, cat, x, y, z, stars, bodies, real: true });
   });
-  const galaxy = { seed, kind: 'real', systems, radius: REAL_STARS.radius, slab: REAL_STARS.slab, meanSpacing: 4 };
+  const galaxy = { seed, kind: 'real', gen, systems, radius: REAL_STARS.radius, slab: REAL_STARS.slab, meanSpacing: 4 };
   addExtras(galaxy);
   return galaxy;
 }
 
-function generateGalaxy({ seed = 1, starCount = 400, meanSpacing = 4, kind = 'flat' } = {}) {
-  if (kind === 'real') return generateRealGalaxy(seed);
+function generateGalaxy({ seed = 1, starCount = 400, meanSpacing = 4, kind = 'flat', gen = 1 } = {}) {
+  if (kind === 'real') return generateRealGalaxy(seed, gen);
   const rng = new Rng(typeof seed === 'number' ? seed : hashSeed(seed));
   const pts = scatter(rng, starCount, meanSpacing);
   const namer = makeNamer(rng);
@@ -1326,6 +1358,8 @@ const HOME_DIST_RANGE = { any: [10, Infinity], near: [10, 25], mid: [25, 45], fa
 const NATION_COUNTS = [1, 4, 5, 6, 7, 8]; // 1 = 地球だけ (国家選択なし)
 const SHIP_COST = { planet: { credits: 300, goods: 100, fuel: 100 }, station: { credits: 150, goods: 50, fuel: 50 } };
 const SETTLERS = { planet: 0.2, station: 0.02 }; // 入植船が運ぶ人口[百万人]
+// 人口の増え方の最大 [/年]。フッター派の約 4.1% (Eaton & Mayer 1953) がほぼ人の生物学的な上限 (目標 R12)。シミュレーション版は種族の特性があっても 4.2% で頭打ち
+const POP_GROWTH = 0.04;
 const WARSHIP_COST = { credits: 150, metal: 100, fuel: 50, rare: 10 };
 const WARSHIP_UPKEEP = 5; // cr/年
 // 兵站: 1艦隊が1年に使う補給物資。駐留する星系 (攻撃中や入植していない星系なら、その国の最も近い星系) の備蓄から出す
@@ -1395,42 +1429,46 @@ const GOVERNOR = { ask: '地球の判断を仰ぐ', yield: '譲歩する', suppr
 const GOVERNOR_NOTE = { ask: '要求は光速で地球へ届き、返事も光速で戻る', yield: '要求をその場で認める (減税・自治)', suppress: 'その場で拒み、駐留の艦隊で威圧する (恐怖度 +25)', ignore: '返事をしない (10年後に拒んだとみなされる)' };
 // 統治体制 (家臣の星系ごとに主人が選ぶ)。hr = 離反の起きやすさ (ハザード) の倍率 (間接統治 = 1)、delay = 通信の遅れへの敏感さ、
 // tribute = 朝貢の割合、loyalty = 忠誠度の目標への効き、rank = 自治の度合い (下げると忠誠度が下がる)。
-// 数値は仮のもの (目標 R08 で、歴史の植民地の独立までの時間から推定し直す)。why = 向きの根拠
+// war = 独立が戦争になる確率 (ICOW の植民地の独立のうち暴力を伴ったものの割合)。why = 根拠。
+// 直接統治の hr と、直接統治・間接統治・エンコミエンダ制の war は歴史の実データから推定した値 (data/derived/history.json)。ほかの hr・delay は文献の向きに合わせた仮の値
 const REGIMES = {
-  direct: { label: '直接統治', hr: 0.8, delay: 1.6, tribute: 0.5, loyalty: 10, rank: 0,
-    note: '総督府が直接治める。指令にかならず従い、朝貢 50%・指令の政治力は半分。遠いほど離反しやすい (上限あり・年に政治力 1)',
-    why: 'Gerring ほか 2011・Lange 2009: 直接統治は治める費用が距離とともに増え、遠い領域ほど保ちにくい' },
-  indirect: { label: '間接統治', hr: 1, delay: 1, tribute: 0.25, loyalty: 0, rank: 1,
-    note: '現地の政府に治めさせ、委任方針に沿って自分で動かす。朝貢 25%',
-    why: '基準 (イギリスの植民地の間接統治。Lange 2009)' },
-  feudal: { label: '封建制', hr: 1.3, delay: 0.5, tribute: 0.15, loyalty: 0, rank: 2,
+  direct: { label: '直接統治', hr: 1.39, delay: 1.6, tribute: 0.5, loyalty: 10, rank: 0, war: 0.32,
+    note: '総督府が直接治める。指令にかならず従い、朝貢 50%・指令の政治力は半分。離反は間接統治の 1.4 倍、独立の 32% が戦争になる (上限あり・年に政治力 1)',
+    why: 'COLDAT の英仏の植民地 101 で推定: フランス (直接統治) はイギリス (間接統治) の 1.39 倍 (95% 信頼区間 0.84〜2.31) 独立しやすい。ICOW: フランスからの独立の 32% が暴力を伴った。直接統治・間接統治の区分は Lange 2009・Crowder 1964' },
+  indirect: { label: '間接統治', hr: 1, delay: 1, tribute: 0.25, loyalty: 0, rank: 1, war: 0.09,
+    note: '現地の政府に治めさせ、委任方針に沿って自分で動かす。朝貢 25%。独立の 9% が戦争になる',
+    why: '基準 (イギリスの植民地の間接統治。Lange 2009)。ICOW: イギリスからの独立 56 のうち暴力を伴ったのは 9%' },
+  feudal: { label: '封建制', hr: 1.3, delay: 0.5, tribute: 0.15, loyalty: 0, rank: 2, war: 0.31,
     note: '現地の領主に封じる。朝貢 15%。遠さが効きにくいが、もとから離れやすい',
     why: 'Seshat: 分権の強い国家ほど分裂しやすい。領主が現地で治めるので、本国との遠さは効きにくい' },
-  federal: { label: '連邦制', hr: 0.6, delay: 0.7, tribute: 0.1, loyalty: 5, rank: 3, refuseAt: 70,
+  federal: { label: '連邦制', hr: 0.6, delay: 0.7, tribute: 0.1, loyalty: 5, rank: 3, refuseAt: 70, war: 0.31,
     note: '連邦の一員として自治を認める。朝貢 10%。忠誠度が 70 未満だと指令を拒むことがある',
     why: 'Cederman ほか 2015・地域の権限の指標 (RAI): 早く自治を認めると分離の紛争が減る (分離を目指す政党は増える: Brancati 2006)' },
-  dominion: { label: '自治領', hr: 0.4, delay: 0.6, tribute: 0.05, loyalty: 10, rank: 4, noOrders: true, peaceful: true,
+  dominion: { label: '自治領', hr: 0.4, delay: 0.6, tribute: 0.05, loyalty: 10, rank: 4, noOrders: true, peaceful: true, war: 0,
     note: '指令は受けず、朝貢 5%。離反しにくく、独立するときも戦争にならない',
     why: 'ICOW: カナダ・オーストラリアなどの自治領は、交渉を重ねて段階的に、戦争なしで独立した' },
-  encomienda: { label: 'エンコミエンダ制', hr: 1.6, delay: 1, tribute: 0.4, loyalty: -10, rank: 0, mine: 1.3, growth: 0.7, forced: true,
-    note: '住民に労役を課す (強制労働)。採掘 +30%・朝貢 40%、人口の増え方 ×0.7・忠誠度の目標 −10。やめたあとも税収が最大 25% 減る後遺症が長く残る',
-    why: 'Dell 2010: ポトシのミタ制 (強制労働) の地域は、廃止から約 200 年後の 2001 年でも家計の消費が約 25% 低く、子どもの発育不良が約 6 ポイント多い。ミタの地域ではトゥパク・アマルの反乱 (1780 年) が起きた' },
+  encomienda: { label: 'エンコミエンダ制', hr: 1.6, delay: 1, tribute: 0.4, loyalty: -10, rank: 0, mine: 1.3, growth: 0.7, forced: true, war: 0.89,
+    note: '住民に労役を課す (強制労働)。採掘 +30%・朝貢 40%、人口の増え方 ×0.7・忠誠度の目標 −10。独立の 89% が戦争になる。やめたあとも税収が最大 25% 減る後遺症が長く残る',
+    why: 'Dell 2010: ポトシのミタ制 (強制労働) の地域は、廃止から約 200 年後の 2001 年でも家計の消費が約 25% 低く、子どもの発育不良が約 6 ポイント多い。ミタの地域ではトゥパク・アマルの反乱 (1780 年) が起きた。ICOW: スペインからの独立 9 のうち 8 が暴力を伴った' },
 };
 const REGIME_ORDER = ['direct', 'indirect', 'feudal', 'federal', 'dominion', 'encomienda'];
 const regimeKey = (gv) => (gv ? (gv.direct ? 'direct' : REGIMES[gv.regime] ? gv.regime : 'indirect') : 'indirect');
-// 離反の起きやすさ (年あたりのハザード) = 基準 × 統治体制の倍率 × exp(delay × 敏感さ × 通信の遅れ ÷ 1 世代) × 人口の比^pop × exp(loyalty × (loyaltyRef − 忠誠度))。
+// 離反の起きやすさ (年あたりのハザード) = 基準 × 統治体制の倍率 × ((通信の遅れ ÷ 1 世代) ÷ 歴史の中央値)^(べき指数 × 敏感さ) × 人口の比^pop × exp(loyalty × (loyaltyRef − 忠誠度))。
+// 遅れの項は、英仏の植民地の Cox モデル (説明変数: 本国・遅れ・植民の始まりの年) の係数 −0.15 (95% 信頼区間 −0.64〜0.33)。シミュレーション版は推定値そのもの、
+// ゲーム版は「遅れが長いほど離れやすい」遊びを残すため信頼区間の上端 0.33 を使う。delayRef = 帆船の時代の英仏の植民地の (知らせの片道の年数 ÷ 28 年) の中央値
 // 1 年に独立を求める動き (不満) が始まる確率は 1 − exp(−ハザード)。1 世代はゲーム版 100 年 (寿命が延びた設定)、シミュレーション版 28 年 (いまの人の世代の長さ)。通信の遅れを歴史の時間に対応させる
 const GENERATION_YEARS = ED.generation;
-const HAZARD = { base: 0.06, delay: 4, pop: 0.3, loyalty: 0.03, loyaltyRef: 50, revoke: 8 };
+const HAZARD = { delayRef: 0.00577, delayMin: 0.25, pop: 0.3, loyalty: 0.03, loyaltyRef: 50, revoke: 8 };
+const VIOLENT_SHARE = 0.31; // 植民地の独立のうち暴力を伴った割合 (ICOW の 128 件)
 // 強制労働の後遺症 (0〜1): 続けた年ごとに scarRate ずつ増え、やめたあとは年に ×scarKeep ずつ消える (半減に約 140 年)。税収 × (1 − scarTax × 後遺症)
 const FORCED = { scarRate: 0.02, scarKeep: 0.995, scarTax: 0.25 };
 function secessionTermsOf({ regime, delay, popRatio, loyalty }) {
   const r = REGIMES[regime] || REGIMES.indirect;
   const ratio = clamp(popRatio || 0, 0.01, 100);
   return [
-    { label: '基準', f: HAZARD.base, note: '年あたり' },
+    { label: '基準', f: ED.hazardBase, note: '年あたり' },
     { label: `統治体制 (${r.label})`, f: r.hr },
-    { label: '通信の遅れ ÷ 1 世代', f: Math.exp(HAZARD.delay * r.delay * delay / GENERATION_YEARS), note: `${delay.toFixed(0)} 年 ÷ ${GENERATION_YEARS} 年` },
+    { label: '通信の遅れ ÷ 1 世代', f: Math.max(HAZARD.delayMin, delay / GENERATION_YEARS / HAZARD.delayRef) ** (ED.delayExp * (ED.regimeDelay ? r.delay : 1)), note: `${delay.toFixed(0)} 年 ÷ ${GENERATION_YEARS} 年` },
     { label: '主人との人口の比', f: ratio ** HAZARD.pop, note: `${ratio < 1 ? ratio.toFixed(2) : ratio.toFixed(1)} 倍` },
     { label: '忠誠度', f: Math.exp(HAZARD.loyalty * (HAZARD.loyaltyRef - loyalty)), note: `${Math.round(loyalty)}` },
   ];
@@ -2246,7 +2284,8 @@ class Game {
   fearFactor(fear) { return 1 - 0.9 * clamp(fear || 0, 0, 100) / 100; }
   // 最後通牒の期限に独立を宣言する確率 = 恐怖度 × 友好度 × 忠誠度の倍率 (忠誠度100で半分)
   loyaltyFactor(loyalty) { return 1 - 0.5 * clamp(loyalty ?? LOYALTY_START, 0, 100) / 100; }
-  declareChance(k) { return this.fearFactor(k.fear) * this.friendFactor(k.friend) * this.loyaltyFactor(k.loyalty); }
+  // シミュレーション版は恐怖度だけで決める (忠誠度は離反のハザードにもう入っている。友好度 (貿易) が独立を妨げる大きさは測られていない)
+  declareChance(k) { return this.fearFactor(k.fear) * (ED.declareDamp ? this.friendFactor(k.friend) * this.loyaltyFactor(k.loyalty) : 1); }
   // 主人との友好度 (0〜100): 主人筋 (主人、その主人…首都まで) との貿易 (両方向。支援として無償で受け取った物資も含む) の大きさで上下する。
   // 目標 = 50 × log10(1 + 貿易額[cr/年、ここ5年ほどの平均] / 2) (5 cr/年で約27、10で約39、20で約52、50で約71、100で約85)。年に最大10ずつ目標へ動く。
   // 反乱の確率は友好度に比例して下がる (× (1 − FRIEND_DAMP × 友好度/100)。友好度100で 0.4 倍。経済の結びつきが強くても独立した植民地はある)
@@ -2387,7 +2426,8 @@ class Game {
     gv.fear = 0;
     gv.friend = 0;
     gv.unrest = { stage: 0 };
-    const peaceful = !!REGIMES[regimeKey(gv)].peaceful;
+    const reg = REGIMES[regimeKey(gv)];
+    const peaceful = !!reg.peaceful;
     delete gv.direct;
     delete gv.regime;
     for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
@@ -2401,7 +2441,8 @@ class Game {
     // 地球の国からの独立は、半々の確率で、また地球の艦隊が駐留していれば必ず、そのまま戦争 (独立戦争) になる
     const human = this.isHuman(formerRealm);
     const present = human && members.some((x) => this.earthFleetAt(x.id, formerRealm) >= 1);
-    const war = human && !peaceful && (present || this.rand() < 0.5); // 自治領は戦争なしで独立する
+    // 戦争になる確率は統治体制ごとの歴史の割合 (ICOW)。ゲーム版は艦隊が駐留していればかならず戦争になる。自治領は戦争なしで独立する
+    const war = human && !peaceful && ((ED.garrisonWar && present) || this.rand() < (reg.war ?? VIOLENT_SHARE));
     let raised = 0;
     const clashes = [];
     if (war) {
@@ -4688,7 +4729,7 @@ class Game {
       const life = Math.min(food, water);
       const n = c.kind === 'planet' ? this.nativeOf(c.sys, c.body) : null;
       const unrest = n && n.st.status !== 'integrated' && n.st.rel < -20 ? 0.02 : 0;
-      c.growth = 0.05 * this.modsOf(c.sys).growth * (REGIMES[regimeKey(this.govs[c.sys])].growth || 1) * (1 - c.pop / this.capOf(c)) * life * (0.5 + 0.5 * goods) * (c.plague > this.year ? 0.2 : 1) - 0.05 * (1 - life) - unrest;
+      c.growth = Math.min(ED.growthCap, POP_GROWTH * this.modsOf(c.sys).growth * (REGIMES[regimeKey(this.govs[c.sys])].growth || 1) * (1 - c.pop / this.capOf(c)) * life * (0.5 + 0.5 * goods) * (c.plague > this.year ? 0.2 : 1)) - 0.05 * (1 - life) - unrest;
       c.pop = Math.max(0.001, c.pop * (1 + c.growth * h));
       this.earn('tax', (BASE_TAX[c.kind] + 0.08 * c.pop * (0.5 + 0.5 * goods)) * h, c.sys);
     }
@@ -8271,8 +8312,8 @@ const app = {
 };
 
 // kind: 'real' = 実在の星の 3 次元の銀河 (新しいゲーム)、'flat' = 以前の平面の銀河 (古いセーブ)
-function newGame(seed, kind = 'real') {
-  const galaxy = generateGalaxy({ seed, starCount: 400, meanSpacing: 4, kind });
+function newGame(seed, kind = 'real', gen = GALAXY_GEN) {
+  const galaxy = generateGalaxy({ seed, starCount: 400, meanSpacing: 4, kind, gen });
   app.game = new Game(galaxy);
   app.sel = { sys: 0, body: null };
   try { const q = new URLSearchParams(location.search); q.set('seed', seed); history.replaceState(null, '', `?${q}`); } catch { /* 埋め込み環境では無視 */ }
@@ -8419,7 +8460,7 @@ function saveMeta(d) {
 }
 function buildSave(game, extra = {}) {
   return {
-    v: 2, seed: game.galaxy.seed, ...(game.galaxy.kind === 'real' ? { galaxy: 'real' } : {}), rs: game.rs, players: game.players, pi: game.pi,
+    v: 2, seed: game.galaxy.seed, ...(game.galaxy.kind === 'real' ? { galaxy: 'real' } : {}), ...(game.galaxy.gen > 1 ? { gen: game.galaxy.gen } : {}), rs: game.rs, players: game.players, pi: game.pi,
     ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
@@ -8602,7 +8643,7 @@ function playLogHtml() {
 // セーブデータを読み込んで現在のゲームに反映する。失敗時は現在の状態を保つ。
 function loadSave(d) {
   const prev = app.game;
-  newGame(d.seed, d.galaxy === 'real' ? 'real' : 'flat');
+  newGame(d.seed, d.galaxy === 'real' ? 'real' : 'flat', d.gen || 1);
   if (app.game.restore(d)) {
     app.speed = SPEEDS.includes(d.speed) ? d.speed : 1;
     updateSpeedButtons();
@@ -8827,7 +8868,7 @@ function rebuildNations(edit) {
   const defs = old.nations.map(({ mods, ...n }) => JSON.parse(JSON.stringify(n)));
   edit(defs);
   const cam = { ...galaxyView.cam };
-  newGame(old.galaxy.seed, old.galaxy.kind || 'flat');
+  newGame(old.galaxy.seed, old.galaxy.kind || 'flat', old.galaxy.gen || 1);
   const g = app.game;
   g.endYear = old.endYear;
   g.challenges = old.challenges;

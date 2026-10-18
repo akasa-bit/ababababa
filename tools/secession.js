@@ -1,11 +1,11 @@
 // 離反の自動対戦: 国家選択のある試合 (N か国) を、プレイヤーの国も AI に任せて Y 年進め、
 // 主従の結びつき (家臣の星系 → 主人) ごとに、始まった年・統治体制・首都との距離・不満が始まった回数・終わった年と終わり方を記録する。
 // 生存時間の分析 (Kaplan–Meier・Cox モデル) で、歴史の実データ (目標 R08・R09) と形を比べるための材料。ゲームの結果は変えない
-// 使い方: node secession.js <html の絶対パス> <outdir> <年数> <シード(カンマ区切り)> [国の数]
+// 使い方: node secession.js <html の絶対パス> <outdir> <年数> <シード(カンマ区切り)> [国の数] [版ごとの値を差し替える JSON (例: '{"hazardBase":0.1}')]
 const { chromium } = require('playwright');
 const fs = require('fs');
 (async () => {
-  const [html, outdir, yearsS, seedsS, nS = '6'] = process.argv.slice(2);
+  const [html, outdir, yearsS, seedsS, nS = '6', setS = '{}'] = process.argv.slice(2);
   fs.mkdirSync(outdir, { recursive: true });
   const b = await chromium.launch({ ...(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {}), args: ['--no-sandbox'] });
   for (const seed of seedsS.split(',')) {
@@ -17,7 +17,8 @@ const fs = require('fs');
     await p.goto(`file://${html}?seed=${seed}&home=0`);
     await p.waitForFunction(() => window.__app && __app.game);
     const t0 = Date.now();
-    const res = await p.evaluate(([seed, years, n]) => {
+    const res = await p.evaluate(([seed, years, n, set]) => {
+      if (typeof ED !== 'undefined') Object.assign(ED, set); // 較正のために版ごとの値を差し替える
       newGame(String(seed));
       const g = __app.game; __app.speed = 0;
       if (n > 1) { g.foundNations(n); g.setPlayerNation(g.nations[1].cap); }
@@ -47,8 +48,8 @@ const fs = require('fs');
       };
       for (let y = 0; y < years; y++) { g.advance(1); scan(); }
       for (const id of [...ties.keys()]) close(id, 'censored');
-      return { seed, years, nations: n, ties: done.map(({ inUnrest, ...x }) => x) };
-    }, [seed, Number(yearsS), Number(nS)]);
+      return { seed, years, nations: n, edition: typeof EDITION === 'undefined' ? null : EDITION, set, ties: done.map(({ inUnrest, ...x }) => x) };
+    }, [seed, Number(yearsS), Number(nS), JSON.parse(setS)]);
     res.errs = errs.slice(0, 5); res.secs = Math.round((Date.now() - t0) / 1000);
     fs.writeFileSync(out, JSON.stringify(res));
     console.log(`${seed}: 結びつき ${res.ties.length}・独立 ${res.ties.filter((t) => t.how === 'independence').length}・${res.secs} 秒${errs.length ? `・誤り ${errs[0]}` : ''}`);
