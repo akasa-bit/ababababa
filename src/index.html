@@ -63,6 +63,24 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #home[hidden] { display:none; }
 #pick { position:fixed; z-index:15; left:12px; top:var(--pick-top,140px); width:min(380px,calc(100% - 24px)); max-height:calc(100% - 88px); overflow:auto; background:rgba(10,14,24,.93); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
 #pick[hidden] { display:none; }
+#pick .nat { position:relative; }
+#pick .hm { position:absolute; right:8px; top:6px; margin:0; min-height:32px; padding:2px 10px; font-size:12px; }
+#pick .hm.on { border-color:var(--accent); color:var(--accent); }
+#pick .go button + button { margin-top:6px; }
+#curtain { position:fixed; inset:0; z-index:40; background:#05070d; display:flex; align-items:center; justify-content:center; padding:16px; }
+#curtain[hidden] { display:none; }
+#netbox { position:fixed; inset:0; z-index:35; background:rgba(5,7,13,.94); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
+#netbox[hidden] { display:none; }
+#netbox .card { width:min(620px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 22px; }
+#netbox textarea { width:100%; font:11px monospace; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; margin:6px 0; padding:6px; word-break:break-all; }
+#netbox section { border-top:1px solid var(--line); margin-top:10px; padding-top:6px; }
+#netbox .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+#toast { position:fixed; z-index:45; left:50%; bottom:24px; transform:translateX(-50%); background:var(--panel); border:1px solid var(--accent); border-radius:8px; padding:10px 16px; max-width:calc(100% - 32px); font-size:14px; }
+#toast[hidden] { display:none; }
+#curtain .card { width:min(460px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:22px 24px; text-align:center; }
+#curtain h2 { font-size:24px; margin-bottom:8px; }
+#curtain .big { width:100%; min-height:48px; margin-top:14px; font-size:17px; }
+#turnbtn small { font-size:11px; opacity:.8; margin-left:4px; }
 #pick h2 { font-size:18px; margin:0 0 4px; }
 #pick .nat { border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-top:8px; cursor:pointer; font-size:13px; }
 #pick .nat.on { border-color:var(--accent); background:rgba(120,170,255,.08); }
@@ -415,6 +433,7 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
         <button data-speed="6" title="1秒で64年">64年</button>
       </div>
       <button id="skipbtn" title="速く進め、知らせ (重大・普通の出来事、決めること) が届いたら止める (最長100年)" aria-label="次の知らせまで進む">⏭</button>
+      <button id="turnbtn" hidden title="次の人間のプレイヤーに交代する (ホットシート)">交代</button>
       <button id="memobtn" title="いま感じたことを、その時点のゲームの状態と一緒に記録する (プレイ記録。ホーム画面で見られる)">メモ</button>
       <button id="menubtn" aria-label="メニュー" aria-expanded="false">≡</button>
       <div id="menu" hidden>
@@ -470,6 +489,8 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
   </main>
   <div id="home" hidden></div>
   <div id="pick" hidden></div>
+  <div id="curtain" hidden></div>
+  <div id="netbox" hidden></div>
   <div id="endbox" hidden></div>
   <div id="memobox" hidden>
     <div class="tags"><button data-tag="bored">退屈</button><button data-tag="confused">分からない</button><button data-tag="torn">迷う</button><button data-tag="fun">面白い</button></div>
@@ -1212,7 +1233,7 @@ const PC_CAP = 100;
 const PC_START = 30;
 const PC_BASE = 6; // 年あたりの基本の政治力
 const pcCostOf = (d) => Math.max(1, Math.round(2 + 0.15 * d)); // 距離 d 光年の星系への指令に要る政治力
-const PC_FREE_ACTS = new Set(['fleet', 'redirect', 'fleetclear', 'rally', 'troopsrally']);
+const PC_FREE_ACTS = new Set(['fleet', 'redirect', 'fleetclear', 'rally', 'troopsrally', 'set', 'sendredirect', 'sendclear', 'drop']);
 const PC_DIPLOMACY = 10; // 宣戦・講和の申し入れ
 // 直轄: 地球の直属の従属星系のうち、地球が直接治める星系。星系政府は自分では開発・入植・交易路の開設をせず、地球の指令をかならず実行する。
 // 指令の政治力は半分、朝貢は50%、忠誠度の目標 +10。1星系あたり年 DIRECT_UPKEEP の政治力を使う。直轄でない星系は委任 (委任方針に沿って自分で動く)
@@ -1379,6 +1400,7 @@ class Game {
     // this.pc などは「いま操作しているプレイヤー (pi 番目)」の値を読み書きする (PLAYER_KEYS)
     this.players = [{ cap: 0, human: true }];
     this.pi = 0;
+    this.stackOwner = {}; // 入植していない星系に駐留する艦隊の持ち主の国 { [sysId]: 首都 } (ないときは地球の国)
     this.nations = null; // 国家選択のある試合の国 [{ cap, body, species, traits, name }] (null なら地球だけの従来の試合)
     this.handicap = 'normal';
     this.year = START_YEAR;
@@ -1522,13 +1544,18 @@ class Game {
     }
   }
   // プレイヤー (1 人目) の国を決める。地球でなければ地球は AI の国になる
-  setPlayerNation(cap) {
-    if (!this.nationOf(cap)) return fail('国がない');
-    this.players[0].cap = cap;
+  setPlayerNation(cap) { return this.setPlayers([cap]); }
+  // 人間が動かす国を決める (ホットシート・ネット対戦では複数)。どのプレイヤーも 1 人目の初期値 (挑戦など) を写して始める
+  setPlayers(caps) {
+    if (!caps.length || caps.some((c) => !this.nationOf(c))) return fail('国がない');
+    const base = JSON.parse(JSON.stringify(this.players[0]));
+    this.players = caps.map((cap) => ({ ...JSON.parse(JSON.stringify(base)), cap, human: true }));
+    this.pi = 0;
     for (const n of this.nations) this.gov(n.cap).independent = true; // どの国の首都も独立国 (人間が動かす国も含めて)
     this.live = null; this.ksCache = null;
     return { ok: true };
   }
+  humans() { return this.players.filter((p) => p.human); }
   // 25 光年以内の星系と距離の一覧 (番号の小さい順)。星系は動かないので銀河ごとに一度だけ作る (入植先探しの範囲は最大 25 光年)
   nearSystems(id) {
     let m = NEAR_SYS.get(this.galaxy);
@@ -1628,6 +1655,15 @@ class Game {
     while (this.govs[cur] && this.govs[cur].lord !== null && this.govs[cur].lord !== undefined && !seen.has(cur)) { seen.add(cur); cur = this.govs[cur].lord; }
     return cur;
   }
+  // 星系に駐留する艦隊の持ち主の国 (入植星系ならその国、入植していない星系なら stackOwner)
+  // いま操作しているプレイヤーから見て、その星系の艦隊が自国のものか (届いている情報で)
+  ownStackKnown(id) {
+    if (id === this.cap) return true;
+    const k = this.known(id);
+    return (k?.cols.length ? k.realm ?? this.cap : k?.stack ?? 0) === this.cap;
+  }
+  stackRealm(id) { return this.isColonized(id) ? this.realmOf(id) : this.stackOwner[id] ?? 0; }
+  setStackOwner(id, realm) { if (realm) this.stackOwner[id] = realm; else delete this.stackOwner[id]; }
   realmSystems(root) { return this.colonizedSystems().filter((x) => this.realmOf(x.id) === root); }
   // 星系 x の政府が、相手の星系 other の国と交戦中だと知っているか (開戦の知らせが光速で x に届いたか)。交易をやめるのはそれから
   // 終戦後も、終戦の知らせが光速で x に届くまでは取引をやめたまま
@@ -2293,8 +2329,28 @@ class Game {
   // 艦隊の到着。自国なら駐留 (戦闘中なら防衛に加わる)、交戦中の国の星系なら艦隊戦か攻囲になる
   fleetArrives(f) {
     const owner = f.owner ?? 0;
-    const destRealm = this.isColonized(f.to) ? this.realmOf(f.to) : owner;
     const name = this.system(f.to).name;
+    // 入植していない星系に他国の艦隊がいる: 交戦中なら艦隊戦 (一度に解く)、そうでなければ引き返す
+    if (!this.isColonized(f.to) && (this.garrison[f.to] || 0) > 0 && this.stackRealm(f.to) !== owner) {
+      const other = this.stackRealm(f.to);
+      if (!this.atWar(owner, other)) {
+        this.fleets.push({ ...f, id: this.nextShipId++, from: f.to, to: f.from, depart: this.year, arrive: this.year + this.fleetYears(f.to, f.from), surprise: false, route: undefined });
+        this.message(`${f.n} 艦隊は ${name} に${this.realmName(other)}の艦隊がいるので引き返した`, f.to);
+        return;
+      }
+      const a = f.n * this.modsOf(owner).fleet, d = (this.garrison[f.to] || 0) * this.modsOf(other).fleet;
+      const win = a > d;
+      const left = Math.floor(Math.sqrt(Math.abs(a * a - d * d)) / this.modsOf(win ? owner : other).fleet);
+      this.garrison[f.to] = left;
+      if (win) this.setStackOwner(f.to, owner);
+      this.event('battle', f.to, `${name} で${this.realmName(owner)}の ${f.n} 艦隊と${this.realmName(other)}の艦隊が戦い、${this.realmName(win ? owner : other)}が勝った (残り ${left} 艦隊)`, this.isHuman(owner) || this.isHuman(other));
+      if (!win || left < 1) return;
+      this.held[f.to] = left;
+      this.continueRoute(f.to, left, f.route, f.chain ?? f.id);
+      return;
+    }
+    if (!this.isColonized(f.to)) this.setStackOwner(f.to, owner);
+    const destRealm = this.isColonized(f.to) ? this.realmOf(f.to) : owner;
     const b = this.battleAt(f.to);
     if (destRealm === owner) {
       if (b && b.realm !== owner) { b.d += f.n; b.d0 += f.n; this.message(`${f.n} 艦隊が ${name} の艦隊戦に防衛側で加わった`, f.to); return; }
@@ -3030,7 +3086,7 @@ class Game {
     const years = this.fleetYears(from, to);
     // 自動防衛配備 (prefix つき) 以外で送った艦隊は、着いた先に命令で駐留する (自動防衛配備で動かさない)
     // 交戦中でない他国の星系へ送った艦隊は奇襲攻撃になる (着いた時点で戦争を始める)
-    const owner = this.realmOf(from);
+    const owner = this.stackRealm(from);
     const dest = this.isColonized(to) ? this.realmOf(to) : owner;
     const surprise = dest !== owner && !this.atWar(owner, dest);
     this.fleets.push({ id: this.nextShipId++, from, to, n, owner, start: this.year, depart: this.year, arrive: this.year + years, auto: !!prefix, surprise, route: route?.length ? [...route] : undefined, chain });
@@ -3374,7 +3430,7 @@ class Game {
     // 地球に届いている情報 (光の遅れぶん昔の様子) で判断し、太陽系以外の艦隊は光速の指令で動かす。
     // 送った指令は届くまで数え、同じ指令を重ねない
     const C = this.cap;
-    const realmK = (id) => (id === C ? C : this.known(id)?.cols.length ? this.known(id).realm ?? C : null);
+    const realmK = (id) => (id === C ? C : this.known(id)?.cols.length ? this.known(id).realm ?? C : (this.known(id)?.stack ?? 0) === C ? null : -1);
     const pop = (id) => this.knownColonies(id).reduce((k, c) => k + c.pop, 0);
     const orders = this.requests.filter((q) => q.kind === 'order' && q.act === 'fleet');
     const orderedTo = (id) => orders.filter((q) => Number(q.d.sys) === id).reduce((k, q) => k + (Number(q.d.n) || 0), 0);
@@ -3504,7 +3560,7 @@ class Game {
   }
 
   rally(to) {
-    const from = Object.keys(this.garrison).map(Number).filter((id) => id !== to && this.garrison[id] > 0);
+    const from = Object.keys(this.garrison).map(Number).filter((id) => id !== to && this.garrison[id] > 0 && this.stackRealm(id) === this.cap);
     if (!from.length) return fail('集められる艦隊がない');
     for (const id of from) this.sendFleet(id, to, this.garrison[id]);
     return { ok: true };
@@ -3959,6 +4015,7 @@ class Game {
       if (q.kind !== 'order' || q.arrive > this.year) continue;
       const pi = this.playerOf(q.by ?? 0); // 指令を出したプレイヤー (古い指令は地球)
       if (pi < 0) continue;
+      if (this.players.length > 1) this.msgTo = pi;
       this.asPlayer(pi, () => {
       // 艦隊は地球の国の軍なので、その星系の政府の忠誠度に関係なく命令に従う。要求への返事と視察はかならず受け取る
       const ob = ['peace', 'fleet', 'redirect', 'fleetclear', 'decide', 'inspect'].includes(q.act) ? { ok: true } : this.obeys(q.to);
@@ -3967,6 +4024,7 @@ class Game {
       if (ob.ok && !['fleet', 'redirect', 'fleetclear', 'peace'].includes(q.act)) this.attend(q.to);
       this.message(r.ok ? `指令「${q.label}」が ${this.system(q.to).name} に届き、実行された` : `指令「${q.label}」は ${this.system(q.to).name} で実行できなかった: ${r.reason}`, q.to);
       });
+      this.msgTo = undefined;
     }
     this.requests = this.requests.filter((q) => !['build', 'tribute', 'order', 'grant'].includes(q.kind) || q.arrive > this.year);
     const done = this.projects.filter((j) => j.ready <= this.year);
@@ -4287,13 +4345,14 @@ class Game {
       delete this.realmWars[k]; delete this.warBy[k]; delete this.warNews[k];
     }
     if (obj(d.held)) this.held = d.held;
+    if (obj(d.stackOwner)) this.stackOwner = Object.fromEntries(Object.entries(d.stackOwner).filter(([k, v]) => sysOk(Number(k)) && Number.isInteger(v)));
     if (obj(d.awe)) this.awe = d.awe;
     if (Array.isArray(d.sieges)) this.sieges = d.sieges.filter((g) => g && sysOk(g.sys));
     if (Array.isArray(d.battles)) this.battles = d.battles.filter((b) => b && sysOk(b.sys) && Number.isFinite(b.a) && Number.isFinite(b.d));
     // 記録のない星系 (旧セーブ) は、いまの様子が光の遅れぶん前に見えたものとして始める
     // (人間のプレイヤーの首都は記録しない。プレイヤーの一覧はこのあとで読むので、セーブの値を見る)
     const humanCaps = Array.isArray(d.players) && d.players.some((p) => p?.human && sysOk(p.cap)) ? d.players.filter((p) => p?.human).map((p) => p.cap) : [0];
-    for (const sx of this.colonizedSystems()) {
+    for (const sx of d.v >= 2 ? [] : this.colonizedSystems()) { // 新しいセーブには、記録のない星系はそのまま (読み込みで状態を変えない)
       if (humanCaps.every((c) => c === sx.id) || this.snaps[sx.id]?.length) continue;
       this.snaps[sx.id] = [{ ...this.snapshot(sx.id), year: this.year - this.lightDelay(sx.id) }];
     }
@@ -4398,7 +4457,7 @@ class Game {
   seenOf(e) { return e.sys === undefined || e.sys === null ? e.seen ?? e.year : e.year + this.lightDelay(e.sys); }
   knownEvents() {
     if (this.spectate) return this.events.filter((e) => e.year <= this.year).sort((a, b) => b.year - a.year);
-    if (this.cap !== 0) return this.events.map((e) => ({ ...e, seen: this.seenOf(e) })).filter((e) => e.seen <= this.year).sort((a, b) => b.seen - a.seen);
+    if (this.cap !== 0 || this.players.length > 1) return this.events.map((e) => ({ ...e, seen: this.seenOf(e) })).filter((e) => e.seen <= this.year).sort((a, b) => b.seen - a.seen);
     return this.events.filter((e) => (e.seen ?? e.year) <= this.year).sort((a, b) => (b.seen ?? b.year) - (a.seen ?? a.year));
   }
   // 充足率などの悪化と回復を見張る (ばたつかないよう 93% 未満で発生、99% 以上で解消)。
@@ -4425,13 +4484,18 @@ class Game {
     }
   }
 
+  // msgTo: 人間が複数いるとき、そのプレイヤーだけに見せる記録 (命令の結果など) の宛先
   message(text, sys, kind) {
-    this.log.unshift({ year: this.year, seen: this.year + this.lightDelay(sys), text, ...(kind ? { kind } : {}), ...(sys !== undefined && sys !== null ? { sys } : {}) });
+    this.log.unshift({ year: this.year, seen: this.year + this.lightDelay(sys), text, ...(kind ? { kind } : {}), ...(sys !== undefined && sys !== null ? { sys } : {}), ...(this.msgTo !== undefined ? { p: this.msgTo } : {}) });
     this.log.length = Math.min(this.log.length, 120);
   }
   knownLog() {
+    if (this.players.length > 1) return this.knownLogRaw().filter((l) => l.p === undefined || l.p === this.pi);
+    return this.knownLogRaw();
+  }
+  knownLogRaw() {
     if (this.spectate) return this.log.filter((l) => l.year <= this.year).sort((a, b) => b.year - a.year);
-    if (this.cap !== 0) return this.log.map((l) => ({ ...l, seen: this.seenOf(l) })).filter((l) => l.seen <= this.year).sort((a, b) => b.seen - a.seen);
+    if (this.cap !== 0 || this.players.length > 1) return this.log.map((l) => ({ ...l, seen: this.seenOf(l) })).filter((l) => l.seen <= this.year).sort((a, b) => b.seen - a.seen);
     return this.log.filter((l) => (l.seen ?? l.year) <= this.year).sort((a, b) => (b.seen ?? b.year) - (a.seen ?? a.year));
   }
 
@@ -4441,6 +4505,7 @@ class Game {
     const fl = this.flow[id];
     return {
       year: this.year,
+      ...(this.stackOwner[id] !== undefined && !this.isColonized(id) ? { stack: this.stackOwner[id] } : {}),
       cols: this.coloniesIn(id).map((c) => ({
         key: colKey(c), name: c.name, kind: c.kind, body: c.body, pop: c.pop, cap: this.capOf(c), growth: c.growth || 0,
         sat: c.sat ? { ...c.sat } : null, focus: c.focus, lv: { ...c.lv }, troops: c.troops, slaveTroops: c.slaveTroops,
@@ -4626,11 +4691,50 @@ class Game {
     // 政治力: 足りなければ送れない。送れたら払う
     const pc = this.pcCost(act, d);
     if (pc > this.pc + 1e-9) return fail(`政治力が足りない (${pc} 必要、いま ${Math.floor(this.pc)})`);
-    const r = this.commandRaw(act, d);
-    if (r?.ok && pc) this.pc -= pc;
-    return r;
+    const old = this.msgTo;
+    if (this.players.length > 1) this.msgTo = this.pi;
+    try {
+      const r = this.commandRaw(act, d);
+      if (r?.ok && pc) this.pc -= pc;
+      return r;
+    } finally { this.msgTo = old; }
+  }
+  // 設定の切り替え (自動化など)。ネット対戦ではすべての端末で同じ時点に変わるように、これも命令として扱う
+  setSetting(d) {
+    const v = d.value;
+    if (d.key === 'auto') {
+      const id = Number(d.sys);
+      if (!this.isColonized(id) || this.realmOf(id) !== this.cap) return fail(`${this.realmName(this.cap)}の星系だけ`);
+      this.auto[id] = !!v;
+      return { ok: true, msg: `${this.system(id).name} の自動開発を${v ? 'オン' : 'オフ'}にした` };
+    }
+    if (d.key === 'acked') { this.acked = [...new Set([...(this.acked || []), ...(v || []).map(Number)])].slice(-300); return { ok: true }; }
+    const SET = {
+      warThreshold: (x) => `戦争方針を「${(WAR_POLICIES.find(([y]) => y === x) || [0, x])[1]}」にした`,
+      autoHabitat: (x) => `過密時の居住区の自動拡張を${x ? 'オン' : 'オフ'}にした`,
+      autoRoutes: (x) => `混んだ交易路の自動拡張を${x ? 'オン' : 'オフ'}にした`,
+      migration: (x) => `恒星間移民を${x ? '許可' : '停止'}した`,
+      autoGrant: () => '', autoBuild: () => '',
+      autoAwe: (x) => `反乱防止のための威圧を${x ? 'オン' : 'オフ'}にした`,
+      autoDefense: (x) => `自動防衛配備を${x ? 'オン' : 'オフ'}にした`,
+    };
+    if (!SET[d.key]) return fail('設定がない');
+    const x = d.key === 'warThreshold' ? Number(v) : !!v;
+    this[d.key] = x;
+    if (d.key === 'autoAwe' && x) this.aweYearly();
+    if (d.key === 'autoDefense' && x) this.autoDefend();
+    return { ok: true, msg: SET[d.key](x) };
   }
   commandRaw(act, d) {
+    if (act === 'set') return this.setSetting(d);
+    if (act === 'drop') { this.players[this.pi].human = false; return { ok: true }; } // ネット対戦で接続が切れた国は AI に任せる
+    if (act === 'fleet' && !this.ownStackKnown(Number(d.from))) return fail('他国の艦隊には命令できない');
+    // 移動中の艦隊への進路変更・指令の取り消し (光速の指令が追いついた地点で効く)
+    if (act === 'sendredirect' || act === 'sendclear') {
+      const f = this.fleets.find((x) => x.id === Number(d.fleet));
+      if (!f || (f.owner ?? 0) !== this.cap) return fail('自国の艦隊ではない');
+      return act === 'sendclear' ? this.sendFleetClear(f) : this.sendRedirect(f, Number(d.sys), d.route || []);
+    }
     if (act === 'declarewar') return this.declareWar(Number(d.sys));
     if (act === 'policy') return this.setPolicy(d.value);
     if (act === 'grant') {
@@ -4650,7 +4754,7 @@ class Game {
     }
     // 集結は、それぞれの出発地への指令に分ける
     if (act === 'rally') {
-      const from = Object.keys(this.garrison).map(Number).filter((id) => id !== d.sys && this.garrison[id] > 0);
+      const from = Object.keys(this.garrison).map(Number).filter((id) => id !== d.sys && this.garrison[id] > 0 && this.stackRealm(id) === this.cap);
       if (!from.length) return fail('集められる艦隊がない');
       for (const id of from) this.command('fleet', { from: id, sys: d.sys, n: 'all' });
       return { ok: true };
@@ -4683,7 +4787,7 @@ class Game {
       case 'warship': return this.buildWarship(sys, Number(d.n) || 1);
       case 'fleet': {
         const from = Number(d.from);
-        if (this.isColonized(from) && this.realmOf(from) !== this.cap) return fail('他国の星系の艦隊には命令できない');
+        if (this.stackRealm(from) !== this.cap) return fail('他国の艦隊には命令できない');
         if (d.aweBack) { // 威圧の艦隊の引き揚げ: 威圧の分だけを動かす (命令で駐留している分はそのまま)
           const k = Math.min(n, this.awe[from] || 0, this.garrison[from] || 0);
           if (k < 1) return fail('威圧の艦隊がいない');
@@ -6498,9 +6602,7 @@ function realmFleetKind(g, realm) { return realm === g.cap ? 'own' : g.knownAtWa
 // 地球の艦隊が (地球に届いている情報で) 駐留している星系か: 地球の国の星系か、入植していない星系
 function isOwnStack(g, id) {
   if (g.knownGarrison(id) < 1) return false;
-  if (id === g.cap) return true;
-  const k = g.known(id);
-  return !k || !k.cols.length || (k.realm ?? g.cap) === g.cap;
+  return g.ownStackKnown(id);
 }
 // 交戦中でない他国の星系 (送ると奇襲攻撃になる)
 function isSurpriseTarget(g, id) {
@@ -6530,17 +6632,16 @@ function orderFleets(target) {
   for (const id of ids) {
     const have = g.knownGarrison(id);
     const n = app.fleetAmount === 'all' ? 'all' : app.fleetAmount === 'half' ? Math.max(1, Math.floor(have / 2)) : 1;
-    if (g.command('fleet', { from: id, sys: first, n, route: rest.length ? rest : undefined }).ok) sent++;
+    if (issue('fleet', { from: id, sys: first, n, route: rest.length ? rest : undefined }).ok) sent++;
   }
   // 移動中の艦隊: 光速の指令が追いついた地点から進路を変える。地球にはまだ移動中に見えていても実はもう着いていれば、着いた星系から送り直す
   for (const id of moving) {
     const f = g.fleets.find((x) => x.id === id);
     const ghost = f ? null : g.ghosts.fleets.find((x) => x.id === id);
-    if (f && g.sendRedirect(f, first, rest).ok) sent++;
-    else if (ghost && g.command('fleet', { from: ghost.to, sys: first, n: ghost.n, route: rest.length ? rest : undefined }).ok) sent++;
+    if (f && issue('sendredirect', { fleet: f.id, sys: first, route: rest }).ok) sent++;
+    else if (ghost && issue('fleet', { from: ghost.to, sys: first, n: ghost.n, route: rest.length ? rest : undefined }).ok) sent++;
   }
-  g.message(`${sent} 件の艦隊に ${route.map((id) => g.system(id).name).join(' → ')} への移動を命じた`);
-  g.live = null;
+  uiNote(`${sent} 件の艦隊に ${route.map((id) => g.system(id).name).join(' → ')} への移動を命じた`);
   app.fleetSel.clear();
   app.fleetMove.clear();
   app.fleetConfirm = null;
@@ -6554,16 +6655,15 @@ function clearFleetSelOrders() {
   const g = app.game;
   PlayLog.add('fleetclear', { from: [...app.fleetSel], moving: app.fleetMove.size });
   let sent = 0;
-  for (const id of app.fleetSel) if (g.command('fleetclear', { sys: id }).ok) sent++;
+  for (const id of app.fleetSel) if (issue('fleetclear', { sys: id }).ok) sent++;
   for (const id of app.fleetMove) {
     const f = g.fleets.find((x) => x.id === id);
     const ghost = f ? null : g.ghosts.fleets.find((x) => x.id === id);
-    if (f && g.sendFleetClear(f).ok) sent++;
-    else if (ghost && g.command('fleetclear', { sys: ghost.to }).ok) sent++;
+    if (f && issue('sendclear', { fleet: f.id }).ok) sent++;
+    else if (ghost && issue('fleetclear', { sys: ghost.to }).ok) sent++;
   }
   if (!sent) return;
-  g.message(`${sent} 件の艦隊に、指令の取り消しを送った`);
-  g.live = null;
+  uiNote(`${sent} 件の艦隊に、指令の取り消しを送った`);
   app.fleetSel.clear();
   app.fleetMove.clear();
   app.fleetConfirm = null;
@@ -7519,7 +7619,7 @@ const app = {
   fleetConfirm: null, // 奇襲攻撃の確認待ちの行き先
   dirty: true,
   selectSystem(id) {
-    if (this.picking && this.game.nationOf(id)) { this.picking.cap = id; renderPick(); }
+    if (this.picking && this.game.nationOf(id)) { pickFocus(id); renderPick(); }
     this.sel = { sys: id, body: null };
     this.lastSys = id;
     this.routeDest = this.fleetOrigin = undefined;
@@ -7685,7 +7785,7 @@ function saveMeta(d) {
 function buildSave(game, extra = {}) {
   return {
     v: 2, seed: game.galaxy.seed, rs: game.rs, players: game.players, pi: game.pi,
-    ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
+    ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, warBy: game.warBy, warNews: game.warNews, peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
@@ -7834,7 +7934,7 @@ async function saveMemo() {
     for (const c of PlayLog.all()) for (const e of c.entries) if (e.snap === k) e.snap = null;
   }
   PlayLog.persist();
-  app.game.message(`メモを記録した${tag ? ` (${MEMO_TAGS[tag]})` : ''}`);
+  uiNote(`メモを記録した${tag ? ` (${MEMO_TAGS[tag]})` : ''}`);
 }
 function exportPlayLog() {
   const sessions = PlayLog.all().map((c) => ({ ...c, summary: PlayLog.summary(c) }));
@@ -7883,7 +7983,7 @@ function save() {
   $('savestat').textContent = ok ? `自動セーブ済み ${app.game.year.toFixed(1)}年` : 'セーブできなかった (保存容量が足りないか、この環境では保存できない)';
 }
 
-$('savenow').onclick = () => { save(); PlayLog.add('ui', { act: 'savenow' }); app.game.message('セーブした。'); };
+$('savenow').onclick = () => { save(); PlayLog.add('ui', { act: 'savenow' }); uiNote('セーブした。'); };
 function exportSave() {
   const blob = new Blob([saveJSON(app.game, { speed: app.speed })], { type: 'application/json' });
   const a = document.createElement('a');
@@ -7938,6 +8038,9 @@ function homeHtml() {
       <p class="note">いまのゲームは、スロットにセーブしておかないと新しいゲームで上書きされる (自動セーブは1つだけ)。</p>
       <p class="note">観戦モード: 光の遅れなしに実際の様子 (船の実際の位置・各星系のいまの状態) を見られ、${ME.gov}も自動で入植・開発・防衛・戦争をする。ゲーム中でも上の「観戦」ボタンで切り替えられる。</p>
     </section>
+    <section><h3>ネット対戦</h3>
+      <div class="row"><div class="info">別の端末の人と、サーバーなしでつないで遊ぶ。ホストは国家選択で「＋人間」を 2 つ以上にして「ネット対戦」を選ぶ (いまのゲームに人間が 2 人以上いれば、ここからもホストになれる)。参加する人は、ホストの招待コードを貼る。</div>
+        ${app.game.humans().length > 1 ? '<button data-home="nethost">ホストになる</button>' : ''}<button data-home="netjoin">参加する</button></div></section>
     <section><h3>セーブスロット</h3>${slots}</section>
     <section><h3>ファイル</h3><div class="row"><button data-home="export">ファイルに書き出し</button><button data-home="import">ファイルから読み込み</button></div></section>
     ${playLogHtml()}
@@ -7952,7 +8055,9 @@ function nationCard(g, n) {
   const crowd = others.filter((o) => o.d < 25).length;
   const stars = clamp((n.cap === 0 ? 1 : 2) + (near && near.d < 18 ? 1 : 0) + (crowd >= 2 ? 1 : 0), 1, 3);
   const home = g.target(n.cap, n.body)?.name || g.system(n.cap).name;
+  const hm = app.picking.humans.includes(n.cap);
   return `<div class="nat ${app.picking.cap === n.cap ? 'on' : ''}" data-pick="${n.cap}">
+    <button class="hm ${hm ? 'on' : ''}" data-human="${n.cap}" title="人間が動かす国にする (2つ以上でホットシート・ネット対戦)">${hm ? '人間 ✓' : '＋人間'}</button>
     <span class="dot" style="background:${realmColor(n.cap)}"></span> <b class="nm">${esc(n.name)}</b> <span class="muted">首都 ${esc(home)} (${esc(g.system(n.cap).name)})</span><br>
     ${ico('pop')}人口 ${fmtPop(cols.reduce((a, c) => a + c.pop, 0))}・${ico('colony')}星系 ${g.realmSystems(n.cap).length}・種族 ${esc(n.species)}<br>
     ${n.traits.map((t) => `<span class="tr" title="${esc(SPECIES_TRAITS[t].desc)}">${SPECIES_TRAITS[t].label}</span>`).join('')}
@@ -7962,9 +8067,12 @@ function nationCard(g, n) {
 }
 function renderPick() {
   const g = app.game;
-  $('pick').innerHTML = `<h2>国家選択</h2><p class="muted" style="font-size:12px">カードか地図の首都を押して国を選ぶ。選ばなかった国は AI が動かす。難易度: <b>${HANDICAP[g.handicap].label}</b></p>
+  const hs = app.picking.humans;
+  $('pick').innerHTML = `<h2>国家選択</h2><p class="muted" style="font-size:12px">カードか地図の首都を押して国を選ぶ。「＋人間」で人間の国を増やすと、ホットシート (1 台を交代で使う) かネット対戦で遊べる。選ばなかった国は AI が動かす。難易度: <b>${HANDICAP[g.handicap].label}</b></p>
     ${g.nations.map((n) => nationCard(g, n)).join('')}
-    <div class="go"><button class="big" data-pick="go">${esc(g.nationOf(app.picking.cap).name)}ではじめる</button></div>`;
+    <div class="go">${hs.length > 1
+    ? `<button class="big" data-pick="go">人間 ${hs.length} 人・交代で遊ぶ</button><button class="big" data-pick="net">人間 ${hs.length} 人・ネット対戦</button>`
+    : `<button class="big" data-pick="go">${esc(g.nationOf(hs[0]).name)}ではじめる</button>`}</div>`;
 }
 // 首都を、地図のうちパネルに隠れていない部分の真ん中に出す
 function centerPick(sys) {
@@ -7974,8 +8082,13 @@ function centerPick(sys) {
   if (p.bottom >= c.bottom - 20 && p.top > c.top + 40) galaxyView.cam.y += (c.bottom - p.top) / 2 / z; // 下に重なる (縦長の画面)
   else galaxyView.cam.x -= Math.max(0, p.right - c.left) / 2 / z; // 左に重なる
 }
+// 国を選ぶ (カード・地図の首都)。人間の国が 1 つだけのうちは、選んだ国がそのまま人間の国になる
+function pickFocus(cap) {
+  app.picking.cap = cap;
+  if (app.picking.humans.length <= 1) app.picking.humans = [cap];
+}
 function openPick() {
-  app.picking = { cap: 0 };
+  app.picking = { cap: 0, humans: [0] };
   $('home').hidden = true;
   app.homeOpen = false;
   app.speed = 0; updateSpeedButtons();
@@ -7987,23 +8100,34 @@ function openPick() {
   $('pick').hidden = false;
 }
 $('pick').onclick = (e) => {
+  const g = app.game;
+  const hb = e.target.closest('[data-human]');
+  if (hb) {
+    const c = Number(hb.dataset.human);
+    const hs = app.picking.humans;
+    if (hs.includes(c)) { if (hs.length > 1) hs.splice(hs.indexOf(c), 1); } else hs.push(c);
+    return renderPick();
+  }
   const el = e.target.closest('[data-pick]');
   if (!el) return;
-  const g = app.game;
-  if (el.dataset.pick === 'go') {
-    const cap = app.picking.cap;
-    g.setPlayerNation(cap);
+  if (el.dataset.pick === 'go' || el.dataset.pick === 'net') {
+    const caps = g.nations.map((n) => n.cap).filter((c) => app.picking.humans.includes(c)); // 国の順
+    g.setPlayers(caps);
+    g.pi = Math.max(0, caps.indexOf(app.picking.cap));
     app.picking = null;
     $('pick').hidden = true;
-    app.selectSystem(cap);
-    galaxyView.centerOn(g.system(cap));
-    PlayLog.add('home', { act: 'nation', cap });
-    if (cap !== 0) g.message(`${g.nationOf(cap).name}として歩みはじめた。首都は ${g.system(cap).name}。`);
+    PlayLog.add('home', { act: 'nation', caps });
+    for (let i = 0; i < caps.length; i++) if (caps[i] !== 0) g.asPlayer(i, () => { if (caps.length > 1) g.msgTo = i; g.message(`${g.nationOf(caps[i]).name}として歩みはじめた。首都は ${g.system(caps[i]).name}。`); g.msgTo = undefined; });
+    app.selectSystem(g.cap);
+    galaxyView.centerOn(g.system(g.cap));
     save();
-    return closeHome(1);
+    if (el.dataset.pick === 'net') { closeHome(1); setSpeed(0); return Net.openHost(); }
+    closeHome(1);
+    if (caps.length > 1) showCurtain(g.pi, false);
+    return;
   }
   const cap = Number(el.dataset.pick);
-  app.picking.cap = cap;
+  pickFocus(cap);
   app.selectSystem(cap);
   renderPick();
   centerPick(g.system(cap));
@@ -8036,6 +8160,45 @@ function openHome() {
   renderHome();
   $('home').hidden = false;
 }
+// --- ホットシート (1 台を交代で使う) ---
+// 交代のときは時間を止め、画面を幕で隠してから次のプレイヤーの視点に切り替える。自動で交代する間隔 (ゲームの年) も選べる
+function isHotseat() { return app.game.humans().length > 1 && !(Net.on); }
+function updateTurnBtn() {
+  const on = isHotseat();
+  $('turnbtn').hidden = !on;
+  if (on) setHtml($('turnbtn'), `交代<small>${esc(ME.realm)}</small>`);
+}
+function nextTurn(auto) {
+  const g = app.game;
+  const hs = g.players.map((p, i) => (p.human ? i : -1)).filter((i) => i >= 0);
+  showCurtain(hs[(hs.indexOf(g.pi) + 1) % hs.length], auto);
+}
+function showCurtain(pi, auto) {
+  const g = app.game;
+  setSpeed(0);
+  g.pi = pi;
+  app.fleetSel.clear(); app.fleetMove.clear(); app.fleetConfirm = null; renderFleetBar();
+  app.setView('galaxy');
+  app.selectSystem(g.cap);
+  galaxyView.centerOn(g.system(g.cap));
+  app.turnStart = g.year;
+  lastTickYear = NaN;
+  PlayLog.add('ui', { act: 'turn', pi });
+  $('curtain').innerHTML = `<div class="card"><h2>${esc(ME.realm)}の番</h2>
+    <p>${auto ? `${app.turnEvery} 年たったので交代。` : ''}ほかの人は画面から目を離してください。</p>
+    <p class="muted">西暦 ${Math.floor(g.year)}年・${esc(ME.species)}・首都 ${esc(g.system(g.cap).name)}</p>
+    <label>自動で交代 <select id="turnevery">${[0, 1, 5, 10, 25].map((y) => `<option value="${y}" ${y === (app.turnEvery || 0) ? 'selected' : ''}>${y ? `${y} 年ごと` : 'しない (「交代」ボタンで)'}</option>`).join('')}</select></label>
+    <button class="big" id="turngo">はじめる</button></div>`;
+  $('curtain').hidden = false;
+  $('turngo').onclick = () => {
+    app.turnEvery = Number($('turnevery').value);
+    app.turnStart = g.year;
+    $('curtain').hidden = true;
+    updateTurnBtn();
+    app.dirty = true;
+  };
+}
+$('turnbtn').onclick = () => nextTurn(false);
 function closeHome(speed) {
   $('home').hidden = true;
   app.homeOpen = false;
@@ -8043,9 +8206,10 @@ function closeHome(speed) {
   app.speed = SPEEDS.includes(speed) && speed ? speed : app.homeSpeed || 1;
   updateSpeedButtons();
   updateSpectateBtn();
+  updateTurnBtn();
   app.dirty = true;
 }
-$('homebtn').onclick = () => { setMenu(false); openHome(); }; // メニューを閉じてから (開いたままだと出典の文がホーム画面のボタンに重なる)
+$('homebtn').onclick = () => { setMenu(false); if (Net.on) return Net.render(); openHome(); }; // メニューを閉じてから (開いたままだと出典の文がホーム画面のボタンに重なる)
 $('home').onclick = (e) => {
   const b = e.target.closest('button[data-home]');
   if (!b) return;
@@ -8081,6 +8245,8 @@ $('home').onclick = (e) => {
     return;
   }
   if (act === 'resume') return closeHome();
+  if (act === 'nethost') { closeHome(0); setSpeed(0); return Net.openHost(); }
+  if (act === 'netjoin') { closeHome(0); setSpeed(0); Net.role = null; return Net.render(); }
   if (act === 'new') {
     if (!confirm2('new')) return;
     newGame(app.homeSeed || String(Math.floor(Math.random() * 1e6)));
@@ -8167,7 +8333,8 @@ setInterval(() => {
 };
 updateFxBtn();
 function updateSpectateBtn() { $('spectatebtn').classList.toggle('on', !!app.game.spectate); }
-$('spectatebtn').onclick = () => { app.game.setSpectate(!app.game.spectate); PlayLog.add('ui', { act: 'spectate', v: app.game.spectate }); updateSpectateBtn(); app.dirty = true; };
+$('spectatebtn').onclick = () => {
+  if (app.game.humans().length > 1) return uiNote('人間が複数いる試合では観戦モードは使えない'); app.game.setSpectate(!app.game.spectate); PlayLog.add('ui', { act: 'spectate', v: app.game.spectate }); updateSpectateBtn(); app.dirty = true; };
 setInterval(save, 5000);
 setInterval(() => PlayLog.persist(), 30000);
 window.addEventListener('pagehide', () => { save(); PlayLog.persist(); });
@@ -8184,6 +8351,7 @@ $('memoclose').onclick = closeMemo;
 $('memosave').onclick = saveMemo;
 document.querySelectorAll('#memobox [data-tag]').forEach((b) => { b.onclick = () => { const on = !b.classList.contains('on'); document.querySelectorAll('#memobox [data-tag]').forEach((x) => x.classList.remove('on')); b.classList.toggle('on', on); }; });
 const setSpeed = (v, keepSkip = false) => {
+  if (Net.on && Net.role === 'guest') { if (v !== app.speed) Net.send(Net.peers[0], { t: 'speed', v }); return; } // 速さはホストが決める
   if (app.speed) app.lastSpeed = app.speed;
   if (v !== app.speed) PlayLog.add('speed', { v });
   if (!keepSkip) app.skip = null;
@@ -8209,7 +8377,7 @@ function checkSkip() {
   if (!news && g.year - app.skip.from < 100) return;
   const from = app.skip.from;
   setSpeed(0);
-  g.message(news ? `知らせが届いたので止めた (${(g.year - from).toFixed(1)} 年進めた)` : '100年進めたので止めた');
+  uiNote(news ? `知らせが届いたので止めた (${(g.year - from).toFixed(1)} 年進めた)` : '100年進めたので止めた');
   app.dirty = true;
 }
 $('skipbtn').onclick = () => (app.skip ? setSpeed(0) : startSkip());
@@ -8252,6 +8420,295 @@ window.addEventListener('keydown', (e) => {
   else if (e.key === 'Escape') { app.fleetSel.clear(); app.fleetMove.clear(); app.fleetConfirm = null; app.setView('galaxy'); renderFleetBar(); }
 });
 
+// --- ネット対戦 (WebRTC。サーバーを置かず、招待コードと返事コードを手で渡し合ってつなぐ) ---
+// ロックステップ: 時間を進めるのはホストだけ。ホストは 1 コマごとに「そのコマで実行する命令と、進める年数」を全員に送り、
+// どの端末も同じ順に「命令を実行 → advance(年数)」をくり返す。試合の乱数もシードから続く 1 本なので、全員が同じ結果になる。
+// ずれを見つけるため、ときどき状態の要約 (ハッシュ) を添える。合わなければ、ホストの状態をまるごと受け取って合わせ直す
+const NET_ICE = [{ urls: 'stun:stun.l.google.com:19302' }];
+const NET_CHUNK = 60000; // データチャネルの 1 通の大きさの上限より小さく切って送る
+const NET_HASH_EVERY = 120; // 何コマごとに状態の要約を添えるか
+const Net = {
+  on: false, role: null, pi: 0, k: 0,
+  peers: [], // ホスト: 参加者ごとの { pi, pc, dc, state, offer }。参加者: ホストへの 1 本
+  queue: [], inbox: [], parts: {}, resyncs: 0, status: '',
+  async pack(o) {
+    const t = JSON.stringify(o);
+    if (typeof CompressionStream === 'undefined') return `J${btoa(unescape(encodeURIComponent(t)))}`;
+    const buf = await new Response(new Blob([t]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer();
+    let bin = '';
+    for (const b of new Uint8Array(buf)) bin += String.fromCharCode(b);
+    return `Z${btoa(bin)}`;
+  },
+  async unpack(code) {
+    const c = code.replace(/\s+/g, '');
+    if (c[0] === 'J') return JSON.parse(decodeURIComponent(escape(atob(c.slice(1)))));
+    const bytes = Uint8Array.from(atob(c.slice(1)), (ch) => ch.charCodeAt(0));
+    return JSON.parse(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text());
+  },
+  // 候補 (ICE) が出そろうまで待つ (STUN に届かない環境でも先へ進めるように、最長 4 秒)
+  iceDone(pc) {
+    return new Promise((res) => {
+      if (pc.iceGatheringState === 'complete') return res();
+      const t = setTimeout(res, 4000);
+      pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); res(); } });
+    });
+  },
+  send(peer, o) {
+    if (!peer.dc || peer.dc.readyState !== 'open') return;
+    const t = JSON.stringify(o);
+    if (t.length <= NET_CHUNK) return peer.dc.send(t);
+    const id = Math.random().toString(36).slice(2);
+    const n = Math.ceil(t.length / NET_CHUNK);
+    for (let i = 0; i < n; i++) peer.dc.send(JSON.stringify({ t: 'part', id, i, n, s: t.slice(i * NET_CHUNK, (i + 1) * NET_CHUNK) }));
+  },
+  wire(peer, dc) {
+    peer.dc = dc;
+    dc.onopen = () => { peer.state = 'つながった'; this.render(); };
+    dc.onclose = () => this.lost(peer);
+    dc.onmessage = (e) => {
+      let m = JSON.parse(e.data);
+      if (m.t === 'part') {
+        const p = (this.parts[m.id] ??= []);
+        p[m.i] = m.s;
+        if (p.filter((x) => x !== undefined).length < m.n) return;
+        delete this.parts[m.id];
+        m = JSON.parse(p.join(''));
+      }
+      this.receive(peer, m);
+    };
+  },
+  // --- ホスト ---
+  openHost() {
+    const g = app.game;
+    this.role = 'host';
+    this.pi = g.pi;
+    this.peers = g.players.map((p, i) => ({ pi: i, cap: p.cap })).filter((p, i) => g.players[i].human && i !== this.pi).map((p) => ({ ...p, state: 'まだ' }));
+    this.render();
+  },
+  async makeOffer(peer) {
+    peer.pc?.close();
+    const pc = new RTCPeerConnection({ iceServers: NET_ICE });
+    peer.pc = pc;
+    this.wire(peer, pc.createDataChannel('moribin', { ordered: true }));
+    await pc.setLocalDescription(await pc.createOffer());
+    await this.iceDone(pc);
+    peer.offer = await this.pack({ t: 'o', sdp: pc.localDescription.sdp, pi: peer.pi, cap: peer.cap });
+    peer.state = '招待コードを渡して、返事を待っている';
+    this.render();
+  },
+  async takeAnswer(peer, code) {
+    try {
+      const d = await this.unpack(code);
+      if (d.t !== 'a') throw new Error();
+      await peer.pc.setRemoteDescription({ type: 'answer', sdp: d.sdp });
+      peer.state = 'つないでいる…';
+    } catch { peer.state = '返事コードが読めなかった'; }
+    this.render();
+  },
+  start() {
+    const g = app.game;
+    // つながらなかった国は AI に任せる
+    for (const p of this.peers) if (p.dc?.readyState !== 'open') g.players[p.pi].human = false;
+    this.peers = this.peers.filter((p) => p.dc?.readyState === 'open');
+    this.on = true;
+    this.k = 0;
+    for (const p of this.peers) this.sendState(p);
+    $('netbox').hidden = true;
+    uiNote(`ネット対戦を始めた (${this.peers.length + 1} 人)。速さはホストが決める`);
+    setSpeed(SPEEDS[1]);
+    app.dirty = true;
+  },
+  sendState(peer) { this.send(peer, { t: 'init', pi: peer.pi, k: this.k, save: buildSave(app.game) }); },
+  // --- 参加者 ---
+  async join(code) {
+    let d;
+    try { d = await this.unpack(code); if (d.t !== 'o') throw new Error(); } catch { this.status = '招待コードが読めなかった'; return this.render(); }
+    this.role = 'guest';
+    this.pi = d.pi;
+    const peer = { pi: 0, state: 'つないでいる…' };
+    this.peers = [peer];
+    const pc = new RTCPeerConnection({ iceServers: NET_ICE });
+    peer.pc = pc;
+    pc.ondatachannel = (e) => this.wire(peer, e.channel);
+    await pc.setRemoteDescription({ type: 'offer', sdp: d.sdp });
+    await pc.setLocalDescription(await pc.createAnswer());
+    await this.iceDone(pc);
+    peer.answer = await this.pack({ t: 'a', sdp: pc.localDescription.sdp });
+    this.status = '返事コードをホストに渡してください。つながったら、ホストが始めるのを待つ';
+    this.render();
+  },
+  // --- 通信 ---
+  receive(peer, m) {
+    if (this.role === 'host') {
+      if (m.t === 'c') this.queue.push({ p: peer.pi, a: m.a, d: m.d });
+      else if (m.t === 'resync') { this.resyncs++; this.sendState(peer); }
+      else if (m.t === 'speed') { setSpeed(SPEEDS.includes(m.v) ? m.v : 0); uiNote(`${app.game.realmName(app.game.players[peer.pi].cap)}が速さを変えた`); }
+      return;
+    }
+    if (m.t === 'init') return this.applyState(m);
+    if (m.t === 'f') this.inbox.push(m);
+  },
+  applyState(m) {
+    loadSave(m.save);
+    const g = app.game;
+    g.pi = this.pi = m.pi;
+    this.k = m.k;
+    this.inbox = this.inbox.filter((f) => f.k > m.k);
+    if (!this.on) {
+      this.on = true;
+      closeHome(0);
+      $('netbox').hidden = true;
+      app.selectSystem(g.cap);
+      galaxyView.centerOn(g.system(g.cap));
+      this.toast(`${ME.realm}としてネット対戦に参加した。速さはホストが決める`);
+    }
+    app.dirty = true;
+  },
+  issue(act, d) {
+    const c = JSON.parse(JSON.stringify({ a: act, d: d || {} }));
+    if (this.role === 'host') this.queue.push({ p: this.pi, ...c });
+    else this.send(this.peers[0], { t: 'c', ...c });
+    return { ok: true, queued: true };
+  },
+  // 状態の要約: プレイヤーごとに違う値 (いま操作しているプレイヤーと、その国の資金・政治力などの写し) と、端末ごとの値を除いたセーブの FNV-1a
+  hash() {
+    const d = { ...buildSave(app.game) };
+    for (const k of ['pi', 'savedAt', 'endShown', 'spectate', 'credits', ...PLAYER_KEYS]) delete d[k];
+    const t = JSON.stringify(d);
+    let h = 0x811c9dc5;
+    for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return (h >>> 0).toString(36);
+  },
+  apply(f) {
+    const g = app.game;
+    for (const c of f.c) runCmd(g, c.p, c.a, c.d);
+    // 時間は、どの端末でも 1 人目のプレイヤーの立場で進める (記録に残る「見えた年」などを端末ごとに変えないため)
+    if (f.y) g.asPlayer(0, () => g.advance(f.y));
+    this.k = f.k;
+  },
+  // 毎画面の更新ごとに呼ぶ。ホストはコマを作って送り、参加者は届いたコマを順に実行する
+  frame(dt) {
+    if (this.role === 'host') {
+      const y = app.speed ? dt * app.speed : 0;
+      if (!y && !this.queue.length) return false;
+      const f = { t: 'f', k: this.k + 1, c: this.queue.splice(0), y, s: app.speed };
+      this.apply(f);
+      if (f.k % NET_HASH_EVERY === 0) f.h = this.hash();
+      for (const p of this.peers) this.send(p, f);
+      return true;
+    }
+    const t0 = performance.now();
+    let n = 0;
+    while (this.inbox.length && performance.now() - t0 < 40) {
+      const f = this.inbox.shift();
+      this.apply(f);
+      n++;
+      if (f.s !== undefined && f.s !== app.speed) { app.speed = f.s; updateSpeedButtons(); }
+      if (f.h && f.h !== this.hash()) {
+        // ずれた: 届いているコマは捨て、ホストの状態をもらい直す
+        this.inbox = [];
+        this.resyncs++;
+        this.send(this.peers[0], { t: 'resync', k: f.k });
+        this.toast('ホストとずれたので、状態を合わせ直している');
+        break;
+      }
+    }
+    return n > 0;
+  },
+  lost(peer) {
+    if (this.role === 'host') {
+      if (!this.on) { peer.state = '切れた'; return this.render(); }
+      this.peers = this.peers.filter((p) => p !== peer);
+      this.queue.push({ p: peer.pi, a: 'drop', d: {} });
+      uiNote(`${app.game.realmName(peer.cap)}との接続が切れた。この国は AI が動かす`);
+      return;
+    }
+    if (!this.on) { this.status = '接続が切れた'; return this.render(); }
+    this.on = false;
+    const g = app.game;
+    g.players.forEach((p, i) => { if (i !== this.pi) p.human = false; });
+    setSpeed(0);
+    uiNote('ホストとの接続が切れた。ここからはひとりで続けられる (ほかの国は AI)');
+  },
+  toast(text) {
+    let el = $('toast');
+    if (!el) { el = document.createElement('div'); el.id = 'toast'; document.body.appendChild(el); }
+    el.textContent = text;
+    el.hidden = false;
+    clearTimeout(this.toastT);
+    this.toastT = setTimeout(() => { el.hidden = true; }, 4000);
+  },
+  // --- 画面 ---
+  render() {
+    const box = $('netbox');
+    box.hidden = false;
+    const g = app.game;
+    const copyBtn = (id) => `<button data-net="copy" data-id="${id}">コピー</button>`;
+    if (this.on) {
+      box.innerHTML = `<div class="card"><h2>ネット対戦</h2><p>${esc(ME.realm)}として${this.role === 'host' ? 'ホストをしている' : '参加している'} (${this.role === 'host' ? this.peers.length + 1 : '?'} 人)。コマ ${this.k}・合わせ直し ${this.resyncs} 回</p>
+        <p class="note">${this.role === 'host' ? '速さはホストが決める。' : '速さのボタンを押すと、ホストに頼む。'}ネット対戦のあいだは、ホーム画面の新しいゲーム・ロードは使えない。</p><button data-net="close">閉じる</button></div>`;
+      return;
+    }
+    if (this.role === 'host') {
+      const ready = this.peers.filter((p) => p.dc?.readyState === 'open').length;
+      box.innerHTML = `<div class="card"><h2>ネット対戦 (ホスト)</h2>
+        <p class="note">相手ごとに「招待コードを作る」→ コードを相手に渡す (メッセージアプリなどで) → 相手が作った返事コードを下に貼って「つなぐ」。全員つながったら「はじめる」。あなたは <b>${esc(g.realmName(g.cap))}</b>。</p>
+        ${this.peers.map((p, i) => `<section><h3>${esc(g.realmName(p.cap))} <span class="muted">${esc(p.state)}</span></h3>
+          ${p.dc?.readyState === 'open' ? '' : `<div class="row"><button data-net="offer" data-i="${i}">招待コードを作る</button>${p.offer ? copyBtn(`netoffer${i}`) : ''}</div>
+          ${p.offer ? `<textarea id="netoffer${i}" readonly rows="3">${esc(p.offer)}</textarea>
+          <textarea id="netans${i}" rows="3" placeholder="相手の返事コードを貼る"></textarea><button data-net="answer" data-i="${i}">つなぐ</button>` : ''}`}</section>`).join('')}
+        <div class="row"><button class="big" data-net="start">はじめる (${ready + 1} 人${ready < this.peers.length ? '・つながっていない国は AI' : ''})</button><button data-net="close" class="ghost">閉じる</button></div></div>`;
+      return;
+    }
+    const peer = this.peers[0];
+    box.innerHTML = `<div class="card"><h2>ネット対戦に参加</h2>
+      <p class="note">ホストからもらった招待コードを貼って「返事コードを作る」。できた返事コードをホストに渡す。</p>
+      <textarea id="netinvite" rows="3" placeholder="招待コードを貼る"></textarea><div class="row"><button data-net="join">返事コードを作る</button><button data-net="close" class="ghost">閉じる</button></div>
+      ${peer?.answer ? `<h3>返事コード ${copyBtn('netanswer')}</h3><textarea id="netanswer" readonly rows="3">${esc(peer.answer)}</textarea>` : ''}
+      <p class="muted">${esc(this.status)}${peer ? ` (${esc(peer.state)})` : ''}</p></div>`;
+  },
+};
+$('netbox').onclick = async (e) => {
+  const b = e.target.closest('button[data-net]');
+  if (!b) return;
+  const act = b.dataset.net;
+  const i = Number(b.dataset.i);
+  if (act === 'copy') { const t = $(b.dataset.id); t.select(); try { await navigator.clipboard.writeText(t.value); } catch { document.execCommand?.('copy'); } b.textContent = 'コピーした'; return; }
+  if (act === 'close') { $('netbox').hidden = true; return; }
+  if (act === 'offer') { b.disabled = true; b.textContent = '作っている…'; return Net.makeOffer(Net.peers[i]); }
+  if (act === 'answer') return Net.takeAnswer(Net.peers[i], $(`netans${i}`).value);
+  if (act === 'start') return Net.start();
+  if (act === 'join') { b.disabled = true; b.textContent = '作っている…'; return Net.join($('netinvite').value); }
+};
+// --- 命令の入口 ---
+// ゲームの状態を変える操作は、すべてここを通す。ひとりで遊ぶとき・ホットシートでは、いま操作しているプレイヤーとしてすぐ実行する。
+// ネット対戦ではホストへ送り、全員の端末が同じ時点で runCmd を実行する (Net.issue)
+function issue(act, d) {
+  if (Net.on) return Net.issue(act, d);
+  return runCmd(app.game, app.game.pi, act, d);
+}
+function runCmd(g, pi, act, d) {
+  return g.asPlayer(pi, () => {
+    const r = g.command(act, d);
+    if (r && (!r.ok || r.msg)) {
+      const old = g.msgTo;
+      if (g.players.length > 1) g.msgTo = pi;
+      g.message(r.ok ? r.msg : `できない: ${r.reason}`);
+      g.msgTo = old;
+    }
+    g.live = null; // 観戦モードの「いまの様子」を取り直す
+    return r;
+  });
+}
+// 画面だけの知らせ (セーブした・メモを記録した など)。ネット対戦では、全員で同じでなければならない記録には書かず、手元にだけ出す
+function uiNote(text) {
+  const g = app.game;
+  if (Net.on) return Net.toast(text);
+  const old = g.msgTo;
+  if (g.players.length > 1) g.msgTo = g.pi;
+  g.message(text);
+  g.msgTo = old;
+}
 const panel = $('panel');
 const empire = $('empire');
 function onPanelClick(e) {
@@ -8275,10 +8732,8 @@ function onPanelClick(e) {
   if (act === 'deselect') return app.deselect();
   if (act === 'fly') { const s = g.system(sys); if (s) { app.selectSystem(sys); app.setView('galaxy'); galaxyView.centerOn(s); } return; }
   if (act === 'ack' || act === 'ackall') {
-    g.acked ??= [];
     const ids = act === 'ack' ? [Number(btn.dataset.id)] : g.knownEvents().filter((e) => evTier(e.kind) >= 3).map((e) => e.id);
-    for (const i of ids) if (!g.acked.includes(i)) g.acked.push(i);
-    g.acked = g.acked.slice(-300);
+    issue('set', { key: 'acked', value: ids });
     setHtml($('rail'), railHtml(g));
     return;
   }
@@ -8299,14 +8754,12 @@ function onPanelClick(e) {
   if (act === 'send' || act === 'candsend') d.from = 0;
   let r;
   if (act === 'bulkfocus') {
-    for (const sx of g.knownOwnSystems()) for (const c of g.knownColonies(sx.id)) g.command('focus', { col: colKey(c), value: app.bulkFocus || 'balanced' });
+    for (const sx of g.knownOwnSystems()) for (const c of g.knownColonies(sx.id)) issue('focus', { col: colKey(c), value: app.bulkFocus || 'balanced' });
     r = { ok: true };
   } else {
-    r = g.command(act, d);
+    r = issue(act, d);
   }
   if (!r) return;
-  if (!r.ok) g.message(`できない: ${r.reason}`);
-  g.live = null; // 観戦モードの「いまの様子」を取り直す
   app.dirty = true;
   save();
 }
@@ -8321,45 +8774,21 @@ function onPanelChange(e) {
   else if (act === 'ra') app.routeA = Number(v);
   else if (act === 'torigin') app.troopOrigin = v;
   else if (act === 'rb') app.routeB = Number(v);
-  else if (act === 'warpolicy') {
-    app.game.warThreshold = Number(v);
-    app.game.message(`戦争方針を「${(WAR_POLICIES.find(([x]) => x === Number(v)) || [0, v])[1]}」にした`);
-  } else if (act === 'autohabitat') {
-    app.game.autoHabitat = e.target.checked;
-    app.game.message(`過密時の居住区の自動拡張を${e.target.checked ? 'オン' : 'オフ'}にした`);
-  } else if (act === 'autoroutes') {
-    app.game.autoRoutes = e.target.checked;
-    app.game.message(`混んだ交易路の自動拡張を${e.target.checked ? 'オン' : 'オフ'}にした`);
-  } else if (act === 'migration') {
-    app.game.migration = e.target.checked;
-    app.game.message(`恒星間移民を${e.target.checked ? '許可' : '停止'}した`);
-  } else if (act === 'autogrant') {
-    app.game.autoGrant = e.target.checked;
-  } else if (act === 'autobuild') {
-    app.game.autoBuild = e.target.checked;
-  } else if (act === 'autoawe') {
-    app.game.autoAwe = e.target.checked;
-    app.game.message(`反乱防止のための威圧を${e.target.checked ? 'オン' : 'オフ'}にした`);
-    if (e.target.checked) app.game.aweYearly();
-  } else if (act === 'autodefense') {
-    app.game.autoDefense = e.target.checked;
-    app.game.message(`自動防衛配備を${e.target.checked ? 'オン' : 'オフ'}にした`);
-    if (e.target.checked) app.game.autoDefend();
+  else if (['warpolicy', 'autohabitat', 'autoroutes', 'migration', 'autogrant', 'autobuild', 'autoawe', 'autodefense'].includes(act)) {
+    const key = { warpolicy: 'warThreshold', autohabitat: 'autoHabitat', autoroutes: 'autoRoutes', migration: 'migration', autogrant: 'autoGrant', autobuild: 'autoBuild', autoawe: 'autoAwe', autodefense: 'autoDefense' }[act];
+    issue('set', { key, value: act === 'warpolicy' ? Number(v) : e.target.checked });
   } else if (act === 'autodev') {
-    const id = Number(e.target.dataset.sys);
-    app.game.auto[id] = e.target.checked;
-    app.game.message(`${app.game.system(id).name} の自動開発を${e.target.checked ? 'オン' : 'オフ'}にした`);
+    issue('set', { key: 'auto', sys: Number(e.target.dataset.sys), value: e.target.checked });
   }
   else if (act === 'candsort') app.candSort = v;
   else if (act === 'evkind') { EvPrefs.kinds[e.target.dataset.k] = e.target.checked; saveEvPrefs(); }
   else if (act === 'mandate' || act === 'governor') {
     // 委任方針・総督の方針の変更は光速の指令 (政治力を使う)
-    const r = app.game.command(act, { sys: Number(e.target.dataset.sys), value: v });
-    app.game.message(r.ok ? `${app.game.system(Number(e.target.dataset.sys)).name} へ${act === 'mandate' ? `委任方針「${MANDATES[v]}」` : `総督の方針「${GOVERNOR[v]}」`}の指令を送った` : `できない: ${r.reason}`);
+    issue(act, { sys: Number(e.target.dataset.sys), value: v });
     save();
   }
   else if (act === 'focus') {
-    if (FOCUS[v]) app.game.command('focus', { col, value: v });
+    if (FOCUS[v]) issue('focus', { col, value: v });
   } else return;
   e.target.blur();
   app.dirty = true;
@@ -8466,7 +8895,9 @@ function frame(now) {
   const game = app.game;
   const nosel = app.sel.sys === null;
   if (nosel !== lastNosel) { lastNosel = nosel; document.body.classList.toggle('nosel', nosel); app.dirty = true; } // 欄の幅が変わると ResizeObserver が地図を合わせる
-  if (app.speed && game.advance(dt * app.speed)) app.dirty = true;
+  if (Net.on) { if (Net.frame(dt)) app.dirty = true; }
+  else if (app.speed && game.advance(dt * app.speed)) app.dirty = true;
+  if (app.turnEvery && isHotseat() && $('curtain').hidden && game.year >= (app.turnStart ?? game.year) + app.turnEvery) nextTurn(true);
   if (app.skip) checkSkip();
   // 地図は、変わりうるときだけ描き直す: 動くものが見える距離だけ動いた・画面や表示が変わった・操作の直後 (0.6 秒)・視点が動いた直後 (止まってからの描き直しのため)・点滅しているもの・
   // 右の欄を描き直すとき (選択などの変更。0.5 秒ごとの更新も含む)。何も起きていなければ前の絵をそのまま残す
@@ -8491,6 +8922,7 @@ function frame(now) {
   // (5 秒に 1 回はかならず更新する)
   if (acc > 0.5 && (game.year !== lastTickYear || now < mapActiveUntil + 1000 || now - lastFullTick > 5000 || railFading(now))) {
     acc = 0; lastTickYear = game.year; lastFullTick = now;
+    updateTurnBtn();
     setHtml($('ships'), shipsHtml(game));
     setHtml($('log'), logHtml(game));
     if (!SHEETS[app.view]) setHtml($('rail'), railHtml(game));
