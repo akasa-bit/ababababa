@@ -1,5 +1,5 @@
 {
-  "name": "moribin-tools",
+  "name": "nolongerubiquitous-tools",
   "private": true,
   "description": "公開用 index.html の組み立て (build.mjs) と自動対戦の実験台",
   "scripts": { "build": "node build.mjs" },

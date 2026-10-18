@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Moribin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Special+Elite&family=Zen+Antique&family=Zen+Old+Mincho:wght@400;700&display=swap"></head><body>
+<!doctype html><html><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>NoLongerUbiquitous</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Special+Elite&family=Zen+Antique&family=Zen+Old+Mincho:wght@400;700&display=swap"></head><body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="worn" x="-2%" y="-10%" width="104%" height="120%" color-interpolation-filters="sRGB">
   <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="11" result="n"/>
   <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -7 4.6" result="holes"/>
@@ -406,6 +406,7 @@ small .ico { width:1em; height:1em; margin-right:0.15em; }
 body { background:var(--bg); }
 header { border-bottom:3px double var(--line); }
 h1 { text-transform:uppercase; letter-spacing:.3em; color:var(--fg); }
+header h1, #home h1 { text-transform:none; letter-spacing:.06em; } h1 .ed { font-size:.6em; letter-spacing:.05em; margin-left:.5em; color:var(--warn); }
 h3 { text-transform:uppercase; letter-spacing:.16em; border-top:2px solid var(--fg); padding-top:6px; color:var(--fg); }
 .stats div, .kpi div { border-top:2px solid var(--line); }
 .stats { gap:4px; } .stats div { padding:8px 6px; } .stats b { white-space:nowrap; }
@@ -440,7 +441,7 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
 </style>
 
   <header>
-    <h1>Moribin</h1>
+    <h1 id="brand">NoLongerUbiquitous</h1>
     <nav>
       <button id="tab-galaxy" class="tab on" title="星間マップ">星間</button>
       <button id="tab-system" class="tab" title="星系マップ">星系</button>
@@ -528,6 +529,21 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
   </div>
   
 <script>
+// 版: game = ゲーム版 (遊びやすさを保ったまま、なるべく現実に近づける)、sim = シミュレーション版 (なるべく現実のまま)。
+// tools/build.mjs が版ごとに書き換えて、index.html と simulation.html を作る
+const EDITION = 'game'; /* EDITION */
+const GAME_NAME = 'NoLongerUbiquitous';
+const EDITION_LABEL = { game: 'ゲーム版', sim: 'シミュレーション版' };
+const EDITION_FILE = { game: 'index.html', sim: 'simulation.html' };
+// 保存の名前 (版ごとに分ける。ゲーム版は前の名前 Moribin のころのセーブをそのまま読む)
+const STORE = EDITION === 'sim' ? 'nlu-sim' : 'moribin';
+const brandHtml = () => `${GAME_NAME}${EDITION === 'sim' ? `<span class="ed">${EDITION_LABEL.sim}</span>` : ''}`;
+// 版ごとに違う値 (ここにあるものだけが違う)。根拠は docs/reality-check.md
+const EDITIONS = {
+  game: { generation: 100 },
+  sim: { generation: 28 },
+};
+const ED = EDITIONS[EDITION];
 // シード付き乱数 (mulberry32)。同じシードなら同じ銀河が生成される。
 function hashSeed(str) {
   let h = 2166136261;
@@ -1402,8 +1418,8 @@ const REGIMES = {
 const REGIME_ORDER = ['direct', 'indirect', 'feudal', 'federal', 'dominion', 'encomienda'];
 const regimeKey = (gv) => (gv ? (gv.direct ? 'direct' : REGIMES[gv.regime] ? gv.regime : 'indirect') : 'indirect');
 // 離反の起きやすさ (年あたりのハザード) = 基準 × 統治体制の倍率 × exp(delay × 敏感さ × 通信の遅れ ÷ 1 世代) × 人口の比^pop × exp(loyalty × (loyaltyRef − 忠誠度))。
-// 1 年に独立を求める動き (不満) が始まる確率は 1 − exp(−ハザード)。1 世代は 100 年 (寿命が延びた設定。通信の遅れを歴史の時間に対応させる)
-const GENERATION_YEARS = 100;
+// 1 年に独立を求める動き (不満) が始まる確率は 1 − exp(−ハザード)。1 世代はゲーム版 100 年 (寿命が延びた設定)、シミュレーション版 28 年 (いまの人の世代の長さ)。通信の遅れを歴史の時間に対応させる
+const GENERATION_YEARS = ED.generation;
 const HAZARD = { base: 0.06, delay: 4, pop: 0.3, loyalty: 0.03, loyaltyRef: 50, revoke: 8 };
 // 強制労働の後遺症 (0〜1): 続けた年ごとに scarRate ずつ増え、やめたあとは年に ×scarKeep ずつ消える (半減に約 140 年)。税収 × (1 − scarTax × 後遺症)
 const FORCED = { scarRate: 0.02, scarKeep: 0.995, scarTax: 0.25 };
@@ -7907,8 +7923,8 @@ const TIER_LABEL = { 3: '重大', 2: '普通', 1: '細事' };
 const MERGE_KINDS = new Set(['shortage', 'migration', 'famine']); // 一覧で、同じ星系の同じ種類をまとめる
 // 種類ごとの表示の好み (見る人ごとなのでブラウザに覚えておく)。未設定なら段で決まる (普通以上を出す)
 const EvPrefs = { kinds: {}, mode: 'list' };
-try { const p = JSON.parse(localStorage.getItem('moribin-evprefs') || 'null'); if (p && typeof p === 'object') { EvPrefs.kinds = p.kinds || {}; EvPrefs.mode = p.mode === 'year' ? 'year' : 'list'; } } catch { /* 既定値 */ }
-function saveEvPrefs() { try { localStorage.setItem('moribin-evprefs', JSON.stringify(EvPrefs)); } catch { /* 保存できない環境 */ } }
+try { const p = JSON.parse(localStorage.getItem(`${STORE}-evprefs`) || 'null'); if (p && typeof p === 'object') { EvPrefs.kinds = p.kinds || {}; EvPrefs.mode = p.mode === 'year' ? 'year' : 'list'; } } catch { /* 既定値 */ }
+function saveEvPrefs() { try { localStorage.setItem(`${STORE}-evprefs`, JSON.stringify(EvPrefs)); } catch { /* 保存できない環境 */ } }
 const evTier = (kind) => EVENT_TIER[kind] ?? 2;
 function evShown(kind) { const v = EvPrefs.kinds[kind]; return v === undefined ? evTier(kind) >= 2 : !!v; }
 
@@ -8333,7 +8349,7 @@ $('vassalbtn').onclick = () => {
 // --- セーブ ---
 // 保存先は IndexedDB (大きなセーブも入る。localStorage は全部で約500万文字までで、大きな帝国では入りきらない)。
 // IndexedDB が使えない環境では localStorage を使う。古い版が localStorage に残したセーブは、起動時に IndexedDB へ移す
-const SAVE_KEY = 'moribin-save-v1';
+const SAVE_KEY = `${STORE}-save-v1`;
 const Store = {
   db: null,
   ready: false,
@@ -8341,7 +8357,7 @@ const Store = {
   async init() {
     try {
       this.db = await new Promise((res, rej) => {
-        const r = indexedDB.open('moribin', 1);
+        const r = indexedDB.open(STORE, 1);
         r.onupgradeneeded = () => r.result.createObjectStore('kv');
         r.onsuccess = () => res(r.result);
         r.onerror = () => rej(r.error);
@@ -8460,7 +8476,7 @@ function clearSave() {
 // --- プレイ記録: 自分がどう遊んだかを、感想ではなく行動として残す (このブラウザの中だけに保存し、外には送らない) ---
 // 操作・速さの切り替え・見ていた画面・操作のない時間・メモを記録する。メモにはその時点のゲームの状態も残す
 const MEMO_TAGS = { bored: '退屈', confused: '分からない', torn: '迷う', fun: '面白い' };
-const PLAYLOG_KEY = 'moribin-playlog';
+const PLAYLOG_KEY = `${STORE}-playlog`;
 const PlayLog = {
   on: true,
   sessions: [], // 過去のセッション (新しいものが後ろ)
@@ -8539,7 +8555,7 @@ async function saveMemo() {
   const snap = memoSnap;
   closeMemo();
   if (!tag && !text) return;
-  const key = `moribin-memo-${Date.now()}`;
+  const key = `${STORE}-memo-${Date.now()}`;
   const ok = snap ? await Store.put(key, snap.text) : false;
   PlayLog.add('memo', { tag, text, snap: ok ? key : null, at: snap ? Math.round(snap.year * 100) / 100 : undefined, view: snap?.view });
   // 古いメモの状態は消す (容量のため。メモの文は残る)
@@ -8553,10 +8569,10 @@ async function saveMemo() {
 }
 function exportPlayLog() {
   const sessions = PlayLog.all().map((c) => ({ ...c, summary: PlayLog.summary(c) }));
-  const blob = new Blob([JSON.stringify({ app: 'moribin', kind: 'playlog', exportedAt: Date.now(), sessions }, null, 1)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'nolongerubiquitous', edition: EDITION, kind: 'playlog', exportedAt: Date.now(), sessions }, null, 1)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `moribin-playlog-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `nolongerubiquitous${EDITION === 'sim' ? '-sim' : ''}-playlog-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
@@ -8603,7 +8619,7 @@ function exportSave() {
   const blob = new Blob([saveJSON(app.game, { speed: app.speed })], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `moribin-${app.game.year.toFixed(0)}.json`;
+  a.download = `nolongerubiquitous${EDITION === 'sim' ? '-sim' : ''}-${app.game.year.toFixed(0)}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
@@ -8620,7 +8636,7 @@ $('importfile').onchange = async (e) => {
 // 作った国はこのブラウザに保存し、どの試合でも人間の国・AI の国として出せる
 const NATION_LIB_MAX = 20;
 const NationLib = {
-  key: 'moribin-nations',
+  key: `${STORE}-nations`,
   list: [], // [{ id, name, species, traits, env, dist }]
   parse(t) {
     try { const a = JSON.parse(t || '[]'); this.list = Array.isArray(a) ? a.filter((n) => n && n.id && n.name && n.species).map((n) => ({ ...n, traits: (n.traits || []).filter((x) => SPECIES_TRAITS[x]).slice(0, NATION_TRAITS_MAX) })) : []; } catch { this.list = []; }
@@ -8704,7 +8720,7 @@ $('home').addEventListener('focusin', (e) => { if (e.target.id === 'ne-species' 
 
 // --- ホーム画面 (新しいゲーム・続きから・セーブスロット・ファイル) ---
 // ホーム画面を開いているあいだは時間を止める。スロットは自動セーブとは別に保存する
-const SLOT_KEYS = [1, 2, 3].map((i) => `moribin-slot-${i}`);
+const SLOT_KEYS = [1, 2, 3].map((i) => `${STORE}-slot-${i}`);
 // m = セーブの概要 (saveMeta)
 function saveInfo(m) {
   if (!m) return '<span class="muted">空き</span>';
@@ -8721,9 +8737,9 @@ function homeHtml() {
       <button class="ghost" data-home="slotdel" data-i="${i}" ${d ? '' : 'disabled'}>${armed(`del${i}`) ? '本当に削除?' : '削除'}</button></div>`;
   }).join('');
   const tabs = `<div class="htabs"><button data-home="tab" data-t="game" class="${app.homeTab !== 'nations' ? 'on' : ''}">ゲーム</button><button data-home="tab" data-t="nations" class="${app.homeTab === 'nations' ? 'on' : ''}">国家づくり (${NationLib.list.length})</button></div>`;
-  if (app.homeTab === 'nations') return `<div class="card"><h1>Moribin</h1>${tabs}${nationsTabHtml()}</div>`;
+  if (app.homeTab === 'nations') return `<div class="card"><h1>${brandHtml()}</h1>${tabs}${nationsTabHtml()}</div>`;
   return `<div class="card">
-    <h1>Moribin</h1><p class="muted">光速の壁の向こうへ広がる恒星間植民</p>${tabs}
+    <h1>${brandHtml()}</h1><p class="muted">光速の壁の向こうへ広がる恒星間植民 — ${EDITION_LABEL[EDITION]} (<a href="${EDITION_FILE[EDITION === 'sim' ? 'game' : 'sim']}">${EDITION_LABEL[EDITION === 'sim' ? 'game' : 'sim']}を開く</a>)</p>${tabs}
     ${app.homeNote ? `<p class="note bad">${esc(app.homeNote)}</p>` : ''}
     <section><h3>いまのゲーム</h3>
       <div class="row"><div class="info">${saveInfo(saveMeta(buildSave(app.game)))}</div><button class="big" data-home="resume">${app.started ? 'ゲームに戻る' : '続きから'}</button></div>
@@ -9083,14 +9099,14 @@ $('home').onclick = (e) => {
 };
 // 通信の表示 (表示しない / 光の点)。見る人ごとの好みなのでブラウザに覚えておく
 const SIGNAL_MODES = { off: '表示しない', dots: '光の点' };
-try { const m = localStorage.getItem('moribin-signals'); if (SIGNAL_MODES[m]) app.signalMode = m; } catch { /* 保存できない環境では既定値 */ }
+try { const m = localStorage.getItem(`${STORE}-signals`); if (SIGNAL_MODES[m]) app.signalMode = m; } catch { /* 保存できない環境では既定値 */ }
 app.signalMode ??= 'off';
 function updateSigBtn() { $('sigbtn').textContent = `通信: ${SIGNAL_MODES[app.signalMode]}`; $('sigbtn').classList.toggle('on', app.signalMode !== 'off'); }
 $('sigbtn').onclick = () => {
   const keys = Object.keys(SIGNAL_MODES);
   app.signalMode = keys[(keys.indexOf(app.signalMode) + 1) % keys.length];
   PlayLog.add('ui', { act: 'signals', v: app.signalMode });
-  try { localStorage.setItem('moribin-signals', app.signalMode); } catch { /* 保存できない環境では無視 */ }
+  try { localStorage.setItem(`${STORE}-signals`, app.signalMode); } catch { /* 保存できない環境では無視 */ }
   updateSigBtn();
 };
 updateSigBtn();
@@ -9102,12 +9118,12 @@ updateSigBtn();
   if (/^#[0-9a-f]{6}$/i.test(own)) { OWN.hex = own; OWN.rgb = [1, 3, 5].map((i) => parseInt(own.slice(i, i + 2), 16)).join(','); }
 }
 // 画面の動き (信号の模様と文字のぶれ)。見る人ごとの好みなのでブラウザに覚えておく
-try { app.fx = localStorage.getItem('moribin-fx') !== 'off'; } catch { app.fx = true; }
+try { app.fx = localStorage.getItem(`${STORE}-fx`) !== 'off'; } catch { app.fx = true; }
 function updateFxBtn() { document.body.classList.toggle('fx', app.fx); $('fxbtn').textContent = `画面の動き: ${app.fx ? '入' : '切'}`; $('fxbtn').classList.toggle('on', app.fx); }
 $('fxbtn').onclick = () => {
   app.fx = !app.fx;
   PlayLog.add('ui', { act: 'fx', v: app.fx });
-  try { localStorage.setItem('moribin-fx', app.fx ? 'on' : 'off'); } catch { /* 保存できない環境では無視 */ }
+  try { localStorage.setItem(`${STORE}-fx`, app.fx ? 'on' : 'off'); } catch { /* 保存できない環境では無視 */ }
   updateFxBtn();
 // 文字のぶれ: 0.26秒ごとに、見えている文字のどれか1つ (ときどき2〜3つ) を短くぶらす
 const FX_JIT = 'button, th, .stats b, .kpi b, #treasury .v, #date, #rail .t, .syshead h2';
@@ -9287,10 +9303,10 @@ const Net = {
     peer.pc?.close();
     const pc = new RTCPeerConnection({ iceServers: NET_ICE });
     peer.pc = pc;
-    this.wire(peer, pc.createDataChannel('moribin', { ordered: true }));
+    this.wire(peer, pc.createDataChannel(STORE, { ordered: true }));
     await pc.setLocalDescription(await pc.createOffer());
     await this.iceDone(pc);
-    peer.offer = await this.pack({ t: 'o', sdp: pc.localDescription.sdp, pi: peer.pi, cap: peer.cap });
+    peer.offer = await this.pack({ t: 'o', ed: EDITION, sdp: pc.localDescription.sdp, pi: peer.pi, cap: peer.cap });
     peer.state = '招待コードを渡して、返事を待っている';
     this.render();
   },
@@ -9321,6 +9337,7 @@ const Net = {
   async join(code) {
     let d;
     try { d = await this.unpack(code); if (d.t !== 'o') throw new Error(); } catch { this.status = '招待コードが読めなかった'; return this.render(); }
+    if ((d.ed || 'game') !== EDITION) { this.status = `招待コードは${EDITION_LABEL[d.ed || 'game']}のもの。同じ版どうしでしかつなげない`; return this.render(); }
     this.role = 'guest';
     this.pi = d.pi;
     const peer = { pi: 0, state: 'つないでいる…' };
@@ -9782,6 +9799,8 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+$('brand').innerHTML = brandHtml();
+document.title = EDITION === 'sim' ? `${GAME_NAME} ${EDITION_LABEL.sim}` : GAME_NAME;
 resize();
 // 起動: 古い版の localStorage のセーブがあればすぐ読む。なければ仮のゲームで始め、IndexedDB のセーブが読めたら差し替える
 const legacy = readLegacySave();
