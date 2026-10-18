@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "fixedAt": "2026-10-18",
   "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
   "rules": [
@@ -8,6 +8,9 @@
     "合否は、自動対戦の結果を実データと同じ形式で書き出し、実データと同じ統計コードで計算する",
     "シミュレーションの統計量は、別々の銀河 (シード) を 30 以上回した分布で評価する。1 つの試合の値では判定しない",
     "fun の目標は、見知らぬ試遊者 (作者とこの会話の参加者以外) のデータでだけ判定する"
+  ],
+  "changes": [
+    { "version": 2, "date": "2026-10-18", "what": "R06・R08・R09・R13・R14・R15・R16 の幅を、取得スクリプトで生データから計算した値だけで決めた (data/derived/history.json)。ゲームの自動対戦の結果はこの変更に使っていない" }
   ],
   "realism": [
     {
@@ -51,10 +54,12 @@
     },
     {
       "id": "R06", "area": "天文", "name": "M 型星の地球型惑星の頻度",
-      "data": { "source": "Dressing & Charbonneau 2015", "version": "論文の表", "script": "data/fetch/eta_earth_m" },
+      "data": {"source": "Dressing & Charbonneau 2015", "version": "論文の表", "script": "data/fetch/eta_earth_m"},
       "statistic": "M 型星あたりの、保守的なハビタブルゾーンの地球型惑星の数",
       "sim": "同じ定義", "pass": "論文の 95% 信頼区間の中",
-      "band": null, "split": "holdout"
+      "band": [0.09, 0.33], "split": "holdout",
+      "observed": {"eta_m_1to1.5Re": 0.16, "ci": "+0.17 / −0.07 (Dressing & Charbonneau 2015 の保守的なハビタブルゾーン、1〜1.5 地球半径)"},
+      "bandMeaning": "論文の推定値 0.16 の誤差の範囲 (0.16 − 0.07 〜 0.16 + 0.17)"
     },
     {
       "id": "R07", "area": "物理", "name": "船のエネルギーの記帳",
@@ -66,19 +71,23 @@
     },
     {
       "id": "R08", "area": "政治", "name": "植民地の離反の起きやすさ (統治体制別)",
-      "data": { "source": "ICOW Colonial History・COLDAT (Becker 2019)・Lange の間接統治データ・Seshat・V-Dem・EPR・Regional Authority Index・Dell 2010", "version": "取得時の版を記録", "script": "data/fetch/colonial" },
+      "data": {"source": "ICOW Colonial History・COLDAT (Becker 2019)・Lange の間接統治データ・Seshat・V-Dem・EPR・Regional Authority Index・Dell 2010", "version": "COLDAT (Harvard Dataverse doi:10.7910/DVN/T9SDEW, 2023-09-21 更新版)・ICOW Colonial History 1.1", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
       "statistic": "独立 (離反) までの時間の Cox 比例ハザードモデル。説明変数は統治体制・本国からの距離・通信の遅れ ÷ 1 世代の長さ・人口の比。統治体制ごとのハザード比と、植民地の存続年数の中央値 (Kaplan–Meier)",
       "sim": "星系の離反の記録を ICOW と同じ形式で書き出し、同じモデルで推定",
       "pass": "主な説明変数のハザード比が、実データの 95% 信頼区間の中。統治体制ごとの存続年数の中央値が実データの ±25% 以内",
-      "band": null, "split": "calibration",
-      "calibrationSet": "イギリス・フランスの植民地", "note": "通信の遅れを歴史の時間にどう対応させるかは、決めてほしいことの表 (docs/targets.md) を参照"
+      "band": [63.8, 106.2], "split": "calibration",
+      "calibrationSet": "イギリス・フランスの植民地", "note": "通信の遅れを歴史の時間にどう対応させるかは、決めてほしいことの表 (docs/targets.md) を参照",
+      "observed": {"median_years_britain_france": 85.0, "iqr": [62.0, 126.0], "n": 101, "hr_direct_vs_indirect": {"hr": 1.3942, "ci95": [0.8415, 2.3099], "proxy": "フランス (直接統治) ÷ イギリス (間接統治)"}, "coef_log_delay_over_generation": {"coef": -0.1523, "ci95": [-0.6362, 0.3316], "note": "Cox モデル (本国・遅れ・植民の始まりの年)。遅れ = 大円距離 × 1.3 ÷ 150 km/日、1 世代 = 28 年"}, "hr_start_year_per_century": {"hr": 13.8607, "ci95": [6.4232, 29.9098]}, "violent_share": {"decolonization": {"n": 128, "share": 0.312}, "secession": {"n": 38, "share": 0.526}, "decolonization_by_ruler": {"britain": {"n": 56, "share": 0.089}, "france": {"n": 25, "share": 0.32}, "spain": {"n": 9, "share": 0.889}, "portugal": {"n": 6, "share": 0.333}, "netherlands": {"n": 3, "share": 0.333}}}},
+      "bandMeaning": "英仏の植民地の存続年数の中央値の ±25% [年]。ハザード比は observed の 95% 信頼区間で判定する"
     },
     {
       "id": "R09", "area": "政治", "name": "植民地の離反 (別の本国)",
-      "data": { "source": "R08 と同じ", "script": "data/fetch/colonial" },
+      "data": {"source": "R08 と同じ", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
       "statistic": "R08 と同じ", "sim": "R08 と同じ",
       "pass": "R08 で較正したモデルのまま、スペイン・ポルトガル・オランダの植民地の存続年数の中央値が ±35% 以内",
-      "band": null, "split": "holdout"
+      "band": [187.8, 390.2], "split": "holdout",
+      "observed": {"median_years_spain_portugal_netherlands": 289.0, "iqr": [212.0, 318.0], "n": 42},
+      "bandMeaning": "スペイン・ポルトガル・オランダの植民地の存続年数の中央値の ±35% [年]"
     },
     {
       "id": "R10", "area": "経済", "name": "産業構造と所得",
@@ -106,36 +115,42 @@
     },
     {
       "id": "R13", "area": "戦争", "name": "戦争の長さの偏り",
-      "data": { "source": "Correlates of War 国家間戦争データ", "version": "取得時の版を記録", "script": "data/fetch/cow" },
+      "data": {"source": "Correlates of War 国家間戦争データ", "version": "Inter-State War Data v4.0", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
       "statistic": "戦争の長さの平均 ÷ 中央値",
       "sim": "tools/wars.js の出力を COW と同じ形式にしたもの",
       "pass": "実データの値の ±30% 以内",
-      "band": null, "reference": "COW を使った研究の補足資料で約 3 (要確認)", "split": "calibration"
+      "band": [1.795, 3.333], "reference": "COW 4.0 の 95 の戦争 (1823〜2003 年) で平均 ÷ 中央値 = 2.56", "split": "calibration",
+      "observed": {"mean_over_median": 2.564, "mean_years": 1.144, "median_years": 0.446, "n": 95}
     },
     {
       "id": "R14", "area": "戦争", "name": "戦争の終わり方の内訳",
-      "data": { "source": "UCDP Conflict Termination", "version": "取得時の版を記録", "script": "data/fetch/ucdp" },
+      "data": {"source": "UCDP Conflict Termination", "version": "UCDP Conflict Termination 4-2024 (紛争単位)", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
       "statistic": "終わり方 (勝利・和平合意・停戦・活動低下) の割合",
       "sim": "白紙講和 = 活動低下、講和条約 = 和平合意、全面降伏と首都の陥落 = 勝利として対応させる",
       "pass": "最も多い終わり方が一致し、各割合の差が 15 ポイント以内",
-      "band": null, "split": "holdout"
+      "band": [0, 0.15], "split": "holdout",
+      "observed": {"interstate": {"n": 72, "shares": {"ceasefire": 0.25, "low_activity": 0.25, "peace_agreement": 0.208, "victory_side_b": 0.153, "victory_side_a": 0.139, "victory": 0.292}}, "all": {"low_activity": 0.414, "victory_side_a": 0.21, "ceasefire": 0.133, "peace_agreement": 0.119, "victory_side_b": 0.085, "actor_ceased": 0.04, "victory": 0.295}},
+      "bandMeaning": "各割合の差の絶対値の最大 (0〜0.15)。勝利 = 両側の勝利の合計。停戦はゲームに対応がないので、残りの区分の割合を足して 1 にし直して比べる"
     },
     {
       "id": "R15", "area": "戦争", "name": "戦争の規模の分布",
-      "data": { "source": "Correlates of War 国家間戦争データ (戦死者数)", "version": "取得時の版を記録", "script": "data/fetch/cow" },
+      "data": {"source": "Correlates of War 国家間戦争データ (戦死者数)", "version": "Inter-State War Data v4.0", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
       "statistic": "戦死者数の分布の裾のべき指数 α (Clauset–Shalizi–Newman の方法)",
       "sim": "戦争ごとの死者数 (艦隊の乗員の損失を含む)",
       "pass": "べき乗則の当てはめの検定で p ≥ 0.1、α が実データの推定値 ±0.3 以内",
-      "band": null, "reference": "Clauset 2018 で約 1.5", "split": "holdout"
+      "band": [1.253, 1.853], "reference": "Clauset 2018 で約 1.5", "split": "holdout",
+      "observed": {"alpha": 1.553, "alpha_se": 0.118, "xmin": 41466.0, "n_tail": 22, "ks": 0.061, "p": 1.0, "boots": 500}
     },
     {
       "id": "R16", "area": "戦争", "name": "戦闘の勝敗と兵力比",
-      "data": { "source": "CDB90 (約 660 の戦闘)", "version": "取得時の版を記録", "script": "data/fetch/cdb90" },
+      "data": {"source": "CDB90 (約 660 の戦闘)", "version": "jrnold/CDB90 (2015 年版の data/)", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
       "statistic": "攻撃側の勝ちを、兵力比の対数でロジスティック回帰したときの傾き。ランチェスター則の指数の推定値",
       "sim": "艦隊戦を同じ形式で書き出して同じ回帰",
       "pass": "傾きと指数が、実データの推定値の 95% 信頼区間の中",
-      "band": null, "split": "calibration",
-      "note": "光速近くでの交戦の物理 (探知の遅れ・相対速度での命中) を入れたうえで合わせる"
+      "band": [0.2356, 0.7233], "split": "calibration",
+      "note": "光速近くでの交戦の物理 (探知の遅れ・相対速度での命中) を入れたうえで合わせる",
+      "observed": {"win_logit_slope": {"name": "log(攻撃側 ÷ 防御側の兵力)", "coef": 0.4794, "se": 0.1244, "ci95": [0.2356, 0.7233], "p": 0.0001}, "lanchester_exponent": {"value": -0.29, "ci95": [-0.439, -0.141], "note": "損害の比 ∝ (敵 ÷ 味方)^(p−q)。二乗則なら 1、一乗則なら 0"}, "n_win": 616, "n_cas": 654},
+      "bandMeaning": "攻撃側の勝ちのロジスティック回帰の傾きの 95% 信頼区間。ランチェスター則の指数は observed の信頼区間で判定する"
     },
     {
       "id": "R17", "area": "生物", "name": "入植集団の大きさと存続",

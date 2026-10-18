@@ -1,0 +1,307 @@
+{
+ "generated": "2026-10-18T10:37:36Z",
+ "colonies": {
+  "n": 161,
+  "note": "COLDAT の期間 (平均の版)。いまの独立国だけが載るので、どの植民地も独立で終わっている (打ち切りなし)",
+  "britain_france": {
+   "n": 101,
+   "median_years": 85.0,
+   "iqr": [
+    62.0,
+    126.0
+   ],
+   "mean_years": 100.7
+  },
+  "spain_portugal_netherlands": {
+   "n": 42,
+   "median_years": 289.0,
+   "iqr": [
+    212.0,
+    318.0
+   ],
+   "mean_years": 258.5
+  },
+  "all": {
+   "n": 161,
+   "median_years": 93.0,
+   "iqr": [
+    56.0,
+    182.0
+   ],
+   "mean_years": 134.4
+  },
+  "by_colonizer": {
+   "belgium": {
+    "n": 3,
+    "median_years": 43.0
+   },
+   "britain": {
+    "n": 68,
+    "median_years": 86.0
+   },
+   "france": {
+    "n": 33,
+    "median_years": 82.0
+   },
+   "germany": {
+    "n": 12,
+    "median_years": 29.0
+   },
+   "italy": {
+    "n": 3,
+    "median_years": 31.0
+   },
+   "netherlands": {
+    "n": 4,
+    "median_years": 278.5
+   },
+   "portugal": {
+    "n": 12,
+    "median_years": 284.0
+   },
+   "spain": {
+    "n": 26,
+    "median_years": 290.0
+   }
+  },
+  "hazard_britain_france": {
+   "model1": {
+    "name": "log(通信の遅れ ÷ 1 世代)",
+    "coef": -0.3326,
+    "se": 0.2694,
+    "ci95": [
+     -0.8607,
+     0.1954
+    ],
+    "p": 0.2169,
+    "hr": 0.717,
+    "hr_ci95": [
+     0.4229,
+     1.2158
+    ]
+   },
+   "model2": [
+    {
+     "name": "log(通信の遅れ ÷ 1 世代)",
+     "coef": -0.302,
+     "se": 0.221,
+     "ci95": [
+      -0.7352,
+      0.1312
+     ],
+     "p": 0.1718,
+     "hr": 0.7393,
+     "hr_ci95": [
+      0.4794,
+      1.1402
+     ]
+    },
+    {
+     "name": "植民の始まりの年 (100 年あたり)",
+     "coef": 2.6674,
+     "se": 0.3916,
+     "ci95": [
+      1.8998,
+      3.435
+     ],
+     "p": 0.0,
+     "hr": 14.4018,
+     "hr_ci95": [
+      6.6842,
+      31.0302
+     ]
+    }
+   ],
+   "model3_direct_vs_indirect": [
+    {
+     "name": "フランス (直接統治) ÷ イギリス (間接統治)",
+     "coef": 0.3323,
+     "se": 0.2576,
+     "ci95": [
+      -0.1725,
+      0.8372
+     ],
+     "p": 0.197,
+     "hr": 1.3942,
+     "hr_ci95": [
+      0.8415,
+      2.3099
+     ]
+    },
+    {
+     "name": "log(通信の遅れ ÷ 1 世代)",
+     "coef": -0.1523,
+     "se": 0.2469,
+     "ci95": [
+      -0.6362,
+      0.3316
+     ],
+     "p": 0.5372,
+     "hr": 0.8587,
+     "hr_ci95": [
+      0.5293,
+      1.3931
+     ]
+    },
+    {
+     "name": "植民の始まりの年 (100 年あたり)",
+     "coef": 2.6291,
+     "se": 0.3924,
+     "ci95": [
+      1.8599,
+      3.3982
+     ],
+     "p": 0.0,
+     "hr": 13.8607,
+     "hr_ci95": [
+      6.4232,
+      29.9098
+     ]
+    }
+   ],
+   "delay_over_generation": {
+    "median": 0.00577,
+    "min": 0.0015,
+    "max": 0.01591
+   },
+   "assumptions": {
+    "sail_km_per_day": 150,
+    "route_factor": 1.3,
+    "generation_years": 28
+   },
+   "note": "ハザード比は「通信の遅れ ÷ 1 世代」が e 倍になったときの独立の起きやすさの倍率 (べき乗則の指数 = 係数)"
+  },
+  "violent_share": {
+   "decolonization": {
+    "n": 128,
+    "share": 0.312
+   },
+   "secession": {
+    "n": 38,
+    "share": 0.526
+   },
+   "decolonization_by_ruler": {
+    "britain": {
+     "n": 56,
+     "share": 0.089
+    },
+    "france": {
+     "n": 25,
+     "share": 0.32
+    },
+    "spain": {
+     "n": 9,
+     "share": 0.889
+    },
+    "portugal": {
+     "n": 6,
+     "share": 0.333
+    },
+    "netherlands": {
+     "n": 3,
+     "share": 0.333
+    }
+   }
+  }
+ },
+ "wars_cow": {
+  "n": 95,
+  "mean_years": 1.144,
+  "median_years": 0.446,
+  "mean_over_median": 2.564,
+  "share_under_1y": 0.684,
+  "deaths": {
+   "n": 95,
+   "median": 8000,
+   "powerlaw": {
+    "alpha": 1.553,
+    "alpha_se": 0.118,
+    "xmin": 41466.0,
+    "n_tail": 22,
+    "ks": 0.061,
+    "p": 1.0,
+    "boots": 500
+   }
+  }
+ },
+ "termination_ucdp": {
+  "all": {
+   "n": 505,
+   "shares": {
+    "low_activity": 0.414,
+    "victory_side_a": 0.21,
+    "ceasefire": 0.133,
+    "peace_agreement": 0.119,
+    "victory_side_b": 0.085,
+    "actor_ceased": 0.04,
+    "victory": 0.295
+   }
+  },
+  "interstate": {
+   "n": 72,
+   "shares": {
+    "ceasefire": 0.25,
+    "low_activity": 0.25,
+    "peace_agreement": 0.208,
+    "victory_side_b": 0.153,
+    "victory_side_a": 0.139,
+    "victory": 0.292
+   }
+  },
+  "codes": {
+   "1": "peace_agreement",
+   "2": "ceasefire",
+   "3": "victory_side_a",
+   "4": "victory_side_b",
+   "5": "low_activity",
+   "6": "actor_ceased"
+  },
+  "note": "UCDP の終わり方の区分 (codebook v4-2024)。type_of_conflict 2 = 国家間"
+ },
+ "battles_cdb90": {
+  "win_logit": {
+   "n": 616,
+   "intercept": {
+    "name": "切片",
+    "coef": 0.3955,
+    "se": 0.0973,
+    "ci95": [
+     0.2047,
+     0.5863
+    ],
+    "p": 0.0
+   },
+   "slope": {
+    "name": "log(攻撃側 ÷ 防御側の兵力)",
+    "coef": 0.4794,
+    "se": 0.1244,
+    "ci95": [
+     0.2356,
+     0.7233
+    ],
+    "p": 0.0001
+   }
+  },
+  "casualty_ratio": {
+   "n": 654,
+   "slope": {
+    "name": "log(損害の比) を log(兵力の比) で回帰した傾き",
+    "coef": 0.2896,
+    "se": 0.076,
+    "ci95": [
+     0.1406,
+     0.4386
+    ],
+    "p": 0.0001
+   },
+   "lanchester_exponent": {
+    "value": -0.29,
+    "ci95": [
+     -0.439,
+     -0.141
+    ],
+    "note": "損害の比 ∝ (敵 ÷ 味方)^(p−q)。二乗則なら 1、一乗則なら 0"
+   }
+  }
+ }
+}
