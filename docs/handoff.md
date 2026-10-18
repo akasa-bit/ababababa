@@ -11,7 +11,7 @@
 - 機能を壊さない (下の「試験」をすべて通してからマージする)。
 - 画面は Xiaomi Pad 8 Pro (3200×2136・144Hz、CSS で横 1280×780・縦 854×1200、画素の比 2.5) で確かめる。Playwright の viewport をこの大きさにして撮る。
 - 「スキン 6」= グラファイト (黒に近い灰色)・白・NASA の赤橙の配色。配色の 10 案から選ばれた唯一の配色で、切り替えは削除した (下の 15)。
-- 作業ブランチは `ccr-c52f9e86-8l8cbz`。マージのあとは `git fetch origin main && git checkout -B ccr-c52f9e86-8l8cbz origin/main` で main に合わせ直し、`--force-with-lease` でプッシュする。
+- 作業ブランチは、そのセッションで指定されたもの (例: `ccr-f641c31e-9hmryq`)。マージのあとは `git fetch origin main && git checkout -B <ブランチ> origin/main` で main に合わせ直し、`--force-with-lease` でプッシュする。
 - リポジトリに入れるもの (コミット・PR・コード・文書) に、AI のモデルの名前を書かない。
 - コミットの末尾の行と PR の本文の末尾は、そのセッションで与えられる案内 (共同作者の行・セッションへのリンク・「Generated with Claude Code」の行) に従う。
 - 試験で書き出す画面の写し (`shots/`) と、作業用の台本は、リポジトリの外 (作業用のフォルダ) に置く。リポジトリに残すものは `tools/` に入れる。
@@ -36,7 +36,7 @@
 
 - **名前**: NoLongerUbiquitous (前の名前は Moribin)。
 - **2 つの版**: 同じ `src/index.html` から、`node tools/build.mjs` でゲーム版 `index.html` とシミュレーション版 `simulation.html` を作る。違いは `EDITION` と、版ごとの値の表 `EDITIONS` だけ。
-- **済んだ段**: 縦切りの試作 S1 (実在の星の 3 次元の銀河)、S2 (統治体制と離反のハザード)、R1 (名前と 2 つの版)、R2 (リアルチェック: 離反・天文・人口・戦争の長さを生データとすり合わせ)。
+- **済んだ段**: 縦切りの試作 S1 (実在の星の 3 次元の銀河)、S2 (統治体制と離反のハザード)、R1 (名前と 2 つの版)、R2 (リアルチェック: 離反・天文・人口・戦争の長さを生データとすり合わせ)、S3 の 1 (エネルギーの記帳と船の推進。`docs/energy.md`)。
 - **データ**: `data/fetch/` (取得) → `data/raw/` (生データと MANIFEST) → `data/build/` (加工・計算) → `data/derived/` と `src/index.html`。
 - **目標**: `targets/targets.json` (版 2 で固定)。書き換えは「目標の変更」だけの PR で行い、`node tools/check-targets.js --lock` で固定し直す。
 - **測る道具**: `tools/secession.js` + `tools/secession-analyze.js` (離反)、`tools/wars.js` + `tools/wars-analyze.js` (戦争)、`tools/eta.js` (η⊕)、`tools/p0-measure.js` (P0 監査)。
@@ -54,7 +54,8 @@
 | R12 人口の増え方 | シミュレーション版は合格。ゲーム版は異星の種族の特性だけ超える |
 | R13 戦争の長さの偏り | 合格 (2.2) |
 | R14 戦争の終わり方 (確認用) | **不合格** (白紙講和が 9 割) |
-| R01・R03・R07・R10・R11・R15〜R18 | まだ (下の段で作る) |
+| R07 船のエネルギーの記帳 | 合格 (すべての便で式との差 5e-16 以下。`tools/tests/energy.js`) |
+| R01・R03・R10・R11・R15〜R18 | まだ (下の段で作る) |
 
 ## 4. ユーザーに選んでもらうこと (返事待ち)
 
@@ -63,7 +64,7 @@
 ## 5. 次にやること (順番)
 
 1. **S3: エネルギーの記帳・レーザー航路・交易**
-   - ダイソン・スウォームの出力を記帳する。船の費用 = (γ−1)mc² ÷ 効率の連鎖 (レーザー光帆 2β/(1+β)・磁気帆・反物質の仕上げ)。目標 R07 (式と記帳が 1e-6 で一致)。
+   - ~~ダイソン・スウォームの出力を記帳する。船の費用 = (γ−1)mc² ÷ 効率の連鎖。目標 R07~~ 済み (`docs/energy.md`)。残り: スウォームの材料を資源から引くこと (R03 と一緒に)、エネルギーを輸送費として交易の値段に入れること (R01 と一緒に)。
    - 交易路は両端の発射所と減速設備。交易量は距離・輸送の時間・利子 (Krugman 1978/2010)・輸送費から決め、重力モデルの距離の弾力性が負で −0.9 前後になること (R01。CEPII のデータの取得から)。
    - 物質とエネルギーの保存のテスト (R03)。域外への売却 (物とお金が湧く) をやめる。
 2. **S4: 第三次産業と研究** (アイデアの生産関数。R10・R11)。そのあと農業の割合を見直す。
@@ -110,6 +111,7 @@
 | `docs/P0-audit.md` | 書き直しの前の監査 (数値と式の一覧と、現実との差) |
 | `docs/governance.md` | 統治体制と離反の仕組みと、測った結果 |
 | `docs/reality-check.md` | 現実の値とのすり合わせ、版ごとの違い、選んでほしいこと |
+| `docs/energy.md` | エネルギーの記帳と船の推進 (式・値の範囲と出典・だれが払うか・測った結果) |
 | `tools/README.md` | 自動対戦・測る道具・試験の使い方 |
 | `tools/WARS-REPORT.md` | 戦争の自動対戦の報告 (MP7。リアルチェックの前のもの) |
 | `data/README.md` | 生データの取得と加工の手順・決まり・限界・出典 |
@@ -124,6 +126,7 @@
 | `REAL_STARS` (`STARS:BEGIN`〜`STARS:END`) | 実在の星の表。`data/build/build_stars.py` が書く。手で直さない |
 | `generateRealGalaxy`・`GALAXY_GEN`・`ETA_EXTRA`・`habitableZone` | 実在の銀河の組み立て、銀河の版、ハビタブルゾーン |
 | `REGIMES`・`HAZARD`・`secessionTermsOf`・`VIOLENT_SHARE`・`FORCED` | 統治体制と離反のハザード、強制労働の後遺症 |
+| `PROP`・`SWARM`・`propulsion`・`E_UNIT` | 推進の効率・スウォーム・1 便の推進のエネルギー。`Game` の `power` (発電)・`bookE` (記帳)・`bookShip` (1 便を記帳)・`pushFleet`・`routeRoom` (エネルギーで送れる量) |
 | `EXHAUST`・`WARSCORE`・`TREATY`・`PEACE` | 戦争疲弊・戦勝点・講和条約・講和の判断の表 |
 | `class Game` | 試合の中身。`advance` (時間を進める。年 1 回の処理の並びもここ)、`economy` (生産と消費)、`earn` (収入)、`unrestYearly`・`declareIndependence` (離反)、`snapshot`・`known` (光の遅れのぶん古い記録)、`restore` (読み込み)、`commandRaw`・`setSetting` (命令の実行) |
 | `PLAYER_KEYS` | プレイヤーごとの値 (`game.pc` などは、いま操作しているプレイヤーの値) |
@@ -149,7 +152,7 @@
 |---|---|---|
 | 1 | 合わせる目標のファイル | 済み (版 2) |
 | 2 | 遊びの柱 | 済み (`docs/design-pillars.md`) |
-| 3 | 縦切りの試作 | S1・S2 済み。S3〜S5 はまだ |
+| 3 | 縦切りの試作 | S1・S2 済み。S3 はエネルギーの記帳まで (R07)。S3 の残り (R03・R01)・S4・S5 はまだ |
 | 4 | 生データの取得スクリプトと ODD の文書 | 星と歴史のデータは済み。交易 (CEPII)・産業構造 (GGDC・ILOSTAT)・研究 (Bloom ほか) のデータと、ODD の文書はまだ |
 | 5 | GitHub Actions での自動対戦の比較と、必勝法を探す AI | まだ (いまは手元で回している) |
 | 6 | 同意を取ったプレイ記録の書き出し | まだ (プレイ記録とメモの書き出しはある。同意の画面がない) |
@@ -174,6 +177,7 @@
 - `hot.js`: 最後の 2 つの配列の先頭が `true`。他国の艦隊への命令は `{"ok":false,"reason":"他国の艦隊には命令できない"}` になるのが正しい。
 - `net.js`: `sync2` の 2 つの要約 (2 番目の値) が同じ。最後の `1` は、わざと壊したあと 1 回で合わせ直したこと。
 - `regime.js`: `regimes` が `federal, dominion, encomienda`、`revoke` が `[true, 32]`、`saveLoad` が `true`、`wide` の 2 つの値が同じ (はみ出しなし)。
+- `energy.js`: 1 行目が「R07 合格」(|比 − 1| の最大が 1e-6 以下)。
 - 古い版と比べるとき (読み込みの互換・描画の違い) は、`git show <コミット>:index.html > /tmp/old.html` で古い公開用の HTML を取り出して渡す (例: `node tools/tests/rotate.js shots /tmp/old.html`)。
 
 ## 15. 画面の決まり (ユーザーと決めたこと)
