@@ -1,10 +1,17 @@
 # ababababa
 
-## 🌌 Moribin
+## 🌌 NoLongerUbiquitous
 
-恒星間入植シミュレーション。ブラウザでそのまま遊べます。
+恒星間入植シミュレーション。ブラウザでそのまま遊べます (前の名前は Moribin)。
 
-**▶ [Moribin を遊ぶ](https://akasa-bit.github.io/ababababa/)**
+**▶ [ゲーム版を遊ぶ](https://akasa-bit.github.io/ababababa/)** ・ **▶ [シミュレーション版を開く](https://akasa-bit.github.io/ababababa/simulation.html)**
+
+| 版 | ねらい | ファイル |
+|---|---|---|
+| ゲーム版 | 遊びやすさを保ったまま、なるべく現実に近づける | `index.html` |
+| シミュレーション版 | なるべく現実のままにする (授業や研究で使う) | `simulation.html` |
+
+2 つの版は同じ元のファイルから作り、違うのは版ごとの値の表 (`EDITIONS`) だけです。違いと根拠は [docs/reality-check.md](docs/reality-check.md)。セーブは版ごとに別で、ネット対戦は同じ版どうしでだけつなげます。
 
 プレイヤーは地球政府。入植船を送って星系を広げ、交易・政治・戦争で恒星間国家を育てる。ただし情報も指令も**光速でしか伝わらない**。星系の政府はふだん自分で動き、地球は限られた**政治力** (地球の意志) をどこに使うかを決める。遠い家臣ほど、関与が届くのに時間も政治力もかかる。
 
@@ -327,7 +334,8 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 ### 開発者向け: ファイルの組み立て
 
 - 読みやすい元のファイルは `src/index.html`。手を入れるのはこちら
-- 公開用の `index.html` は `node tools/build.mjs` で作る (最初に `cd tools && npm ci`。圧縮に python3 を使う)
+- 公開用の `index.html` (ゲーム版) と `simulation.html` (シミュレーション版) は `node tools/build.mjs` で作る (最初に `cd tools && npm ci`。圧縮に python3 を使う)
+  - 版の違いは、`src/index.html` の `EDITION` の値だけ。build がこの行を版ごとに書き換えて 2 枚作る。版ごとに違う値は `EDITIONS` の表にまとめる
   - JavaScript (terser)・CSS (esbuild)・HTML を最小化し、LZMA で圧縮して、7ビットずつ文字にした 1 枚の HTML にする。開くと中の小さな展開器 (`tools/unlzma.js`) が元に戻して表示する
   - 書き出す前に、展開したものが最小化した HTML と 1 バイトずつ一致することを確かめる
   - 大きさ: 元 約 500 KB → 公開用 約 102 KB (約 1/5)。展開にかかるのは開くときの 1 回だけ (約 50 ミリ秒)

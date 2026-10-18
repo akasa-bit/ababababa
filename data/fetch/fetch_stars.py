@@ -13,7 +13,7 @@
 import datetime, hashlib, json, os, sys, urllib.parse, urllib.request
 
 ROOT = os.path.join(os.path.dirname(__file__), '..', 'raw')
-UA = {'User-Agent': 'Moribin data fetch (research game; contact via repository)'}
+UA = {'User-Agent': 'NoLongerUbiquitous data fetch (research game; contact via repository)'}
 
 def get(url, path, post=None):
     req = urllib.request.Request(url, headers=UA, data=urllib.parse.urlencode(post).encode() if post else None)
