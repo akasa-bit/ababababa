@@ -89,6 +89,15 @@ node tools/eta.js "$PWD/index.html" 0.5 2   # FGK 型・M 型の主星あたり�
 node tools/eta.js "$PWD/index.html" 1.0 2   # M 型の目標 R06 は 1〜1.5 地球半径
 ```
 
+## 交易と距離 (目標 R01)
+
+```sh
+NAT=6 node tools/gravity.js 30 300 4 gravity.csv   # 30 の銀河 × 300 年の取引を、実データと同じ形の CSV に書き出す (約 15 分)
+python3 tools/gravity-analyze.py gravity.csv      # 実データと同じ data/build/gravity.py で推定し、合否を出す
+```
+
+`KIND=t` で交易だけ、`KIND=b` で建設の資材だけ。`TW='TRADE.rate=0.03'` のように、試合の前に値を変えられる。結果の読み方は `docs/trade.md`。
+
 ## 試験 (tools/tests)
 
 機能が壊れていないかを確かめる試験です。どれも Playwright で公開用の HTML を開いて動かします。画面の写しは、いまのフォルダの `shots/` に書きます。
