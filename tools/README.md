@@ -89,6 +89,15 @@ node tools/eta.js "$PWD/index.html" 0.5 2   # FGK 型・M 型の主星あたり�
 node tools/eta.js "$PWD/index.html" 1.0 2   # M 型の目標 R06 は 1〜1.5 地球半径
 ```
 
+## 交易と距離 (目標 R01)
+
+```sh
+NAT=6 node tools/gravity.js 30 300 4 gravity.csv   # 30 の銀河 × 300 年の取引を、実データと同じ形の CSV に書き出す (約 15 分)
+python3 tools/gravity-analyze.py gravity.csv      # 実データと同じ data/build/gravity.py で推定し、合否を出す
+```
+
+`KIND=t` で交易だけ、`KIND=b` で建設の資材だけ。`TW='TRADE.rate=0.03'` のように、試合の前に値を変えられる。結果の読み方は `docs/trade.md`。
+
 ## 試験 (tools/tests)
 
 機能が壊れていないかを確かめる試験です。どれも Playwright で公開用の HTML を開いて動かします。画面の写しは、いまのフォルダの `shots/` に書きます。
@@ -100,7 +109,12 @@ export CHROMIUM=/opt/pw-browsers/chromium   # Chromium の場所 (必要なら)
 node tools/tests/det.js 3 120                                   # 決定性 (ゲーム版)
 HTML=$PWD/simulation.html NAT=1 node tools/tests/det.js 7 120   # 決定性 (シミュレーション版・国家選択あり)
 for t in hot treaty edit lib home real net; do node tools/tests/$t.js; done
+node tools/tests/cloud.js shots                                 # アカウントとクラウド (偽の Firebase)
 for t in pick regime editions; do node tools/tests/$t.js shots; done
+node tools/tests/energy.js 5 150                                # 船のエネルギーの記帳 (目標 R07)
+HTML=$PWD/simulation.html NAT=1 node tools/tests/energy.js 7 150
+node tools/tests/conserve.js 5 150                              # 物質とエネルギーの保存 (目標 R03)
+HTML=$PWD/simulation.html NAT=1 node tools/tests/conserve.js 7 150
 ```
 
 | 試験 | 確かめること |
@@ -111,9 +125,12 @@ for t in pick regime editions; do node tools/tests/$t.js shots; done
 | `treaty.js` | 戦争疲弊・講和の申し入れ・講和会議・条約 |
 | `edit.js`・`lib.js` | 国家の編集と保管庫 |
 | `home.js`・`pick.js` | ホーム画面と国家選択 (横と縦の画面) |
-| `real.js` | 実在の 3 次元の銀河・回す・傾ける |
+| `real.js` | 実在の 3 次元の銀河 (地図は真上からの平面)・ずらしても回らない・100 年の観戦 |
 | `regime.js` | 統治体制の切り替え・自治領・強制労働の後遺症・既定の体制・保存と読込 |
-| `rotate.js` | 回したあとの絵が、描き直した絵と一致する |
+| `rotate.js` | ずらして拡大したあとの絵が、描き直した絵と一致する |
 | `editions.js` | 2 つの版が開き、保存の名前が分かれている |
+| `conserve.js` | 1 年ごとに、星系ごと・資源ごとの記帳した出入りと備蓄の増加・運ぶ途中の物・工業の質量・政府ごとのエネルギーが釣り合う (誤差 ÷ 取扱量が 1e-9 以下、目標 R03)。決まっていない出入りがない |
+| `cloud.js` | アカウントとクラウド (偽の Firebase で): ゲストのログイン・名前・クラウドのセーブ・自作の国・部屋のコードでのネット対戦 |
+| `energy.js` | 船 1 便ごとに記帳した推進のエネルギーが、試験の中で計算し直した式と 1 ± 1e-6 で一致する (目標 R07)。太陽系の発電と収支も出す |
 
 各試験は結果を表示します。`[]` で終わる行は、ページの誤りがなかったことを表します。

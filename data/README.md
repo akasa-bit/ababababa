@@ -48,3 +48,21 @@ python3 data/build/analyze_history.py  # 統計量を計算する (numpy が要�
 - **限界**: COLDAT はいまの独立国だけを載せるので、どの植民地も独立で終わっている (いまも続く属領は入らない)。存続年数は植民の始まりの年に強くよる (遅く始まった植民地ほど短い。20 世紀半ばの脱植民地化の波)
 
 出典: Becker, B. (2019) COLDAT, Harvard Dataverse・Hensel, P. R. ICOW Colonial History Data Set 1.1・Sarkees & Wayman (2010) Resort to War (COW 4.0)・Kreutz, J. (2010) UCDP Conflict Termination・CAA (1990) CDB90 / Arnold, J. B. CDB90 (ODC-By)・Google DSPL countries.csv (Apache 2.0)
+
+## 交易のデータ
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_trade.py` → `data/raw/trade/` | CEPII Gravity V202211 (Conte, Cotterlaz & Mayer 2022)。元の zip (約 200 MB、中の CSV は 1.25 GB) はリポジトリに置けないので、2000〜2019 年の行と推定に使う 11 列だけを `cepii_gravity_2000_2019.csv.gz` (6.5 MB) に取り出す。元の zip の URL・取得日・SHA-256、取り出した列・行数・SHA-256 を `data/raw/trade/MANIFEST.json` に記録する。同じ zip からは同じバイト列になる |
+| 加工 | `data/build/analyze_trade.py` (推定は `data/build/gravity.py`) → `data/derived/trade.json` | 重力モデルの PPML 推定 (輸出国×年・輸入国×年の固定効果)。本推定は ln 距離だけ。参考に、制御変数 (隣接・公用語・植民地・自由貿易協定) あり・空の交易額を 0 とする・距離を dist にする・年ごとも出す |
+
+```sh
+python3 data/fetch/fetch_trade.py       # 生データを取り直す (約 200 MB を落とす)
+python3 data/build/analyze_trade.py     # 推定する (numpy が要る。約 1 分)
+```
+
+- **推定の結果**: 本推定 −0.874。制御変数あり −0.680、空の交易額を 0 −0.873、距離を dist にする −0.871。年ごとでは 2000 年の −0.89 から 2019 年の −0.85 へ少しずつ小さくなる
+- **推定のコード**は、ゲームの自動対戦の書き出しにもそのまま使う (目標の決まり「実データと同じ統計コードで計算する」)
+- **限界**: BACI は正の交易額しか載せないので、空の組が 0 なのか、記録がないのかを区別できない (参考の推定で、どちらでもほぼ同じになることを確かめた)
+
+出典: Conte, M., Cotterlaz, P. & Mayer, T. (2022) The CEPII Gravity database, CEPII Working Paper 2022-05・Santos Silva, J. M. C. & Tenreyro, S. (2006) The Log of Gravity, Review of Economics and Statistics 88, 641–658・Correia, S., Guimarães, P. & Zylkin, T. (2020) Fast Poisson estimation with high-dimensional fixed effects, Stata Journal 20, 95–115・Disdier, A.-C. & Head, K. (2008) The Puzzling Persistence of the Distance Effect on Bilateral Trade, Review of Economics and Statistics 90, 37–48
