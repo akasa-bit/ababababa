@@ -10,6 +10,8 @@
 - 画面は Xiaomi Pad 8 Pro (横 1280×780・縦 854×1200)、スキン 6 で確かめる。
 - 作業ブランチは `ccr-c52f9e86-8l8cbz`。マージのあとは `git fetch origin main && git checkout -B ccr-c52f9e86-8l8cbz origin/main` で main に合わせ直し、`--force-with-lease` でプッシュする。
 - リポジトリに入れるもの (コミット・PR・コード・文書) に、AI のモデルの名前を書かない。
+- コミットの末尾の行と PR の本文の末尾は、そのセッションで与えられる案内 (共同作者の行・セッションへのリンク・「Generated with Claude Code」の行) に従う。
+- 試験で書き出す画面の写し (`shots/`) と、作業用の台本は、リポジトリの外 (作業用のフォルダ) に置く。リポジトリに残すものは `tools/` に入れる。
 
 ## 2. ゲームの大きな目標と「決めたこと」
 
@@ -77,3 +79,96 @@
 - **版ごとに違う値**は `EDITIONS` にだけ置く。版を分ける理由は `docs/reality-check.md` に書く。
 - 自動対戦は CPU を食う (4 並列で 30 の銀河 × 300 年 × 2 つの版で約 15 分)。`run_in_background` で回し、待つ。
 - `pkill -f` に、自分のコマンド行にも含まれる文字を使わない (自分のシェルが止まる)。
+
+## 7. 環境と道具の準備
+
+| もの | 使い方 |
+|---|---|
+| 組み立て (build) | `cd tools && npm ci` (esbuild・terser) のあと `node tools/build.mjs`。圧縮に python3 の `lzma` を使う |
+| Playwright | このクラウドの環境では、全体に入っているものを使う: `NODE_PATH=$(npm root -g) node …` |
+| Chromium | `/opt/pw-browsers/chromium`。試験と自動対戦の台本は、環境変数 `CHROMIUM` でこの場所を渡す。`playwright install` はしない |
+| Python | `data/build/analyze_history.py` は numpy を使う (入っている)。`data/fetch/*.py` はネットにつながる環境で動かす (プロキシ経由で取れる) |
+| GitHub | `gh` は使えない。PR の作成とマージは GitHub の MCP の道具 (`mcp__github__create_pull_request`・`mcp__github__merge_pull_request`) で行う |
+
+## 8. 公開のしかた
+
+- `main` にプッシュすると、`.github/workflows/pages.yml` がリポジトリの根をそのまま GitHub Pages に公開する。
+  - ゲーム版: https://akasa-bit.github.io/ababababa/
+  - シミュレーション版: https://akasa-bit.github.io/ababababa/simulation.html
+- 公開されるのは、組み立て済みの `index.html` と `simulation.html` (と `assets/`)。**`src/index.html` を直したら、組み立てた 2 つの HTML も一緒にコミットする。** 忘れると、公開されているゲームに変更が入らない。
+
+## 9. 文書の地図
+
+| 文書 | 中身 |
+|---|---|
+| `README.md` | 遊び方の説明と、開発者向けの決まり (組み立て・再現性・命令の層・ネット対戦) |
+| `docs/design-pillars.md` | 遊びの柱 (3 つ) と時間の設計。新しい仕組みは、どれかの柱を強くするときだけ入れる |
+| `docs/targets.md` + `targets/targets.json` | 合わせる目標 (事前登録)。幅の決め方と合否の決まり |
+| `docs/P0-audit.md` | 書き直しの前の監査 (数値と式の一覧と、現実との差) |
+| `docs/governance.md` | 統治体制と離反の仕組みと、測った結果 |
+| `docs/reality-check.md` | 現実の値とのすり合わせ、版ごとの違い、選んでほしいこと |
+| `tools/README.md` | 自動対戦・測る道具・試験の使い方 |
+| `tools/WARS-REPORT.md` | 戦争の自動対戦の報告 (MP7。リアルチェックの前のもの) |
+| `data/README.md` | 生データの取得と加工の手順・決まり・限界・出典 |
+
+## 10. ソースの地図 (`src/index.html`)
+
+1 つのファイルに全部入っています。行番号は変わるので、名前で探してください。
+
+| 名前 | 中身 |
+|---|---|
+| `EDITION`・`EDITIONS`・`ED` | 版と、版ごとに違う値 (ファイルの先頭) |
+| `REAL_STARS` (`STARS:BEGIN`〜`STARS:END`) | 実在の星の表。`data/build/build_stars.py` が書く。手で直さない |
+| `generateRealGalaxy`・`GALAXY_GEN`・`ETA_EXTRA`・`habitableZone` | 実在の銀河の組み立て、銀河の版、ハビタブルゾーン |
+| `REGIMES`・`HAZARD`・`secessionTermsOf`・`VIOLENT_SHARE`・`FORCED` | 統治体制と離反のハザード、強制労働の後遺症 |
+| `EXHAUST`・`WARSCORE`・`TREATY`・`PEACE` | 戦争疲弊・戦勝点・講和条約・講和の判断の表 |
+| `class Game` | 試合の中身。`advance` (時間を進める。年 1 回の処理の並びもここ)、`economy` (生産と消費)、`earn` (収入)、`unrestYearly`・`declareIndependence` (離反)、`snapshot`・`known` (光の遅れのぶん古い記録)、`restore` (読み込み)、`commandRaw`・`setSetting` (命令の実行) |
+| `PLAYER_KEYS` | プレイヤーごとの値 (`game.pc` などは、いま操作しているプレイヤーの値) |
+| `class GalaxyView`・`class SystemView` | 星間マップと星系マップの描画。`toScreen` (3 次元の投影)、`viewLayer` (重い層の使い回し。角度が変わったら描き直す) |
+| `systemPanel`・`empireHtml`・`renderHome` | 右の欄・帝国タブ・ホーム画面 |
+| `newGame`・`buildSave`・`loadSave` | 新しいゲーム・セーブ・読み込み |
+| `issue`・`runCmd` | 命令の層 (ひとり・ホットシート・ネット対戦の分かれ目) |
+| `Net` | ネット対戦 (WebRTC のロックステップ)。`hash` は状態の要約 |
+| `NationLib`・`PlayLog` | 国家の保管庫・プレイ記録 |
+
+## 11. セーブとネット対戦の決まり
+
+- **セーブ**: `buildSave` が書く `v: 2` の形。実在の銀河なら `galaxy: 'real'`、銀河の版 2 以上なら `gen` を入れる。読み込みでは、シードから銀河を作り直してから `restore` する。
+- **保存の名前**: ゲーム版は前の名前のまま `moribin` (IndexedDB の名前・`moribin-save-v1` など)。Moribin のころのセーブをそのまま読むため。シミュレーション版は `nlu-sim`。
+- **新しい状態を足すとき**
+  - かならずセーブに入れる。入れないと、読み込んだあとに結果がずれ、決定性の試験とネット対戦の要約が合わなくなる (前に `ghosts.fleets` で起きた)。
+  - プレイヤーごとに違う値は `PLAYER_KEYS` に入れる。ネット対戦の要約 (`Net.hash`) は `pi`・`savedAt`・`endShown`・`spectate`・`credits`・`PLAYER_KEYS` を除いて計算する。
+  - 年 1 回の処理は、どの端末でも 1 人目のプレイヤーの立場で進む。「いま操作しているプレイヤー」によって結果が変わる処理を入れない。
+
+## 12. 進め方 (ユーザーの頼みの 1〜8) の状態
+
+| # | 中身 | 状態 |
+|---|---|---|
+| 1 | 合わせる目標のファイル | 済み (版 2) |
+| 2 | 遊びの柱 | 済み (`docs/design-pillars.md`) |
+| 3 | 縦切りの試作 | S1・S2 済み。S3〜S5 はまだ |
+| 4 | 生データの取得スクリプトと ODD の文書 | 星と歴史のデータは済み。交易 (CEPII)・産業構造 (GGDC・ILOSTAT)・研究 (Bloom ほか) のデータと、ODD の文書はまだ |
+| 5 | GitHub Actions での自動対戦の比較と、必勝法を探す AI | まだ (いまは手元で回している) |
+| 6 | 同意を取ったプレイ記録の書き出し | まだ (プレイ記録とメモの書き出しはある。同意の画面がない) |
+| 7 | Steam Playtest の準備 (Electron か Tauri で包む) | まだ |
+| 8 | 授業で使う道具 (シナリオの編集・教材) と、現実と面白さがぶつかる所の表 | 表は `docs/reality-check.md` の 4。道具はまだ |
+
+`docs/targets.md` の「決めてほしいこと」1〜6 には返事をもらった: 1 = 世代を延ばす案 (1 世代 100 年)、2 = 約 600 星系、3 = 実データどおり、4 = 標準の前提は Claude が決める、5 = Claude の案 (500 年を早送りつきで 10〜15 時間)、6 = まずは日本語だけ。ただし 1 は、根拠の説明に誤りがあったので、`docs/reality-check.md` の 2 で選び直してもらっている。
+
+## 13. 分かっている問題
+
+- **戦争が多い**: 6 か国・300 年の自動対戦で、100 年あたりゲーム版 83・シミュレーション版 123 の戦争 (離反が増えて独立戦争が増えた)。終わり方は白紙講和が 9 割で、目標 R14 に合わない。S5 で戦闘と講和を作り直すときに直す。
+- **仮の値**: 封建制・連邦制・自治領の離反の倍率、統治体制ごとの遠さへの敏感さ、離反のハザードの人口の比と忠誠度の項、強制労働の採掘 +30% と人口の増え方 ×0.7。
+- **確かめられないもの**: 直接統治は人間の国だけが使うので、自動対戦ではハザード比を確かめられない。目標 R09 はゲームに本国の違いがないので判定できない。
+- **AI の国の統治体制**は国号で決めている (帝国 → エンコミエンダ制など)。現実の根拠はない。
+- **先住民と異星の国**は架空。シミュレーション版でも残っている (選んでほしいことの 4)。
+- **版をまたいだ読み込み**: 書き出したセーブのファイルは、もう一方の版でも読める (その版の値で続く)。止めてはいない。
+
+## 14. 試験の「合格」の見え方と、古い版との比べ方
+
+- どの試験も、最後の `[]` はページの誤りがなかったこと。`[...]` に文字があれば誤り。
+- `det.js`: 3 行とも「一致」で、`保存→読込→保存: true`。
+- `hot.js`: 最後の 2 つの配列の先頭が `true`。他国の艦隊への命令は `{"ok":false,"reason":"他国の艦隊には命令できない"}` になるのが正しい。
+- `net.js`: `sync2` の 2 つの要約 (2 番目の値) が同じ。最後の `1` は、わざと壊したあと 1 回で合わせ直したこと。
+- `regime.js`: `regimes` が `federal, dominion, encomienda`、`revoke` が `[true, 32]`、`saveLoad` が `true`、`wide` の 2 つの値が同じ (はみ出しなし)。
+- 古い版と比べるとき (読み込みの互換・描画の違い) は、`git show <コミット>:index.html > /tmp/old.html` で古い公開用の HTML を取り出して渡す (例: `node tools/tests/rotate.js shots /tmp/old.html`)。
