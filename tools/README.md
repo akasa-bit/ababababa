@@ -109,6 +109,7 @@ export CHROMIUM=/opt/pw-browsers/chromium   # Chromium の場所 (必要なら)
 node tools/tests/det.js 3 120                                   # 決定性 (ゲーム版)
 HTML=$PWD/simulation.html NAT=1 node tools/tests/det.js 7 120   # 決定性 (シミュレーション版・国家選択あり)
 for t in hot treaty edit lib home real net; do node tools/tests/$t.js; done
+node tools/tests/cloud.js shots                                 # アカウントとクラウド (偽の Firebase)
 for t in pick regime editions; do node tools/tests/$t.js shots; done
 node tools/tests/energy.js 5 150                                # 船のエネルギーの記帳 (目標 R07)
 HTML=$PWD/simulation.html NAT=1 node tools/tests/energy.js 7 150
@@ -129,6 +130,7 @@ HTML=$PWD/simulation.html NAT=1 node tools/tests/conserve.js 7 150
 | `rotate.js` | ずらして拡大したあとの絵が、描き直した絵と一致する |
 | `editions.js` | 2 つの版が開き、保存の名前が分かれている |
 | `conserve.js` | 1 年ごとに、星系ごと・資源ごとの記帳した出入りと備蓄の増加・運ぶ途中の物・工業の質量・政府ごとのエネルギーが釣り合う (誤差 ÷ 取扱量が 1e-9 以下、目標 R03)。決まっていない出入りがない |
+| `cloud.js` | アカウントとクラウド (偽の Firebase で): ゲストのログイン・名前・クラウドのセーブ・自作の国・部屋のコードでのネット対戦 |
 | `energy.js` | 船 1 便ごとに記帳した推進のエネルギーが、試験の中で計算し直した式と 1 ± 1e-6 で一致する (目標 R07)。太陽系の発電と収支も出す |
 
 各試験は結果を表示します。`[]` で終わる行は、ページの誤りがなかったことを表します。

@@ -117,6 +117,7 @@
 | `docs/reality-check.md` | 現実の値とのすり合わせ、版ごとの違い、選んでほしいこと |
 | `docs/energy.md` | エネルギーの記帳と船の推進 (式・値の範囲と出典・だれが払うか・測った結果) |
 | `docs/conservation.md` | 物質とエネルギーの保存 (出入りの種類・直したこと・測った結果・お金への影響) |
+| `docs/online.md` | アカウントとオンライン (Firebase の準備・Firestore の場所・部屋のつなぎ方) |
 | `docs/trade.md` | 交易と距離 (利子と CES の仕組み・測り方・結果・何が遠い交易を減らしているか・選んでほしいこと) |
 | `tools/README.md` | 自動対戦・測る道具・試験の使い方 |
 | `tools/WARS-REPORT.md` | 戦争の自動対戦の報告 (MP7。リアルチェックの前のもの) |
@@ -142,6 +143,7 @@
 | `newGame`・`buildSave`・`loadSave` | 新しいゲーム・セーブ・読み込み |
 | `issue`・`runCmd` | 命令の層 (ひとり・ホットシート・ネット対戦の分かれ目) |
 | `Net` | ネット対戦 (WebRTC のロックステップ)。`hash` は状態の要約 |
+| `Cloud`・`firebaseApi`・`FIREBASE_CONFIG` | アカウント (Firebase)。クラウドのセーブ・自作の国・部屋のコードでのつなぎ方。Firebase の窓口は `firebaseApi` (試験では `window.__FB_FAKE`) |
 | `NationLib`・`PlayLog` | 国家の保管庫・プレイ記録 |
 
 ## 11. セーブとネット対戦の決まり
