@@ -1166,6 +1166,8 @@ const C2 = C_LIGHT * C_LIGHT;
 const YEAR_S = 31557600; // 1 年 (ユリウス年) [s]
 const L_SUN_W = 3.828e26; // 太陽の光度 [W] (IAU 2015 決議 B3)
 const UNIT_KG = 1e9; // 資源の 1 単位 = 100 万 t (食料 1 単位 = 100 万人の 1 年分 = 1 人 1 t/年)
+// 資源ごとの 1 単位の質量 [kg]。工業品は、作るのに使う金属 0.5 単位と同じ質量 (工業で質量が保存される。燃料は燃やして出ていく)
+const RES_KG = { food: UNIT_KG, water: UNIT_KG, metal: UNIT_KG, fuel: UNIT_KG, rare: UNIT_KG, goods: 0.5 * UNIT_KG, slaves: UNIT_KG };
 const PROP = {
   pv: 0.3, // ダイソン・スウォームの発電効率 (光 → 電気)
   laser: 0.5, // レーザーの電気 → 光
@@ -1182,8 +1184,8 @@ const SWARM = {
 };
 const PERSON_KG = 100; // 乗る人 1 人の質量 (体と身の回りの品)。住む場所の質量は船の構造 (工業品) に入る
 const FLEET_KG = 160 * UNIT_KG; // 1 艦隊の質量 (編成に使う金属・燃料・希少元素の合計)
-const TROOP_KG = 10 * UNIT_KG; // 歩兵 1 連隊の質量 (訓練に使う工業品)
-const MIGRANT_KG = 500e3; // 移民 1 人あたりの船の質量 [kg] (入植船と同じ: 工業品 100 単位 ÷ 20 万人)
+const TROOP_KG = 10 * RES_KG.goods; // 歩兵 1 連隊の質量 (訓練に使う工業品)
+const MIGRANT_KG = (100 * RES_KG.goods) / 2e5; // 移民 1 人あたりの船の質量 [kg] (入植船と同じ: 工業品 100 単位 ÷ 20 万人 = 250 t)
 const E_LABEL = { swarm: 'スウォームの発電', settler: '入植船', cargo: '貨物船', build: '資材輸送船', fleet: '艦隊', troop: '歩兵', migrant: '移民船', waste: '蓄えきれず捨てた' };
 // 帆に光の運ぶエネルギーが移る割合を、止まった状態から速さ beta までの加速で通したもの。
 // その瞬間の割合 2β/(1+β) (完全な反射の帆) を、運動量の式で積分した: 必要な光 = mc² (γβ + γ − 1) / 2
@@ -1199,8 +1201,9 @@ function propulsion(m, beta, mode) {
   const anti = (m * (R - 1)) / 2;
   return { acc: ((g - 1) * m * R * C2) / chain, dec: (anti * C2) / PROP.amEff, mass: m * R, anti };
 }
-const E_UNIT = propulsion(UNIT_KG, SHIP_SPEED, 'route').acc; // 交易路で 1 単位を運ぶときの、片側 (加速か減速) のエネルギー [J]
+const E_UNIT = propulsion(UNIT_KG, SHIP_SPEED, 'route').acc; // 交易路で 100 万 t を運ぶときの、片側 (加速か減速) のエネルギー [J]
 const E_UNIT_FREE = ((p) => p.acc + p.dec)(propulsion(UNIT_KG, SHIP_SPEED, 'free')); // 同じく、減速を磁気帆と反物質で行うとき (送る側がすべて払う) [J]
+let MASS_AUDIT = null; // 試験用: { flows: {}, energy: {} } にすると、備蓄とエネルギーの出入りを星系・資源・種類ごとに足し上げる
 let ENERGY_AUDIT = null; // 試験用: 配列にすると、記帳した船を 1 便ずつ書き出す
 
 const KIND_LABEL = { station: '宇宙ステーション', planet: '惑星入植地' };
@@ -1277,7 +1280,6 @@ Object.assign(ICONS, {
   cands: ['0 0 512 512', '<path fill="currentColor" d="M252.78 20.875c-1.302.012-2.6.03-3.905.063c-37.928.974-76.148 11.153-111.28 31.437C25.164 117.285-13.41 261.322 51.5 373.75s208.946 151.036 321.375 86.125c77.7-44.86 120.1-127.513 117.47-211.406c-3.563 65.847-35.898 128.573-91 169.374a218 218 0 0 1-35.814 25.844c-103.68 59.86-235.983 24.4-295.842-79.282c-59.86-103.68-24.43-235.984 79.25-295.844c35.64-20.576 74.67-29.88 112.968-29.03c63.304 1.4 124.623 30.57 165.438 82.53l-32.594 23.032c-33.27-42.835-84.01-66.6-136.063-67c-.96-.008-1.91-.012-2.875 0c-.964.01-1.943.038-2.906.062c-28.006.717-56.222 8.215-82.156 23.188c-82.99 47.914-111.508 154.322-63.594 237.312s154.32 111.51 237.313 63.594c51.37-29.66 81.862-81.724 86.28-136.78c-12.53 45.37-42.32 86.745-85.438 114.186c-.02.013-.043.018-.062.03l-.344.22a158 158 0 0 1-9.78 6.156c-74.245 42.865-168.918 17.494-211.782-56.75c-42.864-74.243-17.493-168.917 56.75-211.78c23.2-13.396 48.39-20.122 73.375-20.782c47.953-1.266 95.138 19.858 125.968 59.156l-39.844 28.156c-20.232-24.32-50.055-37.79-80.594-38.03c-1.17-.01-2.33 0-3.5.03c-17.035.432-34.176 4.995-49.938 14.094c-50.435 29.12-67.806 93.877-38.687 144.313c29.12 50.434 93.908 67.806 144.344 38.686c21.245-12.267 36.623-30.85 45.124-52.03c-18.815 21.064-44.364 36.888-73.938 44.155c-.04.013-.084.02-.125.033c-37.507 10.787-78.796-4.816-99.217-40.188c-24.07-41.688-9.845-94.712 31.843-118.78c13.028-7.523 27.143-11.314 41.156-11.69c25.66-.685 50.898 10.098 68.188 30.25l-41 28.97c-5.497-4.796-12.664-7.72-20.53-7.72c-17.277 0-31.283 14.007-31.283 31.282c0 17.276 14.004 31.282 31.282 31.282s31.28-14.007 31.28-31.283c0-1.187-.06-2.347-.188-3.5l120.094-57.312l4.03-1.75l-.06-.156l62.25-29.72l9.25-4.438l-5.282-8.812l-19.97-33.375l-5.155-8.625l-8.25 5.813l-8.095 5.718c-45.9-58.864-116.14-91.053-187.844-90.405z"/>'],
   tax: ['0 0 512 512', '<path fill="currentColor" d="M258 21.89c-.5 0-1.2 0-1.8.12c-4.6.85-10.1 5.1-13.7 14.81c-3.8 9.7-4.6 23.53-1.3 38.34c3.4 14.63 10.4 27.24 18.2 34.94c7.6 7.7 14.5 9.8 19.1 9c4.8-.7 10.1-5.1 13.7-14.7c3.8-9.64 4.8-23.66 1.4-38.35c-3.5-14.8-10.4-27.29-18.2-34.94c-6.6-6.8-12.7-9.22-17.4-9.22M373.4 151.4c-11 .3-24.9 3.2-38.4 8.9c-15.6 6.8-27.6 15.9-34.2 24.5c-6.6 8.3-7.2 14.6-5.1 18.3c2.2 3.7 8.3 7.2 20 7.7c11.7.7 27.5-2.2 43-8.8c15.5-6.7 27.7-15.9 34.3-24.3c6.6-8.3 7.1-14.8 5-18.5c-2.1-3.8-8.3-7.1-20-7.5c-1.6-.3-3-.3-4.6-.3m-136.3 92.9c-6.6.1-12.6.9-18 2.3c-11.8 3-18.6 8.4-20.8 14.9c-2.5 6.5 0 14.3 7.8 22.7c8.2 8.2 21.7 16.1 38.5 20.5c16.7 4.4 32.8 4.3 44.8 1.1c12.1-3.1 18.9-8.6 21.1-15c2.3-6.5 0-14.2-8.1-22.7c-7.9-8.2-21.4-16.1-38.2-20.4c-9.5-2.5-18.8-3.5-27.1-3.4m160.7 58.1L336 331.7c4.2.2 14.7.5 14.7.5l6.6 8.7l54.7-28.5zm-54.5.1l-57.4 27.2c5.5.3 18.5.5 23.7.8l49.8-23.6zm92.6 10.8l-70.5 37.4l14.5 18.7l74.5-44.6zm-278.8 9.1a40.3 40.3 0 0 0-9 1c-71.5 16.5-113.7 17.9-126.2 17.9H18v107.5s11.6-1.7 30.9-1.8c37.3 0 103 6.4 167 43.8c3.4 2.1 10.7 2.9 19.8 2.9c24.3 0 61.2-5.8 69.7-9C391 452.6 494 364.5 494 364.5l-32.5-28.4s-79.8 50.9-89.9 55.8c-91.1 44.7-164.9 16.8-164.9 16.8s119.9 3 158.4-27.3l-22.6-34s-82.8-2.3-112.3-6.2c-15.4-2-48.7-18.8-73.1-18.8"/>'],
   system: ['0 0 24 24', '<circle cx="12" cy="12" r="3.6" fill="currentColor"/><ellipse cx="12" cy="12" rx="10.2" ry="4.2" transform="rotate(-35 12 12)" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="19.6" cy="6.4" r="2.2" fill="currentColor"/>'],
-  sale: ['0 0 512 512', '<path fill="currentColor" d="M256.18 21c-23.242 0-46.577 3.01-63.186 8.54c-8.304 2.763-14.868 6.196-18.808 9.558c-3.94 3.36-5.167 5.956-5.186 8.96L168.943 57H41v14h430V57H342.967l.033-9.033c.01-3.002-1.17-5.55-5.057-8.895s-10.407-6.773-18.677-9.535C302.724 24.014 279.42 21 256.18 21M38.277 89l-10.443 94h80.9l20.243-86.36L122.81 183h81.07l17.114-86.68l-3.096 86.68h75.75l-4.634-86.518L307.694 183h81.497l-6.167-86.36L403.266 183h80.9l-10.443-94zM25.834 201l-.51 4.588C39.822 226.445 52.968 235 64 235c11.32 0 24.852-8.89 39.8-30.96l.714-3.04zm95.687 0l-.32 4.498C135.753 226.495 148.935 235 160 235c11.293 0 24.788-8.85 39.693-30.803l.63-3.197zm95.736 0l-.156 4.352C231.69 226.455 244.908 235 256 235c11.08 0 24.28-8.525 38.85-29.576l-.237-4.424h-77.357zm94.324 0l.674 3.12c15 22.192 28.503 31.044 39.773 31.013c11.03-.03 24.212-8.62 38.772-29.637l-.32-4.496zm95.906 0l.713 3.04C423.147 226.11 436.68 235 448 235c11.032 0 24.178-8.555 38.676-29.412l-.51-4.588h-78.68zM112 223.31C97.313 242.11 81.492 253 64 253c-13.972 0-26.884-6.906-39-19.264V487h318V279h114v208h30V233.736C474.884 246.094 461.972 253 448 253c-17.49 0-33.31-10.888-47.996-29.684c-14.664 18.808-30.432 29.77-47.926 29.817c-17.508.048-33.352-10.87-48.092-29.807C289.303 242.116 273.486 253 256 253c-17.492 0-33.313-10.89-48-29.69c-14.687 18.8-30.508 29.69-48 29.69s-33.313-10.89-48-29.69M55 279h258v178H55zm18 18v142h222V297zm288 0v71.064l78 .573V297zM88 312h128c-108.235 8-116.31 24-128 113.11zm273 74.066v13.998l78 .573v-14.002zm0 32V487h78v-68.365z"/>'],
   tribute: ['0 0 512 512', '<path fill="currentColor" d="M410.365 101.005c8.21-22.26 16.21-31.12 20.33-34.45c3.06-2.48 5.73-3.42 7.92-2.81c4 1.13 8.49 7.45 11.88 16.89c10.89 30.34 10 84.28-.93 129.51zm-286 72.92c7.52-31 10.28-66.13 7.77-94.92l-43.6-4.86zm289.46-113l-301.2-33.53c-2.5-.28-5.24 1.46-7.11 3c-3.67 3-10.42 10.32-17.66 27.64l308.68 34.34c5.16-13.25 11.02-23.89 17.31-31.43zm-228.78 298.71v-70.72l10.76 1.19l42.24 5.18v70.51zm16-40.34a13 13 0 0 0 5.34 10.29l-2.34 24.42l17 1.74l-4-25a9.54 9.54 0 0 0 5-9.15a13.64 13.64 0 0 0-11.06-12.59s.17.1.13.1c-5.95-.68-11.07 3.9-10.07 10.1zm53 64.45l-85-9.84v-86.72l-1.05-.09a8.14 8.14 0 0 1-7.27 6.71a8 8 0 0 1 5.23 8.9a8 8 0 0 1-8 6.66c8.453 4.004 4.341 16.778-4.86 15.1a8 8 0 0 1-8 13.8a8.01 8.01 0 0 1-12.28 10.29v.09a8 8 0 0 1-3.86 8.37l9.13 5.35v14.25l-12 7.13l-12-7.12v-14.26l8.15-4.82a8.21 8.21 0 0 1-5.07-5.92a.4.4 0 0 1 0-.1a8 8 0 0 1-15.18-5c-6.851 7.214-18.094-2.065-12.31-10.16c-8.346 4.519-16.217-6.676-9.14-13c-9.17 2.661-14.453-10.083-6.09-14.69a8 8 0 0 1-3.21-15.67c-9.294-1.047-9.548-14.463-.3-15.86c-.669-.164-1.264-.473-1.83-.76l-17.24-1.86l.6 167.11l309.18 34.49l-.6-165.83l-107-13.05zm140.06-164l4.72 1.91l.91.58l38.72 4.31l-23.26-64.77l-12.82 37c-.16.46-3.41 9.8-8.27 20.99zm-208.54-39.74l5 5.49l12.75-11.15l21.45-2.28l16.61 15.35l10.51 8.73l18.54-9.29l3.44.5c.12-.67.25-1.34.38-2c3.08-16.1 7.35-30.16 7.53-30.75l13.39-43.91l16.88 42.71l8.42 21.42l10.66-12.39l22.14-25.73l5.78 33.45l3.29 19.1l17.1-9.64l35.09-19.79l-18.48-51.4l-247.86-27.61c2.51 34.94-1.85 77.32-12.39 112h2.32l7-12.86h40.46zm-111.29 97.39c7.6 2.1 7.9 12.766.43 15.29c7.737.867 9.802 11.153 3 14.94c7.653-.548 11.614 8.947 5.84 14c7.313-2.115 13.168 6.216 8.7 12.38c6.288-3.518 13.657 2.417 11.56 9.31c4.53-4.723 12.506-2.304 13.65 4.14c2.057-5.713 9.48-7.141 13.51-2.6c-1.285-6.404 5.23-11.566 11.17-8.85c-4.564-5.77.425-14.123 7.67-12.84c-6.419-4.541-3.122-14.648 4.74-14.53c-7.316-3.503-5.375-14.415 2.7-15.18a8 8 0 0 1-5.38-8l-76.43-8.26c-.41.19-.746.15-1.16.2m367.54 139.08l-.59-163.86l-8.67 7l-55.51 46.79l.58 162zm-26.23-165.2l-24.11-15.27l-4.18-1.69c-5.91 11.52-13.39 23-22.66 27.88c-5.44 2.88-12.22 4.34-20.16 4.34c-11.13 0-24.75-2.91-37.35-8c-10-4-23.3-11-30.26-21.34c-4.9-7.29-6.64-17.77-5.31-32.92l-21.78 10.93l-19-15.8l-11.42-10.53l-9.16 1l-20.45 17.83l-11-11.7h-24.21l-17.61 32l-5.7-7.2l-4.42 4.85l-10.76 16.35l-12.29 4.91L97.611 256h-12.2l-2.776 6.005l76.9 8.21a8.15 8.15 0 0 1 2-2.9a8 8 0 0 1 10.31-.46a2 2 0 0 1-.14-.24c-4.955-8.368 6.459-16.62 12.87-9.375c6.412 7.245-3.167 17.571-10.87 11.635a8 8 0 0 1 1.12 2.89l22.62 2.44l168.54 20.57l51.49-43.38zm-28.34-57.73l-36.88 20.79l-7.14-41.47l-28 32.51l-18.13-46.11s-16.65 54.58-7 69c7.69 11.45 35.42 22.25 54.33 22.25c5 0 9.43-.76 12.67-2.48c13.8-7.31 30.15-54.49 30.15-54.49m-317.08 270.8v-.2c0-3.77-8.21-6.83-18.33-6.83s-18.33 3.06-18.33 6.83c0 3.21 6 5.9 14 6.63v.2c0 3.77 8.21 6.83 18.33 6.83s18.33-3.06 18.33-6.83c-.01-3.21-5.98-5.9-14-6.63m350 6.63c-10.13 0-18.33 3.06-18.33 6.83s8.21 6.83 18.33 6.83s18.33-3.06 18.33-6.83s-8.25-6.8-18.38-6.8zm40-16.28c-10.13 0-18.33 3.06-18.33 6.83s8.21 6.83 18.33 6.83s18.33-3.06 18.33-6.83s-8.22-6.83-18.34-6.83z"/>'],
   ships: ['0 0 512 512', '<path fill="currentColor" d="m482.22 44.844l-50.533 46.25l-21.937 57.22c-34.637 15.445-47.955 24.442-61.47 74.874l39.564-17.657l-1.875 32.095l37.342 14.344l21.75-24.5l17.625 39.56c24.52-42.467 25.663-63.24 4.282-96.78l21.936-57.22l-6.687-68.186zM389.093 263.22c-16.33 25.16-38.017 48.57-63.063 68.217c-.022.018-.038.045-.06.063c-37.302 23.693-83.27 29.138-118.095 15.688c16.236 15.056 37.635 20.705 59.156 19.156c-49.41 14.874-102.32 9.118-139.624-14.28c14.142 19.334 34.493 31.22 56.97 36.592c-58.93 3.328-117.894-19.792-162.44-84l.002 168.03c65.91 28.65 135.148 19.62 196.218-11.56l-16.97 35.78l88.126-85.03h-.093c2-1.796 3.973-3.6 5.936-5.438l-11.28 43.937l59.812-99.438c19.668-27.56 35.253-57.384 45.406-87.718z"/>'],
   log: ['0 0 512 512', '<path fill="currentColor" d="M311.9 47.95c-17.6 0-34.6.7-50.7 2.43L244.6 93.5l-4.9-40.04c-2.5.46-5 .94-7.5 1.47c-9.1 1.94-15.1 7.22-20.3 14.87s-8.9 17.5-12.1 26.6C191 121.5 184 148 178.4 175c6 5.1 12 10.3 17.9 15.4l30.7-17.6l33.8 26.1l51.9-19.7l61 24.5l-6.8 16.7l-54.4-21.8l-54.7 20.7l-32.2-24.9l-14.9 8.5c19.6 17.3 38.6 34.4 56.5 51.2l14-6.4l33.9 16.1l31.2-13.1l24.2 23.3l-12.4 13l-15.8-15.1l-27.6 11.7l-33-15.8c6.9 6.7 13.6 13.2 20.1 19.7l1.7 1.8l19.5 76.3l-7.8-5.7l-53 .4l-38.1-17.8l-42.4 14.6l-5.8-17l49.2-17l41.1 19.2l24.7-.2l-70.7-51.7c-19.7 4.6-39.4 2.8-58.1-3.7c-4.2 44.4-5.9 85.7-7 118.7c-.4 10.7 2.7 23 7.5 32.5c4.9 9.5 11.7 15.4 15 16.1c5.2 1.2 19 3.2 37.7 5.1l12.4-39l19.1 41.7c16.7 1.2 35 2 53.5 2.2c28.2.3 57.1-.9 82-4.7c15.8-2.3 29.6-6 40.7-10.4c-11.8-5.1-21.6-10.6-29.1-16.6c-11.1-8.9-18.2-19.3-17.3-30.9v.2c5.4-96.4 10.8-188.8 30.3-286l.1-.4l.1-.4c5.3-17.9 17.9-39.86 36.1-55.83c-13.9-2.06-28.6-4-43.7-5.66l-22.3 25.3l-2.2-27.7c-19-1.64-38.4-2.71-57.4-2.92h-5.7zm148.5 20.44c-4.7 3.69-9.2 8.03-13.3 12.73c12.1 8.18 21.4 23.38 21.8 36.98c.3 7.8-1.9 14.9-7.7 21.4c-5.8 6.4-15.6 12.4-31.6 15.8l3.8 17.6c18.6-4 32.3-11.5 41.2-21.4c9-9.9 12.7-22.2 12.3-34c-.6-19.3-11.1-37.59-26.5-49.11M25.44 71.91c-.24 1.61-.38 3.43-.38 5.62c.1 7.69 2.03 18.17 5.83 30.17c3.41 10.7 8.27 22.5 14.35 34.8c10.63-5.3 20.59-11 28.41-18.1c-4.42 12.5-10.15 24.7-18.6 36.5c4.14 7.2 8.63 14.4 13.45 21.5c10.64-5.3 20.72-13 29.52-26.1c-3.3 16-8.47 30.6-18.27 41.8c6.53 8.5 13.5 16.8 20.75 24.5c8.7-9.3 15.6-21 20.7-34.9c3.8 18.5 2.6 35.3-5.7 49.4c8 7.2 16.3 13.7 24.8 19.1c6.1-14 8.9-30.6 8.5-49.7c9.2 23.7 11.3 42.9 9.6 59.5c20.2 9.2 40.8 12 61.3 6.1l4.2-1.3l69.3 50.6l-5.9-22.8c-73-72.8-175.4-156.7-261.86-226.69M312.8 123.9l33.2 13.8l31.3-9.9l5.4 17.2l-37.5 11.9l-33.6-14l-28.8 8.1l-4.8-17.4zm107.3 236.2c-.7 0-1.3.1-2 .1c-3.5.1-7.2.5-11.1 1.3l3.4 17.6c12.2-2.3 20-.4 24.5 2.5c4.4 2.9 6.3 6.8 6.4 12.5c.1 9.3-7 23-23.3 32.5c5.4 2.9 11.9 5.9 19.3 8.7c14.4-11.6 22.1-26.8 22-41.4c-.1-10.7-5.2-21.2-14.6-27.4c-6.7-4.3-15-6.5-24.6-6.4"/>'],
@@ -1360,7 +1362,7 @@ const HANDICAP = {
   hard: { label: 'むずかしい', aiIncome: 1.25, aiCost: 0.9, info: 'fuzzy' },
   brutal: { label: 'とてもむずかしい', aiIncome: 1.5, aiCost: 0.8, info: 'hidden' },
 };
-const AI_INCOME_KINDS = new Set(['tax', 'trade', 'export', 'natives']);
+const AI_INCOME_KINDS = new Set(['tax', 'trade', 'natives']);
 const INFO_LABEL = { full: 'の数は正確に見える', fuzzy: 'の数は5艦隊単位の概数', hidden: 'の数は見えない' };
 // 戦争疲弊 (国ごと 0〜100): 失った艦隊・星系と、戦争の年数で増え、平和なあいだに減る。
 // 税収が最大 40% 減り、家臣の忠誠度・議会の支持が下がる。疲れた国ほど講和に応じやすい
@@ -1422,8 +1424,8 @@ const OUTPOST_RES = { 'gas-giant': ['water', 'fuel'], 'ice-giant': ['water', 'fu
 const OUTPOST_RATE = 25; // 埋蔵量1・Lv1あたりの年産量
 const outpostRes = (b) => (b && !b.label && OUTPOST_RES[b.type]) || [];
 const PIRATE_START = 2320;
-const LEDGER_ICON = { tax: 'tax', trade: 'export', import: 'import', export: 'sale', natives: 'natives', tribute: 'tribute', grant: 'grant', upkeep: 'fleet' };
-const LEDGER_LABEL = { tax: '税収', trade: '輸出', import: '輸入', export: '余剰の売却', natives: '先住民', tribute: '朝貢', grant: '資金援助', upkeep: '軍の維持費' };
+const LEDGER_ICON = { tax: 'tax', trade: 'export', import: 'import', natives: 'natives', tribute: 'tribute', grant: 'grant', upkeep: 'fleet' };
+const LEDGER_LABEL = { tax: '税収', trade: '輸出', import: '輸入', natives: '先住民', tribute: '朝貢', grant: '資金援助', upkeep: '軍の維持費' };
 const LOYALTY_START = 70; // 新しい政府の忠誠度
 const FRIEND_SAFE = 50; // 主人との友好度がこれ以上なら、威圧の艦隊を送らない
 const FRIEND_DAMP = 0.6; // 友好度100で、最後通牒の期限に独立を宣言する確率が 1 − FRIEND_DAMP 倍になる
@@ -1578,8 +1580,7 @@ const STORY = {
     },
     resolve(g, dec, k) {
       if (k !== 'salvage' || !g.isColonized(dec.sys)) return;
-      const st = g.stockOf(dec.sys);
-      st.metal += 300; st.rare += 40;
+      g.mv(dec.sys, 'metal', 300, 'extract'); g.mv(dec.sys, 'rare', 40, 'extract'); // 宇宙から回収した物質
       g.message(`${g.system(dec.sys).name} で漂流船を回収した (金属 300・希少元素 40)`, dec.sys);
     },
   },
@@ -1626,7 +1627,7 @@ const STORY = {
     },
     resolve(g, dec, k) {
       if (!g.isColonized(dec.sys)) return;
-      g.stockOf(dec.sys)[dec.res] += k === 'rush' ? 800 : 250;
+      g.mv(dec.sys, dec.res, k === 'rush' ? 800 : 250, 'extract');
       g.message(`${g.system(dec.sys).name} の鉱脈から${RES_LABEL[dec.res]} ${k === 'rush' ? 800 : 250} を得た`, dec.sys);
     },
   },
@@ -1929,6 +1930,12 @@ class Game {
   stockOf(sysId) {
     if (!this.stock[sysId]) this.stock[sysId] = zeroRes();
     return this.stock[sysId];
+  }
+  // 備蓄の出入りはすべてここを通す (kind: extract = 採掘・収穫など自然から、make = 工業の産出、use = 工業の投入、burn = 燃やした燃料、
+  // consume = 人の消費、build = 建設に使った、ship / arrive = 船で出した・着いた、supply = 艦隊の補給、waste = 捨てた、pirate = 海賊に奪われた)。試験で保存則を確かめる (目標 R03)
+  mv(sysId, res, amt, kind) {
+    this.stockOf(sysId)[res] += amt;
+    if (MASS_AUDIT) { const f = (MASS_AUDIT.flows[sysId] ??= {}); const g = (f[res] ??= {}); g[kind] = (g[kind] || 0) + amt; }
   }
   totalPop() { return this.colonies.reduce((s, c) => s + c.pop, 0); }
   warships() { return Object.values(this.garrison).reduce((s, n) => s + n, 0) + this.fleets.reduce((s, f) => s + f.n, 0); }
@@ -3221,7 +3228,7 @@ class Game {
     if (why) return fail(why);
     this.gov(payer).credits -= cost.credits || 0;
     if (cost.energy) this.bookE('build', -cost.energy, payer);
-    for (const r of RES) if (cost[r]) this.stockOf(sysId)[r] -= cost[r];
+    for (const r of RES) if (cost[r]) this.mv(sysId, r, -cost[r], 'build');
     return { ok: true };
   }
 
@@ -3261,12 +3268,13 @@ class Game {
         .sort((a, b) => a.d - b.d);
       for (const x of sources) {
         const eF = this.energyOf(x.id) - (eUsed.get(x.id) || 0), eT = eHave - eIn;
-        const amt = Math.min(x.spare, need, this.routeRoom(x.id, sysId, eF, eT));
+        const kg = RES_KG[r] / UNIT_KG; // 1 単位の質量 [100 万 t]
+        const amt = Math.min(x.spare, need, this.routeRoom(x.id, sysId, eF, eT) / kg);
         if (amt <= 1e-9) continue;
         plan.push({ from: x.id, r, amt });
-        const both = Math.min(eF, eT) >= amt * E_UNIT;
-        eUsed.set(x.id, (eUsed.get(x.id) || 0) + amt * (both ? E_UNIT : E_UNIT_FREE));
-        if (both) eIn += amt * E_UNIT;
+        const both = Math.min(eF, eT) >= amt * kg * E_UNIT;
+        eUsed.set(x.id, (eUsed.get(x.id) || 0) + amt * kg * (both ? E_UNIT : E_UNIT_FREE));
+        if (both) eIn += amt * kg * E_UNIT;
         need -= amt;
         eta = Math.max(eta, x.d);
         if (need <= 1e-9) break;
@@ -3291,8 +3299,8 @@ class Game {
     if (job.flight) this.bookShip('settler', job.flight.m, job.flight.beta, 'free', sysId);
     else if (cost.energy) this.bookE('build', -cost.energy, sysId);
     for (const x of p.plan) {
-      if (x.from !== sysId) this.bookShip('build', x.amt * UNIT_KG, SHIP_SPEED, this.routeMode(x.from, sysId, x.amt), x.from, sysId);
-      this.stockOf(x.from)[x.r] -= x.amt;
+      if (x.from !== sysId) this.bookShip('build', x.amt * RES_KG[x.r], SHIP_SPEED, this.routeMode(x.from, sysId, (x.amt * RES_KG[x.r]) / UNIT_KG), x.from, sysId);
+      this.mv(x.from, x.r, -x.amt, job.type === 'ship' && job.supplies?.[x.r] ? 'ship' : 'build'); // 入植船に積む食料と水は運ばれて入植先の備蓄になる。ほかは建設に使う
       if (x.from !== sysId && !p.aid) { this.earn('import', -x.amt * PRICE[x.r], sysId); this.earn('trade', x.amt * PRICE[x.r], x.from); }
       if (x.from !== sysId) this.noteLordTrade(sysId, x.from, x.amt * PRICE[x.r]); // 主人との友好度: 支援として無償で受け取った資材も数える
     }
@@ -3390,7 +3398,7 @@ class Game {
   // 入植船の質量 [kg] と速さ [c]。交易路を通るなら 0.95c まで出す
   settlerFlight(kind, fromId, toId, sup = this.shipSupplies(kind, fromId, toId)) {
     if (fromId === toId) return null;
-    const m = (SHIP_COST[kind].goods + sup.food + sup.water) * UNIT_KG + SETTLERS[kind] * 1e6 * PERSON_KG;
+    const m = SHIP_COST[kind].goods * RES_KG.goods + sup.food * RES_KG.food + sup.water * RES_KG.water + SETTLERS[kind] * 1e6 * PERSON_KG;
     return { m, beta: this.voyage(fromId, toId, OFFROUTE_SPEED).path.length > 2 ? SHIP_SPEED : OFFROUTE_SPEED };
   }
   launch(fromId, toId, bodyId, kind, supplies = {}) {
@@ -3523,7 +3531,7 @@ class Game {
       const spare = spareOf(q.to, q.res);
       if (!rp || spare <= 0.001) { q.amt = 0; continue; }
       const legs = this.legsOf(rp.path).map((l, i) => ({ ...l, next: rp.path[i + 1] }));
-      let amt = Math.min(q.amt, spare, this.routeRoom(q.to, q.from)); // 送る側の加速と受ける側の減速のエネルギー
+      let amt = Math.min(q.amt, spare, (this.routeRoom(q.to, q.from) * UNIT_KG) / RES_KG[q.res]); // 送る側の加速と受ける側の減速のエネルギー
       for (const l of legs) amt = Math.min(amt, room.get(l.r.id * 2 + l.dir));
       q.state = 'waiting';
       if (amt <= 0.001) continue;
@@ -3540,7 +3548,7 @@ class Game {
         room.set(k, room.get(k) - amt);
         sent.set(k, (sent.get(k) || 0) + amt);
       }
-      this.bookShip('cargo', amt * UNIT_KG, SHIP_SPEED, this.routeMode(q.to, q.from, amt), q.to, q.from);
+      this.bookShip('cargo', amt * RES_KG[q.res], SHIP_SPEED, this.routeMode(q.to, q.from, (amt * RES_KG[q.res]) / UNIT_KG), q.to, q.from);
       this.shipCargo(q.to, legs, q.res, amt);
       q.amt -= amt;
       q.shipped = (q.shipped || 0) + amt;
@@ -3614,7 +3622,7 @@ class Game {
   shipCargo(from, legs, res, amt) {
     const path = [from, ...legs.map((l) => l.next)];
     const dest = path[path.length - 1];
-    this.stockOf(from)[res] -= amt;
+    this.mv(from, res, -amt, 'ship');
     (this.inbound[dest] ??= zeroRes())[res] += amt;
     for (const l of legs) l.r.transit[l.dir][res] += amt;
     const times = [this.year];
@@ -4198,7 +4206,7 @@ class Game {
       const tp = this.troopPower(sys.id);
       const f = power / (power + tp);
       const st = this.stockOf(sys.id);
-      for (const r of RES) st[r] *= 1 - 0.4 * f;
+      for (const r of RES) this.mv(sys.id, r, -0.4 * f * st[r], 'pirate'); // 海賊が持ち去る
       for (const c of this.coloniesIn(sys.id)) c.pop *= 1 - 0.1 * f;
       const lost = Math.min(Math.ceil(power / 2), Math.ceil(tp));
       if (tp) this.loseTroops(sys.id, lost);
@@ -4651,8 +4659,7 @@ class Game {
           kind = 'station';
         }
         // 積んできた食料と水は入植先の備蓄に入る (入植できなくても荷は下ろす)
-        const st = this.stockOf(s.to);
-        for (const [r, v] of Object.entries(s.supplies || {})) st[r] += v;
+        for (const [r, v] of Object.entries(s.supplies || {})) this.mv(s.to, r, v, 'arrive');
         const joinEscort = (col) => { if (col && s.escort) { col.troops += s.escort.troops; col.slaveTroops += s.escort.slave; } };
         if (this.colonyAt(s.to, s.body, kind)) { joinEscort(this.colonyAt(s.to, s.body, kind)); continue; }
         const fresh = !this.govs[s.to];
@@ -4709,7 +4716,7 @@ class Game {
         const inb = (this.inbound[dest] ??= zeroRes());
         const legs = this.legsOf(p.path);
         for (const [res, amt] of Object.entries(p.load)) {
-          st[res] += amt;
+          this.mv(dest, res, amt, 'arrive');
           inb[res] = Math.max(0, inb[res] - amt);
           for (const l of legs) l.r.transit[l.dir][res] = Math.max(0, l.r.transit[l.dir][res] - amt);
         }
@@ -4763,6 +4770,7 @@ class Game {
     const gv = this.gov(id);
     gv.E = (gv.E || 0) + J;
     (gv.eled ??= {})[kind] = (gv.eled[kind] || 0) + J;
+    if (MASS_AUDIT) { const f = (MASS_AUDIT.energy[id] ??= {}); f[kind] = (f[kind] || 0) + J; }
   }
   // 1 便の推進のエネルギーを記帳する。from = 加速する (と反物質を作る) 星系の政府、to = 交易路で減速する星系の政府
   bookShip(kind, m, beta, mode, from, to = from) {
@@ -4781,13 +4789,13 @@ class Game {
     this.bookShip('fleet', f.n * FLEET_KG, onRoute ? SHIP_SPEED : OFFROUTE_SPEED, mode, payer, f.to);
     this.fleets.push(f);
   }
-  // 交易路を通る荷 (貨物船・資材輸送船・移民船) を送れる量 [単位]。ふつうは送る側が加速、受ける側が減速を払う。
+  // 交易路を通る荷 (貨物船・資材輸送船・移民船) を送れる量 [100 万 t]。ふつうは送る側が加速、受ける側が減速を払う。
   // 受ける側が払えなければ (入植したばかりの星系など)、送る側が磁気帆と反物質の分も払う
   routeRoom(from, to, eF = this.energyOf(from), eT = this.energyOf(to)) {
     eF = Math.max(0, eF); eT = Math.max(0, eT);
     return Math.max(Math.min(eF, eT) / E_UNIT, eF / E_UNIT_FREE);
   }
-  routeMode(from, to, units) { const e = units * E_UNIT; return this.energyOf(from) >= e && this.energyOf(to) >= e ? 'route' : 'free'; }
+  routeMode(from, to, mt) { const e = mt * E_UNIT; return this.energyOf(from) >= e && this.energyOf(to) >= e ? 'route' : 'free'; }
 
   economy(h) {
     this.stepH = h;
@@ -4808,7 +4816,7 @@ class Game {
       const f = FOCUS[c.focus] || FOCUS.balanced;
       const st = this.stockOf(c.sys);
       const fl = F(c.sys);
-      const add = (r, v) => { st[r] += v * h; fl.prod[r] += v; };
+      const add = (r, v) => { this.mv(c.sys, r, v * h, 'extract'); fl.prod[r] += v; };
       add('food', c.pop * f.farm * (2 + 2 * this.fertility(c)) * (1 + 0.25 * c.lv.farm));
       const tm = this.modsOf(c.sys);
       const forced = REGIMES[regimeKey(this.govs[c.sys])].mine || 1; // 強制労働の採掘の上乗せ
@@ -4819,7 +4827,7 @@ class Game {
     for (const o of this.outposts) {
       const st = this.stockOf(o.sys);
       const fl = F(o.sys);
-      for (const [r, v] of Object.entries(this.outpostYield(o))) { st[r] += v * h; fl.prod[r] += v; }
+      for (const [r, v] of Object.entries(this.outpostYield(o))) { this.mv(o.sys, r, v * h, 'extract'); fl.prod[r] += v; }
     }
     // 2. 工業: 工業品1につき金属0.5と燃料0.2を使う。原料が足りなければ減産
     for (const c of this.colonies) {
@@ -4827,9 +4835,10 @@ class Game {
       const fl = F(c.sys);
       const need = c.plan * h;
       const k = need > 0 ? clamp(Math.min(st.metal / (0.5 * need), st.fuel / (0.2 * need)), 0, 1) : 0;
-      st.metal -= 0.5 * need * k;
-      st.fuel -= 0.2 * need * k;
-      st.goods += need * k;
+      // 質量の釣り合い: 金属 0.5 単位 (50 万 t) が工業品 1 単位 (50 万 t) になる。燃料は燃やして出ていく
+      this.mv(c.sys, 'metal', -0.5 * need * k, 'use');
+      this.mv(c.sys, 'fuel', -0.2 * need * k, 'burn');
+      this.mv(c.sys, 'goods', need * k, 'make');
       fl.cons.metal += 0.5 * c.plan;
       fl.cons.fuel += 0.2 * c.plan;
       fl.prod.goods += c.plan * k;
@@ -4838,8 +4847,8 @@ class Game {
       if (L) {
         const use = SLAVEWORKS_USE * L * h;
         const ks = clamp(st.slaves / use, 0, 1);
-        st.slaves -= use * ks;
-        st.goods += SLAVEWORKS_OUT * L * h * ks;
+        this.mv(c.sys, 'slaves', -use * ks, 'consume');
+        this.mv(c.sys, 'goods', SLAVEWORKS_OUT * L * h * ks, 'extract'); // 働かされる人が地元で集めた原料から作る
         fl.cons.slaves += SLAVEWORKS_USE * L;
         fl.prod.goods += SLAVEWORKS_OUT * L * ks;
         c.slaveWork = ks;
@@ -4856,7 +4865,7 @@ class Game {
         fl.cons[r] += v;
         const want = v * h;
         const got = Math.min(Math.max(st[r], 0), want);
-        st[r] -= got;
+        this.mv(c.sys, r, -got, 'consume');
         return want > 0 ? got / want : 1;
       };
       const food = use('food', c.pop);
@@ -4882,27 +4891,22 @@ class Game {
         if (!this.wars.some((w) => `${w.sys}|${w.body}` === key)) st.rel = Math.min(100, st.rel + 3 * h);
         if (st.rel >= 40) {
           this.earn('natives', 0.02 * st.pop * h, sys);
-          this.stockOf(sys).rare += 0.005 * st.pop * h;
+          this.mv(sys, 'rare', 0.005 * st.pop * h, 'extract'); // 先住民との交易で手に入る
         }
       } else if (st.status === 'subjugated') {
         this.earn('natives', 0.03 * st.pop * h, sys);
       } else {
         const stock = this.stockOf(sys);
         const fl = F(sys);
-        for (const [r, v] of Object.entries(this.nativeYield(sys, key.split('|')[1], st))) { stock[r] += v * h; fl.prod[r] += v; }
+        for (const [r, v] of Object.entries(this.nativeYield(sys, key.split('|')[1], st))) { this.mv(sys, r, v * h, 'extract'); fl.prod[r] += v; }
       }
     }
     // 5. 交易路
     this.trade(h, flow);
-    // 6. 備蓄の上限を超えた分は域外へ安値(基準価格の5%)で売る
+    // 6. 備蓄の上限を超えた分は捨てる (売る先の「域外」はないので、お金にはならない。物質の保存: 目標 R03)
     for (const [s, st] of Object.entries(this.stock)) {
       const cap = stockCap(flow[s]?.pop || 0);
-      for (const r of RES) {
-        if (st[r] > cap) {
-          this.earn('export', (st[r] - cap) * PRICE[r] * 0.05, Number(s));
-          st[r] = cap;
-        }
-      }
+      for (const r of RES) if (st[r] > cap) this.mv(Number(s), r, cap - st[r], 'waste');
     }
     // 7. 軍の維持費
     // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)
@@ -4918,24 +4922,18 @@ class Game {
     for (const m of this.troopMoves) this.earn('upkeep', -(TROOP_UPKEEP * m.troops + SLAVE_TROOP_UPKEEP * m.slave) * h, 0);
     // 8. 兵站: 艦隊は1艦隊あたり年に FLEET_SUPPLY の燃料と金属を使う。駐留する星系の備蓄から出す
     //    (入植していない星系に置いた艦隊と攻撃中の艦隊は、その国の最も近い星系 = 補給の拠点から)。
-    //    需要に数えるので、足りなければ交易路で運ばれてくる。備蓄で足りないぶんは資金で現地調達し (基準価格の2倍。
-    //    駐留艦隊は拠点の政府、攻撃中の艦隊は国の首都の政府が払う)、資金も尽きれば補給不足になって戦力が落ちる
-    const supply = (realm, sys, n, payer) => {
+    //    需要に数えるので、足りなければ交易路で運ばれてくる。備蓄で足りなければ補給不足になって戦力が落ちる
+    //    (前は資金で「現地調達」できたが、物がどこからか湧くのでやめた。物質の保存: 目標 R03)
+    const supply = (realm, sys, n) => {
       const base = this.supplyBase(realm, sys);
       if (!base) return { k: 0, d: Infinity };
-      const st = this.stockOf(base.id), fl = F(base.id), pid = payer ?? base.id, gv = this.gov(pid);
+      const st = this.stockOf(base.id), fl = F(base.id);
       let k = 1;
       for (const [r, v] of Object.entries(FLEET_SUPPLY)) {
         fl.cons[r] += v * n;
         const want = v * n * h;
-        let got = Math.min(Math.max(st[r], 0), want);
-        st[r] -= got;
-        const cost = (want - got) * PRICE[r] * 2;
-        if (cost > 0) {
-          const pay = Math.min(cost, Math.max(0, gv.credits));
-          if (pay > 0) this.earn('upkeep', -pay, pid);
-          got += (want - got) * (pay / cost);
-        }
+        const got = Math.min(Math.max(st[r], 0), want);
+        this.mv(base.id, r, -got, 'supply');
         if (want > 0) k = Math.min(k, got / want);
       }
       return { k, d: base.d };
@@ -4996,6 +4994,8 @@ class Game {
     if (obj(d.govs)) {
       this.govs = {};
       for (const [k, v] of Object.entries(d.govs)) if (sysOk(Number(k)) && obj(v)) this.govs[k] = v;
+      // 前の版の収支の項目 (余剰の売却 export など) は消す (収入の合計に入らないように)
+      for (const v of Object.values(this.govs)) if (obj(v.ledger)) for (const k of Object.keys(v.ledger)) if (!LEDGER_LABEL[k]) delete v.ledger[k];
     } else if (Number.isFinite(d.credits)) this.credits = d.credits;
     // 旧セーブの入植星系は地球 (太陽系) に従属させる
     for (const c of this.colonies) if (!this.govs[c.sys]) this.govs[c.sys] = { lord: c.sys === 0 ? null : 0, credits: 0, founded: c.founded ?? this.year };
