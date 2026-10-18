@@ -335,6 +335,7 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 
 ### 開発者向け: ファイルの組み立て
 
+- 作業を引き継ぐときは [docs/handoff.md](docs/handoff.md) を読む (約束・決めたこと・いまの状態・次にやること)
 - 読みやすい元のファイルは `src/index.html`。手を入れるのはこちら
 - 公開用の `index.html` (ゲーム版) と `simulation.html` (シミュレーション版) は `node tools/build.mjs` で作る (最初に `cd tools && npm ci`。圧縮に python3 を使う)
   - 版の違いは、`src/index.html` の `EDITION` の値だけ。build がこの行を版ごとに書き換えて 2 枚作る。版ごとに違う値は `EDITIONS` の表にまとめる

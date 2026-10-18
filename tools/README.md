@@ -81,3 +81,39 @@ node tools/secession.js "$PWD/index.html" sout 300 1,2,3,4,5,6 6
 cd tools && npm ci && cd ..
 node tools/build.mjs   # src/index.html → index.html (最小化 + LZMA + 自己展開)
 ```
+
+## 惑星の頻度 (η⊕)
+
+```sh
+node tools/eta.js "$PWD/index.html" 0.5 2   # FGK 型・M 型の主星あたりの、ハビタブルゾーンの 0.5〜1.5 地球半径の惑星 (銀河の版 2)
+node tools/eta.js "$PWD/index.html" 1.0 2   # M 型の目標 R06 は 1〜1.5 地球半径
+```
+
+## 試験 (tools/tests)
+
+機能が壊れていないかを確かめる試験です。どれも Playwright で公開用の HTML を開いて動かします。画面の写しは、いまのフォルダの `shots/` に書きます。
+
+```sh
+cd tools && npm ci && cd ..
+node tools/build.mjs
+export CHROMIUM=/opt/pw-browsers/chromium   # Chromium の場所 (必要なら)
+node tools/tests/det.js 3 120                                   # 決定性 (ゲーム版)
+HTML=$PWD/simulation.html NAT=1 node tools/tests/det.js 7 120   # 決定性 (シミュレーション版・国家選択あり)
+for t in hot treaty edit lib home real net; do node tools/tests/$t.js; done
+for t in pick regime editions; do node tools/tests/$t.js shots; done
+```
+
+| 試験 | 確かめること |
+|---|---|
+| `det.js` | 同じシードなら同じ結果・保存→読込→保存が一致・読込後も同じ結果に進む |
+| `hot.js` | ホットシートの交代・自動の交代・他国の艦隊への命令の拒否・保存と読込 |
+| `net.js` | ネット対戦の命令の受け渡し・状態の要約の一致・壊したときの合わせ直し |
+| `treaty.js` | 戦争疲弊・講和の申し入れ・講和会議・条約 |
+| `edit.js`・`lib.js` | 国家の編集と保管庫 |
+| `home.js`・`pick.js` | ホーム画面と国家選択 (横と縦の画面) |
+| `real.js` | 実在の 3 次元の銀河・回す・傾ける |
+| `regime.js` | 統治体制の切り替え・自治領・強制労働の後遺症・既定の体制・保存と読込 |
+| `rotate.js` | 回したあとの絵が、描き直した絵と一致する |
+| `editions.js` | 2 つの版が開き、保存の名前が分かれている |
+
+各試験は結果を表示します。`[]` で終わる行は、ページの誤りがなかったことを表します。
