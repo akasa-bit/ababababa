@@ -8,6 +8,19 @@
 - Node.js と Playwright (`npm i playwright`)
 - Chromium (Playwright のもの。別の場所の Chromium を使うなら `CHROMIUM=/path/to/chromium`)
 
+## 画面なしで回せる版 (tools/headless.js)
+
+ブラウザを開かずに、Node だけで試合を回す (6 か国・100 年で約 2 秒)。`src/index.html` の `<script>` をそのまま動かし、画面の部品は何もしない代わりの物で受け流す。
+
+```sh
+node tools/headless.js 1 100 6                 # シード 1・100 年・6 か国 → 要約と状態の要約 (hash) を JSON で出す
+node tools/headless.js 1 100 6 params.json     # 値のファイルで表を差し替えて回す
+```
+
+値のファイルは `{ "表の名前": { "項目": 値 } }` の形 (例: `{ "ED": { "hazardBase": 0.8 }, "TRADE": { "rate": 0.02 } }`)。名前が大文字の表の定数 (と、この版の値 `ED`) だけを書き換えられる。ない項目を書くと止まる。読み込みのときに表から計算してしまう値 (`E_UNIT` など) は変わらない。
+
+ほかの道具からは `const H = require('./headless'); const sim = H.load({ params }); const g = sim.run(sim.newGame('1', { nations: 6 }), 100);` で使う (`g` はゲームの `Game` そのもの。`sim.hash(g)` は状態の要約、`sim.tables` は表)。
+
 ## 使い方
 
 ```sh
@@ -116,6 +129,7 @@ for t in pick regime editions; do node tools/tests/$t.js shots; done
 node tools/tests/energy.js 5 150                                # 船のエネルギーの記帳 (目標 R07)
 HTML=$PWD/simulation.html NAT=1 node tools/tests/energy.js 7 150
 node tools/tests/conserve.js 5 150                              # 物質とエネルギーの保存 (目標 R03)
+node tools/tests/headless.js 100 1,4,9                          # 画面なしの版がブラウザと一致する
 HTML=$PWD/simulation.html NAT=1 node tools/tests/conserve.js 7 150
 ```
 
@@ -133,6 +147,7 @@ HTML=$PWD/simulation.html NAT=1 node tools/tests/conserve.js 7 150
 | `editions.js` | 2 つの版が開き、保存の名前が分かれている |
 | `conserve.js` | 1 年ごとに、星系ごと・資源ごとの記帳した出入りと備蓄の増加・運ぶ途中の物・工業の質量・政府ごとのエネルギーが釣り合う (誤差 ÷ 取扱量が 1e-9 以下、目標 R03)。決まっていない出入りがない |
 | `cloud.js` | アカウントとクラウド (偽の Firebase で): ゲストのログイン・名前・クラウドのセーブ・自作の国・部屋のコードでのネット対戦 |
+| `headless.js` | 画面なしの版で回した状態の要約が、公開用の index.html をブラウザで回したものと一致する (国家選択なし・6 か国)。値のファイルが効き、ない項目を拒む |
 | `energy.js` | 船 1 便ごとに記帳した推進のエネルギーが、試験の中で計算し直した式と 1 ± 1e-6 で一致する (目標 R07)。太陽系の発電と収支も出す |
 
 各試験は結果を表示します。`[]` で終わる行は、ページの誤りがなかったことを表します。

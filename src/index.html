@@ -559,6 +559,91 @@ function hashSeed(str) {
   return h >>> 0;
 }
 
+// 決まった計算 (どのブラウザでも同じ結果になる数学の関数)。四則と平方根 (IEEE 754 で結果が 1 つに決まる) と、ビットの読み書きだけで作る。
+// Math.pow・Math.sin などはブラウザの版ごとに末尾の桁が違い、ネット対戦と画面なしの版 (tools/headless.js) で結果がずれる
+const DMath = (() => {
+  const buf = new DataView(new ArrayBuffer(8));
+  const LN2_HI = 6.93147180369123816490e-01, LN2_LO = 1.90821492927058770002e-10, INV_LN2 = 1.44269504088896338700e+00, LN10 = 2.302585092994046;
+  const PIO2_1 = 1.57079632673412561417e+00, PIO2_2 = 6.07710050630396597660e-11, PIO2_3 = 2.02226624871116645580e-21, INV_PIO2 = 6.36619772367581382433e-01;
+  // 2^k (−1022 ≤ k ≤ 1023) をビットで作る
+  const two = (k) => { buf.setUint32(0, (k + 1023) << 20); buf.setUint32(4, 0); return buf.getFloat64(0); };
+  const scale = (y, k) => {
+    while (k > 1023) { y *= two(1023); k -= 1023; }
+    while (k < -1022) { y *= two(-1022); k += 1022; }
+    return y * two(k);
+  };
+  function exp(x) {
+    if (x !== x) return NaN;
+    if (x > 709.782712893384) return Infinity;
+    if (x < -745.1332191019412) return 0;
+    const k = Math.floor(x * INV_LN2 + 0.5);
+    const r = (x - k * LN2_HI) - k * LN2_LO; // |r| ≤ 0.347
+    let p = 1;
+    for (let n = 14; n >= 1; n--) p = 1 + (r * p) / n; // テイラー級数 (ホーナー法)
+    return scale(p, k);
+  }
+  function log(x) {
+    if (x !== x || x < 0) return NaN;
+    if (x === 0) return -Infinity;
+    if (x === Infinity) return Infinity;
+    let e = 0;
+    if (x < 2.2250738585072014e-308) { x *= 18014398509481984; e = -54; } // 非正規化数は 2^54 倍してから
+    buf.setFloat64(0, x);
+    const hi = buf.getUint32(0);
+    e += ((hi >>> 20) & 0x7ff) - 1023;
+    buf.setUint32(0, (hi & 0x000fffff) | 0x3ff00000);
+    let m = buf.getFloat64(0); // 1 ≤ m < 2
+    if (m > 1.4142135623730951) { m *= 0.5; e += 1; }
+    return e * LN2_HI + (log1pK(m - 1) + e * LN2_LO);
+  }
+  // log(1 + f) (−0.3 ≤ f ≤ 0.42)。log(1 + f) = 2 atanh(s)、s = f / (2 + f)
+  function log1pK(f) {
+    const s = f / (2 + f), z = s * s;
+    let R = 0;
+    for (let n = 12; n >= 1; n--) R = z * (1 / (2 * n + 1) + R);
+    return f - s * (f - 2 * R); // = 2s (1 + R)。2s = f − s f を使い、丸めを減らす
+  }
+  const log1p = (u) => (u >= -0.29 && u <= 0.41 ? log1pK(u) : log(1 + u));
+  function pow(x, y) {
+    if (y === 0) return 1;
+    if (x !== x || y !== y) return NaN;
+    if (Number.isInteger(y) && Math.abs(y) <= 1024) {
+      let b = x, n = Math.abs(y), p = 1;
+      while (n) { if (n & 1) p *= b; b *= b; n >>>= 1; }
+      return y < 0 ? 1 / p : p;
+    }
+    if (x === 1) return 1;
+    if (x === 0) return y > 0 ? 0 : Infinity;
+    if (x === Infinity) return y > 0 ? Infinity : 0;
+    if (x < 0) return Number.isInteger(y) ? (Math.abs(y) % 2 === 1 ? -1 : 1) * exp(y * log(-x)) : NaN;
+    return exp(y * log(x));
+  }
+  // sin と cos: π/2 の整数倍を引いて |r| ≤ π/4 にし、テイラー級数で
+  const sinK = (r) => { const z = r * r; let p = 0; for (let n = 19; n >= 3; n -= 2) p = (z / ((n) * (n - 1))) * (1 - p); return r - r * p; };
+  const cosK = (r) => { const z = r * r; let p = 0; for (let n = 20; n >= 2; n -= 2) p = (z / (n * (n - 1))) * (1 - p); return 1 - p; };
+  function reduce(x) {
+    const k = Math.floor(x * INV_PIO2 + 0.5);
+    return [((x - k * PIO2_1) - k * PIO2_2) - k * PIO2_3, ((k % 4) + 4) % 4];
+  }
+  function sin(x) {
+    if (!Number.isFinite(x)) return NaN;
+    const [r, q] = reduce(x);
+    return q === 0 ? sinK(r) : q === 1 ? cosK(r) : q === 2 ? -sinK(r) : -cosK(r);
+  }
+  function cos(x) {
+    if (!Number.isFinite(x)) return NaN;
+    const [r, q] = reduce(x);
+    return q === 0 ? cosK(r) : q === 1 ? -sinK(r) : q === 2 ? -cosK(r) : sinK(r);
+  }
+  const cbrt = (x) => (x < 0 ? -pow(-x, 1 / 3) : pow(x, 1 / 3));
+  const log10 = (x) => log(x) / LN10;
+  const atanh = (x) => 0.5 * log1p((2 * x) / (1 - x));
+  const hypot = (...v) => Math.sqrt(v.reduce((k, a) => k + a * a, 0));
+  return { exp, log, log1p, pow, sin, cos, cbrt, log10, atanh, hypot };
+})();
+// 試合と銀河の計算に使う数学 (GM)。ふだんは DMath。銀河の版 3 までの銀河を作り直すときだけ、作ったときと同じブラウザの Math を使う (古いセーブの銀河を変えない)
+let GM = DMath;
+
 class Rng {
   constructor(seed) {
     this.state = seed >>> 0;
@@ -574,14 +659,14 @@ class Rng {
   int(a, b) { return Math.floor(this.range(a, b + 1)); }
   chance(p) { return this.next() < p; }
   pick(arr) { return arr[Math.floor(this.next() * arr.length)]; }
-  logUniform(a, b) { return Math.exp(this.range(Math.log(a), Math.log(b))); }
+  logUniform(a, b) { return GM.exp(this.range(GM.log(a), GM.log(b))); }
   normal(mu = 0, sigma = 1) {
     const u = 1 - this.next();
     const v = this.next();
-    return mu + sigma * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    return mu + sigma * Math.sqrt(-2 * GM.log(u)) * GM.cos(2 * Math.PI * v);
   }
   poisson(lambda) {
-    const L = Math.exp(-lambda);
+    const L = GM.exp(-lambda);
     let k = 0;
     let p = 1;
     do { k++; p *= this.next(); } while (p > L);
@@ -622,19 +707,19 @@ const MULTIPLICITY = { O: 0.9, B: 0.8, A: 0.7, F: 0.5, G: 0.44, K: 0.41, M: 0.27
 const SOLAR_TEMP = 5772;
 
 const lumFromMass = (m) =>
-  m < 0.43 ? 0.23 * m ** 2.3 : m < 2 ? m ** 4 : m < 55 ? 1.4 * m ** 3.5 : 32000 * m;
-const radiusFromMass = (m) => (m < 1 ? m ** 0.8 : m ** 0.57);
+  m < 0.43 ? 0.23 * GM.pow(m, 2.3) : m < 2 ? GM.pow(m, 4) : m < 55 ? 1.4 * GM.pow(m, 3.5) : 32000 * m;
+const radiusFromMass = (m) => (m < 1 ? GM.pow(m, 0.8) : GM.pow(m, 0.57));
 
 function tempToColor(T) {
   const t = clamp(T, 1000, 40000) / 100;
   let r, g, b;
   if (t <= 66) {
     r = 255;
-    g = 99.4708025861 * Math.log(t) - 161.1195681661;
-    b = t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+    g = 99.4708025861 * GM.log(t) - 161.1195681661;
+    b = t <= 19 ? 0 : 138.5177312231 * GM.log(t - 10) - 305.0447927307;
   } else {
-    r = 329.698727446 * (t - 60) ** -0.1332047592;
-    g = 288.1221695283 * (t - 60) ** -0.0755148492;
+    r = 329.698727446 * GM.pow((t - 60), -0.1332047592);
+    g = 288.1221695283 * GM.pow((t - 60), -0.0755148492);
     b = 255;
   }
   const c = (v) => Math.round(clamp(v, 0, 255));
@@ -645,16 +730,16 @@ function mainSequence(cls, mass) {
   const def = CLASSES.find((c) => c.cls === cls);
   const lum = lumFromMass(mass);
   const radius = radiusFromMass(mass);
-  const temp = SOLAR_TEMP * (lum / radius ** 2) ** 0.25;
+  const temp = SOLAR_TEMP * GM.pow((lum / GM.pow(radius, 2)), 0.25);
   const sub = clamp(Math.floor((10 * (def.hi - mass)) / (def.hi - def.lo)), 0, 9);
   return { cls, label: `${cls}${sub} V`, mass, radius, lum, temp, color: tempToColor(temp), wd: false };
 }
 
 function whiteDwarf(rng) {
   const mass = clamp(rng.normal(0.6, 0.12), 0.4, 1.1);
-  const radius = 0.0115 * (0.6 / mass) ** (1 / 3);
-  const temp = 4000 + 21000 * rng.next() ** 3; // 古いものほど数が多く冷たい
-  const lum = radius ** 2 * (temp / SOLAR_TEMP) ** 4;
+  const radius = 0.0115 * GM.pow((0.6 / mass), (1 / 3));
+  const temp = 4000 + 21000 * GM.pow(rng.next(), 3); // 古いものほど数が多く冷たい
+  const lum = GM.pow(radius, 2) * GM.pow((temp / SOLAR_TEMP), 4);
   return {
     cls: 'WD', label: `DA${(50400 / temp).toFixed(1)}`, mass, radius, lum, temp,
     color: tempToColor(temp), wd: true,
@@ -669,7 +754,7 @@ function classOfMass(m) {
 function makePrimary(rng) {
   const def = rng.weighted(CLASSES, (c) => c.weight);
   if (def.cls === 'WD') return whiteDwarf(rng);
-  const mass = def.lo + (def.hi - def.lo) * rng.next() ** def.skew;
+  const mass = def.lo + (def.hi - def.lo) * GM.pow(rng.next(), def.skew);
   return mainSequence(def.cls, mass);
 }
 
@@ -681,7 +766,7 @@ function makeCompanions(rng, primary) {
   for (let i = 0; i < n; i++) {
     const mass = Math.max(0.08, primary.mass * rng.range(0.15, 1));
     const star = mainSequence(classOfMass(mass), mass);
-    const sep = clamp(10 ** rng.normal(1.5, 1.3), 0.05, 20000) * (i + 1);
+    const sep = clamp(GM.pow(10, rng.normal(1.5, 1.3)), 0.05, 20000) * (i + 1);
     out.push({ star, sep, phase: rng.range(0, Math.PI * 2) });
   }
   return out.sort((a, b) => a.sep - b.sep);
@@ -693,7 +778,7 @@ function makeCompanions(rng, primary) {
 const PLANETS_MEAN = { M: 3.2, K: 3.5, G: 3.5, F: 3, A: 2, B: 0.8, O: 0, WD: 1.2 };
 
 // 平衡温度[K] (アルベド込み)
-const eqTemp = (lum, a, albedo) => (278.6 * ((1 - albedo) * lum) ** 0.25) / Math.sqrt(a);
+const eqTemp = (lum, a, albedo) => (278.6 * GM.pow(((1 - albedo) * lum), 0.25)) / Math.sqrt(a);
 
 const frostLine = (star) => (star.wd ? 3 : 2.7 * Math.sqrt(star.lum));
 // 保守的なハビタブルゾーン (Kopparapu ほか 2014、地球質量): 内側 = 暴走温室、外側 = 最大温室。
@@ -718,23 +803,23 @@ function physical(rng, type) {
   switch (type) {
     case 'dwarf': {
       const mass = rng.logUniform(0.0005, 0.05);
-      return { mass, radius: mass ** 0.3, albedo: rng.range(0.1, 0.6) };
+      return { mass, radius: GM.pow(mass, 0.3), albedo: rng.range(0.1, 0.6) };
     }
     case 'rocky': {
       const mass = rng.logUniform(0.05, 8);
-      return { mass, radius: mass < 1 ? mass ** 0.3 : mass ** 0.27, albedo: rng.range(0.1, 0.45) };
+      return { mass, radius: mass < 1 ? GM.pow(mass, 0.3) : GM.pow(mass, 0.27), albedo: rng.range(0.1, 0.45) };
     }
     case 'mini-neptune': {
       const mass = rng.logUniform(2, 10);
-      return { mass, radius: 1.6 + (2 * Math.log10(mass / 2)) / Math.log10(5), albedo: rng.range(0.2, 0.5) };
+      return { mass, radius: 1.6 + (2 * GM.log10(mass / 2)) / GM.log10(5), albedo: rng.range(0.2, 0.5) };
     }
     case 'ice-giant': {
       const mass = rng.logUniform(8, 40);
-      return { mass, radius: 3.9 * (mass / 16) ** 0.3, albedo: rng.range(0.25, 0.5) };
+      return { mass, radius: 3.9 * GM.pow((mass / 16), 0.3), albedo: rng.range(0.25, 0.5) };
     }
     default: {
       const mass = rng.logUniform(30, 1500);
-      return { mass, radius: clamp(7 + 1.7 * Math.log10(mass), 8, 12.5), albedo: rng.range(0.3, 0.55) };
+      return { mass, radius: clamp(7 + 1.7 * GM.log10(mass), 8, 12.5), albedo: rng.range(0.3, 0.55) };
     }
   }
 }
@@ -742,10 +827,10 @@ function physical(rng, type) {
 // 大気圧[atm]。脱出速度が大きく温度が低いほど大気を保持しやすい。
 function atmosphere(rng, mass, radius, teq) {
   const index = (mass / radius / (teq / 255)) * rng.logUniform(0.1, 10);
-  return index < 0.05 ? 0 : 0.6 * index ** 1.6 * rng.logUniform(0.3, 3);
+  return index < 0.05 ? 0 : 0.6 * GM.pow(index, 1.6) * rng.logUniform(0.3, 3);
 }
 
-const greenhouse = (p) => 1 + 0.1 * Math.log10(1 + 10 * p) + (p > 10 ? 0.5 * Math.log10(p / 10) : 0);
+const greenhouse = (p) => 1 + 0.1 * GM.log10(1 + 10 * p) + (p > 10 ? 0.5 * GM.log10(p / 10) : 0);
 
 function classifySurface(t, p, water) {
   if (t > 1000) return 'molten';
@@ -781,8 +866,8 @@ function settleability(b) {
 
 // 共通の派生量を計算して天体を完成させる。
 function finalizeBody(body, star) {
-  body.period = Math.sqrt(body.a ** 3 / star.mass);
-  body.tidalLock = body.a < 0.25 * Math.cbrt(star.mass) && body.type !== 'belt';
+  body.period = Math.sqrt(GM.pow(body.a, 3) / star.mass);
+  body.tidalLock = body.a < 0.25 * GM.cbrt(star.mass) && body.type !== 'belt';
   const hz = habitableZone(star);
   body.inHZ = body.a >= hz.inner && body.a <= hz.outer;
   if (body.type === 'belt') {
@@ -790,7 +875,7 @@ function finalizeBody(body, star) {
     body.settle = { grade: 0, score: 0, notes: ['小天体の集まりで入植に適した地表がない'] };
     return body;
   }
-  body.gravity = body.mass / body.radius ** 2;
+  body.gravity = body.mass / GM.pow(body.radius, 2);
   body.teq = eqTemp(star.lum, body.a, body.albedo);
   if (body.pressure === undefined) body.pressure = 0;
   if (body.tSurf === undefined) body.tSurf = body.teq * greenhouse(body.pressure);
@@ -806,7 +891,7 @@ function generatePlanets(rng, star, sysName, maxA) {
   if (maxA < 0.1) return [];
   const count = Math.min(9, rng.poisson(PLANETS_MEAN[star.cls]));
   const frost = frostLine(star);
-  let a = star.wd ? rng.logUniform(1, 10) : rng.logUniform(0.05, 0.5) * star.lum ** 0.25;
+  let a = star.wd ? rng.logUniform(1, 10) : rng.logUniform(0.05, 0.5) * GM.pow(star.lum, 0.25);
   const bodies = [];
   for (let i = 0; i < count && a <= maxA; i++, a *= rng.range(1.4, 2.2)) {
     const type = pickType(rng, a / frost);
@@ -814,13 +899,13 @@ function generatePlanets(rng, star, sysName, maxA) {
     if (type === 'rocky' || type === 'dwarf') {
       const teq = eqTemp(star.lum, a, b.albedo);
       b.pressure = type === 'dwarf' && teq > 120 ? 0 : atmosphere(rng, b.mass, b.radius, teq);
-      b.water = rng.next() ** 1.5;
+      b.water = GM.pow(rng.next(), 1.5);
     }
     bodies.push(b);
   }
   // 小惑星帯: 雪線付近に確率的に置く(近すぎる惑星があれば作らない)
   const beltA = frost * rng.range(0.9, 1.3);
-  if (!star.wd && beltA < maxA && rng.chance(0.45) && bodies.every((b) => Math.abs(Math.log(b.a / beltA)) > 0.25)) {
+  if (!star.wd && beltA < maxA && rng.chance(0.45) && bodies.every((b) => Math.abs(GM.log(b.a / beltA)) > 0.25)) {
     bodies.push({ type: 'belt', a: beltA, phase: rng.range(0, Math.PI * 2) });
   }
   bodies.sort((x, y) => x.a - y.a);
@@ -914,9 +999,9 @@ function scatter(rng, count, meanSpacing) {
   for (let tries = 0; pts.length < count && tries < count * 500; tries++) {
     const r = Math.sqrt(rng.next());
     const th = rng.range(0, Math.PI * 2);
-    const x = r * Math.cos(th);
-    const y = r * Math.sin(th);
-    if (pts.every((p) => (p[0] - x) ** 2 + (p[1] - y) ** 2 >= dmin * dmin)) pts.push([x, y]);
+    const x = r * GM.cos(th);
+    const y = r * GM.sin(th);
+    if (pts.every((p) => GM.pow((p[0] - x), 2) + GM.pow((p[1] - y), 2) >= dmin * dmin)) pts.push([x, y]);
   }
   const k = meanSpacing / meanNearest(pts);
   return pts.map(([x, y]) => [x * k, y * k]);
@@ -926,7 +1011,7 @@ function nearestDistances(pts) {
   return pts.map((p, i) => {
     let best = Infinity;
     pts.forEach((q, j) => {
-      if (i !== j) best = Math.min(best, Math.hypot(p[0] - q[0], p[1] - q[1]));
+      if (i !== j) best = Math.min(best, GM.hypot(p[0] - q[0], p[1] - q[1]));
     });
     return best;
   });
@@ -960,17 +1045,18 @@ const REAL_STARS = {"slab":17.0,"radius":53.8,"s":[[-2.16,0.17,-8.5,"","GJ 65",[
 // 名前のない恒星にはカタカナの名前を付け、まだ見つかっていない惑星は手続きで足す (シードで変わるのはこの 2 つと資源・先住民)
 function knownPlanet(rng, [plName, a, mass, radius], star) { // star = 惑星が回る恒星
   // 質量か半径から種類を決める (どちらも分からなければ岩石惑星とみなす)
-  const m = mass ?? (radius ? (radius < 1.6 ? radius ** 3.7 : 4 * radius ** 1.3) : 1);
+  const m = mass ?? (radius ? (radius < 1.6 ? GM.pow(radius, 3.7) : 4 * GM.pow(radius, 1.3)) : 1);
   const type = m < 0.05 ? 'dwarf' : (radius ?? 1) <= 1.7 && m <= 8 ? 'rocky' : m <= 15 ? 'mini-neptune' : m <= 60 ? 'ice-giant' : 'gas-giant';
-  const r = radius ?? (type === 'rocky' ? (m < 1 ? m ** 0.3 : m ** 0.27) : type === 'mini-neptune' ? 1.6 + (2 * Math.log10(m / 2)) / Math.log10(5) : type === 'ice-giant' ? 3.9 * (m / 16) ** 0.3 : clamp(7 + 1.7 * Math.log10(m), 8, 12.5));
+  const r = radius ?? (type === 'rocky' ? (m < 1 ? GM.pow(m, 0.3) : GM.pow(m, 0.27)) : type === 'mini-neptune' ? 1.6 + (2 * GM.log10(m / 2)) / GM.log10(5) : type === 'ice-giant' ? 3.9 * GM.pow((m / 16), 0.3) : clamp(7 + 1.7 * GM.log10(m), 8, 12.5));
   const b = { type, a, mass: m, radius: r, albedo: 0.3, water: 0, phase: rng.range(0, Math.PI * 2), known: plName };
-  if (type === 'rocky' || type === 'dwarf') { b.pressure = atmosphere(rng, b.mass, b.radius, eqTemp(star.lum, a, b.albedo)); b.water = rng.next() ** 1.5; }
+  if (type === 'rocky' || type === 'dwarf') { b.pressure = atmosphere(rng, b.mass, b.radius, eqTemp(star.lum, a, b.albedo)); b.water = GM.pow(rng.next(), 1.5); }
   return b;
 }
 // 実在の銀河の版。2: FGK 型の主星に、保守的なハビタブルゾーンの地球型惑星 (0.5〜1.5 地球半径) を確率 ETA_EXTRA で足す。
 // 版 1 の手続きの惑星だけでは、FGK 型星あたりの η⊕ が 0.21 で、観測 (Bryson ほか 2021: 0.37〜0.60、目標 R05) より少なかった。
 // 足す惑星は別の乱数列で作り、残りの記号を付けるので、ほかの惑星・資源・先住民は版 1 と同じ (古いセーブは版 1 のまま読む)
-const GALAXY_GEN = 3;
+// 4: 3 と同じ星と板で、銀河を作る計算を DMath にした (どのブラウザでも、画面なしの版でも同じ銀河になる)
+const GALAXY_GEN = 4;
 // 銀河の版 3 から、銀河面から ±THIN_SLAB 光年の板の中の星だけを使う (星の表は ±17 光年の板。版 2 までのセーブはそのまま読む)。
 // 星が多すぎて地図を操作できなかったため (ユーザーの指示)
 const THIN_SLAB = 2;
@@ -993,7 +1079,7 @@ function generateRealGalaxy(seed, gen = 1) {
     const hostOf = (p) => stars[p[4] || 0] || primary;
     const known = pls.map((p) => Object.assign(knownPlanet(rng, p, hostOf(p)), p[4] ? { host: stars[p[4]].id } : {}));
     // 手続きの惑星は、既知の惑星と軌道が近すぎるもの (軌道半径の比 1.4 以内) を除いて足す
-    const more = generatePlanets(rng, primary, name, maxA).filter((b) => known.every((k) => Math.abs(Math.log(b.a / k.a)) > Math.log(1.4)));
+    const more = generatePlanets(rng, primary, name, maxA).filter((b) => known.every((k) => Math.abs(GM.log(b.a / k.a)) > GM.log(1.4)));
     const bodies = [...known, ...more].sort((p, q) => p.a - q.a);
     const used = new Set(known.map((k) => k.known.trim().split(/\s+/).pop()));
     let letter = 'b'.charCodeAt(0);
@@ -1009,11 +1095,11 @@ function generateRealGalaxy(seed, gen = 1) {
       const er = new Rng(hashSeed(`${seed}/eta/${i}`));
       const hz = habitableZone(primary);
       const a = er.logUniform(hz.inner, hz.outer);
-      if (er.chance(ETA_EXTRA) && a <= maxA && bodies.every((b) => Math.abs(Math.log(b.a / a)) > Math.log(1.3))) {
+      if (er.chance(ETA_EXTRA) && a <= maxA && bodies.every((b) => Math.abs(GM.log(b.a / a)) > GM.log(1.3))) {
         const mass = er.logUniform(0.1, 4.5); // 0.5〜1.5 地球半径になる質量
-        const b = { type: 'rocky', a, phase: er.range(0, Math.PI * 2), mass, radius: mass < 1 ? mass ** 0.3 : mass ** 0.27, albedo: er.range(0.1, 0.45) };
+        const b = { type: 'rocky', a, phase: er.range(0, Math.PI * 2), mass, radius: mass < 1 ? GM.pow(mass, 0.3) : GM.pow(mass, 0.27), albedo: er.range(0.1, 0.45) };
         b.pressure = atmosphere(er, b.mass, b.radius, eqTemp(primary.lum, a, b.albedo));
-        b.water = er.next() ** 1.5;
+        b.water = GM.pow(er.next(), 1.5);
         while (used.has(String.fromCharCode(letter))) letter++;
         b.id = String.fromCharCode(letter);
         b.name = `${name} ${b.id}`;
@@ -1025,12 +1111,17 @@ function generateRealGalaxy(seed, gen = 1) {
     systems.push({ id: systems.length, name, cat, x, y, z, stars, bodies, real: true }); // 番号は並びの位置 (版 2 までは i + 1 と同じ)
   });
   const thin = gen >= 3;
-  const galaxy = { seed, kind: 'real', gen, systems, radius: thin ? Math.max(...systems.map((s) => Math.hypot(s.x, s.y))) : REAL_STARS.radius, slab: thin ? THIN_SLAB : REAL_STARS.slab, meanSpacing: 4 };
+  const galaxy = { seed, kind: 'real', gen, systems, radius: thin ? Math.max(...systems.map((s) => GM.hypot(s.x, s.y))) : REAL_STARS.radius, slab: thin ? THIN_SLAB : REAL_STARS.slab, meanSpacing: 4 };
   addExtras(galaxy);
   return galaxy;
 }
 
-function generateGalaxy({ seed = 1, starCount = 400, meanSpacing = 4, kind = 'flat', gen = 1 } = {}) {
+function generateGalaxy(opts = {}) {
+  const prev = GM;
+  GM = (opts.gen ?? 1) >= 4 ? DMath : Math;
+  try { return buildGalaxy(opts); } finally { GM = prev; }
+}
+function buildGalaxy({ seed = 1, starCount = 400, meanSpacing = 4, kind = 'flat', gen = 1 } = {}) {
   if (kind === 'real') return generateRealGalaxy(seed, gen);
   const rng = new Rng(typeof seed === 'number' ? seed : hashSeed(seed));
   const pts = scatter(rng, starCount, meanSpacing);
@@ -1040,13 +1131,13 @@ function generateGalaxy({ seed = 1, starCount = 400, meanSpacing = 4, kind = 'fl
     const sol = makeSol();
     return { id: 0, name: sol.name, x, y, stars: [{ id: 's0', name: '太陽', ...sol.star, sep: 0, phase: 0 }], bodies: sol.bodies };
   });
-  const radius = Math.max(...systems.map((s) => Math.hypot(s.x, s.y)));
+  const radius = Math.max(...systems.map((s) => GM.hypot(s.x, s.y)));
   const galaxy = { seed, systems, radius, meanSpacing };
   addExtras(galaxy);
   return galaxy;
 }
 
-const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0)); // 光年 (平面の銀河では z がない)
+const distance = (a, b) => GM.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0)); // 光年 (平面の銀河では z がない)
 const DEFAULT_PITCH = 0.6; // 3 次元の銀河を見下ろす初めの傾き [rad] (約 34°)
 const MAX_PITCH = 1.3; // 傾けられる上限 [rad] (約 75°)
 const SYS_DIST = new WeakMap(); // 銀河 → 星系どうしの距離の表 (Game.sysDist)
@@ -1113,7 +1204,7 @@ function makeNatives(rng, b) {
   const tech = rng.weighted([0, 1, 2, 3], (t) => [0.4, 0.35, 0.18, 0.07][t]);
   return {
     species: `${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`,
-    pop: rng.logUniform(1, 300) * (1 + tech) ** 1.5,
+    pop: rng.logUniform(1, 300) * GM.pow((1 + tech), 1.5),
     tech,
     mood: Math.round(rng.range(-40, 30)),
   };
@@ -1130,7 +1221,7 @@ function makeMoreNatives(rng, b) {
   const tech = rng.weighted([0, 1, 2, 3], (t) => (lush ? [0.4, 0.35, 0.18, 0.07] : [0.6, 0.3, 0.08, 0.02])[t]);
   return {
     species: `${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`,
-    pop: rng.logUniform(1, lush ? 300 : 40) * (1 + tech) ** 1.5,
+    pop: rng.logUniform(1, lush ? 300 : 40) * GM.pow((1 + tech), 1.5),
     tech,
     mood: Math.round(rng.range(-40, 30)),
   };
@@ -1206,7 +1297,7 @@ function propulsion(m, beta, mode) {
   const chain = PROP.laser * PROP.beam * sailEff(beta);
   if (mode === 'route') { const e = ((g - 1) * m * C2) / chain; return { acc: e, dec: e, mass: m, anti: 0 }; }
   // 反物質ロケット: 速さの変化 (ラピディティ) atanh(βf) = 排気速度 × ln(質量比)。推進剤の半分が反物質
-  const R = Math.exp(Math.atanh(PROP.magsailTo) / PROP.amExhaust);
+  const R = GM.exp(GM.atanh(PROP.magsailTo) / PROP.amExhaust);
   const anti = (m * (R - 1)) / 2;
   return { acc: ((g - 1) * m * R * C2) / chain, dec: (anti * C2) / PROP.amEff, mass: m * R, anti };
 }
@@ -1216,7 +1307,7 @@ function propulsion(m, beta, mode) {
 // sigma = 代替の弾力性 (構造重力モデルの推定の中央の値 約 5。Head & Mayer 2014)、rate = 実質の利子率 [/年] (長期の安全資産の実質利子率 約 1%。Jordà ほか 2019)、
 // sources = 買い手が見る売り手の数 (交易路網で近い順)、wait = 注文が届いてから入荷を待つ年数の上限
 const TRADE = { sigma: 5, rate: 0.01, sources: 16, wait: 10 };
-const tradeCost = (years) => Math.exp(TRADE.rate * years);
+const tradeCost = (years) => GM.exp(TRADE.rate * years);
 const E_UNIT = propulsion(UNIT_KG, SHIP_SPEED, 'route').acc; // 交易路で 100 万 t を運ぶときの、片側 (加速か減速) のエネルギー [J]
 const E_UNIT_FREE = ((p) => p.acc + p.dec)(propulsion(UNIT_KG, SHIP_SPEED, 'free')); // 同じく、減速を磁気帆と反物質で行うとき (送る側がすべて払う) [J]
 let TRADE_AUDIT = null; // 試験用: 配列にすると、星系どうしの取引 (送った星系・受けた星系・年・基準価格での額) を書き出す (目標 R01)
@@ -1533,13 +1624,13 @@ function secessionTermsOf({ regime, delay, popRatio, loyalty }) {
   return [
     { label: '基準', f: ED.hazardBase, note: '年あたり' },
     { label: `統治体制 (${r.label})`, f: r.hr },
-    { label: '通信の遅れ ÷ 1 世代', f: Math.max(HAZARD.delayMin, delay / GENERATION_YEARS / HAZARD.delayRef) ** (ED.delayExp * (ED.regimeDelay ? r.delay : 1)), note: `${delay.toFixed(0)} 年 ÷ ${GENERATION_YEARS} 年` },
-    { label: '主人との人口の比', f: ratio ** HAZARD.pop, note: `${ratio < 1 ? ratio.toFixed(2) : ratio.toFixed(1)} 倍` },
-    { label: '忠誠度', f: Math.exp(HAZARD.loyalty * (HAZARD.loyaltyRef - loyalty)), note: `${Math.round(loyalty)}` },
+    { label: '通信の遅れ ÷ 1 世代', f: GM.pow(Math.max(HAZARD.delayMin, delay / GENERATION_YEARS / HAZARD.delayRef), (ED.delayExp * (ED.regimeDelay ? r.delay : 1))), note: `${delay.toFixed(0)} 年 ÷ ${GENERATION_YEARS} 年` },
+    { label: '主人との人口の比', f: GM.pow(ratio, HAZARD.pop), note: `${ratio < 1 ? ratio.toFixed(2) : ratio.toFixed(1)} 倍` },
+    { label: '忠誠度', f: GM.exp(HAZARD.loyalty * (HAZARD.loyaltyRef - loyalty)), note: `${Math.round(loyalty)}` },
   ];
 }
 const hazardOf = (terms) => terms.reduce((k, t) => k * t.f, 1);
-const hazardYear = (h) => 1 - Math.exp(-h); // 1 年に起きる確率
+const hazardYear = (h) => 1 - GM.exp(-h); // 1 年に起きる確率
 // 不満が収まる忠誠度: UNREST_CALM か、動きが始まったときの忠誠度 +15 の高いほう (最後通牒ではさらに +10)
 const calmAtOf = (u) => Math.max(UNREST_CALM, (u?.at ?? 0) + 15);
 const pctH = (v) => `${(v * 100).toFixed(v < 0.1 ? 1 : 0)}%`; // 小さな確率も見える百分率
@@ -2339,7 +2430,7 @@ class Game {
   rebelFleetOf(cols, credits) {
     const pop = cols.reduce((k, c) => k + c.pop, 0);
     const econ = cols.reduce((k, c) => k + Object.values(c.lv || {}).reduce((a, b) => a + b, 0), 0);
-    return Math.max(1, Math.round(2 * Math.log10(1 + pop) + econ / 4 + Math.max(0, credits || 0) / 1000));
+    return Math.max(1, Math.round(2 * GM.log10(1 + pop) + econ / 4 + Math.max(0, credits || 0) / 1000));
   }
   rebelFleet(id) { return this.rebelFleetOf(this.coloniesIn(id), this.gov(id).credits); }
   knownRebelFleet(id) { const k = this.known(id); return this.rebelFleetOf(this.knownColonies(id), k?.credits); }
@@ -2359,7 +2450,7 @@ class Game {
   // 主人との友好度 (0〜100): 主人筋 (主人、その主人…首都まで) との貿易 (両方向。支援として無償で受け取った物資も含む) の大きさで上下する。
   // 目標 = 50 × log10(1 + 貿易額[cr/年、ここ5年ほどの平均] / 2) (5 cr/年で約27、10で約39、20で約52、50で約71、100で約85)。年に最大10ずつ目標へ動く。
   // 反乱の確率は友好度に比例して下がる (× (1 − FRIEND_DAMP × 友好度/100)。友好度100で 0.4 倍。経済の結びつきが強くても独立した植民地はある)
-  friendTarget(trade) { return clamp(50 * Math.log10(1 + Math.max(0, trade || 0) / 2), 0, 100); }
+  friendTarget(trade) { return clamp(50 * GM.log10(1 + Math.max(0, trade || 0) / 2), 0, 100); }
   friendFactor(friend) { return Math.max(0, 1 - FRIEND_DAMP * clamp(friend || 0, 0, 100) / 100); }
   // 主人筋 (主人、その主人…首都まで) との取引を数える。a, b のどちらかがもう一方の主人筋なら、家臣の側に記録する
   isLordOf(x, id) {
@@ -3020,7 +3111,7 @@ class Game {
       // 守りの艦隊が造られたり届いたりしたら、攻囲を中断して艦隊戦になる (進捗は艦隊戦に勝てば引き継ぐ)
       if ((this.garrison[g.sys] || 0) > 0) { this.sieges = this.sieges.filter((x) => x !== g); this.startBattle(g.sys, g.realm, g.ships, g.progress, g.route); continue; }
       const pop = this.coloniesIn(g.sys).reduce((k, c) => k + c.pop, 0);
-      const ground = this.troopPower(g.sys) + 4 * Math.log10(1 + pop);
+      const ground = this.troopPower(g.sys) + 4 * GM.log10(1 + pop);
       // 兵站: 補給線が長いほど・補給が足りないほど攻囲は遅れる。戦力が6割を切ると、年に5%ずつ艦隊が脱落する
       const eff = this.fleetEff(g.sup, g.line) * this.modsOf(g.realm).fleet;
       if (eff < 0.6) {
@@ -3176,7 +3267,7 @@ class Game {
     return { def, st: this.natives[key] };
   }
   // 制圧に必要な戦力(艦隊の数)
-  nativeDefense(n) { return Math.max(1, Math.ceil((n.def.tech + 1) ** 2 * Math.log10(1 + n.st.pop))); }
+  nativeDefense(n) { return Math.max(1, Math.ceil(GM.pow((n.def.tech + 1), 2) * GM.log10(1 + n.st.pop))); }
 
   // --- 入植地 ---
   capOf(c) {
@@ -3458,7 +3549,7 @@ class Game {
 
   // 国家方針が整備期なら、建設費 (資金) が25%安い
   upgradeCost(c, fac) {
-    const k = 2 ** c.lv[fac];
+    const k = GM.pow(2, c.lv[fac]);
     const f = this.policyAt(c.sys) === 'consolidate' ? 0.75 : 1;
     return { credits: Math.round((100 + 0.05 * c.pop) * k * f), metal: Math.round(50 * k) };
   }
@@ -3636,7 +3727,7 @@ class Game {
           const kp = sysRes(S, res);
           const avail = spareOf(S, res) - (promised.get(kp) || 0);
           if (avail <= min) continue;
-          const w = avail * tradeCost(dist[S]) ** -TRADE.sigma;
+          const w = avail * GM.pow(tradeCost(dist[S]), -TRADE.sigma);
           const lead = dist[S] + this.travelYears(T, S);
           cands.push({ S, kpair, kp, avail, w });
           W += w; WL += w * lead;
@@ -3767,7 +3858,7 @@ class Game {
   fleetIntercept(f, origin = 0) {
     const E = this.system(origin);
     const t0 = this.year;
-    const gap = (t) => { const p = this.fleetPosition(f, t); return (t - t0) - Math.hypot(p.x - E.x, p.y - E.y, (p.z || 0) - (E.z || 0)); };
+    const gap = (t) => { const p = this.fleetPosition(f, t); return (t - t0) - GM.hypot(p.x - E.x, p.y - E.y, (p.z || 0) - (E.z || 0)); };
     let hi = t0 + 1;
     for (let i = 0; i < 20 && gap(hi) < 0; i++) hi = t0 + (hi - t0) * 2;
     let lo = t0;
@@ -3837,7 +3928,7 @@ class Game {
   // 他の星系に駐留する全艦をこの星系へ集める
   // --- 採掘基地 ---
   outpostAt(sysId, bodyId) { return this.outposts.find((o) => o.sys === sysId && o.body === bodyId); }
-  outpostCost(o) { const k = 2 ** (o ? o.lv : 0); return { credits: 200 * k, metal: 100 * k }; }
+  outpostCost(o) { const k = GM.pow(2, (o ? o.lv : 0)); return { credits: 200 * k, metal: 100 * k }; }
   outpostYield(o) {
     const b = this.target(o.sys, o.body);
     return Object.fromEntries(outpostRes(b).map((r) => [r, OUTPOST_RATE * (b.deposits?.[r] || 0) * o.lv]));
@@ -4367,7 +4458,7 @@ class Game {
     this.event('war', sysId, `${this.target(sysId, bodyId).name} で${n.def.species} (${TECH_LABEL[n.def.tech]}) との征服戦争が始まった`);
     this.warsYearly(true);
   }
-  militia(c) { return c ? 0.3 + 0.5 * Math.log10(1 + c.pop) : 0; }
+  militia(c) { return c ? 0.3 + 0.5 * GM.log10(1 + c.pop) : 0; }
   warPower(w) {
     const c = this.colonyAt(w.sys, w.body, 'planet');
     return (c ? c.troops + SLAVE_TROOP_POWER * c.slaveTroops : 0) + 0.5 * (this.garrison[w.sys] || 0) + this.militia(c);
@@ -4808,7 +4899,7 @@ class Game {
     const gv = this.govs[id];
     if (!gv || !this.isColonized(id)) return 0;
     const [f0, t0] = (gv.sw ??= this.isHome(id) ? [SWARM.home, START_YEAR] : [SWARM.seed, gv.founded ?? this.year]);
-    return 1 / (1 + (1 / f0 - 1) * Math.exp((-Math.LN2 / SWARM.doubling) * Math.max(0, this.year - t0)));
+    return 1 / (1 + (1 / f0 - 1) * GM.exp((-Math.LN2 / SWARM.doubling) * Math.max(0, this.year - t0)));
   }
   // 星系の発電 [J/年] = 恒星の光度の和 × 覆う割合 × 発電効率
   power(id) {
@@ -5355,7 +5446,7 @@ class Game {
       py = a.y + (b.y - a.y) * f;
       pz = (a.z || 0) + ((b.z || 0) - (a.z || 0)) * f;
     };
-    const f = (t) => { place(t); return t + Math.hypot(px - E.x, py - E.y, pz - (E.z || 0)) - this.year; };
+    const f = (t) => { place(t); return t + GM.hypot(px - E.x, py - E.y, pz - (E.z || 0)) - this.year; };
     if (f(t0) > 0 || f(t1) <= 0) return null;
     let lo = t0;
     let hi = t1;
@@ -5687,7 +5778,7 @@ function starIcon(stars, cls = '') {
 // 惑星のアイコン: 種類ごとに形を変える (岩石 = クレーター、ガス巨星 = 大きく縞、氷巨星 = 環、ミニ・ネプチューン = 縞1本、矮小天体 = 小さな丸、小惑星帯 = 弧に並ぶ粒)
 function planetIcon(b, cls = '') {
   const c = bodyColor(b);
-  const band = (y, r, w = 1.3, col = 'rgba(0,0,0,.28)') => { const h = Math.sqrt(Math.max(0, r * r - (y - 12) ** 2)) - 0.6; return `<path d="M${(12 - h).toFixed(2)} ${y}H${(12 + h).toFixed(2)}" stroke="${col}" stroke-width="${w}"/>`; };
+  const band = (y, r, w = 1.3, col = 'rgba(0,0,0,.28)') => { const h = Math.sqrt(Math.max(0, r * r - GM.pow((y - 12), 2))) - 0.6; return `<path d="M${(12 - h).toFixed(2)} ${y}H${(12 + h).toFixed(2)}" stroke="${col}" stroke-width="${w}"/>`; };
   const body = {
     rocky: `<circle cx="12" cy="12" r="6.6" fill="${c}"/><circle cx="9.8" cy="10" r="1.5" fill="rgba(0,0,0,.3)"/><circle cx="14.2" cy="14.3" r="1.1" fill="rgba(0,0,0,.3)"/>`,
     dwarf: `<circle cx="12" cy="12" r="3.8" fill="${c}"/>`,
