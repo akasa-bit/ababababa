@@ -115,6 +115,15 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #home .row .info { flex:1; min-width:200px; font-size:13px; }
 #home .row button.ghost { margin-top:0; }
 #home .big { font-size:16px; padding:10px 22px; border-color:var(--accent); color:var(--accent); }
+#home .htabs { display:flex; gap:6px; margin:10px 0 4px; } #home .htabs button { flex:1; min-height:44px; font-size:15px; } #home .htabs button.on { outline:2px solid var(--accent); }
+#home .natc { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px 0; border-bottom:1px solid var(--line); }
+#home .natc .info { flex:1; min-width:220px; font-size:14px; } #home .natc .nm { font-size:17px; } #home .natc .btns { display:flex; gap:6px; } #home .natc .btns button { white-space:nowrap; min-width:64px; margin:0; }
+#home .tr { display:inline-block; border:1px solid var(--line); border-radius:4px; padding:0 6px; margin:3px 4px 0 0; font-size:13px; }
+#home .nated { border:1px solid var(--accent); border-radius:8px; padding:12px 14px; margin:8px 0; }
+#home .nated label { display:block; margin:8px 0; font-size:14px; }
+#home .nated input:not([type]), #home .nated select { width:100%; font-size:15px; padding:6px 8px; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; margin-top:4px; }
+#home .nated .trs { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:4px 12px; }
+#home .nated .trs label { display:flex; gap:6px; align-items:flex-start; margin:2px 0; } #home .nated .trs b { font-weight:normal; white-space:nowrap; } #home .nated .trs small { display:block; color:var(--muted); font-size:11px; }
 #home input[type=text] { background:#0a0f1a; color:var(--fg); border:1px solid var(--line); border-radius:5px; padding:5px 8px; font:inherit; width:10em; }
 #home label { display:inline-flex; gap:6px; align-items:center; font-size:13px; }
 #legend { position:absolute; right:10px; bottom:10px; background:rgba(13,18,29,.85); border:1px solid var(--line); border-radius:6px; padding:4px 10px; font-size:12px; }
@@ -1210,6 +1219,32 @@ const TREATY = { vassal: 70, cash: 1000, cashPts: 5, cashMax: 10, white: 5, year
 // にらみ合い: 戦闘も攻め落としもない戦争は、年 stalemate ÷ (1 + 年数 ÷ stalemateHalf) の確率で講和を求める。
 // 始まってすぐは終わりやすく、長引いた戦争ほど泥沼になる (実際の戦争の長さも、多くは短く一部がとても長い)
 const PEACE = { minYears: 3, sueEx: 60, sueWs: -50, stalemate: 0.35, stalemateHalf: 4, offerEvery: 5, offerYears: 10, base: 0.15, loseWs: 80, exLose: 120, winBase: 0.05, exWin: 100, winWs: 400, min: 0.03, max: 0.95 };
+// 国の名前の接尾辞 (歴史上の国家の国号から)。w = 選ばれやすさ、t = その特性を持つ種族なら選ばれやすくなる
+const NATION_SUFFIX = [
+  { s: '王国', ex: 'イングランド王国', w: 4 }, { s: '帝国', ex: 'ローマ帝国', w: 3, t: ['warlike'] }, { s: '共和国', ex: 'ヴェネツィア共和国', w: 4, t: ['traders', 'wise'] },
+  { s: '連邦', ex: 'ソビエト連邦', w: 2, t: ['adaptable'] }, { s: '公国', ex: 'モナコ公国', w: 2 }, { s: '大公国', ex: 'リトアニア大公国', w: 2 },
+  { s: '侯国', ex: 'アンハルト侯国', w: 1 }, { s: '辺境伯領', ex: 'ブランデンブルク辺境伯領', w: 1, t: ['warlike'] }, { s: '選帝侯国', ex: 'ザクセン選帝侯国', w: 1, t: ['wise'] },
+  { s: '首長国', ex: 'キレナイカ首長国', w: 2, t: ['xerophile'] }, { s: 'ハン国', ex: 'ブハラ・ハン国', w: 2, t: ['warlike', 'prolific'] }, { s: 'スルタン国', ex: 'ブルネイ・スルタン国', w: 2, t: ['traders'] },
+  { s: '自由国', ex: 'アイルランド自由国', w: 2 }, { s: '独立国', ex: '(独立を国号に掲げた国)', w: 2 }, { s: '自由市', ex: 'ダンツィヒ自由市', w: 1, t: ['traders'] },
+  { s: '連合王国', ex: 'グレートブリテン及び北アイルランド連合王国', w: 1 }, { s: '合衆国', ex: 'アメリカ合衆国', w: 1, t: ['adaptable', 'prolific'] }, { s: '同盟', ex: 'ハンザ同盟', w: 1, t: ['traders'] },
+  { s: '共和国連邦', ex: 'ポーランド・リトアニア共和国', w: 1 }, { s: '人民共和国', ex: '(20 世紀の社会主義国の国号)', w: 1, t: ['industrious'] },
+  { s: '民主共和国', ex: 'ドイツ民主共和国', w: 1, t: ['industrious'] }, { s: '連邦共和国', ex: 'ドイツ連邦共和国', w: 1 }, { s: '藩王国', ex: 'ハイデラバード藩王国', w: 1 },
+  { s: '市国', ex: 'バチカン市国', w: 1, t: ['wise'] }, { s: '自治領', ex: 'カナダ自治領', w: 1, t: ['cryophile'] }, { s: '国', ex: '(国号の基本形)', w: 2 },
+];
+// 独立した星系の国の接尾辞 (分かれて立った国らしいもの)
+const SECEDE_SUFFIX = ['独立国', '自由国', '共和国', '自治国', '公国', '大公国', '侯国', '首長国', '自由市', '連邦', '王国', '国'];
+// 種族の名前から国の名前を作る (「ミナーラ人」→「ミナーラ独立国」)。rng があればそれで、なければ名前から決める
+function nationName(species, traits = [], rng = null) {
+  const stem = species.replace(/人$/, '') || species;
+  const ws = NATION_SUFFIX.map((x) => x.w * (x.t && x.t.some((t) => traits.includes(t)) ? 3 : 1));
+  let r = (rng ? rng.next() : (hashSeed(species) % 10007) / 10007) * ws.reduce((a, b) => a + b, 0);
+  const i = ws.findIndex((w) => (r -= w) < 0);
+  return `${stem}${NATION_SUFFIX[i < 0 ? 0 : i].s}`;
+}
+// 自作の国の母星の好み
+const HOME_ENV = { any: 'おまかせ', temperate: '温暖な惑星', ocean: '海洋の惑星', frozen: '寒冷な惑星', desert: '乾燥した惑星' };
+const HOME_DIST = { any: 'おまかせ', near: '近い (10〜25 光年)', mid: 'ふつう (25〜45 光年)', far: '遠い (45 光年より先)' };
+const HOME_DIST_RANGE = { any: [10, Infinity], near: [10, 25], mid: [25, 45], far: [45, Infinity] };
 const NATION_COUNTS = [1, 4, 5, 6, 7, 8]; // 1 = 地球だけ (国家選択なし)
 const SHIP_COST = { planet: { credits: 300, goods: 100, fuel: 100 }, station: { credits: 150, goods: 50, fuel: 50 } };
 const SETTLERS = { planet: 0.2, station: 0.02 }; // 入植船が運ぶ人口[百万人]
@@ -1525,8 +1560,9 @@ class Game {
   isHome(sys, body) { return this.nations ? this.nations.some((n) => n.cap === sys && n.body === body) : sys === 0 && body === 'earth'; }
   // 開始時に宇宙へ出ている国を作る: 地球 (人類) と、異星の種族の母星 count−1 か国。
   // 母星は、住みやすい岩石惑星から重みつきのくじで選ぶ (同じシードなら同じ)
-  foundNations(count, handicap = 'normal') { this.applyNations(this.planNations(count), handicap); }
-  planNations(count) {
+  foundNations(count, handicap = 'normal', customs = []) { this.applyNations(this.planNations(count, customs), handicap); }
+  // customs = ホーム画面の「国家づくり」で作った国 ({ name, species, traits, env, dist })。先に置き、残りをくじで埋める
+  planNations(count, customs = []) {
     const list = [{ cap: 0, body: 'earth', species: HUMAN, traits: HUMAN_TRAITS, name: '地球の国' }];
     const rng = new Rng(hashSeed(`${this.galaxy.seed}/nations`));
     // 候補: 太陽系から 10 光年より遠い、住みやすい岩石惑星 (銀河のどこでも)。
@@ -1537,23 +1573,42 @@ class Game {
       for (const b of sys.bodies) {
         const nat = b.natives || b.nativesSpare;
         if (b.type !== 'rocky' || (b.settle?.grade || 0) < 2) continue;
-        cands.push({ sys: sys.id, body: b, w: (nat ? 2 + nat.tech : 1) * b.settle.grade });
+        cands.push({ sys: sys.id, body: b, d: this.sysDist(0, sys.id), w: (nat ? 2 + nat.tech : 1) * b.settle.grade });
       }
     }
-    for (let k = 1; k < count && cands.length; k++) {
+    const draw = (ok) => {
       // ほかの国の首都から 12 光年以上 (候補がなければ 8 光年以上) 離れた候補から引く
-      let pool = [];
       for (const gap of [12, 8]) {
-        pool = cands.filter((c) => list.every((n) => this.sysDist(n.cap, c.sys) >= gap));
-        if (pool.length) break;
+        const pool = cands.filter((c) => ok(c) && list.every((n) => this.sysDist(n.cap, c.sys) >= gap));
+        if (!pool.length) continue;
+        let r = rng.next() * pool.reduce((t, c) => t + c.w, 0);
+        return pool.find((c) => (r -= c.w) <= 0) || pool[pool.length - 1];
       }
-      if (!pool.length) break;
-      let r = rng.next() * pool.reduce((t, c) => t + c.w, 0);
-      const pick = pool.find((c) => (r -= c.w) <= 0) || pool[pool.length - 1];
+      return null;
+    };
+    const used = new Set([HUMAN, ...customs.map((c) => c.species)]);
+    for (let k = 1; k < count && cands.length; k++) {
+      const cu = customs[k - 1];
+      let pick;
+      if (cu) {
+        const [d0, d1] = HOME_DIST_RANGE[cu.dist] || HOME_DIST_RANGE.any;
+        const env = (c) => !cu.env || cu.env === 'any' || c.body.surface === cu.env;
+        const dist = (c) => c.d >= d0 && c.d < d1;
+        pick = draw((c) => env(c) && dist(c)) || draw(env) || draw(dist) || draw(() => true); // 好みに合う星がなければ、条件をゆるめる
+      } else pick = draw(() => true);
+      if (!pick) break;
       const { sys, body } = pick;
-      const nat = body.natives || body.nativesSpare;
-      const species = nat?.species || `${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`;
-      list.push({ cap: sys, body: body.id, species, traits: speciesTraits(species), name: `${species}の国` });
+      let species, traits, name;
+      if (cu) ({ species, traits, name } = cu);
+      else {
+        const nat = body.natives || body.nativesSpare;
+        species = nat && !used.has(nat.species) ? nat.species : '';
+        while (!species || used.has(species)) species = `${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`;
+        traits = speciesTraits(species);
+        name = nationName(species, traits, rng);
+      }
+      used.add(species);
+      list.push({ cap: sys, body: body.id, species, traits: [...traits], name });
       cands.splice(0, cands.length, ...cands.filter((c) => c.sys !== sys));
     }
     return list;
@@ -1742,7 +1797,8 @@ class Game {
   enemiesOf(root) {
     return Object.keys(this.realmWars).map((k) => k.split('|').map(Number)).filter((p) => p.includes(root)).map((p) => (p[0] === root ? p[1] : p[0]));
   }
-  realmName(root) { return this.nationOf(root)?.name || (root === 0 ? '地球の国' : `${this.system(root).name} の国`); }
+  // 国の名前。国家選択の国は決めた名前、独立した星系の国は「星系の名前 + 接尾辞」(接尾辞は星系ごとに決まる)
+  realmName(root) { return this.nationOf(root)?.name || (root === 0 ? '地球の国' : `${this.system(root).name}${SECEDE_SUFFIX[hashSeed(`${this.galaxy.seed}/${root}`) % SECEDE_SUFFIX.length]}`); }
   // 地球 (プレイヤー) が知っている戦争: 開戦の知らせが光速で地球に届いたもの (観戦モードはすべて)
   // 終わった戦争も、終戦の知らせが地球に届くまでは交戦中に見える (開戦を知っていた場合)
   warKnown(key) {
@@ -2496,7 +2552,7 @@ class Game {
   declareWar(root) {
     if (root === this.cap || this.realmOf(root) !== root || this.atWar(this.cap, root)) return fail('宣戦できない');
     this.beginWar(this.cap, root, this.cap);
-    this.event('politics', this.cap, `${this.system(root).name} の国に宣戦した (相手は攻め落とされるまで降伏しない)`);
+    this.event('politics', this.cap, `${this.realmName(root)}に宣戦した (相手は攻め落とされるまで降伏しない)`);
     return { ok: true };
   }
   // 講和の申し入れ (光速の指令として相手の首都へ届く)。相手の艦隊が地球の国より少なければ受け入れ、そうでなくても30%
@@ -2587,7 +2643,7 @@ class Game {
     }
     if (!this.fightingAt(owner, destRealm, f.to)) {
       this.fleets.push({ ...f, id: this.nextShipId++, from: f.to, to: f.from, depart: this.year, arrive: this.year + this.fleetYears(f.to, f.from), surprise: false, route: undefined });
-      this.message(`${f.n} 艦隊は ${name} (${this.system(destRealm).name} の国) と交戦中ではないので入れず、引き返した (攻め込むには先に宣戦する)`, f.to);
+      this.message(`${f.n} 艦隊は ${name} (${this.realmName(destRealm)}) と交戦中ではないので入れず、引き返した (攻め込むには先に宣戦する)`, f.to);
       return;
     }
     if (b && b.realm === owner) { b.a += f.n; b.a0 += f.n; if (f.route?.length) b.route ??= f.route; this.message(`${f.n} 艦隊が ${name} の艦隊戦に攻撃側で加わった`, f.to); return; }
@@ -2600,7 +2656,7 @@ class Game {
     } else if (sg) { sg.ships += f.n; if (route) sg.route = route; }
     else {
       this.sieges.push({ sys: f.to, realm: owner, ships: f.n, progress: 0, start: this.year, route });
-      this.event('battle', f.to, `${name} に守りの艦隊はなく、${this.system(owner).name} の国の ${f.n} 艦隊が攻囲を始めた`, this.isHuman(owner) || this.isHuman(destRealm));
+      this.event('battle', f.to, `${name} に守りの艦隊はなく、${this.realmName(owner)}の ${f.n} 艦隊が攻囲を始めた`, this.isHuman(owner) || this.isHuman(destRealm));
     }
   }
   // 艦隊戦はランチェスターの二次則を時間をかけて解く: 両軍とも1艦隊が1年に BATTLE_RATE 艦隊ずつ敵を壊滅させ、0.5艦隊を切った側が負け。
@@ -2610,7 +2666,7 @@ class Game {
     const d = this.garrison[sys] || 0;
     this.garrison[sys] = 0;
     this.battles.push({ sys, realm, a: ships, d, a0: ships, d0: d, start: this.year, progress: progress || 0, route });
-    this.event('battle', sys, `${this.system(sys).name} で艦隊戦が始まった (攻撃 ${this.system(realm).name} の国 ${ships} 艦隊 対 防衛 ${d} 艦隊)`, this.isHuman(realm) || this.isHuman(this.realmOf(sys)));
+    this.event('battle', sys, `${this.system(sys).name} で艦隊戦が始まった (攻撃 ${this.realmName(realm)} ${ships} 艦隊 対 防衛 ${d} 艦隊)`, this.isHuman(realm) || this.isHuman(this.realmOf(sys)));
   }
   battlesStep(dt) {
     for (const b of [...this.battles]) {
@@ -2642,10 +2698,10 @@ class Game {
       if (b.a >= 0.5) {
         const left = Math.max(1, Math.floor(b.a));
         this.sieges.push({ sys: b.sys, realm: b.realm, ships: left, progress: b.progress || 0, start: this.year, route: b.route });
-        this.event('battle', b.sys, `${name} の艦隊戦で攻撃側 (${this.system(b.realm).name} の国) が勝った (${span}、${left} 艦隊が残る)。攻囲が始まる`, mine);
+        this.event('battle', b.sys, `${name} の艦隊戦で攻撃側 (${this.realmName(b.realm)}) が勝った (${span}、${left} 艦隊が残る)。攻囲が始まる`, mine);
       } else {
         this.garrison[b.sys] = Math.floor(b.d);
-        this.event('battle', b.sys, `${name} の艦隊戦で攻撃側 (${this.system(b.realm).name} の国) が全滅した (${span}、防衛側は ${Math.floor(b.d)} 艦隊が残る)`, mine);
+        this.event('battle', b.sys, `${name} の艦隊戦で攻撃側 (${this.realmName(b.realm)}) が全滅した (${span}、防衛側は ${Math.floor(b.d)} 艦隊が残る)`, mine);
       }
     }
   }
@@ -2668,7 +2724,7 @@ class Game {
         g.wear = (g.wear || 0) + 0.05 * g.ships;
         while (g.wear >= 1 && g.ships >= 1) { g.wear -= 1; g.ships -= 1; }
         if (g.ships < 1) {
-          this.event('battle', g.sys, `補給が続かず、${this.system(g.sys).name} を攻囲していた ${this.system(g.realm).name} の国の艦隊が崩れた`, this.isHuman(g.realm) || this.isHuman(this.realmOf(g.sys)));
+          this.event('battle', g.sys, `補給が続かず、${this.system(g.sys).name} を攻囲していた ${this.realmName(g.realm)}の艦隊が崩れた`, this.isHuman(g.realm) || this.isHuman(this.realmOf(g.sys)));
           this.sieges = this.sieges.filter((x) => x !== g);
           continue;
         }
@@ -2746,7 +2802,7 @@ class Game {
     gv.unrest = { stage: 0 };
     this.asRealm(winner, () => { this.stats.subjugated++; this.councilAdd(10); });
     this.cleanWars();
-    this.event('politics', root, `${this.system(root).name} の国が降伏し、${this.realmName(winner)}に従属した${n > 1 ? ` (配下の ${n - 1} 星系も従う)` : ''}`, this.isHuman(winner));
+    this.event('politics', root, `${this.realmName(root)}が降伏し、${this.realmName(winner)}に従属した${n > 1 ? ` (配下の ${n - 1} 星系も従う)` : ''}`, this.isHuman(winner));
   }
   // 独立国の戦争の判断 (年1回)
   // - 交戦中の国の手薄な星系 (20光年以内) を、いちばん艦隊の多い星系から攻める (年1回)
@@ -4579,6 +4635,8 @@ class Game {
       delete this.realmWars[k]; delete this.warBy[k]; delete this.warNews[k];
     }
     if (obj(d.held)) this.held = d.held;
+    // 着いたが、その知らせがまだプレイヤーに届いていない艦隊 (威圧の判断に使うので、セーブに含める)
+    if (Array.isArray(d.ghostFleets)) this.ghosts.fleets = d.ghostFleets.filter((f) => f && sysOk(f.from) && sysOk(f.to) && Number.isFinite(f.until));
     if (obj(d.stackOwner)) this.stackOwner = Object.fromEntries(Object.entries(d.stackOwner).filter(([k, v]) => sysOk(Number(k)) && Number.isInteger(v)));
     if (obj(d.awe)) this.awe = d.awe;
     if (Array.isArray(d.sieges)) this.sieges = d.sieges.filter((g) => g && sysOk(g.sys));
@@ -6509,7 +6567,7 @@ function sysFlags(g, sys, k, cols) {
     const enemies = g.knownEnemiesOf(realm);
     if (enemies.length && (realm !== g.cap || id === g.cap)) flags.push(['enemy', `${enemies.map((e) => g.realmName(e)).join('・')}と交戦中`]);
   }
-  if (k?.siege) flags.push(['enemy', `攻囲されている: ${g.system(k.siege.realm).name} の国 ${k.siege.ships} 艦隊・${pct(k.siege.progress)}`]);
+  if (k?.siege) flags.push(['enemy', `攻囲されている: ${g.realmName(k.siege.realm)} ${k.siege.ships} 艦隊・${pct(k.siege.progress)}`]);
   if (k?.battle) flags.push(['enemy', `艦隊戦: ${Math.ceil(k.battle.a)} 対 ${Math.ceil(k.battle.d)} 艦隊`]);
   if (vassal && realm === g.cap) {
     const o = independenceOutlook(g, id);
@@ -6534,7 +6592,7 @@ function sysHead(g, sys, k, cols) {
   const realm = id === g.cap ? g.realmOf(id) : k?.realm ?? null;
   const pop = cols.reduce((a, c) => a + c.pop, 0);
   const vassal = id !== g.cap && k && k.lord !== null && k.lord !== undefined;
-  const owner = cols.length ? (realm === g.cap ? `${ME.realm}` : realm === id && k?.independent ? '独立国の首都' : `${g.system(realm).name} の国`) : '未入植';
+  const owner = cols.length ? (realm === g.cap ? `${ME.realm}` : realm === id && k?.independent ? '独立国の首都' : `${g.realmName(realm)}`) : '未入植';
   const tiles = [];
   if (cols.length) tiles.push([`${ico('pop')}人口`, fmtPop(pop)]);
   const flags = sysFlags(g, sys, k, cols);
@@ -7996,6 +8054,7 @@ const Store = {
       }
     }
     for (const k of SLOT_KEYS) { const t = await this.get(k); this.meta[k] = t ? saveMeta(parseSave(t)) : null; }
+    NationLib.parse(await this.get(NationLib.key));
     this.ready = true;
   },
   get(k) {
@@ -8039,7 +8098,7 @@ function saveMeta(d) {
 function buildSave(game, extra = {}) {
   return {
     v: 2, seed: game.galaxy.seed, rs: game.rs, players: game.players, pi: game.pi,
-    ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
+    ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
@@ -8255,6 +8314,92 @@ $('importfile').onchange = async (e) => {
   else { app.homeNote = 'セーブデータを読み込めなかった。'; renderHome(); }
 };
 
+// --- 自作の国 (ホーム画面の「国家づくり」) ---
+// 作った国はこのブラウザに保存し、どの試合でも人間の国・AI の国として出せる
+const NATION_LIB_MAX = 20;
+const NationLib = {
+  key: 'moribin-nations',
+  list: [], // [{ id, name, species, traits, env, dist }]
+  parse(t) {
+    try { const a = JSON.parse(t || '[]'); this.list = Array.isArray(a) ? a.filter((n) => n && n.id && n.name && n.species).map((n) => ({ ...n, traits: (n.traits || []).filter((x) => SPECIES_TRAITS[x]).slice(0, NATION_TRAITS_MAX) })) : []; } catch { this.list = []; }
+  },
+  save() { Store.put(this.key, JSON.stringify(this.list)); },
+  get(id) { return this.list.find((n) => n.id === id); },
+};
+// 特性の選び方の決まり: 3 つまで、食い違うものは同時に持たない
+const traitBlocked = (traits, t) => !traits.includes(t) && (traits.length >= NATION_TRAITS_MAX || traits.some((x) => TRAIT_CLASH.some((c) => c.includes(x) && c.includes(t))));
+function suffixOf(name, species) { const stem = species.replace(/人$/, ''); return name.startsWith(stem) ? name.slice(stem.length) : ''; }
+function nationsTabHtml() {
+  const ed = app.natEdit;
+  const card = (n) => `<div class="natc"><div class="info"><b class="nm">${esc(n.name)}</b> <span class="muted">種族 ${esc(n.species)}</span><br>
+      ${n.traits.map((t) => `<span class="tr" title="${esc(SPECIES_TRAITS[t].desc)}">${SPECIES_TRAITS[t].label}</span>`).join('') || '<span class="muted">特性なし</span>'}
+      <div class="muted">母星: ${HOME_ENV[n.env || 'any']}・${HOME_DIST[n.dist || 'any']}</div></div>
+    <div class="btns"><button data-home="natedit" data-id="${n.id}">直す</button><button data-home="natcopy" data-id="${n.id}">複製</button><button class="ghost" data-home="natdel" data-id="${n.id}">${app.homeArmed === `nd${n.id}` ? '本当に消す?' : '消す'}</button></div></div>`;
+  const editor = ed ? `<div class="nated">
+      <h3>${ed.id ? '国を直す' : '新しい国'}</h3>
+      <label>種族の名前 <input id="ne-species" maxlength="12" value="${esc(ed.species)}" placeholder="例: ミナーラ人"></label>
+      <label>国の名前 <input id="ne-name" maxlength="20" value="${esc(ed.name)}" placeholder="例: ミナーラ独立国"></label>
+      <label>接尾辞から選ぶ <select id="ne-suffix"><option value="">(自分で書く)</option>${NATION_SUFFIX.map((x) => `<option value="${esc(x.s)}" ${suffixOf(ed.name, ed.species) === x.s ? 'selected' : ''}>${esc(x.s)} — ${esc(x.ex)}</option>`).join('')}</select></label>
+      <p>特性 (${NATION_TRAITS_MAX} つまで。食い違うものは同時に選べない)</p>
+      <div class="trs">${Object.entries(SPECIES_TRAITS).map(([k, t]) => `<label title="${esc(t.desc)}"><input type="checkbox" class="ne-tr" value="${k}" ${ed.traits.includes(k) ? 'checked' : ''} ${traitBlocked(ed.traits, k) ? 'disabled' : ''}><span><b>${t.label}</b><small>${esc(t.desc)}</small></span></label>`).join('')}</div>
+      <label>母星の環境 <select id="ne-env">${Object.entries(HOME_ENV).map(([k, l]) => `<option value="${k}" ${ed.env === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label>太陽系からの距離 <select id="ne-dist">${Object.entries(HOME_DIST).map(([k, l]) => `<option value="${k}" ${ed.dist === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <p class="note">母星は、銀河ができたときに、この好みに合う住みやすい岩石惑星から選ぶ (合う星がなければ条件をゆるめる)。銀河ができたあと、国家選択の画面の「アレンジする」で選び直すこともできる。</p>
+      ${app.natNote ? `<p class="note bad">${esc(app.natNote)}</p>` : ''}
+      <div class="row"><button class="big" data-home="natsave">保存する</button><button class="ghost" data-home="natcancel">やめる</button></div></div>` : '';
+  return `<section><h3>国家づくり</h3>
+    <p class="note">ここで作った国は、このブラウザに保存され、どの試合にも出せる (新しいゲームの「自作の国を出す」で選ぶ)。国家選択の画面で「＋人間」にすれば自分で動かし、そうでなければ AI が動かす。${NATION_LIB_MAX} か国まで。</p>
+    ${editor || `<div class="row"><button class="big" data-home="natnew" ${NationLib.list.length >= NATION_LIB_MAX ? 'disabled' : ''}>新しい国を作る</button></div>`}
+    ${NationLib.list.map(card).join('') || (ed ? '' : '<p class="muted">まだ国がない。</p>')}</section>`;
+}
+// 国の編集欄の中身を app.natEdit に読み込む (描き直しで入力が消えないように)
+function readNatForm() {
+  const ed = app.natEdit;
+  if (!ed || !$('ne-species')) return;
+  ed.species = $('ne-species').value.trim();
+  ed.name = $('ne-name').value.trim();
+  ed.env = $('ne-env').value;
+  ed.dist = $('ne-dist').value;
+  ed.traits = [...document.querySelectorAll('#home .ne-tr')].filter((x) => x.checked).map((x) => x.value);
+}
+function natAction(act, id) {
+  readNatForm();
+  app.natNote = '';
+  if (act === 'natnew') { const sp = `${KANA_A[Math.floor(Math.random() * KANA_A.length)]}${KANA_B[Math.floor(Math.random() * KANA_B.length)]}人`; app.natEdit = { id: null, species: sp, name: nationName(sp), traits: [], env: 'any', dist: 'any' }; }
+  else if (act === 'natedit') { const n = NationLib.get(id); app.natEdit = n ? JSON.parse(JSON.stringify(n)) : null; }
+  else if (act === 'natcopy') { const n = NationLib.get(id); if (n && NationLib.list.length < NATION_LIB_MAX) app.natEdit = { ...JSON.parse(JSON.stringify(n)), id: null, name: `${n.name} (写し)` }; }
+  else if (act === 'natdel') {
+    if (app.homeArmed !== `nd${id}`) { app.homeArmed = `nd${id}`; return renderHome(); }
+    app.homeArmed = null;
+    NationLib.list = NationLib.list.filter((n) => n.id !== id);
+    app.homeLib = (app.homeLib || []).filter((x) => x !== id);
+    NationLib.save();
+  } else if (act === 'natcancel') app.natEdit = null;
+  else if (act === 'natsave') {
+    const ed = app.natEdit;
+    const why = !ed.species ? '種族の名前を入れる' : ed.species === HUMAN ? '人類は地球の国の種族' : !ed.name ? '国の名前を入れる'
+      : NationLib.list.some((n) => n.id !== ed.id && n.species === ed.species) ? 'ほかの自作の国と同じ種族の名前' : '';
+    if (why) { app.natNote = why; return renderHome(); }
+    const n = { id: ed.id || `n${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`, name: ed.name, species: ed.species, traits: ed.traits.slice(0, NATION_TRAITS_MAX), env: ed.env, dist: ed.dist };
+    const i = NationLib.list.findIndex((x) => x.id === n.id);
+    if (i >= 0) NationLib.list[i] = n; else NationLib.list.push(n);
+    NationLib.save();
+    app.natEdit = null;
+  }
+  renderHome();
+}
+$('home').addEventListener('change', (e) => {
+  const t = e.target;
+  if (!app.natEdit || !t.closest('.nated')) return;
+  readNatForm();
+  const ed = app.natEdit;
+  if (t.id === 'ne-suffix' && t.value) ed.name = `${ed.species.replace(/人$/, '')}${t.value}`;
+  if (t.id === 'ne-species') { const suf = suffixOf(app.natEdit.prevName ?? ed.name, app.natEdit.prevSpecies ?? ed.species); if (suf) ed.name = `${ed.species.replace(/人$/, '')}${suf}`; }
+  ed.prevName = ed.name; ed.prevSpecies = ed.species;
+  renderHome();
+});
+$('home').addEventListener('focusin', (e) => { if (e.target.id === 'ne-species' && app.natEdit) { app.natEdit.prevSpecies = e.target.value.trim(); app.natEdit.prevName = $('ne-name').value.trim(); } });
+
 // --- ホーム画面 (新しいゲーム・続きから・セーブスロット・ファイル) ---
 // ホーム画面を開いているあいだは時間を止める。スロットは自動セーブとは別に保存する
 const SLOT_KEYS = [1, 2, 3].map((i) => `moribin-slot-${i}`);
@@ -8273,8 +8418,10 @@ function homeHtml() {
       <button data-home="slotload" data-i="${i}" ${d ? '' : 'disabled'}>ロード</button>
       <button class="ghost" data-home="slotdel" data-i="${i}" ${d ? '' : 'disabled'}>${armed(`del${i}`) ? '本当に削除?' : '削除'}</button></div>`;
   }).join('');
+  const tabs = `<div class="htabs"><button data-home="tab" data-t="game" class="${app.homeTab !== 'nations' ? 'on' : ''}">ゲーム</button><button data-home="tab" data-t="nations" class="${app.homeTab === 'nations' ? 'on' : ''}">国家づくり (${NationLib.list.length})</button></div>`;
+  if (app.homeTab === 'nations') return `<div class="card"><h1>Moribin</h1>${tabs}${nationsTabHtml()}</div>`;
   return `<div class="card">
-    <h1>Moribin</h1><p class="muted">光速の壁の向こうへ広がる恒星間植民</p>
+    <h1>Moribin</h1><p class="muted">光速の壁の向こうへ広がる恒星間植民</p>${tabs}
     ${app.homeNote ? `<p class="note bad">${esc(app.homeNote)}</p>` : ''}
     <section><h3>いまのゲーム</h3>
       <div class="row"><div class="info">${saveInfo(saveMeta(buildSave(app.game)))}</div><button class="big" data-home="resume">${app.started ? 'ゲームに戻る' : '続きから'}</button></div>
@@ -8284,6 +8431,7 @@ function homeHtml() {
         <label><input id="home-spectate" type="checkbox" ${app.homeSpectate ? 'checked' : ''}> 観戦モード</label></div>
       <div class="row"><label>国の数 <select id="home-nat">${NATION_COUNTS.map((n) => `<option value="${n}" ${n === (app.homeNat ?? 1) ? 'selected' : ''}>${n === 1 ? '地球だけ (国家選択なし)' : `${n} か国から選ぶ`}</option>`).join('')}</select></label>
         <label>難易度 <select id="home-hc">${Object.entries(HANDICAP).map(([k, h]) => `<option value="${k}" ${k === (app.homeHc ?? 'normal') ? 'selected' : ''}>${h.label}</option>`).join('')}</select></label></div>
+      ${NationLib.list.length ? `<div class="row"><span class="muted">自作の国を出す</span>${NationLib.list.map((n) => `<label><input type="checkbox" class="home-lib" value="${n.id}" ${(app.homeLib || []).includes(n.id) ? 'checked' : ''}> ${esc(n.name)}</label>`).join('')}</div>` : ''}
       <div class="row"><label>終わりの年 <select id="home-end">${END_CHOICES.map(([y, l]) => `<option value="${y}" ${y === (app.homeEnd ?? 500) ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
       <div class="row"><span class="muted">挑戦 (選ばなくてもよい)</span>${Object.entries(CHALLENGES).map(([k, c]) => `<label title="${esc(c.desc)}"><input type="checkbox" class="home-ch" value="${k}" ${(app.homeCh || []).includes(k) ? 'checked' : ''}> ${c.label}</label>`).join('')}
         <button data-home="new">${armed('new') ? '本当に? いまのゲームは消える' : 'はじめる'}</button></div>
@@ -8373,11 +8521,11 @@ function pickEdit(e) {
   const t = e.target;
   const idx = (defs) => defs.findIndex((x) => x.cap === cap);
   if (t.dataset.ed === 'name' && e.type === 'change') {
-    rebuildNations((defs) => { const n = defs[idx(defs)]; n.name = t.value.trim() || `${n.species}の国`; });
+    rebuildNations((defs) => { const n = defs[idx(defs)]; n.name = t.value.trim() || nationName(n.species, n.traits); });
   } else if (t.dataset.ed === 'species' && e.type === 'change') {
     const v = t.value.trim();
     if (!v || g.nations.some((m) => m.cap !== cap && m.species === v)) { uiNote(v ? 'ほかの国と同じ種族の名前は使えない' : '種族の名前が空'); return renderPick(); }
-    rebuildNations((defs) => { const n = defs[idx(defs)]; if (n.name === `${n.species}の国`) n.name = `${v}の国`; n.species = v; });
+    rebuildNations((defs) => { const n = defs[idx(defs)]; const suf = suffixOf(n.name, n.species); if (suf) n.name = `${v.replace(/人$/, '')}${suf}`; n.species = v; });
   } else if (t.dataset.tr && e.type === 'change') {
     rebuildNations((defs) => {
       const n = defs[idx(defs)];
@@ -8422,13 +8570,13 @@ function pickFocus(cap) {
   app.picking.cap = cap;
   if (app.picking.humans.length <= 1) app.picking.humans = [cap];
 }
-function openPick() {
-  app.picking = { cap: 0, humans: [0] };
+function openPick(cap = 0) {
+  app.picking = { cap, humans: [cap] };
   $('home').hidden = true;
   app.homeOpen = false;
   app.speed = 0; updateSpeedButtons();
   app.setView('galaxy');
-  app.selectSystem(0);
+  app.selectSystem(cap);
   galaxyView.fit();
   document.documentElement.style.setProperty('--pick-top', `${Math.round(document.querySelector('main').getBoundingClientRect().top) + 10}px`);
   renderPick();
@@ -8557,7 +8705,7 @@ $('home').onclick = (e) => {
   app.homeSeed = $('home-seed')?.value.trim() || '';
   app.homeSpectate = !!$('home-spectate')?.checked;
   if ($('home-end')) app.homeEnd = Number($('home-end').value);
-  if ($('home-nat')) { app.homeNat = Number($('home-nat').value); app.homeHc = $('home-hc').value; }
+  if ($('home-nat')) { app.homeNat = Number($('home-nat').value); app.homeHc = $('home-hc').value; app.homeLib = [...document.querySelectorAll('#home .home-lib')].filter((x) => x.checked).map((x) => x.value); }
   if ($('home-end')) app.homeCh = [...document.querySelectorAll('#home .home-ch')].filter((x) => x.checked).map((x) => x.value);
   app.homeNote = '';
   // 取り返しのつかない操作は2回押して確定する (confirm() は使えない環境がある)
@@ -8584,6 +8732,8 @@ $('home').onclick = (e) => {
     return;
   }
   if (act === 'resume') return closeHome();
+  if (act === 'tab') { readNatForm(); app.homeTab = b.dataset.t; return renderHome(); }
+  if (act.startsWith('nat')) return natAction(act, b.dataset.id);
   if (act === 'nethost') { closeHome(0); setSpeed(0); return Net.openHost(); }
   if (act === 'netjoin') { closeHome(0); setSpeed(0); Net.role = null; return Net.render(); }
   if (act === 'new') {
@@ -8593,7 +8743,13 @@ $('home').onclick = (e) => {
     app.game.endYear = app.homeEnd === 0 ? null : START_YEAR + (app.homeEnd ?? 500);
     app.game.challenges = (app.homeCh || []).filter((k) => CHALLENGES[k]).map((id) => ({ id, status: 'active' }));
     app.game.handicap = HANDICAP[app.homeHc] ? app.homeHc : 'normal';
-    if ((app.homeNat ?? 1) > 1) { app.game.foundNations(app.homeNat, app.homeHc); return openPick(); }
+    const customs = (app.homeLib || []).map((id) => NationLib.get(id)).filter(Boolean);
+    if ((app.homeNat ?? 1) > 1 || customs.length) {
+      app.game.foundNations(Math.max(app.homeNat ?? 1, customs.length + 1), app.homeHc, customs);
+      // 自作の国を出したら、最初の自作の国を人間の国にしておく (国家選択の画面で変えられる)
+      const first = customs.length ? app.game.nations.find((n) => n.species === customs[0].species) : null;
+      return openPick(first ? first.cap : 0);
+    }
     save();
     return closeHome(1);
   }
