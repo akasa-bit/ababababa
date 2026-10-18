@@ -353,6 +353,8 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 - 再現性 (マルチプレイの前提): 試合の乱数はシードから続く 1 本の乱数 (`Game.rand`、状態 `rs` はセーブに含める) だけを使い、`Math.random` は使わない (見た目の揺らぎや新しいゲームの番号決めは別)
   - 同じシードなら、別のページでも同じ結果になる
   - 保存→読み込み→保存が 1 文字も変わらず、読み込んだゲームは元のゲームと同じ結果に進み続ける (足し引きを積み重ねる値は毎回数え直し、なめらかにした値はセーブに含める)
+  - 試合と銀河の計算は、`Math.pow`・`**`・`Math.exp`・`Math.log`・`Math.sin` などではなく、`GM` (ふだんは `DMath`) を使う。`DMath` は四則と平方根だけで作った数学の関数で、どのブラウザ・どの版でも、画面なしの版 (Node) でも結果が 1 ビットも変わらない。ブラウザの `Math.pow`・`Math.sin`・`Math.cos` は版ごとに末尾の桁が違い (Chromium 141 と Node 22 で 2 割の値が違った)、ネット対戦が端末ごとにずれる原因になる。画面の描画には `Math` を使ってよい
+  - 銀河の版 4 から、銀河を作る計算も `DMath`。版 3 までの銀河 (古いセーブ) は、前と同じく `Math` で作り直す (`generateGalaxy` が `GM` を切り替える)
 
 - プレイヤーの国 (マルチプレイの準備): 人間が動かす国は `game.players` (首都 `cap` と、政治力・議会・国家方針・決めること・時代の課題・自動化の設定など `PLAYER_KEYS` の値) で持つ。`game.pc` などは、いま操作しているプレイヤー (`game.pi`) の値を指す
   - 光の遅れ・「知っている星系」・届いた知らせは、いま操作しているプレイヤーの首都から数える
@@ -374,6 +376,8 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 書き直しの設計: 合わせる目標 (事前登録) は [docs/targets.md](docs/targets.md) (正本は `targets/targets.json`。`node tools/check-targets.js` で固定したときから変わっていないかを確かめる)、遊びの柱と時間の設計は [docs/design-pillars.md](docs/design-pillars.md)。
 
 戦争疲弊・講和会議の釣り合いは、国家選択のある試合の自動対戦で測り、現実の戦争の統計 (Correlates of War・UCDP) と形を比べて調整した。報告は [tools/WARS-REPORT.md](tools/WARS-REPORT.md)。
+
+画面なしで回せる版 (`tools/headless.js`): `src/index.html` の試合の中身を Node で動かす。公開用の `index.html` と同じシード・同じ手順なら同じ状態になる (`tools/tests/headless.js`)。値のファイル (JSON) で表を差し替えられる。
 
 `tools/` に、戦略ボットでゲームを何百年も自動で回し、仕組みが実際に働いているか・プレイヤーの選び方で結果が変わるかを数字で確かめる道具がある。使い方は [tools/README.md](tools/README.md)。
 
