@@ -143,6 +143,7 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #zoom button { min-width:46px; min-height:46px; font-size:18px; background:rgba(13,18,29,.85); }
 #zoom #vassalbtn { font-size:13px; }
 #zoom #vassalbtn.on { border-color:var(--own); color:var(--own); }
+#zoom #rotbtn.on { outline:2px solid var(--accent); outline-offset:1px; }
 aside { width:340px; background:var(--panel); border-left:1px solid var(--line); padding:12px 14px; overflow-y:auto; }
 button { background:#17213a; color:var(--fg); border:1px solid #2a3a60; border-radius:5px; padding:5px 10px; font:inherit; cursor:pointer; }
 button:hover:not(:disabled) { background:#1f2d4f; }
@@ -510,7 +511,7 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
         <div><i style="border:2px solid #ff9f43;border-radius:50%;width:7px;height:7px"></i>入植星系の輪の色 = 所属する国 (青緑は地球の国)</div>
       </details>
       <div id="fleetbar" hidden></div>
-      <div id="zoom"><button id="zoom-in" aria-label="拡大">＋</button><button id="zoom-out" aria-label="縮小">－</button><button id="zoom-fit" aria-label="全体表示">全体</button><button id="vassalbtn" title="誰が誰に従属しているかを矢印で表示する (家臣 → 主人)">従属</button></div>
+      <div id="zoom"><button id="zoom-in" aria-label="拡大">＋</button><button id="zoom-out" aria-label="縮小">－</button><button id="zoom-fit" aria-label="全体表示">全体</button><button id="rotbtn" title="オンにすると、ドラッグで地図を回す・傾ける (マウスは中ボタンか Alt+ドラッグでも回る。2 本指でひねっても回る)">回す</button><button id="topbtn" title="真上から見る / 斜めから見る">真上</button><button id="vassalbtn" title="誰が誰に従属しているかを矢印で表示する (家臣 → 主人)">従属</button></div>
     </div>
     <aside>
       <div id="panel"></div>
@@ -969,7 +970,10 @@ function knownPlanet(rng, [plName, a, mass, radius], star) { // star = 惑星が
 // 実在の銀河の版。2: FGK 型の主星に、保守的なハビタブルゾーンの地球型惑星 (0.5〜1.5 地球半径) を確率 ETA_EXTRA で足す。
 // 版 1 の手続きの惑星だけでは、FGK 型星あたりの η⊕ が 0.21 で、観測 (Bryson ほか 2021: 0.37〜0.60、目標 R05) より少なかった。
 // 足す惑星は別の乱数列で作り、残りの記号を付けるので、ほかの惑星・資源・先住民は版 1 と同じ (古いセーブは版 1 のまま読む)
-const GALAXY_GEN = 2;
+const GALAXY_GEN = 3;
+// 銀河の版 3 から、銀河面から ±THIN_SLAB 光年の板の中の星だけを使う (星の表は ±17 光年の板。版 2 までのセーブはそのまま読む)。
+// 星が多すぎて地図を操作できなかったため (ユーザーの指示)
+const THIN_SLAB = 2;
 const ETA_EXTRA = 0.45;
 function generateRealGalaxy(seed, gen = 1) {
   const rng = new Rng(hashSeed(`${seed}/real`));
@@ -977,6 +981,7 @@ function generateRealGalaxy(seed, gen = 1) {
   const sol = makeSol();
   const systems = [{ id: 0, name: sol.name, x: 0, y: 0, z: 0, stars: [{ id: 's0', name: '太陽', ...sol.star, sep: 0, phase: 0 }], bodies: sol.bodies }];
   REAL_STARS.s.forEach(([x, y, z, ja, cat, rows, pls], i) => {
+    if (gen >= 3 && Math.abs(z) > THIN_SLAB) return; // 板の外の星は使わない (名前も乱数も使わない)
     const name = ja || namer();
     const stars = rows.map(([cls, label, mass, lum, temp, radius, sep, own], k) => ({
       id: `s${k}`, name: own && k ? own : rows.length > 1 ? `${name} ${'ABCDEFG'[k]}` : name, cls, label, mass, lum, radius, temp,
@@ -1017,9 +1022,10 @@ function generateRealGalaxy(seed, gen = 1) {
         bodies.sort((p, q) => p.a - q.a);
       }
     }
-    systems.push({ id: i + 1, name, cat, x, y, z, stars, bodies, real: true });
+    systems.push({ id: systems.length, name, cat, x, y, z, stars, bodies, real: true }); // 番号は並びの位置 (版 2 までは i + 1 と同じ)
   });
-  const galaxy = { seed, kind: 'real', gen, systems, radius: REAL_STARS.radius, slab: REAL_STARS.slab, meanSpacing: 4 };
+  const thin = gen >= 3;
+  const galaxy = { seed, kind: 'real', gen, systems, radius: thin ? Math.max(...systems.map((s) => Math.hypot(s.x, s.y))) : REAL_STARS.radius, slab: thin ? THIN_SLAB : REAL_STARS.slab, meanSpacing: 4 };
   addExtras(galaxy);
   return galaxy;
 }
@@ -1041,6 +1047,8 @@ function generateGalaxy({ seed = 1, starCount = 400, meanSpacing = 4, kind = 'fl
 }
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0)); // 光年 (平面の銀河では z がない)
+const DEFAULT_PITCH = 0.6; // 3 次元の銀河を見下ろす初めの傾き [rad] (約 34°)
+const MAX_PITCH = 1.3; // 傾けられる上限 [rad] (約 75°)
 const SYS_DIST = new WeakMap(); // 銀河 → 星系どうしの距離の表 (Game.sysDist)
 const NEAR_SYS = new WeakMap(); // 銀河 → 星系ごとの 25 光年以内の星系 (Game.nearSystems)
 
@@ -5735,9 +5743,8 @@ class GalaxyView {
     this.cam.x = 0;
     this.cam.y = 0;
     this.cam.z = 0;
-    // 地図はいつも真上から見る平面 (ステラリスの銀河の地図にならう)。星の高さ (z) は位置の計算にだけ使い、描き方には使わない
-    this.cam.yaw = 0;
-    this.cam.pitch = 0;
+    // 3 次元の銀河は、少し斜めから見下ろして始める (平面の銀河は真上から)
+    if (this.camKind !== g.kind) { this.camKind = g.kind; this.cam.yaw = 0; this.cam.pitch = g.kind === 'real' ? DEFAULT_PITCH : 0; }
   }
 
   // 地球の知っている入植星系がすべて収まるように寄せる (従属マップを開いたとき)
@@ -5780,6 +5787,12 @@ class GalaxyView {
     this.cam.x = wx - dx;
     this.cam.y = wy - dy;
   }
+  // 回す: yaw は自由に、pitch は真上 (0) から 75° まで
+  rotateBy(dyaw, dpitch) {
+    this.cam.yaw = (this.cam.yaw + dyaw) % (Math.PI * 2);
+    this.cam.pitch = clamp(this.cam.pitch + dpitch, 0, MAX_PITCH);
+    this.app.dirty = true;
+  }
 
   pick(sx, sy, radius = 12) {
     let best = null;
@@ -5820,7 +5833,8 @@ class GalaxyView {
       if (pts.size === 1) {
         const [x, y] = pos(e);
         // 回す: 「回す」ボタンがオン、マウスの中ボタン、Alt を押しながらのドラッグ
-        this.drag = { x, y, cx: this.cam.x, cy: this.cam.y, moved: false };
+        const rot = this.app.rotateMode || (e.pointerType === 'mouse' && (e.button === 1 || e.altKey));
+        this.drag = { x, y, cx: this.cam.x, cy: this.cam.y, moved: false, rot, yaw: this.cam.yaw, pitch: this.cam.pitch };
         // タッチの長押し (0.45秒動かさない) で経由地の線引きを始める
         clearTimeout(this.lp);
         if (e.pointerType !== 'mouse') this.lp = setTimeout(() => { if (this.drag && !this.drag.moved && pts.size === 1) this.startPath(x, y); }, 450);
@@ -5848,6 +5862,8 @@ class GalaxyView {
         // 倍率は指の間隔の比。ピンチを始めたとき指の中点の下にあった地点が、いまの中点の下に来るよう視点を動かす
         // (中身が指に貼りついたまま拡大・移動し、ずれていかない)
         this.cam.zoom = clamp(pinch.zoom * d / pinch.d, 1.5, 80);
+        // 2 本指をひねると回る (3 次元の銀河のとき)
+        if (this.app.game.galaxy.kind === 'real') this.cam.yaw = pinch.yaw - (Math.atan2(b[1] - a[1], b[0] - a[0]) - pinch.ang);
         this.pinWorld(pinch.world[0], pinch.world[1], mx, my);
         return;
       }
@@ -5855,7 +5871,10 @@ class GalaxyView {
         const dx = x - this.drag.x;
         const dy = y - this.drag.y;
         if (Math.hypot(dx, dy) > 6) { this.drag.moved = true; clearTimeout(this.lp); }
-        if (this.drag.moved) {
+        if (this.drag.moved && this.drag.rot) {
+          this.cam.yaw = this.drag.yaw - dx * 0.008;
+          this.cam.pitch = clamp(this.drag.pitch - dy * 0.008, 0, MAX_PITCH);
+        } else if (this.drag.moved) {
           const [wx, wy] = this.screenDelta(dx, dy);
           this.cam.x = this.drag.cx - wx;
           this.cam.y = this.drag.cy - wy;
@@ -5898,7 +5917,7 @@ class GalaxyView {
       if (pts.size < 2) pinch = null;
       if (wasPinch && pts.size === 1 && this.drag) {
         const [rx, ry] = [...pts.values()][0];
-        this.drag = { x: rx, y: ry, cx: this.cam.x, cy: this.cam.y, moved: true };
+        this.drag = { x: rx, y: ry, cx: this.cam.x, cy: this.cam.y, moved: true, rot: this.app.rotateMode, yaw: this.cam.yaw, pitch: this.cam.pitch };
       }
       if (this.drag && !this.drag.moved && !wasPinch && e.type === 'pointerup') this.tap(this.pick(x, y), e, this.pickFleet(x, y));
       if (pts.size === 0) this.drag = null;
@@ -6062,7 +6081,7 @@ class GalaxyView {
     const sel = game.system(this.app.sel.sys ?? game.cap);
     const z = this.cam.zoom;
 
-    // 選択中の星からの距離リング
+    // 選択中の星からの距離リング (選んだ星の高さの、銀河面に平行な面の上の円。傾けると楕円に見える)
     const [cx, cy] = this.toScreen(sel.x, sel.y, sel.z);
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 6]);
@@ -6080,6 +6099,25 @@ class GalaxyView {
       ctx.fillText(`${d} ly`, lx + (flat ? 0 : 4), ly - (flat ? 0 : 3));
     }
     ctx.setLineDash([]);
+    // 高さの手がかり: 傾けているときは、各星から銀河面 (z = 0) へ縦の線を引く (EVE Online の星図と同じ)
+    if (!flat && this.app.game.galaxy.kind === 'real') {
+      ctx.strokeStyle = 'rgba(120,150,210,0.16)';
+      ctx.beginPath();
+      for (const sx of this.app.game.galaxy.systems) {
+        if (Math.abs(sx.z || 0) < 0.3) continue;
+        const [ax, ay] = this.toScreen(sx.x, sx.y, sx.z);
+        const [bx, by] = this.toScreen(sx.x, sx.y, 0);
+        ctx.moveTo(ax, ay); ctx.lineTo(bx, by);
+      }
+      ctx.stroke();
+      // 銀河面の目盛り: 太陽から 10 光年ごとの円
+      ctx.strokeStyle = 'rgba(120,150,210,0.10)';
+      for (let d = 10; d <= this.app.game.galaxy.radius + 5; d += 10) {
+        ctx.beginPath();
+        for (let i = 0; i <= 64; i++) { const a = (i / 64) * Math.PI * 2; const [px, py] = this.toScreen(d * Math.cos(a), d * Math.sin(a), 0); if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); }
+        ctx.stroke();
+      }
+    }
 
     // 地図はすべて「いま地球に届いている光」で描く: 動くものは見かけの位置、星系の様子は光が届いた時点のもの
     const seenAt = (posAt, t0, t1) => game.apparent(posAt, t0, t1);
@@ -8564,8 +8602,20 @@ const mapView = () => (app.view === 'system' ? systemView : galaxyView);
 $('zoom-in').onclick = () => mapView().zoomAt(1.5, w / 2, h / 2);
 $('zoom-out').onclick = () => mapView().zoomAt(1 / 1.5, w / 2, h / 2);
 $('zoom-fit').onclick = () => mapView().fit();
-// (前は 3 次元の地図を回す・傾けるボタンがあった。いまは真上からの平面だけなので、ボタンはない)
-function updateMapButtons() {}
+// 3 次元の地図の回転: 「回す」をオンにするとドラッグで回る。「真上」で真上からの見方と斜めからの見方を切り替える
+function updateMapButtons() {
+  const real = app.game?.galaxy?.kind === 'real';
+  $('rotbtn').hidden = $('topbtn').hidden = !real || app.view !== 'galaxy';
+  $('rotbtn').classList.toggle('on', !!app.rotateMode);
+  setHtml($('topbtn'), galaxyView.cam.pitch < 0.01 ? '斜め' : '真上');
+}
+$('rotbtn').onclick = () => { app.rotateMode = !app.rotateMode; updateMapButtons(); };
+$('topbtn').onclick = () => {
+  const c = galaxyView.cam;
+  if (c.pitch < 0.01) c.pitch = DEFAULT_PITCH; else { c.pitch = 0; c.yaw = 0; }
+  updateMapButtons();
+  app.dirty = true;
+};
 // 従属マップの切り替え (家臣 → 主人の矢印)
 function updateVassalBtn() { $('vassalbtn').classList.toggle('on', app.mapMode === 'vassal'); }
 $('vassalbtn').onclick = () => {
@@ -9489,6 +9539,7 @@ window.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
   if (e.key === ' ') { setSpeed(app.speed ? 0 : app.lastSpeed || 1); e.preventDefault(); }
   else if (e.key >= '1' && e.key <= String(SPEEDS.length)) setSpeed(SPEEDS[Number(e.key) - 1]);
+  else if (app.view === 'galaxy' && app.game.galaxy.kind === 'real' && e.key.length === 1 && 'zxrf'.includes(e.key)) galaxyView.rotateBy(e.key === 'z' ? -0.15 : e.key === 'x' ? 0.15 : 0, e.key === 'r' ? 0.1 : e.key === 'f' ? -0.1 : 0); // 地図を回す (Z/X)・傾ける (R/F)
   else if (e.key === 'g') app.setView('galaxy');
   else if (e.key === 's') app.setView('system');
   else if (e.key === 'e') app.setView('empire');
