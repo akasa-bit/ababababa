@@ -337,6 +337,8 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 
 ### 開発者向け: 自動対戦の実験台
 
+物理学と社会学の面で現実と比べた監査 (数値と式の一覧・現実との差の表) は [docs/P0-audit.md](docs/P0-audit.md)。
+
 戦争疲弊・講和会議の釣り合いは、国家選択のある試合の自動対戦で測り、現実の戦争の統計 (Correlates of War・UCDP) と形を比べて調整した。報告は [tools/WARS-REPORT.md](tools/WARS-REPORT.md)。
 
 `tools/` に、戦略ボットでゲームを何百年も自動で回し、仕組みが実際に働いているか・プレイヤーの選び方で結果が変わるかを数字で確かめる道具がある。使い方は [tools/README.md](tools/README.md)。
