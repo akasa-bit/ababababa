@@ -1,0 +1,33 @@
+{
+ "source": "CEPII Gravity database V202211 (Conte, M., Cotterlaz, P. & Mayer, T. 2022, CEPII Working Paper 2022-05)",
+ "url": "https://www.cepii.fr/DATA_DOWNLOAD/gravity/data/Gravity_csv_V202211.zip",
+ "member": "Gravity_V202211.csv",
+ "zip_sha256": "7ffea0510a536587f2f9295bbafef4a312a36b366acc256eb6d9770fe35e44b1",
+ "fetched": "2026-10-18T11:47:29Z",
+ "license": "CEPII のデータの利用条件 (出典を明記して研究・教育に使う) に従う",
+ "files": [
+  {
+   "file": "cepii_gravity_2000_2019.csv.gz",
+   "columns": [
+    "year",
+    "iso3_o",
+    "iso3_d",
+    "dist",
+    "distw_harmonic",
+    "contig",
+    "comlang_off",
+    "comcol",
+    "col_dep_ever",
+    "fta_wto",
+    "tradeflow_baci"
+   ],
+   "years": [
+    2000,
+    2019
+   ],
+   "rows": 1091864,
+   "sha256": "b109197e1bf62b253e7d82208dc02665d55d8907f299c0f82316611f2484f5d6",
+   "filter": "輸出国 ≠ 輸入国、その年に両方の国が存在する (country_exists = 1)"
+  }
+ ]
+}

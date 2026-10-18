@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "fixedAt": "2026-10-18",
   "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
   "rules": [
@@ -10,16 +10,17 @@
     "fun の目標は、見知らぬ試遊者 (作者とこの会話の参加者以外) のデータでだけ判定する"
   ],
   "changes": [
-    { "version": 2, "date": "2026-10-18", "what": "R06・R08・R09・R13・R14・R15・R16 の幅を、取得スクリプトで生データから計算した値だけで決めた (data/derived/history.json)。ゲームの自動対戦の結果はこの変更に使っていない" }
+    { "version": 2, "date": "2026-10-18", "what": "R06・R08・R09・R13・R14・R15・R16 の幅を、取得スクリプトで生データから計算した値だけで決めた (data/derived/history.json)。ゲームの自動対戦の結果はこの変更に使っていない" },
+    { "version": 3, "date": "2026-10-18", "what": "R01 の幅を、取得スクリプトで生データ (CEPII Gravity V202211、2000〜2019 年) から計算した値だけで決めた (推定 −0.874、data/derived/trade.json)。合格の決まり (負で、差 0.3 以内) をそのまま当てはめた。式は ln 距離だけ (ゲームの星系には隣接・言語などの変数がないので)。ゲームの自動対戦の結果はこの変更に使っていない" }
   ],
   "realism": [
     {
       "id": "R01", "area": "交易", "name": "交易と距離 (重力モデル)",
-      "data": { "source": "CEPII Gravity database", "version": "取得時の最新版を記録", "years": "2000-2019", "script": "data/fetch/cepii_gravity" },
-      "statistic": "PPML 推定 (輸出国・輸入国の固定効果つき) の距離の弾力性",
+      "data": { "source": "CEPII Gravity database", "version": "V202211", "years": "2000-2019", "script": "data/fetch/fetch_trade.py" },
+      "statistic": "PPML 推定 (輸出国×年・輸入国×年の固定効果つき) の ln 距離の係数。説明変数は ln 距離だけ (ゲームと同じ式にするため)。計算は data/build/gravity.py",
       "sim": "星系どうしの交易量を同じ式で推定した距離の弾力性 (距離は光年。弾力性は単位によらない)",
       "pass": "シミュレーションの弾力性が負で、実データの推定値との差が 0.3 以内",
-      "band": null, "reference": "Disdier & Head 2008 のメタ分析で平均 約 −0.9", "split": "calibration"
+      "band": [-1.1743, -0.5743], "estimate": -0.8743, "reference": "Disdier & Head 2008 のメタ分析で平均 約 −0.9", "split": "calibration"
     },
     {
       "id": "R02", "area": "交易", "name": "交易と距離 (別の時代)",
