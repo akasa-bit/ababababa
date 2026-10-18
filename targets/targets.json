@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "fixedAt": "2026-10-18",
+  "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
+  "rules": [
+    "数値の合格幅がまだ決まっていない目標 (band が null) は、取得スクリプトで生データから統計量を計算した時点で、その計算結果だけから幅を決めて書き込み、固定する。シミュレーションの結果を見てから幅を決めてはいけない",
+    "split が holdout の目標は、較正 (パラメータ推定・調整) に使わない。合否の確認だけに使う",
+    "合否は、自動対戦の結果を実データと同じ形式で書き出し、実データと同じ統計コードで計算する",
+    "シミュレーションの統計量は、別々の銀河 (シード) を 30 以上回した分布で評価する。1 つの試合の値では判定しない",
+    "fun の目標は、見知らぬ試遊者 (作者とこの会話の参加者以外) のデータでだけ判定する"
+  ],
+  "realism": [
+    {
+      "id": "R01", "area": "交易", "name": "交易と距離 (重力モデル)",
+      "data": { "source": "CEPII Gravity database", "version": "取得時の最新版を記録", "years": "2000-2019", "script": "data/fetch/cepii_gravity" },
+      "statistic": "PPML 推定 (輸出国・輸入国の固定効果つき) の距離の弾力性",
+      "sim": "星系どうしの交易量を同じ式で推定した距離の弾力性 (距離は光年。弾力性は単位によらない)",
+      "pass": "シミュレーションの弾力性が負で、実データの推定値との差が 0.3 以内",
+      "band": null, "reference": "Disdier & Head 2008 のメタ分析で平均 約 −0.9", "split": "calibration"
+    },
+    {
+      "id": "R02", "area": "交易", "name": "交易と距離 (別の時代)",
+      "data": { "source": "RICardo", "version": "取得時の最新版を記録", "years": "1870-1913", "script": "data/fetch/ricardo" },
+      "statistic": "R01 と同じ推定", "sim": "R01 と同じ",
+      "pass": "R01 で較正したモデルのまま、弾力性の差が 0.4 以内",
+      "band": null, "split": "holdout"
+    },
+    {
+      "id": "R03", "area": "物理", "name": "物質とエネルギーの保存",
+      "data": null,
+      "statistic": "星系ごと・年ごとの (入った量 − 出た量 − 在庫の増加) ÷ 取扱量",
+      "sim": "すべての星系・すべての年",
+      "pass": "絶対値の最大が 1e-9 以下 (テストで常に確かめる)",
+      "band": [0, 1e-9], "split": "test"
+    },
+    {
+      "id": "R04", "area": "天文", "name": "地図の範囲の星の数と種類",
+      "data": { "source": "CNS5 (Golovin ほか 2023)・Gaia DR3・RECONS", "version": "取得時の版を記録", "script": "data/fetch/stars" },
+      "statistic": "銀河面に沿った板状の範囲 (厚さ ±15〜20 光年) にある恒星系の数と、スペクトル型の割合",
+      "sim": "同じ範囲に置いた星系",
+      "pass": "実在の星を置く範囲は表と一致すること (数・位置・型)。その外を手続き的に作る範囲は、密度が実測の ±10%、型の割合が各 ±2 ポイント以内",
+      "band": null, "split": "calibration"
+    },
+    {
+      "id": "R05", "area": "天文", "name": "地球型惑星の頻度 (η⊕)",
+      "data": { "source": "Bryson ほか 2021 (Kepler DR25)", "version": "論文の表", "script": "data/fetch/eta_earth" },
+      "statistic": "FGK 型星あたり、半径 0.5〜1.5 地球半径で保守的なハビタブルゾーン (Kopparapu 2013) にある惑星の数",
+      "sim": "同じ定義で数えた、生成した惑星の頻度",
+      "pass": "論文の下限と上限 (0.37〜0.60) のあいだ",
+      "band": [0.37, 0.60], "split": "calibration"
+    },
+    {
+      "id": "R06", "area": "天文", "name": "M 型星の地球型惑星の頻度",
+      "data": { "source": "Dressing & Charbonneau 2015", "version": "論文の表", "script": "data/fetch/eta_earth_m" },
+      "statistic": "M 型星あたりの、保守的なハビタブルゾーンの地球型惑星の数",
+      "sim": "同じ定義", "pass": "論文の 95% 信頼区間の中",
+      "band": null, "split": "holdout"
+    },
+    {
+      "id": "R07", "area": "物理", "name": "船のエネルギーの記帳",
+      "data": null,
+      "statistic": "船 1 隻の費用に記帳したエネルギー ÷ ((γ−1)mc² ÷ 推進の効率の連鎖)",
+      "sim": "すべての船",
+      "pass": "1 ± 1e-6 (式と記帳が一致する)。効率の連鎖の各段 (発電・レーザー・帆への伝達 2β/(1+β)・磁気帆の減速・反物質の仕上げ) は、文献の範囲の中の値を使い、範囲を docs に書く",
+      "band": [0.999999, 1.000001], "split": "test"
+    },
+    {
+      "id": "R08", "area": "政治", "name": "植民地の離反の起きやすさ (統治体制別)",
+      "data": { "source": "ICOW Colonial History・COLDAT (Becker 2019)・Lange の間接統治データ・Seshat・V-Dem・EPR・Regional Authority Index・Dell 2010", "version": "取得時の版を記録", "script": "data/fetch/colonial" },
+      "statistic": "独立 (離反) までの時間の Cox 比例ハザードモデル。説明変数は統治体制・本国からの距離・通信の遅れ ÷ 1 世代の長さ・人口の比。統治体制ごとのハザード比と、植民地の存続年数の中央値 (Kaplan–Meier)",
+      "sim": "星系の離反の記録を ICOW と同じ形式で書き出し、同じモデルで推定",
+      "pass": "主な説明変数のハザード比が、実データの 95% 信頼区間の中。統治体制ごとの存続年数の中央値が実データの ±25% 以内",
+      "band": null, "split": "calibration",
+      "calibrationSet": "イギリス・フランスの植民地", "note": "通信の遅れを歴史の時間にどう対応させるかは、決めてほしいことの表 (docs/targets.md) を参照"
+    },
+    {
+      "id": "R09", "area": "政治", "name": "植民地の離反 (別の本国)",
+      "data": { "source": "R08 と同じ", "script": "data/fetch/colonial" },
+      "statistic": "R08 と同じ", "sim": "R08 と同じ",
+      "pass": "R08 で較正したモデルのまま、スペイン・ポルトガル・オランダの植民地の存続年数の中央値が ±35% 以内",
+      "band": null, "split": "holdout"
+    },
+    {
+      "id": "R10", "area": "経済", "name": "産業構造と所得",
+      "data": { "source": "GGDC 10 部門データベース・ILOSTAT", "version": "取得時の版を記録", "script": "data/fetch/sectors" },
+      "statistic": "1 人あたり所得 (対数) に対する、農業・工業・サービスの就業者の割合の曲線 (工業はこぶ型)",
+      "sim": "星系ごとの所得と就業構造",
+      "pass": "所得の各分位で、シミュレーションの割合が実データの四分位範囲の中。工業の割合が最大になる所得が、実データの範囲の中",
+      "band": null, "split": "calibration"
+    },
+    {
+      "id": "R11", "area": "経済", "name": "研究の生産性の低下",
+      "data": { "source": "Bloom ほか 2020 (American Economic Review) の再現用データ", "version": "論文の公開データ", "script": "data/fetch/ideas" },
+      "statistic": "研究者 1 人あたりのアイデアの生産 (研究の生産性) が年に何 % 下がるか",
+      "sim": "同じ定義で数えた研究の生産性",
+      "pass": "実データの推定値の ±50% 以内",
+      "band": null, "split": "calibration"
+    },
+    {
+      "id": "R12", "area": "人口", "name": "人口の増え方の上限",
+      "data": { "source": "Eaton & Mayer 1953 (フッター派)・国連 WPP", "version": "取得時の版を記録", "script": "data/fetch/population" },
+      "statistic": "自然増加率の最大",
+      "sim": "すべての入植地の自然増加率 (移民を除く)",
+      "pass": "最大が年 4.2% 以下",
+      "band": [0, 0.042], "split": "calibration"
+    },
+    {
+      "id": "R13", "area": "戦争", "name": "戦争の長さの偏り",
+      "data": { "source": "Correlates of War 国家間戦争データ", "version": "取得時の版を記録", "script": "data/fetch/cow" },
+      "statistic": "戦争の長さの平均 ÷ 中央値",
+      "sim": "tools/wars.js の出力を COW と同じ形式にしたもの",
+      "pass": "実データの値の ±30% 以内",
+      "band": null, "reference": "COW を使った研究の補足資料で約 3 (要確認)", "split": "calibration"
+    },
+    {
+      "id": "R14", "area": "戦争", "name": "戦争の終わり方の内訳",
+      "data": { "source": "UCDP Conflict Termination", "version": "取得時の版を記録", "script": "data/fetch/ucdp" },
+      "statistic": "終わり方 (勝利・和平合意・停戦・活動低下) の割合",
+      "sim": "白紙講和 = 活動低下、講和条約 = 和平合意、全面降伏と首都の陥落 = 勝利として対応させる",
+      "pass": "最も多い終わり方が一致し、各割合の差が 15 ポイント以内",
+      "band": null, "split": "holdout"
+    },
+    {
+      "id": "R15", "area": "戦争", "name": "戦争の規模の分布",
+      "data": { "source": "Correlates of War 国家間戦争データ (戦死者数)", "version": "取得時の版を記録", "script": "data/fetch/cow" },
+      "statistic": "戦死者数の分布の裾のべき指数 α (Clauset–Shalizi–Newman の方法)",
+      "sim": "戦争ごとの死者数 (艦隊の乗員の損失を含む)",
+      "pass": "べき乗則の当てはめの検定で p ≥ 0.1、α が実データの推定値 ±0.3 以内",
+      "band": null, "reference": "Clauset 2018 で約 1.5", "split": "holdout"
+    },
+    {
+      "id": "R16", "area": "戦争", "name": "戦闘の勝敗と兵力比",
+      "data": { "source": "CDB90 (約 660 の戦闘)", "version": "取得時の版を記録", "script": "data/fetch/cdb90" },
+      "statistic": "攻撃側の勝ちを、兵力比の対数でロジスティック回帰したときの傾き。ランチェスター則の指数の推定値",
+      "sim": "艦隊戦を同じ形式で書き出して同じ回帰",
+      "pass": "傾きと指数が、実データの推定値の 95% 信頼区間の中",
+      "band": null, "split": "calibration",
+      "note": "光速近くでの交戦の物理 (探知の遅れ・相対速度での命中) を入れたうえで合わせる"
+    },
+    {
+      "id": "R17", "area": "生物", "name": "入植集団の大きさと存続",
+      "data": { "source": "Smith 2014 (Acta Astronautica)・Marin & Beluffi の HERITAGE シミュレーション", "version": "論文", "script": null },
+      "statistic": "論文の前提 (乗員数・世代数・婚姻の規則) で計算した、遺伝的多様性が保たれる確率",
+      "sim": "同じ前提を入れたときのゲームの存続の計算",
+      "pass": "両方の論文の前提で、それぞれの論文の結論 (数万人 / 約 100 人で足りる) を再現する。幅のある答えは幅のまま画面に出す",
+      "band": null, "split": "test"
+    },
+    {
+      "id": "R18", "area": "数値計算", "name": "時間刻みの収束",
+      "data": null,
+      "statistic": "乱数を使わない部分 (人口の伸び・艦隊戦・輸送) で、刻みを半分にしたときに誤差が何分の 1 になるか",
+      "sim": "刻み 0.5・0.25・0.125・0.0625 年",
+      "pass": "1 次の方法なら 1.8〜2.2 倍、2 次の方法なら 3.6〜4.4 倍ずつ小さくなる",
+      "band": null, "split": "test"
+    }
+  ],
+  "fun": [
+    { "id": "F01", "name": "最初の 1 回の長さ", "data": "Steam Playtest などの見知らぬ試遊者 30 人以上のプレイ記録", "statistic": "初回のプレイ時間の中央値", "pass": "45 分以上", "band": [45, null] },
+    { "id": "F02", "name": "また遊びに来る割合", "data": "同上", "statistic": "初回から 7 日以内に 2 回目を遊んだ人の割合", "pass": "35% 以上", "band": [0.35, null] },
+    { "id": "F03", "name": "迷った場所", "data": "プレイ記録 (メモの「分からない」・同じ画面で 60 秒以上操作がない時間)", "statistic": "最初の 1 時間あたりの回数の中央値と、いちばん多い画面の割合", "pass": "1 時間あたり 3 回以下、どの 1 画面も全体の 30% 以下", "band": [0, 3] },
+    { "id": "F04", "name": "最初の意味のある判断までの時間", "data": "プレイ記録", "statistic": "開始から最初の入植・交易路・統治体制の判断までの時間の中央値", "pass": "3 分以内", "band": [0, 3] },
+    { "id": "F05", "name": "判断の間隔", "data": "プレイ記録", "statistic": "標準の速さで、止めていない時間に判断 (命令) が来る間隔の中央値", "pass": "90 秒以内", "band": [0, 90] },
+    { "id": "F06", "name": "必勝法がない", "data": "必勝法を探す AI と、6 つ以上の戦略ボット × 30 以上の銀河", "statistic": "銀河ごとに最も良かった戦略の分布", "pass": "どの戦略も、すべての成績 (星系・人口・資金・生き残り) で他を上回ることはない。3 つ以上の戦略が、それぞれ 10% 以上の銀河で最も良い", "band": null },
+    { "id": "F07", "name": "使いやすさ", "data": "見知らぬ試遊者の SUS (System Usability Scale) アンケート", "statistic": "SUS の平均点", "pass": "70 点以上", "band": [70, null] },
+    { "id": "F08", "name": "動きの軽さ", "data": "Xiaomi Pad 8 Pro・Steam Deck での計測", "statistic": "3 次元の地図 (星系 3,000 個) の描画の速さと、最高速 (年 64 年) での進み", "pass": "地図は毎秒 60 コマ (下限 45)、最高速で 1 秒に 64 年進む", "band": null },
+    { "id": "F09", "name": "教材としての効き目", "data": "授業で使った学生 20 人以上の、遊ぶ前と後の小テスト (光の遅れと統治・重力モデル・ランチェスター則)", "statistic": "正答率の上がり幅", "pass": "20 ポイント以上", "band": [0.2, null] }
+  ]
+}
