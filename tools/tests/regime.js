@@ -18,6 +18,8 @@ const { chromium } = require('playwright');
       const vs = Object.keys(g.govs).map(Number).filter((id) => g.govs[id].lord === 0 && g.isColonized(id) && g.realmOf(id) === 0 && !g.govs[id].autonomy && !g.govs[id].direct).sort((a, c) => g.sysDist(0, a) - g.sysDist(0, c));
       res.vassals = vs.length;
       const [a, c, e] = vs;
+      // 試すのは統治体制の仕組みなので、待つあいだに不満から自治を求めて指令を受けなくならないよう、3 つを落ち着かせておく
+      for (const x of [a, c, e]) { delete g.govs[x].unrest; g.govs[x].loyalty = 90; g.decisions = g.decisions.filter((q) => q.sys !== x); }
       g.pc = 100;
       res.cmd = [issue('rule', { sys: a, value: 'federal' }).ok, issue('rule', { sys: c, value: 'dominion' }).ok, issue('rule', { sys: e, value: 'encomienda' }).ok, issue('rule', { sys: a, value: 'nonsense' }).ok];
       const far = Math.max(...[a, c, e].map((x) => g.lightDelay(x)));
