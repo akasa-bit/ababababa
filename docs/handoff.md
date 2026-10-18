@@ -2,12 +2,15 @@
 
 新しいセッションで作業を続けるためのメモです。まずこのページと `README.md`・`docs/design-pillars.md`・`docs/reality-check.md` を読んでください。
 
+**ユーザーがこれまでに送った依頼は、すべて `docs/requests-log.md` にそのまま残してあります。** 新しいセッションは前の会話を読めません。画面や遊びの細かい決まりの多くはそこにしかないので、仕組みを変える前に、関係する依頼を探してください。変更の理由は `git log` (PR の本文) にもあります。
+
 ## 1. いつもの約束 (ユーザーとの決まり)
 
 - 報告は日本語で書く。
 - 変更ごとに、コミット → プッシュ → PR → スカッシュマージまで行う。PR の本文にテンプレートはない。
 - 機能を壊さない (下の「試験」をすべて通してからマージする)。
-- 画面は Xiaomi Pad 8 Pro (横 1280×780・縦 854×1200)、スキン 6 で確かめる。
+- 画面は Xiaomi Pad 8 Pro (3200×2136・144Hz、CSS で横 1280×780・縦 854×1200、画素の比 2.5) で確かめる。Playwright の viewport をこの大きさにして撮る。
+- 「スキン 6」= グラファイト (黒に近い灰色)・白・NASA の赤橙の配色。配色の 10 案から選ばれた唯一の配色で、切り替えは削除した (下の 15)。
 - 作業ブランチは `ccr-c52f9e86-8l8cbz`。マージのあとは `git fetch origin main && git checkout -B ccr-c52f9e86-8l8cbz origin/main` で main に合わせ直し、`--force-with-lease` でプッシュする。
 - リポジトリに入れるもの (コミット・PR・コード・文書) に、AI のモデルの名前を書かない。
 - コミットの末尾の行と PR の本文の末尾は、そのセッションで与えられる案内 (共同作者の行・セッションへのリンク・「Generated with Claude Code」の行) に従う。
@@ -172,3 +175,31 @@
 - `net.js`: `sync2` の 2 つの要約 (2 番目の値) が同じ。最後の `1` は、わざと壊したあと 1 回で合わせ直したこと。
 - `regime.js`: `regimes` が `federal, dominion, encomienda`、`revoke` が `[true, 32]`、`saveLoad` が `true`、`wide` の 2 つの値が同じ (はみ出しなし)。
 - 古い版と比べるとき (読み込みの互換・描画の違い) は、`git show <コミット>:index.html > /tmp/old.html` で古い公開用の HTML を取り出して渡す (例: `node tools/tests/rotate.js shots /tmp/old.html`)。
+
+## 15. 画面の決まり (ユーザーと決めたこと)
+
+- **配色**: スキン 6 だけ。色は意味にだけ使う (自国・敵・警告・良い知らせなど。`:root` の変数)。
+- **見た目**: ボタンとタブは額縁のような枠。文字は古い報告書風の書体 (Google Fonts の Courier Prime・Special Elite・Zen Antique・Zen Old Mincho)。ボタンには動かない白い走査線。文字のぶれ (信号の揺れ) は設定の「画面の動き」で切り替える。
+- **大きさ**: 文字の大きさは 4 段階、余白は 8px の倍数。ボタンは指で押せる大きさ (44〜48px)。文字のコントラストは基準を満たす。
+- **説明文**: 長い説明は画面から外し、「説明」を押したときだけ出す (`helpify` が 50 字以上の説明文を自動で畳む)。
+- **知らせ**: 出来事は地図の端の帯に流す。重大なものは消えずに残り、押すと地図がそこへ飛ぶ。イベントタブは履歴を探すときだけ使う。
+- **情報の古さ**: 古い情報ほど薄く描き、「○年前の情報」を添える。
+- **右の欄**: 星系を選んでいないときは出さず、地図を広げる。
+- **押したボタンが指から逃げない**: 押して中身が増えても、押したボタンの位置は動かさない (増えた分は上へ伸ばす。交易路の連打のため)。
+- **背景**: 星間マップは天の川の実写 (NASA)、星系マップは太陽系が北アメリカ星雲、ほかの星系はユーザーが選んだ 17 枚 (`assets/systems/`)。抑えめの明るさにする。
+- **アイコン**: ユーザーが候補から選んだもの。出典とライセンスは README の「アイコンの出典」。
+- **地図の描画**: 動かしているあいだは毎コマ描き、止まっていて何も変わらないときは描き直さない。
+
+## 16. 前に見せた報告と候補 (Artifact)
+
+ユーザーに見せた報告や選んでもらった候補は、Claude の Artifact として公開してある (ユーザーの Artifact。Artifact の道具の `read` で読める)。
+
+| 題 | リンク | 中身 |
+|---|---|---|
+| Moribin (最初の版) | https://claude.ai/artifact/RVZwwmcEK3w4WiZa6NDsUz | このゲームの出発点になった 1 枚の HTML |
+| Moribin 七つの判断 | https://claude.ai/artifact/RVvFq44sJa9ytUMSDdWsda | 遊びの点検のあとに選んでもらった 7 つの判断 (プレイヤーの役割・独立を手を打てる問題にする・序盤の静けさ・通知・目標・まれな仕組み・最初の 30 分) |
+| Moribin 遊びの点検 | https://claude.ai/artifact/AFauMcbRq9R6ZvzWNwsPg8 | 自動対戦での遊びの点検の報告 |
+| Moribin 画面の手直し | https://claude.ai/artifact/X2z5vZPA6HR5W7x74YoJy6 | 画面の決まり (上の 15) を作ったときの報告 |
+| Moribin 配色の10案 | https://claude.ai/artifact/4ayUavzV4P7ZKhDYKuzp9Y | 配色の候補 (6 が選ばれた) |
+| Moribin 星系背景の候補 | https://claude.ai/artifact/CwznVsDnUxmzQ5dLMPQCYG | 星系の背景の候補 (17 枚が選ばれた) |
+| Moribin アイコン候補・アイコン候補 2 | https://claude.ai/artifact/TaiuT4GQd1EqvgK3LbZKrX ・ https://claude.ai/artifact/A5tw474vpKdfJfyNvUKh84 | アイコンの候補 (選んだ番号は `docs/requests-log.md`) |
