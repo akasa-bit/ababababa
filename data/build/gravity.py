@@ -3,7 +3,8 @@
 
 推定する式: 交易額 X_ij,t = exp(a_i,t + b_j,t + β ln 距離_ij + γ' 制御変数) × 誤差
   a_i,t = 輸出国 × 年の固定効果、b_j,t = 輸入国 × 年の固定効果 (多国間の抵抗。Anderson & van Wincoop 2003)
-解き方: 反復重み付き最小二乗 (IRLS)。固定効果は、重み付きの平均を交互に引いて取り除く (Correia, Guimarães & Zylkin 2020 の ppmlhdfe と同じ考え方)。
+解き方: 反復重み付き最小二乗 (IRLS)。固定効果は、年ごとのかたまりに分けて、重み付きの最小二乗の式を直接解いて取り除く
+(ほかの形の固定効果なら、重み付きの平均を交互に引く。Correia, Guimarães & Zylkin 2020 の ppmlhdfe と同じ考え方)。
 
 使い方 (ほかのスクリプトから):
   from gravity import ppml, read_flows
@@ -35,6 +36,44 @@ def _demean(v, w, groups, tol=1e-12, maxit=10000):
     return v
 
 
+def _demean_blocks(v, w, blocks):
+    """輸出国×年・輸入国×年の 2 つの固定効果は、年ごとのかたまりに分かれる。かたまりごとに、重み付きの最小二乗の式を直接解いて引く。
+    blocks: [(行の番号, かたまりの中の輸出国の番号, 輸入国の番号, 輸出国の数, 輸入国の数)]"""
+    out = v.copy()
+    for idx, gi, gj, ni, nj in blocks:
+        ww = w[idx]
+        W = np.zeros((ni, nj))
+        np.add.at(W, (gi, gj), ww)
+        Do = W.sum(1)
+        Dd = W.sum(0)
+        vb = v[idx]
+        ro = np.zeros((ni, v.shape[1])); np.add.at(ro, gi, ww[:, None] * vb)
+        rd = np.zeros((nj, v.shape[1])); np.add.at(rd, gj, ww[:, None] * vb)
+        Wo = W / Do[:, None]
+        A = np.diag(Dd) - W.T @ Wo
+        bj = np.linalg.lstsq(A, rd - Wo.T @ ro, rcond=None)[0]
+        ai = (ro - W @ bj) / Do[:, None]
+        out[idx] = vb - ai[gi] - bj[gj]
+    return out
+
+
+def _blocks(fe):
+    """fe が [(輸出国, 年) の列, (輸入国, 年) の列] なら、年ごとのかたまりを作る。そうでなければ None"""
+    if len(fe) != 2 or not all(isinstance(k, tuple) and len(k) == 2 for k in fe[0][:1] + fe[1][:1]):
+        return None
+    by = {}
+    for n, (ko, kd) in enumerate(zip(fe[0], fe[1])):
+        if ko[1] != kd[1]:
+            return None
+        by.setdefault(ko[1], []).append(n)
+    out = []
+    for rows in by.values():
+        gi, ni = _groups([fe[0][n] for n in rows])
+        gj, nj = _groups([fe[1][n] for n in rows])
+        out.append((np.array(rows), gi, gj, ni, nj))
+    return out
+
+
 def ppml(y, X, fe, tol=1e-10, maxit=200):
     """y: 交易額 (n,)、X: 説明変数 (n, k)、fe: 固定効果のキーの列のリスト。返り値: 係数 (k,)・反復の回数・使った行の数"""
     y = np.asarray(y, float)
@@ -47,7 +86,9 @@ def ppml(y, X, fe, tol=1e-10, maxit=200):
             tot = np.bincount(g[keep], weights=y[keep], minlength=n)
             keep &= tot[g] > 0
     y, X = y[keep], X[keep]
-    groups = [_groups([k for k, ok in zip(keys, keep) if ok]) for keys in fe]
+    fe = [[k for k, ok in zip(keys, keep) if ok] for keys in fe]
+    groups = [_groups(keys) for keys in fe]
+    blocks = _blocks(fe)
     mu = (y + y.mean()) / 2
     eta = np.log(mu)
     beta = np.zeros(X.shape[1])
@@ -55,7 +96,7 @@ def ppml(y, X, fe, tol=1e-10, maxit=200):
     for it in range(1, maxit + 1):
         z = eta + (y - mu) / mu
         w = mu
-        V = _demean(np.column_stack([z, X]), w, groups)
+        V = _demean_blocks(np.column_stack([z, X]), w, blocks) if blocks else _demean(np.column_stack([z, X]), w, groups)
         zd, Xd = V[:, 0], V[:, 1:]
         WX = Xd * w[:, None]
         beta = np.linalg.solve(WX.T @ Xd, WX.T @ zd)

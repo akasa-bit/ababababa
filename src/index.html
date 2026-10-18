@@ -1201,8 +1201,16 @@ function propulsion(m, beta, mode) {
   const anti = (m * (R - 1)) / 2;
   return { acc: ((g - 1) * m * R * C2) / chain, dec: (anti * C2) / PROP.amEff, mass: m * R, anti };
 }
+// 交易 (S3。docs/trade.md)。荷の値段は、航行の年数 t のあいだの利子で e^(rate × t) 倍になる (Krugman 1978/2010「恒星間の交易の理論」)。
+// 買い手は、交易路でつながった売り手に、売れる量 × 値段^(−σ) に比例して注文を分ける (CES の需要。σ = 代替の弾力性)。
+// rate は目標 R01 (重力モデルの距離の弾力性) で較正するつもりだったが、利子は弾力性を急にする向きにしか効かず、0 でも幅に入らなかった (docs/trade.md)
+// sigma = 代替の弾力性 (構造重力モデルの推定の中央の値 約 5。Head & Mayer 2014)、rate = 実質の利子率 [/年] (長期の安全資産の実質利子率 約 1%。Jordà ほか 2019)、
+// sources = 買い手が見る売り手の数 (交易路網で近い順)、wait = 注文が届いてから入荷を待つ年数の上限
+const TRADE = { sigma: 5, rate: 0.01, sources: 16, wait: 10 };
+const tradeCost = (years) => Math.exp(TRADE.rate * years);
 const E_UNIT = propulsion(UNIT_KG, SHIP_SPEED, 'route').acc; // 交易路で 100 万 t を運ぶときの、片側 (加速か減速) のエネルギー [J]
 const E_UNIT_FREE = ((p) => p.acc + p.dec)(propulsion(UNIT_KG, SHIP_SPEED, 'free')); // 同じく、減速を磁気帆と反物質で行うとき (送る側がすべて払う) [J]
+let TRADE_AUDIT = null; // 試験用: 配列にすると、星系どうしの取引 (送った星系・受けた星系・年・基準価格での額) を書き出す (目標 R01)
 let MASS_AUDIT = null; // 試験用: { flows: {}, energy: {} } にすると、備蓄とエネルギーの出入りを星系・資源・種類ごとに足し上げる
 let ENERGY_AUDIT = null; // 試験用: 配列にすると、記帳した船を 1 便ずつ書き出す
 
@@ -3263,7 +3271,7 @@ class Game {
       const { dist } = this.reach(sysId);
       const sources = this.colonizedSystems()
         .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !this.tradeBlocked(sysId, s.id) && (onlyFrom === undefined || s.id === onlyFrom))
-        .map((s) => ({ id: s.id, d: dist[s.id] + this.travelYears(sysId, s.id), spare: this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) }))
+        .map((s) => ({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id), spare: this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) }))
         .filter((x) => x.spare > 0)
         .sort((a, b) => a.d - b.d);
       for (const x of sources) {
@@ -3271,7 +3279,7 @@ class Game {
         const kg = RES_KG[r] / UNIT_KG; // 1 単位の質量 [100 万 t]
         const amt = Math.min(x.spare, need, this.routeRoom(x.id, sysId, eF, eT) / kg);
         if (amt <= 1e-9) continue;
-        plan.push({ from: x.id, r, amt });
+        plan.push({ from: x.id, r, amt, price: PRICE[r] * tradeCost(x.t) }); // 航行の年数ぶんの利子を乗せた値段
         const both = Math.min(eF, eT) >= amt * kg * E_UNIT;
         eUsed.set(x.id, (eUsed.get(x.id) || 0) + amt * kg * (both ? E_UNIT : E_UNIT_FREE));
         if (both) eIn += amt * kg * E_UNIT;
@@ -3281,7 +3289,7 @@ class Game {
       }
       if (need > 1e-6) return { why: `${RES_LABEL[r]}が不足 (交易路でつながった星系を含めても足りない)` };
     }
-    const imp = plan.filter((x) => x.from !== sysId).reduce((k, x) => k + x.amt * PRICE[x.r], 0);
+    const imp = plan.filter((x) => x.from !== sysId).reduce((k, x) => k + x.amt * x.price, 0);
     if (onlyFrom === undefined && imp > 0 && (cost.credits || 0) + imp > this.gov(sysId).credits) return { why: `資金不足 (資材の輸入費 ${Math.ceil(imp)} cr を含む)`, poor: true };
     return { why: '', eta, plan, imp };
   }
@@ -3299,10 +3307,11 @@ class Game {
     if (job.flight) this.bookShip('settler', job.flight.m, job.flight.beta, 'free', sysId);
     else if (cost.energy) this.bookE('build', -cost.energy, sysId);
     for (const x of p.plan) {
+      if (x.from !== sysId && TRADE_AUDIT) TRADE_AUDIT.push([x.from, sysId, this.year, x.amt * PRICE[x.r], 'b']);
       if (x.from !== sysId) this.bookShip('build', x.amt * RES_KG[x.r], SHIP_SPEED, this.routeMode(x.from, sysId, (x.amt * RES_KG[x.r]) / UNIT_KG), x.from, sysId);
       this.mv(x.from, x.r, -x.amt, job.type === 'ship' && job.supplies?.[x.r] ? 'ship' : 'build'); // 入植船に積む食料と水は運ばれて入植先の備蓄になる。ほかは建設に使う
-      if (x.from !== sysId && !p.aid) { this.earn('import', -x.amt * PRICE[x.r], sysId); this.earn('trade', x.amt * PRICE[x.r], x.from); }
-      if (x.from !== sysId) this.noteLordTrade(sysId, x.from, x.amt * PRICE[x.r]); // 主人との友好度: 支援として無償で受け取った資材も数える
+      if (x.from !== sysId && !p.aid) { this.earn('import', -x.amt * x.price, sysId); this.earn('trade', x.amt * x.price, x.from); }
+      if (x.from !== sysId) this.noteLordTrade(sysId, x.from, x.amt * x.price); // 主人との友好度: 支援として無償で受け取った資材も数える
     }
     if (p.aid) this.receiveAid(sysId, p.aid);
     if (p.eta <= 0) { this.finish({ ...job, sys: sysId }); return { ok: true }; }
@@ -3515,7 +3524,7 @@ class Game {
   // 2) 要求が届いた星系が、交易路を乗り継いで荷を送る。交易路の輸送量が足りなければ待機して少しずつ送る
   // 受け手の目標 = 需要 × (2年 + 要求の往復と航行の年数)。輸送中の荷と未処理の要求も数え、備蓄上限の8割は超えない。
   trade(h, flow) {
-    if (!this.routes.length) { this.requests = this.requests.filter((q) => q.kind !== 'trade'); return; }
+    if (!this.routes.length) { for (const q of this.requests) if (q.kind === 'trade') this.refund(q); this.requests = this.requests.filter((q) => q.kind !== 'trade'); return; }
     // 輸送中の量は毎回、貨物から数え直す (足し引きの積み重ねだと、読み込み直したゲームと最後の桁がずれて結果が分かれるので)
     this.rebuildTransit();
     // 交易路の向きごとの残りの輸送量と送った量 (キーは 交易路の番号×2+向き)
@@ -3526,33 +3535,43 @@ class Game {
     // 届いた要求を処理する
     for (const q of this.requests) {
       if (q.kind !== 'trade' || q.arrive > this.year) continue;
-      if (this.tradeBlocked(q.to, q.from)) { q.amt = 0; continue; } // 送り手が開戦を知っていれば断る
+      if (this.tradeBlocked(q.to, q.from)) { this.refund(q); continue; } // 送り手が開戦を知っていれば断る
       const rp = this.routePath(q.to, q.from);
       const spare = spareOf(q.to, q.res);
-      if (!rp || spare <= 0.001) { q.amt = 0; continue; }
+      // 余りがなければ取り消さずに入荷待ちにして、作れた分から送る。届いてから TRADE.wait 年たっても送りきれなければ、残りを取り消す
+      if (!rp || this.year > q.arrive + TRADE.wait) { this.refund(q); continue; }
+      if (spare <= 0.001) { q.state = 'waiting'; continue; }
       const legs = this.legsOf(rp.path).map((l, i) => ({ ...l, next: rp.path[i + 1] }));
       let amt = Math.min(q.amt, spare, (this.routeRoom(q.to, q.from) * UNIT_KG) / RES_KG[q.res]); // 送る側の加速と受ける側の減速のエネルギー
       for (const l of legs) amt = Math.min(amt, room.get(l.r.id * 2 + l.dir));
       q.state = 'waiting';
       if (amt <= 0.001) continue;
-      // 受け手が代金を払う (基準価格)。払えない分は、送り手が受け手の主人なら支援として無償で送る。そうでなければ送らない
-      const price = PRICE[q.res];
-      const paid = Math.min(amt, Math.max(0, this.gov(q.from).credits) / price);
+      // 代金 (基準価格に、航行の年数ぶんの利子を乗せた値段) は、受け手が注文のときに先に払ってある (q.pre)。売り手は送った分を受け取る。
+      // 先払いの足りない分は、送り手が受け手の主人なら支援として無償で送る。そうでなければ送らない。
+      // (前の版のセーブの要求は先払いがないので、送るときに受け手の資金から払う)
+      const price = q.price ?? PRICE[q.res] * tradeCost(this.reach(q.to).dist[q.from] ?? 0);
+      const prepaid = q.pre !== undefined;
+      const paid = Math.min(amt, Math.max(0, prepaid ? q.pre : this.gov(q.from).credits) / price);
       const aid = this.gov(q.from).lord === q.to ? amt - paid : 0;
       amt = paid + aid;
-      if (amt <= 0.001) { q.amt = 0; continue; }
-      if (paid > 0) { this.earn('import', -paid * price, q.from); this.earn('trade', paid * price, q.to); this.noteLordTrade(q.from, q.to, paid * price); }
+      if (amt <= 0.001) { this.refund(q); continue; }
+      if (paid > 0) {
+        if (prepaid) q.pre -= paid * price; else this.earn('import', -paid * price, q.from);
+        this.earn('trade', paid * price, q.to); this.noteLordTrade(q.from, q.to, paid * price);
+      }
       if (aid > 0) { this.receiveAid(q.from, aid * price); this.noteLordTrade(q.from, q.to, aid * price); }
       for (const l of legs) {
         const k = l.r.id * 2 + l.dir;
         room.set(k, room.get(k) - amt);
         sent.set(k, (sent.get(k) || 0) + amt);
       }
+      if (TRADE_AUDIT) TRADE_AUDIT.push([q.to, q.from, this.year, amt * PRICE[q.res], 't']);
       this.bookShip('cargo', amt * RES_KG[q.res], SHIP_SPEED, this.routeMode(q.to, q.from, (amt * RES_KG[q.res]) / UNIT_KG), q.to, q.from);
       this.shipCargo(q.to, legs, q.res, amt);
       q.amt -= amt;
       q.shipped = (q.shipped || 0) + amt;
     }
+    for (const q of this.requests) if (q.kind === 'trade' && q.amt <= 0.001 && q.pre > 0) this.refund(q);
     this.requests = this.requests.filter((q) => q.kind !== 'trade' || q.amt > 0.001);
     // 未処理の要求の量 (受け手ごと・送り手ごと) と、要求の組 (受け手・送り手・資源。同じ要求を重ねないため)。
     // 何度も引くので、キーは文字列でなく数 (星系の番号と資源の番号から作る)
@@ -3597,26 +3616,52 @@ class Game {
         // 代金を払えない星系は、主人にだけ支援を求める
         const broke = this.gov(T).credits < min * PRICE[res];
         const ka = sysRes(T, res);
+        // 売り手の候補 (交易路網で近い順に TRADE.sources まで)。重み = 売れる量 × (輸送中の利子)^(−σ) (Krugman 1978/2010 と CES の需要)
+        const cands = [];
+        let W = 0, WL = 0;
         for (const S of broke ? sources.filter((x) => x === lord) : sources) {
-          const lead = dist[S] + this.travelYears(T, S);
-          let want = Math.min((2 + lead) * ft.cons[res], 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked.get(ka) || 0);
-          if (want <= min) break;
+          if (cands.length >= TRADE.sources) break;
           const kpair = pairKey(T, S, res);
           if (pendingPair.has(kpair)) continue;
           if (blocked(T, S)) continue; // 交戦中の国どうしでは取引しない (開戦を知ってから)
           const kp = sysRes(S, res);
-          const amt = Math.min(want, spareOf(S, res) - (promised.get(kp) || 0));
+          const avail = spareOf(S, res) - (promised.get(kp) || 0);
+          if (avail <= min) continue;
+          const w = avail * tradeCost(dist[S]) ** -TRADE.sigma;
+          const lead = dist[S] + this.travelYears(T, S);
+          cands.push({ S, kpair, kp, avail, w });
+          W += w; WL += w * lead;
+        }
+        if (!cands.length) continue;
+        // 受け手の目標 = 需要 × (2 年 + 要求の往復と航行の年数の重み付きの平均)
+        const want = Math.min((2 + WL / W) * ft.cons[res], 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked.get(ka) || 0);
+        if (want <= min) continue;
+        // 代金は注文のときに先に払う (主人への支援の頼みは払わない)。資金が足りなければ、どの売り手への注文も同じ割合で減らす
+        for (const c of cands) { c.price = PRICE[res] * tradeCost(dist[c.S]); c.amt = Math.min((want * c.w) / W, c.avail); }
+        const bill = cands.reduce((k, c) => k + c.amt * c.price, 0);
+        const scale = broke || bill <= 0 ? 1 : Math.min(1, Math.max(0, this.gov(T).credits) / bill);
+        for (const c of cands) {
+          const price = c.price;
+          const amt = c.amt * scale;
           if (amt <= min) continue;
-          this.requests.push({ id: this.nextShipId++, kind: 'trade', from: T, to: S, res, amt, sent: this.year, arrive: this.year + this.travelYears(T, S), state: 'sending' });
-          pendingPair.add(kpair);
+          const pre = broke ? 0 : amt * price;
+          if (pre) this.earn('import', -pre, T);
+          this.requests.push({ id: this.nextShipId++, kind: 'trade', from: T, to: c.S, res, amt, price, pre, sent: this.year, arrive: this.year + this.travelYears(T, c.S), state: 'sending' });
+          pendingPair.add(c.kpair);
           asked.set(ka, (asked.get(ka) || 0) + amt);
-          promised.set(kp, (promised.get(kp) || 0) + amt);
+          promised.set(c.kp, (promised.get(c.kp) || 0) + amt);
         }
       }
     }
     for (const r of this.routes) {
       for (const dir of [0, 1]) r.vol[dir] += ((sent.get(r.id * 2 + dir) || 0) / h - r.vol[dir]) * Math.min(1, h);
     }
+  }
+  // 取り消した物資移送要求の先払いを、受け手に返す (返金は光速で届くが、簡単のためすぐ返す)
+  refund(q) {
+    if (q.pre > 0 && this.govs[q.from]) this.earn('import', q.pre, q.from);
+    q.pre = 0;
+    q.amt = 0;
   }
   // 貨物を積み出す。path は経由する星系の列、times は各星系に着く年
   shipCargo(from, legs, res, amt) {
