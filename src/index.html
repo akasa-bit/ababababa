@@ -1200,11 +1200,16 @@ const AI_INCOME_KINDS = new Set(['tax', 'trade', 'export', 'natives']);
 const INFO_LABEL = { full: 'の数は正確に見える', fuzzy: 'の数は5艦隊単位の概数', hidden: 'の数は見えない' };
 // 戦争疲弊 (国ごと 0〜100): 失った艦隊・星系と、戦争の年数で増え、平和なあいだに減る。
 // 税収が最大 40% 減り、家臣の忠誠度・議会の支持が下がる。疲れた国ほど講和に応じやすい
-const EXHAUST = { ship: 1.5, system: 8, warYear: 2, siegeYear: 1, peaceYear: 5, tax: 0.004, loyalty: 0.25, council: 1 / 40 };
+const EXHAUST = { ship: 1.5, system: 8, warYear: 1, siegeYear: 1, peaceYear: 5, tax: 0.004, loyalty: 0.25, council: 1 / 40 };
 // 戦勝点 (−100〜100): 沈めた艦隊の差 (1 艦隊 2 点) と、攻め落とした星系の差 (1 つ 20 点)
 const WARSCORE = { ship: 2, system: 20 };
 // 講和会議の条件の値段 (勝った側は戦勝点を、100 を上限に条件に使う)
-const TREATY = { vassal: 70, cash: 1000, cashPts: 5, cashMax: 10 };
+const TREATY = { vassal: 70, cash: 1000, cashPts: 5, cashMax: 10, white: 5, years: 3 };
+// AI の講和の判断: 開戦から minYears 年たち、戦争疲弊が sueEx 以上か戦勝点が sueWs 以下なら申し入れる (人間の国へは offerEvery 年に 1 回、offerYears 年有効)。
+// 申し入れに応じる確率 (peaceChance): 負けている側は base + |戦勝点|/loseWs + 疲弊/exLose、勝っている側は winBase + 疲弊/exWin − 戦勝点/winWs
+// にらみ合い: 戦闘も攻め落としもない戦争は、年 stalemate ÷ (1 + 年数 ÷ stalemateHalf) の確率で講和を求める。
+// 始まってすぐは終わりやすく、長引いた戦争ほど泥沼になる (実際の戦争の長さも、多くは短く一部がとても長い)
+const PEACE = { minYears: 3, sueEx: 60, sueWs: -50, stalemate: 0.35, stalemateHalf: 4, offerEvery: 5, offerYears: 10, base: 0.15, loseWs: 80, exLose: 120, winBase: 0.05, exWin: 100, winWs: 400, min: 0.03, max: 0.95 };
 const NATION_COUNTS = [1, 4, 5, 6, 7, 8]; // 1 = 地球だけ (国家選択なし)
 const SHIP_COST = { planet: { credits: 300, goods: 100, fuel: 100 }, station: { credits: 150, goods: 50, fuel: 50 } };
 const SETTLERS = { planet: 0.2, station: 0.02 }; // 入植船が運ぶ人口[百万人]
@@ -1826,7 +1831,7 @@ class Game {
   // 講和が決まった: 戦勝点が勝っている側が講和会議で条件を選ぶ (差が小さければ白紙講和)
   makePeace(a, b, from) {
     const ws = this.warScore(a, b);
-    if (Math.abs(ws) < 5) {
+    if (Math.abs(ws) < TREATY.white) {
       this.endWar(a, b, from);
       this.event('politics', from, `${this.realmName(a)}と${this.realmName(b)}が白紙講和を結んだ (戦勝点 ${ws})`, this.isHuman(a) || this.isHuman(b));
       return;
@@ -1841,7 +1846,7 @@ class Game {
     for (const w of winners) this.endWar(w.realm, loser, from);
     const bids = winners.filter((w) => w.pts >= 1).map((w) => ({ realm: w.realm, pts: Math.min(100, Math.round(w.pts)), picks: null }));
     if (!bids.length) return;
-    const c = { id: this.nextShipId++, loser, year: this.year, until: this.year + 3, from, bids };
+    const c = { id: this.nextShipId++, loser, year: this.year, until: this.year + TREATY.years, from, bids };
     for (const b of c.bids) if (!this.isHuman(b.realm)) b.picks = this.aiTreatyPicks(c, b);
     this.event('politics', from, `${this.realmName(loser)}との講和会議が開かれた (${c.bids.map((b) => `${this.realmName(b.realm)} 持ち点 ${b.pts}`).join('・')})`, c.bids.some((b) => this.isHuman(b.realm)) || this.isHuman(loser));
     if (c.bids.every((b) => b.picks)) return this.resolveConference(c);
@@ -2502,7 +2507,7 @@ class Game {
     const key = this.warKey(this.cap, root);
     if (this.isHuman(root)) {
       this.peaceOffers = this.peaceOffers.filter((o) => o.key !== key);
-      this.peaceOffers.push({ key, from: this.cap, to: root, year: this.year, until: this.year + 10 });
+      this.peaceOffers.push({ key, from: this.cap, to: root, year: this.year, until: this.year + PEACE.offerYears });
       this.event('politics', root, `${this.realmName(this.cap)}が${this.realmName(root)}に講和を申し入れた (戦勝点 ${this.warScore(this.cap, root)})`, true);
       return { ok: true };
     }
@@ -2515,7 +2520,7 @@ class Game {
   // AI の国 r が、敵 e からの講和に応じる確率
   peaceChance(r, e) {
     const ws = this.warScore(r, e), ex = this.exhaustion[r] || 0;
-    return clamp(ws <= 0 ? 0.15 - ws / 80 + ex / 120 : 0.05 + ex / 100 - ws / 400, 0.03, 0.95);
+    return clamp(ws <= 0 ? PEACE.base - ws / PEACE.loseWs + ex / PEACE.exLose : PEACE.winBase + ex / PEACE.exWin - ws / PEACE.winWs, PEACE.min, PEACE.max);
   }
   // 終戦。from = 講和の結ばれた星系 (終戦の知らせはここから光速で広がる)。
   // 各地の艦隊戦・攻囲は、終戦の知らせが攻める側の主星を経て届くまで続く (fightingAt)
@@ -2770,11 +2775,13 @@ class Game {
         if (this.warBy[key] === root && years >= 5 && theirs >= 5 * Math.max(1, ours) && this.rand() < 0.08) { this.startConference(root, [{ realm: e, pts: 100 }], root); break; }
         // 疲れた・負けている国は講和を申し入れる。相手が AI なら相手の判断で、人間なら申し入れとして届く (5 年に 1 回まで)
         const ex = this.exhaustion[root] || 0, ws = this.warScore(root, e);
-        if (years < 3 || (ex < 60 && ws > -50)) continue;
+        const st = this.warStats[key];
+        const quiet = st && !Object.keys(st.k).length && !Object.keys(st.t).length && this.rand() < PEACE.stalemate / (1 + years / PEACE.stalemateHalf);
+        if (!quiet && (years < PEACE.minYears || (ex < PEACE.sueEx && ws > PEACE.sueWs))) continue;
         if (this.isHuman(e)) {
-          if (!this.peaceOffers.some((o) => o.key === key && this.year - o.year < 5)) {
+          if (!this.peaceOffers.some((o) => o.key === key && this.year - o.year < PEACE.offerEvery)) {
             this.peaceOffers = this.peaceOffers.filter((o) => o.key !== key);
-            this.peaceOffers.push({ key, from: root, to: e, year: this.year, until: this.year + 10 });
+            this.peaceOffers.push({ key, from: root, to: e, year: this.year, until: this.year + PEACE.offerYears });
             this.event('politics', root, `${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScore(e, root)}・相手の戦争疲弊 ${Math.round(ex)})`, true);
           }
         } else if (this.rand() < this.peaceChance(e, root)) this.makePeace(root, e, root);
@@ -7364,7 +7371,7 @@ function politicsSheet(app) {
     <div class="kpi"><div><span>${ico('war')}${esc(ME.realm)}の戦争疲弊</span><b class="${myEx >= 40 ? 'bad' : ''}">${myEx}</b><span>税収 −${Math.round(EXHAUST.tax * myEx * 100)}%・家臣の忠誠度 −${Math.round(EXHAUST.loyalty * myEx)}${myEx > 20 ? `・議会の支持 −${(EXHAUST.council * (myEx - 20)).toFixed(1)}/年` : ''}</span></div></div>
     ${realms ? `<div class="scroll"><table class="tbl"><tr><th>首都</th><th>規模 (把握分)</th><th>状態</th><th>戦況</th><th></th></tr>${realms}</table></div>` : '<p class="note">いまのところ独立国はない。</p>'}
     <p class="note"><b>戦争疲弊</b> (0〜100) は、艦隊を失うと 1 艦隊あたり ${EXHAUST.ship}、星系を攻め落とされると ${EXHAUST.system}、戦っている戦争 1 つにつき年 ${EXHAUST.warYear} (攻囲されている星系 1 つにつき年 ${EXHAUST.siegeYear}) 増え、平和なあいだは年 ${EXHAUST.peaceYear} ずつ減る。<b>戦勝点</b> (−100〜100) は、沈めた艦隊の差 (1 艦隊 ${WARSCORE.ship}) と、攻め落とした星系の差 (1 つ ${WARSCORE.system}) で決まる。
-      講和は、勝っている側が<b>講和会議</b>で戦勝点 (100 まで) を条件に使う: 従属させる (${TREATY.vassal})・星系の割譲 (人口しだいで 5〜30)・賠償金 (${fmtAmt(TREATY.cash)} cr ごとに ${TREATY.cashPts})。戦勝点の差が 5 未満なら白紙講和。AI の国は、負けているほど・疲れているほど講和に応じ、戦争疲弊が 60 を超えるか戦勝点が −50 を下回ると自分から申し入れてくる。</p>
+      講和は、勝っている側が<b>講和会議</b>で戦勝点 (100 まで) を条件に使う: 従属させる (${TREATY.vassal})・星系の割譲 (人口しだいで 5〜30)・賠償金 (${fmtAmt(TREATY.cash)} cr ごとに ${TREATY.cashPts})。戦勝点の差が 5 未満なら白紙講和。AI の国は、負けているほど・疲れているほど講和に応じ、戦争疲弊が 60 を超えるか戦勝点が −50 を下回ると自分から申し入れてくる。戦闘のないにらみ合いの戦争も、始まってすぐは年 35% ほど、長引くほど低い確率で申し入れてくる (20 年たつと年 6%)。</p>
     <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。終わらせ方は上の「戦争疲弊」「講和会議」のとおり (仕掛けた側が大差で負ければ、相手に全面的に任せる持ち点 100 の講和会議になる)。独立国どうしも戦争をする (近くの弱い独立国に宣戦する)。交戦中でない国の星系へ艦隊を送ると奇襲攻撃になり、着いた時点で戦争が始まる。交戦中の国どうしでは物資をやり取りしない (各星系は開戦の知らせが光速で届いてから取引をやめる)。講和・降伏で戦争が終わっても、終戦の知らせが主星 (首都) を経て光速で届くまで、各地の艦隊は戦い続け攻囲も続く。</p>
     <h3>戦争</h3>
     ${(() => {
