@@ -1,5 +1,6 @@
 // 公開用の HTML を作る: src/index.html を最小化し、LZMA で圧縮して、自分で展開する 1 枚の HTML にする。
-// 版ごとに 2 枚作る: index.html (ゲーム版) と simulation.html (シミュレーション版)。違いは src の EDITION の値だけ
+// 版ごとに作る: index.html (ゲーム版) と simulation.html (シミュレーション版)。違いは src の EDITION の値だけ
+// いまはゲーム版だけを作る。シミュレーション版はゲーム版を公開するまで凍結し、組み立て直さない (docs/game-plan.md の 1)
 // 使い方: (cd tools && npm ci) のあと node tools/build.mjs
 // 圧縮は python3 の lzma を使う。できあがりは展開して元の最小化 HTML と 1 バイトずつ照らし合わせてから書き出す
 import fs from 'fs';
@@ -16,7 +17,8 @@ const unlzma = require('./unlzma.js');
 const source = fs.readFileSync(path.join(root, 'src/index.html'), 'utf8');
 const EDITION_LINE = "const EDITION = 'game'; /* EDITION */";
 if (!source.includes(EDITION_LINE)) throw new Error('src/index.html に EDITION の行がない');
-const EDITIONS = [['game', 'index.html', 'NoLongerUbiquitous'], ['sim', 'simulation.html', 'NoLongerUbiquitous シミュレーション版']];
+const ALL_EDITIONS = [['game', 'index.html', 'NoLongerUbiquitous'], ['sim', 'simulation.html', 'NoLongerUbiquitous シミュレーション版']];
+const EDITIONS = ALL_EDITIONS.filter(([e]) => e === 'game'); // シミュレーション版は凍結中
 // LZMA の圧縮 (文脈のビット数を変えて、いちばん小さいものを使う)
 const py = `import lzma,sys,json
 b=sys.stdin.buffer.read();best=None
