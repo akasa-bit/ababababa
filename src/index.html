@@ -374,6 +374,7 @@ body.nosel aside { display:none; }
    文字と星が読めるよう暗くかぶせ、星間マップでは視点の動きにわずかに遅れて動かす (奥行き) */
 #sky { position:absolute; inset:0; overflow:hidden; background:var(--map-bg); pointer-events:none; }
 #sky > div { position:absolute; inset:-12%; background:center / cover no-repeat; opacity:0; transition:opacity .4s; will-change:transform; }
+#sky > .sky-galaxy { inset:-50%; } /* 回しても角が見えないよう、対角線より大きく */
 #sky .sky-galaxy { background-image:linear-gradient(rgba(11,12,13,.28), rgba(11,12,13,.28)), url("assets/space-galaxy.jpg"); }
 #sky .sky-system { background-image:linear-gradient(rgba(11,12,13,.5), rgba(11,12,13,.5)), url("assets/space-system.jpg"); }
 #sky[data-view="galaxy"] .sky-galaxy, #sky[data-view="system"] .sky-system { opacity:1; }
@@ -5777,7 +5778,8 @@ class GalaxyView {
 
   // 視点に依存する重いレイヤー (星・国境) を、画面より一回り大きく (上下左右に余白 m) 描いて使い回す。
   // 視点が動いているあいだは前に描いたものをずらして (ズームなら拡大縮小して) 貼るだけにし、動きが止まってから描き直す。
-  // 中身 (key)・画面の大きさが変わったとき、ずらすと端が足りなくなるとき、ズームが2倍以上変わったときはすぐ描き直す。
+  // 中身 (key)・画面の大きさが変わったとき、ずらすと端が足りなくなるとき、ズームが2倍以上変わったとき、
+  // 回したり傾けたりしたとき (ずらすだけでは合わない) はすぐ描き直す。
   // render(lc, m) は画面の座標 (toScreen) で描く。描ける範囲は −m〜w+m
   viewLayer(name, w, h, key, render) {
     const L = ((this.layers ??= {})[name] ??= { c: document.createElement('canvas') });
@@ -5785,13 +5787,15 @@ class GalaxyView {
     const m = Math.round(Math.max(w, h) * 0.12); // 余白 (広いほど描き直しが減るが、メモリを食う)
     const cam = this.cam;
     const place = () => {
+      // 描いたときの注目点が、いまの画面のどこに来るか (向きは同じなので、ずらして拡大縮小するだけで重なる)
       const k = cam.zoom / L.cam.zoom;
-      const left = k * (-m - w / 2) + w / 2 + (L.cam.x - cam.x) * cam.zoom;
-      const top = k * (-m - h / 2) + h / 2 + (L.cam.y - cam.y) * cam.zoom;
+      const [cx, cy] = this.toScreen(L.cam.x, L.cam.y, L.cam.z);
+      const left = k * (-m - w / 2) + cx;
+      const top = k * (-m - h / 2) + cy;
       return { k, left, top, right: left + k * (w + 2 * m), bottom: top + k * (h + 2 * m) };
     };
-    let fresh = !L.cam || L.key !== key || L.w !== w || L.h !== h || L.s !== s;
-    if (!fresh && (L.cam.x !== cam.x || L.cam.y !== cam.y || L.cam.zoom !== cam.zoom)) {
+    let fresh = !L.cam || L.key !== key || L.w !== w || L.h !== h || L.s !== s || L.cam.yaw !== cam.yaw || L.cam.pitch !== cam.pitch;
+    if (!fresh && (L.cam.x !== cam.x || L.cam.y !== cam.y || L.cam.z !== cam.z || L.cam.zoom !== cam.zoom)) {
       const p = place();
       const settled = performance.now() - (this.camMovedAt || 0) > 180;
       if (settled || p.left > 0 || p.top > 0 || p.right < w || p.bottom < h || p.k < 0.5 || p.k > 2) fresh = true;
@@ -5830,7 +5834,7 @@ class GalaxyView {
     this.w = w;
     this.h = h;
     const { ctx } = this;
-    const camKey = `${this.cam.x},${this.cam.y},${this.cam.zoom}`;
+    const camKey = `${this.cam.x},${this.cam.y},${this.cam.z},${this.cam.zoom},${this.cam.yaw},${this.cam.pitch}`;
     if (camKey !== this.lastCamKey) { this.lastCamKey = camKey; this.camMovedAt = performance.now(); }
     const game = this.app.game;
     const sel = game.system(this.app.sel.sys ?? game.cap);
@@ -9708,7 +9712,8 @@ function setHtmlKeepScroll(el, html) {
 }
 // --- メインループ ---
 let last = performance.now();
-// 背景の層: 画面に合わせて画像を切り替え、星間マップでは視点の 4% だけ動かす (ズームでもわずかに大きく)
+// 背景の層: 画面に合わせて画像を切り替え、星間マップでは視点の 4% だけ動かす (ズームでもわずかに大きく)。
+// 3 次元の地図では、回すと背景も同じ角度だけ回り、傾けると上下にずれる (遠くの空として地図についてくる)
 const sky = $('sky');
 let lastSkyKey = '';
 // 星系マップの背景: 太陽系は北アメリカ星雲、ほかの星系は assets/systems/ の 17 枚から星系ごとに決まった1枚 (使い回し)
@@ -9717,7 +9722,7 @@ const systemBg = (id) => (id === 0 ? 'assets/space-system.jpg' : `assets/systems
 function updateSky() {
   const v = app.view === 'system' ? 'system' : 'galaxy';
   const c = galaxyView.cam;
-  const key = v === 'galaxy' ? `g|${c.x}|${c.y}|${c.zoom}` : `s|${app.sel.sys}`;
+  const key = v === 'galaxy' ? `g|${c.x}|${c.y}|${c.zoom}|${c.yaw}|${c.pitch}` : `s|${app.sel.sys}`;
   if (key === lastSkyKey) return;
   lastSkyKey = key;
   sky.dataset.view = v;
@@ -9727,7 +9732,8 @@ function updateSky() {
     // 端が見えないよう、ずらす量は背景の余白 (12%) の 8 割まで
     const mx = sky.clientWidth * 0.1, my = sky.clientHeight * 0.1;
     const tx = Math.max(-mx, Math.min(mx, -c.x * c.zoom * k)), ty = Math.max(-my, Math.min(my, -c.y * c.zoom * k));
-    sky.firstElementChild.style.transform = `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px) scale(${sc.toFixed(3)})`;
+    const tilt = (c.pitch || 0) * sky.clientHeight * 0.08; // 傾けた分だけ空を上へずらす (余白の中)
+    sky.firstElementChild.style.transform = `translate(${tx.toFixed(1)}px, ${(ty - tilt).toFixed(1)}px) rotate(${(c.yaw || 0).toFixed(4)}rad) scale(${sc.toFixed(3)})`;
   }
 }
 let lastNosel = false, lastMapKey = '', lastMapGame = null, lastDrawYear = NaN, lastDateText = '', mapActiveUntil = 0, lastTickYear = NaN, lastFullTick = 0;
@@ -9754,7 +9760,7 @@ function frame(now) {
   // 星図では、年が進んでも動くものが 0.25 ピクセル動くまでは描き直さない。いちばん速く見えるのは地球へ近づく船で、
   // 見かけの速さは光速の 20 倍 (0.95c で近づくとき 1/(1−0.95)) まで。星系図は惑星が回るので毎フレーム描く
   const yearMoved = app.view === 'galaxy' ? Math.abs(game.year - lastDrawYear) * 20 * cam.zoom >= 0.25 : game.year !== lastDrawYear;
-  const mapKey = `${app.view}|${w}|${h}|${cam.x}|${cam.y}|${cam.zoom}|${app.sel.sys}|${app.sel.body}|${app.fleetSel.size}|${app.fleetMove.size}|${app.signalMode}|${systemView.cam.x}|${systemView.cam.y}|${systemView.cam.zoom}`;
+  const mapKey = `${app.view}|${w}|${h}|${cam.x}|${cam.y}|${cam.z}|${cam.zoom}|${cam.yaw}|${cam.pitch}|${app.sel.sys}|${app.sel.body}|${app.fleetSel.size}|${app.fleetMove.size}|${app.signalMode}|${systemView.cam.x}|${systemView.cam.y}|${systemView.cam.zoom}`;
   if (app.dirty || yearMoved || mapKey !== lastMapKey || game !== lastMapGame || now < mapActiveUntil || now - (galaxyView.camMovedAt || 0) < 400 || galaxyView.animating || systemView.animating) {
     lastMapKey = mapKey; lastMapGame = game; lastDrawYear = game.year; galaxyView.animating = systemView.animating = false;
     const ctx = galaxyView.ctx;
