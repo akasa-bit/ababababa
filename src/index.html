@@ -139,7 +139,6 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #zoom button { min-width:46px; min-height:46px; font-size:18px; background:rgba(13,18,29,.85); }
 #zoom #vassalbtn { font-size:13px; }
 #zoom #vassalbtn.on { border-color:var(--own); color:var(--own); }
-#zoom #rotbtn.on { outline:2px solid var(--accent); outline-offset:1px; }
 aside { width:340px; background:var(--panel); border-left:1px solid var(--line); padding:12px 14px; overflow-y:auto; }
 button { background:#17213a; color:var(--fg); border:1px solid #2a3a60; border-radius:5px; padding:5px 10px; font:inherit; cursor:pointer; }
 button:hover:not(:disabled) { background:#1f2d4f; }
@@ -507,7 +506,7 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
         <div><i style="border:2px solid #ff9f43;border-radius:50%;width:7px;height:7px"></i>入植星系の輪の色 = 所属する国 (青緑は地球の国)</div>
       </details>
       <div id="fleetbar" hidden></div>
-      <div id="zoom"><button id="zoom-in" aria-label="拡大">＋</button><button id="zoom-out" aria-label="縮小">－</button><button id="zoom-fit" aria-label="全体表示">全体</button><button id="rotbtn" title="オンにすると、ドラッグで地図を回す・傾ける (マウスは中ボタンか Alt+ドラッグでも回る。2 本指でひねっても回る)">回す</button><button id="topbtn" title="真上から見る / 斜めから見る">真上</button><button id="vassalbtn" title="誰が誰に従属しているかを矢印で表示する (家臣 → 主人)">従属</button></div>
+      <div id="zoom"><button id="zoom-in" aria-label="拡大">＋</button><button id="zoom-out" aria-label="縮小">－</button><button id="zoom-fit" aria-label="全体表示">全体</button><button id="vassalbtn" title="誰が誰に従属しているかを矢印で表示する (家臣 → 主人)">従属</button></div>
     </div>
     <aside>
       <div id="panel"></div>
@@ -1038,8 +1037,6 @@ function generateGalaxy({ seed = 1, starCount = 400, meanSpacing = 4, kind = 'fl
 }
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0)); // 光年 (平面の銀河では z がない)
-const DEFAULT_PITCH = 0.6; // 3 次元の銀河を見下ろす初めの傾き [rad] (約 34°)
-const MAX_PITCH = 1.3; // 傾けられる上限 [rad] (約 75°)
 const SYS_DIST = new WeakMap(); // 銀河 → 星系どうしの距離の表 (Game.sysDist)
 const NEAR_SYS = new WeakMap(); // 銀河 → 星系ごとの 25 光年以内の星系 (Game.nearSystems)
 
@@ -5734,8 +5731,9 @@ class GalaxyView {
     this.cam.x = 0;
     this.cam.y = 0;
     this.cam.z = 0;
-    // 3 次元の銀河は、少し斜めから見下ろして始める (平面の銀河は真上から)
-    if (this.camKind !== g.kind) { this.camKind = g.kind; this.cam.yaw = 0; this.cam.pitch = g.kind === 'real' ? DEFAULT_PITCH : 0; }
+    // 地図はいつも真上から見る平面 (ステラリスの銀河の地図にならう)。星の高さ (z) は位置の計算にだけ使い、描き方には使わない
+    this.cam.yaw = 0;
+    this.cam.pitch = 0;
   }
 
   // 地球の知っている入植星系がすべて収まるように寄せる (従属マップを開いたとき)
@@ -5778,12 +5776,6 @@ class GalaxyView {
     this.cam.x = wx - dx;
     this.cam.y = wy - dy;
   }
-  // 回す: yaw は自由に、pitch は真上 (0) から 75° まで
-  rotateBy(dyaw, dpitch) {
-    this.cam.yaw = (this.cam.yaw + dyaw) % (Math.PI * 2);
-    this.cam.pitch = clamp(this.cam.pitch + dpitch, 0, MAX_PITCH);
-    this.app.dirty = true;
-  }
 
   pick(sx, sy, radius = 12) {
     let best = null;
@@ -5824,8 +5816,7 @@ class GalaxyView {
       if (pts.size === 1) {
         const [x, y] = pos(e);
         // 回す: 「回す」ボタンがオン、マウスの中ボタン、Alt を押しながらのドラッグ
-        const rot = this.app.rotateMode || (e.pointerType === 'mouse' && (e.button === 1 || e.altKey));
-        this.drag = { x, y, cx: this.cam.x, cy: this.cam.y, moved: false, rot, yaw: this.cam.yaw, pitch: this.cam.pitch };
+        this.drag = { x, y, cx: this.cam.x, cy: this.cam.y, moved: false };
         // タッチの長押し (0.45秒動かさない) で経由地の線引きを始める
         clearTimeout(this.lp);
         if (e.pointerType !== 'mouse') this.lp = setTimeout(() => { if (this.drag && !this.drag.moved && pts.size === 1) this.startPath(x, y); }, 450);
@@ -5853,8 +5844,6 @@ class GalaxyView {
         // 倍率は指の間隔の比。ピンチを始めたとき指の中点の下にあった地点が、いまの中点の下に来るよう視点を動かす
         // (中身が指に貼りついたまま拡大・移動し、ずれていかない)
         this.cam.zoom = clamp(pinch.zoom * d / pinch.d, 1.5, 80);
-        // 2 本指をひねると回る (3 次元の銀河のとき)
-        if (this.app.game.galaxy.kind === 'real') this.cam.yaw = pinch.yaw - (Math.atan2(b[1] - a[1], b[0] - a[0]) - pinch.ang);
         this.pinWorld(pinch.world[0], pinch.world[1], mx, my);
         return;
       }
@@ -5862,10 +5851,7 @@ class GalaxyView {
         const dx = x - this.drag.x;
         const dy = y - this.drag.y;
         if (Math.hypot(dx, dy) > 6) { this.drag.moved = true; clearTimeout(this.lp); }
-        if (this.drag.moved && this.drag.rot) {
-          this.cam.yaw = this.drag.yaw - dx * 0.008;
-          this.cam.pitch = clamp(this.drag.pitch - dy * 0.008, 0, MAX_PITCH);
-        } else if (this.drag.moved) {
+        if (this.drag.moved) {
           const [wx, wy] = this.screenDelta(dx, dy);
           this.cam.x = this.drag.cx - wx;
           this.cam.y = this.drag.cy - wy;
@@ -5908,7 +5894,7 @@ class GalaxyView {
       if (pts.size < 2) pinch = null;
       if (wasPinch && pts.size === 1 && this.drag) {
         const [rx, ry] = [...pts.values()][0];
-        this.drag = { x: rx, y: ry, cx: this.cam.x, cy: this.cam.y, moved: true, rot: this.app.rotateMode, yaw: this.cam.yaw, pitch: this.cam.pitch };
+        this.drag = { x: rx, y: ry, cx: this.cam.x, cy: this.cam.y, moved: true };
       }
       if (this.drag && !this.drag.moved && !wasPinch && e.type === 'pointerup') this.tap(this.pick(x, y), e, this.pickFleet(x, y));
       if (pts.size === 0) this.drag = null;
@@ -6072,7 +6058,7 @@ class GalaxyView {
     const sel = game.system(this.app.sel.sys ?? game.cap);
     const z = this.cam.zoom;
 
-    // 選択中の星からの距離リング (選んだ星の高さの、銀河面に平行な面の上の円。傾けると楕円に見える)
+    // 選択中の星からの距離リング
     const [cx, cy] = this.toScreen(sel.x, sel.y, sel.z);
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 6]);
@@ -6090,87 +6076,72 @@ class GalaxyView {
       ctx.fillText(`${d} ly`, lx + (flat ? 0 : 4), ly - (flat ? 0 : 3));
     }
     ctx.setLineDash([]);
-    // 高さの手がかり: 傾けているときは、各星から銀河面 (z = 0) へ縦の線を引く (EVE Online の星図と同じ)
-    if (!flat && this.app.game.galaxy.kind === 'real') {
-      ctx.strokeStyle = 'rgba(120,150,210,0.16)';
-      ctx.beginPath();
-      for (const sx of this.app.game.galaxy.systems) {
-        if (Math.abs(sx.z || 0) < 0.3) continue;
-        const [ax, ay] = this.toScreen(sx.x, sx.y, sx.z);
-        const [bx, by] = this.toScreen(sx.x, sx.y, 0);
-        ctx.moveTo(ax, ay); ctx.lineTo(bx, by);
-      }
-      ctx.stroke();
-      // 銀河面の目盛り: 太陽から 10 光年ごとの円
-      ctx.strokeStyle = 'rgba(120,150,210,0.10)';
-      for (let d = 10; d <= this.app.game.galaxy.radius + 5; d += 10) {
-        ctx.beginPath();
-        for (let i = 0; i <= 64; i++) { const a = (i / 64) * Math.PI * 2; const [px, py] = this.toScreen(d * Math.cos(a), d * Math.sin(a), 0); if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); }
-        ctx.stroke();
-      }
-    }
 
     // 地図はすべて「いま地球に届いている光」で描く: 動くものは見かけの位置、星系の様子は光が届いた時点のもの
     const seenAt = (posAt, t0, t1) => game.apparent(posAt, t0, t1);
     const known = new Map();
     const K = (id) => { if (!known.has(id)) known.set(id, id === game.cap ? game.snapshot(id) : game.known(id)); return known.get(id); };
 
-    // 国境: 国ごとに、入植星系のまわり 3.5 光年の円を合わせた領域の外周を描く (地球の国は太線)。
-    // 円の和の外周は、別のキャンバスに塗った領域から少し小さい領域をくり抜いて作り、国の色で塗る。
-    // 描いた国境は 1 枚のレイヤーに貯めておき、視点・画面の大きさ・国ごとの星系が変わったときだけ描き直す (重いので)
-    const groups = new Map();
+    // 国の領土 (ステラリスの銀河の地図にならう): 画面を小さな升目に分け、升目ごとに TERRITORY_LY 光年以内でいちばん近い入植星系の国を割り当てる。
+    // 国の色で淡く塗り、隣の升目と国が違う所 (国境と領土の端) を濃く塗る。升目の絵をなめらかに引き伸ばして貼るので、縁はやわらかくなる。
+    // 描いた絵は 1 枚のレイヤーに貯めておき、視点が止まったときと国ごとの星系が変わったときだけ描き直す (重いので)
     const members = [];
     for (const sx of game.knownSystems()) {
       const k = K(sx.id);
-      if (!k || !k.cols.length) continue;
-      const realm = k.realm ?? 0;
-      if (!groups.has(realm)) groups.set(realm, []);
-      groups.get(realm).push(this.toScreen(sx.x, sx.y, sx.z));
-      members.push(`${realm}:${sx.id}`);
+      if (k?.cols.length) members.push(`${k.realm ?? 0}:${sx.id}`);
     }
-    if (groups.size) {
-      // 国境は、国ごとの星系 (members) が変わったときと、視点が止まったときだけ描き直す (動かしているあいだは貼り直すだけ)
-      this.viewLayer('border', w, h, OWN.hex + members.join(','), (lc, m, s) => {
-        this.off ??= document.createElement('canvas');
-        if (this.off.width !== lc.canvas.width || this.off.height !== lc.canvas.height) { this.off.width = lc.canvas.width; this.off.height = lc.canvas.height; }
-        const oc = this.off.getContext('2d');
-        const R = 3.5 * this.cam.zoom;
-        // 点はいまの視点で取り直す (groups は描き直す前の視点のことがある)
-        const pts0 = new Map();
+    if (members.length) {
+      this.viewLayer('border', w, h, OWN.hex + members.join(','), (lc, m) => {
+        const owners = [];
         for (const sx of game.knownSystems()) {
           const k = K(sx.id);
-          if (!k || !k.cols.length) continue;
-          const realm = k.realm ?? 0;
-          if (!pts0.has(realm)) pts0.set(realm, []);
-          pts0.get(realm).push(this.toScreen(sx.x, sx.y, sx.z));
+          if (!k?.cols.length) continue;
+          const [x, y] = this.toScreen(sx.x, sx.y, sx.z);
+          owners.push({ x, y, realm: k.realm ?? 0 });
         }
-        const circles = (c, pts, rad) => { c.beginPath(); for (const [x, y] of pts) { if (x < -m - rad || y < -m - rad || x > w + m + rad || y > h + m + rad) continue; c.moveTo(x + rad, y); c.arc(x, y, rad, 0, Math.PI * 2); } };
-        for (const [realm, pts] of pts0) {
-          const color = realmColor(realm);
-          const lw = realm === game.cap ? 2.5 : 1.5;
-          lc.globalAlpha = realm === game.cap ? 0.07 : 0.05;
-          lc.fillStyle = color;
-          circles(lc, pts, R);
-          lc.fill();
-          lc.globalAlpha = 1;
-          oc.setTransform(1, 0, 0, 1, 0, 0);
-          oc.clearRect(0, 0, this.off.width, this.off.height);
-          oc.setTransform(s, 0, 0, s, m * s, m * s);
-          oc.globalCompositeOperation = 'source-over';
-          oc.fillStyle = '#000';
-          circles(oc, pts, R);
-          oc.fill();
-          oc.globalCompositeOperation = 'destination-out';
-          circles(oc, pts, Math.max(0.5, R - lw));
-          oc.fill();
-          oc.globalCompositeOperation = 'source-in';
-          oc.fillStyle = color;
-          oc.fillRect(-m, -m, w + 2 * m, h + 2 * m);
-          oc.globalCompositeOperation = 'source-over';
-          lc.globalAlpha = realm === game.cap ? 0.85 : 0.6;
-          lc.drawImage(this.off, -m, -m, w + 2 * m, h + 2 * m);
-          lc.globalAlpha = 1;
+        const R = TERRITORY_LY * this.cam.zoom;
+        const C = clamp(Math.round(R / 12), 2, 4); // 升目の大きさ [px]
+        const x0 = -m, y0 = -m, gw = Math.ceil((w + 2 * m) / C), gh = Math.ceil((h + 2 * m) / C);
+        // 入植星系を、大きさ R の箱に分けておく (升目ごとに近くの箱だけ調べる)
+        const bins = new Map();
+        const bk = (bx, by) => bx * 100003 + by;
+        for (const o of owners) { const key = bk(Math.floor(o.x / R), Math.floor(o.y / R)); if (!bins.has(key)) bins.set(key, []); bins.get(key).push(o); }
+        const realms = [...new Set(owners.map((o) => o.realm))];
+        const ri = new Map(realms.map((r, n) => [r, n + 1]));
+        const grid = new Uint8Array(gw * gh);
+        for (let gy = 0; gy < gh; gy++) {
+          const py = y0 + (gy + 0.5) * C, by = Math.floor(py / R);
+          for (let gx = 0; gx < gw; gx++) {
+            const px = x0 + (gx + 0.5) * C, bx = Math.floor(px / R);
+            let best = R * R, who = 0;
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+              const list = bins.get(bk(bx + dx, by + dy));
+              if (!list) continue;
+              for (const o of list) { const d = (o.x - px) ** 2 + (o.y - py) ** 2; if (d < best) { best = d; who = ri.get(o.realm); } }
+            }
+            grid[gy * gw + gx] = who;
+          }
         }
+        const rgb = realms.map((r) => { const c = realmColor(r); return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; });
+        const img = new ImageData(gw, gh);
+        const at = (gx, gy) => (gx < 0 || gy < 0 || gx >= gw || gy >= gh ? 0 : grid[gy * gw + gx]);
+        for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
+          const v = grid[gy * gw + gx];
+          if (!v) continue;
+          const edge = at(gx - 1, gy) !== v || at(gx + 1, gy) !== v || at(gx, gy - 1) !== v || at(gx, gy + 1) !== v;
+          const mine = realms[v - 1] === game.cap;
+          const [r, g2, b2] = rgb[v - 1];
+          const o = (gy * gw + gx) * 4;
+          img.data[o] = r; img.data[o + 1] = g2; img.data[o + 2] = b2;
+          img.data[o + 3] = edge ? (mine ? 235 : 200) : (mine ? 52 : 40);
+        }
+        this.off ??= document.createElement('canvas');
+        this.off.width = gw; this.off.height = gh;
+        this.off.getContext('2d').putImageData(img, 0, 0);
+        lc.imageSmoothingEnabled = true;
+        lc.filter = `blur(${(C * 0.5).toFixed(1)}px)`; // 升目の角を丸める
+        lc.drawImage(this.off, x0, y0, gw * C, gh * C);
+        lc.filter = 'none';
         // 作業用のキャンバスは描き終えたら小さくしてメモリを返す (タブレットでは大きなキャンバスが重なると表示が乱れる)
         this.off.width = this.off.height = 1;
       });
@@ -7915,6 +7886,7 @@ function requestsTable(g) {
 // 国の色 (地球の国は青緑、独立国は首都ごとの色)
 // 地球の国の色 (地図)。配色の案で変わる
 const OWN = { hex: '#4de3d0', rgb: '77,227,208' };
+const TERRITORY_LY = 5; // 入植星系が領土にするまわりの距離 [光年] (星間マップの国の塗り分け)
 function realmColor(root) { return root === 0 || root === null || root === undefined ? OWN.hex : REALM_COLORS[root % REALM_COLORS.length]; }
 
 // 帝国 → 政治: 各星系の政府の忠誠度、独立国と戦争
@@ -8588,20 +8560,8 @@ const mapView = () => (app.view === 'system' ? systemView : galaxyView);
 $('zoom-in').onclick = () => mapView().zoomAt(1.5, w / 2, h / 2);
 $('zoom-out').onclick = () => mapView().zoomAt(1 / 1.5, w / 2, h / 2);
 $('zoom-fit').onclick = () => mapView().fit();
-// 3 次元の地図の回転: 「回す」をオンにするとドラッグで回る。「真上」で真上からの見方と斜めからの見方を切り替える
-function updateMapButtons() {
-  const real = app.game?.galaxy?.kind === 'real';
-  $('rotbtn').hidden = $('topbtn').hidden = !real || app.view !== 'galaxy';
-  $('rotbtn').classList.toggle('on', !!app.rotateMode);
-  setHtml($('topbtn'), galaxyView.cam.pitch < 0.01 ? '斜め' : '真上');
-}
-$('rotbtn').onclick = () => { app.rotateMode = !app.rotateMode; updateMapButtons(); };
-$('topbtn').onclick = () => {
-  const c = galaxyView.cam;
-  if (c.pitch < 0.01) c.pitch = DEFAULT_PITCH; else { c.pitch = 0; c.yaw = 0; }
-  updateMapButtons();
-  app.dirty = true;
-};
+// (前は 3 次元の地図を回す・傾けるボタンがあった。いまは真上からの平面だけなので、ボタンはない)
+function updateMapButtons() {}
 // 従属マップの切り替え (家臣 → 主人の矢印)
 function updateVassalBtn() { $('vassalbtn').classList.toggle('on', app.mapMode === 'vassal'); }
 $('vassalbtn').onclick = () => {
@@ -9491,7 +9451,6 @@ window.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
   if (e.key === ' ') { setSpeed(app.speed ? 0 : app.lastSpeed || 1); e.preventDefault(); }
   else if (e.key >= '1' && e.key <= String(SPEEDS.length)) setSpeed(SPEEDS[Number(e.key) - 1]);
-  else if (app.view === 'galaxy' && app.game.galaxy.kind === 'real' && e.key.length === 1 && 'zxrf'.includes(e.key)) galaxyView.rotateBy(e.key === 'z' ? -0.15 : e.key === 'x' ? 0.15 : 0, e.key === 'r' ? 0.1 : e.key === 'f' ? -0.1 : 0); // 地図を回す (Z/X)・傾ける (R/F)
   else if (e.key === 'g') app.setView('galaxy');
   else if (e.key === 's') app.setView('system');
   else if (e.key === 'e') app.setView('empire');
