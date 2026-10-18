@@ -76,6 +76,12 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #curtain[hidden] { display:none; }
 #netbox { position:fixed; inset:0; z-index:35; background:rgba(5,7,13,.94); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
 #netbox[hidden] { display:none; }
+#treatybox { position:fixed; inset:0; z-index:36; background:rgba(5,7,13,.9); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
+#treatybox[hidden] { display:none; }
+#treatybox .card { width:min(560px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 22px; }
+#treatybox .terms { display:flex; flex-direction:column; gap:4px; margin:8px 0; }
+#treatybox .terms button { text-align:left; min-height:40px; } #treatybox .terms button.on { outline:2px solid var(--accent); }
+#treatybox .terms small { float:right; opacity:.8; } #treatybox .row { display:flex; gap:8px; flex-wrap:wrap; }
 #netbox .card { width:min(620px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 22px; }
 #netbox textarea { width:100%; font:11px monospace; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; margin:6px 0; padding:6px; word-break:break-all; }
 #netbox section { border-top:1px solid var(--line); margin-top:10px; padding-top:6px; }
@@ -496,6 +502,7 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
   <div id="pick" hidden></div>
   <div id="curtain" hidden></div>
   <div id="netbox" hidden></div>
+  <div id="treatybox" hidden></div>
   <div id="endbox" hidden></div>
   <div id="memobox" hidden>
     <div class="tags"><button data-tag="bored">退屈</button><button data-tag="confused">分からない</button><button data-tag="torn">迷う</button><button data-tag="fun">面白い</button></div>
@@ -925,7 +932,7 @@ const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番
 // 忠誠度の目標の内訳。目標 = 先頭から順に足した値 (0〜100 に収める)
 // 忠誠度の目標の内訳。距離は直接には小さく効き、主人の関与 (指令・援助・艦隊・視察) が途絶えた年数が大きく効く
 // (遠い星系ほど関与が届くのに時間と政治力がかかるので、距離は間接的に効く)
-function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, direct = false, concession = false, policy = null }) {
+function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, direct = false, concession = false, policy = null, exhaustion = 0 }) {
   return [
     { label: '基準', v: 85 },
     { label: '主人との距離', v: -(0.6 * dLord), note: `${dLord.toFixed(1)} ly` },
@@ -938,6 +945,7 @@ function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, negle
     { label: '直轄', v: direct ? 10 : 0 },
     { label: '減税・自治', v: concession ? 15 : 0 },
     { label: `国家方針${policy ? ` (${POLICIES[policy].label})` : ''}`, v: POLICY_LOYALTY[policy] || 0 },
+    ...(exhaustion ? [{ label: '国の戦争疲弊', v: -EXHAUST.loyalty * exhaustion, note: `${Math.round(exhaustion)}` }] : []),
   ];
 }
 const RES_LABEL = { food: '食料', water: '水', metal: '金属', fuel: '燃料', rare: '希少元素', goods: '工業品', slaves: '奴隷', credits: 'cr' };
@@ -1190,6 +1198,13 @@ const HANDICAP = {
 };
 const AI_INCOME_KINDS = new Set(['tax', 'trade', 'export', 'natives']);
 const INFO_LABEL = { full: 'の数は正確に見える', fuzzy: 'の数は5艦隊単位の概数', hidden: 'の数は見えない' };
+// 戦争疲弊 (国ごと 0〜100): 失った艦隊・星系と、戦争の年数で増え、平和なあいだに減る。
+// 税収が最大 40% 減り、家臣の忠誠度・議会の支持が下がる。疲れた国ほど講和に応じやすい
+const EXHAUST = { ship: 1.5, system: 8, warYear: 2, siegeYear: 1, peaceYear: 5, tax: 0.004, loyalty: 0.25, council: 1 / 40 };
+// 戦勝点 (−100〜100): 沈めた艦隊の差 (1 艦隊 2 点) と、攻め落とした星系の差 (1 つ 20 点)
+const WARSCORE = { ship: 2, system: 20 };
+// 講和会議の条件の値段 (勝った側は戦勝点を、100 を上限に条件に使う)
+const TREATY = { vassal: 70, cash: 1000, cashPts: 5, cashMax: 10 };
 const NATION_COUNTS = [1, 4, 5, 6, 7, 8]; // 1 = 地球だけ (国家選択なし)
 const SHIP_COST = { planet: { credits: 300, goods: 100, fuel: 100 }, station: { credits: 150, goods: 50, fuel: 50 } };
 const SETTLERS = { planet: 0.2, station: 0.02 }; // 入植船が運ぶ人口[百万人]
@@ -1249,7 +1264,7 @@ const PC_CAP = 100;
 const PC_START = 30;
 const PC_BASE = 6; // 年あたりの基本の政治力
 const pcCostOf = (d) => Math.max(1, Math.round(2 + 0.15 * d)); // 距離 d 光年の星系への指令に要る政治力
-const PC_FREE_ACTS = new Set(['fleet', 'redirect', 'fleetclear', 'rally', 'troopsrally', 'set', 'sendredirect', 'sendclear', 'drop']);
+const PC_FREE_ACTS = new Set(['fleet', 'redirect', 'fleetclear', 'rally', 'troopsrally', 'set', 'sendredirect', 'sendclear', 'drop', 'treaty', 'acceptpeace']);
 const PC_DIPLOMACY = 10; // 宣戦・講和の申し入れ
 // 直轄: 地球の直属の従属星系のうち、地球が直接治める星系。星系政府は自分では開発・入植・交易路の開設をせず、地球の指令をかならず実行する。
 // 指令の政治力は半分、朝貢は50%、忠誠度の目標 +10。1星系あたり年 DIRECT_UPKEEP の政治力を使う。直轄でない星系は委任 (委任方針に沿って自分で動く)
@@ -1429,6 +1444,10 @@ class Game {
     this.snaps = {}; // 星系ごとの様子の記録 (地球から見えるのは光が届いた分だけ)
     // 戦争は国 (首都の星系) の組ごと。キーは warKey(a, b) = '小さい方|大きい方'
     this.realmWars = {}; // 交戦中の国の組 { [key]: 開戦年 }
+    this.exhaustion = {}; // 国ごとの戦争疲弊 { [首都]: 0〜100 }
+    this.warStats = {}; // 戦争ごとの戦果 { [key]: { k: { [国]: 沈めた艦隊 }, t: { [国]: 攻め落とした星系 } } }
+    this.peaceOffers = []; // 人間の国への講和の申し入れ { key, from, to, year, until }
+    this.conferences = []; // 講和会議 { id, loser, year, until, from, bids: [{ realm, pts, picks }] }
     this.warNews = {}; // 開戦の知らせ { [key]: { year, from } }。各星系は知らせが光速で届いてから交易をやめる
     this.held = {}; // 命令で送られて駐留している艦隊の数 { [星系]: n }。自動防衛配備はこの分を動かさない
     this.peaces = []; // 終わった戦争 { key, a, b, year, from, start, by, news }。終戦の知らせが光速で広がるまで使う
@@ -1757,6 +1776,7 @@ class Game {
   beginWar(by, target, from = by) {
     const key = this.warKey(by, target);
     this.realmWars[key] = this.year;
+    this.warStats[key] = { k: {}, t: {} };
     this.warBy[key] = by;
     this.warNews[key] = { year: this.year, from };
   }
@@ -1767,6 +1787,161 @@ class Game {
       const [a, b] = k.split('|').map(Number);
       if (!alive(a) || !alive(b)) { delete this.realmWars[k]; delete this.warBy[k]; delete this.warNews[k]; }
     }
+  }
+  // --- 戦争疲弊・戦勝点 ---
+  exhaust(root, v) { if (root !== undefined && root !== null) this.exhaustion[root] = clamp((this.exhaustion[root] || 0) + v, 0, 100); }
+  // 艦隊戦で沈んだ艦隊を数える (by = 沈めた国、lost = 沈められた国)
+  warLoss(by, lost, n) {
+    if (n <= 0) return;
+    const st = this.warStats[this.warKey(by, lost)];
+    if (st) st.k[by] = (st.k[by] || 0) + n;
+    this.exhaust(lost, EXHAUST.ship * n);
+  }
+  // 星系を攻め落とした
+  warTake(by, lost) {
+    const st = this.warStats[this.warKey(by, lost)];
+    if (st) st.t[by] = (st.t[by] || 0) + 1;
+    this.exhaust(lost, EXHAUST.system);
+  }
+  // a から見た b との戦争の戦勝点
+  warScore(a, b) {
+    const st = this.warStats[this.warKey(a, b)];
+    if (!st) return 0;
+    return Math.round(clamp(WARSCORE.ship * ((st.k[a] || 0) - (st.k[b] || 0)) + WARSCORE.system * ((st.t[a] || 0) - (st.t[b] || 0)), -100, 100));
+  }
+  // 年 1 回: 戦っている国は疲れ、平和な国は回復する
+  exhaustionYearly() {
+    const roots = new Set([...this.colonizedSystems().map((x) => this.realmOf(x.id)), ...Object.keys(this.exhaustion).map(Number)]);
+    for (const r of roots) {
+      if (!this.isColonized(r) || this.realmOf(r) !== r) { delete this.exhaustion[r]; continue; }
+      const wars = this.enemiesOf(r).length;
+      const besieged = this.sieges.filter((g) => this.realmOf(g.sys) === r).length;
+      this.exhaust(r, wars ? EXHAUST.warYear * wars + EXHAUST.siegeYear * besieged : -EXHAUST.peaceYear);
+      if (!this.exhaustion[r]) delete this.exhaustion[r];
+    }
+    for (const k of Object.keys(this.warStats)) if (this.realmWars[k] === undefined) delete this.warStats[k];
+    this.peaceOffers = this.peaceOffers.filter((o) => o.until > this.year && this.realmWars[o.key] !== undefined);
+  }
+  // --- 講和 ---
+  // 講和が決まった: 戦勝点が勝っている側が講和会議で条件を選ぶ (差が小さければ白紙講和)
+  makePeace(a, b, from) {
+    const ws = this.warScore(a, b);
+    if (Math.abs(ws) < 5) {
+      this.endWar(a, b, from);
+      this.event('politics', from, `${this.realmName(a)}と${this.realmName(b)}が白紙講和を結んだ (戦勝点 ${ws})`, this.isHuman(a) || this.isHuman(b));
+      return;
+    }
+    const [w, l] = ws > 0 ? [a, b] : [b, a];
+    this.startConference(l, [{ realm: w, pts: Math.abs(ws) }], from);
+  }
+  // 講和会議を開く。loser = 負けた国、winners = [{ realm, pts }]。
+  // 勝った国は持ち点 (戦勝点、100 まで) で条件を選ぶ。複数の国が勝っていれば同時に入札し、同じ条件を選んだら持ち点の多い国が取る。
+  // 人間の国は 3 年のうちに条件を選ぶ (選ばなければ自動で選ぶ)。戦争は会議が開いた時点で終わる
+  startConference(loser, winners, from = loser) {
+    for (const w of winners) this.endWar(w.realm, loser, from);
+    const bids = winners.filter((w) => w.pts >= 1).map((w) => ({ realm: w.realm, pts: Math.min(100, Math.round(w.pts)), picks: null }));
+    if (!bids.length) return;
+    const c = { id: this.nextShipId++, loser, year: this.year, until: this.year + 3, from, bids };
+    for (const b of c.bids) if (!this.isHuman(b.realm)) b.picks = this.aiTreatyPicks(c, b);
+    this.event('politics', from, `${this.realmName(loser)}との講和会議が開かれた (${c.bids.map((b) => `${this.realmName(b.realm)} 持ち点 ${b.pts}`).join('・')})`, c.bids.some((b) => this.isHuman(b.realm)) || this.isHuman(loser));
+    if (c.bids.every((b) => b.picks)) return this.resolveConference(c);
+    this.conferences.push(c);
+  }
+  // 会議で選べる条件
+  treatyTerms(c) {
+    const l = c.loser;
+    const out = [];
+    if (c.bids.length === 1) out.push({ id: 'v', label: `${this.realmName(l)}を従属させる (配下の星系ごと)`, cost: TREATY.vassal });
+    for (const x of this.realmSystems(l)) {
+      if (x.id === l) continue;
+      const pop = this.coloniesIn(x.id).reduce((k, col) => k + col.pop, 0);
+      out.push({ id: `s${x.id}`, sys: x.id, label: `${x.name} を割譲させる`, cost: 5 + Math.min(25, Math.round(Math.sqrt(pop) / 4)) });
+    }
+    const cash = Math.min(TREATY.cashMax, Math.floor(Math.max(0, this.gov(l).credits) / TREATY.cash));
+    for (let i = 1; i <= cash; i++) out.push({ id: `c${i}`, label: `賠償金 ${fmtAmt(TREATY.cash)} cr (${i} 口目)`, cost: TREATY.cashPts });
+    return out;
+  }
+  // AI の選び方: 近くて持ち点が足りれば従属、そうでなければ自分の首都に近い星系から、残りは賠償金
+  aiTreatyPicks(c, b) {
+    const terms = this.treatyTerms(c);
+    const picks = [];
+    if (b.pts >= TREATY.vassal && terms.some((t) => t.id === 'v') && this.sysDist(b.realm, c.loser) <= 30) picks.push('v');
+    picks.push(...terms.filter((t) => t.sys !== undefined).sort((x, y) => this.sysDist(b.realm, x.sys) - this.sysDist(b.realm, y.sys)).map((t) => t.id));
+    picks.push(...terms.filter((t) => t.id[0] === 'c').map((t) => t.id));
+    return picks;
+  }
+  // 人間の国が条件を選ぶ (命令 treaty)
+  submitTreaty(d) {
+    const c = this.conferences.find((x) => x.id === Number(d.id));
+    const b = c?.bids.find((x) => x.realm === this.cap);
+    if (!b) return fail('講和会議がない');
+    const ids = new Set(this.treatyTerms(c).map((t) => t.id));
+    b.picks = (Array.isArray(d.picks) ? d.picks : []).filter((x) => ids.has(x));
+    if (c.bids.every((x) => x.picks)) this.resolveConference(c);
+    return { ok: true, msg: '講和会議に条件を出した' };
+  }
+  conferencesYearly() {
+    for (const c of [...this.conferences]) {
+      if (c.until > this.year) continue;
+      for (const b of c.bids) if (!b.picks) b.picks = this.aiTreatyPicks(c, b); // 期限までに選ばなかった
+      this.resolveConference(c);
+    }
+  }
+  // 同時入札: 各国が、まだ取られていない条件のうち持ち点で払える最初のものに入札する。
+  // 同じ条件に入札が重なれば、残りの持ち点の多い国が取る (同じなら先の国)。取れなかった国はその条件を外して次の回へ
+  resolveConference(c) {
+    this.conferences = this.conferences.filter((x) => x !== c);
+    const terms = new Map(this.treatyTerms(c).map((t) => [t.id, t]));
+    const left = c.bids.map((b) => b.pts);
+    const lists = c.bids.map((b) => [...(b.picks || [])]);
+    const won = c.bids.map(() => []);
+    const taken = new Set();
+    for (let round = 0; round < 200; round++) {
+      const offers = new Map();
+      c.bids.forEach((b, i) => {
+        const id = lists[i].find((x) => terms.has(x) && !taken.has(x) && terms.get(x).cost <= left[i] && !(x === 'v' && taken.size) && !taken.has('v'));
+        if (id) (offers.get(id) || offers.set(id, []).get(id)).push(i);
+      });
+      if (!offers.size) break;
+      for (const [id, who] of offers) {
+        const i = who.sort((x, y) => left[y] - left[x] || x - y)[0];
+        taken.add(id);
+        left[i] -= terms.get(id).cost;
+        won[i].push(id);
+        for (const j of who) if (j !== i) lists[j] = lists[j].filter((x) => x !== id);
+      }
+    }
+    const l = c.loser;
+    const lines = [];
+    c.bids.forEach((b, i) => {
+      const got = [];
+      if (!this.isColonized(b.realm) || this.realmOf(b.realm) !== b.realm) won[i] = []; // 会議のあいだに国でなくなった
+      for (const id of won[i]) {
+        const t = terms.get(id);
+        if (id === 'v') { if (this.isColonized(l) && this.realmOf(l) === l) { this.surrender(l, b.realm); got.push('従属'); } }
+        else if (t.sys !== undefined) {
+          if (this.realmOf(t.sys) !== l) continue;
+          const gv = this.gov(t.sys);
+          Object.assign(gv, { lord: b.realm, independent: false, loyalty: 30, friend: 0 });
+          got.push(this.system(t.sys).name);
+        } else {
+          const amt = Math.min(TREATY.cash, Math.max(0, this.gov(l).credits));
+          this.gov(l).credits -= amt;
+          this.gov(b.realm).credits += amt;
+          got.push(`賠償金 ${fmtAmt(amt)} cr`);
+        }
+      }
+      lines.push(`${this.realmName(b.realm)}: ${got.length ? got.join('・') : 'なし'}`);
+    });
+    this.event('politics', c.from, `${this.realmName(l)}との講和条約が結ばれた (${lines.join(' / ')})`, c.bids.some((b) => this.isHuman(b.realm)) || this.isHuman(l));
+  }
+  // 人間の国への講和の申し入れに応じる (命令 acceptpeace)
+  acceptPeace(d) {
+    const o = this.peaceOffers.find((x) => x.key === d.key && x.to === this.cap);
+    if (!o || this.realmWars[o.key] === undefined) return fail('講和の申し入れがない');
+    this.peaceOffers = this.peaceOffers.filter((x) => x !== o);
+    this.makePeace(o.from, o.to, this.cap);
+    return { ok: true };
   }
   realmShips(root) {
     return this.realmSystems(root).reduce((k, x) => k + (this.garrison[x.id] || 0), 0)
@@ -1794,7 +1969,7 @@ class Game {
     const pop = (x) => this.coloniesIn(x).reduce((k, c) => k + c.pop, 0);
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: distance(this.system(id), this.system(this.realmOf(lord))),
       bigger: pop(id) > pop(lord), orders: gv.orders || 0, lordShips: this.garrison[lord] || 0, dep: gv.dep || 0,
-      neglect: this.neglectOf(gv), direct: !!gv.direct, concession: (gv.taxFree || 0) > this.year || (gv.autonomy || 0) > this.year, policy: this.policyAt(id) });
+      neglect: this.neglectOf(gv), direct: !!gv.direct, concession: (gv.taxFree || 0) > this.year || (gv.autonomy || 0) > this.year, policy: this.policyAt(id), exhaustion: this.exhaustion[this.realmOf(id)] || 0 });
   }
   // 地球の知る限りの内訳 (地球に届いている記録で。表示用)
   knownLoyaltyTerms(id) {
@@ -1806,7 +1981,7 @@ class Game {
     // 放っておかれた年数は、記録の時点から今までの年数を足す (そのあと関与が届いたかは、まだ地球には見えない)
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: this.sysDist(id, capital),
       bigger: pop(id) > pop(lord), orders: k.orders || 0, lordShips: this.knownGarrison(lord), dep: k.dep || 0,
-      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), direct: !!k.direct, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null });
+      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), direct: !!k.direct, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0 });
   }
   // 星系に駐留している地球の国の艦隊 (命令で駐留している分と威圧の分。太陽系はすべて)
   earthFleetAt(id, root = this.cap) {
@@ -2163,7 +2338,7 @@ class Game {
     if (why) this.message(`議会の支持 ${v > 0 ? '+' : ''}${v} (${why})`);
   }
   councilYearly() {
-    this.council = clamp(this.council - 0.25, 0, 100);
+    this.council = clamp(this.council - 0.25 - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20), 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる
     if (this.council < 15) {
       this.event('goal', this.cap, `議会の支持が ${Math.round(this.council)} まで落ち、政権が交代した。国家方針は白紙に戻り、貯めていた政治力を失った`);
       this.policy = null;
@@ -2320,14 +2495,27 @@ class Game {
     return { ok: true };
   }
   // 講和の申し入れ (光速の指令として相手の首都へ届く)。相手の艦隊が地球の国より少なければ受け入れ、そうでなくても30%
+  // 相手が人間の国なら申し入れとして届き、相手が応じるのを待つ。AI の国は戦勝点と戦争疲弊で決める:
+  // こちらが勝っていれば (相手が負けていれば) 応じやすく、相手が勝っていても相手が疲れていれば応じる
   offerPeace(root) {
     if (!this.atWar(this.cap, root) || this.realmOf(root) !== root) return fail('交戦中ではない');
-    if (this.realmShips(root) < this.realmShips(this.cap) || this.rand() < 0.3) {
-      this.endWar(this.cap, root, root); // 講和の申し入れを受けた相手の首都で結ばれる
-      this.event('politics', root, `${this.system(root).name} の国が講和を受け入れた (独立を認めた)`, true);
+    const key = this.warKey(this.cap, root);
+    if (this.isHuman(root)) {
+      this.peaceOffers = this.peaceOffers.filter((o) => o.key !== key);
+      this.peaceOffers.push({ key, from: this.cap, to: root, year: this.year, until: this.year + 10 });
+      this.event('politics', root, `${this.realmName(this.cap)}が${this.realmName(root)}に講和を申し入れた (戦勝点 ${this.warScore(this.cap, root)})`, true);
       return { ok: true };
     }
-    return fail('講和を拒否された');
+    if (this.rand() < this.peaceChance(root, this.cap)) {
+      this.makePeace(this.cap, root, root); // 講和の申し入れを受けた相手の首都で結ばれる
+      return { ok: true };
+    }
+    return fail(`講和を拒否された (戦勝点 ${this.warScore(this.cap, root)}・相手の戦争疲弊 ${Math.round(this.exhaustion[root] || 0)})`);
+  }
+  // AI の国 r が、敵 e からの講和に応じる確率
+  peaceChance(r, e) {
+    const ws = this.warScore(r, e), ex = this.exhaustion[r] || 0;
+    return clamp(ws <= 0 ? 0.15 - ws / 80 + ex / 120 : 0.05 + ex / 100 - ws / 400, 0.03, 0.95);
   }
   // 終戦。from = 講和の結ばれた星系 (終戦の知らせはここから光速で広がる)。
   // 各地の艦隊戦・攻囲は、終戦の知らせが攻める側の主星を経て届くまで続く (fightingAt)
@@ -2361,6 +2549,8 @@ class Game {
       const a = f.n * this.modsOf(owner).fleet, d = (this.garrison[f.to] || 0) * this.modsOf(other).fleet;
       const win = a > d;
       const left = Math.floor(Math.sqrt(Math.abs(a * a - d * d)) / this.modsOf(win ? owner : other).fleet);
+      this.warLoss(other, owner, win ? f.n - left : f.n);
+      this.warLoss(owner, other, win ? (this.garrison[f.to] || 0) : (this.garrison[f.to] || 0) - left);
       this.garrison[f.to] = left;
       if (win) this.setStackOwner(f.to, owner);
       this.event('battle', f.to, `${name} で${this.realmName(owner)}の ${f.n} 艦隊と${this.realmName(other)}の艦隊が戦い、${this.realmName(win ? owner : other)}が勝った (残り ${left} 艦隊)`, this.isHuman(owner) || this.isHuman(other));
@@ -2438,6 +2628,9 @@ class Game {
       }
       if (b.a >= 0.5 && b.d >= 0.5) continue;
       this.battles = this.battles.filter((x) => x !== b);
+      const defender = this.realmOf(b.sys);
+      this.warLoss(defender, b.realm, Math.round(b.a0 - (b.a >= 0.5 ? Math.max(1, Math.floor(b.a)) : 0)));
+      this.warLoss(b.realm, defender, Math.round(b.d0 - (b.a >= 0.5 ? 0 : Math.floor(b.d))));
       const name = this.system(b.sys).name;
       const span = `${(this.year - b.start).toFixed(1)} 年、攻撃 ${Math.round(b.a0)} 艦隊 対 防衛 ${Math.round(b.d0)} 艦隊`;
       const mine = this.isHuman(b.realm) || this.isHuman(this.realmOf(b.sys));
@@ -2479,6 +2672,7 @@ class Game {
       if (this.troopPower(g.sys) >= 1) this.loseTroops(g.sys, 1);
       if (g.progress < 1) continue;
       const oldRealm = this.realmOf(g.sys);
+      this.warTake(g.realm, oldRealm);
       const gv = this.gov(g.sys);
       gv.lord = g.realm;
       gv.independent = false;
@@ -2570,12 +2764,20 @@ class Game {
       }
       for (const e of enemies) {
         const key = this.warKey(root, e);
+        if (this.realmWars[key] === undefined) continue;
         const ours = this.realmShips(root), theirs = this.realmShips(e), years = this.year - this.realmWars[key];
-        if (this.warBy[key] === root && years >= 5 && theirs >= 5 * Math.max(1, ours) && this.rand() < 0.08) { this.surrender(root, e); break; }
-        if (!this.isHuman(this.warBy[key]) && years >= 20 && ours < 2 * theirs && theirs < 2 * ours && this.rand() < 0.05) {
-          this.endWar(root, e, root);
-          this.event('politics', root, `${this.realmName(root)}と${this.realmName(e)}が講和し、戦争が終わった`, this.isHuman(e));
-        }
+        // 自分から仕掛けて大差で負けていれば、相手に全面的に任せる (持ち点 100 の講和会議)
+        if (this.warBy[key] === root && years >= 5 && theirs >= 5 * Math.max(1, ours) && this.rand() < 0.08) { this.startConference(root, [{ realm: e, pts: 100 }], root); break; }
+        // 疲れた・負けている国は講和を申し入れる。相手が AI なら相手の判断で、人間なら申し入れとして届く (5 年に 1 回まで)
+        const ex = this.exhaustion[root] || 0, ws = this.warScore(root, e);
+        if (years < 3 || (ex < 60 && ws > -50)) continue;
+        if (this.isHuman(e)) {
+          if (!this.peaceOffers.some((o) => o.key === key && this.year - o.year < 5)) {
+            this.peaceOffers = this.peaceOffers.filter((o) => o.key !== key);
+            this.peaceOffers.push({ key, from: root, to: e, year: this.year, until: this.year + 10 });
+            this.event('politics', root, `${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScore(e, root)}・相手の戦争疲弊 ${Math.round(ex)})`, true);
+          }
+        } else if (this.rand() < this.peaceChance(e, root)) this.makePeace(root, e, root);
       }
       if (!enemies.length && this.rand() < 0.03) {
         const ours = this.realmShips(root);
@@ -3973,7 +4175,7 @@ class Game {
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
       this.keepGhosts(before);
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.eachPlayer(() => { this.autoDefend(); this.aweYearly(); }); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.routesYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); if (this.spectate) this.eachPlayer(() => this.earthWarYearly()); this.siegesYearly(); this.politicsYearly(); this.recordSnapshots(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.eachPlayer(() => { this.autoDefend(); this.aweYearly(); }); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.routesYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); if (this.spectate) this.eachPlayer(() => this.earthWarYearly()); this.siegesYearly(); this.exhaustionYearly(); this.conferencesYearly(); this.politicsYearly(); this.recordSnapshots(); }
     }
     return changed;
   }
@@ -4148,6 +4350,7 @@ class Game {
       if (kind === 'trade') amount *= this.modsOf(sys).trade; // 種族の特性: 商才
       if (AI_INCOME_KINDS.has(kind) && !this.isHuman(this.realmOf(sys))) amount *= HANDICAP[this.handicap].aiIncome; // ハンディキャップ: AI の国の収入
     }
+    if (kind === 'tax' && amount > 0) amount *= 1 - EXHAUST.tax * (this.exhaustion[this.realmOf(sys)] || 0); // 戦争疲弊
     gv.credits += amount;
     gv.led ??= {};
     gv.led[kind] = (gv.led[kind] || 0) + amount;
@@ -4352,6 +4555,10 @@ class Game {
     this.govs[0].lord = null;
     if (obj(d.snaps)) this.snaps = d.snaps;
     if (obj(d.realmWars)) this.realmWars = d.realmWars;
+    if (obj(d.exhaustion)) this.exhaustion = d.exhaustion;
+    if (obj(d.warStats)) this.warStats = d.warStats;
+    if (Array.isArray(d.peaceOffers)) this.peaceOffers = d.peaceOffers.filter((o) => o && typeof o.key === 'string');
+    if (Array.isArray(d.conferences)) this.conferences = d.conferences.filter((c) => c && sysOk(c.loser) && Array.isArray(c.bids));
     if (obj(d.warBy)) this.warBy = d.warBy;
     if (obj(d.warNews)) this.warNews = d.warNews;
     if (Array.isArray(d.peaces)) this.peaces = d.peaces.filter((x) => x && typeof x.key === 'string' && Number.isFinite(x.year));
@@ -4663,6 +4870,9 @@ class Game {
   // 観戦モードの地球政府の戦争の判断 (年1回): 交戦中の独立国に対し、優勢なら手近な敵の星系へ艦隊を差し向け、
   // 劣勢なら講和を申し入れる。戦時は太陽系で艦隊を編成する。平時でも独立国より5倍以上強ければ年5%の確率で宣戦する
   earthWarYearly() {
+    // 講和の申し入れ・講和会議は、疲れているか勝っていれば応じ、条件はおまかせで選ぶ
+    for (const o of this.peaceOffers.filter((x) => x.to === this.cap)) if ((this.exhaustion[this.cap] || 0) > 40 || this.warScore(this.cap, o.from) > 10) this.acceptPeace(o);
+    for (const c of [...this.conferences]) { const b = c.bids.find((x) => x.realm === this.cap && !x.picks); if (b) this.submitTreaty({ id: c.id, picks: this.aiTreatyPicks(c, b) }); }
     const ours = this.realmShips(this.cap);
     const ordered = (act, sys) => this.requests.some((q) => q.kind === 'order' && q.act === act && Number(q.d.sys) === sys);
     for (const x of this.colonizedSystems()) {
@@ -4674,7 +4884,7 @@ class Game {
         continue;
       }
       if (this.hasShipyard(this.cap) && this.gov(this.cap).credits >= 2 * WARSHIP_COST.credits) this.buildWarship(this.cap);
-      if (ours < 0.7 * theirs) { if (!ordered('peace', root)) this.command('peace', { sys: root }); continue; }
+      if (ours < 0.7 * theirs || (this.exhaustion[this.cap] || 0) > 60) { if (!ordered('peace', root)) this.command('peace', { sys: root }); continue; }
       let best = null;
       for (const t of this.realmSystems(root)) {
         if (ordered('fleet', t.id) || this.fleets.some((f) => f.to === t.id && (f.owner ?? 0) === this.cap)) continue;
@@ -4747,6 +4957,8 @@ class Game {
   }
   commandRaw(act, d) {
     if (act === 'set') return this.setSetting(d);
+    if (act === 'treaty') return this.submitTreaty(d);
+    if (act === 'acceptpeace') return this.acceptPeace(d);
     if (act === 'drop') { this.players[this.pi].human = false; return { ok: true }; } // ネット対戦で接続が切れた国は AI に任せる
     if (act === 'fleet' && !this.ownStackKnown(Number(d.from))) return fail('他国の艦隊には命令できない');
     // 移動中の艦隊への進路変更・指令の取り消し (光速の指令が追いついた地点で効く)
@@ -6390,7 +6602,16 @@ function railHtml(g) {
   const decSys = new Set(decs.filter((d) => d.kind === 'demand').map((d) => d.sys)); // 返事待ちの要求は、知らせではなく「決めること」として出す
   const majors = evs.filter((e) => evTier(e.kind) >= 3 && !e.good && evShown(e.kind) && !acked.has(e.id) && g.year - (e.seen ?? e.year) < 60 && !(e.kind === 'demand' && decSys.has(e.sys)));
   const recent = evs.filter((e) => !majors.includes(e) && !(e.kind === 'demand' && decSys.has(e.sys)) && evShown(e.kind) && evTier(e.kind) >= 2 && now - (app.railFirst.get(e.id) ?? -1e9) < 10000).slice(0, 3);
-  const n = decs.length + majors.length;
+  // 講和会議 (自分が条件を選ぶもの) と、自分への講和の申し入れ
+  const diplo = [
+    ...g.conferences.filter((c) => c.bids.some((b) => b.realm === g.cap && !b.picks)).map((c) => `<div class="dec"><div class="m">講和会議・${Math.floor(c.until)}年までに選ぶ (選ばなければ自動)</div>
+      <div class="t">${esc(g.realmName(c.loser))}との講和会議。持ち点 ${c.bids.find((b) => b.realm === g.cap).pts} で条件を選ぶ</div>
+      <div class="opts"><button data-act="treatyopen" data-id="${c.id}">${ico('peace')}条件を選ぶ</button></div></div>`),
+    ...g.peaceOffers.filter((o) => o.to === g.cap).map((o) => `<div class="dec"><div class="m">講和の申し入れ・${Math.floor(o.until)}年まで</div>
+      <div class="t">${esc(g.realmName(o.from))}が講和を申し入れている (戦勝点 ${g.warScore(g.cap, o.from)}。勝っている側が講和会議で条件を選ぶ)</div>
+      <div class="opts"><button data-act="acceptpeace" data-key="${o.key}">${ico('peace')}講和に応じる</button></div></div>`),
+  ];
+  const n = decs.length + majors.length + diplo.length;
   // 地図が狭いときは、帯を畳んだ形 (件数だけのボタン) から始める。帯が地図を覆ってタップを邪魔しないように
   if (railHidden()) return `<div class="railbar"><button data-act="railtoggle"${decs.length ? ' class="due"' : ''}>${n ? `知らせ ${n} 件を出す` : '知らせを出す'}</button></div>`;
   if (!n && !recent.length) return '';
@@ -6413,7 +6634,7 @@ function railHtml(g) {
       return `<button data-act="decide" data-sys="${d.sys}" data-id="${d.id}" data-opt="${o.k}" ${why ? 'disabled' : ''} title="${esc(o.note || '')}">${esc(o.label)}<small>${esc(why || [o.cr ? `${o.cr} cr` : '', pc ? `政治力 ${pc}` : ''].filter(Boolean).join('・') || '費用なし')}</small><small class="clamp2">${esc(o.note || '')}</small></button>`;
     }).join('')}</div></div>`;
   const shownMajors = majors.slice(0, 3);
-  return `${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
+  return `${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
     ${shownMajors.map((e) => item(e, true)).join('')}${majors.length > shownMajors.length ? `<div class="more">ほかに重大な知らせ ${majors.length - shownMajors.length} 件</div>` : ''}
     ${recent.map((e) => item(e, false)).join('')}
     <div class="railbar">${majors.length > 1 ? '<button data-act="ackall">重大な知らせをすべて確かめた</button>' : ''}<button data-act="railtoggle">隠す</button></div>`;
@@ -7125,8 +7346,10 @@ function politicsSheet(app) {
     const others = g.knownEnemiesOf(root).filter((e) => e !== 0);
     return `<tr><td><span class="dot" style="background:${realmColor(root)}"></span>${goto(g.system(root))}</td><td>${n} 星系</td>
       <td>${war ? `<b class="bad">${ME.realm}と交戦中</b> (${(g.warStart(g.warKey(g.cap, root)) ?? g.year).toFixed(0)}年から)` : `${ME.realm}とは平和`}${others.length ? `<br><span class="bad">${others.map((e) => esc(g.realmName(e))).join('・')}と交戦中</span>` : ''}</td>
-      <td>${war ? `<button data-act="peace" data-sys="${root}">${ico('peace')}講和を申し入れる<small>指令: 届くまで ${g.lightDelay(root).toFixed(1)} 年</small></button>` : `<button data-act="declarewar" data-sys="${root}">${ico('war')}宣戦する</button>`}</td></tr>`;
+      <td>${war ? `戦勝点 <b class="${g.warScore(g.cap, root) < 0 ? 'bad' : 'hz'}">${g.warScore(g.cap, root)}</b><br><span class="muted">相手の戦争疲弊 ${Math.round(g.exhaustion[root] || 0)}</span>` : '—'}</td>
+      <td>${war ? `${g.peaceOffers.some((o) => o.from === root && o.to === g.cap) ? `<button data-act="acceptpeace" data-key="${g.warKey(g.cap, root)}">${ico('peace')}講和に応じる<small>相手からの申し入れ</small></button>` : ''}<button data-act="peace" data-sys="${root}">${ico('peace')}講和を申し入れる<small>指令: 届くまで ${g.lightDelay(root).toFixed(1)} 年</small></button>` : `<button data-act="declarewar" data-sys="${root}">${ico('war')}宣戦する</button>`}</td></tr>`;
   }).join('');
+  const myEx = Math.round(g.exhaustion[g.cap] || 0);
   const sieges = g.knownSystems().map((x) => ({ x, sg: g.known(x.id)?.siege })).filter((v) => v.sg).map(({ x, sg }) => `<tr><td>${goto(x)}</td>
     <td><span class="dot" style="background:${realmColor(sg.realm)}"></span>${esc(g.system(sg.realm).name)} の国</td><td>${sg.ships} 艦隊</td><td>${pct(sg.progress)}</td><td>${supplyCell(sg.eff, sg.line)}</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
   const battles = g.knownSystems().map((x) => ({ x, bt: g.known(x.id)?.battle })).filter((v) => v.bt).map(({ x, bt }) => `<tr><td>${goto(x)}</td>
@@ -7138,8 +7361,11 @@ function politicsSheet(app) {
     <label class="check auto"><input type="checkbox" data-act="autogrant" ${g.autoGrant ? 'checked' : ''}> ${ico('grant')}入植後${GRANT_YEARS}年の自動資金援助 (${ME.home}から)</label>
     <p class="note">入植して${GRANT_YEARS}年以内の星系には、主人の星系が毎年、資金の3% (最大 ${GRANT_MAX} cr) を自動で送る。資金援助は支援物資と同じく忠誠度を上げる。チェックを外すと${ME.home}からの自動送金だけが止まる (ほかの星系どうしは続く)。個別の資金援助は星系の詳細欄から送れる。</p>
     <h3>独立国</h3>
-    ${realms ? `<div class="scroll"><table class="tbl"><tr><th>首都</th><th>規模 (把握分)</th><th>状態</th><th></th></tr>${realms}</table></div>` : '<p class="note">いまのところ独立国はない。</p>'}
-    <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。独立して始まった戦争では、独立国は簡単には降伏しない: 開戦から5年以上たち、${ME.realm}の戦力が5倍以上になると、国ごと降伏して${ME.realm}に従属することがある。20年以上たっても決着がつかなければ講和 (独立は保たれる) になることもある。${ME.home}から宣戦した一方的な侵略では、相手は降伏も講和もせず、攻め落とされるまで戦う。独立国どうしも戦争をする (近くの弱い独立国に宣戦する)。仕掛けた側が大差で負ければ降伏し、仕掛けられた側は攻め落とされるまで戦う。交戦中でない国の星系へ艦隊を送ると奇襲攻撃になり、着いた時点で戦争が始まる。交戦中の国どうしでは物資をやり取りしない (各星系は開戦の知らせが光速で届いてから取引をやめる)。講和・降伏で戦争が終わっても、終戦の知らせが主星 (首都) を経て光速で届くまで、各地の艦隊は戦い続け攻囲も続く。</p>
+    <div class="kpi"><div><span>${ico('war')}${esc(ME.realm)}の戦争疲弊</span><b class="${myEx >= 40 ? 'bad' : ''}">${myEx}</b><span>税収 −${Math.round(EXHAUST.tax * myEx * 100)}%・家臣の忠誠度 −${Math.round(EXHAUST.loyalty * myEx)}${myEx > 20 ? `・議会の支持 −${(EXHAUST.council * (myEx - 20)).toFixed(1)}/年` : ''}</span></div></div>
+    ${realms ? `<div class="scroll"><table class="tbl"><tr><th>首都</th><th>規模 (把握分)</th><th>状態</th><th>戦況</th><th></th></tr>${realms}</table></div>` : '<p class="note">いまのところ独立国はない。</p>'}
+    <p class="note"><b>戦争疲弊</b> (0〜100) は、艦隊を失うと 1 艦隊あたり ${EXHAUST.ship}、星系を攻め落とされると ${EXHAUST.system}、戦っている戦争 1 つにつき年 ${EXHAUST.warYear} (攻囲されている星系 1 つにつき年 ${EXHAUST.siegeYear}) 増え、平和なあいだは年 ${EXHAUST.peaceYear} ずつ減る。<b>戦勝点</b> (−100〜100) は、沈めた艦隊の差 (1 艦隊 ${WARSCORE.ship}) と、攻め落とした星系の差 (1 つ ${WARSCORE.system}) で決まる。
+      講和は、勝っている側が<b>講和会議</b>で戦勝点 (100 まで) を条件に使う: 従属させる (${TREATY.vassal})・星系の割譲 (人口しだいで 5〜30)・賠償金 (${fmtAmt(TREATY.cash)} cr ごとに ${TREATY.cashPts})。戦勝点の差が 5 未満なら白紙講和。AI の国は、負けているほど・疲れているほど講和に応じ、戦争疲弊が 60 を超えるか戦勝点が −50 を下回ると自分から申し入れてくる。</p>
+    <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。終わらせ方は上の「戦争疲弊」「講和会議」のとおり (仕掛けた側が大差で負ければ、相手に全面的に任せる持ち点 100 の講和会議になる)。独立国どうしも戦争をする (近くの弱い独立国に宣戦する)。交戦中でない国の星系へ艦隊を送ると奇襲攻撃になり、着いた時点で戦争が始まる。交戦中の国どうしでは物資をやり取りしない (各星系は開戦の知らせが光速で届いてから取引をやめる)。講和・降伏で戦争が終わっても、終戦の知らせが主星 (首都) を経て光速で届くまで、各地の艦隊は戦い続け攻囲も続く。</p>
     <h3>戦争</h3>
     ${(() => {
       const rows = g.knownWarKeys().map((k) => {
@@ -7807,7 +8033,7 @@ function buildSave(game, extra = {}) {
   return {
     v: 2, seed: game.galaxy.seed, rs: game.rs, players: game.players, pi: game.pi,
     ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
-    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, warBy: game.warBy, warNews: game.warNews, peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
+    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, pc: game.pc, council: game.council, policy: game.policy, decisions: game.decisions, story: game.story, era: game.era, challenges: game.challenges,
@@ -8786,6 +9012,38 @@ $('netbox').onclick = async (e) => {
   if (act === 'start') return Net.start();
   if (act === 'join') { b.disabled = true; b.textContent = '作っている…'; return Net.join($('netinvite').value); }
 };
+// --- 講和会議で条件を選ぶ ---
+// 選んだ順が入札の順番 (同時入札で先に取りたいものから)。持ち点を超える分は取れない
+function openTreaty(id) { app.treaty = { id, picks: [] }; renderTreaty(); }
+function renderTreaty() {
+  const g = app.game;
+  const c = g.conferences.find((x) => x.id === app.treaty?.id);
+  const bid = c?.bids.find((b) => b.realm === g.cap);
+  const box = $('treatybox');
+  if (!c || !bid || bid.picks) { box.hidden = true; app.treaty = null; return; }
+  const terms = g.treatyTerms(c);
+  const picks = app.treaty.picks;
+  const used = picks.reduce((k, id) => k + (terms.find((t) => t.id === id)?.cost || 0), 0);
+  const others = c.bids.filter((b) => b !== bid);
+  box.innerHTML = `<div class="card"><h2>${ico('peace')}講和会議: ${esc(g.realmName(c.loser))}</h2>
+    <p>持ち点 <b>${bid.pts}</b>・選んだ条件 <b class="${used > bid.pts ? 'bad' : ''}">${used}</b>${others.length ? `<br><span class="muted">ほかの勝った国: ${others.map((b) => `${esc(g.realmName(b.realm))} (持ち点 ${b.pts})`).join('・')}。同じ条件を選んだら、残りの持ち点の多い国が取る</span>` : ''}</p>
+    <p class="note">押した順に入札する。持ち点を超えた分は取れない。${Math.floor(c.until)}年までに選ばなければ自動で選ぶ。</p>
+    <div class="terms">${terms.map((t) => { const i = picks.indexOf(t.id); return `<button data-tr="${t.id}" class="${i >= 0 ? 'on' : ''}">${i >= 0 ? `<b>${i + 1}.</b> ` : ''}${esc(t.label)} <small>${t.cost} 点</small></button>`; }).join('')}</div>
+    <div class="row"><button class="big" data-tr="send">この条件で講和する</button><button data-tr="auto">おまかせで選ぶ</button><button data-tr="close" class="ghost">あとで</button></div></div>`;
+  box.hidden = false;
+}
+$('treatybox').onclick = (e) => {
+  const b = e.target.closest('button[data-tr]');
+  if (!b || !app.treaty) return;
+  const g = app.game;
+  const k = b.dataset.tr;
+  if (k === 'close') { $('treatybox').hidden = true; app.treaty = null; return; }
+  if (k === 'auto') { const c = g.conferences.find((x) => x.id === app.treaty.id); app.treaty.picks = g.aiTreatyPicks(c, c.bids.find((x) => x.realm === g.cap)); return renderTreaty(); }
+  if (k === 'send') { issue('treaty', { id: app.treaty.id, picks: app.treaty.picks }); $('treatybox').hidden = true; app.treaty = null; app.dirty = true; return save(); }
+  const p = app.treaty.picks;
+  if (p.includes(k)) p.splice(p.indexOf(k), 1); else p.push(k);
+  renderTreaty();
+};
 // --- 命令の入口 ---
 // ゲームの状態を変える操作は、すべてここを通す。ひとりで遊ぶとき・ホットシートでは、いま操作しているプレイヤーとしてすぐ実行する。
 // ネット対戦ではホストへ送り、全員の端末が同じ時点で runCmd を実行する (Net.issue)
@@ -8855,6 +9113,7 @@ function onPanelClick(e) {
     return;
   }
   if (act === 'back') return app.selectBody(null);
+  if (act === 'treatyopen') return openTreaty(Number(btn.dataset.id));
   // 行動はすべて command を通す。太陽系以外が対象なら光速の指令になり、届いた先の政府が実行する
   const d = { ...btn.dataset, sys, body, kind };
   if (act === 'send' || act === 'candsend') d.from = 0;
