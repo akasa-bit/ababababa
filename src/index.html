@@ -1199,7 +1199,7 @@ const STORY_RESET = new Set(['politics', 'demand', 'battle', 'pirate', 'war', 'n
 let SIM = null;
 const rnd = () => (SIM ? SIM.rand() : Math.random());
 const pickOf = (list) => (list.length ? list[Math.floor(rnd() * list.length)] : null);
-const earthSystems = (g) => g.realmSystems(0).map((x) => x.id);
+const earthSystems = (g) => g.realmSystems(g.cap).map((x) => x.id);
 const STORY = {
   derelict: {
     pick: (g) => pickOf(earthSystems(g)),
@@ -1216,7 +1216,7 @@ const STORY = {
     },
   },
   accident: {
-    pick: (g) => pickOf(earthSystems(g).filter((id) => id !== 0 && g.coloniesIn(id).some((c) => c.pop >= 0.05) && g.year - (g.gov(id).founded ?? g.year) < 100)),
+    pick: (g) => pickOf(earthSystems(g).filter((id) => id !== g.cap && g.coloniesIn(id).some((c) => c.pop >= 0.05) && g.year - (g.gov(id).founded ?? g.year) < 100)),
     start(g, sys) {
       const c = g.coloniesIn(sys).sort((a, b) => b.pop - a.pop)[0];
       c.pop *= 0.8;
@@ -1232,16 +1232,16 @@ const STORY = {
     },
   },
   refugees: {
-    pick: (g) => (g.colonies.some((c) => c.sys !== 0 && g.realmOf(c.sys) === 0) || g.rand() < 0.3 ? 0 : null),
+    pick: (g) => (g.colonies.some((c) => c.sys !== g.cap && g.realmOf(c.sys) === g.cap) || g.rand() < 0.3 ? g.cap : null),
     start(g, sys) {
       const species = `${pickOf(KANA_A)}${pickOf(KANA_B)}人`;
       g.event('story', sys, `異星の難民船が太陽系に現れ、${species} 5万人が保護を求めている`);
-      g.addDecision({ kind: 'story', type: 'refugees', sys, species, deadline: g.year + 5, def: 'refuse', text: `異星の難民船が太陽系に現れた。${species} 5万人が保護を求めている。受け入れれば、空きのある地球の国の入植地へ送る。`,
+      g.addDecision({ kind: 'story', type: 'refugees', sys, species, deadline: g.year + 5, def: 'refuse', text: `異星の難民船が${sys === 0 ? '太陽系' : g.system(sys).name}に現れた。${species} 5万人が保護を求めている。受け入れれば、空きのある${g.realmName(g.cap)}の入植地へ送る。`,
         opts: [{ k: 'accept', label: '受け入れる', note: `入植地の人口 +5万人 (${species})・議会の支持 −3 (反対派)` }, { k: 'refuse', label: '断る', note: '議会の支持 +2' }] });
     },
     resolve(g, dec, k) {
       if (k === 'refuse') { g.councilAdd(2, '難民を断った'); return; }
-      const c = g.colonies.filter((x) => g.realmOf(x.sys) === 0).sort((a, b) => (g.capOf(b) - b.pop) - (g.capOf(a) - a.pop))[0];
+      const c = g.colonies.filter((x) => g.realmOf(x.sys) === g.cap).sort((a, b) => (g.capOf(b) - b.pop) - (g.capOf(a) - a.pop))[0];
       if (!c) return;
       g.addPeople(c, 0.05, { [dec.species]: 1 });
       g.councilAdd(-3, '難民を受け入れた');
@@ -1249,7 +1249,7 @@ const STORY = {
     },
   },
   discovery: {
-    pick: (g) => pickOf(earthSystems(g).filter((id) => id !== 0)),
+    pick: (g) => pickOf(earthSystems(g).filter((id) => id !== g.cap)),
     start(g, sys) {
       const r = pickOf(['metal', 'fuel', 'rare', 'water']);
       g.event('story', sys, `${g.system(sys).name} で${RES_LABEL[r]}の豊かな鉱脈が見つかった`, true);
@@ -1292,12 +1292,12 @@ const STORY = {
       const gv = g.govs[dec.sys];
       if (!c || !gv) return;
       if (k === 'cure') { c.plague = 0; gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 5); g.attend(dec.sys); g.message(`${c.name} に医療団が着き、疫病が収まった`, dec.sys); }
-      else if (dec.sys !== 0) gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - 5);
+      else if (dec.sys !== g.cap) gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - 5);
     },
   },
   raid: {
     // 海賊が本格的に現れる前の、小さな襲撃
-    pick: (g) => (g.year < PIRATE_START + 10 ? pickOf(earthSystems(g).filter((id) => id !== 0)) : null),
+    pick: (g) => (g.year < PIRATE_START + 10 ? pickOf(earthSystems(g).filter((id) => id !== g.cap)) : null),
     start(g, sys) { g.pirateRaid(g.system(sys), 1); },
     resolve() {},
   },
@@ -1308,6 +1308,10 @@ class Game {
     this.galaxy = galaxy;
     this.rs = hashSeed(`${galaxy.seed}/sim`); // 試合の乱数の状態 (mulberry32)。セーブに含める
     SIM = this;
+    // プレイヤー (人間が動かす国)。cap = その国の首都。政治力・議会・方針・自動化などはプレイヤーごとに持ち、
+    // this.pc などは「いま操作しているプレイヤー (pi 番目)」の値を読み書きする (PLAYER_KEYS)
+    this.players = [{ cap: 0, human: true }];
+    this.pi = 0;
     this.year = START_YEAR;
     this.colonies = [];
     this.ships = [];
@@ -1444,11 +1448,18 @@ class Game {
   }
   totalPop() { return this.colonies.reduce((s, c) => s + c.pop, 0); }
   warships() { return Object.values(this.garrison).reduce((s, n) => s + n, 0) + this.fleets.reduce((s, f) => s + f.n, 0); }
-  // プレイヤー (地球政府) の資金と収支
-  get credits() { return this.gov(0).credits; }
-  set credits(v) { this.gov(0).credits = v; }
-  get ledger() { return this.gov(0).ledger || {}; }
-  income(id = 0) { return Object.values(this.gov(id).ledger || {}).reduce((s, v) => s + v, 0); }
+  // プレイヤーの文脈: isHuman = 人間が動かす国の首都か。asPlayer = i 番目のプレイヤーとして fn を実行する
+  // (this.pc・this.cap などがそのプレイヤーを指す)。asRealm = 国 root の人間のプレイヤーとして (いなければ何もしない)
+  isHuman(cap) { return this.players.some((p) => p.human && p.cap === cap); }
+  playerOf(cap) { return this.players.findIndex((p) => p.human && p.cap === cap); }
+  asPlayer(i, fn) { const old = this.pi; this.pi = i; try { return fn(); } finally { this.pi = old; } }
+  asRealm(root, fn) { const i = this.playerOf(root); return i < 0 ? undefined : this.asPlayer(i, fn); }
+  eachPlayer(fn) { this.players.forEach((p, i) => { if (p.human) this.asPlayer(i, fn); }); }
+  // いま操作しているプレイヤーの政府の資金と収支
+  get credits() { return this.gov(this.cap).credits; }
+  set credits(v) { this.gov(this.cap).credits = v; }
+  get ledger() { return this.gov(this.cap).ledger || {}; }
+  income(id = this.cap) { return Object.values(this.gov(id).ledger || {}).reduce((s, v) => s + v, 0); }
   gov(id) {
     if (!this.govs[id]) this.govs[id] = { lord: 0, credits: 0, founded: this.year };
     return this.govs[id];
@@ -1518,7 +1529,7 @@ class Game {
   knownAtWar(a, b) { return a !== b && this.warKnown(this.warKey(a, b)); }
   // 地球の知る限り、星系 a と b の国が交戦中か (交易路の開設先の候補から外すのに使う)
   knownHostile(a, b) {
-    const realm = (id) => (id === 0 ? 0 : this.known(id)?.realm ?? 0);
+    const realm = (id) => (id === this.cap ? this.realmOf(id) : this.known(id)?.realm ?? this.cap);
     return this.knownAtWar(realm(a), realm(b));
   }
   knownWarKeys() { return [...new Set([...Object.keys(this.realmWars), ...this.peaces.map((r) => r.key)])].filter((k) => this.warKnown(k)); }
@@ -1529,11 +1540,11 @@ class Game {
   warStart(key) { return this.realmWars[key] ?? this.lastPeace(key)?.start; }
   warAggressor(key) { return this.realmWars[key] !== undefined ? this.warBy[key] : this.lastPeace(key)?.by; }
   // 地球から見た国の戦力: 把握している星系の駐留艦隊の合計
-  knownRealmShips(root) { return this.knownSystems().filter((x) => (x.id === 0 ? 0 : this.known(x.id)?.realm ?? 0) === root).reduce((k, x) => k + this.knownGarrison(x.id), 0); }
+  knownRealmShips(root) { return this.knownSystems().filter((x) => (x.id === this.cap ? this.realmOf(x.id) : this.known(x.id)?.realm ?? this.cap) === root).reduce((k, x) => k + this.knownGarrison(x.id), 0); }
   // 地球から見えている建設中の事業: 太陽系はいまのもの、ほかの星系は光が届いている記録のもの
   knownProjects() {
-    const out = this.projects.filter((j) => j.sys === 0);
-    for (const x of this.knownSystems()) if (x.id !== 0) for (const j of this.known(x.id)?.projects || []) out.push({ ...j, sys: x.id });
+    const out = this.projects.filter((j) => j.sys === this.cap);
+    for (const x of this.knownSystems()) if (x.id !== this.cap) for (const j of this.known(x.id)?.projects || []) out.push({ ...j, sys: x.id });
     return out;
   }
   // 開戦。by = 仕掛けた国、target = 仕掛けられた国、from = 知らせが広がり始める星系
@@ -1545,7 +1556,7 @@ class Game {
   }
   // 国でなくなった (首都が攻め落とされた・従属した) 側の戦争を片づける
   cleanWars() {
-    const alive = (r) => r === 0 || (this.isColonized(r) && this.realmOf(r) === r);
+    const alive = (r) => this.isColonized(r) && this.realmOf(r) === r;
     for (const k of Object.keys(this.realmWars)) {
       const [a, b] = k.split('|').map(Number);
       if (!alive(a) || !alive(b)) { delete this.realmWars[k]; delete this.warBy[k]; delete this.warNews[k]; }
@@ -1581,20 +1592,20 @@ class Game {
   }
   // 地球の知る限りの内訳 (地球に届いている記録で。表示用)
   knownLoyaltyTerms(id) {
-    const k = id === 0 ? null : this.known(id);
+    const k = id === this.cap ? null : this.known(id);
     if (!k || k.lord === null || k.lord === undefined) return null;
     const lord = k.lord;
     const pop = (x) => this.knownColonies(x).reduce((a, c) => a + c.pop, 0);
-    const capital = lord === 0 ? 0 : this.known(lord)?.realm ?? k.realm ?? 0;
+    const capital = lord === this.cap ? this.cap : this.known(lord)?.realm ?? k.realm ?? this.cap;
     // 放っておかれた年数は、記録の時点から今までの年数を足す (そのあと関与が届いたかは、まだ地球には見えない)
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: this.sysDist(id, capital),
       bigger: pop(id) > pop(lord), orders: k.orders || 0, lordShips: this.knownGarrison(lord), dep: k.dep || 0,
       neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), direct: !!k.direct, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null });
   }
   // 星系に駐留している地球の国の艦隊 (命令で駐留している分と威圧の分。太陽系はすべて)
-  earthFleetAt(id) {
+  earthFleetAt(id, root = this.cap) {
     const g = this.garrison[id] || 0;
-    return id === 0 ? g : Math.min(g, (this.held[id] || 0) + (this.awe[id] || 0));
+    return id === root ? g : Math.min(g, (this.held[id] || 0) + (this.awe[id] || 0));
   }
   // 反乱 (独立戦争) を起こしたとき、その星系が持つであろう艦隊: 人口と経済 (施設の規模・資金) に応じて
   rebelFleetOf(cols, credits) {
@@ -1607,8 +1618,9 @@ class Game {
   // 恐怖度 (0〜100): 忠誠度とは別のパラメータ。その星系に駐留する地球の艦隊 (命令で駐留している分と威圧の分) が多いほど高い。
   // 目標 = 50 × 地球の艦隊 / 反乱したときの推定艦隊 (同数で50、2倍で100)。年に最大10ずつ目標へ動く。地球の国の星系だけ
   fearTarget(id) {
-    if (id === 0 || this.realmOf(id) !== 0) return 0;
-    return Math.min(100, 50 * this.earthFleetAt(id) / this.rebelFleet(id) * (this.policyAt(id) === 'military' ? 1.5 : 1));
+    const root = this.realmOf(id);
+    if (id === root || !this.isHuman(root)) return 0;
+    return Math.min(100, 50 * this.earthFleetAt(id, root) / this.rebelFleet(id) * (this.policyAt(id) === 'military' ? 1.5 : 1));
   }
   // 恐怖度が高いほど独立を宣言しにくい (恐怖度100で確率が1/10)
   fearFactor(fear) { return 1 - 0.9 * clamp(fear || 0, 0, 100) / 100; }
@@ -1630,7 +1642,7 @@ class Game {
   loyaltyYearly() {
     for (const [key, gv] of Object.entries(this.govs)) {
       const id = Number(key);
-      if (id === 0 || gv.lord === null || gv.lord === undefined || !this.isColonized(id)) continue;
+      if (gv.lord === null || gv.lord === undefined || !this.isColonized(id)) continue;
       gv.loyalty ??= LOYALTY_START;
       gv.loyalty = clamp(gv.loyalty + clamp(this.loyaltyTarget(id) - gv.loyalty, -5, 5), 0, 100);
       gv.orders = (gv.orders || 0) * 0.7;
@@ -1682,7 +1694,7 @@ class Game {
   }
   calmUnrest(id, gv, why) {
     gv.unrest = { stage: 0 };
-    for (const d of this.decisions) if (d.kind === 'demand' && d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
+    for (const p of this.players) for (const d of p.decisions || []) if (d.kind === 'demand' && d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
     this.event('politics', id, `${this.system(id).name}: ${why}`, true);
   }
   demandText(kind) { return kind === 'tax' ? `朝貢の免除 (${CONCESSION_YEARS}年)` : `自治 (${CONCESSION_YEARS}年、主人の指令を受けない)`; }
@@ -1691,8 +1703,8 @@ class Game {
     const what = this.demandText(kind);
     const name = this.system(id).name;
     gv.unrest = { stage: 2, since: this.year, kind };
-    if (gv.lord !== 0) {
-      // 主人が地球でなければ、主人の政府が判断する (要求と返事が光速で往復する)
+    if (!this.isHuman(gv.lord)) {
+      // 主人が人間のプレイヤーでなければ、主人の政府が判断する (要求と返事が光速で往復する)
       gv.unrest.aiAt = this.year + 2 * this.travelYears(id, gv.lord);
       this.event('demand', id, `${name} が${this.system(gv.lord).name}に${what}を求めた`);
       return;
@@ -1705,6 +1717,8 @@ class Game {
       this.event('demand', id, `${name} が${what}を求めたが、総督は方針どおり返事をしない (10年で拒んだとみなされる)`);
       return;
     }
+    // 主人 (人間のプレイヤー) の決めることに加える
+    this.asRealm(gv.lord, () => {
     const d = this.lightDelay(id);
     gv.unrest.timeout = this.year + 2 * d + 15;
     this.addDecision({ kind: 'demand', type: kind, sys: id, deadline: this.year + d + 15,
@@ -1714,7 +1728,8 @@ class Game {
         { k: 'refuse', label: '拒む', note: `最後通牒になる。忠誠度 −10` },
         { k: 'awe', label: '拒んで威圧する', note: '最後通牒になる。すぐ太陽系から威圧の艦隊 (推定独立軍の2倍) を送る。忠誠度 −5' },
       ] });
-    this.event('demand', id, `${name} が地球に${what}を求めた (返事は光速で ${d.toFixed(1)} 年かかる)`);
+    this.event('demand', id, `${name} が${this.cap === 0 ? '地球' : this.realmName(this.cap)}に${what}を求めた (返事は光速で ${d.toFixed(1)} 年かかる)`);
+    });
   }
   grantDemand(id, gv) {
     const u = gv.unrest || {};
@@ -1746,25 +1761,26 @@ class Game {
     gv.friend = 0;
     gv.unrest = { stage: 0 };
     delete gv.direct;
-    for (const d of this.decisions) if (d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
-    if (formerRealm === 0) {
+    for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
+    this.asRealm(formerRealm, () => {
       this.stats.indepFromEarth++;
       this.councilAdd(-8);
       for (const c of this.challenges) if (c.id === 'loyal' && c.status === 'active') { c.status = 'failed'; c.at = this.year; }
-    }
+    });
     const members = this.colonizedSystems().filter((x) => this.realmOf(x.id) === id);
     const followers = members.length - 1;
     // 地球の国からの独立は、半々の確率で、また地球の艦隊が駐留していれば必ず、そのまま戦争 (独立戦争) になる
-    const present = formerRealm === 0 && members.some((x) => this.earthFleetAt(x.id) >= 1);
-    const war = formerRealm === 0 && (present || this.rand() < 0.5);
+    const human = this.isHuman(formerRealm);
+    const present = human && members.some((x) => this.earthFleetAt(x.id, formerRealm) >= 1);
+    const war = human && (present || this.rand() < 0.5);
     let raised = 0;
     const clashes = [];
     if (war) {
-      this.beginWar(id, 0, id);
+      this.beginWar(id, formerRealm, id);
       // 独立戦争: 各星系は人口と経済の規模に応じた艦隊を持つ (それまでの自前の守りも加わる)。
       // 駐留していた地球の艦隊は、その場で艦隊戦を始める (勝てば攻囲に移る)
       for (const x of members) {
-        const earth = this.earthFleetAt(x.id);
+        const earth = this.earthFleetAt(x.id, formerRealm);
         const n = this.rebelFleet(x.id);
         raised += n;
         this.garrison[x.id] = (this.garrison[x.id] || 0) - earth + n;
@@ -1773,13 +1789,13 @@ class Game {
         if (earth >= 1) clashes.push([x.id, earth]);
       }
     }
-    this.event('politics', id, `${this.system(id).name} が ${this.system(lord).name} への従属をやめ、独立を宣言した${followers ? ` (従属する ${followers} 星系も従う)` : ''}${cause}${war ? `。地球の国と戦争状態に入った (独立軍 ${raised} 艦隊)` : ''}`);
-    for (const [x, earth] of clashes) this.startBattle(x, 0, earth, 0);
+    this.event('politics', id, `${this.system(id).name} が ${this.system(lord).name} への従属をやめ、独立を宣言した${followers ? ` (従属する ${followers} 星系も従う)` : ''}${cause}${war ? `。${this.realmName(formerRealm)}と戦争状態に入った (独立軍 ${raised} 艦隊)` : ''}`);
+    for (const [x, earth] of clashes) this.startBattle(x, formerRealm, earth, 0);
   }
   // 指令が届いたとき: 地球の国の外なら拒否、忠誠度が50未満なら (50−忠誠度)/50 の確率で拒否
   obeys(id) {
-    if (id === 0) return { ok: true };
-    if (this.realmOf(id) !== 0) return fail('地球の国に属していないので従わない');
+    if (id === this.cap) return { ok: true };
+    if (this.realmOf(id) !== this.cap) return fail(`${this.realmName(this.cap)}に属していないので従わない`);
     const gv = this.gov(id);
     const loyalty = gv.loyalty ?? LOYALTY_START;
     if ((gv.autonomy || 0) > this.year) return fail(`自治を認められているので従わない (${Math.round(gv.autonomy)}年まで)`);
@@ -1794,13 +1810,14 @@ class Game {
 
   // --- 政治力・統治 (直轄と委任)・国家方針 ---
   isDirect(id) { return !!this.govs[id]?.direct; }
-  directCount() { let n = 0; for (const [k, v] of Object.entries(this.govs)) if (v.direct && this.isColonized(Number(k))) n++; return n; }
+  directCount() { let n = 0; for (const [k, v] of Object.entries(this.govs)) if (v.direct && this.isColonized(Number(k)) && this.realmOf(Number(k)) === this.cap) n++; return n; }
   directMax() { return DIRECT_MAX + (this.policy?.id === 'consolidate' ? 2 : 0); }
   // その星系で効いている国家方針 (変えた知らせが光速で届くまでは前の方針)。地球の国の外では効かない
   policyAt(id) {
-    const p = this.policy;
-    if (!p || this.realmOf(id) !== 0) return null;
-    return this.year >= p.since + this.lightDelay(id) ? p.id : p.prev ?? null;
+    const root = this.realmOf(id);
+    const p = this.players[this.playerOf(root)]?.policy;
+    if (!p) return null;
+    return this.year >= p.since + this.sysDist(root, id) ? p.id : p.prev ?? null;
   }
   // 指令に要る政治力。艦隊への指令・自動の指令・太陽系の中の行動は0。直轄の星系は半分
   pcCost(act, d) {
@@ -1809,14 +1826,14 @@ class Game {
     if (act === 'policy') return POLICY_COST;
     const extra = act === 'decide' ? this.decisionOpt(d)?.pc || 0 : 0;
     const target = act === 'grant' || act === 'decide' ? Number(d.sys) : this.cmdTarget(act, d);
-    if (target === undefined || target === null || target === 0 || Number.isNaN(target)) return extra;
+    if (target === undefined || target === null || target === this.cap || Number.isNaN(target)) return extra;
     const c = pcCostOf(this.lightDelay(target));
     return extra + (this.isDirect(target) ? Math.max(1, Math.ceil(c / 2)) : c);
   }
   // 政治力の年あたりの増減の内訳
   pcIncome() {
     const parts = [['基本', PC_BASE]];
-    const n = this.realmSystems(0).length;
+    const n = this.realmSystems(this.cap).length;
     if (n >= 10) parts.push(['国の大きさ (10星系ごとに +1)', Math.floor(n / 10)]);
     const c = Math.round((this.council - 50) / 10);
     if (c) parts.push(['議会の支持', c]);
@@ -1830,14 +1847,14 @@ class Game {
     this.pc = clamp(this.pc + this.pcLast, 0, PC_CAP);
   }
   // 主人の関与 (指令・援助・艦隊・視察・回答) が届いた: 放っておかれた年数が0に戻る
-  attend(id) { if (id !== 0 && this.govs[id]) this.govs[id].attended = this.year; }
+  attend(id) { if (!this.isHuman(id) && this.govs[id]) this.govs[id].attended = this.year; }
   neglectOf(gv) { return Math.max(0, this.year - (gv.attended ?? gv.founded ?? this.year)); }
   setPolicy(id) {
     if (!POLICIES[id]) return fail('不明な方針');
     if (this.policy?.id === id) return fail('いまの方針と同じ');
     if (this.policy && this.year - this.policy.since < POLICY_YEARS) return fail(`${Math.ceil(this.policy.since + POLICY_YEARS - this.year)}年後まで変えられない`);
     this.policy = { id, since: this.year, prev: this.policy?.id ?? null };
-    this.event('goal', 0, `国家方針を「${POLICIES[id].label}」にした (${POLICIES[id].good}。${POLICIES[id].bad})。遠い星系には知らせが光速で届いてから効く`, true);
+    this.event('goal', this.cap, `国家方針を「${POLICIES[id].label}」にした (${POLICIES[id].good}。${POLICIES[id].bad})。遠い星系には知らせが光速で届いてから効く`, true);
     return { ok: true };
   }
   // 直轄・委任の切り替え (指令が届いたとき)
@@ -1845,7 +1862,7 @@ class Game {
     const gv = this.govs[id];
     if (!gv || !this.isColonized(id)) return fail('入植地がない');
     if (!direct) { delete gv.direct; return { ok: true }; }
-    if (gv.lord !== 0 || this.realmOf(id) !== 0) return fail('地球の直属の従属星系だけを直轄にできる');
+    if (gv.lord !== this.cap || this.realmOf(id) !== this.cap) return fail('直属の従属星系だけを直轄にできる');
     if ((gv.autonomy || 0) > this.year) return fail('自治を認めているので直轄にできない');
     if (!gv.direct && this.directCount() >= this.directMax()) return fail(`直轄は ${this.directMax()} 星系まで`);
     gv.direct = true;
@@ -1873,15 +1890,15 @@ class Game {
     if (!this.spectate && dec.seen > this.year) return fail('まだ知らせが届いていない');
     const o = dec.opts.find((x) => x.k === d.opt);
     if (!o) return fail('不明な選択肢');
-    if ((o.cr || 0) > this.gov(0).credits) return fail(`資金が足りない (${o.cr} cr)`);
-    if (o.cr) this.earn('grant', -o.cr, 0);
+    if ((o.cr || 0) > this.gov(this.cap).credits) return fail(`資金が足りない (${o.cr} cr)`);
+    if (o.cr) this.earn('grant', -o.cr, this.cap);
     dec.state = 'sent';
     dec.reply = o.k;
     dec.sentAt = this.year;
     if (dec.kind === 'demand' && o.k === 'awe') {
       const n = Math.max(1, 2 * this.knownRebelFleet(dec.sys));
-      const spare = Math.max(0, (this.garrison[0] || 0) - 1);
-      if (spare >= 1) this.command('fleet', { from: 0, sys: dec.sys, n: Math.min(n, spare), awe: true });
+      const spare = Math.max(0, (this.garrison[this.cap] || 0) - 1);
+      if (spare >= 1) this.command('fleet', { from: this.cap, sys: dec.sys, n: Math.min(n, spare), awe: true });
     }
     return { ok: true };
   }
@@ -1940,21 +1957,21 @@ class Game {
   councilYearly() {
     this.council = clamp(this.council - 0.25, 0, 100);
     if (this.council < 15) {
-      this.event('goal', 0, `議会の支持が ${Math.round(this.council)} まで落ち、政権が交代した。国家方針は白紙に戻り、貯めていた政治力を失った`);
+      this.event('goal', this.cap, `議会の支持が ${Math.round(this.council)} まで落ち、政権が交代した。国家方針は白紙に戻り、貯めていた政治力を失った`);
       this.policy = null;
       this.pc = 0;
       this.council = 45;
     }
   }
-  realmPop(root = 0) { return this.realmSystems(root).reduce((k, x) => k + this.coloniesIn(x.id).reduce((a, c) => a + c.pop, 0), 0); }
-  realmRoutes(root = 0) { return this.routes.filter((r) => this.realmOf(r.a) === root && this.realmOf(r.b) === root).length; }
-  unrestCount(root = 0) { return Object.entries(this.govs).filter(([k, v]) => (v.unrest?.stage || 0) >= 1 && this.isColonized(Number(k)) && this.realmOf(Number(k)) === root).length; }
+  realmPop(root = this.cap) { return this.realmSystems(root).reduce((k, x) => k + this.coloniesIn(x.id).reduce((a, c) => a + c.pop, 0), 0); }
+  realmRoutes(root = this.cap) { return this.routes.filter((r) => this.realmOf(r.a) === root && this.realmOf(r.b) === root).length; }
+  unrestCount(root = this.cap) { return Object.entries(this.govs).filter(([k, v]) => (v.unrest?.stage || 0) >= 1 && this.isColonized(Number(k)) && this.realmOf(Number(k)) === root).length; }
   taskValue(t) {
     switch (t.id) {
-      case 'systems': return this.realmSystems(0).length;
-      case 'routes': return this.realmRoutes(0);
-      case 'pop': return this.realmPop(0);
-      case 'calm': return this.unrestCount(0);
+      case 'systems': return this.realmSystems(this.cap).length;
+      case 'routes': return this.realmRoutes(this.cap);
+      case 'pop': return this.realmPop(this.cap);
+      case 'calm': return this.unrestCount(this.cap);
       case 'integrate': return this.stats.integrated - (t.base || 0);
       case 'subjugate': return this.stats.subjugated - (t.base || 0);
       default: return 0;
@@ -1970,15 +1987,15 @@ class Game {
         { id: 'routes', target: 3, check: 'reach', deadline: end, label: `${end}年までに、地球の国の中の交易路を3本にする` },
       ];
     }
-    const sys = this.realmSystems(0).length;
+    const sys = this.realmSystems(this.cap).length;
     const pool = [
       { id: 'systems', target: Math.max(sys + 5, Math.round(sys * 1.4)), check: 'reach', label: '' },
-      { id: 'routes', target: this.realmRoutes(0) + 4, check: 'reach', label: '' },
-      { id: 'pop', target: Math.round(this.realmPop(0) * 1.4), check: 'reach', label: '' },
+      { id: 'routes', target: this.realmRoutes(this.cap) + 4, check: 'reach', label: '' },
+      { id: 'pop', target: Math.round(this.realmPop(this.cap) * 1.4), check: 'reach', label: '' },
       { id: 'calm', target: 0, check: 'end', label: '' },
     ];
     if (Object.values(this.natives).some((s) => s.status === 'independent')) pool.push({ id: 'integrate', target: 1, base: this.stats.integrated, check: 'reach', label: '' });
-    if (this.colonizedSystems().some((x) => x.id !== 0 && this.realmOf(x.id) === x.id && this.gov(x.id).independent)) pool.push({ id: 'subjugate', target: 1, base: this.stats.subjugated, check: 'reach', label: '' });
+    if (this.colonizedSystems().some((x) => x.id !== this.cap && this.realmOf(x.id) === x.id && this.gov(x.id).independent)) pool.push({ id: 'subjugate', target: 1, base: this.stats.subjugated, check: 'reach', label: '' });
     const out = [];
     while (out.length < 2 && pool.length) out.push(pool.splice(Math.floor(this.rand() * pool.length), 1)[0]);
     for (const tk of out) {
@@ -1996,48 +2013,48 @@ class Game {
     if (!this.era || this.era.n !== n) {
       let done = 0;
       for (const tk of this.era?.tasks || []) {
-        if (tk.status === 'active') { tk.status = 'failed'; this.councilAdd(-10); this.event('goal', 0, `時代の課題を果たせなかった: ${tk.label} (議会の支持 −10)`); }
+        if (tk.status === 'active') { tk.status = 'failed'; this.councilAdd(-10); this.event('goal', this.cap, `時代の課題を果たせなかった: ${tk.label} (議会の支持 −10)`); }
         if (tk.status === 'done') done++;
       }
       this.era = { n, tasks: this.eraTasks(n).map((tk) => ({ ...tk, status: 'active' })), bonus: this.era ? done : 0 };
-      this.event('goal', 0, `${START_YEAR + ERA_YEARS * n}年、新しい時代が始まった。課題: ${this.era.tasks.map((tk) => tk.label).join(' / ')}${this.era.bonus ? `。前の時代の課題を ${this.era.bonus} つ果たしたので、この時代は政治力が年 +${2 * this.era.bonus}` : ''}`, true);
+      this.event('goal', this.cap, `${START_YEAR + ERA_YEARS * n}年、新しい時代が始まった。課題: ${this.era.tasks.map((tk) => tk.label).join(' / ')}${this.era.bonus ? `。前の時代の課題を ${this.era.bonus} つ果たしたので、この時代は政治力が年 +${2 * this.era.bonus}` : ''}`, true);
     }
     for (const tk of this.era.tasks) {
       if (tk.status !== 'active') continue;
       if (tk.check === 'reach' && this.taskMet(tk)) {
         tk.status = 'done'; tk.at = this.year; this.stats.tasksDone++;
         this.councilAdd(15);
-        this.event('goal', 0, `時代の課題を果たした: ${tk.label} (議会の支持 +15)`, true);
+        this.event('goal', this.cap, `時代の課題を果たした: ${tk.label} (議会の支持 +15)`, true);
       } else if (this.year >= tk.deadline) {
-        if (tk.check === 'end' && this.taskMet(tk)) { tk.status = 'done'; tk.at = this.year; this.stats.tasksDone++; this.councilAdd(15); this.event('goal', 0, `時代の課題を果たした: ${tk.label} (議会の支持 +15)`, true); }
-        else { tk.status = 'failed'; tk.at = this.year; this.councilAdd(-10); this.event('goal', 0, `時代の課題を果たせなかった: ${tk.label} (議会の支持 −10)`); }
+        if (tk.check === 'end' && this.taskMet(tk)) { tk.status = 'done'; tk.at = this.year; this.stats.tasksDone++; this.councilAdd(15); this.event('goal', this.cap, `時代の課題を果たした: ${tk.label} (議会の支持 +15)`, true); }
+        else { tk.status = 'failed'; tk.at = this.year; this.councilAdd(-10); this.event('goal', this.cap, `時代の課題を果たせなかった: ${tk.label} (議会の支持 −10)`); }
       }
     }
   }
-  independentRealms() { return this.colonizedSystems().filter((x) => x.id !== 0 && this.realmOf(x.id) === x.id && this.gov(x.id).independent).length; }
+  independentRealms() { return this.colonizedSystems().filter((x) => x.id !== this.cap && this.realmOf(x.id) === x.id && this.gov(x.id).independent).length; }
   challengesYearly() {
-    const sol = this.system(0);
+    const sol = this.system(this.cap);
     const end = this.endYear && this.year >= this.endYear;
     for (const c of this.challenges) {
       if (c.status !== 'active') continue;
       let ok = null;
-      if (c.id === 'sixty' && this.realmSystems(0).length >= 60) ok = true;
-      if (c.id === 'far' && this.realmSystems(0).some((x) => distance(x, sol) > 40)) ok = true;
+      if (c.id === 'sixty' && this.realmSystems(this.cap).length >= 60) ok = true;
+      if (c.id === 'far' && this.realmSystems(this.cap).some((x) => distance(x, sol) > 40)) ok = true;
       if (end && ok === null) ok = c.id === 'loyal' ? true : c.id === 'unify' ? this.independentRealms() === 0 : false;
       if (ok === null) continue;
       c.status = ok ? 'done' : 'failed';
       c.at = this.year;
-      this.event('goal', 0, `挑戦「${CHALLENGES[c.id].label}」を${ok ? '果たした' : '果たせなかった'}`, ok);
+      this.event('goal', this.cap, `挑戦「${CHALLENGES[c.id].label}」を${ok ? '果たした' : '果たせなかった'}`, ok);
     }
   }
   // 点数 (いつでも見られる。終わりの年に確定する)
   score() {
-    const sys = this.realmSystems(0);
-    const vass = Object.entries(this.govs).filter(([k, v]) => Number(k) !== 0 && v.lord !== null && v.lord !== undefined && this.isColonized(Number(k)) && this.realmOf(Number(k)) === 0).map(([, v]) => v);
+    const sys = this.realmSystems(this.cap);
+    const vass = Object.entries(this.govs).filter(([k, v]) => Number(k) !== this.cap && v.lord !== null && v.lord !== undefined && this.isColonized(Number(k)) && this.realmOf(Number(k)) === this.cap).map(([, v]) => v);
     const avg = vass.length ? vass.reduce((k, v) => k + (v.loyalty ?? LOYALTY_START), 0) / vass.length : 0;
     const parts = [
       ['地球の国の星系 (×10)', 10 * sys.length],
-      ['人口 (200百万人ごとに1)', Math.round(this.realmPop(0) / 200)],
+      ['人口 (200百万人ごとに1)', Math.round(this.realmPop(this.cap) / 200)],
       ['家臣の平均の忠誠度 (×2)', Math.round(2 * avg)],
       ['果たした時代の課題 (×40)', 40 * this.stats.tasksDone],
       ['果たした挑戦 (×150)', 150 * this.challenges.filter((c) => c.status === 'done').length],
@@ -2048,36 +2065,38 @@ class Game {
   }
   endYearly() {
     if (!this.endYear || this.ended || this.year < this.endYear) return;
-    this.challengesYearly();
     this.ended = true;
+    this.eachPlayer(() => {
+    this.challengesYearly();
     this.finalScore = this.score();
-    this.event('goal', 0, `${Math.round(this.endYear)}年、このゲームの終わりの年になった。点数 ${this.finalScore.total} (このまま続けて遊べる)`, true);
+    this.event('goal', this.cap, `${Math.round(this.endYear)}年、このゲームの終わりの年になった。点数 ${this.finalScore.total} (このまま続けて遊べる)`, true);
+    });
   }
   // 地球の国の外の主人 (と地球の国の家臣の家臣の主人) は、放っておかれた家臣に少額の資金援助を送って関与する (年に半々)
   lordsAttendYearly() {
     for (const [k, gv] of Object.entries(this.govs)) {
       const id = Number(k);
       const lord = gv.lord;
-      if (lord === null || lord === undefined || lord === 0 || !this.isColonized(id) || this.neglectOf(gv) < 20) continue;
+      if (lord === null || lord === undefined || this.isHuman(lord) || !this.isColonized(id) || this.neglectOf(gv) < 20) continue;
       if (this.gov(lord).credits < 300 || this.rand() < 0.5) continue;
       this.sendGrant(lord, id, 50, true);
     }
   }
   // 観戦モードの地球政府の政治の判断 (年1回): 国家方針、決めること、放っておかれた直属の家臣への視察
   earthPoliticsYearly() {
-    const n = this.realmSystems(0).length;
-    const want = this.aiPolicy || (this.enemiesOf(0).length ? 'military' : n < 25 ? 'expand' : 'consolidate'); // aiPolicy は実験用 (自動対戦で方針を固定する)
+    const n = this.realmSystems(this.cap).length;
+    const want = this.aiPolicy || (this.enemiesOf(this.cap).length ? 'military' : n < 25 ? 'expand' : 'consolidate'); // aiPolicy は実験用 (自動対戦で方針を固定する)
     if (this.policy?.id !== want && (!this.policy || this.year - this.policy.since >= POLICY_YEARS) && this.pc >= POLICY_COST + 10) this.command('policy', { value: want });
     for (const dec of this.visibleDecisions()) {
       let k = dec.def;
-      if (dec.kind === 'demand') k = (this.garrison[0] || 0) >= 2 * this.knownRebelFleet(dec.sys) + 1 && this.rand() < 0.5 ? 'awe' : 'accept';
+      if (dec.kind === 'demand') k = (this.garrison[this.cap] || 0) >= 2 * this.knownRebelFleet(dec.sys) + 1 && this.rand() < 0.5 ? 'awe' : 'accept';
       else {
-        const ok = dec.opts.filter((o) => (o.cr || 0) <= 0.2 * this.gov(0).credits && this.pcCost('decide', { sys: dec.sys, id: dec.id, opt: o.k }) <= this.pc - 10);
+        const ok = dec.opts.filter((o) => (o.cr || 0) <= 0.2 * this.gov(this.cap).credits && this.pcCost('decide', { sys: dec.sys, id: dec.id, opt: o.k }) <= this.pc - 10);
         if (ok.length) k = ok[0].k;
       }
       if (k) this.command('decide', { sys: dec.sys, id: dec.id, opt: k });
     }
-    const neglected = this.knownSystems().filter((s) => s.id !== 0 && this.known(s.id)?.lord === 0 && (this.known(s.id).realm ?? 0) === 0)
+    const neglected = this.knownSystems().filter((s) => s.id !== this.cap && this.known(s.id)?.lord === this.cap && (this.known(s.id).realm ?? this.cap) === this.cap)
       .map((s) => ({ s, y: this.year - (this.known(s.id).attended ?? this.known(s.id).founded ?? this.year) }))
       .filter((x) => x.y > 30 && !this.requests.some((q) => q.kind === 'order' && q.act === 'inspect' && Number(q.d.sys) === x.s.id))
       .sort((a, b) => b.y - a.y);
@@ -2087,16 +2106,16 @@ class Game {
 
   // --- 国家間の戦争 ---
   declareWar(root) {
-    if (root === 0 || this.realmOf(root) !== root || this.atWar(0, root)) return fail('宣戦できない');
-    this.beginWar(0, root, 0);
-    this.event('politics', 0, `${this.system(root).name} の国に宣戦した (相手は攻め落とされるまで降伏しない)`);
+    if (root === this.cap || this.realmOf(root) !== root || this.atWar(this.cap, root)) return fail('宣戦できない');
+    this.beginWar(this.cap, root, this.cap);
+    this.event('politics', this.cap, `${this.system(root).name} の国に宣戦した (相手は攻め落とされるまで降伏しない)`);
     return { ok: true };
   }
   // 講和の申し入れ (光速の指令として相手の首都へ届く)。相手の艦隊が地球の国より少なければ受け入れ、そうでなくても30%
   offerPeace(root) {
-    if (!this.atWar(0, root) || this.realmOf(root) !== root) return fail('交戦中ではない');
-    if (this.realmShips(root) < this.realmShips(0) || this.rand() < 0.3) {
-      this.endWar(0, root, root); // 講和の申し入れを受けた相手の首都で結ばれる
+    if (!this.atWar(this.cap, root) || this.realmOf(root) !== root) return fail('交戦中ではない');
+    if (this.realmShips(root) < this.realmShips(this.cap) || this.rand() < 0.3) {
+      this.endWar(this.cap, root, root); // 講和の申し入れを受けた相手の首都で結ばれる
       this.event('politics', root, `${this.system(root).name} の国が講和を受け入れた (独立を認めた)`, true);
       return { ok: true };
     }
@@ -2104,7 +2123,7 @@ class Game {
   }
   // 終戦。from = 講和の結ばれた星系 (終戦の知らせはここから光速で広がる)。
   // 各地の艦隊戦・攻囲は、終戦の知らせが攻める側の主星を経て届くまで続く (fightingAt)
-  endWar(a, b, from = a === 0 ? b : a) {
+  endWar(a, b, from = this.isHuman(a) ? b : a) {
     const key = this.warKey(a, b);
     if (this.realmWars[key] !== undefined) {
       this.peaces.push({ key, a, b, year: this.year, from, start: this.realmWars[key], by: this.warBy[key], news: this.warNews[key] });
@@ -2131,7 +2150,7 @@ class Game {
       if (sg) { sg.ships += f.n; if (f.route?.length) sg.route ??= f.route; return; }
       this.garrison[f.to] = (this.garrison[f.to] || 0) + f.n;
       // 地球が命じて送った艦隊の来訪は関与になる (自動防衛配備・威圧の艦隊は数えない)
-      if (owner === 0 && !f.auto && !f.awe && !f.aweBack && this.isColonized(f.to)) this.attend(f.to);
+      if (this.isHuman(owner) && !f.auto && !f.awe && !f.aweBack && this.isColonized(f.to)) this.attend(f.to);
       if (f.awe) this.awe[f.to] = (this.awe[f.to] || 0) + f.n;
       else if (!f.auto) this.held[f.to] = (this.held[f.to] || 0) + f.n;
       this.message(`${f.n} 艦隊が ${name} に到着した${f.route?.length ? ` (経由地。次は ${this.system(f.route[0]).name})` : ''}`, f.to);
@@ -2158,7 +2177,7 @@ class Game {
     } else if (sg) { sg.ships += f.n; if (route) sg.route = route; }
     else {
       this.sieges.push({ sys: f.to, realm: owner, ships: f.n, progress: 0, start: this.year, route });
-      this.event('battle', f.to, `${name} に守りの艦隊はなく、${this.system(owner).name} の国の ${f.n} 艦隊が攻囲を始めた`, owner === 0 || destRealm === 0);
+      this.event('battle', f.to, `${name} に守りの艦隊はなく、${this.system(owner).name} の国の ${f.n} 艦隊が攻囲を始めた`, this.isHuman(owner) || this.isHuman(destRealm));
     }
   }
   // 艦隊戦はランチェスターの二次則を時間をかけて解く: 両軍とも1艦隊が1年に BATTLE_RATE 艦隊ずつ敵を壊滅させ、0.5艦隊を切った側が負け。
@@ -2168,12 +2187,12 @@ class Game {
     const d = this.garrison[sys] || 0;
     this.garrison[sys] = 0;
     this.battles.push({ sys, realm, a: ships, d, a0: ships, d0: d, start: this.year, progress: progress || 0, route });
-    this.event('battle', sys, `${this.system(sys).name} で艦隊戦が始まった (攻撃 ${this.system(realm).name} の国 ${ships} 艦隊 対 防衛 ${d} 艦隊)`, realm === 0 || this.realmOf(sys) === 0);
+    this.event('battle', sys, `${this.system(sys).name} で艦隊戦が始まった (攻撃 ${this.system(realm).name} の国 ${ships} 艦隊 対 防衛 ${d} 艦隊)`, this.isHuman(realm) || this.isHuman(this.realmOf(sys)));
   }
   battlesStep(dt) {
     for (const b of [...this.battles]) {
       if (!this.fightingAt(b.realm, this.realmOf(b.sys), b.sys)) { // 終戦の知らせが届いた: 防衛側は駐留に戻り、攻撃側は引き揚げる
-        this.event('battle', b.sys, `${this.system(b.sys).name} の艦隊戦は、終戦の知らせが届いて終わった`, b.realm === 0 || this.realmOf(b.sys) === 0);
+        this.event('battle', b.sys, `${this.system(b.sys).name} の艦隊戦は、終戦の知らせが届いて終わった`, this.isHuman(b.realm) || this.isHuman(this.realmOf(b.sys)));
         this.battles = this.battles.filter((x) => x !== b);
         this.garrison[b.sys] = (this.garrison[b.sys] || 0) + Math.round(b.d);
         this.withdraw({ sys: b.sys, realm: b.realm, ships: Math.round(b.a) });
@@ -2193,7 +2212,7 @@ class Game {
       this.battles = this.battles.filter((x) => x !== b);
       const name = this.system(b.sys).name;
       const span = `${(this.year - b.start).toFixed(1)} 年、攻撃 ${Math.round(b.a0)} 艦隊 対 防衛 ${Math.round(b.d0)} 艦隊`;
-      const mine = b.realm === 0 || this.realmOf(b.sys) === 0;
+      const mine = this.isHuman(b.realm) || this.isHuman(this.realmOf(b.sys));
       if (b.a >= 0.5) {
         const left = Math.max(1, Math.floor(b.a));
         this.sieges.push({ sys: b.sys, realm: b.realm, ships: left, progress: b.progress || 0, start: this.year, route: b.route });
@@ -2209,7 +2228,7 @@ class Game {
   siegesYearly() {
     for (const g of [...this.sieges]) {
       if (!this.fightingAt(g.realm, this.realmOf(g.sys), g.sys) || g.ships < 1) {
-        if (g.ships >= 1) this.event('battle', g.sys, `終戦の知らせが届き、${this.system(g.sys).name} の攻囲を解いて引き揚げた`, g.realm === 0 || this.realmOf(g.sys) === 0);
+        if (g.ships >= 1) this.event('battle', g.sys, `終戦の知らせが届き、${this.system(g.sys).name} の攻囲を解いて引き揚げた`, this.isHuman(g.realm) || this.isHuman(this.realmOf(g.sys)));
         this.withdraw(g);
         continue;
       }
@@ -2223,7 +2242,7 @@ class Game {
         g.wear = (g.wear || 0) + 0.05 * g.ships;
         while (g.wear >= 1 && g.ships >= 1) { g.wear -= 1; g.ships -= 1; }
         if (g.ships < 1) {
-          this.event('battle', g.sys, `補給が続かず、${this.system(g.sys).name} を攻囲していた ${this.system(g.realm).name} の国の艦隊が崩れた`, g.realm === 0 || this.realmOf(g.sys) === 0);
+          this.event('battle', g.sys, `補給が続かず、${this.system(g.sys).name} を攻囲していた ${this.system(g.realm).name} の国の艦隊が崩れた`, this.isHuman(g.realm) || this.isHuman(this.realmOf(g.sys)));
           this.sieges = this.sieges.filter((x) => x !== g);
           continue;
         }
@@ -2240,7 +2259,7 @@ class Game {
       this.garrison[g.sys] = g.ships;
       this.held[g.sys] = (this.held[g.sys] || 0) + g.ships; // 攻め落とした艦隊はそのまま駐留する
       this.sieges = this.sieges.filter((x) => x !== g);
-      this.event('battle', g.sys, `${this.system(g.sys).name} が降伏し、${g.realm === 0 ? '地球の国 (太陽系)' : `${this.system(g.realm).name} の国`}に従属した`, g.realm === 0);
+      this.event('battle', g.sys, `${this.system(g.sys).name} が降伏し、${g.realm === 0 ? '地球の国 (太陽系)' : `${this.system(g.realm).name} の国`}に従属した`, this.isHuman(g.realm));
       // 経由地の指令が残っていれば次へ。攻め落とした星系には守りとして2割 (最低1艦隊) を残す
       if (g.route?.length) {
         const keep = g.ships >= 2 ? Math.max(1, Math.round(g.ships * 0.2)) : 0;
@@ -2256,7 +2275,7 @@ class Game {
     const base = Math.max(1, this.pirateMax());
     for (const s of this.colonizedSystems()) {
       const id = s.id;
-      if (id === 0) continue;
+      if (this.isHuman(id)) continue;
       const gv = this.gov(id);
       // 委任方針が軍備なら、海賊の最大戦力より2艦隊多く置く (海賊が現れる前から)
       if (this.year < PIRATE_START - 5 && gv.mandate !== 'arm') continue;
@@ -2275,7 +2294,7 @@ class Game {
   realmsArm() {
     for (const [key, gv0] of Object.entries(this.govs)) {
       const root = Number(key);
-      if (root === 0 || !gv0.independent || this.realmOf(root) !== root || !this.isColonized(root)) continue;
+      if (this.isHuman(root) || !gv0.independent || this.realmOf(root) !== root || !this.isColonized(root)) continue;
       const war = this.enemiesOf(root).length > 0;
       for (const x of this.realmSystems(root)) {
         const gv = this.gov(x.id);
@@ -2298,9 +2317,9 @@ class Game {
     gv.orders = 0;
     gv.attended = this.year;
     gv.unrest = { stage: 0 };
-    if (winner === 0) { this.stats.subjugated++; this.councilAdd(10); }
+    this.asRealm(winner, () => { this.stats.subjugated++; this.councilAdd(10); });
     this.cleanWars();
-    this.event('politics', root, `${this.system(root).name} の国が降伏し、${this.realmName(winner)}に従属した${n > 1 ? ` (配下の ${n - 1} 星系も従う)` : ''}`, winner === 0);
+    this.event('politics', root, `${this.system(root).name} の国が降伏し、${this.realmName(winner)}に従属した${n > 1 ? ` (配下の ${n - 1} 星系も従う)` : ''}`, this.isHuman(winner));
   }
   // 独立国の戦争の判断 (年1回)
   // - 交戦中の国の手薄な星系 (20光年以内) を、いちばん艦隊の多い星系から攻める (年1回)
@@ -2309,7 +2328,7 @@ class Game {
   // - どことも戦っていなければ、首都から25光年以内の独立国で、自分の1.5倍より弱いところへ年3%の確率で宣戦する
   realmsYearly() {
     this.cleanWars();
-    const roots = this.colonizedSystems().map((x) => x.id).filter((r) => r !== 0 && this.realmOf(r) === r && this.gov(r).independent);
+    const roots = this.colonizedSystems().map((x) => x.id).filter((r) => !this.isHuman(r) && this.realmOf(r) === r && this.gov(r).independent);
     for (const root of roots) {
       if (this.realmOf(root) !== root) continue; // この年のうちに降伏した
       const enemies = this.enemiesOf(root);
@@ -2317,7 +2336,7 @@ class Game {
       const strong = mine.filter((x) => (this.garrison[x.id] || 0) >= 3).sort((a, b) => (this.garrison[b.id] || 0) - (this.garrison[a.id] || 0))[0];
       if (strong && enemies.length) {
         const n = this.garrison[strong.id] - 1;
-        const target = enemies.flatMap((e) => this.realmSystems(e)).filter((x) => x.id !== 0 && (this.garrison[x.id] || 0) < n)
+        const target = enemies.flatMap((e) => this.realmSystems(e)).filter((x) => !this.isHuman(x.id) && (this.garrison[x.id] || 0) < n)
           .sort((a, b) => distance(a, strong) - distance(b, strong))[0];
         if (target && distance(target, strong) <= 20) this.sendFleet(strong.id, target.id, n);
       }
@@ -2325,9 +2344,9 @@ class Game {
         const key = this.warKey(root, e);
         const ours = this.realmShips(root), theirs = this.realmShips(e), years = this.year - this.realmWars[key];
         if (this.warBy[key] === root && years >= 5 && theirs >= 5 * Math.max(1, ours) && this.rand() < 0.08) { this.surrender(root, e); break; }
-        if (this.warBy[key] !== 0 && years >= 20 && ours < 2 * theirs && theirs < 2 * ours && this.rand() < 0.05) {
+        if (!this.isHuman(this.warBy[key]) && years >= 20 && ours < 2 * theirs && theirs < 2 * ours && this.rand() < 0.05) {
           this.endWar(root, e, root);
-          this.event('politics', root, `${this.realmName(root)}と${this.realmName(e)}が講和し、戦争が終わった`, e === 0);
+          this.event('politics', root, `${this.realmName(root)}と${this.realmName(e)}が講和し、戦争が終わった`, this.isHuman(e));
         }
       }
       if (!enemies.length && this.rand() < 0.03) {
@@ -2650,17 +2669,17 @@ class Game {
   // 太陽系と直轄の星系の交易路は「交易路の自動拡張」がオンのときだけ。資金が費用の1.5倍以上あり、資材が手に入るとき。
   // 知らせは混み始めたときに1回 (8割を下回ったら数え直す)、地球の国の星系がかかわる交易路だけ
   routesYearly() {
-    const home = this.realmOf(0);
     for (const r of this.routes) {
       const use = this.routeUse(r);
       if (use < 0.8) { r.hot = false; continue; }
       if (use < 0.9) continue;
       if (!r.hot) {
         r.hot = true;
-        if (this.realmOf(r.a) === home || this.realmOf(r.b) === home) this.event('trade', r.a, `${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路が混んでいる (容量の ${pct(use)})`);
+        if (this.isHuman(this.realmOf(r.a)) || this.isHuman(this.realmOf(r.b))) this.event('trade', r.a, `${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路が混んでいる (容量の ${pct(use)})`);
       }
       const gv = this.gov(r.a);
-      if ((r.a === 0 && !this.spectate) || gv.direct ? !this.autoRoutes : false) continue;
+      const owner = this.players[this.playerOf(this.realmOf(r.a))];
+      if (owner && ((this.isHuman(r.a) && !this.spectate) || gv.direct) ? !owner.autoRoutes : false) continue;
       if (this.pending((j) => j.type === 'route' && j.route === r.id)) continue;
       const cost = this.routeUpCost(r);
       if (gv.credits < 1.5 * cost.credits || this.procure(cost, r.a).why) continue;
@@ -2881,18 +2900,18 @@ class Game {
     const t0 = this.year;
     const hi = this.fleetIntercept(f);
     const p = this.fleetPosition(f, hi);
-    this.requests.push({ id: this.nextShipId++, kind: 'order', from: 0, to: f.to, act: 'redirect', label: CMD_LABEL.redirect,
+    this.requests.push({ id: this.nextShipId++, kind: 'order', from: this.cap, ...(this.cap !== 0 ? { by: this.cap } : {}), to: f.to, act: 'redirect', label: CMD_LABEL.redirect,
       d: { fleet: f.id, sys: target, from: f.to, n: f.n, x: p.x, y: p.y, route: route?.length ? [...route] : undefined }, sent: t0, arrive: hi, state: 'sending' });
     this.message(`移動中の ${f.n} 艦隊 (${this.system(f.from).name} → ${this.system(f.to).name}) へ、${this.system(target).name} への進路変更を命じた (指令が追いつくまで ${(hi - t0).toFixed(1)} 年)`);
     return { ok: true, queued: true };
   }
   // 艦隊への指令の取り消し。移動中の艦隊へは光速の指令が追いついた時点で効く
-  sendFleetClear(f, origin = 0) {
+  sendFleetClear(f, origin = this.cap) {
     const t0 = this.year;
     const hi = this.fleetIntercept(f, origin);
-    this.requests.push({ id: this.nextShipId++, kind: 'order', from: origin, to: f.to, act: 'fleetclear', label: CMD_LABEL.fleetclear,
+    this.requests.push({ id: this.nextShipId++, kind: 'order', from: origin, ...(this.cap !== 0 ? { by: this.cap } : {}), to: f.to, act: 'fleetclear', label: CMD_LABEL.fleetclear,
       d: { fleet: f.chain ?? f.id, sys: f.to }, sent: t0, arrive: hi, state: 'sending' });
-    if (origin !== 0) return { ok: true, queued: true };
+    if (origin !== this.cap) return { ok: true, queued: true };
     this.message(`移動中の ${f.n} 艦隊 (${this.system(f.from).name} → ${this.system(f.to).name}) へ、指令の取り消しを送った (追いつくまで ${(hi - t0).toFixed(1)} 年)`);
     return { ok: true, queued: true };
   }
@@ -2913,7 +2932,7 @@ class Game {
     const sys = Number(d.sys);
     let had = (this.held[sys] || 0) > 0;
     delete this.held[sys];
-    for (const x of [...this.sieges, ...this.battles]) if (x.sys === sys && x.realm === 0 && x.route?.length) { x.route = undefined; had = true; }
+    for (const x of [...this.sieges, ...this.battles]) if (x.sys === sys && x.realm === this.cap && x.route?.length) { x.route = undefined; had = true; }
     return had ? { ok: true } : fail('取り消す指令がない');
   }
   // 進路変更の指令が届いた: いまの位置から新しい行き先へ直行する (0.9c)。もう着いていれば、着いた星系から送り直す
@@ -2968,7 +2987,7 @@ class Game {
   // クレジットは費用の2倍以上あるときだけ使う。
   autoDevelop() {
     // 太陽系 (プレイヤー) は自動開発をオンにしたときだけ。他の星系の政府はいつも自分の資金で開発する
-    for (const id of this.colonizedSystems().map((x) => x.id).filter((k) => k !== 0 || this.auto[k])) {
+    for (const id of this.colonizedSystems().map((x) => x.id).filter((k) => !this.isHuman(k) || this.auto[k])) {
       const fl = this.flow[id];
       if (!fl || !this.isColonized(id)) continue;
       // 自動の発注は1星系あたり同時に2件まで (資材の到着を待たずに積み上げない)
@@ -3010,7 +3029,7 @@ class Game {
   govsYearly() {
     for (const s of this.colonizedSystems()) {
       const id = s.id;
-      if (id === 0 && !this.spectate) continue; // 地球政府はプレイヤー (観戦モードでは自動で動く)
+      if (this.isHuman(id) && !this.spectate) continue; // 地球政府はプレイヤー (観戦モードでは自動で動く)
       const gv = this.gov(id);
       if (gv.direct) continue; // 直轄の星系は地球が動かす
       const mine = this.routes.filter((r) => r.a === id || r.b === id);
@@ -3040,14 +3059,14 @@ class Game {
     const pop = this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
     const busy = this.projects.some((j) => j.type === 'ship' && j.sys === id) || this.ships.some((x) => x.from === id);
     const pol = this.policyAt(id);
-    const wait = Math.max(3, (id === 0 ? 5 : gv.mandate === 'expand' ? 6 : 10) + (pol === 'expand' ? -4 : pol === 'consolidate' ? 5 : 0));
+    const wait = Math.max(3, (this.isHuman(id) ? 5 : gv.mandate === 'expand' ? 6 : 10) + (pol === 'expand' ? -4 : pol === 'consolidate' ? 5 : 0));
     return pop >= 3 && !busy && this.year - (gv.lastColony ?? gv.founded) >= wait;
   }
   // 入植先: 未入植で入植できる惑星のうち、適性が高く近いところ。ふだんは10光年以内 (観戦モードの地球政府は20)、
   // 星系内に手の届く建設がなくなった政府 (far) は25光年まで探す。
   // 住める惑星のない星系も、主星を回る宇宙ステーションで押さえる (適性1の惑星より6光年ぶん近いときだけ選ぶ)
   colonyTarget(id) {
-    const range = id === 0 ? 20 : this.gov(id).far ? 25 : this.gov(id).mandate === 'expand' ? 15 : 10;
+    const range = this.isHuman(id) ? 20 : this.gov(id).far ? 25 : this.gov(id).mandate === 'expand' ? 15 : 10;
     let best = null;
     for (const [tid, d] of this.nearSystems(id)) {
       if (d > range || tid === id || this.isColonized(tid)) continue;
@@ -3078,7 +3097,7 @@ class Game {
   govDevelopYearly() {
     for (const s of this.colonizedSystems()) {
       const id = s.id;
-      if (id === 0 && !this.spectate) continue;
+      if (this.isHuman(id) && !this.spectate) continue;
       const gv = this.gov(id);
       if (gv.direct) continue; // 直轄の星系は地球が動かす
       if (this.projects.filter((j) => j.sys === id && j.label.startsWith('[自動]')).length >= 3) continue;
@@ -3125,7 +3144,7 @@ class Game {
   stationsYearly() {
     for (const s of this.colonizedSystems()) {
       const id = s.id;
-      if (id === 0 && !this.auto[0]) continue;
+      if (this.isHuman(id) && !this.auto[id]) continue;
       const gv = this.gov(id);
       if (gv.direct) continue;
       if (this.year - (gv.lastStation ?? gv.founded ?? -1e9) < 10) continue;
@@ -3157,7 +3176,7 @@ class Game {
       const id = Number(key);
       const lord = gv.lord;
       if (lord === null || lord === undefined || !this.isColonized(id) || this.year - (gv.founded ?? this.year) > GRANT_YEARS) continue;
-      if (lord === 0 && (!this.autoGrant || (!this.spectate && !this.known(id)?.cols.length))) continue; // 地球は入植を知ってから送る
+      if (this.isHuman(lord) && this.asRealm(lord, () => !this.autoGrant || (!this.spectate && !this.known(id)?.cols.length))) continue; // 地球は入植を知ってから送る
       if (this.realmOf(id) !== this.realmOf(lord)) continue;
       const amt = Math.min(GRANT_MAX, 0.03 * this.gov(lord).credits);
       if (amt >= 1) this.sendGrant(lord, id, amt, true);
@@ -3181,9 +3200,9 @@ class Game {
   pirateBase() { return (1 + Math.max(0, this.year - PIRATE_START) / 40) / 3; }
   pirateMax() { return Math.max(1, Math.round(1.5 * this.pirateBase())); }
   // 自動防衛配備で目指す駐留数。太陽系は海賊に狙われないので1艦隊、他の入植星系は海賊の最大戦力ぶん (海賊が現れる前は1艦隊)
-  defenseGoal(id) { return id === 0 || this.year < PIRATE_START ? 1 : this.pirateMax(); }
+  defenseGoal(id) { return this.isHuman(id) || this.year < PIRATE_START ? 1 : this.pirateMax(); } // 人間の国の首都は海賊に狙われない
   incoming(id) { return this.fleets.filter((f) => f.to === id && !f.awe).reduce((k, f) => k + f.n, 0); }
-  knownAwe(id) { return id === 0 ? 0 : Math.min(this.knownGarrison(id), this.known(id)?.awe || 0); }
+  knownAwe(id) { return id === this.cap ? 0 : Math.min(this.knownGarrison(id), this.known(id)?.awe || 0); }
   defenseGap(id) { return Math.max(0, this.defenseGoal(id) - (this.knownGarrison(id) - this.knownAwe(id)) - this.incoming(id)); } // 地球から見た不足 (威圧の駐留は数えない)
 
   // 自動防衛配備: 年に1回、目標に足りない入植星系へ、人口の多い順に、近くの余っている艦隊を回す。
@@ -3193,21 +3212,22 @@ class Game {
     if (!this.autoDefense) return;
     // 地球に届いている情報 (光の遅れぶん昔の様子) で判断し、太陽系以外の艦隊は光速の指令で動かす。
     // 送った指令は届くまで数え、同じ指令を重ねない
-    const realmK = (id) => (id === 0 ? 0 : this.known(id)?.cols.length ? this.known(id).realm ?? 0 : null);
+    const C = this.cap;
+    const realmK = (id) => (id === C ? C : this.known(id)?.cols.length ? this.known(id).realm ?? C : null);
     const pop = (id) => this.knownColonies(id).reduce((k, c) => k + c.pop, 0);
     const orders = this.requests.filter((q) => q.kind === 'order' && q.act === 'fleet');
     const orderedTo = (id) => orders.filter((q) => Number(q.d.sys) === id).reduce((k, q) => k + (Number(q.d.n) || 0), 0);
     const orderedFrom = (id) => orders.filter((q) => Number(q.d.from) === id).reduce((k, q) => k + (Number(q.d.n) || 0), 0);
-    const heldK = (id) => (id === 0 ? this.held[0] || 0 : this.known(id)?.held || 0);
+    const heldK = (id) => (id === C ? this.held[C] || 0 : this.known(id)?.held || 0);
     // 威圧のための駐留 (awe) は海賊対策とは別なので、数えず動かさない
     const pirateK = (id) => this.knownGarrison(id) - this.knownAwe(id);
     const gapK = (id) => Math.max(0, this.defenseGoal(id) - pirateK(id) - this.incoming(id) - orderedTo(id));
-    const spareK = (id) => pirateK(id) - orderedFrom(id) - Math.max(realmK(id) === 0 ? this.defenseGoal(id) : 0, Math.min(heldK(id), pirateK(id)));
-    const known = [0, ...Object.keys(this.snaps).map(Number).filter((id) => id !== 0)];
-    const targets = this.knownSystems().filter((s) => realmK(s.id) === 0 && gapK(s.id) > 0).sort((a, b) => pop(b.id) - pop(a.id));
+    const spareK = (id) => pirateK(id) - orderedFrom(id) - Math.max(realmK(id) === C ? this.defenseGoal(id) : 0, Math.min(heldK(id), pirateK(id)));
+    const known = [C, ...Object.keys(this.snaps).map(Number).filter((id) => id !== C)];
+    const targets = this.knownSystems().filter((s) => realmK(s.id) === C && gapK(s.id) > 0).sort((a, b) => pop(b.id) - pop(a.id));
     for (const t of targets) {
       let gap = gapK(t.id);
-      const sources = known.filter((id) => id !== t.id && spareK(id) > 0 && (realmK(id) === 0 || realmK(id) === null))
+      const sources = known.filter((id) => id !== t.id && spareK(id) > 0 && (realmK(id) === C || realmK(id) === null))
         .sort((a, b) => this.lightDelay(a) + this.fleetYears(a, t.id) - this.lightDelay(b) - this.fleetYears(b, t.id));
       for (const id of sources) {
         if (gap <= 0) break;
@@ -3218,18 +3238,18 @@ class Game {
     }
     if (!this.autoBuild) return;
     // 足りない分は太陽系の軍事基地で編成する
-    const short = this.knownSystems().filter((s) => realmK(s.id) === 0).reduce((k, s) => k + gapK(s.id), 0)
-      - queuedWarships(this.projects, 0);
-    for (let i = 0; i < Math.min(short, 5) && this.hasShipyard(0); i++) {
-      if (this.gov(0).credits < 2 * WARSHIP_COST.credits || this.procure(WARSHIP_COST, 0).why) break;
-      this.order(WARSHIP_COST, 0, { type: 'warship', label: '[自動防衛] 太陽系 (Sol) の艦隊' });
+    const short = this.knownSystems().filter((s) => realmK(s.id) === C).reduce((k, s) => k + gapK(s.id), 0)
+      - queuedWarships(this.projects, C);
+    for (let i = 0; i < Math.min(short, 5) && this.hasShipyard(C); i++) {
+      if (this.gov(C).credits < 2 * WARSHIP_COST.credits || this.procure(WARSHIP_COST, C).why) break;
+      this.order(WARSHIP_COST, C, { type: 'warship', label: `[自動防衛] ${this.system(C).name} の艦隊` });
     }
   }
   // 反乱防止の威圧: 年に1回、地球の直属の従属星系 (主人が太陽系) に、反乱したときの推定艦隊の2倍の地球の艦隊を駐留させる。
   // 海賊対策の駐留とは別に数える。忠誠度が50以上の星系には送らない。地球に届いている情報で判断し、忠誠度の低い順に太陽系の艦隊を送る
   // (太陽系には1艦隊残す)。足りなければ「足りない艦隊は自動で編成」がオンのとき、太陽系で資金と資源の続く限り編成する
   aweGoal(id) { return 2 * this.knownRebelFleet(id); }
-  aweTargets() { return this.knownSystems().filter((s) => s.id !== 0 && this.known(s.id)?.cols.length && (this.known(s.id).realm ?? 0) === 0 && this.known(s.id).lord === 0
+  aweTargets() { return this.knownSystems().filter((s) => s.id !== this.cap && this.known(s.id)?.cols.length && (this.known(s.id).realm ?? this.cap) === this.cap && this.known(s.id).lord === this.cap
     && !this.aweUnneeded(this.known(s.id))); }
   // 威圧が要らない (地球の知る忠誠度が50以上か、主人との友好度が十分高く反乱しない)
   aweUnneeded(k) { return (k.loyalty ?? LOYALTY_START) >= 50 || (k.friend || 0) >= FRIEND_SAFE; }
@@ -3244,31 +3264,31 @@ class Game {
     // 威圧が要らなくなった星系からは、威圧の艦隊を太陽系へ引き揚げる (光速の指令で。引き揚げ中・指令の送信中は重ねない)
     for (const s of this.knownSystems()) {
       const id = s.id;
-      const k = id === 0 ? null : this.known(id);
-      const n = id === 0 ? 0 : this.knownAwe(id);
-      if (n < 1 || !k?.cols.length || (k.realm ?? 0) !== 0 || !this.aweUnneeded(k)) continue;
+      const k = id === this.cap ? null : this.known(id);
+      const n = id === this.cap ? 0 : this.knownAwe(id);
+      if (n < 1 || !k?.cols.length || (k.realm ?? this.cap) !== this.cap || !this.aweUnneeded(k)) continue;
       if (this.requests.some((q) => q.kind === 'order' && q.act === 'fleet' && q.d.aweBack && Number(q.d.from) === id)) continue;
       if ([...this.fleets, ...this.ghosts.fleets].some((f) => f.aweBack && f.from === id)) continue;
-      this.command('fleet', { from: id, sys: 0, n, aweBack: true });
+      this.command('fleet', { from: id, sys: this.cap, n, aweBack: true });
     }
     const targets = this.aweTargets().sort((a, b) => (this.known(a.id).loyalty ?? 100) - (this.known(b.id).loyalty ?? 100));
     let short = 0;
     for (const t of targets) {
       const gap = this.aweGap(t.id);
       if (gap <= 0) continue;
-      const spare = Math.max(0, (this.garrison[0] || 0) - Math.max(this.defenseGoal(0), this.held[0] || 0));
+      const spare = Math.max(0, (this.garrison[this.cap] || 0) - Math.max(this.defenseGoal(this.cap), this.held[this.cap] || 0));
       const n = Math.min(gap, spare);
-      if (n >= 1) this.command('fleet', { from: 0, sys: t.id, n, awe: true });
+      if (n >= 1) this.command('fleet', { from: this.cap, sys: t.id, n, awe: true });
       short += gap - n;
     }
     if (!this.autoBuild || short <= 0) return;
-    short -= queuedWarships(this.projects, 0);
-    for (let i = 0; i < Math.min(short, 1000) && this.hasShipyard(0); i++) {
-      if (this.gov(0).credits < WARSHIP_COST.credits) break;
-      if (!this.order(WARSHIP_COST, 0, { type: 'warship', label: '[威圧] 太陽系 (Sol) の艦隊' }).ok) break;
+    short -= queuedWarships(this.projects, this.cap);
+    for (let i = 0; i < Math.min(short, 1000) && this.hasShipyard(this.cap); i++) {
+      if (this.gov(this.cap).credits < WARSHIP_COST.credits) break;
+      if (!this.order(WARSHIP_COST, this.cap, { type: 'warship', label: `[威圧] ${this.system(this.cap).name} の艦隊` }).ok) break;
     }
   }
-  undefended() { return this.knownSystems().filter((s) => (s.id === 0 || (this.known(s.id)?.realm ?? 0) === 0) && this.defenseGap(s.id) > 0); }
+  undefended() { return this.knownSystems().filter((s) => (s.id === this.cap || (this.known(s.id)?.realm ?? this.cap) === this.cap) && this.defenseGap(s.id) > 0); }
 
   // --- 恒星間移民 ---
   // 人口が上限の90%を超えた入植地から、年に1回、人口の3% (上限超えなら5%) が移民船で出ていく。
@@ -3276,13 +3296,15 @@ class Game {
   // 過密な入植地の居住区を拡張する (移民と並行して進む)。自動拡張がオンか、その星系の自動開発がオンのとき。
   // 資金が費用の2倍以上あり、資材を調達できるときだけ。建設中なら重ねて発注しない。
   expandHabitat(c) {
-    if (!(this.autoHabitat || this.auto[c.sys] || c.sys !== 0) || c.lv.habitat >= FACILITY_MAX.habitat) return;
+    if (!(!this.isHuman(c.sys) || this.auto[c.sys] || this.players[this.playerOf(c.sys)].autoHabitat) || c.lv.habitat >= FACILITY_MAX.habitat) return;
     const col = colKey(c);
     if (this.pending((j) => j.type === 'upgrade' && j.col === col && j.fac === 'habitat')) return;
     const cost = this.upgradeCost(c, 'habitat');
     if (this.gov(c.sys).credits < 2 * cost.credits || this.procure(cost, c.sys).why) return;
     this.order(cost, c.sys, { type: 'upgrade', col, fac: 'habitat', label: `[過密] ${c.name} の居住区 Lv${c.lv.habitat + 1}` });
   }
+  // 恒星間移民を許すか: 人間の国はそのプレイヤーの設定、AI の国はいつも許す
+  migrationOn(sys) { const i = this.playerOf(this.realmOf(sys)); return i < 0 ? true : this.players[i].migration; }
   migrantsTo(c) { const k = colKey(c); return this.migrants.filter((m) => m.to === k).reduce((s, m) => s + m.n, 0); }
   migrate() {
     // 向かっている移民の数 (行き先ごと)。一覧を毎回数え直す migrantsTo と同じ値を、送り出すたびに足して保つ
@@ -3295,12 +3317,12 @@ class Game {
       // 人口過密は状態として持ち (イベントタブの「いま起きている問題」に出る)、記録には入植地ごとに最初の1回だけ書く
       if (!c.alerts.crowd && ratio >= 0.9) {
         c.alerts.crowd = true;
-        if (!c.crowdLogged) { c.crowdLogged = true; this.event('migration', c.sys, `${c.name} が初めて人口過密になった (上限の ${pct(ratio)})${this.migration ? '。恒星間移民が始まる' : ''}`); }
+        if (!c.crowdLogged) { c.crowdLogged = true; this.event('migration', c.sys, `${c.name} が初めて人口過密になった (上限の ${pct(ratio)})${this.migrationOn(c.sys) ? '。恒星間移民が始まる' : ''}`); }
       } else if (c.alerts.crowd && ratio < 0.85) {
         c.alerts.crowd = false;
       }
       if (ratio >= 0.9) this.expandHabitat(c);
-      if (!this.migration || ratio < 0.9) continue;
+      if (!this.migrationOn(c.sys) || ratio < 0.9) continue;
       const want = c.pop * (ratio >= 1 ? 0.05 : 0.03);
       const dests = this.colonies
         .filter((d) => d !== c && (d.sat?.food ?? 1) >= 0.99 && (!this.needsWater(d) || (d.sat?.water ?? 1) >= 0.99))
@@ -3336,7 +3358,7 @@ class Game {
   // 宇宙海賊の襲撃。入植地が増えるほど、時代が進むほど増える。地球は本国艦隊が守っている前提で対象外。
   pirates(h) {
     if (this.year < PIRATE_START) return false;
-    const targets = this.colonizedSystems().filter((s) => s.id !== 0);
+    const targets = this.colonizedSystems().filter((s) => !this.isHuman(s.id));
     if (!targets.length || this.rand() > 0.05 * Math.sqrt(targets.length) * h) return false;
     const sys = targets[Math.floor(this.rand() * targets.length)];
     this.pirateRaid(sys, Math.max(1, Math.round(this.pirateBase() * (0.5 + this.rand()))));
@@ -3383,7 +3405,7 @@ class Game {
     if (n.st.rel < 80) return fail('友好度80以上が必要');
     this.addPeople(c, n.st.pop, { [n.def.species]: 1 });
     n.st.status = 'integrated';
-    if (this.realmOf(sysId) === 0) this.stats.integrated++;
+    this.asRealm(this.realmOf(sysId), () => this.stats.integrated++);
     this.event('natives', sysId, `${n.def.species} ${fmtPop(n.st.pop)}が ${c.name} の市民になった`, true);
     return { ok: true };
   }
@@ -3546,7 +3568,7 @@ class Game {
     for (const [key, st] of Object.entries(this.natives)) {
       const [sysStr, bodyId] = key.split('|');
       const sys = Number(sysStr);
-      if (st.status === 'subjugated' && (sys !== 0 || this.spectate) && this.colonyAt(sys, bodyId, 'planet')) this.enslave(sys, bodyId);
+      if (st.status === 'subjugated' && (!this.isHuman(sys) || this.spectate) && this.colonyAt(sys, bodyId, 'planet')) this.enslave(sys, bodyId);
     }
     for (const [key, st] of Object.entries(this.natives)) {
       const [sysStr, bodyId] = key.split('|');
@@ -3714,7 +3736,7 @@ class Game {
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
       this.keepGhosts(before);
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.autoDefend(); this.aweYearly(); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.routesYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); if (this.spectate) this.earthWarYearly(); this.siegesYearly(); this.politicsYearly(); this.recordSnapshots(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.eachPlayer(() => { this.autoDefend(); this.aweYearly(); }); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.routesYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.realmsYearly(); if (this.spectate) this.eachPlayer(() => this.earthWarYearly()); this.siegesYearly(); this.politicsYearly(); this.recordSnapshots(); }
     }
     return changed;
   }
@@ -3722,13 +3744,15 @@ class Game {
   // 政治力・議会・時代の課題・挑戦・語り手・決めること・終わりの年 (年1回)
   politicsYearly() {
     this.lordsAttendYearly();
-    this.pcYearly();
-    this.councilYearly();
-    this.erasYearly();
-    this.challengesYearly();
-    this.storyYearly();
-    this.decisionsYearly();
-    if (this.spectate) this.earthPoliticsYearly();
+    this.eachPlayer(() => {
+      this.pcYearly();
+      this.councilYearly();
+      this.erasYearly();
+      this.challengesYearly();
+      this.storyYearly();
+      this.decisionsYearly();
+      if (this.spectate) this.earthPoliticsYearly();
+    });
     this.endYearly();
   }
   // 1歩のあいだに一覧から消えた動くものを、到着が地球から見えるまで表示用に残す
@@ -3772,12 +3796,16 @@ class Game {
     }
     for (const q of this.requests) {
       if (q.kind !== 'order' || q.arrive > this.year) continue;
+      const pi = this.playerOf(q.by ?? 0); // 指令を出したプレイヤー (古い指令は地球)
+      if (pi < 0) continue;
+      this.asPlayer(pi, () => {
       // 艦隊は地球の国の軍なので、その星系の政府の忠誠度に関係なく命令に従う。要求への返事と視察はかならず受け取る
       const ob = ['peace', 'fleet', 'redirect', 'fleetclear', 'decide', 'inspect'].includes(q.act) ? { ok: true } : this.obeys(q.to);
       const r = ob.ok ? this.exec(q.act, q.d) : ob;
       // 地球からの指令が届いたことは関与になる (放っておかれた年数が0に戻る)
       if (ob.ok && !['fleet', 'redirect', 'fleetclear', 'peace'].includes(q.act)) this.attend(q.to);
       this.message(r.ok ? `指令「${q.label}」が ${this.system(q.to).name} に届き、実行された` : `指令「${q.label}」は ${this.system(q.to).name} で実行できなかった: ${r.reason}`, q.to);
+      });
     }
     this.requests = this.requests.filter((q) => !['build', 'tribute', 'order', 'grant'].includes(q.kind) || q.arrive > this.year);
     const done = this.projects.filter((j) => j.ready <= this.year);
@@ -3810,7 +3838,7 @@ class Game {
         if (kind === 'planet' && this.hostileNatives(s.to, s.body)) this.startWar(s.to, s.body);
         const sup = Object.entries(s.supplies || {}).filter(([, v]) => v > 0).map(([r, v]) => `${RES_LABEL[r]} ${fmtAmt(v)}`).join('・');
         this.event('colony', s.to, `${t.name} に${KIND_LABEL[kind]}を設立した (${this.system(s.to).name})${sup ? `。積み荷: ${sup}` : ''}`, true);
-        if (fresh && s.from === 0) this.councilAdd(1); // 地球が送った入植船で新しい星系を拓いた
+        if (fresh) this.asRealm(s.from, () => this.councilAdd(1)); // 人間の国の首都が送った入植船で新しい星系を拓いた
       }
     }
     if (this.migrants.some((m) => m.arrive <= this.year)) {
@@ -4131,6 +4159,11 @@ class Game {
     if (typeof d.autoBuild === 'boolean') this.autoBuild = d.autoBuild;
     if (typeof d.migration === 'boolean') this.migration = d.migration;
     if (Number.isFinite(d.rs)) this.rs = d.rs >>> 0;
+    // プレイヤーの記録 (新しいセーブ)。古いセーブは上で読んだ値が players[0] に入っている
+    if (Array.isArray(d.players) && d.players.length && d.players.every((p) => p && sysOk(p.cap))) {
+      this.players = d.players;
+      this.pi = Number.isInteger(d.pi) && d.pi >= 0 && d.pi < d.players.length ? d.pi : 0;
+    }
     if (typeof d.autoRoutes === 'boolean') this.autoRoutes = d.autoRoutes;
     if (Array.isArray(d.wars)) this.wars = d.wars.filter((w) => w && ok(w.sys, w.body));
     if (Number.isFinite(d.warThreshold)) this.warThreshold = d.warThreshold;
@@ -4178,15 +4211,19 @@ class Game {
 
   // 重要なイベント。ログにも流す
   // 遠くの星系の出来事は、光が地球に届くまでプレイヤーには分からない (seen = 地球に知らせが届く年)
-  lightDelay(sys) { return sys === undefined || sys === null || sys === 0 ? 0 : this.sysDist(0, sys); }
+  // 光の遅れは、いま操作しているプレイヤーの首都から数える
+  lightDelay(sys) { return sys === undefined || sys === null || sys === this.cap ? 0 : this.sysDist(this.cap, sys); }
   event(kind, sys, text, good = false) {
     if (STORY_RESET.has(kind) && this.story) this.story.last = this.year; // 語り手は、何かが起きた年から数え直す
     this.events.unshift({ id: this.nextShipId++, year: this.year, seen: this.year + this.lightDelay(sys), kind, sys, text, good });
     this.events.length = Math.min(this.events.length, 300);
     this.message(text, sys, kind);
   }
+  // 知らせが届く年: 出来事の星系からいまのプレイヤーの首都まで光が届く年 (地球が首都なら記録した seen のまま)
+  seenOf(e) { return e.sys === undefined || e.sys === null ? e.seen ?? e.year : e.year + this.lightDelay(e.sys); }
   knownEvents() {
     if (this.spectate) return this.events.filter((e) => e.year <= this.year).sort((a, b) => b.year - a.year);
+    if (this.cap !== 0) return this.events.map((e) => ({ ...e, seen: this.seenOf(e) })).filter((e) => e.seen <= this.year).sort((a, b) => b.seen - a.seen);
     return this.events.filter((e) => (e.seen ?? e.year) <= this.year).sort((a, b) => (b.seen ?? b.year) - (a.seen ?? a.year));
   }
   // 充足率などの悪化と回復を見張る (ばたつかないよう 93% 未満で発生、99% 以上で解消)。
@@ -4214,11 +4251,12 @@ class Game {
   }
 
   message(text, sys, kind) {
-    this.log.unshift({ year: this.year, seen: this.year + this.lightDelay(sys), text, ...(kind ? { kind } : {}) });
+    this.log.unshift({ year: this.year, seen: this.year + this.lightDelay(sys), text, ...(kind ? { kind } : {}), ...(sys !== undefined && sys !== null ? { sys } : {}) });
     this.log.length = Math.min(this.log.length, 120);
   }
   knownLog() {
     if (this.spectate) return this.log.filter((l) => l.year <= this.year).sort((a, b) => b.year - a.year);
+    if (this.cap !== 0) return this.log.map((l) => ({ ...l, seen: this.seenOf(l) })).filter((l) => l.seen <= this.year).sort((a, b) => b.seen - a.seen);
     return this.log.filter((l) => (l.seen ?? l.year) <= this.year).sort((a, b) => (b.seen ?? b.year) - (a.seen ?? a.year));
   }
 
@@ -4251,12 +4289,13 @@ class Game {
   recordSnapshots() {
     this.snapVer = (this.snapVer || 0) + 1; // 記録が変わった (knownSystems の使い回しをやめる)
     const ids = new Set([...this.colonizedSystems().map((x) => x.id), ...Object.keys(this.garrison).filter((k) => this.garrison[k] > 0).map(Number)]);
+    const caps = this.players.filter((p) => p.human).map((p) => p.cap);
     for (const id of ids) {
-      if (id === 0) continue;
+      if (caps.every((c) => c === id)) continue; // 人間のプレイヤーの首都はいつも最新が見える
       const list = (this.snaps[id] ??= []);
       list.push(this.snapshot(id));
-      // 地球から見えている記録より古いものは捨てる
-      const seenYear = this.year - this.lightDelay(id);
+      // どの人間のプレイヤーからも見えなくなった古い記録は捨てる (いちばん遠いプレイヤーの分まで残す)
+      const seenYear = this.year - Math.max(...caps.map((c) => (c === id ? 0 : this.sysDist(c, id))));
       let i = 0;
       while (i + 1 < list.length && list[i + 1].year <= seenYear) i++;
       if (i) list.splice(0, i);
@@ -4264,7 +4303,7 @@ class Game {
   }
   // 地球から見えている星系の様子。太陽系はいつも最新。まだ光が届いていなければ null
   known(id) {
-    if (id === 0) return this.snapshot(0);
+    if (id === this.cap) return this.snapshot(id);
     // 観戦モードでは、いまの実際の様子 (同じ時刻のあいだは使い回す)
     if (this.spectate) {
       if (!this.live || this.live.year !== this.year) this.live = { year: this.year, map: new Map() };
@@ -4285,30 +4324,30 @@ class Game {
   knownSystems() {
     const live = this.spectate ? this.live : null;
     const c = this.ksCache;
-    if (c && c.year === this.year && c.spectate === this.spectate && c.snaps === this.snaps && c.ver === this.snapVer && c.live === live && (live !== null) === this.spectate) return c.list.slice();
-    const list = this.galaxy.systems.filter((x) => x.id === 0 || this.known(x.id)?.cols.length);
-    this.ksCache = { year: this.year, spectate: this.spectate, snaps: this.snaps, ver: this.snapVer, live: this.spectate ? this.live : null, list };
+    if (c && c.year === this.year && c.cap === this.cap && c.spectate === this.spectate && c.snaps === this.snaps && c.ver === this.snapVer && c.live === live && (live !== null) === this.spectate) return c.list.slice();
+    const list = this.galaxy.systems.filter((x) => x.id === this.cap || this.known(x.id)?.cols.length);
+    this.ksCache = { year: this.year, cap: this.cap, spectate: this.spectate, snaps: this.snaps, ver: this.snapVer, live: this.spectate ? this.live : null, list };
     return list.slice();
   }
   knownColonies(id) {
-    if (id === 0) return this.coloniesIn(0);
+    if (id === this.cap) return this.coloniesIn(id);
     const k = this.known(id);
     return k ? k.cols.map((c) => ({ ...c, sys: id })) : [];
   }
   knownColonyAt(id, body, kind) { return this.knownColonies(id).find((c) => c.body === body && c.kind === kind); }
   knownColonized(id) { return this.knownColonies(id).length > 0; }
-  knownGarrison(id) { return id === 0 ? this.garrison[0] || 0 : this.known(id)?.garrison || 0; }
-  knownOutposts(id) { return id === 0 ? this.outposts.filter((o) => o.sys === 0) : (this.known(id)?.outposts || []).map((o) => ({ ...o, sys: id })); }
-  knownWars(id) { return id === 0 ? this.wars.filter((w) => w.sys === 0) : (this.known(id)?.wars || []).map((w) => ({ ...w, sys: id })); }
+  knownGarrison(id) { return id === this.cap ? this.garrison[id] || 0 : this.known(id)?.garrison || 0; }
+  knownOutposts(id) { return id === this.cap ? this.outposts.filter((o) => o.sys === id) : (this.known(id)?.outposts || []).map((o) => ({ ...o, sys: id })); }
+  knownWars(id) { return id === this.cap ? this.wars.filter((w) => w.sys === id) : (this.known(id)?.wars || []).map((w) => ({ ...w, sys: id })); }
   knownNative(id, body) {
     const n = this.nativeOf(id, body);
-    if (!n || id === 0) return n;
+    if (!n || id === this.cap) return n;
     const st = this.known(id)?.natives?.[body];
     return { def: n.def, st: st ? { ...st } : { rel: n.def.mood, status: 'independent', pop: n.def.pop } };
   }
   // 情報の古さ [年]。太陽系は0、まだ何も届いていなければ null
   dataAge(id) {
-    if (id === 0) return 0;
+    if (id === this.cap) return 0;
     const k = this.known(id);
     return k ? this.year - k.year : null;
   }
@@ -4317,7 +4356,7 @@ class Game {
   // (出発がまだ見えていない・到着がもう見えているなら null)
   apparent(posAt, t0, t1) {
     if (this.spectate) return this.year < t0 || this.year > t1 ? null : posAt(this.year); // 観戦モードは実際の位置
-    const E = this.system(0);
+    const E = this.system(this.cap);
     const f = (t) => { const q = posAt(t); return t + Math.hypot(q.x - E.x, q.y - E.y) - this.year; };
     if (f(t0) > 0 || f(t1) <= 0) return null;
     let lo = t0;
@@ -4329,7 +4368,7 @@ class Game {
   // (地図で毎フレーム、輸送中の荷や船の数だけ呼ぶので)。式と順番は pathPosition・shipPosition と同じ
   apparentPath(path, times, t0, t1) {
     if (this.spectate || path.length < 2) return this.apparent((t) => this.pathPosition(path, times, t), t0, t1);
-    const E = this.system(0);
+    const E = this.system(this.cap);
     let px = 0, py = 0;
     const place = (t) => {
       let i = 0;
@@ -4353,30 +4392,30 @@ class Game {
   setSpectate(on) {
     this.spectate = !!on;
     this.live = null;
-    if (on) { this.auto[0] = true; this.autoDefense = true; this.autoBuild = true; this.autoHabitat = true; this.autoGrant = true; }
+    if (on) { this.auto[this.cap] = true; this.autoDefense = true; this.autoBuild = true; this.autoHabitat = true; this.autoGrant = true; }
     this.message(on ? '観戦モードにした (実際の様子を見る。地球政府も自動で動く)' : '観戦モードを終えた (地球に届く光で見る)');
   }
   // 観戦モードの地球政府の戦争の判断 (年1回): 交戦中の独立国に対し、優勢なら手近な敵の星系へ艦隊を差し向け、
   // 劣勢なら講和を申し入れる。戦時は太陽系で艦隊を編成する。平時でも独立国より5倍以上強ければ年5%の確率で宣戦する
   earthWarYearly() {
-    const ours = this.realmShips(0);
+    const ours = this.realmShips(this.cap);
     const ordered = (act, sys) => this.requests.some((q) => q.kind === 'order' && q.act === act && Number(q.d.sys) === sys);
     for (const x of this.colonizedSystems()) {
       const root = x.id;
-      if (root === 0 || this.realmOf(root) !== root || !this.gov(root).independent) continue;
+      if (root === this.cap || this.realmOf(root) !== root || !this.gov(root).independent) continue;
       const theirs = this.realmShips(root);
-      if (!this.atWar(0, root)) {
+      if (!this.atWar(this.cap, root)) {
         if (ours > 5 * Math.max(1, theirs) && this.rand() < 0.05) this.declareWar(root);
         continue;
       }
-      if (this.hasShipyard(0) && this.gov(0).credits >= 2 * WARSHIP_COST.credits) this.buildWarship(0);
+      if (this.hasShipyard(this.cap) && this.gov(this.cap).credits >= 2 * WARSHIP_COST.credits) this.buildWarship(this.cap);
       if (ours < 0.7 * theirs) { if (!ordered('peace', root)) this.command('peace', { sys: root }); continue; }
       let best = null;
       for (const t of this.realmSystems(root)) {
-        if (ordered('fleet', t.id) || this.fleets.some((f) => f.to === t.id && (f.owner ?? 0) === 0)) continue;
+        if (ordered('fleet', t.id) || this.fleets.some((f) => f.to === t.id && (f.owner ?? 0) === this.cap)) continue;
         const b = this.battleAt(t.id);
         const need = (this.garrison[t.id] || 0) + (b ? b.d : 0) + 2;
-        for (const s of this.realmSystems(0)) {
+        for (const s of this.realmSystems(this.cap)) {
           const n = (this.garrison[s.id] || 0) - 1;
           if (n < need) continue;
           const d = distance(s, t);
@@ -4416,8 +4455,8 @@ class Game {
     if (act === 'policy') return this.setPolicy(d.value);
     if (act === 'grant') {
       const to = Number(d.sys);
-      if (to === 0 || !this.isColonized(to) || this.realmOf(to) !== 0) return fail('地球の国の星系にだけ送れる');
-      return this.sendGrant(0, to, Number(d.amt));
+      if (to === this.cap || !this.isColonized(to) || this.realmOf(to) !== this.cap) return fail(`${this.realmName(this.cap)}の星系にだけ送れる`);
+      return this.sendGrant(this.cap, to, Number(d.amt));
     }
     if (act === 'decide') {
       const r = this.sendDecision(d);
@@ -4426,7 +4465,7 @@ class Game {
     }
     if (act === 'rule' && d.value === 'direct') {
       const id = Number(d.sys);
-      if (this.known(id)?.lord !== 0 || (this.known(id)?.realm ?? 0) !== 0) return fail('地球の直属の従属星系だけを直轄にできる');
+      if (this.known(id)?.lord !== this.cap || (this.known(id)?.realm ?? this.cap) !== this.cap) return fail('直属の従属星系だけを直轄にできる');
       if (!this.isDirect(id) && this.directPlanned() >= this.directMax()) return fail(`直轄は ${this.directMax()} 星系まで`);
     }
     // 集結は、それぞれの出発地への指令に分ける
@@ -4444,9 +4483,9 @@ class Game {
       return { ok: true };
     }
     const target = this.cmdTarget(act, d);
-    if (target === undefined || target === null || target === 0) return this.exec(act, d);
+    if (target === undefined || target === null || target === this.cap) return this.exec(act, d);
     const arrive = this.year + this.lightDelay(target);
-    this.requests.push({ id: this.nextShipId++, kind: 'order', from: 0, to: target, act, d: { ...d }, label: CMD_LABEL[act] || act, sent: this.year, arrive, state: 'sending' });
+    this.requests.push({ id: this.nextShipId++, kind: 'order', from: this.cap, ...(this.cap !== 0 ? { by: this.cap } : {}), to: target, act, d: { ...d }, label: CMD_LABEL[act] || act, sent: this.year, arrive, state: 'sending' });
     this.message(`${this.system(target).name} へ指令「${CMD_LABEL[act] || act}」を送った (届くまで ${(arrive - this.year).toFixed(1)} 年)`);
     return { ok: true, queued: true };
   }
@@ -4464,7 +4503,7 @@ class Game {
       case 'warship': return this.buildWarship(sys, Number(d.n) || 1);
       case 'fleet': {
         const from = Number(d.from);
-        if (this.isColonized(from) && this.realmOf(from) !== 0) return fail('他国の星系の艦隊には命令できない');
+        if (this.isColonized(from) && this.realmOf(from) !== this.cap) return fail('他国の星系の艦隊には命令できない');
         if (d.aweBack) { // 威圧の艦隊の引き揚げ: 威圧の分だけを動かす (命令で駐留している分はそのまま)
           const k = Math.min(n, this.awe[from] || 0, this.garrison[from] || 0);
           if (k < 1) return fail('威圧の艦隊がいない');
@@ -4640,6 +4679,13 @@ const fmt = (v, d = 2) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.
 // 星間マップ: パン(ドラッグ)・ズーム(ホイール)・星の選択/ダブルクリックで星系を開く。
 
 
+
+// プレイヤーごとに持つ値。Game の this.pc などは、いま操作しているプレイヤー (players[pi]) の値を指す
+const PLAYER_KEYS = ['finalScore', 'pc', 'pcLast', 'council', 'policy', 'decisions', 'story', 'era', 'challenges', 'stats', 'acked', 'aiPolicy',
+  'autoBuild', 'autoGrant', 'autoDefense', 'autoAwe', 'autoHabitat', 'autoRoutes', 'migration', 'warThreshold'];
+for (const k of PLAYER_KEYS) Object.defineProperty(Game.prototype, k, { get() { return this.players[this.pi][k]; }, set(v) { this.players[this.pi][k] = v; }, configurable: true });
+Object.defineProperty(Game.prototype, 'me', { get() { return this.players[this.pi]; } });
+Object.defineProperty(Game.prototype, 'cap', { get() { return this.players[this.pi].cap; } }); // いま操作しているプレイヤーの首都
 
 class GalaxyView {
   constructor(canvas, app) {
@@ -7439,7 +7485,7 @@ function saveMeta(d) {
 }
 function buildSave(game, extra = {}) {
   return {
-    v: 2, seed: game.galaxy.seed, rs: game.rs, year: game.year, colonies: game.colonies, ships: game.ships,
+    v: 2, seed: game.galaxy.seed, rs: game.rs, players: game.players, pi: game.pi, year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, warBy: game.warBy, warNews: game.warNews, peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
@@ -7713,7 +7759,7 @@ function closeHome(speed) {
   updateSpectateBtn();
   app.dirty = true;
 }
-$('homebtn').onclick = openHome;
+$('homebtn').onclick = () => { setMenu(false); openHome(); }; // メニューを閉じてから (開いたままだと出典の文がホーム画面のボタンに重なる)
 $('home').onclick = (e) => {
   const b = e.target.closest('button[data-home]');
   if (!b) return;
