@@ -15,7 +15,7 @@ const { chromium } = require('playwright');
       g.setSpectate(true); for (let i = 0; i < 280; i++) g.advance(0.25); g.setSpectate(false);
       const res = {};
       // 直属の家臣を 3 つ選ぶ
-      const vs = Object.keys(g.govs).map(Number).filter((id) => g.govs[id].lord === 0 && g.isColonized(id) && g.realmOf(id) === 0 && !g.govs[id].autonomy && !g.govs[id].direct).sort((a, c) => g.sysDist(0, a) - g.sysDist(0, c));
+      const vs = Object.keys(g.govs).map(Number).filter((id) => g.govs[id].lord === 0 && g.known(id)?.lord === 0 && g.isColonized(id) && g.realmOf(id) === 0 && !g.govs[id].autonomy && !g.govs[id].direct) // 地球に届いている記録でも直属の家臣のもの (指令はその記録で判断する).sort((a, c) => g.sysDist(0, a) - g.sysDist(0, c));
       res.vassals = vs.length;
       const [a, c, e] = vs;
       // 試すのは統治体制の仕組みなので、待つあいだに不満から自治を求めて指令を受けなくならないよう、3 つを落ち着かせておく

@@ -1,4 +1,4 @@
-// 実在の 3 次元の銀河 (地図は真上からの平面): 100 年の観戦・国境の塗り分け
+// 実在の 3 次元の銀河: 100 年の観戦・回す・傾ける・真上から見る
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`; // 試す版 (HTML=$PWD/simulation.html でシミュレーション版)
 require('fs').mkdirSync('shots', { recursive: true }); // 画面の写しは、いまのフォルダの shots/ に書く
@@ -10,11 +10,14 @@ const { chromium } = require('playwright');
     await p.addInitScript(() => { try { localStorage.clear(); } catch {} });
     await p.goto(`file://${HTML}?seed=11&home=0`); await p.waitForFunction(() => window.__app && __app.game); await p.waitForTimeout(800);
     const info = await p.evaluate(() => { const g = __app.game; return [g.galaxy.kind, g.galaxy.systems.length, g.galaxy.radius, g.system(1).name, g.system(1).cat, g.sysDist(0, 1).toFixed(2), g.galaxy.systems.filter((s) => s.bodies.some((b) => b.known)).length]; });
+    await p.screenshot({ path: `shots/real-tilt-${tag}.png` });
+    await p.click('#topbtn'); await p.waitForTimeout(400);
     await p.screenshot({ path: `shots/real-top-${tag}.png` });
-    // 地図はいつも真上から (回す・傾けるのボタンはない。ドラッグはずらすだけ)
+    await p.click('#topbtn'); await p.click('#rotbtn');
     const box = await p.$eval('canvas', (c) => { const r = c.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
     await p.mouse.move(box[0], box[1]); await p.mouse.down(); await p.mouse.move(box[0] + 160, box[1] - 60, { steps: 8 }); await p.mouse.up();
-    info.push(await p.evaluate(() => [galaxyView.cam.yaw, galaxyView.cam.pitch, !!document.getElementById('rotbtn')].join(',')));
+    await p.waitForTimeout(300);
+    await p.screenshot({ path: `shots/real-rot-${tag}.png` });
     // select Alpha Cen and open its panel
     const r2 = await p.evaluate(() => { const g = __app.game; const s = g.galaxy.systems.find((x) => x.cat === 'GJ 559'); __app.selectSystem(s.id); galaxyView.centerOn(s); __app.dirty = true; return [s.name, s.stars.map((x) => x.label).join('+'), s.bodies.map((x) => `${x.name}${x.known ? '*' : ''}(${x.type},${x.a.toFixed(2)})`).join(' ')]; });
     await p.waitForTimeout(600);
