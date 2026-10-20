@@ -12,20 +12,21 @@
 | **B 道具** | 4 → 5 → 17 | `tools/`・CI・`PlayLog`・同意の画面・包装 (試合の計算にはなるべく触らない) | いつでも |
 | **C 経済** | 6 → 7 → 8 → 9 | 帳簿 (`earn`・支払い)・財政・生産・`FOCUS` | いつでも。ただし 6・7 は帳簿づくりまでにし、つり合いの判断はセッション 4 の道具ができてからにする |
 | **D 人口と船** | 10 → 11 → 12 → 13 → 14 | 人口・集団・船の設計・艦隊戦 | A と C が終わってから |
-| **P 下準備** | P1 → P2 | 新しいファイルだけ: `docs/proposals/`・`data/fetch/`・`data/raw/<新しいフォルダ>/`・`data/build/` (`src/`・`tools/`・`targets/` には触らない) | いつでも (2026-10-20 のユーザーの決定。`docs/requests/2026-10-20-common.md` の common-3・common-4) |
+| **Q 下準備** | Q1 → Q2 | 新しいファイルだけ: `docs/proposals/`・`data/fetch/`・`data/raw/<新しいフォルダ>/`・`data/build/` (`src/`・`tools/`・`targets/` には触らない) | いつでも (2026-10-20 のユーザーの決定。`docs/requests/2026-10-20-common.md` の common-3・common-4) |
 | **E 仕上げ** | 15 → 16 → 18 | つり合い・試遊・文字列 | D が終わってから。**18 (文字列を集める) は全部のファイルに触るので、ほかのレーンが止まっているときに 1 本だけで回す** |
+| **P 物理** | (セッション 14 の一部を先に) | 星間の気体と遮蔽 (`shieldOf`・`bookShip`)・`data/` の物理の生データと Geant4・`tools/physics.js` | いつでも (2026-10-20 に足した。`docs/requests/2026-10-20-P.md`)。`bookShip` を呼ぶ所 (交易・艦隊・入植) に 1 行ずつ触るので、マージの前に A・C と突き合わせる |
 
 - レーンの「主に触る所」の外を大きく直すときは、PR の本文にそう書き、ほかのレーンで動いているセッションに響かないか確かめる。
 - 1 つのレーンを 2 つのセッションで同時に進めない。
 
-### レーン P (下準備) の決まり
+### レーン Q (下準備) の決まり
 
 後の回が最初にユーザーの返事待ちで止まらないように、選択肢の表と生データを先に用意するレーン。ほかのレーンとぶつからないように、次を守る。
 
 - **新しいファイルだけを作る。** `src/`・`tools/`・`index.html` には触らない。共有のファイル (`data/README.md`・`data/raw/MANIFEST.json`・`docs/game-plan.md`・`docs/handoff.md`) にも書かず、取った生データは `data/raw/<名前>/` に、その中の `MANIFEST.json` と `README.md` をつけて置く。
 - **目標 (`targets/targets.json`) は変えない。** 幅の案は `docs/proposals/` に書くだけにし、固定はその段のセッションが「目標の変更」の PR で行う (目標の PR は 1 本ずつ)。
 - **ほかのレーンが動いている段には手を出さない。** 始める前に `docs/status/` を読み、その段のセッションが始まっていたら、その段の分は飛ばす。
-- ユーザーの返事は `docs/requests/<日付>-P.md` にそのまま残し、`docs/proposals/` の表に「決まった案」として書く。その段のセッションは、決まっていればそれに従い、もう一度は聞かない。
+- ユーザーの返事は `docs/requests/<日付>-Q.md` にそのまま残し、`docs/proposals/` の表に「決まった案」として書く。その段のセッションは、決まっていればそれに従い、もう一度は聞かない。
 
 ## 2. 文書の分け方 (衝突しないように)
 
@@ -67,3 +68,12 @@ GitHub の設定 (branch protection の *Require branches to be up to date befor
 - `docs/handoff.md` の「3. いまの状態」「5-3. 止めている作業」の中身を、`docs/status/A.md`・`docs/status/C.md` (財政の差分) などに移し、`handoff.md` には共通の約束と地図だけを残す。
 - `docs/requests-log.md` の頭に「ここで終わり。続きは `docs/requests/`」と書く。
 - `fiscal.patch` は `docs/wip/C-fiscal.patch` に名前を変える (中身はそのまま)。
+
+## 6. シミュレーション版は一旦無視する (2026-10-20)
+
+ユーザーの指示 (`docs/requests/2026-10-20-P.md` の P-2)。物理 (星間の気体と宇宙線の遮蔽・加速の時間・M 型星のフレア。`docs/physics.md`) を、**シミュレーション版にだけ**入れてマージした。ゲーム版の試合は前と同じ。
+
+- **レーン P 以外は、シミュレーション版を無視する。** `simulation.html` を作り直さない・直さない (`node tools/build.mjs` はゲーム版だけを作る。シミュレーション版は `--sim` を付けたときだけ)。
+- CI の表の「シミュレーション版・参考」の行 (`physics`・シミュレーション版の `energy`・シミュレーション版の `build`) は、落ちても CI を止めない。ほかのレーンは気にしなくてよい。
+- `src/index.html` の物理の所 (`ED.physics` を見ている所、`shieldOf`・`accelExtra`・`withAccel`・`radiationOf`、`ISM`・`SHIELD*`・`SURFACE_DOSE`・`FLARES` の表) と `EDITIONS.sim` は、レーン P だけが触る。ほかのレーンは、`bookShip` などを直すときに、その行 (航路の長さ `ly` を渡す所・`withAccel` を掛ける所) を消さずに残す。ぶつかったら両方残す。
+- ゲーム版に物理を入れるかは、あとでユーザーが決める (`EDITIONS.game.physics` を true にするだけで入る)。

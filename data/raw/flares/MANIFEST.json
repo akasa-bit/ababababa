@@ -1,0 +1,61 @@
+[
+ {
+  "file": "gunther2020_ReadMe.txt",
+  "url": "https://cdsarc.cds.unistra.fr/ftp/J/AJ/159/60/ReadMe",
+  "fetched": "2026-10-20T09:40:46Z",
+  "sha256": "885ce845a3a5823ae8d76eb2f5a6a89582727983e0cbf89e71ce22516f9486c7",
+  "lines": 197
+ },
+ {
+  "file": "gunther2020_table2.txt",
+  "url": "https://cdsarc.cds.unistra.fr/ftp/J/AJ/159/60/table2.dat",
+  "fetched": "2026-10-20T09:40:47Z",
+  "sha256": "73e621d59dec673235b6b4be35c59cd06fded54fc1697e1b7e9b86a23de2459a",
+  "lines": 1228
+ },
+ {
+  "file": "galletta2025_ReadMe.txt",
+  "url": "https://cdsarc.cds.unistra.fr/ftp/J/A+A/698/A180/ReadMe",
+  "fetched": "2026-10-20T09:40:47Z",
+  "sha256": "11ecc6edc1a210a69f3505da8a1855cfb4db9a73c4292bc8bacc4780b298fa41",
+  "lines": 118
+ },
+ {
+  "file": "galletta2025_stars.txt",
+  "url": "https://cdsarc.cds.unistra.fr/ftp/J/A+A/698/A180/stars.dat",
+  "fetched": "2026-10-20T09:40:48Z",
+  "sha256": "d130211f37ce8c05f532edfbc7319a0b0e059a844fddf9374a91cbb8d1a87d77",
+  "lines": 172
+ },
+ {
+  "file": "galletta2025_table3.txt",
+  "url": "https://cdsarc.cds.unistra.fr/ftp/J/A+A/698/A180/table3.dat",
+  "fetched": "2026-10-20T09:40:49Z",
+  "sha256": "01ba226b148429175287841330711da62a35a7b6f1b6a655940257ce6e448b94",
+  "lines": 751
+ },
+ {
+  "file": "gunther2020_tic.csv",
+  "url": "https://tapvizier.cds.unistra.fr/TAPVizieR/tap/sync",
+  "fetched": "2026-10-20T09:40:51Z",
+  "sha256": "e78a7a8cafcdecb590151d3e44560f9595e9030248b46e2de1886306c85e8a17",
+  "lines": 1229,
+  "query": "SELECT TIC, RAJ2000, DEJ2000, Tmag, Teff, Dist FROM \"IV/39/tic82\" WHERE TIC IN (表 2 の TIC)"
+ },
+ {
+  "file": "papaioannou2023_appC.tex",
+  "url": "https://arxiv.org/e-print/2211.15312#43407corr.tex (appendix C)",
+  "fetched": "2026-10-20T09:40:51Z",
+  "sha256": "b190a8895b6fd9c07b846a386d59bff166081b0f590cecf7ecc0f60a34826b92",
+  "lines": 72,
+  "source_sha256": "88fa3f504b53c2d5487a97193768aca157349082401ce14d86fdfb27f285b7f5"
+ },
+ {
+  "file": "goes_xrs_1984_2017.txt.gz",
+  "url": "https://www.ngdc.noaa.gov/stp/space-weather/solar-data/solar-features/solar-flares/x-rays/goes/xrs/goes-xrs-report_{1984..2016}.txt と goes-xrs-report_2017-ytd.txt (年ごとのファイルをつないだ)",
+  "fetched": "2026-10-20T09:41:02Z",
+  "sha256": "704bb4f23da6bd350bdf72cdaf555f976749716fd1fccc253241b20a838926d8",
+  "lines": 61529,
+  "sha256_uncompressed": "3907356fcfa287b89b188432955cd1e7a925ebb4212cf8d14e501327387e36b5"
+ }
+]
