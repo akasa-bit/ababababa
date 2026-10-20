@@ -1,0 +1,30 @@
+[
+ {
+  "file": "smith2014-doi.json",
+  "url": "https://api.crossref.org/works/10.1016/j.actaastro.2013.12.013",
+  "fetched": "2026-10-20T11:12:22Z",
+  "sha256": "0ab59c30e2d1c2605e4568167d30c820a705c5d5280a97457864f328baee90ca",
+  "bytes": 27006
+ },
+ {
+  "file": "marin2018-arxiv.html",
+  "url": "https://arxiv.org/abs/1806.03856",
+  "fetched": "2026-10-20T11:12:22Z",
+  "sha256": "ad3cfdbe47b0b80059a7eb071983e6181e40e422720470c9537891c430c0f7c7",
+  "bytes": 43088
+ },
+ {
+  "file": "traill2007-doi.json",
+  "url": "https://api.crossref.org/works/10.1016/j.biocon.2007.06.011",
+  "fetched": "2026-10-20T11:12:22Z",
+  "sha256": "c0bbf4ace937335598df8848aadb15c9d6c2387110ed77a3a81e6d3b1eb2eb4b",
+  "bytes": 12536
+ },
+ {
+  "file": "frankham2014-doi.json",
+  "url": "https://api.crossref.org/works/10.1016/j.biocon.2013.12.036",
+  "fetched": "2026-10-20T11:12:22Z",
+  "sha256": "93d1297dcbbb6082b5ee303f6392fbc47efa3f7921a69aebeb730cf8b35a1fa2",
+  "bytes": 27814
+ }
+]
