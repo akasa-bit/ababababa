@@ -1,0 +1,63 @@
+// お金の保存の試験 (段 4)。conserve.js と同じく、1 年ごとに次を確かめる。
+//   - 全体: (お金の総額の増加) ÷ 取扱量 (出入りの絶対値の合計) が 1e-9 以下。総額 = 政府の資金 + 星系の民間 + 先住民 + 運ぶ途中 − 銀行の貸出
+//     (民間と先住民は払えない分を銀行から借りる。銀行は貸すと同時に預金を作るので、お金の量は貸出の分だけ増え、純額は変わらない)
+//     (運ぶ途中 = 物資移送要求の先払い・朝貢と資金援助・返事に添えた額・入植船と準備中の入植船の開拓資金)
+//   - 帳簿ごと: 政府・民間・先住民・運ぶ途中のそれぞれで、記帳した出入りの合計 = 額の増加 (記帳しないで書き換える所がない)
+//   - 種類ごと: 出入りの種類ごとに、すべての帳簿の合計が 0 (どこかから出た分は、どこかへ入る)。交易は輸入 (import) と輸出 (trade) を合わせて見る
+//   - 出入りの種類が決まったものだけであること
+// 使い方: node tools/tests/money.js [シード] [年数] [国の数]   (画面なしの版で回す。HTML=… で版を選ぶ)
+const path = require('path');
+const H = require(path.resolve(__dirname, '..', 'headless'));
+const [seed = '5', years = '150', nations = '0'] = process.argv.slice(2);
+const KINDS = ['tax', 'natives', 'upkeep', 'build', 'trade', 'import', 'tribute', 'grant', 'treaty'];
+const sim = H.load(process.env.HTML ? { src: process.env.HTML } : {});
+const g = sim.newGame(seed, { nations: Number(nations) });
+const holdings = () => {
+  const h = { gov: 0, pv: 0, nat: 0, way: 0 };
+  let loan = 0;
+  for (const v of Object.values(g.govs)) { h.gov += v.credits || 0; h.pv += (v.pv || 0) - (v.loan || 0); loan += v.loan || 0; if (v.pv < 0 || v.loan < 0) h.bad = true; }
+  for (const st of Object.values(g.natives)) { h.nat += (st.cr || 0) - (st.loan || 0); loan += st.loan || 0; if (st.cr < 0 || st.loan < 0) h.bad = true; }
+  h.loan = loan;
+  for (const q of g.requests) h.way += (q.kind === 'trade' ? q.pre : q.kind === 'tribute' || q.kind === 'grant' ? q.amt : 0) || 0;
+  for (const d of g.decisions) h.way += d.cr || 0;
+  for (const s of g.ships) h.way += s.seed || 0;
+  for (const j of g.projects) h.way += j.seed || 0;
+  return h;
+};
+let worst = 0, worstAt = '', worstAcct = 0, worstAcctAt = '', worstKind = 0, worstKindAt = '', bad = new Set(), through = 0;
+const totals = {};
+for (let y = 0; y < Number(years); y++) {
+  const h0 = holdings();
+  sim.evaluate('MONEY_AUDIT = {}');
+  for (let i = 0; i < 4; i++) g.advance(0.25);
+  const h1 = holdings(), A = sim.evaluate('MONEY_AUDIT');
+  sim.evaluate('MONEY_AUDIT = null');
+  let abs = 0;
+  const byAcct = { gov: 0, pv: 0, nat: 0, way: 0 };
+  for (const [k, f] of Object.entries(A)) {
+    if (!KINDS.includes(k)) bad.add(k);
+    for (const [t, v] of Object.entries(f)) { abs += Math.abs(v); byAcct[t] += v; totals[k] = (totals[k] || 0) + Math.abs(v) / 2; }
+  }
+  through += abs;
+  const at = `${g.year.toFixed(0)} 年`;
+  const sum = (h) => h.gov + h.pv + h.nat + h.way;
+  if (h1.bad) bad.add('手持ちか借りがマイナス');
+  const q = abs ? Math.abs(sum(h1) - sum(h0)) / abs : Math.abs(sum(h1) - sum(h0));
+  if (q > worst) { worst = q; worstAt = at; }
+  for (const t of Object.keys(byAcct)) {
+    const e = abs ? Math.abs(h1[t] - h0[t] - byAcct[t]) / abs : Math.abs(h1[t] - h0[t]);
+    if (e > worstAcct) { worstAcct = e; worstAcctAt = `${at} ${t}`; }
+  }
+  const fam = {};
+  for (const [k, f] of Object.entries(A)) { const n = k === 'import' ? 'trade' : k; fam[n] = (fam[n] || 0) + Object.values(f).reduce((a, v) => a + v, 0); }
+  for (const [k, v] of Object.entries(fam)) { const e = abs ? Math.abs(v) / abs : Math.abs(v); if (e > worstKind) { worstKind = e; worstKindAt = `${at} ${k}`; } }
+}
+const e = (v) => Number(v).toExponential(2);
+const h = holdings();
+const ok = !bad.size && worst <= 1e-9 && worstAcct <= 1e-9 && worstKind <= 1e-9 && !bad.size;
+console.log(`${years} 年・入植地 ${g.colonies.length} ・ お金の保存 ${ok ? '合格' : '不合格'}`);
+console.log(`  総額の誤差 ÷ 取扱量の最大 ${e(worst)} (${worstAt})`);
+console.log(`  帳簿ごとの誤差 ${e(worstAcct)} (${worstAcctAt}) ・ 種類ごとの誤差 ${e(worstKind)} (${worstKindAt})`);
+console.log(`  決まっていない出入り: ${bad.size ? [...bad].join(', ') : 'なし'}`);
+console.log(`  終わりの額 [cr]: 政府 ${Math.round(h.gov)} / 民間 (手持ち − 借り) ${Math.round(h.pv)} / 先住民 ${Math.round(h.nat)} / 運ぶ途中 ${Math.round(h.way)} / 銀行の貸出 ${Math.round(h.loan)}`);
+console.log('  種類ごとの取扱量 [cr]:', Object.entries(totals).map(([k, v]) => `${k} ${Math.round(v)}`).join(' / '));

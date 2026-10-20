@@ -138,6 +138,7 @@ for t in pick regime editions; do node tools/tests/$t.js shots; done
 node tools/tests/energy.js 5 150                                # 船のエネルギーの記帳 (目標 R07)
 HTML=$PWD/simulation.html NAT=1 node tools/tests/energy.js 7 150
 node tools/tests/conserve.js 5 150                              # 物質とエネルギーの保存 (目標 R03)
+node tools/tests/money.js 5 150                                 # お金の保存 (画面なしの版。6 か国なら 3 つめに 6)
 node tools/tests/headless.js 100 1,4,9                          # 画面なしの版がブラウザと一致する
 HTML=$PWD/simulation.html NAT=1 node tools/tests/conserve.js 7 150
 ```
@@ -157,6 +158,7 @@ HTML=$PWD/simulation.html NAT=1 node tools/tests/conserve.js 7 150
 | `conserve.js` | 1 年ごとに、星系ごと・資源ごとの記帳した出入りと備蓄の増加・運ぶ途中の物・工業の質量・政府ごとのエネルギーが釣り合う (誤差 ÷ 取扱量が 1e-9 以下、目標 R03)。決まっていない出入りがない |
 | `cloud.js` | アカウントとクラウド (偽の Firebase で): ゲストのログイン・名前・クラウドのセーブ・自作の国・部屋のコードでのネット対戦 |
 | `headless.js` | 画面なしの版で回した状態の要約が、公開用の index.html をブラウザで回したものと一致する (国家選択なし・6 か国)。値のファイルが効き、ない項目を拒む |
+| `money.js` | 1 年ごとに、お金の総額 (政府・民間・先住民・運ぶ途中 − 銀行の貸出) が変わらない、帳簿ごとの記帳した出入りと額の増加が一致する、出入りの種類ごとに帳簿の合計が 0 (誤差 ÷ 取扱量が 1e-9 以下)。決まっていない出入りがなく、手持ちと借りがマイナスにならない ([docs/money.md](../docs/money.md)) |
 | `energy.js` | 船 1 便ごとに記帳した推進のエネルギーが、試験の中で計算し直した式と 1 ± 1e-6 で一致する (目標 R07)。太陽系の発電と収支も出す |
 
 各試験は結果を表示します。`[]` で終わる行は、ページの誤りがなかったことを表します。
