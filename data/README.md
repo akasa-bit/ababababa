@@ -136,3 +136,11 @@ node tools/build.mjs
 - **限界**: 長い波の当てはまりは弱い (R² 0.1〜0.2)。2300 年の倍率は、延ばす伸びの選び方で ×33〜×253 と大きく変わる (`docs/productivity.md`)
 
 出典: Bergeaud, A., Cette, G. & Lecat, R. (2016) Productivity Trends in Advanced Countries between 1890 and 2012, Review of Income and Wealth 62(3), 420–444・Bolt, J. & van Zanden, J. L. (2024) Maddison style estimates of the evolution of the world economy: A new 2023 update, Journal of Economic Surveys
+## スウォームの太陽電池の劣化のデータ
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_pv.py` → `data/raw/pv/` | GaAs の陽子の NIEL (SR-NIEL v11.1 の計算機、Ed = 21 eV、0.01〜1,000 MeV)・NIST PSTAR のパイレックス (カバーガラスの代わり) |
+| 加工 | `data/build/build_pv.py` → `data/derived/pv.json` と `src/index.html` の `PV_DAMAGE` | フレアの陽子 (ε = 2.13) がカバーガラスを通って接合に与える変位損傷の線量、3 接合の電池の出力の残り (Walters ほか 2004 の C・Dx)、太陽の 1 AU での確かめ |
+
+出典: SR-NIEL (Boschini ほか、www.sr-niel.org)・NIST PSTAR・Walters, Morton & Messenger (2004) NASA/TP-2004-213338・Lohmeyer, Aniceto, Cahoy & Carlton (2018) Int. J. Space Sci. Eng. 5, 61
