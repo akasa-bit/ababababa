@@ -79,3 +79,16 @@ python3 data/build/analyze_trade.py     # 推定する (numpy が要る。約 1 
 - **限界**: JST の revenue と expenditure は中央政府 (国によって範囲が少し違う。JST の文書を参照)。ゲームは首都と従属星系の政府をまとめた一般政府で比べる。Bank of England の「A millennium of macroeconomic data」(約 27 MB) は大きすぎるので取っていない
 
 出典: Jordà, Ò., Schularick, M. & Taylor, A. M. (2017). Macrofinancial History and the New Business Cycle Facts. NBER Macroeconomics Annual 31, 213–263・Schmelzing, P. (2020). Eight centuries of global real interest rates, R-G, and the 'suprasecular' decline, 1311–2018. Bank of England Staff Working Paper 845
+
+## 市場のデータ (目標 R23〜R26)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_market.py` → `data/raw/market/` | World Bank Commodity Price Data (Pink Sheet) の年次の表、USDA PSD の小麦・とうもろこし・米の期末在庫と国内消費 (国ごと・年ごと。元の zip から取り出したもの)、FRED ISRATIO (米国の企業全体の在庫 ÷ 売上、月次)。取得日・URL・SHA-256 を `data/raw/market/MANIFEST.json` に記録する |
+| 加工 | `data/build/analyze_market.py` → `data/derived/market.json` | 品目ごとの Δln(実質の値段) の標準偏差と、傾向を除いた ln(値段) の 1 年の自己相関 (Deaton & Laroque 1992)、世界の穀物の在庫 ÷ 消費、在庫 ÷ 月の売上の 10%〜90% 点 |
+
+- **品目とゲームの資源の対応**: 食料 ← 穀物・油・砂糖・肉など 18 品目、金属 ← アルミ・鉄鉱石・銅・鉛・すず・ニッケル・亜鉛、燃料 ← 原油・石炭・天然ガス、希少元素 ← 金・白金・銀 (`GROUPS`)。水・工業品・奴隷に対応する一次産品はない
+- **世界の穀物**: PSD は世界の行を持たないので、国を足し上げる (PSD の世界の値も同じ足し上げ)
+- **限界**: Pink Sheet の実質の値段は、先進国の工業品の輸出の単価 (MUV) で割ったもの。ISRATIO は米国だけ
+
+出典: World Bank (2026) Commodity Price Data (The Pink Sheet)・USDA Foreign Agricultural Service, Production, Supply and Distribution Online・U.S. Census Bureau, Total Business: Inventories to Sales Ratio (FRED ISRATIO)・Deaton, A. & Laroque, G. (1992) On the Behaviour of Commodity Prices, Review of Economic Studies 59, 1–23

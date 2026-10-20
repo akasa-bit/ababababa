@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "fixedAt": "2026-10-20",
   "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
   "rules": [
@@ -12,7 +12,8 @@
   "changes": [
     { "version": 2, "date": "2026-10-18", "what": "R06・R08・R09・R13・R14・R15・R16 の幅を、取得スクリプトで生データから計算した値だけで決めた (data/derived/history.json)。ゲームの自動対戦の結果はこの変更に使っていない" },
     { "version": 3, "date": "2026-10-18", "what": "R01 の幅を、取得スクリプトで生データ (CEPII Gravity V202211、2000〜2019 年) から計算した値だけで決めた (推定 −0.874、data/derived/trade.json)。合格の決まり (負で、差 0.3 以内) をそのまま当てはめた。式は ln 距離だけ (ゲームの星系には隣接・言語などの変数がないので)。ゲームの自動対戦の結果はこの変更に使っていない" },
-    { "version": 4, "date": "2026-10-20", "what": "財政と金融の目標 R19〜R22 を足した。幅は、取得スクリプト (data/fetch/fetch_fiscal.py) で取った Jordà–Schularick–Taylor R6 から data/build/analyze_fiscal.py で計算した、国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ GDP がなく、測れない)" }
+    { "version": 4, "date": "2026-10-20", "what": "財政と金融の目標 R19〜R22 を足した。幅は、取得スクリプト (data/fetch/fetch_fiscal.py) で取った Jordà–Schularick–Taylor R6 から data/build/analyze_fiscal.py で計算した、国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ GDP がなく、測れない)" },
+    { "version": 5, "date": "2026-10-20", "what": "市場の目標 R23〜R26 を足した。幅は、取得スクリプト (data/fetch/fetch_market.py) で取った World Bank Pink Sheet・USDA PSD・FRED ISRATIO から data/build/analyze_market.py で計算した 10%〜90% 点だけで決めた (data/derived/market.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ値段がなく、測れない)" }
   ],
   "realism": [
     {
@@ -208,6 +209,46 @@
       "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
       "band": [0.2943, 0.7847], "estimate": 0.474,
       "reference": "18 か国 1870〜2020 年 (2445 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R23", "area": "市場", "name": "値段の変化のばらつき",
+      "data": { "source": "World Bank Pink Sheet・USDA PSD・FRED ISRATIO", "years": "1960-2025 (ISRATIO は 1992 年〜)", "script": "data/fetch/fetch_market.py" },
+      "statistic": "各系列の Δln(実質の値段) の標準偏差 (年次)。現実は Pink Sheet の 31 品目 (食料 18・金属 7・燃料 3・貴金属 3)、ゲームは星系ごとの食料・金属・燃料・希少元素の値段。計算は data/build/analyze_market.py",
+      "sim": "ゲームの星系ごとの値段と在庫を、同じ列のパネルに書き出し (tools/market-panel.js)、同じコード (data/build/analyze_market.py) で計算する。銀河 (シード) ごとに中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの 10%〜90% 点の中",
+      "band": [0.1358, 0.273], "estimate": 0.1962,
+      "reference": "31 の系列・年・月の分布。品目の組ごとの値も data/derived/market.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R24", "area": "市場", "name": "値段の続き方",
+      "data": { "source": "World Bank Pink Sheet・USDA PSD・FRED ISRATIO", "years": "1960-2025 (ISRATIO は 1992 年〜)", "script": "data/fetch/fetch_market.py" },
+      "statistic": "各系列の ln(実質の値段) から直線の傾向を除いたものの 1 年の自己相関 (Deaton & Laroque 1992 の形)。系列は R23 と同じ。計算は data/build/analyze_market.py",
+      "sim": "ゲームの星系ごとの値段と在庫を、同じ列のパネルに書き出し (tools/market-panel.js)、同じコード (data/build/analyze_market.py) で計算する。銀河 (シード) ごとに中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの 10%〜90% 点の中",
+      "band": [0.6781, 0.8955], "estimate": 0.8305,
+      "reference": "31 の系列・年・月の分布。品目の組ごとの値も data/derived/market.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R25", "area": "市場", "name": "穀物の在庫 ÷ 消費",
+      "data": { "source": "World Bank Pink Sheet・USDA PSD・FRED ISRATIO", "years": "1960-2025 (ISRATIO は 1992 年〜)", "script": "data/fetch/fetch_market.py" },
+      "statistic": "世界の小麦・とうもろこし・米の期末在庫 ÷ その年の国内消費 (1960〜2024 年の作物・年)。ゲームは星系ごとの食料の在庫 ÷ その年の食料の消費。計算は data/build/analyze_market.py",
+      "sim": "ゲームの星系ごとの値段と在庫を、同じ列のパネルに書き出し (tools/market-panel.js)、同じコード (data/build/analyze_market.py) で計算する。銀河 (シード) ごとに中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの 10%〜90% 点の中",
+      "band": [0.1412, 0.3606], "estimate": 0.2773,
+      "reference": "195 の系列・年・月の分布。品目の組ごとの値も data/derived/market.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R26", "area": "市場", "name": "工業品の在庫 ÷ 売上",
+      "data": { "source": "World Bank Pink Sheet・USDA PSD・FRED ISRATIO", "years": "1960-2025 (ISRATIO は 1992 年〜)", "script": "data/fetch/fetch_market.py" },
+      "statistic": "米国の企業全体の在庫 ÷ 月の売上 (月数。1992 年〜の月)。ゲームは星系ごとの工業品の在庫 ÷ 月あたりの工業品の消費。計算は data/build/analyze_market.py",
+      "sim": "ゲームの星系ごとの値段と在庫を、同じ列のパネルに書き出し (tools/market-panel.js)、同じコード (data/build/analyze_market.py) で計算する。銀河 (シード) ごとに中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの 10%〜90% 点の中",
+      "band": [1.27, 1.47], "estimate": 1.39,
+      "reference": "416 の系列・年・月の分布。品目の組ごとの値も data/derived/market.json にある",
       "split": "calibration"
     }
   ],
