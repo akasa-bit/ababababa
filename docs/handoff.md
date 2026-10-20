@@ -162,6 +162,7 @@
 
 - `src/index.html` を直したら、かならず `node tools/build.mjs` で 2 つの版を作り直す。試験は公開用の HTML を開いて動かす。
 - **決まった計算**: 試合と銀河の計算に `Math.pow`・`**`・`Math.exp/log/sin/cos/cbrt/atanh/hypot/log10` を書かない。`GM.pow(…)` などを使う (`DMath`。ブラウザの版で末尾の桁が変わらない)。画面の描画は `Math` でよい。守らないと `tools/tests/headless.js` が落ち、ネット対戦が端末の間でずれる
+- **CI**: PR を作ると GitHub Actions (`.github/workflows/ci.yml`) が試験と自動対戦を回し、表を PR のコメントに書く。マージの前にコメントの表がすべて合格か見る。手元では `node tools/ci-tests.js`
 - **画面なしの版**: `tools/headless.js` (Node で試合を回す。ボット・CI・つり合いの点検の土台)
 - **決定性**: 試合の乱数は `Game.rand` (状態 `rs` はセーブに入る) だけを使う。`Math.random` は見た目にだけ使う。新しい乱数を増やすと試合の筋は変わるが、決定性の試験は通る。
 - **セーブの互換**: 銀河は読み込みのたびにシードから作り直す。銀河の作り方を変えるときは、版の番号 (`GALAXY_GEN`) を上げ、古いセーブは古い作り方で読む (例: η⊕ の版 2)。
