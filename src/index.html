@@ -2952,7 +2952,7 @@ class Game {
     this.debtStep(h);
   }
   // 国債 (docs/debt.md)。人間が動かしていない政府は、財政の反応の式 (DEBT) で決まる基礎収支に、国債の利子を足した分だけ国債を出す
-  // (マイナスなら返す)。銀行が国債を買い、同じ額の預金を政府に作るので、政府の純額 (資金 − 国債) は変わらない (お金は湧かない)。
+  // (マイナスなら返す。手元の資金で返しきれない分は持ち越す)。銀行が国債を買い、同じ額の預金を政府に作るので、政府の純額 (資金 − 国債) は変わらない (お金は湧かない)。
   // 手元の資金が税収の DEBT.cash 年分を超えたら、超えた分を DEBT.spend 年ほどで行政サービス (民間の賃金と買い付け) に使う
   debtStep(h) {
     const war = new Set(Object.keys(this.realmWars).flatMap((k) => k.split('|').map(Number)));
@@ -2969,8 +2969,14 @@ class Game {
       fr.t += (GM.log(fr.y) - fr.t) * Math.min(1, h / DEBT.trend);
       fr.u = fr.u * keep + DEBT.sd * Math.sqrt(1 - keep * keep) * this.randNormal();
       const s = DEBT.a + DEBT.rho * ((gv.bond || 0) / fr.y) + DEBT.beta * (GM.log(fr.y) - fr.t) + (war.has(this.realmOf(id)) ? DEBT.war : 0) + fr.u;
-      let x = -s * fr.y * h + paid;
-      if (x < 0) x = -Math.min(-x, gv.bond || 0, Math.max(0, gv.credits));
+      // 返しきれなかった分 (手元の資金が足りなかった分) は、次の刻みから先に返す (gv.due)
+      let x = -s * fr.y * h + paid - (gv.due || 0);
+      gv.due = 0;
+      if (x < 0) {
+        const pay = Math.min(-x, gv.bond || 0, Math.max(0, gv.credits));
+        gv.due = Math.min(-x - pay, (gv.bond || 0) - pay);
+        x = -pay;
+      }
       if (gv.credits + x < 0) x = -gv.credits;
       if (x) { gv.credits += x; gv.bond = Math.max(0, (gv.bond || 0) + x); }
       const extra = gv.credits - DEBT.cash * Math.max(0, (gv.ledger?.tax || 0) + (gv.ledger?.natives || 0));
