@@ -92,3 +92,35 @@ python3 data/build/analyze_trade.py     # 推定する (numpy が要る。約 1 
 - **限界**: Pink Sheet の実質の値段は、先進国の工業品の輸出の単価 (MUV) で割ったもの。ISRATIO は米国だけ
 
 出典: World Bank (2026) Commodity Price Data (The Pink Sheet)・USDA Foreign Agricultural Service, Production, Supply and Distribution Online・U.S. Census Bureau, Total Business: Inventories to Sales Ratio (FRED ISRATIO)・Deaton, A. & Laroque, G. (1992) On the Behaviour of Commodity Prices, Review of Economic Studies 59, 1–23
+
+## 物理 (星間の気体・宇宙線と遮蔽) のデータ
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_ism.py` → `data/raw/ism/` | Linsky, Redfield & Tilipman 2019 の表 2 (近くの星 62 本の視線の log N(H I)。arXiv 1910.01243 の原稿の LaTeX から表だけ)・NIST PSTAR (水の中の陽子)・PDG の水の性質。取得日・URL・SHA-256・行数を `data/raw/ism/MANIFEST.json` に記録する |
+| 加工 | `data/build/build_ism.py` → `data/derived/ism.json` と `src/index.html` の `ISM` | 16.5 pc 以内の 24 本の視線から、雲の中を通る割合を出し、雲の中 (中性と電離した水素・ヘリウム・塵) と外 (圧力のつり合う電離した気体) の核子を足した、航路の平均の数密度 |
+| 計算 | `data/build/g4_all.sh` (`g4_shield.py`・`g4_stages.sh`・`make_gcr_source.py`) → `data/derived/g4/` | Geant4 11.4 で、水の板の中の深さと線量 (前: 星間の気体の陽子とヘリウム、横: 船の系に直した銀河宇宙線)。4 コアで 2〜3 時間。Geant4 は `pip install geant4_pybind numpy` (初めての import で約 2 GB のデータを落とす) |
+| 加工 | `data/build/build_shield.py` → `data/derived/shield.json` と `src/index.html` の `SHIELD_DOSE`・`SHIELD_GCR` | 段を継ぎ、線量の山から先を減る形に均した表。確かめ (PSTAR・PDG・MSL の実測) |
+| 見積もり | `data/build/side_checks.py` → `data/derived/physics_checks.json` | ゲームに入れなかった物理の桁 (熱・気体の抵抗・横の宇宙線の比・回折・加速の時間) |
+
+```sh
+python3 data/fetch/fetch_ism.py
+python3 data/build/build_ism.py
+data/build/g4_all.sh <Geant4 の入った python> <作業場所> && cp <作業場所>/*.json data/derived/g4/
+python3 data/build/build_shield.py
+python3 data/build/side_checks.py
+node tools/build.mjs
+```
+
+中身と結果は `docs/physics.md`。出典: Linsky, Redfield & Tilipman (2019) ApJ 886, 41・Slavin & Frisch (2008) A&A 491, 53・Krüger ほか (2015) ApJ 812, 139・NIST PSTAR・PDG・Vos & Potgieter (2015) ApJ 815, 119・Simpson (1983) Ann. Rev. Nucl. Part. Sci. 33, 323・Zeitlin ほか (2013) Science 340, 1080
+
+## M 型星のフレアのデータ
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_tess.py <置き場>` → `data/raw/tess/MANIFEST.json` | ゲームの M 型星 (CNS5 の 1 つずつ) の TIC 番号 (VizieR IV/39) と、TESS の 2 分ごとの光度曲線 (MAST、1 星 4 セクタまで、約 290 MB)。光度曲線はリポジトリに置かず、URL と SHA-256 を記録する。TESS の感度の曲線 `tess-response-function-v2.0.csv` (HEASARC) |
+| 取得 | `data/fetch/fetch_flares.py` → `data/raw/flares/` | Günther ほか 2020 の表 2 と TIC の位置、Galletta ほか 2025 の表 3 (10 pc 以内)、Papaioannou ほか 2023 の付録 C (太陽の陽子の現象 65 回)、NOAA の GOES の X 線のフレアの記録 (1984〜2017 年) |
+| 加工 | `data/build/flares_tess.py <置き場>` → `data/derived/tess_flares.json` | 光度曲線からフレアを数える (移動中央値・3σ が 3 点・注入と回収で E90)。エネルギーは 9,000 K の黒体 |
+| 加工 | `data/build/build_flares.py` → `data/derived/flares.json` と `src/index.html` の `FLARES` | 星ごとの分布の当てはめ (露出で重み・最尤法)、太陽で測った X 線 → 陽子の関係と、陽子が来る割合、1 AU の 1 年の F(>10 MeV) |
+
+出典: Ricker ほか (2015) TESS・Stassun ほか (2019) / Paegert ほか (2021) TIC・Günther ほか (2020) AJ 159, 60・Galletta ほか (2025) A&A 698, A180・Papaioannou ほか (2023) A&A 671, A66・Cliver ほか (2020) ApJ 903, 41・NOAA NCEI GOES XRS flare reports・Davenport (2014) ApJ 797, 122
