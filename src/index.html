@@ -1328,6 +1328,11 @@ function propulsion(m, beta, mode) {
 /* ISM:BEGIN (data/build/build_ism.py が書く。手で直さない) */
 const ISM = { nNuc: 0.1142 }; // 航路で前面に当たる核子の平均の数密度 [/cm³] (近くの星 24 本の視線の H I の柱密度から。data/derived/ism.json)
 /* ISM:END */
+/* PV_DAMAGE:BEGIN (data/build/build_pv.py が書く。手で直さない) */
+// スウォームの太陽電池: 全方向の F(>10 MeV) 1 /cm² あたりの接合の変位損傷の線量 ddd [MeV/g] を、カバーガラスの厚さ [µm] ごとに (ε = 2.13)。
+// 出力の残り = 1 − C log10(1 + DDD/Dx) (3 接合の電池。Walters ほか 2004)。使う厚さは glass、素子は life 年ごとに取り替える (設定の選択。docs/physics.md の 7)
+const PV_DAMAGE = {"ddd":{"100":0.1243,"300":0.01715,"1000":0.002211,"3000":0.0004067},"glass":100,"C":0.27,"Dx":1700000000.0,"life":15};
+/* PV_DAMAGE:END */
 /* FLARES:BEGIN (data/build/build_flares.py が書く。手で直さない) */
 // 星系の目録の名前 → 恒星ごとの、1 AU で 1 年に届くフレアの高エネルギー陽子 F(>10 MeV) [/cm²] (M 型星だけ。ほかの恒星は 0、太陽は sun)。
 // 陽子のスペクトルは ε = 2.13 (Papaioannou ほか 2023 の中央値。Geant4 の線源。付録 C の 10〜100 MeV の比からは 1.78)。docs/physics.md の 6
@@ -1372,11 +1377,24 @@ function doseAt(tab, t) { // 表の深さ t [g/cm²] の ln(線量) (表より�
 function annualDose(flare, a, column) {
   return GM.exp(doseAt(SURFACE_DOSE.gcr, column)) * YEAR_S + (flare / (a * a)) * GM.exp(doseAt(SURFACE_DOSE.sep, column));
 }
+// 恒星の 1 AU で 1 年の F(>10 MeV) [/cm²]。実在の星は星ごとの値。太陽と、星の値がない恒星 (手続きの銀河) は、F・G・K 型なら太陽の値、M 型なら測れた M 型星の中央値
+function flareOf(star) {
+  return star.flare ?? (!FLARES ? 0 : star.cls === 'M' ? FLARES.mMedian : 'FGK'.includes(star.cls) ? FLARES.sun : 0);
+}
+// スウォームの太陽電池の、陽子で傷んだあとの平均の出力の残り (物理。シミュレーション版だけ。docs/physics.md の 7)。素子は、地球と同じ明るさになる
+// 距離 √L AU を回るので、届く陽子は 1 AU の値 ÷ L。出力の残り 1 − C log10(1 + DDD/Dx) を、取り替えるまでの life 年で平均する
+function pvRemaining(star) {
+  if (!ED.physics || !PV_DAMAGE || !(star.lum > 0)) return 1;
+  const rate = (flareOf(star) / star.lum) * PV_DAMAGE.ddd[PV_DAMAGE.glass]; // 1 年の DDD [MeV/g]
+  let sum = 0;
+  for (let k = 0; k < 40; k++) sum += Math.max(0, 1 - PV_DAMAGE.C * GM.log10(1 + (rate * PV_DAMAGE.life * (k + 0.5)) / 40 / PV_DAMAGE.Dx));
+  return sum / 40;
+}
 function radiationOf(b, star) {
   if (!ED.physics || !SURFACE_DOSE || (b.type !== 'rocky' && b.type !== 'dwarf')) return null;
   const col = (b.pressure * RADIATION.columnPerBar) / Math.max(0.05, b.gravity || 1);
   // 実在の星は星ごとの値。太陽と、星の値がない恒星 (手続きの銀河) は、F・G・K 型なら太陽の値、M 型なら測れた M 型星の中央値
-  const flare = star.flare ?? (!FLARES ? 0 : star.cls === 'M' ? FLARES.mMedian : 'FGK'.includes(star.cls) ? FLARES.sun : 0);
+  const flare = flareOf(star);
   const surf = annualDose(flare, b.a, col);
   let cover = 0;
   if (surf > RADIATION.limitSv) { // 限度に収まる覆いの厚さを二分法で
@@ -5207,7 +5225,9 @@ class Game {
     if (!cover) return 0;
     const s = this.system(id);
     s.lumSum ??= s.stars.reduce((k, x) => k + (x.lum || 0), 0);
-    return s.lumSum * L_SUN_W * cover * PROP.pv * YEAR_S;
+    // 太陽電池が陽子で傷んだ分 (シミュレーション版だけ。ゲーム版は 1 で、星系に何も書かない)
+    const rf = ED.physics ? (s.pvRF ??= s.lumSum > 0 ? s.stars.reduce((k, x) => k + (x.lum || 0) * pvRemaining(x), 0) / s.lumSum : 1) : 1;
+    return s.lumSum * L_SUN_W * cover * PROP.pv * rf * YEAR_S;
   }
   energyOf(id) { return this.govs[id]?.E || 0; }
   // エネルギーを記帳する (kind ごとに、負なら使った量)。蓄えが負になってもよい (自動の移動の分。あとの発電で埋める)
@@ -8991,7 +9011,8 @@ function energyBox(g, id, k) {
   const now = id === g.cap;
   const E = now ? g.energyOf(id) : k?.energy || 0, P = now ? g.power(id) : k?.power || 0;
   const sys = g.system(id), lum = sys.stars.reduce((a, x) => a + (x.lum || 0), 0);
-  const cover = lum ? P / (lum * L_SUN_W * PROP.pv * YEAR_S) : 0;
+  const rf = sys.pvRF ?? 1; // 太陽電池が陽子で傷んだ分 (シミュレーション版だけ)
+  const cover = lum ? P / (lum * L_SUN_W * PROP.pv * rf * YEAR_S) : 0;
   return `<table class="tbl"><tr><td>蓄え</td><td>${fmtJ(E)} <span class="muted">(上限 ${fmtJ(SWARM.store * P)})</span></td></tr>
     <tr><td>スウォームの発電</td><td>${fmtJ(P)}/年</td></tr><tr><td>恒星の光を覆う割合</td><td>${cover >= 0.01 ? pct(cover) : cover.toExponential(1)}</td></tr>
     <tr><td>交易路で 1 単位 (100 万 t) を運ぶ</td><td>${fmtJ(E_UNIT)} ずつ (送る側の加速・受ける側の減速)</td></tr>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""財政と金融の様式化された事実を計算する (目標 R19〜R22)。
+"""財政と金融の様式化された事実を計算する (目標 R19〜R22・R27)。
 
 同じ関数 stats() を、現実のパネル (Jordà–Schularick–Taylor R6) にも、ゲームが書き出したパネル
 (tools/fiscal-panel.js。列は JST と同じ名前) にもかける (targets.json の決まり: 合否は実データと同じ統計コードで計算する)。
@@ -11,6 +11,7 @@
   R20 政府が黒字だった年の割合  revenue > expenditure の年 ÷ 年数
   R21 政府債務 ÷ GDP           debtgdp
   R22 民間の信用 ÷ GDP          tloans / gdp
+  R27 政府支出 ÷ GDP           expenditure / gdp (2026-10-20 に足した。費用の大きさを経済に合わせるため)
 幅の決め方 (ゲームの結果を見る前に決めた): 現実の国ごとの値の 10%〜90% 点。ゲームは、銀河ごと・国ごとの値の中央値がこの幅に入れば合格。
 
 使い方:
@@ -28,6 +29,7 @@ STATS = {
     'R20': ('政府が黒字だった年の割合', lambda d: (d['revenue'] > d['expenditure']).astype(float).where(d['revenue'].notna() & d['expenditure'].notna())),
     'R21': ('政府債務 ÷ GDP', lambda d: d['debtgdp']),
     'R22': ('民間の信用 ÷ GDP', lambda d: d['tloans'] / d['gdp']),
+    'R27': ('政府支出 ÷ GDP', lambda d: d['expenditure'] / d['gdp']),
 }
 
 def stats(df, years=None):
