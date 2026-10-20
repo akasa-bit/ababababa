@@ -5546,7 +5546,7 @@ class Game {
       if (root === this.cap || this.realmOf(root) !== root || !this.gov(root).independent) continue;
       const theirs = this.realmShips(root);
       if (!this.atWar(this.cap, root)) {
-        if (ours > 5 * Math.max(1, theirs) && this.rand() < 0.05) this.declareWar(root);
+        if (ours > 5 * Math.max(1, theirs) && this.sysDist(this.cap, root) <= 25 && this.rand() < 0.05) this.declareWar(root); // AI の国と同じく首都から 25 光年まで
         continue;
       }
       if (this.hasShipyard(this.cap) && this.gov(this.cap).credits >= 2 * WARSHIP_COST.credits) this.buildWarship(this.cap);
