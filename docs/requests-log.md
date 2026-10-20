@@ -1316,3 +1316,9 @@ docs/wip/ai-knowledge.patch を当てて、node tools/build.mjs のあと、戦�
 ```
 
 (main に入ったばかりの `docs/session-start.md` を読んでから続けた。試験はすべて合格、`docs/ai-knowledge.md` を書いて PR にした)
+
+```text
+レーンA,全部進めていいよ
+```
+
+(レーン A (セッション 1 → 2 → 3) を続けて進めてよい、という指示。セッション 1 の PR をマージしてから、セッション 2 へ進む)
