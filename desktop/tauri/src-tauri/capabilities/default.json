@@ -1,6 +1,0 @@
-{
-  "identifier": "default",
-  "description": "窓 main に許すこと (いまはなし。比べの bench_report はアプリの命令なので要らない)",
-  "windows": ["main"],
-  "permissions": []
-}
