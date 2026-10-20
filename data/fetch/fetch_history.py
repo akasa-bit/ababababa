@@ -6,6 +6,7 @@
   - ICOW Colonial History 1.1 (Hensel、独立の年と、独立が暴力を伴ったか) … paulhensel.org
   - 国の位置 (首都のおおよその緯度・経度。Google DSPL の countries.csv)
   - Correlates of War の国家間戦争 4.0 (戦争の期間)
+  - Correlates of War の国家の一覧 (State System Membership 2016。その年に国がいくつあったか)
   - UCDP Conflict Termination 4-2024 (紛争の終わり方)
   - CDB90 (約 660 の陸上の戦闘の兵力と損害。jrnold/CDB90)
 保存先は data/raw/history/。取得日・URL・SHA-256・行数を data/raw/history/MANIFEST.json に記録する。
@@ -42,6 +43,7 @@ def main():
     for url, name in [
         ('https://raw.githubusercontent.com/google/dspl/master/samples/google/canonical/countries.csv', 'countries.csv'),
         ('https://correlatesofwar.org/wp-content/uploads/Inter-StateWarData_v4.0.csv', 'cow_interstate_v4.csv'),
+        ('https://correlatesofwar.org/wp-content/uploads/states2016.csv', 'cow_states2016.csv'),
         ('https://ucdp.uu.se/downloads/monadterm/UCDPConflictTerminationDataset_v4_2024_Conflict.csv', 'ucdp_termination_conflict.csv'),
         ('https://raw.githubusercontent.com/jrnold/CDB90/master/data/battles.csv', 'cdb90_battles.csv'),
         ('https://raw.githubusercontent.com/jrnold/CDB90/master/data/belligerents.csv', 'cdb90_belligerents.csv'),

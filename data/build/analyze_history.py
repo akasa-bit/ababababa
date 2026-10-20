@@ -4,6 +4,7 @@
 - R08・R09 植民地の存続: COLDAT の植民地ごとの期間。本国の首都からの距離 (大円距離) を ICOW の国の位置で出し、
   存続年数の中央値と、Cox 比例ハザードモデル (Breslow) の距離のハザード比を求める。独立が暴力を伴った割合は ICOW から
 - R13 国家間戦争の長さ: COW 4.0。戦争ごとに最初の開始日から最後の終了日まで。平均 ÷ 中央値
+- R29 国家間戦争の多さ: COW 4.0 の参加 (国と戦争の組) のうち、始まりが 1816〜2007 年のものの数 ÷ 同じ期間の国・年 (COW の国家の一覧 2016)
 - R14 紛争の終わり方: UCDP Conflict Termination 4-2024 (紛争のエピソード単位)
 - R16 戦闘: CDB90。攻撃側の勝ちを兵力比の対数でロジスティック回帰した傾きと、損害の比を兵力比で回帰した傾き (ランチェスター則の指数)
 書き出し: data/derived/history.json
@@ -209,6 +210,20 @@ def wars():
     return {'n': len(dur), 'mean_years': round(mean, 3), 'median_years': round(med, 3), 'mean_over_median': round(mean / med, 3),
             'share_under_1y': round(sum(1 for x in dur if x < 1) / len(dur), 3), 'deaths': sorted(int(w['deaths']) for w in by.values())}
 
+def war_onsets(y0=1816, y1=2007):
+    """国 1 つが 1 年のうちに新しく国家間戦争に入る回数 (戦争への参加の始まり ÷ 国・年)"""
+    years = 0
+    for r in rows('cow_states2016.csv', enc='latin-1'):
+        a, b = max(int(r['styear']), y0), min(int(r['endyear']), y1)
+        if b >= a:
+            years += b - a + 1
+    part = {(r['ccode'], r['WarNum']) for r in rows('cow_interstate_v4.csv', enc='latin-1') if y0 <= int(r['StartYear1']) <= y1}
+    n = len(part)
+    rate = n / years
+    return {'period': [y0, y1], 'state_years': years, 'participations': n, 'wars': len({w for _, w in part}),
+            'per_100_state_years': round(rate * 100, 3),
+            'ci95_poisson': [round((n - 1.96 * math.sqrt(n)) / years * 100, 3), round((n + 1.96 * math.sqrt(n)) / years * 100, 3)]}
+
 def termination():
     eps = {}
     for r in rows('ucdp_termination_conflict.csv'):
@@ -259,6 +274,7 @@ def battles():
 def main():
     ICOW = rows('icow_colhist.csv')
     out = {'generated': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'), 'colonies': colony_stats(colonies(), ICOW), 'wars_cow': wars(),
+           'war_onsets_cow': war_onsets(),
            'termination_ucdp': termination(), 'battles_cdb90': battles()}
     d = out['wars_cow']['deaths']
     out['wars_cow']['deaths'] = {'n': len(d), 'median': statistics.median(d), 'powerlaw': powerlaw(d)}

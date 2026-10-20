@@ -36,6 +36,6 @@ function measure(file) {
 const rows = [['この版', measure(src)], ...(baseSrc && baseSrc !== '-' ? [['比べる元', measure(baseSrc)]] : [])];
 const pc = (x) => `${(x * 100).toFixed(0)}%`;
 const f = (x) => (typeof x === 'number' ? (Math.abs(x) < 1 && x !== 0 ? `${(x * 100).toFixed(0)}%` : x.toFixed(1)) : String(x));
-console.log('| | 国 100 年あたりの国家間戦争 (COW 2.34、±30% は 1.64〜3.04) | 100 年あたりの戦争 | 終わった / 続いている | 長さの平均 / 中央値 (年) | 平均 ÷ 中央値 (R13: 1.80〜3.33) | 白紙講和 | 条約 | 降伏 | 滅亡 |');
+console.log('| | 国 100 年あたりの国家間戦争 (R29: COW 2.34、±30% は 1.64〜3.04) | 100 年あたりの戦争 | 終わった / 続いている | 長さの平均 / 中央値 (年) | 平均 ÷ 中央値 (R13: 1.80〜3.33) | 白紙講和 | 条約 | 降伏 | 滅亡 |');
 console.log('|---|---|---|---|---|---|---|---|---|---|');
 for (const [n, r] of rows) console.log(`| ${n} | ${r.r19.toFixed(2)} | ${f(r.per100y)} | ${r.ended} / ${r.ongoing} | ${f(r.meanYears)} / ${f(r.medianYears)} | ${r.meanOverMedian ? r.meanOverMedian.toFixed(2) : '—'} | ${pc(r.white)} | ${pc(r.treaty)} | ${pc(r.capitulation)} | ${pc(r.conquest)} |`);

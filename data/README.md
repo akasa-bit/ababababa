@@ -35,8 +35,8 @@ node tools/build.mjs                # 公開用の index.html を作る
 
 | 段 | 場所 | 中身 |
 |---|---|---|
-| 取得 | `data/fetch/fetch_history.py` → `data/raw/history/` | COLDAT (Becker 2019、植民地の期間)・ICOW Colonial History 1.1 (独立と暴力)・国の位置 (Google DSPL)・Correlates of War 国家間戦争 4.0・UCDP Conflict Termination 4-2024・CDB90 (陸上の戦闘)。取得日・URL・SHA-256・行数を `data/raw/history/MANIFEST.json` に記録する |
-| 加工 | `data/build/analyze_history.py` → `data/derived/history.json` | 植民地の存続年数の中央値・Cox 比例ハザードモデル (遅れ ÷ 1 世代・本国・植民の始まりの年)・独立が暴力を伴った割合・戦争の長さの平均 ÷ 中央値・戦死者数のべき指数・紛争の終わり方の割合・戦闘の勝敗と兵力比 |
+| 取得 | `data/fetch/fetch_history.py` → `data/raw/history/` | COLDAT (Becker 2019、植民地の期間)・ICOW Colonial History 1.1 (独立と暴力)・国の位置 (Google DSPL)・Correlates of War 国家間戦争 4.0・Correlates of War 国家の一覧 2016 (その年の国の数)・UCDP Conflict Termination 4-2024・CDB90 (陸上の戦闘)。取得日・URL・SHA-256・行数を `data/raw/history/MANIFEST.json` に記録する |
+| 加工 | `data/build/analyze_history.py` → `data/derived/history.json` | 植民地の存続年数の中央値・Cox 比例ハザードモデル (遅れ ÷ 1 世代・本国・植民の始まりの年)・独立が暴力を伴った割合・戦争の長さの平均 ÷ 中央値・国家間戦争の多さ (国 100 年あたりの参加の始まり)・戦死者数のべき指数・紛争の終わり方の割合・戦闘の勝敗と兵力比 |
 
 ```sh
 python3 data/fetch/fetch_history.py    # 生データを取り直す
