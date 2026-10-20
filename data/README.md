@@ -72,7 +72,7 @@ python3 data/build/analyze_trade.py     # 推定する (numpy が要る。約 1 
 | 段 | 場所 | 中身 |
 |---|---|---|
 | 取得 | `data/fetch/fetch_fiscal.py` → `data/raw/fiscal/` | Jordà–Schularick–Taylor Macrohistory Database R6 (18 か国 1870〜2020 年。税収・政府支出・政府債務・利子率・民間の信用・名目 GDP) と文書、Schmelzing (2020) の 1311〜2018 年の世界の実質利子率。取得日・URL・SHA-256・大きさを `data/raw/fiscal/MANIFEST.json` に記録する |
-| 加工 | `data/build/analyze_fiscal.py` → `data/derived/fiscal.json` | 国ごとの税収 ÷ GDP・政府が黒字だった年の割合・政府債務 ÷ GDP・民間の信用 ÷ GDP・政府支出 ÷ GDP (R27) と、国のあいだの 10%〜90% 点 (全期間・1870〜1913 年・1950〜2020 年) |
+| 加工 | `data/build/analyze_fiscal.py` → `data/derived/fiscal.json` | 国ごとの税収 ÷ GDP・政府が黒字だった年の割合・政府債務 ÷ GDP・民間の信用 ÷ GDP・政府支出 ÷ GDP (R27)・財政の反応 (R28。Bohn 1998 の形の国ごとの傾き。戦争の年は `data/raw/history/` の Correlates of War から) と、国のあいだの 10%〜90% 点 (全期間・1870〜1913 年・1950〜2020 年) |
 
 - **同じ台本でゲームも測る**: `python3 data/build/analyze_fiscal.py <ゲームのパネル.csv>` で、ゲームが書き出した同じ列のパネル (`tools/fiscal-panel.js`) を同じ式で計算する
 - **国ごとの値をとる理由**: 長く載っている国の重みが偏らないように、まず国ごとの中央値 (黒字の割合は平均) を出し、国のあいだの分布を見る
