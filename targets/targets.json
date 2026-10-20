@@ -1,5 +1,5 @@
 {
-  "version": 8,
+  "version": 9,
   "fixedAt": "2026-10-20",
   "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
   "rules": [
@@ -15,7 +15,8 @@
     { "version": 4, "date": "2026-10-20", "what": "財政と金融の目標 R19〜R22 を足した。幅は、取得スクリプト (data/fetch/fetch_fiscal.py) で取った Jordà–Schularick–Taylor R6 から data/build/analyze_fiscal.py で計算した、国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ GDP がなく、測れない)" },
     { "version": 5, "date": "2026-10-20", "what": "市場の目標 R23〜R26 を足した。幅は、取得スクリプト (data/fetch/fetch_market.py) で取った World Bank Pink Sheet・USDA PSD・FRED ISRATIO から data/build/analyze_market.py で計算した 10%〜90% 点だけで決めた (data/derived/market.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ値段がなく、測れない)" },
     { "version": 6, "date": "2026-10-20", "what": "政府支出 ÷ GDP (R27) を足した。費用の大きさ (値段の水準) を経済に合わせて決めるため (ユーザーの決定、docs/requests/2026-10-20-C.md の C-11)。幅は R19〜R22 と同じく Jordà–Schularick–Taylor R6 の国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。R19〜R22 の幅は変えていない。ゲームの結果はこの幅を決めるのに使っていない" },
-    { "version": 8, "date": "2026-10-20", "what": "F08 を、いまのゲーム版の銀河 (星系 73 個。銀河面 ±2 光年の板) に合わせた。前の「星系 3,000 個」は、銀河を板にして 73 星系に減らす前の想定だった。合格の数 (毎秒 60 コマ・下限 45、最高速で 1 秒に 64 年) と測る機械 (Xiaomi Pad 8 Pro・Steam Deck) は変えていない。測り方を desktop/bench/probe.js の手順に決めた。包装の比べ (レーン S) の測定は GPU のない機械の Xvfb のもので、F08 の判定には使わず、この変更にも使っていない" }
+    { "version": 8, "date": "2026-10-20", "what": "F08 を、いまのゲーム版の銀河 (星系 73 個。銀河面 ±2 光年の板) に合わせた。前の「星系 3,000 個」は、銀河を板にして 73 星系に減らす前の想定だった。合格の数 (毎秒 60 コマ・下限 45、最高速で 1 秒に 64 年) と測る機械 (Xiaomi Pad 8 Pro・Steam Deck) は変えていない。測り方を desktop/bench/probe.js の手順に決めた。包装の比べ (レーン S) の測定は GPU のない機械の Xvfb のもので、F08 の判定には使わず、この変更にも使っていない" },
+    { "version": 9, "date": "2026-10-20", "what": "R29 (国家間戦争の多さ) を足した。幅は、取得スクリプトで生データ (COW 国家間戦争 4.0 と国家の一覧 2016、1816〜2007 年) から計算した値 (国 100 年あたり 2.338、data/derived/history.json の war_onsets_cow) に、R13 と同じ「実データの ±30% 以内」を当てはめた。値は段 8 (講和と開戦の交渉、#121) を作る前に計算した。ゲームの自動対戦の結果はこの幅を決めるのに使っていない" }
   ],
   "realism": [
     {
@@ -272,6 +273,15 @@
       "band": [-0.0203, 0.0624], "estimate": 0.0336,
       "reference": "18 か国 1870〜2020 年 (2718 国・年)。1870〜1913 年 (中央値 0.0394) と 1950〜2020 年 (0.0186) の値も data/derived/fiscal.json にある",
       "split": "calibration"
+    },
+    {
+      "id": "R29", "area": "戦争", "name": "国家間戦争の多さ",
+      "data": { "source": "Correlates of War 国家間戦争データと国家の一覧", "version": "Inter-State War Data v4.0・State System Membership 2016", "years": "1816-2007", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
+      "statistic": "国 1 つが 100 年のうちに新しく国家間戦争に入る回数 (戦争への参加の始まり ÷ 国・年 × 100)",
+      "sim": "tools/wars-headless.js: 国どうしの戦争 (独立戦争を除く。1 つの戦争で参加は 2) の始まり ÷ 国・年 × 100 (国 = 毎年の独立した国の数、ゲームの 1 年 = 1 年)",
+      "pass": "実データの値の ±30% 以内",
+      "band": [1.637, 3.039], "reference": "COW 4.0 の 95 の戦争への 332 の参加、14,199 国・年 (1816〜2007 年) で 100 年あたり 2.338 (ポアソンの 95% 区間 2.087〜2.590)", "split": "calibration",
+      "observed": { "per_100_state_years": 2.338, "participations": 332, "state_years": 14199, "wars": 95 }
     }
   ],
   "fun": [
