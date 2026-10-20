@@ -18,7 +18,9 @@ const { chromium } = require('playwright');
       g.productivity = PRODUCTIVITY.forecast.k;
       // 70 年進め、直属の家臣が 3 つできていなければ、できるまで (最大 200 年) 進める (経済の速さで、家臣のできる年が変わる)
       const direct = () => Object.keys(g.govs).map(Number).filter((id) => g.govs[id].lord === 0 && g.known(id)?.lord === 0 && g.isColonized(id) && g.realmOf(id) === 0 && !g.govs[id].autonomy && !g.govs[id].direct).length;
-      g.setSpectate(true); for (let i = 0; i < 280 || (direct() < 3 && i < 800); i++) g.advance(0.25); g.setSpectate(false);
+      // 数えるのは、観戦を終えたあとと同じ見え方 (地球に届いた光の記録) で。観戦中の実際の様子で数えると、終えたときに足りないことがある
+      const seen = () => { g.spectate = false; g.live = null; const n = direct(); g.spectate = true; g.live = null; return n; };
+      g.setSpectate(true); for (let i = 0; i < 280 || (seen() < 3 && i < 800); i++) g.advance(0.25); g.setSpectate(false);
       const res = {};
       // 直属の家臣を 3 つ選ぶ
       const vs = Object.keys(g.govs).map(Number).filter((id) => g.govs[id].lord === 0 && g.known(id)?.lord === 0 && g.isColonized(id) && g.realmOf(id) === 0 && !g.govs[id].autonomy && !g.govs[id].direct) // 地球に届いている記録でも直属の家臣のもの (指令はその記録で判断する).sort((a, c) => g.sysDist(0, a) - g.sysDist(0, c));
