@@ -19,7 +19,7 @@
                               JST にないので、長期の利子率 × 前の年の債務で近づける)、d = debtgdp、
                               gap = ln(rgdpbarro) − HP フィルター (λ = 100) の傾向。30 年以上ある国だけ (2026-10-20 に足した)
 ゲームの国債の値 (params。src/index.html の DEBT に写す): 財政の反応の式の係数 (国ごとの最小二乗の中央値)・
-  景気のずれの範囲 (HP フィルターのずれの 1%〜99% 点)・借りられる上限 (debtgdp の国ごとの 90% 点の中央値)・
+  景気のずれの範囲 (HP フィルターのずれの 1%〜99% 点)・借りられる上限 (debtgdp の国ごとの中央値の中央値 = R21 の estimate。国ごとの 90% 点の中央値 limit_p90 では、ゲームの R21 が 1.13 と幅を超えた)・
   手元に置く資金 (Eurostat の一般政府の現金・預金 ÷ 総収入の、国ごとの中央値の中央値。単位は年)
 幅の決め方 (ゲームの結果を見る前に決めた): 現実の国ごとの値の 10%〜90% 点。ゲームは、銀河ごと・国ごとの値の中央値がこの幅に入れば合格。
 
@@ -108,7 +108,7 @@ def params(jst):
     r = lambda x: round(float(x), 4)
     return {'a': r(coef['a'].median()), 'rho': r(coef['rho'].median()), 'beta': r(coef['beta'].median()), 'war': r(coef['war'].median()),
             'sd': r(coef['sd'].median()), 'ar': r(coef['ar'].median()), 'gap': [r(np.percentile(gaps, 1)), r(np.percentile(gaps, 99))],
-            'limit': r(jst.groupby('country')['debtgdp'].quantile(0.9).median()),
+            'limit': r(jst.groupby('country')['debtgdp'].median().median()), 'limit_p90': r(jst.groupby('country')['debtgdp'].quantile(0.9).median()),
             'cash': r(held.median()), 'cash_p10_p90': [r(held.quantile(0.1)), r(held.quantile(0.9))], 'cash_countries': int(held.size)}
 
 def summary(name, per, rows):
