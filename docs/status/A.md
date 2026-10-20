@@ -10,8 +10,8 @@
 
 ### 残っていること (この順に)
 
-1. **PR #121 をマージする。** 2026-10-20 11:30 ごろ、main (#133 まで) を取りこんで試験はすべて合格、push 済み (head 18817bc)。CI の表がすべて合格で、main がそのあと動いていなければスカッシュマージする。動いていたら `docs/parallel.md` の 3 をもう一度 (下の「落とし穴」)。
-2. **目標 R28 (国家間戦争の多さ) の PR を出す。** 差分は **`docs/wip/A-war-onsets.patch`** (2026-10-20、main #133 の上で `git apply` で当たることを確かめた)。中身:
+1. **PR #121 をマージする。** 2026-10-20、main (#134 まで) を取りこんで試験はすべて合格、push 済み。CI の表がすべて合格で、main がそのあと動いていなければスカッシュマージする。動いていたら `docs/parallel.md` の 3 をもう一度 (下の「落とし穴」)。
+2. **目標 R28 (国家間戦争の多さ) の PR を出す。** 差分は **`docs/wip/A-war-onsets.patch`** (2026-10-20、main #134 の上で `git apply` で当たることを確かめた)。中身:
    - `data/fetch/fetch_history.py` に COW の国家の一覧 2016 (`cow_states2016.csv`) を足し、生データと MANIFEST の行も足す
    - `data/build/analyze_history.py` に `war_onsets()` (国 100 年あたりの国家間戦争への参加の始まり) を足し、`data/derived/history.json` に `war_onsets_cow` (2.338、14,199 国・年に 332 の参加)
    - `targets/targets.json` に R28 (幅 1.637〜3.039 = ±30%)、版 7。`targets.lock`・`docs/targets.md`・`data/README.md`
