@@ -25,6 +25,7 @@ canvas { position:absolute; inset:0; width:100%; height:100%; display:block; tou
 #empire .scroll { overflow-x:auto; }
 #empire .tbl { font-size:12.5px; }
 #empire .tbl td, #empire .tbl th { padding:4px 10px 4px 0; white-space:nowrap; }
+#empire .tbl td.wrap { white-space:normal; min-width:12em; }
 #empire .tbl tr.total td { border-top:1px solid var(--line); font-weight:bold; }
 #empire .tbl select { width:auto; margin:0; padding:2px 4px; }
 #empire .tbl button { padding:2px 8px; min-height:0; }
@@ -1151,7 +1152,7 @@ const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番
 // 忠誠度の目標の内訳。目標 = 先頭から順に足した値 (0〜100 に収める)
 // 忠誠度の目標の内訳。距離は直接には小さく効き、主人の関与 (指令・援助・艦隊・視察) が途絶えた年数が大きく効く
 // (遠い星系ほど関与が届くのに時間と政治力がかかるので、距離は間接的に効く)
-function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = 'indirect', concession = false, policy = null, exhaustion = 0 }) {
+function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = 'indirect', concession = false, policy = null, exhaustion = 0, tax = 'normal', welfare = 0 }) {
   return [
     { label: '基準', v: 85 },
     { label: '主人との距離', v: -(0.6 * dLord), note: `${dLord.toFixed(1)} ly` },
@@ -1165,6 +1166,8 @@ function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, negle
     { label: '減税・自治', v: concession ? 15 : 0 },
     { label: `国家方針${policy ? ` (${POLICIES[policy].label})` : ''}`, v: POLICY_LOYALTY[policy] || 0 },
     ...(exhaustion ? [{ label: '国の戦争疲弊', v: -EXHAUST.loyalty * exhaustion, note: `${Math.round(exhaustion)}` }] : []),
+    ...(tax !== 'normal' && TAX_LEVELS[tax] ? [{ label: `税 (${TAX_LEVELS[tax].label})`, v: TAX_LEVELS[tax].loyalty }] : []),
+    ...(welfare ? [{ label: '福祉の予算', v: BUDGET.welfare.loyalty * welfare }] : []),
   ];
 }
 const RES_LABEL = { food: '食料', water: '水', metal: '金属', fuel: '燃料', rare: '希少元素', goods: '工業品', slaves: '奴隷', credits: 'cr' };
@@ -1382,8 +1385,8 @@ function shieldOf(kind, m, beta, ly) {
 // rate は目標 R01 (重力モデルの距離の弾力性) で較正するつもりだったが、利子は弾力性を急にする向きにしか効かず、0 でも幅に入らなかった (docs/trade.md)
 // sigma = 代替の弾力性 (構造重力モデルの推定の中央の値 約 5。Head & Mayer 2014)、rate = 実質の利子率 [/年] (長期の安全資産の実質利子率 約 1%。Jordà ほか 2019)、
 // sources = 買い手が見る売り手の数 (交易路網で近い順)、wait = 注文が届いてから入荷を待つ年数の上限
-const TRADE = { sigma: 5, rate: 0.01, sources: 16, wait: 10 };
-const tradeCost = (years) => GM.exp(TRADE.rate * years);
+const TRADE = { sigma: 5, rate: 0.01, sources: 16, wait: 10 }; // rate は財政の標準 (FISCAL_DEFAULT.rate と同じ)
+const tradeCost = (years, rate = TRADE.rate) => GM.exp(rate * years); // rate = 買い手の国の利子率 (財政で選ぶ。人間でない国は標準の TRADE.rate)
 const E_UNIT = propulsion(UNIT_KG, SHIP_SPEED, 'route').acc; // 交易路で 100 万 t を運ぶときの、片側 (加速か減速) のエネルギー [J]
 const E_UNIT_FREE = ((p) => p.acc + p.dec)(propulsion(UNIT_KG, SHIP_SPEED, 'free')); // 同じく、減速を磁気帆と反物質で行うとき (送る側がすべて払う) [J]
 let TRADE_AUDIT = null; // 試験用: 配列にすると、星系どうしの取引 (送った星系・受けた星系・年・基準価格での額) を書き出す (目標 R01)
@@ -1609,8 +1612,8 @@ const OUTPOST_RES = { 'gas-giant': ['water', 'fuel'], 'ice-giant': ['water', 'fu
 const OUTPOST_RATE = 25; // 埋蔵量1・Lv1あたりの年産量
 const outpostRes = (b) => (b && !b.label && OUTPOST_RES[b.type]) || [];
 const PIRATE_START = 2320;
-const LEDGER_ICON = { tax: 'tax', trade: 'export', import: 'import', natives: 'natives', tribute: 'tribute', grant: 'grant', upkeep: 'fleet' };
-const LEDGER_LABEL = { tax: '税収', trade: '輸出', import: '輸入', natives: '先住民', tribute: '朝貢', grant: '資金援助', upkeep: '軍の維持費' };
+const LEDGER_ICON = { tax: 'tax', trade: 'export', import: 'import', interest: 'credits', welfare: 'pop', security: 'loyalty', military: 'fleet', natives: 'natives', tribute: 'tribute', grant: 'grant', upkeep: 'fleet' };
+const LEDGER_LABEL = { tax: '税収', trade: '輸出', import: '輸入', interest: '貯えの利子', welfare: '福祉の予算', security: '治安の予算', military: '軍事の予算', natives: '先住民', tribute: '朝貢', grant: '資金援助', upkeep: '軍の維持費' };
 const LOYALTY_START = 70; // 新しい政府の忠誠度
 const FRIEND_SAFE = 50; // 主人との友好度がこれ以上なら、威圧の艦隊を送らない
 const FRIEND_DAMP = 0.6; // 友好度100で、最後通牒の期限に独立を宣言する確率が 1 − FRIEND_DAMP 倍になる
@@ -1622,12 +1625,17 @@ const CMD_LABEL = {
   peace: '講和の申し入れ', send: '入植船を送る', candsend: '入植船を送る', upgrade: '施設の拡張', route: '交易路の開設', route2: '交易路の開設', uproute: '交易路の拡張',
   warship: '艦隊の編成', fleet: '艦隊の派遣', redirect: '艦隊の進路変更', fleetclear: '艦隊への指令の取り消し', gift: '先住民への贈り物', integrate: '先住民を市民に', conquer: '先住民の制圧', enslave: '奴隷化',
   slavetype: '奴隷の扱いの変更', liberate: '先住民の解放', train: '歩兵の訓練', troopsend: '歩兵の派遣', outpost: '採掘基地の建設', focus: '方針の変更',
-  rule: '統治体制の変更', mandate: '委任方針の変更', governor: '総督の方針の変更', inspect: '視察団', decide: '返事', policy: '国家方針の変更',
+  rule: '統治体制の変更', fiscal: '財政の変更', mandate: '委任方針の変更', governor: '総督の方針の変更', inspect: '視察団', decide: '返事', policy: '国家方針の変更',
 };
 const SEED_FUNDS = { planet: 200, station: 80 }; // 入植船が新しい政府に持っていく開拓資金 (入植船の費用に含まれる)
 const BASE_TAX = { planet: 5, station: 2 }; // 入植地ごとの基本の税収 [cr/年] (小さな入植地の政府を回すため) // 従属する星系が主人に納める、年間収入の割合
 
 const stockCap = (pop) => 500 + 5 * pop; // 星系の備蓄上限 (資源ごと)
+// 市場の値段 (段 5)。星系ごと・資源ごとに、在庫 ÷ ふだんの消費 (年) が目標の在庫の厚さ cover [年] から離れるほど値段が動く:
+//   値段 = 基準価格 × (在庫 ÷ (消費 × cover))^(−eta)  (在庫の多い年は安く、少ない年は高い。Deaton & Laroque 1992 の競争的な貯蔵の形)
+// cover は現実の在庫の厚さ (食料など: 世界の穀物の在庫 ÷ 消費の中央値 0.28 年。工業品: 米国の在庫 ÷ 売上の中央値 1.39 か月)。
+// eta (値段の在庫への効き方) と smooth (ふだんの消費をならす年数) は仮の値 (docs/market.md)。いまは値段を記録するだけで、遊びには使わない
+const MARKET = { eta: 1, smooth: 1, min: 0.02, max: 50, cover: { food: 0.28, water: 0.28, metal: 0.28, fuel: 0.28, rare: 0.28, goods: 1.39 / 12, slaves: 0.28 } };
 const zeroRes = () => { const o = {}; for (const r of RES) o[r] = 0; return o; };
 const colKey = (c) => `${c.sys}|${c.body}|${c.kind}`;
 // 星系の記録 (snaps) の JSON の使い回し。記録は取ったあと変わらないので、記録ごとに一度だけ JSON にする
@@ -1695,7 +1703,7 @@ const HAZARD = { delayRef: 0.00577, delayMin: 0.25, pop: 0.3, loyalty: 0.03, loy
 const VIOLENT_SHARE = 0.31; // 植民地の独立のうち暴力を伴った割合 (ICOW の 128 件)
 // 強制労働の後遺症 (0〜1): 続けた年ごとに scarRate ずつ増え、やめたあとは年に ×scarKeep ずつ消える (半減に約 140 年)。税収 × (1 − scarTax × 後遺症)
 const FORCED = { scarRate: 0.02, scarKeep: 0.995, scarTax: 0.25 };
-function secessionTermsOf({ regime, delay, popRatio, loyalty }) {
+function secessionTermsOf({ regime, delay, popRatio, loyalty, security = 0 }) {
   const r = REGIMES[regime] || REGIMES.indirect;
   const ratio = clamp(popRatio || 0, 0.01, 100);
   return [
@@ -1704,6 +1712,7 @@ function secessionTermsOf({ regime, delay, popRatio, loyalty }) {
     { label: '通信の遅れ ÷ 1 世代', f: GM.pow(Math.max(HAZARD.delayMin, delay / GENERATION_YEARS / HAZARD.delayRef), (ED.delayExp * (ED.regimeDelay ? r.delay : 1))), note: `${delay.toFixed(0)} 年 ÷ ${GENERATION_YEARS} 年` },
     { label: '主人との人口の比', f: GM.pow(ratio, HAZARD.pop), note: `${ratio < 1 ? ratio.toFixed(2) : ratio.toFixed(1)} 倍` },
     { label: '忠誠度', f: GM.exp(HAZARD.loyalty * (HAZARD.loyaltyRef - loyalty)), note: `${Math.round(loyalty)}` },
+    ...(security ? [{ label: '治安の予算', f: 1 - BUDGET.security.hazard * security }] : []),
   ];
 }
 const hazardOf = (terms) => terms.reduce((k, t) => k * t.f, 1);
@@ -1718,6 +1727,27 @@ const POLICIES = {
   military: { label: '軍拡期', good: '艦隊の維持費 −40%・恐怖度の目標 ×1.5', bad: '主人との友好度の目標 −10・家臣の忠誠度の目標 −3' },
 };
 const POLICY_LOYALTY = { expand: -5, consolidate: 8, military: -3 };
+// 財政 (プレイヤーが選ぶ。国家方針と同じく、変えた知らせが光速で届いた星系から効く)。効き目の大きさは仮の値 (docs/fiscal.md)
+// 税: k = 人口あたりの税の倍率、loyalty = 家臣の忠誠度の目標、council = 議会の支持の年あたりの変化
+const TAX_LEVELS = {
+  low: { label: '低い', k: 0.6, loyalty: 6, council: 0.2 },
+  normal: { label: '標準', k: 1, loyalty: 0, council: 0 },
+  high: { label: '高い', k: 1.4, loyalty: -6, council: -0.2 },
+  heavy: { label: '重税', k: 1.8, loyalty: -12, council: -0.5 },
+};
+// 利子率 [/年]: 交易の値段 (運ぶ年数ぶんの利子。買い手の国の利子率) と、政府の貯えにつく利子
+const RATES = [0, 0.01, 0.03, 0.05, 0.08];
+// 予算: 首都の税収のうち、毎年その政策に使う割合。効き目 = 最大 × 割合 ÷ (割合 + BUDGET_HALF) (使うほど伸びが鈍る)
+const BUDGET = {
+  welfare: { label: '福祉', good: '家臣の忠誠度の目標 +最大 12・人口の増え方 ×最大 1.15', loyalty: 12, growth: 0.15 },
+  security: { label: '治安', good: '離反の起きやすさ ×最大 0.6', hazard: 0.4 },
+  military: { label: '軍事', good: '艦隊の戦力 ×最大 1.25', fleet: 0.25 },
+};
+const BUDGET_SHARES = [0, 0.05, 0.1, 0.2, 0.3];
+const BUDGET_HALF = 0.1;
+const budgetEffect = (share) => (share > 0 ? share / (share + BUDGET_HALF) : 0);
+const FISCAL_DEFAULT = { tax: 'normal', rate: 0.01, budget: { welfare: 0, security: 0, military: 0 } };
+const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
 const POLICY_COST = 20;
 const POLICY_YEARS = 30; // 国家方針を変えられる間隔
 // 不満の段階: 1 不満 (離反の起きやすさ HAZARD に従って起きる) → UNREST_YEARS 年続くと 2 要求 (減税・自治を主人へ求める)
@@ -1897,6 +1927,7 @@ class Game {
     this.ghosts = { cargo: [], fleets: [], requests: [], troopMoves: [], migrants: [], ships: [], legs: [] };
     this.battles = []; // 艦隊戦 { sys, realm (攻める国の首都), a (攻撃側), d (防衛側), a0, d0 (投入した総数), start, progress (中断した攻囲の進捗) }
     this.stock = {}; // 星系ごとの備蓄。同じ星系の入植地は備蓄を共有する
+    this.market = {}; // 星系ごとの市場 { u: 資源ごとのふだんの消費 [/年], p: 値段 } (段 5)
     this.routes = []; // 交易路 { id, a, b, lv, transit: [A→Bの輸送中量, B→A], vol: [年あたり輸送量] }
     this.requests = []; // 物資移送要求 { id, kind: 'trade'|'build', from (要求元), to (送り手), res, amt, sent, arrive, state }
     this.cargo = []; // 輸送中の貨物 { key, path: [経由する星系], times: [各星系に着く年], arrive, load }
@@ -2436,7 +2467,8 @@ class Game {
     const pop = (x) => this.coloniesIn(x).reduce((k, c) => k + c.pop, 0);
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: distance(this.system(id), this.system(this.realmOf(lord))),
       bigger: pop(id) > pop(lord), orders: gv.orders || 0, lordShips: this.garrison[lord] || 0, dep: gv.dep || 0,
-      neglect: this.neglectOf(gv), regime: regimeKey(gv), concession: (gv.taxFree || 0) > this.year || (gv.autonomy || 0) > this.year, policy: this.policyAt(id), exhaustion: this.exhaustion[this.realmOf(id)] || 0 });
+      neglect: this.neglectOf(gv), regime: regimeKey(gv), concession: (gv.taxFree || 0) > this.year || (gv.autonomy || 0) > this.year, policy: this.policyAt(id), exhaustion: this.exhaustion[this.realmOf(id)] || 0,
+      tax: this.fiscalAt(id).tax, welfare: this.budgetAt(this.realmOf(id), id, 'welfare') });
   }
   // 地球の知る限りの内訳 (地球に届いている記録で。表示用)
   knownLoyaltyTerms(id) {
@@ -2448,7 +2480,7 @@ class Game {
     // 放っておかれた年数は、記録の時点から今までの年数を足す (そのあと関与が届いたかは、まだ地球には見えない)
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: this.sysDist(id, capital),
       bigger: pop(id) > pop(lord), orders: k.orders || 0, lordShips: this.knownGarrison(lord), dep: k.dep || 0,
-      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), regime: this.knownRegime(k), concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0 });
+      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), regime: this.knownRegime(k), concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0, tax: k.tax || 'normal', welfare: k.welfare || 0 });
   }
   // 統治体制 (主人がいなければ null)
   regimeOf(gv) { return regimeKey(gv); }
@@ -2469,7 +2501,7 @@ class Game {
     const gv = this.govs[id];
     if (!gv || gv.lord === null || gv.lord === undefined) return null;
     const pop = (x) => this.coloniesIn(x).reduce((k, c) => k + c.pop, 0);
-    return secessionTermsOf({ regime: regimeKey(gv), delay: this.sysDist(id, this.realmOf(id)), popRatio: pop(id) / Math.max(1e-3, pop(gv.lord)), loyalty: gv.loyalty ?? LOYALTY_START });
+    return secessionTermsOf({ regime: regimeKey(gv), delay: this.sysDist(id, this.realmOf(id)), popRatio: pop(id) / Math.max(1e-3, pop(gv.lord)), loyalty: gv.loyalty ?? LOYALTY_START, security: this.budgetAt(this.realmOf(id), id, 'security') });
   }
   // 地球の知る限りの内訳 (表示用)。regime を渡すと、その統治体制にしたときの値 (比べる用。忠誠度の目標の差も入れる)
   knownSecessionTerms(id, regime = null) {
@@ -2480,7 +2512,7 @@ class Game {
     const cur = this.knownRegime(k);
     const r = regime || cur;
     const loyalty = clamp((k.loyalty ?? LOYALTY_START) + (REGIMES[r].loyalty - REGIMES[cur].loyalty) - HAZARD.revoke * Math.max(0, REGIMES[cur].rank - REGIMES[r].rank), 0, 100);
-    return secessionTermsOf({ regime: r, delay: this.sysDist(id, capital), popRatio: pop(id) / Math.max(1e-3, pop(k.lord)), loyalty });
+    return secessionTermsOf({ regime: r, delay: this.sysDist(id, capital), popRatio: pop(id) / Math.max(1e-3, pop(k.lord)), loyalty, security: k.security || 0 });
   }
   // 統治体制を変える (指令が届いたとき)。自治の度合いを下げると、下げた段ごとに忠誠度 −HAZARD.revoke
   setRegime(id, regime) {
@@ -2740,6 +2772,7 @@ class Game {
     if (d.auto || d.awe || d.aweBack || PC_FREE_ACTS.has(act)) return 0;
     if (act === 'declarewar' || act === 'peace') return PC_DIPLOMACY;
     if (act === 'policy') return POLICY_COST;
+    if (act === 'fiscal') { const c = this.fiscal || FISCAL_DEFAULT; return (d.tax ?? c.tax) !== c.tax || Number(d.rate ?? c.rate) !== c.rate ? FISCAL_COST : 0; }
     const extra = act === 'decide' ? this.decisionOpt(d)?.pc || 0 : 0;
     const target = act === 'grant' || act === 'decide' ? Number(d.sys) : this.cmdTarget(act, d);
     if (target === undefined || target === null || target === this.cap || Number.isNaN(target)) return extra;
@@ -2767,6 +2800,71 @@ class Game {
   // 主人の関与 (指令・援助・艦隊・視察・回答) が届いた: 放っておかれた年数が0に戻る
   attend(id) { if (!this.isHuman(id) && this.govs[id]) this.govs[id].attended = this.year; }
   neglectOf(gv) { return Math.max(0, this.year - (gv.attended ?? gv.founded ?? this.year)); }
+  // 予算: 人間の国の首都の政府が、税収 (ならした値) × 予算の割合を毎刻み使う。受け取るのは首都の民間 (給付・給料・買い付け)。
+  // 払いきれなかった割合だけ効き目が下がる (bpaid、1 年ほどでならす)
+  budgetStep(h) {
+    for (const p of this.players) {
+      const gv = p.human && p.fiscal && this.govs[p.cap];
+      if (!gv) continue;
+      const tax = Math.max(0, gv.ledger?.tax || 0);
+      const parts = Object.keys(BUDGET).map((k) => [k, (p.fiscal.budget?.[k] || 0) * tax * h]).filter(([, x]) => x > 0);
+      const want = parts.reduce((a, [, x]) => a + x, 0);
+      const f = want > 0 ? Math.min(1, Math.max(0, gv.credits) / want) : 1;
+      for (const [k, x] of parts) this.earn(k, -x * f, p.cap, { pv: p.cap });
+      gv.bpaid = (gv.bpaid ?? 1) + (f - (gv.bpaid ?? 1)) * Math.min(1, h);
+    }
+    this.interestStep(h);
+  }
+  // 利子: 銀行から借りている民間と先住民が、その星系で効いている国の利子率で利子を払う。銀行はそれを、預金
+  // (政府の資金・民間と先住民の手持ち) の額に比べて分ける。銀行の儲けは 0 (docs/fiscal.md)。運ぶ途中のお金には利子がつかない
+  interestStep(h) {
+    const debtors = [], deposits = [];
+    let paid = 0, held = 0;
+    for (const key of Object.keys(this.govs)) {
+      const id = Number(key), gv = this.govs[key];
+      if (gv.loan > 0) { const x = gv.loan * this.rateAt(id) * h; debtors.push([{ pv: id }, x]); paid += x; }
+      if (gv.credits > 0) { deposits.push([{ gov: id }, gv.credits, id]); held += gv.credits; }
+      if (gv.pv > 0) { deposits.push([{ pv: id }, gv.pv]); held += gv.pv; }
+    }
+    for (const [key, st] of Object.entries(this.natives)) {
+      const sys = Number(key.split('|')[0]);
+      if (st.loan > 0) { const x = st.loan * this.rateAt(sys) * h; debtors.push([{ nat: key }, x]); paid += x; }
+      if (st.cr > 0) { deposits.push([{ nat: key }, st.cr]); held += st.cr; }
+    }
+    if (!(paid > 0) || !(held > 0)) return;
+    for (const [acct, x] of debtors) this.cash('interest', -x, acct);
+    for (const [acct, v, gov] of deposits) {
+      const x = paid * (v / held);
+      if (gov !== undefined) this.earn('interest', x, gov); else this.cash('interest', x, acct);
+    }
+  }
+  // 財政。fiscalFor(国, 星系) = その星系で効いている、その国の財政 (変えた知らせが光速で届くまでは前の財政)。人間でない国は標準
+  fiscalFor(root, id) {
+    const f = this.players[this.playerOf(root)]?.fiscal;
+    if (!f) return FISCAL_DEFAULT;
+    return this.year >= f.since + this.sysDist(root, id) ? f : f.prev ?? FISCAL_DEFAULT;
+  }
+  fiscalAt(id) { return this.fiscalFor(this.realmOf(id), id); }
+  taxK(id) { return (TAX_LEVELS[this.fiscalAt(id).tax] || TAX_LEVELS.normal).k; }
+  rateAt(id) { return this.fiscalAt(id).rate ?? FISCAL_DEFAULT.rate; }
+  // 予算の効き目 (0〜1)。首都が予算を払いきれていなければ、払えた割合だけ効く
+  budgetAt(root, id, k) { return budgetEffect((this.fiscalFor(root, id).budget?.[k] || 0) * (this.govs[root]?.bpaid ?? 1)); }
+  // 艦隊の戦力の倍率 (種族の特性 × 軍事の予算)。x は国か星系、at は戦う星系
+  fleetMul(x, at) { const root = this.realmOf(x); return this.modsOf(x).fleet * (1 + BUDGET.military.fleet * this.budgetAt(root, at, 'military')); }
+  setFiscal(d) {
+    const cur = this.fiscal || FISCAL_DEFAULT;
+    const tax = d.tax ?? cur.tax, rate = Number(d.rate ?? cur.rate);
+    const budget = {};
+    for (const k of Object.keys(BUDGET)) budget[k] = Number(d[k] ?? cur.budget?.[k] ?? 0);
+    if (!TAX_LEVELS[tax] || !RATES.includes(rate) || Object.values(budget).some((v) => !BUDGET_SHARES.includes(v))) return fail('選べない値');
+    const total = Object.values(budget).reduce((a, v) => a + v, 0);
+    if (total > 0.6 + 1e-9) return fail('予算は税収の 6 割まで');
+    if (tax === cur.tax && rate === cur.rate && Object.keys(BUDGET).every((k) => budget[k] === (cur.budget?.[k] || 0))) return fail('いまと同じ');
+    this.fiscal = { tax, rate, budget, since: this.year, prev: { tax: cur.tax, rate: cur.rate, budget: { ...(cur.budget || FISCAL_DEFAULT.budget) } } };
+    const parts = [`税は「${TAX_LEVELS[tax].label}」`, `利子率は年 ${(rate * 100).toFixed(0)}%`, `予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
+    this.event('goal', this.cap, `財政を変えた (${parts.join('、')})。遠い星系には知らせが光速で届いてから効く`, true);
+    return { ok: true };
+  }
   setPolicy(id) {
     if (!POLICIES[id]) return fail('不明な方針');
     if (this.policy?.id === id) return fail('いまの方針と同じ');
@@ -2884,7 +2982,7 @@ class Game {
     if (why) this.message(`議会の支持 ${v > 0 ? '+' : ''}${v} (${why})`);
   }
   councilYearly() {
-    this.council = clamp(this.council - 0.25 - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20), 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる
+    this.council = clamp(this.council - 0.25 - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20) + (TAX_LEVELS[this.fiscal?.tax] || TAX_LEVELS.normal).council, 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる。重い税も落とす
     if (this.council < 15) {
       this.event('goal', this.cap, `議会の支持が ${Math.round(this.council)} まで落ち、政権が交代した。国家方針は白紙に戻り、貯めていた政治力を失った`);
       this.policy = null;
@@ -3092,9 +3190,9 @@ class Game {
         this.message(`${f.n} 艦隊は ${name} に${this.realmName(other)}の艦隊がいるので引き返した`, f.to);
         return;
       }
-      const a = f.n * this.modsOf(owner).fleet, d = (this.garrison[f.to] || 0) * this.modsOf(other).fleet;
+      const a = f.n * this.fleetMul(owner, f.to), d = (this.garrison[f.to] || 0) * this.fleetMul(other, f.to);
       const win = a > d;
-      const left = Math.floor(Math.sqrt(Math.abs(a * a - d * d)) / this.modsOf(win ? owner : other).fleet);
+      const left = Math.floor(Math.sqrt(Math.abs(a * a - d * d)) / this.fleetMul(win ? owner : other, f.to));
       this.warLoss(other, owner, win ? f.n - left : f.n);
       this.warLoss(owner, other, win ? (this.garrison[f.to] || 0) : (this.garrison[f.to] || 0) - left);
       this.garrison[f.to] = left;
@@ -3166,7 +3264,7 @@ class Game {
       b.d0 += this.garrison[b.sys] || 0;
       this.garrison[b.sys] = 0;
       // 兵站: 攻撃側は補給線の長さと補給の充足率、防衛側は補給の充足率で戦力が変わる
-      const ea = this.fleetEff(b.sup, b.line) * this.modsOf(b.realm).fleet, ed = this.fleetEff(b.dsup, 0) * this.modsOf(b.sys).fleet;
+      const ea = this.fleetEff(b.sup, b.line) * this.fleetMul(b.realm, b.sys), ed = this.fleetEff(b.dsup, 0) * this.fleetMul(b.sys, b.sys);
       for (let i = 0; i < 5; i++) {
         const a = b.a, d = b.d, h = dt / 5;
         b.a = Math.max(0, a - BATTLE_RATE * d * ed * h);
@@ -3204,7 +3302,7 @@ class Game {
       const pop = this.coloniesIn(g.sys).reduce((k, c) => k + c.pop, 0);
       const ground = this.troopPower(g.sys) + 4 * GM.log10(1 + pop);
       // 兵站: 補給線が長いほど・補給が足りないほど攻囲は遅れる。戦力が6割を切ると、年に5%ずつ艦隊が脱落する
-      const eff = this.fleetEff(g.sup, g.line) * this.modsOf(g.realm).fleet;
+      const eff = this.fleetEff(g.sup, g.line) * this.fleetMul(g.realm, g.sys);
       if (eff < 0.6) {
         g.wear = (g.wear || 0) + 0.05 * g.ships;
         while (g.wear >= 1 && g.ships >= 1) { g.wear -= 1; g.ships -= 1; }
@@ -3472,7 +3570,7 @@ class Game {
         const kg = RES_KG[r] / UNIT_KG; // 1 単位の質量 [100 万 t]
         const amt = Math.min(x.spare, need, this.routeRoom(x.id, sysId, eF, eT) / kg);
         if (amt <= 1e-9) continue;
-        plan.push({ from: x.id, r, amt, price: PRICE[r] * tradeCost(x.t) }); // 航行の年数ぶんの利子を乗せた値段
+        plan.push({ from: x.id, r, amt, price: PRICE[r] * tradeCost(x.t, this.rateAt(sysId)) }); // 航行の年数ぶんの利子を乗せた値段
         const both = Math.min(eF, eT) >= amt * kg * E_UNIT;
         eUsed.set(x.id, (eUsed.get(x.id) || 0) + amt * kg * (both ? E_UNIT : E_UNIT_FREE));
         if (both) eIn += amt * kg * E_UNIT;
@@ -3746,7 +3844,7 @@ class Game {
       // 代金 (基準価格に、航行の年数ぶんの利子を乗せた値段) は、受け手が注文のときに先に払ってある (q.pre)。売り手は送った分を受け取る。
       // 先払いの足りない分は、送り手が受け手の主人なら支援として無償で送る。そうでなければ送らない。
       // (前の版のセーブの要求は先払いがないので、送るときに受け手の資金から払う)
-      const price = q.price ?? PRICE[q.res] * tradeCost(this.reach(q.to).dist[q.from] ?? 0);
+      const price = q.price ?? PRICE[q.res] * tradeCost(this.reach(q.to).dist[q.from] ?? 0, this.rateAt(q.from));
       const prepaid = q.pre !== undefined;
       const paid = Math.min(amt, Math.max(0, prepaid ? q.pre : this.gov(q.from).credits) / price);
       const aid = this.gov(q.from).lord === q.to ? amt - paid : 0;
@@ -3804,6 +3902,7 @@ class Game {
       const needs = RES.filter((res) => ft.prod[res] < ft.cons[res]);
       if (!needs.length) continue;
       const { dist } = this.reach(T);
+      const rate = this.rateAt(T); // 買い手の国の利子率
       const sources = this.reachSorted(T);
       const inb = (this.inbound[T] ??= zeroRes());
       const sto = this.stockOf(T);
@@ -3824,7 +3923,7 @@ class Game {
           const kp = sysRes(S, res);
           const avail = spareOf(S, res) - (promised.get(kp) || 0);
           if (avail <= min) continue;
-          const w = avail * GM.pow(tradeCost(dist[S]), -TRADE.sigma);
+          const w = avail * GM.pow(tradeCost(dist[S], rate), -TRADE.sigma);
           const lead = dist[S] + this.travelYears(T, S);
           cands.push({ S, kpair, kp, avail, w });
           W += w; WL += w * lead;
@@ -3834,7 +3933,7 @@ class Game {
         const want = Math.min((2 + WL / W) * ft.cons[res], 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked.get(ka) || 0);
         if (want <= min) continue;
         // 代金は注文のときに先に払う (主人への支援の頼みは払わない)。資金が足りなければ、どの売り手への注文も同じ割合で減らす
-        for (const c of cands) { c.price = PRICE[res] * tradeCost(dist[c.S]); c.amt = Math.min((want * c.w) / W, c.avail); }
+        for (const c of cands) { c.price = PRICE[res] * tradeCost(dist[c.S], rate); c.amt = Math.min((want * c.w) / W, c.avail); }
         const bill = cands.reduce((k, c) => k + c.amt * c.price, 0);
         const scale = broke || bill <= 0 ? 1 : Math.min(1, Math.max(0, this.gov(T).credits) / bill);
         for (const c of cands) {
@@ -4442,7 +4541,7 @@ class Game {
   pirateRaid(sys, power) {
     const g = this.garrison[sys.id] || 0;
     // 兵站: 補給不足の艦隊は戦力が落ちる
-    if (g * this.fleetEff(this.supplied[sys.id]?.k) * this.modsOf(sys.id).fleet >= power) {
+    if (g * this.fleetEff(this.supplied[sys.id]?.k) * this.fleetMul(sys.id, sys.id) >= power) {
       const loss = Math.floor((power / 3) * this.rand());
       this.garrison[sys.id] = g - loss;
       this.event('pirate', sys.id, `${sys.name} で宇宙海賊 (戦力${power}) を撃退した${loss ? ` (${loss} 艦隊を喪失)` : ''}`, true);
@@ -5078,6 +5177,21 @@ class Game {
   }
   routeMode(from, to, mt) { const e = mt * E_UNIT; return this.energyOf(from) >= e && this.energyOf(to) >= e ? 'route' : 'free'; }
 
+  // 市場の値段を決め直す (MARKET の説明)。ふだんの消費は、人の消費と工業の投入 (flow の cons) を smooth 年でならしたもの
+  marketStep(h, flow) {
+    const a = Math.min(1, h / MARKET.smooth);
+    for (const [key, st] of Object.entries(this.stock)) {
+      const m = (this.market[key] ??= { u: zeroRes(), p: { ...PRICE } });
+      const cons = flow[key]?.cons;
+      for (const r of RES) {
+        m.u[r] += ((cons?.[r] || 0) - m.u[r]) * a;
+        const need = m.u[r] * MARKET.cover[r];
+        const cover = need > 1e-9 ? Math.max(st[r], 0) / need : Infinity;
+        m.p[r] = PRICE[r] * (cover === Infinity ? MARKET.min : cover > 0 ? clamp(GM.pow(cover, -MARKET.eta), MARKET.min, MARKET.max) : MARKET.max); // 使い道がなければ最低の値段
+      }
+    }
+  }
+  price(sys, r) { return this.market[sys]?.p[r] ?? PRICE[r]; }
   economy(h) {
     this.stepH = h;
     // 0. エネルギー: スウォームの発電を蓄える。蓄えの上限 (SWARM.store 年分の出力) を超えた分は捨てる
@@ -5159,9 +5273,10 @@ class Game {
       const life = Math.min(food, water);
       const n = c.kind === 'planet' ? this.nativeOf(c.sys, c.body) : null;
       const unrest = n && n.st.status !== 'integrated' && n.st.rel < -20 ? 0.02 : 0;
-      c.growth = Math.min(ED.growthCap, POP_GROWTH * this.modsOf(c.sys).growth * (REGIMES[regimeKey(this.govs[c.sys])].growth || 1) * (1 - c.pop / this.capOf(c)) * life * (0.5 + 0.5 * goods) * (c.plague > this.year ? 0.2 : 1)) - 0.05 * (1 - life) - unrest;
+      const welfare = 1 + BUDGET.welfare.growth * this.budgetAt(this.realmOf(c.sys), c.sys, 'welfare'); // 福祉の予算
+      c.growth = Math.min(ED.growthCap, POP_GROWTH * welfare * this.modsOf(c.sys).growth * (REGIMES[regimeKey(this.govs[c.sys])].growth || 1) * (1 - c.pop / this.capOf(c)) * life * (0.5 + 0.5 * goods) * (c.plague > this.year ? 0.2 : 1)) - 0.05 * (1 - life) - unrest;
       c.pop = Math.max(0.001, c.pop * (1 + c.growth * h));
-      this.earn('tax', (BASE_TAX[c.kind] + 0.08 * c.pop * (0.5 + 0.5 * goods)) * h, c.sys, { pv: c.sys }); // 星系の民間が払う
+      this.earn('tax', (BASE_TAX[c.kind] + 0.08 * c.pop * (0.5 + 0.5 * goods)) * this.taxK(c.sys) * h, c.sys, { pv: c.sys }); // 星系の民間が払う。税の重さは財政で選ぶ
     }
     // 4. 先住民: 拠点がある星系では友好度が少しずつ上がる。友好的なら交易、制圧していれば貢納
     for (const [key, st] of Object.entries(this.natives)) {
@@ -5183,12 +5298,14 @@ class Game {
       }
     }
     // 5. 交易路
+    this.budgetStep(h);
     this.trade(h, flow);
     // 6. 備蓄の上限を超えた分は捨てる (売る先の「域外」はないので、お金にはならない。物質の保存: 目標 R03)
     for (const [s, st] of Object.entries(this.stock)) {
       const cap = stockCap(flow[s]?.pop || 0);
       for (const r of RES) if (st[r] > cap) this.mv(Number(s), r, cap - st[r], 'waste');
     }
+    this.marketStep(h, flow);
     // 7. 軍の維持費
     // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)。受け取るのは払う星系の民間 (兵の給料と補給の買い付け)
     const payer = (id) => (this.isColonized(id) ? id : 0);
@@ -5316,6 +5433,7 @@ class Game {
       this.snaps[sx.id] = [{ ...this.snapshot(sx.id), year: this.year - this.lightDelay(sx.id) }];
     }
     if (obj(d.stock)) this.stock = { ...this.stock, ...d.stock };
+    if (obj(d.market)) this.market = d.market;
     for (const st of Object.values(this.stock)) for (const r of RES) if (!Number.isFinite(st[r])) st[r] = 0;
     for (const c of this.colonies) this.stockOf(c.sys);
     if (Array.isArray(d.routes)) this.routes = d.routes.filter((r) => sysOk(r.a) && sysOk(r.b) && Array.isArray(r.transit));
@@ -5475,6 +5593,11 @@ class Game {
       garrison: this.garrison[id] || 0, held: this.held[id] || 0, awe: this.awe[id] || 0, supply: this.supplied[id]?.k,
       projects: this.projects.filter((j) => j.sys === id).map((j) => ({ type: j.type, n: j.n, col: j.col, fac: j.fac, body: j.body, to: j.to, kind: j.kind, start: j.start, ready: j.ready, label: j.label })),
       credits: gv ? gv.credits : 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null, energy: gv?.E || 0, power: this.power(id),
+      ...(() => { // その星系で効いている財政 (標準でないものだけ)
+        if (!this.isColonized(id)) return {};
+        const root = this.realmOf(id), t = this.fiscalAt(id).tax, w = this.budgetAt(root, id, 'welfare'), sc = this.budgetAt(root, id, 'security');
+        return { ...(t !== 'normal' ? { tax: t } : {}), ...(w ? { welfare: w } : {}), ...(sc ? { security: sc } : {}) };
+      })(),
       outposts: this.outposts.filter((o) => o.sys === id).map((o) => ({ body: o.body, lv: o.lv })),
       natives: Object.fromEntries(this.system(id).bodies.filter((b) => this.natives[`${id}|${b.id}`]).map((b) => [b.id, { ...this.natives[`${id}|${b.id}`] }])),
       wars: this.wars.filter((w) => w.sys === id).map((w) => ({ body: w.body, progress: w.progress, enemy: w.enemy })),
@@ -5716,7 +5839,7 @@ class Game {
       case 'uproute': return this.routes.find((r) => r.id === Number(d.route))?.a;
       case 'upgrade': case 'train': case 'focus': return colSys(d.col);
       case 'peace': return Number(d.sys);
-      case 'policy': return 0;
+      case 'policy': case 'fiscal': return this.cap;
       case 'rule': case 'mandate': case 'governor': case 'inspect': case 'decide': return Number(d.sys);
       default: return d.sys;
     }
@@ -5775,6 +5898,7 @@ class Game {
     }
     if (act === 'declarewar') return this.declareWar(Number(d.sys));
     if (act === 'policy') return this.setPolicy(d.value);
+    if (act === 'fiscal') return this.setFiscal(d);
     if (act === 'grant') {
       const to = Number(d.sys);
       if (to === this.cap || !this.isColonized(to) || this.realmOf(to) !== this.cap) return fail(`${this.realmName(this.cap)}の星系にだけ送れる`);
@@ -6018,7 +6142,7 @@ const ME = {
   get home() { const g = this.g; if (!g || g.cap === 0) return '地球'; const n = g.nationOf(g.cap); return (n && g.target(n.cap, n.body)?.name) || g.system(g.cap).name; },
   get capName() { const g = this.g; return !g || g.cap === 0 ? '太陽系' : g.system(g.cap).name; },
 };
-const PLAYER_KEYS = ['finalScore', 'pc', 'pcLast', 'council', 'policy', 'decisions', 'story', 'era', 'challenges', 'stats', 'acked', 'aiPolicy',
+const PLAYER_KEYS = ['finalScore', 'pc', 'pcLast', 'council', 'policy', 'fiscal', 'decisions', 'story', 'era', 'challenges', 'stats', 'acked', 'aiPolicy',
   'autoBuild', 'autoGrant', 'autoDefense', 'autoAwe', 'autoHabitat', 'autoRoutes', 'migration', 'warThreshold', 'regime'];
 for (const k of PLAYER_KEYS) Object.defineProperty(Game.prototype, k, { get() { return this.players[this.pi][k]; }, set(v) { this.players[this.pi][k] = v; }, configurable: true });
 Object.defineProperty(Game.prototype, 'me', { get() { return this.players[this.pi]; } });
@@ -8624,6 +8748,30 @@ function councilChart(v) {
     </svg><figcaption><span class="sw own"></span>支持 ${n} <span class="sw opp"></span>不支持 ${100 - n}</figcaption></figure>`;
 }
 
+// 帝国 → 目標の「財政」: 税・利子率・予算。変えると光速で広がる (国家方針と同じ)
+function fiscalHtml(g) {
+  const f = g.fiscal || FISCAL_DEFAULT;
+  const tax = Math.max(0, g.gov(g.cap).ledger?.tax || 0);
+  const pend = g.fiscal ? g.realmSystems(g.cap).filter((s) => g.year < f.since + g.sysDist(g.cap, s.id)).length : 0;
+  const opt = (v, cur, l) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${l}</option>`;
+  const sel = (k, list, cur) => `<select data-act="fiscal" data-k="${k}">${list.map(([v, l]) => opt(v, cur, l)).join('')}</select>`;
+  const used = Object.keys(BUDGET).reduce((a, k) => a + (f.budget?.[k] || 0), 0);
+  const paid = g.gov(g.cap).bpaid ?? 1;
+  const rows = Object.entries(BUDGET).map(([k, b]) => {
+    const sh = f.budget?.[k] || 0;
+    return `<tr><td>${b.label}</td><td>${sel(k, BUDGET_SHARES.map((x) => [x, `${Math.round(x * 100)}%`]), sh)}</td><td>${sh ? `${fmtAmt(sh * tax)} cr/年・効き目 ${pct(budgetEffect(sh * paid))}` : '<span class="muted">使わない</span>'}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
+  }).join('');
+  return `<h3>${ico('credits')}財政</h3>
+    <p class="note">税と利子率を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く${pend ? ` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
+    <table class="tbl">
+      <tr><td>税</td><td>${sel('tax', Object.entries(TAX_LEVELS).map(([v, t]) => [v, t.label]), f.tax)}</td><td colspan="2" class="muted wrap">人口あたりの税 ×${TAX_LEVELS[f.tax].k}${TAX_LEVELS[f.tax].loyalty ? `・家臣の忠誠度の目標 ${TAX_LEVELS[f.tax].loyalty > 0 ? '+' : ''}${TAX_LEVELS[f.tax].loyalty}` : ''}${TAX_LEVELS[f.tax].council ? `・議会の支持 年 ${TAX_LEVELS[f.tax].council > 0 ? '+' : ''}${TAX_LEVELS[f.tax].council}` : ''}</td></tr>
+      <tr><td>利子率</td><td>${sel('rate', RATES.map((x) => [x, `年 ${Math.round(x * 100)}%`]), f.rate)}</td><td colspan="2" class="muted wrap">政府の貯えにつく利子。高いほど、運ぶ年数ぶん輸入の値段が上がる (e^(利子率 × 年数) 倍)</td></tr>
+    </table>
+    <h3>予算 (${ME.capName}の税収 ${fmtAmt(tax)} cr/年 のうち ${Math.round(used * 100)}% を使う。6 割まで)</h3>
+    <table class="tbl">${rows}</table>
+    ${paid < 0.99 && used ? `<p class="note bad">資金が足りず、予算を ${pct(paid)} しか払えていない (効き目もそのぶん下がる)</p>` : ''}`;
+}
+
 // 帝国 → 目標: 国家方針・政治力・議会の支持・時代の課題・挑戦・点数・直轄の星系
 function goalsSheet(app) {
   const g = app.game;
@@ -8655,6 +8803,7 @@ function goalsSheet(app) {
     <h3>国家方針${pol ? ` — いまは「${POLICIES[pol.id].label}」(${Math.round(pol.since)}年から)` : ''}</h3>
     <p class="note">国の向きを一つ選ぶ。${POLICY_YEARS}年に一度だけ変えられる (政治力 ${POLICY_COST})。効果は、知らせが光速で届いた星系から順に効く。</p>
     <div class="btns wrap">${polBtns}</div>
+    ${fiscalHtml(g)}
     <h3>政治力 (${ME.home}の意志)</h3>
     <p class="note">星系の政府への指令 (施設・交易路・方針・視察・要求への返事など) には政治力が要る。遠い星系ほど多く (距離 d 光年で 2 + 0.15d、直轄の星系は半分)。宣戦・講和は ${PC_DIPLOMACY}。${ME.capName}の中の行動 (${ME.capName}からの入植船・施設) と艦隊への指令は要らない。年ごとに貯まり、${PC_CAP} で頭打ちになる。</p>
     <table class="tbl">${inc.parts.map(([l, v]) => `<tr><td>${esc(l)}</td><td class="${v < 0 ? 'bad' : ''}">${v >= 0 ? '+' : ''}${v}/年</td></tr>`).join('')}<tr class="total"><td>合計</td><td>${inc.total >= 0 ? '+' : ''}${inc.total}/年</td></tr></table>
@@ -9004,7 +9153,7 @@ function buildSave(game, extra = {}) {
   return {
     v: 2, seed: game.galaxy.seed, ...(game.galaxy.kind === 'real' ? { galaxy: 'real' } : {}), ...(game.galaxy.gen > 1 ? { gen: game.galaxy.gen } : {}), rs: game.rs, players: game.players, pi: game.pi,
     ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
-    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, ...(Object.keys(game.intel).length ? { intel: game.intel } : {}), ...(game.aiOrders.length ? { aiOrders: game.aiOrders } : {}), peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
+    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, ...(Object.keys(game.intel).length ? { intel: game.intel } : {}), ...(game.aiOrders.length ? { aiOrders: game.aiOrders } : {}), peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, market: game.market, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, pc: game.pc, council: game.council, policy: game.policy, decisions: game.decisions, story: game.story, era: game.era, challenges: game.challenges,
@@ -10446,6 +10595,14 @@ function onPanelChange(e) {
   else if (act === 'candsort') app.candSort = v;
   else if (act === 'evkind') { EvPrefs.kinds[e.target.dataset.k] = e.target.checked; saveEvPrefs(); }
   else if (act === 'regimedefault') issue('set', { key: 'regime', value: v });
+  else if (act === 'fiscal') {
+    const c = app.game.fiscal || FISCAL_DEFAULT;
+    const d = { tax: c.tax, rate: c.rate, ...c.budget };
+    const k = e.target.dataset.k;
+    d[k] = k === 'tax' ? v : Number(v);
+    issue('fiscal', d);
+    save();
+  }
   else if (act === 'mandate' || act === 'governor') {
     // 委任方針・総督の方針の変更は光速の指令 (政治力を使う)
     issue(act, { sys: Number(e.target.dataset.sys), value: v });

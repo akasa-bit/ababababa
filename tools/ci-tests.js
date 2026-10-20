@@ -38,6 +38,14 @@ const TESTS = [
   ['physics', ['5', '150'], (o, code) => (code === 0 && o.trim().split('\n')[0].includes('物理 合格') ? '' : '物理 不合格')],
   ['money', ['5', '150'], (o) => (o.trim().split('\n')[0].includes('お金の保存 合格') && o.includes('決まっていない出入り: なし') ? '' : 'お金の保存 不合格')],
   ['money', ['7', '150', '6'], (o) => (o.trim().split('\n')[0].includes('お金の保存 合格') && o.includes('決まっていない出入り: なし') ? '' : 'お金の保存 不合格 (6 か国)')],
+  ['fiscal', [SHOTS], (o) => {
+    try {
+      const j = JSON.parse(o.slice(o.indexOf('{'), o.lastIndexOf('}') + 1));
+      const good = (v) => v.ok && !v.bad[0] && !v.bad[1] && v.pc === 5 && v.now.join() === '1.8,1,0.01' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
+        && v.loyalty.join() === 'false,true,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.saveLoad && v.ui === 'low' && v.wide[0] === v.wide[1] && !v.errs.length;
+      return Object.values(j).every(good) ? '' : '財政の結果が違う';
+    } catch { return '出力を読めない'; }
+  }],
   ['rotate', [SHOTS, path.join(ROOT, 'index.html')], (o) => ((o.match(/rotated == fresh redraw: true \[\]/g) || []).length === 2 ? '' : '回したあとの絵が描き直しと違う')],
   ['headless', ['100', '1,4,9'], (o, code) => (code === 0 && o.includes('画面なしの版: 一致') ? '' : '画面なしの版がブラウザと違う')],
 ];

@@ -1,0 +1,26 @@
+[
+ {
+  "file": "CMO-Historical-Data-Annual.xlsx",
+  "url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Annual.xlsx",
+  "fetched": "2026-10-20T08:31:31Z",
+  "sha256": "d07bcb67ac39ceba4ef46a36e9d252f89d52c590ce6c05b23acb023d845e3a8b",
+  "bytes": 3175465
+ },
+ {
+  "file": "fred_isratio.csv",
+  "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=ISRATIO",
+  "fetched": "2026-10-20T08:31:32Z",
+  "sha256": "4dbff46e312631dc37f1645f226cd60941d9be8cd3953e3f7576b1e0b06ebe61",
+  "bytes": 6681
+ },
+ {
+  "file": "psd_cereals.csv.gz",
+  "url": "https://apps.fas.usda.gov/psdonline/downloads/psd_grains_pulses_csv.zip#psd_grains_pulses.csv",
+  "fetched": "2026-10-20T08:31:44Z",
+  "sha256": "54fde81fd3b0235b96b127e316e933a413c763534aa39d1e1eaf851efc377dcf",
+  "bytes": 208210,
+  "source_sha256": "7047570ee818e79154d0af1d92ecdb5b6a0343900793a0b22fa4b4e55e3cd1ae",
+  "rows": 45912,
+  "filter": "小麦・とうもろこし・米 (Wheat, Corn, Rice, Milled) の Ending Stocks と Domestic Consumption"
+ }
+]

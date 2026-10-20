@@ -67,6 +67,32 @@ python3 data/build/analyze_trade.py     # 推定する (numpy が要る。約 1 
 
 出典: Conte, M., Cotterlaz, P. & Mayer, T. (2022) The CEPII Gravity database, CEPII Working Paper 2022-05・Santos Silva, J. M. C. & Tenreyro, S. (2006) The Log of Gravity, Review of Economics and Statistics 88, 641–658・Correia, S., Guimarães, P. & Zylkin, T. (2020) Fast Poisson estimation with high-dimensional fixed effects, Stata Journal 20, 95–115・Disdier, A.-C. & Head, K. (2008) The Puzzling Persistence of the Distance Effect on Bilateral Trade, Review of Economics and Statistics 90, 37–48
 
+## 財政と金融のデータ (目標 R19〜R22)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_fiscal.py` → `data/raw/fiscal/` | Jordà–Schularick–Taylor Macrohistory Database R6 (18 か国 1870〜2020 年。税収・政府支出・政府債務・利子率・民間の信用・名目 GDP) と文書、Schmelzing (2020) の 1311〜2018 年の世界の実質利子率。取得日・URL・SHA-256・大きさを `data/raw/fiscal/MANIFEST.json` に記録する |
+| 加工 | `data/build/analyze_fiscal.py` → `data/derived/fiscal.json` | 国ごとの税収 ÷ GDP・政府が黒字だった年の割合・政府債務 ÷ GDP・民間の信用 ÷ GDP と、国のあいだの 10%〜90% 点 (全期間・1870〜1913 年・1950〜2020 年) |
+
+- **同じ台本でゲームも測る**: `python3 data/build/analyze_fiscal.py <ゲームのパネル.csv>` で、ゲームが書き出した同じ列のパネル (`tools/fiscal-panel.js`) を同じ式で計算する
+- **国ごとの値をとる理由**: 長く載っている国の重みが偏らないように、まず国ごとの中央値 (黒字の割合は平均) を出し、国のあいだの分布を見る
+- **限界**: JST の revenue と expenditure は中央政府 (国によって範囲が少し違う。JST の文書を参照)。ゲームは首都と従属星系の政府をまとめた一般政府で比べる。Bank of England の「A millennium of macroeconomic data」(約 27 MB) は大きすぎるので取っていない
+
+出典: Jordà, Ò., Schularick, M. & Taylor, A. M. (2017). Macrofinancial History and the New Business Cycle Facts. NBER Macroeconomics Annual 31, 213–263・Schmelzing, P. (2020). Eight centuries of global real interest rates, R-G, and the 'suprasecular' decline, 1311–2018. Bank of England Staff Working Paper 845
+
+## 市場のデータ (目標 R23〜R26)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_market.py` → `data/raw/market/` | World Bank Commodity Price Data (Pink Sheet) の年次の表、USDA PSD の小麦・とうもろこし・米の期末在庫と国内消費 (国ごと・年ごと。元の zip から取り出したもの)、FRED ISRATIO (米国の企業全体の在庫 ÷ 売上、月次)。取得日・URL・SHA-256 を `data/raw/market/MANIFEST.json` に記録する |
+| 加工 | `data/build/analyze_market.py` → `data/derived/market.json` | 品目ごとの Δln(実質の値段) の標準偏差と、傾向を除いた ln(値段) の 1 年の自己相関 (Deaton & Laroque 1992)、世界の穀物の在庫 ÷ 消費、在庫 ÷ 月の売上の 10%〜90% 点 |
+
+- **品目とゲームの資源の対応**: 食料 ← 穀物・油・砂糖・肉など 18 品目、金属 ← アルミ・鉄鉱石・銅・鉛・すず・ニッケル・亜鉛、燃料 ← 原油・石炭・天然ガス、希少元素 ← 金・白金・銀 (`GROUPS`)。水・工業品・奴隷に対応する一次産品はない
+- **世界の穀物**: PSD は世界の行を持たないので、国を足し上げる (PSD の世界の値も同じ足し上げ)
+- **限界**: Pink Sheet の実質の値段は、先進国の工業品の輸出の単価 (MUV) で割ったもの。ISRATIO は米国だけ
+
+出典: World Bank (2026) Commodity Price Data (The Pink Sheet)・USDA Foreign Agricultural Service, Production, Supply and Distribution Online・U.S. Census Bureau, Total Business: Inventories to Sales Ratio (FRED ISRATIO)・Deaton, A. & Laroque, G. (1992) On the Behaviour of Commodity Prices, Review of Economic Studies 59, 1–23
+
 ## 物理 (星間の気体・宇宙線と遮蔽) のデータ
 
 | 段 | 場所 | 中身 |

@@ -50,6 +50,8 @@ GitHub の設定 (branch protection の *Require branches to be up to date befor
 
 ## 5. 並行に移るときの後片付け
 
+**済み** (2026-10-20、セッション 2 の最初)。
+
 セッション 1 (レーン A) は、並行の決まりの前に始まったので、前の形 (`docs/handoff.md` と `docs/requests-log.md`) に書く。そのままでよい。
 セッション 1 のマージのあと、レーン A の次のセッション (セッション 2) の最初に、次の片付けをする。
 
