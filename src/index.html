@@ -1876,8 +1876,9 @@ const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算�
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)
 // に合わせて国債を出し入れする (Bohn 1998 の形。係数は JST R6 の 18 か国 1870〜2020 年を国ごとに推定した中央値。data/build/analyze_fiscal.py)。
-// trend = 傾向をならす年数、cash = 手元に置く資金 (税収の何年分。仮の値)、spend = それを超えた資金を行政サービスに使いきる年数
-const DEBT = { a: -0.0023, rho: 0.0336, beta: 0.056, war: -0.017, sd: 0.0269, ar: 0.6971, trend: 10, cash: 3, spend: 1 };
+// trend = 傾向をならす年数、gap = 傾向からのずれの範囲 (JST の 18 か国の HP フィルターのずれの 1%〜99% 点)、
+// cash = 手元に置く資金 (税収の何年分。仮の値)、spend = それを超えた資金を行政サービスに使いきる年数
+const DEBT = { a: -0.0023, rho: 0.0336, beta: 0.056, war: -0.017, sd: 0.0269, ar: 0.6971, trend: 10, gap: [-0.176, 0.145], cash: 3, spend: 1 };
 const POLICY_COST = 20;
 const POLICY_YEARS = 30; // 国家方針を変えられる間隔
 // 不満の段階: 1 不満 (離反の起きやすさ HAZARD に従って起きる) → UNREST_YEARS 年続くと 2 要求 (減税・自治を主人へ求める)
@@ -2964,11 +2965,15 @@ class Game {
       if (!this.isColonized(id) || (this.isHuman(id) && !this.spectate)) continue;
       const y = this.coloniesIn(id).reduce((k, c) => k + this.incomeOf(c), 0);
       if (!(y > 0)) continue;
-      const fr = (gv.fr ??= { y, t: GM.log(y), u: 0 });
+      const fr = (gv.fr ??= { y, t: GM.log(y), g: 0, u: 0 });
       fr.y += (y - fr.y) * Math.min(1, h);
-      fr.t += (GM.log(fr.y) - fr.t) * Math.min(1, h / DEBT.trend);
+      // 傾向: ln GDP の水準と伸び (Holt の線形の平滑化。伸びる星系でも、傾向が遅れて「好景気」に見えないように)
+      const lv = fr.t + (fr.g || 0) * h, e = GM.log(fr.y) - lv, k = 1 - GM.exp(-h / DEBT.trend);
+      fr.t = lv + k * e;
+      fr.g = (fr.g || 0) + (k * k / h) * e;
       fr.u = fr.u * keep + DEBT.sd * Math.sqrt(1 - keep * keep) * this.randNormal();
-      const s = DEBT.a + DEBT.rho * ((gv.bond || 0) / fr.y) + DEBT.beta * (GM.log(fr.y) - fr.t) + (war.has(this.realmOf(id)) ? DEBT.war : 0) + fr.u;
+      const gap = clamp(GM.log(fr.y) - fr.t, DEBT.gap[0], DEBT.gap[1]);
+      const s = DEBT.a + DEBT.rho * ((gv.bond || 0) / fr.y) + DEBT.beta * gap + (war.has(this.realmOf(id)) ? DEBT.war : 0) + fr.u;
       // 返しきれなかった分 (手元の資金が足りなかった分) は、次の刻みから先に返す (gv.due)
       let x = -s * fr.y * h + paid - (gv.due || 0);
       gv.due = 0;
