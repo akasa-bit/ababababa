@@ -39,7 +39,7 @@ const { chromium } = require('playwright');
       res.hazard = (g.secessionTerms(far) || []).some((t) => t.label === '治安の予算' && t.f < 1);
       res.fleet = [g.modsOf(0).fleet, +g.fleetMul(0, 0).toFixed(3)];
       const led = g.gov(0).ledger;
-      res.ledger = { welfare: led.welfare < 0, security: led.security < 0, military: led.military < 0, interest: led.interest > 0 };
+      res.ledger = { welfare: led.welfare < 0, security: led.security < 0, military: led.military < 0, interest: !!led.interest }; // 利子は純額 (貯えの利子 − 国債の利子) なので、0 でなく記帳されていればよい
       res.council = +(g.council - cr0).toFixed(2);
       // 保存と読み込み
       const d = JSON.parse(JSON.stringify(buildSave(g)));
