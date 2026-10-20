@@ -15,9 +15,11 @@ const { chromium } = require('playwright');
     await p.goto(`file://${HTML}?seed=11&home=0`); await p.waitForFunction(() => window.__app && __app.game);
     const r = await p.evaluate(() => {
       const g = __app.game; __app.speed = 0;
-      g.setSpectate(true); for (let i = 0; i < 240; i++) g.advance(0.25); g.setSpectate(false);
+      const vassals = () => Object.keys(g.govs).map(Number).filter((id) => id !== 0 && g.isColonized(id) && g.realmOf(id) === 0 && g.govs[id].lord !== null);
+      // 地球の国に従属星系ができるまで (60 年から、最長 200 年) 進める
+      g.setSpectate(true); for (let i = 0; i < 240 || (!vassals().length && i < 800); i++) g.advance(0.25); g.setSpectate(false);
       const res = {};
-      const vs = Object.keys(g.govs).map(Number).filter((id) => id !== 0 && g.isColonized(id) && g.realmOf(id) === 0 && g.govs[id].lord !== null).sort((a, c) => g.sysDist(0, c) - g.sysDist(0, a));
+      const vs = vassals().sort((a, c) => g.sysDist(0, c) - g.sysDist(0, a));
       const far = vs[0];
       res.far = Math.round(g.sysDist(0, far));
       g.pc = 50;

@@ -1,0 +1,15 @@
+{
+  "name": "nolongerubiquitous-electron",
+  "private": true,
+  "version": "0.0.1",
+  "description": "NoLongerUbiquitous を Electron で包む (比べるための試作)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-packager . NoLongerUbiquitous --out=out --overwrite --asar --extra-resource=../game --extra-resource=../bench/probe.js --ignore=^/out"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "44.8.0"
+  }
+}

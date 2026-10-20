@@ -1,5 +1,6 @@
 // お金の保存の試験 (段 4)。conserve.js と同じく、1 年ごとに次を確かめる。
 //   - 全体: (お金の総額の増加) ÷ 取扱量 (出入りの絶対値の合計) が 1e-9 以下。総額 = 政府の資金 + 星系の民間 + 先住民 + 運ぶ途中 − 銀行の貸出
+//     (政府は国債の分を銀行から借りる。政府の額は 資金 − 国債)
 //     (民間と先住民は払えない分を銀行から借りる。銀行は貸すと同時に預金を作るので、お金の量は貸出の分だけ増え、純額は変わらない)
 //     (運ぶ途中 = 物資移送要求の先払い・朝貢と資金援助・返事に添えた額・入植船と準備中の入植船の開拓資金)
 //   - 帳簿ごと: 政府・民間・先住民・運ぶ途中のそれぞれで、記帳した出入りの合計 = 額の増加 (記帳しないで書き換える所がない)
@@ -9,13 +10,13 @@
 const path = require('path');
 const H = require(path.resolve(__dirname, '..', 'headless'));
 const [seed = '5', years = '150', nations = '0'] = process.argv.slice(2);
-const KINDS = ['tax', 'natives', 'upkeep', 'build', 'trade', 'import', 'tribute', 'grant', 'treaty', 'interest', 'welfare', 'security', 'military'];
+const KINDS = ['tax', 'natives', 'upkeep', 'build', 'trade', 'import', 'tribute', 'grant', 'treaty', 'interest', 'welfare', 'security', 'military', 'public'];
 const sim = H.load(process.env.HTML ? { src: process.env.HTML } : {});
 const g = sim.newGame(seed, { nations: Number(nations) });
 const holdings = () => {
   const h = { gov: 0, pv: 0, nat: 0, way: 0 };
   let loan = 0;
-  for (const v of Object.values(g.govs)) { h.gov += v.credits || 0; h.pv += (v.pv || 0) - (v.loan || 0); loan += v.loan || 0; if (v.pv < 0 || v.loan < 0) h.bad = true; }
+  for (const v of Object.values(g.govs)) { h.gov += (v.credits || 0) - (v.bond || 0); loan += v.bond || 0; if (v.bond < 0) h.bad = true; h.pv += (v.pv || 0) - (v.loan || 0); loan += v.loan || 0; if (v.pv < 0 || v.loan < 0) h.bad = true; }
   for (const st of Object.values(g.natives)) { h.nat += (st.cr || 0) - (st.loan || 0); loan += st.loan || 0; if (st.cr < 0 || st.loan < 0) h.bad = true; }
   h.loan = loan;
   for (const q of g.requests) h.way += (q.kind === 'trade' ? q.pre : q.kind === 'tribute' || q.kind === 'grant' ? q.amt : 0) || 0;
