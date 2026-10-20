@@ -14,7 +14,11 @@ const { chromium } = require('playwright');
       // ページを開いてから実時間で進んだ分に左右されないよう、同じシードで作り直してから進める (機械の速さで家臣の数が変わり、CI で落ちた)
       __app.speed = 0; newGame('11');
       const g = __app.game;
-      g.setSpectate(true); for (let i = 0; i < 280; i++) g.advance(0.25); g.setSpectate(false);
+      // 統治体制を試すには直属の家臣が要る。値段で動く経済 (段 5) では広がりが遅いので、開始時の生産性を「2300 年の予測」にして家臣を早く育てる
+      g.productivity = PRODUCTIVITY.forecast.k;
+      // 70 年進め、直属の家臣が 3 つできていなければ、できるまで (最大 200 年) 進める (経済の速さで、家臣のできる年が変わる)
+      const direct = () => Object.keys(g.govs).map(Number).filter((id) => g.govs[id].lord === 0 && g.known(id)?.lord === 0 && g.isColonized(id) && g.realmOf(id) === 0 && !g.govs[id].autonomy && !g.govs[id].direct).length;
+      g.setSpectate(true); for (let i = 0; i < 280 || (direct() < 3 && i < 800); i++) g.advance(0.25); g.setSpectate(false);
       const res = {};
       // 直属の家臣を 3 つ選ぶ
       const vs = Object.keys(g.govs).map(Number).filter((id) => g.govs[id].lord === 0 && g.known(id)?.lord === 0 && g.isColonized(id) && g.realmOf(id) === 0 && !g.govs[id].autonomy && !g.govs[id].direct) // 地球に届いている記録でも直属の家臣のもの (指令はその記録で判断する).sort((a, c) => g.sysDist(0, a) - g.sysDist(0, c));

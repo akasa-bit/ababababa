@@ -34,9 +34,9 @@ const { chromium } = require('playwright');
   if (op) await op.click();
   await p.waitForTimeout(400);
   await p.screenshot({ path: 'shots/war-treaty.png' });
-  // pick two systems + cash
+  // pick two systems + cash (条件のボタンだけ: s + 星系の番号、c + 口の番号。send・close は選ばない)
   const btns = await p.$$eval('#treatybox [data-tr]', (bs) => bs.map((b) => b.dataset.tr));
-  for (const t of btns.filter((x) => x[0] === 's').slice(0, 2).concat(btns.filter((x) => x[0] === 'c').slice(0, 2))) await p.click(`#treatybox [data-tr="${t}"]`);
+  for (const t of btns.filter((x) => /^s\d+$/.test(x)).slice(0, 2).concat(btns.filter((x) => /^c\d+$/.test(x)).slice(0, 2))) await p.click(`#treatybox [data-tr="${t}"]`);
   await p.screenshot({ path: 'shots/war-treaty2.png' });
   await p.click('#treatybox [data-tr="send"]');
   await p.waitForTimeout(300);
