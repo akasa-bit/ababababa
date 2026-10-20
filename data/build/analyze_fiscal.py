@@ -43,9 +43,22 @@ def stats(df, years=None):
                   'p90': round(float(per.quantile(0.9)), 4) if per.size else None}
     return out
 
+def game_stats(df):
+    """ゲームのパネル: 銀河ごとに stats() をかけ、国のあいだの中央値を、銀河のあいだでさらに中央値にする (targets.json の sim)。
+    galaxy の列がなければ (現実のデータ)、stats() と同じ"""
+    if 'galaxy' not in df.columns:
+        return stats(df)
+    per = {g: stats(d) for g, d in df.groupby('galaxy')}
+    out = {}
+    for k, (name, _) in STATS.items():
+        v = pd.Series([s[k]['median'] for s in per.values() if s[k]['median'] is not None])
+        out[k] = {'name': name, 'galaxies': int(v.size), 'median': round(float(v.median()), 4) if v.size else None,
+                  'p10': round(float(v.quantile(0.1)), 4) if v.size else None, 'p90': round(float(v.quantile(0.9)), 4) if v.size else None}
+    return out
+
 def main():
     if len(sys.argv) > 1:
-        print(json.dumps(stats(pd.read_csv(sys.argv[1])), ensure_ascii=False, indent=1))
+        print(json.dumps(game_stats(pd.read_csv(sys.argv[1])), ensure_ascii=False, indent=1))
         return
     jst = pd.read_excel(RAW)
     res = {'source': 'Jordà–Schularick–Taylor Macrohistory Database R6 (data/raw/fiscal/JSTdatasetR6.xlsx)',
