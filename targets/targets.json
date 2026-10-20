@@ -1,6 +1,6 @@
 {
-  "version": 3,
-  "fixedAt": "2026-10-18",
+  "version": 4,
+  "fixedAt": "2026-10-20",
   "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
   "rules": [
     "数値の合格幅がまだ決まっていない目標 (band が null) は、取得スクリプトで生データから統計量を計算した時点で、その計算結果だけから幅を決めて書き込み、固定する。シミュレーションの結果を見てから幅を決めてはいけない",
@@ -11,7 +11,8 @@
   ],
   "changes": [
     { "version": 2, "date": "2026-10-18", "what": "R06・R08・R09・R13・R14・R15・R16 の幅を、取得スクリプトで生データから計算した値だけで決めた (data/derived/history.json)。ゲームの自動対戦の結果はこの変更に使っていない" },
-    { "version": 3, "date": "2026-10-18", "what": "R01 の幅を、取得スクリプトで生データ (CEPII Gravity V202211、2000〜2019 年) から計算した値だけで決めた (推定 −0.874、data/derived/trade.json)。合格の決まり (負で、差 0.3 以内) をそのまま当てはめた。式は ln 距離だけ (ゲームの星系には隣接・言語などの変数がないので)。ゲームの自動対戦の結果はこの変更に使っていない" }
+    { "version": 3, "date": "2026-10-18", "what": "R01 の幅を、取得スクリプトで生データ (CEPII Gravity V202211、2000〜2019 年) から計算した値だけで決めた (推定 −0.874、data/derived/trade.json)。合格の決まり (負で、差 0.3 以内) をそのまま当てはめた。式は ln 距離だけ (ゲームの星系には隣接・言語などの変数がないので)。ゲームの自動対戦の結果はこの変更に使っていない" },
+    { "version": 4, "date": "2026-10-20", "what": "財政と金融の目標 R19〜R22 を足した。幅は、取得スクリプト (data/fetch/fetch_fiscal.py) で取った Jordà–Schularick–Taylor R6 から data/build/analyze_fiscal.py で計算した、国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ GDP がなく、測れない)" }
   ],
   "realism": [
     {
@@ -168,6 +169,46 @@
       "sim": "刻み 0.5・0.25・0.125・0.0625 年",
       "pass": "1 次の方法なら 1.8〜2.2 倍、2 次の方法なら 3.6〜4.4 倍ずつ小さくなる",
       "band": null, "split": "test"
+    },
+    {
+      "id": "R19", "area": "財政", "name": "税収 ÷ GDP",
+      "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
+      "statistic": "revenue ÷ gdp の国ごとの中央値 (GDP はゲームでは付加価値の合計。定義は docs/fiscal.md)。計算は data/build/analyze_fiscal.py",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
+      "band": [0.105, 0.2634], "estimate": 0.1545,
+      "reference": "18 か国 1870〜2020 年 (2520 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R20", "area": "財政", "name": "政府が黒字だった年の割合",
+      "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
+      "statistic": "revenue > expenditure だった年の割合 (国ごと)。計算は data/build/analyze_fiscal.py",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
+      "band": [0.1252, 0.5609], "estimate": 0.2682,
+      "reference": "18 か国 1870〜2020 年 (2538 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R21", "area": "財政", "name": "政府債務 ÷ GDP",
+      "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
+      "statistic": "debtgdp の国ごとの中央値 (政府の総債務)。計算は data/build/analyze_fiscal.py",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
+      "band": [0.2017, 0.7295], "estimate": 0.4687,
+      "reference": "18 か国 1870〜2020 年 (2489 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R22", "area": "金融", "name": "民間の信用 ÷ GDP",
+      "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
+      "statistic": "tloans ÷ gdp の国ごとの中央値 (銀行から民間への貸出)。計算は data/build/analyze_fiscal.py",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
+      "band": [0.2943, 0.7847], "estimate": 0.474,
+      "reference": "18 か国 1870〜2020 年 (2445 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
+      "split": "calibration"
     }
   ],
   "fun": [

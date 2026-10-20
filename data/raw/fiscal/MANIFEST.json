@@ -1,0 +1,23 @@
+[
+ {
+  "file": "JSTdatasetR6.xlsx",
+  "url": "https://www.macrohistory.net/app/download/9834512569/JSTdatasetR6.xlsx",
+  "fetched": "2026-10-20T07:18:32Z",
+  "sha256": "c1bb91fe56ea50d4f27af5c0fc897d481e89ae38ce41eaecab62134c9354981d",
+  "bytes": 1408158
+ },
+ {
+  "file": "JST_documentationR6.pdf",
+  "url": "https://www.macrohistory.net/app/download/9834516169/JST_documentationR6.pdf",
+  "fetched": "2026-10-20T07:18:33Z",
+  "sha256": "36b428724246409f52b760d7803bc05a1281677abc7a67d28567a21c1c44e1f2",
+  "bytes": 2181397
+ },
+ {
+  "file": "schmelzing2020_data.xlsx",
+  "url": "https://www.bankofengland.co.uk/-/media/boe/files/working-paper/2020/eight-centuries-of-global-real-interest-rates-r-g-and-the-suprasecular-decline-1311-2018-data.xlsx",
+  "fetched": "2026-10-20T07:18:33Z",
+  "sha256": "1f2f6f2f01fb4127cccbc8fc30acb9a5dde5b8b07f4c3014196a002f280409e6",
+  "bytes": 2170589
+ }
+]
