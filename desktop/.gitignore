@@ -1,0 +1,5 @@
+node_modules/
+game/
+electron/out/
+tauri/src-tauri/target/
+tauri/src-tauri/gen/
