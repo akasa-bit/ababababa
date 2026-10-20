@@ -1,0 +1,24 @@
+[
+ {
+  "file": "linsky2019_tab2.tex",
+  "url": "https://arxiv.org/e-print/1910.01243#innerlism.tex (deluxetable tab:licmem)",
+  "fetched": "2026-10-20T07:22:50Z",
+  "sha256": "8c648c592b05759add139621a6fb5ad664c123d789c1738c86f5e9f7a4090708",
+  "lines": 189,
+  "source_sha256": "52b3e0c308c585a98f1d7eee8024436cd7307e5b1b7360c73d1c0b75148d942a"
+ },
+ {
+  "file": "pstar_water.txt",
+  "url": "https://physics.nist.gov/cgi-bin/Star/ap_table-t.pl (POST matno=276&ShowDefault=on&prog=PSTAR)",
+  "fetched": "2026-10-20T07:22:51Z",
+  "sha256": "d4b7dbfe97139eafdbc632721e1d040d72a0935269700cde2670c76005452d29",
+  "lines": 150
+ },
+ {
+  "file": "pdg_water.txt",
+  "url": "https://pdg.lbl.gov/2024/AtomicNuclearProperties/HTML/water_liquid.html",
+  "fetched": "2026-10-20T07:22:51Z",
+  "sha256": "d106ad7adc49f5f67fbe5d2e3b31ecc6b260618af9e1248dfff0590a6b64ebae",
+  "lines": 88
+ }
+]

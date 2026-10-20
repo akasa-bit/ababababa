@@ -549,8 +549,9 @@ const EDITIONS = {
   // hazardBase = 離反のハザードの基準 [/年] (植民地の存続年数の中央値に合わせて自動対戦で決めた)、delayExp = 通信の遅れ ÷ 1 世代のべき指数 (Cox モデル)、
   // regimeDelay = 統治体制ごとの遠さへの敏感さを使うか、garrisonWar = 艦隊が駐留していれば独立がかならず戦争になるか、growthCap = 人口の増え方の上限 [/年]、
   // declareDamp = 最後通牒の期限に独立する確率を、友好度と忠誠度でも下げるか
-  game: { generation: 100, hazardBase: 0.6, delayExp: 0.33, regimeDelay: true, garrisonWar: true, growthCap: Infinity, declareDamp: true },
-  sim: { generation: 28, hazardBase: 1.3, delayExp: -0.15, regimeDelay: false, garrisonWar: false, growthCap: 0.042, declareDamp: false },
+  // physics = 星間の気体・宇宙線の遮蔽、加速にかかる時間、M 型星のフレアを入れるか (docs/physics.md。2026-10-20 にシミュレーション版にだけ入れた)
+  game: { generation: 100, hazardBase: 0.6, delayExp: 0.33, regimeDelay: true, garrisonWar: true, growthCap: Infinity, declareDamp: true, physics: false },
+  sim: { generation: 28, hazardBase: 1.3, delayExp: -0.15, regimeDelay: false, garrisonWar: false, growthCap: 0.042, declareDamp: false, physics: true },
 };
 const ED = EDITIONS[EDITION];
 // シード付き乱数 (mulberry32)。同じシードなら同じ銀河が生成される。
@@ -884,6 +885,13 @@ function finalizeBody(body, star) {
     body.surface = classifySurface(body.tSurf, body.pressure, body.water);
   }
   body.settle = settleability(body);
+  const rad = radiationOf(body, star);
+  if (rad) {
+    body.rad = rad;
+    if (rad.surf > RADIATION.limitSv && body.settle.grade === 3) { // 地表で暮らせないので、地下の街 (適性 2) の扱い
+      body.settle = { ...body.settle, grade: 2, notes: [...body.settle.notes, `地表の被曝 ${(rad.surf * 1000).toFixed(0)} mSv/年`] };
+    }
+  }
   return body;
 }
 
@@ -1073,6 +1081,7 @@ function generateRealGalaxy(seed, gen = 1) {
     const stars = rows.map(([cls, label, mass, lum, temp, radius, sep, own], k) => ({
       id: `s${k}`, name: own && k ? own : rows.length > 1 ? `${name} ${'ABCDEFG'[k]}` : name, cls, label, mass, lum, radius, temp,
       color: tempToColor(temp), wd: cls === 'WD', sep: k ? Math.max(sep, 1) : 0, phase: rng.range(0, Math.PI * 2),
+      ...(ED.physics && FLARES ? { flare: cls === 'M' ? FLARES.stars[cat]?.[k] ?? 0 : 'FGK'.includes(cls) ? FLARES.sun : 0 } : {}),
     }));
     const primary = stars[0];
     const maxA = stars.length > 1 ? Math.max(0.1, stars[1].sep / 3) : 100;
@@ -1309,6 +1318,128 @@ function propulsion(m, beta, mode) {
   const R = GM.exp(GM.atanh(PROP.magsailTo) / PROP.amExhaust);
   const anti = (m * (R - 1)) / 2;
   return { acc: ((g - 1) * m * R * C2) / chain, dec: (anti * C2) / PROP.amEff, mass: m * R, anti };
+}
+// --- 星間の気体・宇宙線と遮蔽 (物理。docs/physics.md) ---
+// 前: 船から見ると、星間の気体の原子核 (陽子とヘリウム。塵の粒も核子の集まりとして) が、1 核子あたり (γ−1) m_p c² で正面から当たる (0.95c で 2.07 GeV)。
+//   1 便で前面 1 cm² に当たる核子の数 = 核子の数密度 × 航路の長さ (どの系で数えても同じなので、船の時間の遅れによらない)。
+// 横と後ろ: 銀河の宇宙線は、船の系では光行差で前寄りに集まり、横の壁にも斜めに強く当たる。こちらは船の時間 (航路の長さ ÷ γβc) に比例する。
+// 乗る人と積み荷の被曝を限度までに抑える遮蔽 (水の氷) の厚さを、Geant4 で測った深さと線量の表 (SHIELD_DOSE・SHIELD_GCR) から決め、その質量も加速する。
+// 熱 (前面で 1 m² あたり 35 kW)・気体の抵抗 (船の運動量の 10⁻⁹ ほど) は、測って小さいと分かったので入れない (docs/physics.md の 4)
+/* ISM:BEGIN (data/build/build_ism.py が書く。手で直さない) */
+const ISM = { nNuc: 0.1142 }; // 航路で前面に当たる核子の平均の数密度 [/cm³] (近くの星 24 本の視線の H I の柱密度から。data/derived/ism.json)
+/* ISM:END */
+/* FLARES:BEGIN (data/build/build_flares.py が書く。手で直さない) */
+// 星系の目録の名前 → 恒星ごとの、1 AU で 1 年に届くフレアの高エネルギー陽子 F(>10 MeV) [/cm²] (M 型星だけ。ほかの恒星は 0、太陽は sun)。
+// 陽子のスペクトルは ε = 2.13 (Papaioannou ほか 2023 の中央値。Geant4 の線源。付録 C の 10〜100 MeV の比からは 1.78)。docs/physics.md の 6
+const FLARES = {"sun":970500000.0,"mMedian":122300000000.0,"stars":{"GJ 559":[0,218300000000.0],"GJ 699":[20520000000.0],"GJ 729":[3189000000000.0],"GJ 860":[122300000000.0],"GJ 234":[862500000000.0],"GJ 674":[149800000000.0],"GJ 3618":[2112000000.0],"GJ 682":[41590000000.0],"GJ 12259":[39810000000.0],"GJ 752":[24880000000.0,122300000000.0],"GJ 11068":[122300000000.0],"GJ 667":[0,122300000000.0],"GJ 12735":[438600000000.0],"GJ 1224":[1862000000000.0],"GJ 250":[0,122300000000.0],"GJ 283":[0,6288000000.0],"GJ 10026":[5865000000.0],"GJ 12613":[876800000000.0],"GJ 49":[90540000000.0,9659000000000.0],"GJ 748":[225500000000.0],"GJ 3459":[53220000000.0],"GJ 10491":[443900000000.0],"GJ 47":[83120000000.0],"GJ 1235":[40220000000.0],"GJ 766":[37710000000.0,122300000000.0],"GJ 740":[300500000000.0],"GJ 735":[14940000000000.0],"GJ 12479":[10400000000.0],"GJ 11054":[36310000000000.0],"GJ 12905":[23110000000.0],"GJ 3126":[63000000000.0],"GJ 12566":[206600000000.0],"GJ 806":[130900000000.0],"GJ 3466":[520600000000.0,122300000000.0],"GJ 428":[0,122300000000.0],"GJ 12604":[113900000000.0],"GJ 10726":[40610000000.0],"GJ 1073":[69130000000.0],"GJ 3442":[122300000000.0],"GJ 130.1":[122300000000.0,61240000000.0],"GJ 2130":[1108000000000.0,1349000000000.0],"GJ 10129":[36810000000.0],"GJ 12643":[3166000000000.0],"GJ 10781":[78350000000.0],"GJ 3404":[296100000000.0,150700000000.0],"GJ 12239":[8550000000000.0],"GJ 10013":[122300000000.0,122300000000.0],"GJ 792":[122300000000.0],"GJ 634":[159800000000.0],"GJ 777":[0,101200000000.0],"GJ 10701":[359600000000.0],"GJ 263":[18850000000.0],"GJ 11259":[11530000000.0],"GJ 12313":[14990000000000.0],"GJ 4152":[112100000000.0]}};
+/* FLARES:END */
+/* SHIELD:BEGIN (data/build/build_shield.py が書く。手で直さない) */
+// 深さ t [g/cm²] の水の中の線量 (前面に当たる核子 1 個/cm² あたり): lnD = ln(Gy cm²)・lnH = ln(Sv cm²)。線量の山から先だけ。
+// 表より深い所は、減る長さ lamD・lamH [g/cm²] で指数関数に延ばす (Geant4 11.4・FTFP_BERT。data/derived/shield.json)
+const SHIELD_DOSE = {"0.95":{"t":[100.0,150.0,200.0,250.0,300.0,350.0,400.0,450.0,500.0,550.0,600.0,650.0,700.0,750.0,800.0,850.0,900.0,950.0,1000.0,1050.0,1100.0,1150.0,1200.0,1250.0,1300.0,1350.0,1400.0,1450.0,1500.0,1550.0,1600.0,1650.0,1700.0,1750.0,1800.0,1850.0,1900.0,1950.0,2000.0,2050.0],"lnD":[-20.6199,-20.788,-21.0752,-21.4108,-21.8163,-22.2262,-22.6705,-23.1529,-23.6353,-24.1025,-24.5228,-25.0084,-25.5442,-25.9881,-26.479,-26.9653,-27.3801,-27.925,-28.3475,-28.8033,-29.3432,-29.8002,-30.2631,-30.689,-31.1551,-31.6204,-32.0837,-32.5779,-32.9838,-33.593,-33.9591,-34.3636,-34.8786,-35.5296,-36.2025,-36.3547,-36.9753,-37.2493,-37.8341,-38.4671],"lamD":112.23,"lnH":[-20.1783,-20.3324,-20.5617,-20.9007,-21.1879,-21.6478,-22.0454,-22.4846,-22.8962,-23.3504,-23.7314,-24.213,-24.7156,-25.1614,-25.5766,-26.0785,-26.5527,-26.9626,-27.4118,-27.8166,-28.4311,-28.7701,-29.2959,-29.7348,-30.16,-30.6199,-31.0723,-31.6042,-31.9939,-32.5403,-32.8946,-33.3769,-33.9229,-34.6026,-35.1505,-35.2693,-35.9386,-36.358,-36.7451,-37.566],"lamH":102.67},"0.9":{"t":[50.0,100.0,150.0,200.0,250.0,300.0,350.0,400.0,450.0,500.0,550.0,600.0,650.0,700.0,750.0,800.0,850.0,900.0,950.0,1000.0,1050.0,1100.0,1150.0,1200.0,1250.0,1300.0,1350.0,1400.0,1450.0,1500.0,1550.0,1600.0,1650.0,1700.0,1750.0,1800.0,1850.0,1900.0,1950.0,2000.0,2050.0,2100.0,2150.0,2200.0,2250.0,2300.0,2350.0],"lnD":[-20.8809,-21.0141,-21.3292,-21.7405,-22.1961,-22.7084,-23.2902,-23.8936,-24.6583,-25.0707,-25.6235,-26.1026,-26.5414,-26.9935,-27.4415,-27.925,-28.3644,-28.7538,-29.3022,-29.8098,-30.2708,-30.7681,-31.1958,-31.7283,-32.1725,-32.6936,-33.1529,-33.6549,-34.1193,-34.6476,-35.0889,-35.5373,-36.0437,-36.6128,-37.1479,-37.4853,-38.0499,-38.5512,-38.9964,-39.5034,-39.9943,-40.4718,-41.1143,-41.5164,-42.1961,-42.5668,-43.2127],"lamD":93.4,"lnH":[-20.4634,-20.5668,-20.8586,-21.2441,-21.6923,-22.1284,-22.6327,-23.2061,-23.7374,-24.1136,-24.6178,-25.1403,-25.6341,-25.9965,-26.4369,-26.9485,-27.3848,-27.7987,-28.2924,-28.8077,-29.2798,-29.749,-30.223,-30.6898,-31.1538,-31.6595,-32.1154,-32.5981,-33.0992,-33.614,-34.0897,-34.5219,-35.0354,-35.5663,-36.0928,-36.5119,-37.0195,-37.6044,-37.8869,-38.5091,-38.996,-39.5612,-40.0242,-40.388,-41.2316,-41.2316,-42.4102],"lamH":83.91}};
+// 横の壁の銀河宇宙線 (船の系に直した Vos & Potgieter 2015 の星間のスペクトル。H, He, O, Fe): lnH = ln(Sv/s)
+const SHIELD_GCR = {"0.95":{"t":[0.0,50.0,100.0,150.0,200.0,250.0,300.0,350.0,400.0,450.0,500.0,550.0,600.0,650.0,700.0,750.0,800.0,850.0],"lnH":[-15.9082,-16.9241,-17.8495,-18.6306,-19.41,-20.0653,-20.7018,-21.4302,-21.8684,-22.6638,-23.3208,-23.6395,-24.3556,-24.7345,-25.3251,-25.6535,-26.3881,-26.796],"lamH":101.97},"0.9":{"t":[0.0,50.0,100.0,150.0,200.0,250.0,300.0,350.0,400.0,450.0,500.0,550.0,600.0,650.0,700.0,750.0,800.0,850.0],"lnH":[-15.9983,-17.3574,-18.0346,-18.7696,-19.4813,-19.9637,-20.6918,-21.1399,-21.9542,-22.4841,-23.1472,-23.4622,-23.7939,-24.5275,-25.0706,-25.3692,-26.0031,-26.4818],"lamH":96.53}};
+// 惑星の地面と居住区 (止まった所。上の半球から等方に。水の板): sep = フレアの陽子 (ln Sv、全方向の F(>10 MeV) 1 /cm² あたり)、gcr = 銀河宇宙線 (ln Sv/s)
+const SURFACE_DOSE = {"sep":{"t":[0.0,50.0,100.0,150.0,200.0,250.0,300.0,350.0,400.0,450.0,500.0,550.0,600.0,650.0,700.0,750.0,800.0,850.0,900.0,950.0,1000.0,1050.0,1100.0,1150.0,1200.0,1250.0,1300.0,1350.0,1400.0,1450.0,1500.0,1550.0,1600.0,1650.0,1700.0,1750.0,1800.0,1850.0],"lnH":[-21.5406,-29.6954,-30.1899,-31.0787,-31.3756,-32.0881,-32.1763,-32.5927,-33.095,-33.6225,-34.1052,-34.5897,-35.011,-35.4828,-35.9283,-36.3433,-36.8218,-37.1725,-37.721,-38.2104,-38.6038,-39.1899,-39.7002,-39.9741,-40.4153,-41.0079,-41.4376,-41.7558,-42.2332,-42.7553,-43.3572,-43.6255,-44.1727,-44.6855,-45.2391,-45.7942,-45.7942,-46.333],"lamH":105.67},"gcr":{"t":[0.0,50.0,100.0,150.0,200.0,250.0,300.0,350.0,400.0,450.0,500.0,550.0,600.0,650.0,700.0,750.0,800.0,850.0,900.0,950.0,1000.0,1050.0,1100.0,1150.0,1200.0,1250.0,1300.0,1350.0,1400.0,1450.0,1500.0,1550.0,1600.0,1650.0,1700.0,1750.0,1800.0,1900.0,1950.0,2000.0,2050.0,2100.0,2150.0,2200.0,2250.0,2300.0,2350.0,2400.0,2450.0,2500.0,2550.0,2600.0,2650.0],"lnH":[-16.8676,-18.7652,-19.1837,-19.4886,-19.8564,-20.3024,-20.4081,-21.0182,-21.2309,-21.7715,-22.1503,-22.4634,-22.9871,-23.2865,-23.7894,-24.2012,-24.7266,-25.1582,-25.5622,-25.8287,-26.3997,-26.5765,-27.2385,-27.4729,-27.7381,-28.4386,-28.7034,-29.3697,-29.6181,-29.817,-30.4273,-30.6062,-30.8726,-31.3519,-32.1887,-32.5549,-32.5549,-32.6191,-33.1859,-33.1859,-33.2497,-33.2497,-33.2497,-33.2497,-33.2818,-33.2818,-33.2818,-33.2818,-33.3384,-33.3384,-33.3384,-33.3384,-33.3384],"lamH":100000.0}};
+/* SHIELD:END */
+const SHIELD = {
+  crewSv: 0.6, // 乗る人の 1 便の線量当量の限度 [Sv] (NASA-STD-3001 の宇宙飛行士の生涯の限度 600 mSv)
+  frontShare: null, // そのうち前 (星間の気体) に割り当てる分 (残りは横と後ろの宇宙線)。null なら、遮蔽が一番軽くなる割り振りを探す
+  cargoGy: 1e4, // 積み荷の吸収線量の限度 [Gy] (食品の照射の上限の目安 10 kGy: Codex の一般規格。耐放射線の電子部品も 1〜10 kGy)。宇宙線は数 Gy なので横の遮蔽は要らない
+  crew: ['settler', 'migrant', 'troop', 'fleet'], // 人が乗る船
+  rho: { crew: 500, cargo: 1000 }, // 船の平均の密度 [kg/m³] (人が乗る船は ISS の与圧部の 約 460、積み荷は水や氷の 1000。仮定)
+  aspect: [1, 10], // 船の長さ ÷ 直径 の範囲。この中で、遮蔽が一番軽くなる太さにする (横の遮蔽が要らない荷は細い方の端)
+};
+const LY_CM = 9.4607e17; // 1 光年 [cm]
+// 表 tab の深さ t [g/cm²] と ln(線量) から、ln(線量) が target になる深さ。表の頭 (線量の山) より下なら 0、表より深い所は指数関数で延ばす
+function depthFor(tab, key, target) {
+  const ln = tab['ln' + key], t = tab.t;
+  if (target >= ln[0]) return 0;
+  for (let i = 0; i < ln.length - 1; i++) if (ln[i + 1] <= target) return t[i] + ((ln[i] - target) / (ln[i] - ln[i + 1])) * (t[i + 1] - t[i]);
+  return t[t.length - 1] + (ln[ln.length - 1] - target) * tab['lam' + key];
+}
+// 惑星の地表の被曝 (物理。シミュレーション版だけ。docs/physics.md の 6)。銀河宇宙線と、恒星のフレアの高エネルギー陽子 (星ごとの TESS の観測から)。
+// 地表は大気の柱 (気圧 ÷ 重力) の下。年の限度 (ICRP の職業被曝の年平均 20 mSv) を超えれば、地表では暮らせない (入植適性の「地球型」は地下の街の扱い)。
+// 地下に住むなら、限度に収まるまで覆う厚さ (cover [g/cm²]) を出す
+const RADIATION = { limitSv: 0.02, columnPerBar: 1019.7 }; // 1 bar の大気の柱 [g/cm²] (地球の重力のとき。重力に反比例)
+function doseAt(tab, t) { // 表の深さ t [g/cm²] の ln(線量) (表より浅い所は表の頭、深い所は指数関数で延ばす)
+  const ln = tab.lnH, ts = tab.t;
+  if (t <= ts[0]) return ln[0];
+  for (let i = 0; i < ts.length - 1; i++) if (t <= ts[i + 1]) return ln[i] + ((t - ts[i]) / (ts[i + 1] - ts[i])) * (ln[i + 1] - ln[i]);
+  return ln[ln.length - 1] - (t - ts[ts.length - 1]) / tab.lamH;
+}
+// 1 年の線量当量 [Sv]。flare = 1 AU で 1 年の F(>10 MeV) [/cm²]、a = 恒星からの距離 [AU]、column = 上にある物の柱 [g/cm²]
+function annualDose(flare, a, column) {
+  return GM.exp(doseAt(SURFACE_DOSE.gcr, column)) * YEAR_S + (flare / (a * a)) * GM.exp(doseAt(SURFACE_DOSE.sep, column));
+}
+function radiationOf(b, star) {
+  if (!ED.physics || !SURFACE_DOSE || (b.type !== 'rocky' && b.type !== 'dwarf')) return null;
+  const col = (b.pressure * RADIATION.columnPerBar) / Math.max(0.05, b.gravity || 1);
+  // 実在の星は星ごとの値。太陽と、星の値がない恒星 (手続きの銀河) は、F・G・K 型なら太陽の値、M 型なら測れた M 型星の中央値
+  const flare = star.flare ?? (!FLARES ? 0 : star.cls === 'M' ? FLARES.mMedian : 'FGK'.includes(star.cls) ? FLARES.sun : 0);
+  const surf = annualDose(flare, b.a, col);
+  let cover = 0;
+  if (surf > RADIATION.limitSv) { // 限度に収まる覆いの厚さを二分法で
+    let lo = 0, hi = 20000;
+    for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; if (annualDose(flare, b.a, col + m) > RADIATION.limitSv) lo = m; else hi = m; }
+    cover = hi;
+  }
+  return { column: col, surf, cover, flareShare: surf > 0 ? 1 - (GM.exp(doseAt(SURFACE_DOSE.gcr, col)) * YEAR_S) / surf : 0 };
+}
+// 加速と減速にかかる時間 (物理。シミュレーション版だけ。docs/physics.md の 5)。一定の (船の中で感じる) 加速度 a で、0 から速さ β まで加速し、
+// 着く前に同じように減速する。途中の星系では止まらない。c/a [年] = c²/a [光年] (1g で 0.969)。人の乗る船は 1g (人が長く耐えられる)、荷は 10g
+const ACCEL = { crew: 1, cargo: 10 }; // 加速度 [g]
+function accelExtra(ly, beta, gs) {
+  if (!ED.physics || !(ly > 0)) return 0;
+  const T = C_LIGHT / (gs * 9.80665) / YEAR_S;
+  const g = 1 / Math.sqrt(1 - beta * beta), xa = T * (g - 1); // 加速のあいだに進む道のり [光年]
+  const total = ly >= 2 * xa ? 2 * T * g * beta + (ly - 2 * xa) / beta : 2 * T * Math.sqrt((1 + ly / 2 / T) ** 2 - 1);
+  return total - ly / beta; // 速さ β のまま飛ぶとしたときより遅れる年数
+}
+// 道のりの各星系に着く年 times に、加速と減速の遅れ extra を足す (加速の分は 2 つ目の点から、減速の分は最後の点に)
+function withAccel(times, extra) {
+  if (!extra) return times;
+  return times.map((t, i) => (i === 0 ? t : t + extra / 2 + (i === times.length - 1 ? extra / 2 : 0)));
+}
+// 船の形と遮蔽の質量。V = 体積 [m³]、tf = 前の厚さ・ts = 横と後ろの厚さ [g/cm²]。
+// 船は直径 d・長さ L の円柱。前面 (π d²/4) に tf、横 (π d L) と後ろ (π d²/4) に ts を張る。
+// 質量 = π d²/4 (tf + ts) + 4 V ts / d を一番小さくする d は (8 V ts / (π (tf + ts)))^(1/3)。細長さ L/d の範囲で切る
+function shieldShape(V, tf, ts) {
+  const dOf = (k) => GM.cbrt((4 * V) / (Math.PI * k)); // 細長さ k のときの直径
+  const dBest = ts > 0 ? GM.cbrt((8 * V * ts) / (Math.PI * (tf + ts))) : 0;
+  const d = Math.min(dOf(SHIELD.aspect[0]), Math.max(dOf(SHIELD.aspect[1]), dBest));
+  const area = (Math.PI * d * d) / 4; // 前面 [m²]
+  return { kg: 10 * (area * (tf + ts) + ((4 * V) / d) * ts), d, area }; // 1 g/cm² = 10 kg/m²
+}
+// 1 便の遮蔽。m = 積み荷と船の質量 [kg]、ly = 航路の長さ [光年]。
+// 乗る人の限度は、前 (星間の気体) と横 (宇宙線) に、遮蔽が一番軽くなるように割り振る (黄金分割で探す)
+function shieldOf(kind, m, beta, ly) {
+  if (!ED.physics || !(ly > 0) || !(m > 0) || !SHIELD_DOSE) return { kg: 0, depth: 0, side: 0, fluence: 0, area: 0 };
+  const crew = SHIELD.crew.includes(kind);
+  const key = beta >= 0.925 ? '0.95' : '0.9';
+  const fluence = ISM.nNuc * ly * LY_CM;
+  const V = m / SHIELD.rho[crew ? 'crew' : 'cargo'];
+  const g = 1 / Math.sqrt(1 - beta * beta);
+  // 船の時間 [s]。加速と減速のあいだ (1g) は、船の時間が速く進む (T atanh β)
+  const T1 = C_LIGHT / 9.80665 / YEAR_S, xa = T1 * (g - 1);
+  const tau = ED.physics && ly >= 2 * xa ? ((2 * T1 * GM.atanh(beta) + (ly - 2 * xa) / (g * beta)) * YEAR_S) : (ly * LY_CM) / (g * beta * C_LIGHT * 100);
+  if (!crew) {
+    const tf = depthFor(SHIELD_DOSE[key], 'D', GM.log(SHIELD.cargoGy / fluence)); // 荷は宇宙線が数 Gy なので横は要らない
+    return { ...shieldShape(V, tf, 0), depth: tf, side: 0, fluence, tau, share: 1 };
+  }
+  const at = (f) => {
+    const tf = depthFor(SHIELD_DOSE[key], 'H', GM.log((SHIELD.crewSv * f) / fluence));
+    const ts = depthFor(SHIELD_GCR[key], 'H', GM.log((SHIELD.crewSv * (1 - f)) / tau));
+    return { ...shieldShape(V, tf, ts), depth: tf, side: ts, fluence, tau, share: f };
+  };
+  if (SHIELD.frontShare) return at(SHIELD.frontShare);
+  const R = (Math.sqrt(5) - 1) / 2;
+  let lo = 0.01, hi = 0.99, x1 = hi - R * (hi - lo), x2 = lo + R * (hi - lo), f1 = at(x1).kg, f2 = at(x2).kg;
+  for (let i = 0; i < 40; i++) {
+    if (f1 <= f2) { hi = x2; x2 = x1; f2 = f1; x1 = hi - R * (hi - lo); f1 = at(x1).kg; }
+    else { lo = x1; x1 = x2; f1 = f2; x2 = lo + R * (hi - lo); f2 = at(x2).kg; }
+  }
+  return at((lo + hi) / 2);
 }
 // 交易 (S3。docs/trade.md)。荷の値段は、航行の年数 t のあいだの利子で e^(rate × t) 倍になる (Krugman 1978/2010「恒星間の交易の理論」)。
 // 買い手は、交易路でつながった売り手に、売れる量 × 値段^(−σ) に比例して注文を分ける (CES の需要。σ = 代替の弾力性)。
@@ -3617,7 +3748,7 @@ class Game {
     const seed = job.type === 'ship' ? SEED_FUNDS[job.kind] || 0 : 0;
     if (cost.credits) { this.cash('build', -cost.credits, { gov: sysId }); this.cash('build', cost.credits - seed, { pv: sysId }); }
     if (seed) this.cash('build', seed, { way: job, f: 'seed' });
-    if (job.flight) this.bookShip('settler', job.flight.m, job.flight.beta, 'free', sysId);
+    if (job.flight) this.bookShip('settler', job.flight.m, job.flight.beta, 'free', sysId, sysId, job.flight.ly ?? 0);
     else if (cost.energy) this.bookE('build', -cost.energy, sysId);
     for (const x of p.plan) {
       if (x.from !== sysId && TRADE_AUDIT) TRADE_AUDIT.push([x.from, sysId, this.year, x.amt * PRICE[x.r], 'b']);
@@ -3714,14 +3845,14 @@ class Game {
     const sup = this.shipSupplies(kind, fromId, toId);
     const cost = { ...SHIP_COST[kind], credits: Math.round(SHIP_COST[kind].credits * f) + SEED_FUNDS[kind], ...sup };
     const fl = this.settlerFlight(kind, fromId, toId, sup);
-    if (fl) { const p = propulsion(fl.m, fl.beta, 'free'); cost.energy = p.acc + p.dec; }
+    if (fl) { const p = propulsion(fl.m + shieldOf('settler', fl.m, fl.beta, fl.ly ?? 0).kg, fl.beta, 'free'); cost.energy = p.acc + p.dec; }
     return cost;
   }
   // 入植船の質量 [kg] と速さ [c]。交易路を通るなら 0.95c まで出す
   settlerFlight(kind, fromId, toId, sup = this.shipSupplies(kind, fromId, toId)) {
     if (fromId === toId) return null;
     const m = SHIP_COST[kind].goods * RES_KG.goods + sup.food * RES_KG.food + sup.water * RES_KG.water + SETTLERS[kind] * 1e6 * PERSON_KG;
-    return { m, beta: this.voyage(fromId, toId, OFFROUTE_SPEED).path.length > 2 ? SHIP_SPEED : OFFROUTE_SPEED };
+    return { m, beta: this.voyage(fromId, toId, OFFROUTE_SPEED).path.length > 2 ? SHIP_SPEED : OFFROUTE_SPEED, ly: this.sysDist(fromId, toId) };
   }
   launch(fromId, toId, bodyId, kind, supplies = {}, job = null) {
     // 出発地の星系に駐留する歩兵から同行させる (奴隷兵は後回し)
@@ -3731,7 +3862,7 @@ class Game {
     for (const c of this.coloniesIn(fromId)) { const k = Math.min(want, c.slaveTroops); c.slaveTroops -= k; escort.slave += k; want -= k; }
     const v = this.voyage(fromId, toId, OFFROUTE_SPEED);
     const years = v.years;
-    if (escort.troops + escort.slave && fromId !== toId) this.bookShip('troop', (escort.troops + escort.slave) * TROOP_KG, v.path.length > 2 ? SHIP_SPEED : OFFROUTE_SPEED, 'free', fromId);
+    if (escort.troops + escort.slave && fromId !== toId) this.bookShip('troop', (escort.troops + escort.slave) * TROOP_KG, v.path.length > 2 ? SHIP_SPEED : OFFROUTE_SPEED, 'free', fromId, fromId, this.sysDist(fromId, toId));
     const ship = {
       id: this.nextShipId++, from: fromId, to: toId, body: bodyId, kind,
       path: v.path, times: v.times.map((t) => this.year + t), supplies, escort,
@@ -3985,8 +4116,9 @@ class Game {
     this.mv(from, res, -amt, 'ship');
     (this.inbound[dest] ??= zeroRes())[res] += amt;
     for (const l of legs) l.r.transit[l.dir][res] += amt;
-    const times = [this.year];
-    for (let i = 1; i < path.length; i++) times.push(times[i - 1] + this.shipYears(path[i - 1], path[i]));
+    let times = [this.year], cly = 0;
+    for (let i = 1; i < path.length; i++) { times.push(times[i - 1] + this.shipYears(path[i - 1], path[i])); cly += this.sysDist(path[i - 1], path[i]); }
+    times = withAccel(times, accelExtra(cly, SHIP_SPEED, ACCEL.cargo)); // 荷は 10g
     const key = path.join('>');
     let p = null;
     for (let i = this.cargo.length - 1; i >= Math.max(0, this.cargo.length - 64) && !p; i--) {
@@ -4040,7 +4172,10 @@ class Game {
   // 艦隊の戦力の倍率: 補給線の効き × (0.5 + 0.5 × 補給の充足率)。補給がまったくなければ半分
   fleetEff(k = 1, d = 0) { return this.lineEff(d) * (0.5 + 0.5 * k); }
   // 艦隊は直行する。交易路が直接結ぶ区間なら 0.95c、それ以外は 0.9c
-  fleetYears(from, to) { return this.shipYears(from, to, !!this.routeBetween(from, to)); }
+  fleetYears(from, to) {
+    const onRoute = !!this.routeBetween(from, to);
+    return this.shipYears(from, to, onRoute) + accelExtra(this.travelYears(from, to), onRoute ? SHIP_SPEED : OFFROUTE_SPEED, ACCEL.crew);
+  }
   // route = 着いたあとに順に回る経由地 (星系の id の列)。艦隊戦・攻囲をまたいでも保たれる
   // chain = 経由地を回っている艦隊の最初の id (取り消しの指令が後を追うのに使う)
   sendFleet(from, to, n, prefix = '', route = null, chain = undefined) {
@@ -4130,10 +4265,11 @@ class Game {
     f.fromXY = { x: p.x, y: p.y, z: p.z || 0 };
     f.depart = this.year;
     f.to = to;
-    f.arrive = this.year + Math.max(0.001, distance(this.system(to), p)) / OFFROUTE_SPEED;
+    const dly = Math.max(0.001, distance(this.system(to), p));
+    f.arrive = this.year + dly / OFFROUTE_SPEED + accelExtra(dly, OFFROUTE_SPEED, ACCEL.crew);
     const owner = f.owner ?? 0;
     // 進路を変えるには、いまの速さを磁気帆と反物質で落として、もう一度加速する (宇宙の途中なので、国の首都の政府が払う)
-    this.bookShip('fleet', f.n * FLEET_KG, OFFROUTE_SPEED, 'free', owner);
+    this.bookShip('fleet', f.n * FLEET_KG, OFFROUTE_SPEED, 'free', owner, owner, (f.arrive - this.year) * OFFROUTE_SPEED);
     const dest = this.isColonized(to) ? this.realmOf(to) : owner;
     f.surprise = dest !== owner && !this.atWar(owner, dest);
     f.auto = false;
@@ -4854,8 +4990,9 @@ class Game {
       to.slaveTroops += slave;
       return { ok: true };
     }
-    const times = [this.year];
-    for (let i = 1; i < route.path.length; i++) times.push(times[i - 1] + this.shipYears(route.path[i - 1], route.path[i], !route.direct));
+    let times = [this.year], tly = 0;
+    for (let i = 1; i < route.path.length; i++) { times.push(times[i - 1] + this.shipYears(route.path[i - 1], route.path[i], !route.direct)); tly += this.sysDist(route.path[i - 1], route.path[i]); }
+    times = withAccel(times, accelExtra(tly, route.direct ? OFFROUTE_SPEED : SHIP_SPEED, ACCEL.crew));
     // 交易路なら着く側のレーザーで減速する。直行なら磁気帆と反物質 (どちらも蓄えが負になってもよい)
     this.bookShip('troop', (troops + slave) * TROOP_KG, route.direct ? OFFROUTE_SPEED : SHIP_SPEED, route.direct ? 'free' : 'route', from.sys, to.sys);
     this.troopMoves.push({ id: this.nextShipId++, from: fromKey, to: toKey, path: route.path, times, arrive: times[times.length - 1], troops, slave });
@@ -5170,10 +5307,12 @@ class Game {
     if (MASS_AUDIT) { const f = (MASS_AUDIT.energy[id] ??= {}); f[kind] = (f[kind] || 0) + J; }
   }
   // 1 便の推進のエネルギーを記帳する。from = 加速する (と反物質を作る) 星系の政府、to = 交易路で減速する星系の政府
-  bookShip(kind, m, beta, mode, from, to = from) {
-    const p = propulsion(m, beta, mode);
+  // ly = 航路の長さ [光年] (遮蔽の厚さを決める)。from と to が航路の両端でない便 (入植船・艦隊など) は、呼ぶ側が渡す
+  bookShip(kind, m, beta, mode, from, to = from, ly = from === to ? 0 : this.sysDist(from, to)) {
+    const sh = shieldOf(kind, m, beta, ly);
+    const p = propulsion(m + sh.kg, beta, mode);
     if (mode === 'route') { this.bookE(kind, -p.acc, from); this.bookE(kind, -p.dec, to); } else this.bookE(kind, -(p.acc + p.dec), from);
-    if (ENERGY_AUDIT) ENERGY_AUDIT.push({ kind, m, beta, mode, E: p.acc + p.dec, year: this.year });
+    if (ENERGY_AUDIT) ENERGY_AUDIT.push({ kind, m, beta, mode, E: p.acc + p.dec, year: this.year, ly, shield: sh.kg, depth: sh.depth, side: sh.side, share: sh.share });
     return p.acc + p.dec;
   }
   // 艦隊を出す (交易路が直接結ぶ自国の星系への移動なら、着く側のレーザーで減速する。ほかは磁気帆と反物質)。費用は出発する星系 (自国でなければ国の首都) の政府
@@ -5183,7 +5322,7 @@ class Game {
     const mine = (id) => this.isColonized(id) && this.realmOf(id) === owner;
     const payer = mine(f.from) ? f.from : owner;
     const mode = onRoute && mine(f.from) && mine(f.to) ? 'route' : 'free';
-    this.bookShip('fleet', f.n * FLEET_KG, onRoute ? SHIP_SPEED : OFFROUTE_SPEED, mode, payer, f.to);
+    this.bookShip('fleet', f.n * FLEET_KG, onRoute ? SHIP_SPEED : OFFROUTE_SPEED, mode, payer, f.to, this.sysDist(f.from, f.to));
     this.fleets.push(f);
   }
   // 交易路を通る荷 (貨物船・資材輸送船・移民船) を送れる量 [100 万 t]。ふつうは送る側が加速、受ける側が減速を払う。
@@ -6080,8 +6219,12 @@ class Game {
       const onRoute = !!this.routeBetween(path[i - 1], path[i]);
       times.push(times[i - 1] + this.shipYears(path[i - 1], path[i]) * (onRoute ? 1 : SHIP_SPEED / offSpeed));
     }
-    const v = { path, times, years: times[times.length - 1] };
-    if (cacheable) vc.set(vk, { path: path.slice(), times: times.slice(), years: v.years });
+    // 加速と減速の遅れ (シミュレーション版だけ。人の乗る船の 1g。入植船・移民船・同行する歩兵がこの道のりを使う)
+    let ly = 0;
+    for (let i = 1; i < path.length; i++) ly += this.sysDist(path[i - 1], path[i]);
+    const tt = withAccel(times, accelExtra(ly, path.length > 2 || this.routeBetween(path[0], path[1]) ? SHIP_SPEED : offSpeed, ACCEL.crew));
+    const v = { path, times: tt, years: tt[tt.length - 1] };
+    if (cacheable) vc.set(vk, { path: path.slice(), times: tt.slice(), years: v.years });
     return v;
   }
   // 経路 (星系の列) と各星系に着く年から現在位置を求める
@@ -8085,7 +8228,8 @@ function bodyPanel(app) {
       ${solid ? row('表面温度', `${Math.round(b.tSurf)} K (${Math.round(b.tSurf - 273)} ℃)`) : ''}
       ${solid ? row('大気圧', b.pressure < 0.001 ? 'ほぼ真空' : `${fmt(b.pressure)} atm`) : ''}
       ${solid ? row('地表', SURFACE_LABEL[b.surface] || '') : ''}
-      ${solid ? row('入植適性', `<b class="grade g${b.settle.grade}">${GRADE_LABEL[b.settle.grade]}</b>${b.settle.notes.length ? ` — ${b.settle.notes.join('、')}` : ''}`) : ''}</table>`;
+      ${solid ? row('入植適性', `<b class="grade g${b.settle.grade}">${GRADE_LABEL[b.settle.grade]}</b>${b.settle.notes.length ? ` — ${b.settle.notes.join('、')}` : ''}`) : ''}
+      ${solid && b.rad ? row('地表の被曝', `${fmtSv(b.rad.surf)}/年 (フレア ${Math.round(100 * b.rad.flareShare)}%・宇宙線 ${Math.round(100 * (1 - b.rad.flareShare))}%)${b.rad.cover ? `。地下に住むなら 土 ${(b.rad.cover / 200).toFixed(1)} m の下 (年 ${fmtSv(RADIATION.limitSv)} まで)` : ''}`) : ''}</table>`;
   }
   const cols = ['planet', 'station'].map((k) => g.knownColonyAt(sys.id, b.id, k)).filter(Boolean);
   return `
@@ -8926,6 +9070,13 @@ function ledgerHtml(g) {
   }).join('');
 }
 
+const fmtSv = (v) => (v >= 1 ? `${v.toPrecision(3)} Sv` : v >= 1e-3 ? `${(v * 1e3).toPrecision(3)} mSv` : `${(v * 1e6).toPrecision(3)} µSv`);
+// 遮蔽の目安: 10 光年を 0.95c で行く 1 単位の荷と、移民 1 万人の船
+function shieldNote() {
+  const c = shieldOf('cargo', UNIT_KG, SHIP_SPEED, 10), m = shieldOf('migrant', 1e4 * MIGRANT_KG, SHIP_SPEED, 10);
+  const f = (x, kg) => `前 水 ${(x.depth / 100).toFixed(0)} m${x.side ? `・横 ${(x.side / 100).toFixed(1)} m` : ''} (質量の +${((100 * x.kg) / kg).toFixed(1)}%)`;
+  return `荷 1 単位: ${f(c, UNIT_KG)}・移民 1 万人: ${f(m, 1e4 * MIGRANT_KG)}`;
+}
 // 右の欄のエネルギー。首都はいまの値、ほかは光が届いた時点の記録 (known)
 function energyBox(g, id, k) {
   const now = id === g.cap;
@@ -8934,7 +9085,8 @@ function energyBox(g, id, k) {
   const cover = lum ? P / (lum * L_SUN_W * PROP.pv * YEAR_S) : 0;
   return `<table class="tbl"><tr><td>蓄え</td><td>${fmtJ(E)} <span class="muted">(上限 ${fmtJ(SWARM.store * P)})</span></td></tr>
     <tr><td>スウォームの発電</td><td>${fmtJ(P)}/年</td></tr><tr><td>恒星の光を覆う割合</td><td>${cover >= 0.01 ? pct(cover) : cover.toExponential(1)}</td></tr>
-    <tr><td>交易路で 1 単位 (100 万 t) を運ぶ</td><td>${fmtJ(E_UNIT)} ずつ (送る側の加速・受ける側の減速)</td></tr></table>`;
+    <tr><td>交易路で 1 単位 (100 万 t) を運ぶ</td><td>${fmtJ(E_UNIT)} ずつ (送る側の加速・受ける側の減速)</td></tr>
+    ${ED.physics ? `<tr><td>星間の気体と宇宙線の遮蔽 (10 光年・0.95c)</td><td>${shieldNote()}</td></tr>` : ''}</table>`;
 }
 // エネルギーの収支 (いまの政府)。使った量は負
 function eLedgerHtml(g) {
