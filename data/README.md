@@ -66,3 +66,24 @@ python3 data/build/analyze_trade.py     # 推定する (numpy が要る。約 1 
 - **限界**: BACI は正の交易額しか載せないので、空の組が 0 なのか、記録がないのかを区別できない (参考の推定で、どちらでもほぼ同じになることを確かめた)
 
 出典: Conte, M., Cotterlaz, P. & Mayer, T. (2022) The CEPII Gravity database, CEPII Working Paper 2022-05・Santos Silva, J. M. C. & Tenreyro, S. (2006) The Log of Gravity, Review of Economics and Statistics 88, 641–658・Correia, S., Guimarães, P. & Zylkin, T. (2020) Fast Poisson estimation with high-dimensional fixed effects, Stata Journal 20, 95–115・Disdier, A.-C. & Head, K. (2008) The Puzzling Persistence of the Distance Effect on Bilateral Trade, Review of Economics and Statistics 90, 37–48
+
+## 物理 (星間の気体・宇宙線と遮蔽) のデータ
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_ism.py` → `data/raw/ism/` | Linsky, Redfield & Tilipman 2019 の表 2 (近くの星 62 本の視線の log N(H I)。arXiv 1910.01243 の原稿の LaTeX から表だけ)・NIST PSTAR (水の中の陽子)・PDG の水の性質。取得日・URL・SHA-256・行数を `data/raw/ism/MANIFEST.json` に記録する |
+| 加工 | `data/build/build_ism.py` → `data/derived/ism.json` と `src/index.html` の `ISM` | 16.5 pc 以内の 24 本の視線から、雲の中を通る割合を出し、雲の中 (中性と電離した水素・ヘリウム・塵) と外 (圧力のつり合う電離した気体) の核子を足した、航路の平均の数密度 |
+| 計算 | `data/build/g4_all.sh` (`g4_shield.py`・`g4_stages.sh`・`make_gcr_source.py`) → `data/derived/g4/` | Geant4 11.4 で、水の板の中の深さと線量 (前: 星間の気体の陽子とヘリウム、横: 船の系に直した銀河宇宙線)。4 コアで 2〜3 時間。Geant4 は `pip install geant4_pybind numpy` (初めての import で約 2 GB のデータを落とす) |
+| 加工 | `data/build/build_shield.py` → `data/derived/shield.json` と `src/index.html` の `SHIELD_DOSE`・`SHIELD_GCR` | 段を継ぎ、線量の山から先を減る形に均した表。確かめ (PSTAR・PDG・MSL の実測) |
+| 見積もり | `data/build/side_checks.py` → `data/derived/physics_checks.json` | ゲームに入れなかった物理の桁 (熱・気体の抵抗・横の宇宙線の比・回折・加速の時間) |
+
+```sh
+python3 data/fetch/fetch_ism.py
+python3 data/build/build_ism.py
+data/build/g4_all.sh <Geant4 の入った python> <作業場所> && cp <作業場所>/*.json data/derived/g4/
+python3 data/build/build_shield.py
+python3 data/build/side_checks.py
+node tools/build.mjs
+```
+
+中身と結果は `docs/physics.md`。出典: Linsky, Redfield & Tilipman (2019) ApJ 886, 41・Slavin & Frisch (2008) A&A 491, 53・Krüger ほか (2015) ApJ 812, 139・NIST PSTAR・PDG・Vos & Potgieter (2015) ApJ 815, 119・Simpson (1983) Ann. Rev. Nucl. Part. Sci. 33, 323・Zeitlin ほか (2013) Science 340, 1080
