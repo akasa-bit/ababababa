@@ -11,7 +11,9 @@ const { chromium } = require('playwright');
     await p.addInitScript(() => { try { localStorage.clear(); } catch {} });
     await p.goto(`file://${HTML}?seed=11&home=0`); await p.waitForFunction(() => window.__app && __app.game);
     const r = await p.evaluate(() => {
-      const g = __app.game; __app.speed = 0;
+      // ページを開いてから実時間で進んだ分に左右されないよう、同じシードで作り直してから進める (機械の速さで家臣の数が変わり、CI で落ちた)
+      __app.speed = 0; newGame('11');
+      const g = __app.game;
       g.setSpectate(true); for (let i = 0; i < 280; i++) g.advance(0.25); g.setSpectate(false);
       const res = {};
       // 直属の家臣を 3 つ選ぶ

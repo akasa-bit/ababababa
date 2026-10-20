@@ -1,6 +1,6 @@
 # 引き継ぎメモ
 
-新しいセッションで作業を続けるためのメモです。まずこのページと `README.md`・`docs/design-pillars.md`・`docs/reality-check.md` を読んでください。
+新しいセッションで作業を続けるためのメモです。**作業は Claude の Project で続ける** (手順と、Project の指示に貼る文は `docs/claude-project.md`)。まずこのページと `README.md`・`docs/design-pillars.md`・`docs/reality-check.md` を読んでください。
 
 **ユーザーがこれまでに送った依頼は、すべて `docs/requests-log.md` にそのまま残してあります。** 新しいセッションは前の会話を読めません。画面や遊びの細かい決まりの多くはそこにしかないので、仕組みを変える前に、関係する依頼を探してください。変更の理由は `git log` (PR の本文) にもあります。
 
@@ -146,7 +146,11 @@
 
 ### 5-3. 止めている作業
 
-- **財政 (税・利子率・予算)**: ユーザーの依頼 (requests-log の 121) で作っていたが、地図と Firebase を先にするよう言われて止めた。差分は `docs/wip/fiscal.patch` (いまの main に `git apply` で当たることを確かめた)。
+- **段 3: AI の国も光の遅れのぶん古い情報で判断する** (`docs/game-plan.md` の段 3)。ユーザーが測る途中で止めた (requests-log の 131 の前)。差分は `docs/wip/ai-knowledge.patch` (いまの main に `git apply` で当たる。`src/index.html` と、戦争を測る道具 `tools/wars-headless.js`。当てたら `node tools/build.mjs`)。
+  - 中身: 星系ごとの年ごとの記録 `intel` ([年, 国, 駐留艦隊]、変わったときだけ足す)・`seenBy(見る星系, 星系)`・`seenShips`・`aiKnowsWar` (開戦の知らせが首都に届いたか)・`aiEnemiesOf`・艦隊の指令が首都から光速で届く `aiOrder` と `aiOrdersYearly`。`realmsYearly` (攻める先・講和・宣戦の相手) と `realmsArm` をこれで判断する。`intel`・`aiOrders` はセーブに入る
+  - 測ったこと (12 の銀河 × 300 年 × 6 か国、`node tools/ci-report.js`): 始まった戦争 136 → 106 (−22%)、終わりの年に続いている戦争 8.4 → 19.8 (+136%)、国の数 +9%、入植地・人口・独立はほぼ同じ
+  - 残り: 戦争の長さと終わり方を測る (`node tools/wars-headless.js src/index.html <main の src> 12 300 6`。目標 R13・R14)。長引く理由を調べる (講和を考えるのも開戦を知ってからなので、知らせが届くまで講和しない。攻める先が見つからず膠着する)。試験を回す。`docs/ai-knowledge.md` を書く。AI が弱くなった分を難しさの値で補うか (監査 A の G4 のおすすめ) を測って決める
+- **財政 (税・利子率・予算)**: ユーザーの依頼 (requests-log の 121) で作っていたが、地図と Firebase を先にするよう言われて止めた。差分は `docs/wip/fiscal.patch` (2026-10-20 に、DMath (#109) のあとの main に当たるよう作り直した。`Math.exp`・`**` の所は `GM.exp`・`GM.pow`。試験 `fiscal.js` は `ok: true`)。
   - 中身: `TAX_LEVELS`・`RATES`・`BUDGET`・`fiscalFor`・`setFiscal`・`budgetStep`・`fleetMul`・帝国 → 目標の「財政」の欄・試験 `tools/tests/fiscal.js`
   - 済んだこと: 試験 `fiscal.js` と det は通った。
   - 残り: ほかの試験を一通り回すこと、`docs/fiscal.md`・README・reality-check を書くこと、効き目の大きさ (仮の値) を G の表に載せること。
@@ -157,6 +161,7 @@
 ## 6. 作業のこつと落とし穴
 
 - **画面の描き直しと入力欄**: `Cloud.run` などは、始めに「…」を出すために画面を描き直す。入力欄の値は、描き直す前に読んでおく (前に、部屋のコードとメールのログインで値が消えた)。
+- **試験は実時間に左右されないように**: ページを開くと、ゲームは画面の更新ごとに実時間で進む。試合の中身を確かめる試験は、`requestAnimationFrame` を止めるか、`newGame(シード)` で作り直してから `advance` で進める (前に `regime.js` が、CI の機械の速さで家臣の数が変わって落ちた)
 - **試験の家臣の選び方**: 星系の数や試合の筋が変わると、`regime.js` のように「家臣を 3 つ選ぶ」試験が外れる。指令は地球に届いている記録 (`known`) で判断されるので、試験でも `g.known(id)?.lord` を見る。
 - **銀河の版**: 星の表を変えずに使う星を変えるときは、`GALAXY_GEN` を上げて、古い版のセーブは古い作り方のまま読む (版 3 = `THIN_SLAB` の板)。星系の番号は並びの位置 (`systems[id]`) なので、間を飛ばさない。
 
@@ -199,6 +204,8 @@
 | `docs/design-pillars.md` | 遊びの柱 (3 つ) と時間の設計。新しい仕組みは、どれかの柱を強くするときだけ入れる |
 | `docs/targets.md` + `targets/targets.json` | 合わせる目標 (事前登録)。幅の決め方と合否の決まり |
 | `docs/P0-audit.md` | 書き直しの前の監査 (数値と式の一覧と、現実との差) |
+| `docs/claude-project.md` | Claude の Project で続ける手順と、Project の指示に貼る文 |
+| `docs/wip/ai-knowledge.patch` | 止めている段 3 (AI の光の遅れ) の差分 (上の 5-3。マージしていない) |
 | `docs/game-plan.md` | ゲーム版を先に仕上げる段取り (13 の段)、G のおすすめの扱い、シミュレーション版のときのやること |
 | `docs/audit-A.md` | 監査 A: 講義・研究のシミュレーターと Steam のゲームへの差の表 (27 行)、桁の見積もり、選んでもらうこと G1〜G7、いまあるものの使い道、段取りの案 |
 | `docs/governance.md` | 統治体制と離反の仕組みと、測った結果 |

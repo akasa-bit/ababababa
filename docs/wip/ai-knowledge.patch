@@ -1,0 +1,195 @@
+diff --git a/src/index.html b/src/index.html
+index 6a7a636..dcf4b37 100644
+--- a/src/index.html
++++ b/src/index.html
+@@ -1810,6 +1810,8 @@ class Game {
+     this.held = {}; // 命令で送られて駐留している艦隊の数 { [星系]: n }。自動防衛配備はこの分を動かさない
+     this.peaces = []; // 終わった戦争 { key, a, b, year, from, start, by, news }。終戦の知らせが光速で広がるまで使う
+     this.warBy = {}; // 戦争を仕掛けた国 { [key]: 首都 }。仕掛けられた側は降伏せず、攻め落とされるまで戦う
++    this.intel = {}; // 星系ごとの年ごとの記録 { [星系]: [[年, 国, 駐留艦隊], …] } (変わったときだけ足す)。AI の国は光の遅れのぶん古いものを見て判断する (docs/ai-knowledge.md)
++    this.aiOrders = []; // AI の国の首都から出た艦隊の指令 { at (届く年), realm, from, to, n }。光速で指令を出す星系へ届く
+     this.sieges = []; // 攻囲 { sys, realm (攻める国の首都), ships, progress, start }
+     // 到着して消えたあとも、その到着の光が地球に届くまでは地図に見えている動くもの (表示用、セーブしない)
+     this.ghosts = { cargo: [], fleets: [], requests: [], troopMoves: [], migrants: [], ships: [], legs: [] };
+@@ -3172,7 +3174,7 @@ class Game {
+     for (const [key, gv0] of Object.entries(this.govs)) {
+       const root = Number(key);
+       if (this.isHuman(root) || !gv0.independent || this.realmOf(root) !== root || !this.isColonized(root)) continue;
+-      const war = this.enemiesOf(root).length > 0;
++      const war = this.aiEnemiesOf(root).length > 0;
+       for (const x of this.realmSystems(root)) {
+         const gv = this.gov(x.id);
+         const big = this.coloniesIn(x.id).sort((a, b) => b.pop - a.pop)[0];
+@@ -3208,19 +3210,21 @@ class Game {
+     const roots = this.colonizedSystems().map((x) => x.id).filter((r) => !this.isHuman(r) && this.realmOf(r) === r && this.gov(r).independent);
+     for (const root of roots) {
+       if (this.realmOf(root) !== root) continue; // この年のうちに降伏した
+-      const enemies = this.enemiesOf(root);
++      const enemies = this.aiEnemiesOf(root); // 開戦の知らせが首都に届いた戦争だけ
+       const mine = this.realmSystems(root);
+       const strong = mine.filter((x) => (this.garrison[x.id] || 0) >= 3).sort((a, b) => (this.garrison[b.id] || 0) - (this.garrison[a.id] || 0))[0];
+       if (strong && enemies.length) {
+         const n = this.garrison[strong.id] - 1;
+-        const target = enemies.flatMap((e) => this.realmSystems(e)).filter((x) => !this.isHuman(x.id) && (this.garrison[x.id] || 0) < n)
++        // 攻める先は、首都に届いている記録 (光の遅れのぶん古い) で、敵の星系のうち駐留艦隊が少ないもの
++        const foes = new Set(enemies);
++        const target = this.galaxy.systems.filter((x) => { const v = this.seenBy(root, x.id); return v && foes.has(v[1]) && !this.isHuman(x.id) && v[2] < n; })
+           .sort((a, b) => distance(a, strong) - distance(b, strong))[0];
+-        if (target && distance(target, strong) <= 20) this.sendFleet(strong.id, target.id, n);
++        if (target && distance(target, strong) <= 20) this.aiOrder(root, strong.id, target.id, n);
+       }
+       for (const e of enemies) {
+         const key = this.warKey(root, e);
+         if (this.realmWars[key] === undefined) continue;
+-        const ours = this.realmShips(root), theirs = this.realmShips(e), years = this.year - this.realmWars[key];
++        const ours = this.realmShips(root), theirs = this.seenShips(root, e), years = this.year - this.realmWars[key];
+         // 自分から仕掛けて大差で負けていれば、相手に全面的に任せる (持ち点 100 の講和会議)
+         if (this.warBy[key] === root && years >= 5 && theirs >= 5 * Math.max(1, ours) && this.rand() < 0.08) { this.startConference(root, [{ realm: e, pts: 100 }], root); break; }
+         // 疲れた・負けている国は講和を申し入れる。相手が AI なら相手の判断で、人間なら申し入れとして届く (5 年に 1 回まで)
+@@ -3238,7 +3242,7 @@ class Game {
+       }
+       if (!enemies.length && this.rand() < 0.03) {
+         const ours = this.realmShips(root);
+-        const prey = roots.filter((r) => r !== root && this.realmOf(r) === r && this.sysDist(r, root) <= 25 && ours >= 1.5 * Math.max(1, this.realmShips(r)))
++        const prey = roots.filter((r) => r !== root && this.seenBy(root, r)?.[1] === r && this.sysDist(r, root) <= 25 && ours >= 1.5 * Math.max(1, this.seenShips(root, r)))
+           .sort((a, b) => this.sysDist(a, root) - this.sysDist(b, root))[0];
+         if (prey !== undefined) {
+           this.beginWar(root, prey, root);
+@@ -4711,7 +4715,7 @@ class Game {
+       if (this.battles.length) { this.battlesStep(h); changed = true; }
+       this.autoTimer += h;
+       this.keepGhosts(before);
+-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.eachPlayer(() => { this.autoDefend(); this.aweYearly(); }); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.routesYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.regimeYearly(); this.realmsYearly(); if (this.spectate) this.eachPlayer(() => this.earthWarYearly()); this.siegesYearly(); this.exhaustionYearly(); this.conferencesYearly(); this.politicsYearly(); this.recordSnapshots(); }
++      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.eachPlayer(() => { this.autoDefend(); this.aweYearly(); }); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.routesYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.regimeYearly(); this.aiOrdersYearly(); this.realmsYearly(); if (this.spectate) this.eachPlayer(() => this.earthWarYearly()); this.siegesYearly(); this.exhaustionYearly(); this.conferencesYearly(); this.politicsYearly(); this.recordSnapshots(); }
+     }
+     return changed;
+   }
+@@ -5153,6 +5157,8 @@ class Game {
+     if (Array.isArray(d.conferences)) this.conferences = d.conferences.filter((c) => c && sysOk(c.loser) && Array.isArray(c.bids));
+     if (obj(d.warBy)) this.warBy = d.warBy;
+     if (obj(d.warNews)) this.warNews = d.warNews;
++    if (obj(d.intel)) this.intel = d.intel;
++    if (Array.isArray(d.aiOrders)) this.aiOrders = d.aiOrders.filter((o) => o && sysOk(o.from) && sysOk(o.to));
+     if (Array.isArray(d.peaces)) this.peaces = d.peaces.filter((x) => x && typeof x.key === 'string' && Number.isFinite(x.year));
+     // 旧形式 (地球の国との戦争だけ。キーは独立国の首都、warBy は 'earth') を国の組のキーに直す
+     for (const k of Object.keys(this.realmWars)) {
+@@ -5347,7 +5353,67 @@ class Game {
+       battle: (() => { const b = this.battleAt(id); return b ? { realm: b.realm, a: b.a, d: b.d, a0: b.a0, d0: b.d0, start: b.start, ea: this.fleetEff(b.sup, b.line), ed: this.fleetEff(b.dsup, 0), line: b.line } : null; })(),
+     };
+   }
++  // --- AI の国の知っていること (光の遅れ) ---
++  // 年ごとに、入植星系と艦隊のいる星系の [年, 国, 駐留艦隊] を記録する (前と同じなら足さない)。
++  // いちばん遠い 2 つの星系の距離より古い記録は、もうどこからも見えないので、その時点の 1 つだけ残して捨てる
++  recordIntel() {
++    const span = (this.intelSpan ??= Math.ceil(Math.max(...this.galaxy.systems.map((a) => Math.max(...this.galaxy.systems.map((b) => distance(a, b))))))) + 1;
++    const ids = new Set([...this.colonizedSystems().map((x) => x.id), ...Object.keys(this.garrison).filter((k) => this.garrison[k] > 0).map(Number), ...Object.keys(this.intel).map(Number)]);
++    for (const id of ids) {
++      const realm = this.isColonized(id) ? this.realmOf(id) : null, gar = this.garrison[id] || 0;
++      const list = (this.intel[id] ??= []);
++      const last = list[list.length - 1];
++      if (!last || last[1] !== realm || last[2] !== gar) list.push([this.year, realm, gar]);
++      let i = 0;
++      while (i + 1 < list.length && list[i + 1][0] <= this.year - span) i++;
++      if (i) list.splice(0, i);
++    }
++  }
++  // 星系 viewer から見えている星系 id の [年, 国, 駐留艦隊]。光がまだ届いていない分は見えない。
++  // その年の記録がなければ、いちばん古い記録 (試合の始まりの様子) を使う
++  seenBy(viewer, id) {
++    if (viewer === id) return [this.year, this.isColonized(id) ? this.realmOf(id) : null, this.garrison[id] || 0];
++    const list = this.intel[id];
++    if (!list?.length) return null;
++    const t = this.year - this.sysDist(viewer, id);
++    let best = list[0];
++    for (const e of list) { if (e[0] <= t) best = e; else break; }
++    return best;
++  }
++  // 国 root (の首都) が知っている、国 e の艦隊の数 (星系に駐留している分だけ。移動中の艦隊は見えない)
++  seenShips(root, e) {
++    let n = 0;
++    for (const id of Object.keys(this.intel)) { const v = this.seenBy(root, Number(id)); if (v && v[1] === e) n += v[2]; }
++    return n;
++  }
++  // 国 root (の首都) が、その戦争の開戦の知らせを受け取ったか
++  aiKnowsWar(root, key) {
++    if (this.realmWars[key] === undefined) return false;
++    const news = this.warNews[key];
++    return !news || this.year >= news.year + this.sysDist(news.from, root);
++  }
++  aiEnemiesOf(root) { return this.enemiesOf(root).filter((e) => this.aiKnowsWar(root, this.warKey(root, e))); }
++  // 届いた艦隊の指令を実行する (その星系がまだ同じ国で、相手とまだ交戦中で、艦隊が残っていれば)
++  // 首都 root から、星系 from の艦隊を to へ送る指令を出す (首都の艦隊ならその場で。ほかは指令が光速で届いてから)
++  aiOrder(root, from, to, n) {
++    if (from === root) { this.sendFleet(from, to, n); return; }
++    if (this.aiOrders.some((o) => o.from === from)) return; // 前の指令がまだ届いていない
++    this.aiOrders.push({ at: this.year + this.sysDist(root, from), realm: root, from, to, n });
++  }
++  aiOrdersYearly() {
++    const due = this.aiOrders.filter((o) => o.at <= this.year + 1e-9);
++    if (!due.length) return;
++    this.aiOrders = this.aiOrders.filter((o) => o.at > this.year + 1e-9);
++    for (const o of due) {
++      if (!this.isColonized(o.from) || this.realmOf(o.from) !== o.realm || this.realmOf(o.realm) !== o.realm) continue;
++      const dest = this.isColonized(o.to) ? this.realmOf(o.to) : null;
++      if (dest === null || !this.atWar(o.realm, dest)) continue;
++      const n = Math.min(o.n, (this.garrison[o.from] || 0) - 1);
++      if (n >= 1) this.sendFleet(o.from, o.to, n);
++    }
++  }
+   recordSnapshots() {
++    this.recordIntel();
+     this.snapVer = (this.snapVer || 0) + 1; // 記録が変わった (knownSystems の使い回しをやめる)
+     const ids = new Set([...this.colonizedSystems().map((x) => x.id), ...Object.keys(this.garrison).filter((k) => this.garrison[k] > 0).map(Number)]);
+     const caps = this.players.filter((p) => p.human).map((p) => p.cap);
+@@ -8788,7 +8854,7 @@ function buildSave(game, extra = {}) {
+   return {
+     v: 2, seed: game.galaxy.seed, ...(game.galaxy.kind === 'real' ? { galaxy: 'real' } : {}), ...(game.galaxy.gen > 1 ? { gen: game.galaxy.gen } : {}), rs: game.rs, players: game.players, pi: game.pi,
+     ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
+-    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
++    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, ...(Object.keys(game.intel).length ? { intel: game.intel } : {}), ...(game.aiOrders.length ? { aiOrders: game.aiOrders } : {}), peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
+     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
+     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
+     surveyed: game.surveyed, pc: game.pc, council: game.council, policy: game.policy, decisions: game.decisions, story: game.story, era: game.era, challenges: game.challenges,
+diff --git a/tools/wars-headless.js b/tools/wars-headless.js
+new file mode 100644
+index 0000000..3c71e84
+--- /dev/null
++++ b/tools/wars-headless.js
+@@ -0,0 +1,37 @@
++// 戦争の自動対戦 (画面なしの版): 国家選択のある試合を観戦で回し、戦争の始まり・終わり方・長さを数える。
++// tools/wars.js (ブラウザ) と同じ数え方。main と比べるときは、比べる元の src を 2 つめに渡す
++// 使い方: node tools/wars-headless.js <src/index.html> [比べる元の src] [銀河の数] [年数] [国の数]
++const H = require('./headless');
++const [src, baseSrc, nS = '12', yS = '300', natS = '6'] = process.argv.slice(2);
++function measure(file) {
++  const sim = H.load({ src: file });
++  const done = [];
++  let gamesYears = 0;
++  for (let seed = 1; seed <= Number(nS); seed++) {
++    const g = sim.newGame(String(seed), { nations: Number(natS) });
++    const wars = new Map();
++    const wrap = (name, fn) => { const orig = g[name].bind(g); g[name] = (...a) => fn(orig, ...a); };
++    let mode = null;
++    const finish = (key, how) => { const w = wars.get(key); if (!w) return; wars.delete(key); done.push({ dur: g.year - w.start, how }); };
++    wrap('beginWar', (orig, by, target, from) => { const r = orig(by, target, from); wars.set(g.warKey(by, target), { start: g.year }); return r; });
++    wrap('makePeace', (orig, a, c, from) => { mode = Math.abs(g.warScore(a, c)) < 5 ? 'white' : 'treaty'; const r = orig(a, c, from); mode = null; return r; });
++    wrap('startConference', (orig, loser, winners, from) => { const m = mode || (winners.length && winners[0].pts >= 100 ? 'capitulation' : 'treaty'); for (const w of winners) finish(g.warKey(w.realm, loser), m); return orig(loser, winners, from); });
++    wrap('endWar', (orig, a, c, from) => { finish(g.warKey(a, c), mode || 'white'); return orig(a, c, from); });
++    wrap('cleanWars', (orig) => { const before = new Set(Object.keys(g.realmWars)); const r = orig(); for (const k of before) if (g.realmWars[k] === undefined) finish(k, 'conquest'); return r; });
++    wrap('surrender', (orig, root, winner) => { finish(g.warKey(root, winner), 'capitulation'); return orig(root, winner); });
++    sim.run(g, Number(yS));
++    for (const k of [...wars.keys()]) finish(k, 'ongoing');
++    gamesYears += Number(yS);
++  }
++  const ended = done.filter((d) => d.how !== 'ongoing');
++  const durs = ended.map((d) => d.dur).sort((a, b) => a - b);
++  const med = durs[Math.floor(durs.length / 2)] || 0, mean = durs.reduce((k, x) => k + x, 0) / (durs.length || 1);
++  const share = (h) => ended.filter((d) => d.how === h).length / (ended.length || 1);
++  return { per100y: (done.length / gamesYears) * 100, ended: ended.length, ongoing: done.length - ended.length, meanYears: mean, medianYears: med, meanOverMedian: med ? mean / med : null,
++    white: share('white'), treaty: share('treaty'), capitulation: share('capitulation'), conquest: share('conquest') };
++}
++const rows = [['この版', measure(src)], ...(baseSrc && baseSrc !== '-' ? [['比べる元', measure(baseSrc)]] : [])];
++const f = (x) => (typeof x === 'number' ? (Math.abs(x) < 1 && x !== 0 ? `${(x * 100).toFixed(0)}%` : x.toFixed(1)) : String(x));
++console.log('| | 100 年あたりの戦争 | 終わった / 続いている | 長さの平均 / 中央値 (年) | 平均 ÷ 中央値 (R13: 1.80〜3.33) | 白紙講和 | 条約 | 降伏 | 滅亡 |');
++console.log('|---|---|---|---|---|---|---|---|---|');
++for (const [n, r] of rows) console.log(`| ${n} | ${f(r.per100y)} | ${r.ended} / ${r.ongoing} | ${f(r.meanYears)} / ${f(r.medianYears)} | ${r.meanOverMedian ? r.meanOverMedian.toFixed(2) : '—'} | ${f(r.white)} | ${f(r.treaty)} | ${f(r.capitulation)} | ${f(r.conquest)} |`);
