@@ -1,5 +1,5 @@
 {
-  "version": 9,
+  "version": 10,
   "fixedAt": "2026-10-20",
   "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
   "rules": [
@@ -16,7 +16,8 @@
     { "version": 5, "date": "2026-10-20", "what": "市場の目標 R23〜R26 を足した。幅は、取得スクリプト (data/fetch/fetch_market.py) で取った World Bank Pink Sheet・USDA PSD・FRED ISRATIO から data/build/analyze_market.py で計算した 10%〜90% 点だけで決めた (data/derived/market.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ値段がなく、測れない)" },
     { "version": 6, "date": "2026-10-20", "what": "政府支出 ÷ GDP (R27) を足した。費用の大きさ (値段の水準) を経済に合わせて決めるため (ユーザーの決定、docs/requests/2026-10-20-C.md の C-11)。幅は R19〜R22 と同じく Jordà–Schularick–Taylor R6 の国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。R19〜R22 の幅は変えていない。ゲームの結果はこの幅を決めるのに使っていない" },
     { "version": 8, "date": "2026-10-20", "what": "F08 を、いまのゲーム版の銀河 (星系 73 個。銀河面 ±2 光年の板) に合わせた。前の「星系 3,000 個」は、銀河を板にして 73 星系に減らす前の想定だった。合格の数 (毎秒 60 コマ・下限 45、最高速で 1 秒に 64 年) と測る機械 (Xiaomi Pad 8 Pro・Steam Deck) は変えていない。測り方を desktop/bench/probe.js の手順に決めた。包装の比べ (レーン S) の測定は GPU のない機械の Xvfb のもので、F08 の判定には使わず、この変更にも使っていない" },
-    { "version": 9, "date": "2026-10-20", "what": "R29 (国家間戦争の多さ) を足した。幅は、取得スクリプトで生データ (COW 国家間戦争 4.0 と国家の一覧 2016、1816〜2007 年) から計算した値 (国 100 年あたり 2.338、data/derived/history.json の war_onsets_cow) に、R13 と同じ「実データの ±30% 以内」を当てはめた。値は段 8 (講和と開戦の交渉、#121) を作る前に計算した。ゲームの自動対戦の結果はこの幅を決めるのに使っていない" }
+    { "version": 9, "date": "2026-10-20", "what": "R29 (国家間戦争の多さ) を足した。幅は、取得スクリプトで生データ (COW 国家間戦争 4.0 と国家の一覧 2016、1816〜2007 年) から計算した値 (国 100 年あたり 2.338、data/derived/history.json の war_onsets_cow) に、R13 と同じ「実データの ±30% 以内」を当てはめた。値は段 8 (講和と開戦の交渉、#121) を作る前に計算した。ゲームの自動対戦の結果はこの幅を決めるのに使っていない" },
+    { "version": 10, "date": "2026-10-20", "what": "R10 (産業構造と所得) と R11 (研究の生産性の低下) の幅を、取得スクリプトで取った生データの計算結果だけから決めた。R10: GGDC 10 部門 × Maddison 2023 (31 か国 1948〜2012 年) の所得 5 分位ごとの就業の割合の四分位範囲と、工業の頂点の所得のブートストラップの 5〜95% 点 (6,200〜10,660 ドル)。ゲームの所得をドルに読み替える物差しは、食料の基準の値段を 2011 年の世界の穀物の値段 (Pink Sheet × USDA PSD、1 t = 356.4 ドル) に合わせるものとし、これも生データだけから決めた。R11: Bloom ほか 2020 の台本と同じ計算の全体の値 (年 −5.09%) の ±50%。どちらも構造転換と研究をゲームに入れる前に決め、ゲームの自動対戦の結果は見ていない" }
   ],
   "realism": [
     {
@@ -60,7 +61,7 @@
     },
     {
       "id": "R06", "area": "天文", "name": "M 型星の地球型惑星の頻度",
-      "data": {"source": "Dressing & Charbonneau 2015", "version": "論文の表", "script": "data/fetch/eta_earth_m"},
+      "data": { "source": "Dressing & Charbonneau 2015", "version": "論文の表", "script": "data/fetch/eta_earth_m" },
       "statistic": "M 型星あたりの、保守的なハビタブルゾーンの地球型惑星の数",
       "sim": "同じ定義", "pass": "論文の 95% 信頼区間の中",
       "band": [0.09, 0.33], "split": "holdout",
@@ -77,7 +78,7 @@
     },
     {
       "id": "R08", "area": "政治", "name": "植民地の離反の起きやすさ (統治体制別)",
-      "data": {"source": "ICOW Colonial History・COLDAT (Becker 2019)・Lange の間接統治データ・Seshat・V-Dem・EPR・Regional Authority Index・Dell 2010", "version": "COLDAT (Harvard Dataverse doi:10.7910/DVN/T9SDEW, 2023-09-21 更新版)・ICOW Colonial History 1.1", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "ICOW Colonial History・COLDAT (Becker 2019)・Lange の間接統治データ・Seshat・V-Dem・EPR・Regional Authority Index・Dell 2010", "version": "COLDAT (Harvard Dataverse doi:10.7910/DVN/T9SDEW, 2023-09-21 更新版)・ICOW Colonial History 1.1", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "独立 (離反) までの時間の Cox 比例ハザードモデル。説明変数は統治体制・本国からの距離・通信の遅れ ÷ 1 世代の長さ・人口の比。統治体制ごとのハザード比と、植民地の存続年数の中央値 (Kaplan–Meier)",
       "sim": "星系の離反の記録を ICOW と同じ形式で書き出し、同じモデルで推定",
       "pass": "主な説明変数のハザード比が、実データの 95% 信頼区間の中。統治体制ごとの存続年数の中央値が実データの ±25% 以内",
@@ -88,7 +89,7 @@
     },
     {
       "id": "R09", "area": "政治", "name": "植民地の離反 (別の本国)",
-      "data": {"source": "R08 と同じ", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "R08 と同じ", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "R08 と同じ", "sim": "R08 と同じ",
       "pass": "R08 で較正したモデルのまま、スペイン・ポルトガル・オランダの植民地の存続年数の中央値が ±35% 以内",
       "band": [187.8, 390.2], "split": "holdout",
@@ -97,19 +98,26 @@
     },
     {
       "id": "R10", "area": "経済", "name": "産業構造と所得",
-      "data": { "source": "GGDC 10 部門データベース・ILOSTAT", "version": "取得時の版を記録", "script": "data/fetch/sectors" },
-      "statistic": "1 人あたり所得 (対数) に対する、農業・工業・サービスの就業者の割合の曲線 (工業はこぶ型)",
-      "sim": "星系ごとの所得と就業構造",
-      "pass": "所得の各分位で、シミュレーションの割合が実データの四分位範囲の中。工業の割合が最大になる所得が、実データの範囲の中",
-      "band": null, "split": "calibration"
+      "data": { "source": "GGDC 10 部門データベース (Timmer, de Vries & de Vries 2015、2014 年 1 月版) × Maddison Project Database 2023。確かめに世界銀行 WDI (ILOSTAT のモデル推計)", "version": "10SD jan15 2014・MPD 2023・WDI (2026-10 取得)", "years": "1948-2012 (WDI は 1991-2024)", "script": "data/fetch/fetch_sectors.py → data/build/build_sectors.py" },
+      "statistic": "国・年ごとの農業・工業・サービスの就業者の割合 (農業 = Agriculture、工業 = 鉱業・製造業・電気ガス水道・建設、サービス = 残りの 5 部門。Herrendorf・Rogerson・Valentinyi 2014 の分け方) を、1 人あたり所得 (2011 年の国際ドル) の 5 分位で分けた四分位範囲。工業の割合を ln 所得の 2 次式で当てはめた頂点の所得 (国の固定効果つき)。計算は data/build/build_sectors.py",
+      "sim": "ゲームの星系・年ごとの就業の割合 (農業 = farm、工業 = mine + ind、サービス = serv。研究者はサービスに入る) と 1 人あたり所得を、同じ列のパネルに書き出し、同じコードで計算する。所得は、星系の民間の所得 (付加価値) を地元の消費者物価 (食料 1・工業品 0.3・水 0.1 (水が要る星系だけ) の基準の量の値段 ÷ 基準の値段) で割った実質の所得を、食料の基準の値段を 2011 年の世界の穀物の値段 (1 t = 356.4 ドル。data/derived/sectors.json の anchor) に合わせて 2011 年の国際ドルに読み替え、人口 (100 万人) で割ったもの。人口 100 万人以上の星系・年だけを使う。分位の境目は実データ (GGDC) のもので固定し、604 ドル未満と 50,902 ドルを超える星系・年は比べない。銀河 (シード) ごとに分位・部門ごとの割合の中央値 (星系・年が 10 以上ある分位だけ) と頂点 (2 次の係数が負でなければ頂点なし) を出し、30 以上の銀河の中央値で判定する。ゲームの 1 年 = 1 年",
+      "pass": "半分以上の銀河で値のある分位がすべて、3 部門とも実データの四分位範囲の中 (比べられる分位が 3 つ以上あること)。工業の頂点の所得 (銀河の中央値) が幅の中 (半分以上の銀河で頂点がなければ不合格)",
+      "band": [6200, 10660], "estimate": 7944, "reference": "GGDC × Maddison の 31 か国 1948〜2012 年 (1632 国・年)。幅は工業の頂点の所得を国を引き直すブートストラップ 500 回の 5%〜95% 点。確かめ用の WDI (177 か国 1991〜2024 年、2021 年の国際ドル) の値も data/derived/sectors.json にある (頂点 10,882、8,242〜14,486)", "split": "calibration",
+      "quintiles": [
+        { "income": [604, 1999], "agr": [0.689, 0.861], "ind": [0.035, 0.101], "srv": [0.091, 0.216] },
+        { "income": [1999, 5516], "agr": [0.483, 0.611], "ind": [0.127, 0.186], "srv": [0.245, 0.346] },
+        { "income": [5516, 11305], "agr": [0.228, 0.37], "ind": [0.221, 0.315], "srv": [0.382, 0.48] },
+        { "income": [11305, 22463], "agr": [0.075, 0.162], "ind": [0.303, 0.38], "srv": [0.481, 0.591] },
+        { "income": [22463, 50902], "agr": [0.025, 0.055], "ind": [0.222, 0.301], "srv": [0.645, 0.75] }
+      ]
     },
     {
       "id": "R11", "area": "経済", "name": "研究の生産性の低下",
-      "data": { "source": "Bloom ほか 2020 (American Economic Review) の再現用データ", "version": "論文の公開データ", "script": "data/fetch/ideas" },
-      "statistic": "研究者 1 人あたりのアイデアの生産 (研究の生産性) が年に何 % 下がるか",
-      "sim": "同じ定義で数えた研究の生産性",
+      "data": { "source": "Bloom, Jones, Van Reenen & Webb 2020, Are Ideas Getting Harder to Find? (American Economic Review 110(4)) の再現用の一式 IdeaPFPrograms.zip", "version": "論文の公開の台本と、台本に書き込まれた公開の統計 (BEA NIPA・BLS・CPS)", "years": "1930 年代〜2000 年代", "script": "data/fetch/fetch_ideas.py → data/build/build_ideas.py" },
+      "statistic": "研究の生産性 = TFP の伸び (Ȧ/A) ÷ 実効の研究者の数 (研究費 ÷ 大卒の賃金) の、年あたりの変化率 (10 年ごとの平均の、最初と最後の 10 年の比の対数 ÷ 年数)。米国全体 (Aggregate) の値",
+      "sim": "ゲームの国ごとに、技術の伸び (分野ごとの ln A の伸びを部門の付加価値で重みづけた平均) ÷ 研究者の数 (人) を 10 年ごとに出し (伸びは 10 年の平均、研究者は 10 年の幾何平均)、最初と最後の 10 年の比の対数 ÷ その間の年数。試合の始めから終わりまである国だけを使う。銀河 (シード) ごとに国の中央値をとり、30 以上の銀河の中央値で判定する。ゲームの 1 年 = 1 年",
       "pass": "実データの推定値の ±50% 以内",
-      "band": null, "split": "calibration"
+      "band": [-7.63, -2.54], "estimate": -5.086, "reference": "研究者 ×22.2 (1930 年代 → 2000 年代)、研究の生産性 年 −5.09% (論文 −5.3%)。分野ごとの確かめにムーアの法則の広い定義 (年 −6.76%、論文 −6.8%) も data/derived/ideas.json にある", "split": "calibration"
     },
     {
       "id": "R12", "area": "人口", "name": "人口の増え方の上限",
@@ -121,7 +129,7 @@
     },
     {
       "id": "R13", "area": "戦争", "name": "戦争の長さの偏り",
-      "data": {"source": "Correlates of War 国家間戦争データ", "version": "Inter-State War Data v4.0", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "Correlates of War 国家間戦争データ", "version": "Inter-State War Data v4.0", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "戦争の長さの平均 ÷ 中央値",
       "sim": "tools/wars.js の出力を COW と同じ形式にしたもの",
       "pass": "実データの値の ±30% 以内",
@@ -130,7 +138,7 @@
     },
     {
       "id": "R14", "area": "戦争", "name": "戦争の終わり方の内訳",
-      "data": {"source": "UCDP Conflict Termination", "version": "UCDP Conflict Termination 4-2024 (紛争単位)", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "UCDP Conflict Termination", "version": "UCDP Conflict Termination 4-2024 (紛争単位)", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "終わり方 (勝利・和平合意・停戦・活動低下) の割合",
       "sim": "白紙講和 = 活動低下、講和条約 = 和平合意、全面降伏と首都の陥落 = 勝利として対応させる",
       "pass": "最も多い終わり方が一致し、各割合の差が 15 ポイント以内",
@@ -140,7 +148,7 @@
     },
     {
       "id": "R15", "area": "戦争", "name": "戦争の規模の分布",
-      "data": {"source": "Correlates of War 国家間戦争データ (戦死者数)", "version": "Inter-State War Data v4.0", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "Correlates of War 国家間戦争データ (戦死者数)", "version": "Inter-State War Data v4.0", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "戦死者数の分布の裾のべき指数 α (Clauset–Shalizi–Newman の方法)",
       "sim": "戦争ごとの死者数 (艦隊の乗員の損失を含む)",
       "pass": "べき乗則の当てはめの検定で p ≥ 0.1、α が実データの推定値 ±0.3 以内",
@@ -149,7 +157,7 @@
     },
     {
       "id": "R16", "area": "戦争", "name": "戦闘の勝敗と兵力比",
-      "data": {"source": "CDB90 (約 660 の戦闘)", "version": "jrnold/CDB90 (2015 年版の data/)", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "CDB90 (約 660 の戦闘)", "version": "jrnold/CDB90 (2015 年版の data/)", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "攻撃側の勝ちを、兵力比の対数でロジスティック回帰したときの傾き。ランチェスター則の指数の推定値",
       "sim": "艦隊戦を同じ形式で書き出して同じ回帰",
       "pass": "傾きと指数が、実データの推定値の 95% 信頼区間の中",

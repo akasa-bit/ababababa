@@ -259,5 +259,25 @@
    "b_lny2": -0.019067476899260534
   },
   "boots": 500
+ },
+ "anchor": {
+  "year": 2011,
+  "usd_per_t": 356.35718546623065,
+  "prices_usd_per_t": {
+   "Wheat": 316.3,
+   "Corn": 291.7,
+   "Rice, Milled": 543.0
+  },
+  "consumption_t": {
+   "Wheat": 690834000.0,
+   "Corn": 886048000.0,
+   "Rice, Milled": 455213000.0
+  },
+  "series": {
+   "Wheat": "Wheat, US HRW",
+   "Corn": "Maize",
+   "Rice, Milled": "Rice, Thai 5%"
+  },
+  "note": "ゲームの食料の基準の値段 (cr / 100 万 t) を、この 1 t の値段 × 100 万に合わせる。1 人あたり所得 (ドル) = 実質の所得 [cr] ÷ 食料の基準の値段 [cr / 100 万 t] × usd_per_t ÷ 人口 [百万人]"
  }
 }
