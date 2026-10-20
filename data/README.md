@@ -66,3 +66,16 @@ python3 data/build/analyze_trade.py     # 推定する (numpy が要る。約 1 
 - **限界**: BACI は正の交易額しか載せないので、空の組が 0 なのか、記録がないのかを区別できない (参考の推定で、どちらでもほぼ同じになることを確かめた)
 
 出典: Conte, M., Cotterlaz, P. & Mayer, T. (2022) The CEPII Gravity database, CEPII Working Paper 2022-05・Santos Silva, J. M. C. & Tenreyro, S. (2006) The Log of Gravity, Review of Economics and Statistics 88, 641–658・Correia, S., Guimarães, P. & Zylkin, T. (2020) Fast Poisson estimation with high-dimensional fixed effects, Stata Journal 20, 95–115・Disdier, A.-C. & Head, K. (2008) The Puzzling Persistence of the Distance Effect on Bilateral Trade, Review of Economics and Statistics 90, 37–48
+
+## 財政と金融のデータ (目標 R19〜R22)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_fiscal.py` → `data/raw/fiscal/` | Jordà–Schularick–Taylor Macrohistory Database R6 (18 か国 1870〜2020 年。税収・政府支出・政府債務・利子率・民間の信用・名目 GDP) と文書、Schmelzing (2020) の 1311〜2018 年の世界の実質利子率。取得日・URL・SHA-256・大きさを `data/raw/fiscal/MANIFEST.json` に記録する |
+| 加工 | `data/build/analyze_fiscal.py` → `data/derived/fiscal.json` | 国ごとの税収 ÷ GDP・政府が黒字だった年の割合・政府債務 ÷ GDP・民間の信用 ÷ GDP と、国のあいだの 10%〜90% 点 (全期間・1870〜1913 年・1950〜2020 年) |
+
+- **同じ台本でゲームも測る**: `python3 data/build/analyze_fiscal.py <ゲームのパネル.csv>` で、ゲームが書き出した同じ列のパネル (`tools/fiscal-panel.js`) を同じ式で計算する
+- **国ごとの値をとる理由**: 長く載っている国の重みが偏らないように、まず国ごとの中央値 (黒字の割合は平均) を出し、国のあいだの分布を見る
+- **限界**: JST の revenue と expenditure は中央政府 (国によって範囲が少し違う。JST の文書を参照)。ゲームは首都と従属星系の政府をまとめた一般政府で比べる。Bank of England の「A millennium of macroeconomic data」(約 27 MB) は大きすぎるので取っていない
+
+出典: Jordà, Ò., Schularick, M. & Taylor, A. M. (2017). Macrofinancial History and the New Business Cycle Facts. NBER Macroeconomics Annual 31, 213–263・Schmelzing, P. (2020). Eight centuries of global real interest rates, R-G, and the 'suprasecular' decline, 1311–2018. Bank of England Staff Working Paper 845
