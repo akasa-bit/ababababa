@@ -16,6 +16,7 @@ OUT = os.path.join(HERE, '..', 'derived', 'shield.json')
 SRC = os.path.join(HERE, '..', '..', 'src', 'index.html')
 RUNS = {'p95': 'FTFP_BERT・陽子 0.95c (2066.6 MeV)', 'p90': 'FTFP_BERT・陽子 0.9c (1214.2 MeV)',
         'g95': 'FTFP_BERT・横の壁の銀河宇宙線 0.95c (線量は 1 秒あたり)', 'g90': 'FTFP_BERT・横の壁の銀河宇宙線 0.9c (線量は 1 秒あたり)',
+        's00': 'FTFP_BERT・惑星の地面のフレアの陽子 (ε = 2.13、全方向の F(>10 MeV) 1 /cm² あたり)', 'c00': 'FTFP_BERT・惑星の地面の銀河宇宙線 (止まった所、1 秒あたり)',
         'p95q': 'QBBC・陽子 0.95c (物理の模型の違いを見る)', 'a95': 'FTFP_BERT・ヘリウムの原子核 0.95c (8210 MeV。重ね合わせの確かめ)'}
 
 def stitch(name):
@@ -141,7 +142,8 @@ def main():
             q = g_[pk:]
             row['t' + key] = [p['t'] for p in q]
             row['ln' + key] = isotonic_dec([math.log(p[key]) for p in q], [(p[key] / p['d' + key]) ** 2 for p in q])
-            row['lam' + key] = round(r['tail' + key]['lambda'], 2)
+            lam = r['tail' + key]['lambda']
+            row['lam' + key] = round(lam if 0 < lam < 1e5 else 1e5, 2)  # 奥でほぼ平ら (ミュー粒子) なら、延ばすときも平らに
         ts = sorted(set.intersection(*[set(row['t' + k]) for k in keys]))
         out = {'t': ts}
         for k in keys:
@@ -150,14 +152,17 @@ def main():
         return out
     game = {b: table(n, ('D', 'H')) for b, n in (('0.95', 'p95'), ('0.9', 'p90')) if n in res}
     gcr = {b: table(n, ('H',)) for b, n in (('0.95', 'g95'), ('0.9', 'g90')) if n in res}
-    res_game = {'front': game, 'gcr': gcr}
+    surf = {k: table(n, ('H',)) for k, n in (('sep', 's00'), ('gcr', 'c00')) if n in res}
+    res_game = {'front': game, 'gcr': gcr, 'surface': surf}
     json.dump({'runs': res, 'checks': chk, 'compare': comp, 'game': res_game}, open(OUT, 'w'), indent=1, ensure_ascii=False)
     block = ('/* SHIELD:BEGIN (data/build/build_shield.py が書く。手で直さない) */\n'
              '// 深さ t [g/cm²] の水の中の線量 (前面に当たる核子 1 個/cm² あたり): lnD = ln(Gy cm²)・lnH = ln(Sv cm²)。線量の山から先だけ。\n'
              '// 表より深い所は、減る長さ lamD・lamH [g/cm²] で指数関数に延ばす (Geant4 11.4・FTFP_BERT。data/derived/shield.json)\n'
              'const SHIELD_DOSE = ' + json.dumps(game, separators=(',', ':')) + ';\n'
              '// 横の壁の銀河宇宙線 (船の系に直した Vos & Potgieter 2015 の星間のスペクトル。H, He, O, Fe): lnH = ln(Sv/s)\n'
-             'const SHIELD_GCR = ' + json.dumps(gcr, separators=(',', ':')) + ';\n/* SHIELD:END */')
+             'const SHIELD_GCR = ' + json.dumps(gcr, separators=(',', ':')) + ';\n'
+             '// 惑星の地面と居住区 (止まった所。上の半球から等方に。水の板): sep = フレアの陽子 (ln Sv、全方向の F(>10 MeV) 1 /cm² あたり)、gcr = 銀河宇宙線 (ln Sv/s)\n'
+             'const SURFACE_DOSE = ' + json.dumps(surf, separators=(',', ':')) + ';\n/* SHIELD:END */')
     src = open(SRC, encoding='utf-8').read()
     if '/* SHIELD:BEGIN' in src:
         src = re.sub(r'/\* SHIELD:BEGIN.*?/\* SHIELD:END \*/', lambda m: block, src, flags=re.S)

@@ -10,6 +10,9 @@
 重み w の合計 = 壁 1 cm² を 1 秒に通る原子核の数。Geant4 の線量の出力は、そのまま 1 秒あたりの線量 (Gy/s・Sv/s) になる。
 
 使い方: python3 data/build/make_gcr_source.py <β> <出力.npz> [粒子の数]
+      python3 data/build/make_gcr_source.py sep <ε> <出力.npz> [粒子の数]
+        … フレアの高エネルギー陽子: 積分のスペクトル F(>E) ∝ E^−ε (10 MeV〜20 GeV)、上の半球から等方に。
+          重みの合計 = 1/4 (全方向のフルエンス F(>10 MeV) = 1 /cm² のとき、地面 1 cm² を通る数)。線量の出力は F(>10 MeV) 1 /cm² あたりになる
 """
 import math, random, sys
 import numpy as np
@@ -22,7 +25,26 @@ def lis(E):
     b2 = 1 - (MP / 1000 / (E + MP / 1000)) ** 2
     return 2.70 * E ** 1.12 / b2 * ((E + 0.67) / 1.67) ** -3.93
 
+def sep(eps, out, N):
+    rng = random.Random(2)
+    lo, hi = 10.0, 2e4
+    rows = []
+    for _ in range(N):
+        # 積分のスペクトル F(>E) = (E/10)^−ε を、10 MeV〜20 GeV で切って逆に引く
+        u = rng.random()
+        Fhi = (hi / lo) ** -eps
+        E = lo * (1 - u * (1 - Fhi)) ** (-1 / eps)
+        mu = math.sqrt(rng.random())  # 面を通る向きは cosθ に比例 (等方の流れ)
+        ph = 2 * math.pi * rng.random(); st = math.sqrt(1 - mu * mu)
+        rows.append((2212, E, st * math.cos(ph), st * math.sin(ph), mu))
+    r = np.array(rows)
+    W = 0.25 * (1 - (hi / lo) ** -eps)
+    np.savez(out, pdg=r[:, 0].astype(np.int64), ke=r[:, 1], ux=r[:, 2], uy=r[:, 3], uz=r[:, 4], w=np.full(N, W / N))
+    print(f'フレアの陽子 ε={eps}: 粒子 {N}、平均 {r[:,1].mean():.0f} MeV、重みの合計 {W:.4f}')
+
 def main():
+    if sys.argv[1] == 'sep':
+        return sep(float(sys.argv[2]), sys.argv[3], int(sys.argv[4]) if len(sys.argv) > 4 else 200000)
     beta = float(sys.argv[1]); out = sys.argv[2]; N = int(sys.argv[3]) if len(sys.argv) > 3 else 200000
     g = 1 / math.sqrt(1 - beta * beta)
     NE, NT, NP = 120, 90, 72

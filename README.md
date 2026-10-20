@@ -11,7 +11,7 @@
 | ゲーム版 | 遊びやすさを保ったまま、なるべく現実に近づける | `index.html` |
 | シミュレーション版 | なるべく現実のままにする (授業や研究で使う) | `simulation.html` |
 
-2 つの版は同じ元のファイルから作り、違うのは版ごとの値の表 (`EDITIONS`) だけです。**いまはゲーム版を先に仕上げていて、シミュレーション版はゲーム版の公開まで凍結しています** (更新しません。[docs/game-plan.md](docs/game-plan.md))。違いと根拠は [docs/reality-check.md](docs/reality-check.md)。セーブは版ごとに別で、ネット対戦は同じ版どうしでだけつなげます。
+2 つの版は同じ元のファイルから作り、違うのは版ごとの値の表 (`EDITIONS`) だけです。**いまはゲーム版を先に仕上げています。** シミュレーション版は、2026-10-20 に物理 (星間の気体と宇宙線の遮蔽・加速の時間・M 型星のフレア。[docs/physics.md](docs/physics.md)) だけを入れて組み立て直し、そのあとはまた止めています (ほかの作業では無視する。[docs/parallel.md](docs/parallel.md) の 6)。違いと根拠は [docs/reality-check.md](docs/reality-check.md)。セーブは版ごとに別で、ネット対戦は同じ版どうしでだけつなげます。
 
 プレイヤーは地球政府。入植船を送って星系を広げ、交易・政治・戦争で恒星間国家を育てる。ただし情報も指令も**光速でしか伝わらない**。星系の政府はふだん自分で動き、地球は限られた**政治力** (地球の意志) をどこに使うかを決める。遠い家臣ほど、関与が届くのに時間も政治力もかかる。
 
@@ -341,7 +341,7 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 
 - 作業を引き継ぐときは [docs/handoff.md](docs/handoff.md) を読む (約束・決めたこと・いまの状態・次にやること)
 - 読みやすい元のファイルは `src/index.html`。手を入れるのはこちら
-- 公開用の `index.html` (ゲーム版) と `simulation.html` (シミュレーション版) は `node tools/build.mjs` で作る (最初に `cd tools && npm ci`。圧縮に python3 を使う)
+- 公開用の `index.html` (ゲーム版) は `node tools/build.mjs`、`simulation.html` (シミュレーション版) は `node tools/build.mjs --sim` で作る (シミュレーション版はレーン P だけ。最初に `cd tools && npm ci`。圧縮に python3 を使う)
   - 版の違いは、`src/index.html` の `EDITION` の値だけ。build がこの行を版ごとに書き換えて 2 枚作る。版ごとに違う値は `EDITIONS` の表にまとめる
   - JavaScript (terser)・CSS (esbuild)・HTML を最小化し、LZMA で圧縮して、7ビットずつ文字にした 1 枚の HTML にする。開くと中の小さな展開器 (`tools/unlzma.js`) が元に戻して表示する
   - 書き出す前に、展開したものが最小化した HTML と 1 バイトずつ一致することを確かめる

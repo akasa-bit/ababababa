@@ -58,3 +58,12 @@ GitHub の設定 (branch protection の *Require branches to be up to date befor
 - `docs/handoff.md` の「3. いまの状態」「5-3. 止めている作業」の中身を、`docs/status/A.md`・`docs/status/C.md` (財政の差分) などに移し、`handoff.md` には共通の約束と地図だけを残す。
 - `docs/requests-log.md` の頭に「ここで終わり。続きは `docs/requests/`」と書く。
 - `fiscal.patch` は `docs/wip/C-fiscal.patch` に名前を変える (中身はそのまま)。
+
+## 6. シミュレーション版は一旦無視する (2026-10-20)
+
+ユーザーの指示 (`docs/requests/2026-10-20-P.md` の P-2)。物理 (星間の気体と宇宙線の遮蔽・加速の時間・M 型星のフレア。`docs/physics.md`) を、**シミュレーション版にだけ**入れてマージした。ゲーム版の試合は前と同じ。
+
+- **レーン P 以外は、シミュレーション版を無視する。** `simulation.html` を作り直さない・直さない (`node tools/build.mjs` はゲーム版だけを作る。シミュレーション版は `--sim` を付けたときだけ)。
+- CI の表の「シミュレーション版・参考」の行 (`physics`・シミュレーション版の `energy`・シミュレーション版の `build`) は、落ちても CI を止めない。ほかのレーンは気にしなくてよい。
+- `src/index.html` の物理の所 (`ED.physics` を見ている所、`shieldOf`・`accelExtra`・`withAccel`・`radiationOf`、`ISM`・`SHIELD*`・`SURFACE_DOSE`・`FLARES` の表) と `EDITIONS.sim` は、レーン P だけが触る。ほかのレーンは、`bookShip` などを直すときに、その行 (航路の長さ `ly` を渡す所・`withAccel` を掛ける所) を消さずに残す。ぶつかったら両方残す。
+- ゲーム版に物理を入れるかは、あとでユーザーが決める (`EDITIONS.game.physics` を true にするだけで入る)。

@@ -27,7 +27,7 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
     for (let i = 0; i < Y * 4; i++) g.advance(0.25);
     const govs = Object.entries(g.govs).filter(([id]) => g.isColonized(Number(id)));
     return {
-      audit: ENERGY_AUDIT, prop: PROP, c: C_LIGHT, ism: ISM, sh: SHIELD, dose: SHIELD_DOSE, gcr: SHIELD_GCR,
+      audit: ENERGY_AUDIT, prop: PROP, c: C_LIGHT, ism: ISM, sh: SHIELD, dose: SHIELD_DOSE, gcr: SHIELD_GCR, physics: ED.physics,
       govs: govs.length, negative: govs.filter(([, v]) => (v.E || 0) < 0).length,
       earth: { E: g.govs[0].E, power: g.power(0), cover: g.swarmCover(0), ledger: g.govs[0].eledger },
       colonies: g.colonies.length, routes: g.routes.length,
@@ -48,11 +48,13 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
     return 10 * ((Math.PI * d * d) / 4 * (tf + ts) + ((4 * V) / d) * ts);
   };
   const shieldKg = (x) => {
-    if (!(x.ly > 0)) return 0;
+    if (!(x.ly > 0) || !r.physics) return 0; // 遮蔽はシミュレーション版だけ
     const crew = r.sh.crew.includes(x.kind), k = x.beta > 0.925 ? '0.95' : '0.9';
     const L = x.ly * 9.4607e17, V = x.m / r.sh.rho[crew ? 'crew' : 'cargo'];
     if (!crew) return shape(V, depth(r.dose[k], 'D', Math.log(r.sh.cargoGy / (r.ism.nNuc * L))), 0);
-    const tau = L / ((1 / Math.sqrt(1 - x.beta ** 2)) * x.beta * c * 100);
+    // 船の時間 [s]: 1g の加速と減速のあいだは (c/a) atanh β、そのほかは道のり ÷ γβc (シミュレーション版の加速の時間)
+    const ga = 1 / Math.sqrt(1 - x.beta ** 2), T1 = c / 9.80665 / 31557600, xa = T1 * (ga - 1);
+    const tau = x.ly >= 2 * xa ? (2 * T1 * Math.atanh(x.beta) + (x.ly - 2 * xa) / (ga * x.beta)) * 31557600 : L / (ga * x.beta * c * 100);
     const kg = (f) => shape(V, depth(r.dose[k], 'H', Math.log((r.sh.crewSv * f) / (r.ism.nNuc * L))), depth(r.gcr[k], 'H', Math.log((r.sh.crewSv * (1 - f)) / tau)));
     if (r.sh.frontShare) return kg(r.sh.frontShare);
     // 一番軽い割り振り: 0.01〜0.99 を 2,000 に刻んで探し、ゲームの値がそれより重くないことを見る (ゲームは黄金分割)

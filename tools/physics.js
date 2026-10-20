@@ -7,8 +7,9 @@
 const fs = require('fs');
 const H = require('./headless');
 
+// 物理はシミュレーション版だけに入っているので、シミュレーション版として回す
 function voyages(seed, years, nations, params) {
-  const sim = H.load({ params });
+  const sim = H.load({ params, edition: 'sim' });
   sim.evaluate('ENERGY_AUDIT = []');
   const g = sim.run(sim.newGame(seed, { nations }), years);
   return { rows: sim.evaluate('ENERGY_AUDIT'), g, sim };

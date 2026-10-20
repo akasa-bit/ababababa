@@ -22,3 +22,10 @@ wait
 [ -f v95.json ] || "$PY" "$D/g4_shield.py" --events 5000 --thick 700 --out v95 > v95.log 2>&1 &
 [ -f g00.json ] || "$PY" "$D/g4_shield.py" --events 3000 --source gcr00.npz --thick 60 --probe 5 --out g00 > g00.log 2>&1 &
 wait
+# 惑星の地表と居住区 (止まった所): 銀河宇宙線 (gcr00) とフレアの高エネルギー陽子 (sep、ε = 2.13) を、大気と覆いの奥 2,700 g/cm² まで
+python3 "$D/make_gcr_source.py" sep 2.13 sep.npz
+[ -f s00_1.json ] || "$PY" "$D/g4_shield.py" --events 20000 --source sep.npz --out s00_1 --seed 1 > s00.log 2>&1
+"$D/g4_stages.sh" "$PY" s00 9 20000 >> s00.log 2>&1 &
+[ -f c00_1.json ] || "$PY" "$D/g4_shield.py" --events 4000 --source gcr00.npz --out c00_1 --seed 1 > c00.log 2>&1
+"$D/g4_stages.sh" "$PY" c00 9 4000 >> c00.log 2>&1 &
+wait
