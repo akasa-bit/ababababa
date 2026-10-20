@@ -18,6 +18,9 @@
                               pb = 基礎収支 ÷ GDP = (revenue − expenditure) / gdp + ltrate/100 × d(前の年) (利子の払いは
                               JST にないので、長期の利子率 × 前の年の債務で近づける)、d = debtgdp、
                               gap = ln(rgdpbarro) − HP フィルター (λ = 100) の傾向。30 年以上ある国だけ (2026-10-20 に足した)
+ゲームの国債の値 (params。src/index.html の DEBT に写す): 財政の反応の式の係数 (国ごとの最小二乗の中央値)・
+  景気のずれの範囲 (HP フィルターのずれの 1%〜99% 点)・借りられる上限 (debtgdp の国ごとの 90% 点の中央値)・
+  手元に置く資金 (Eurostat の一般政府の現金・預金 ÷ 総収入の、国ごとの中央値の中央値。単位は年)
 幅の決め方 (ゲームの結果を見る前に決めた): 現実の国ごとの値の 10%〜90% 点。ゲームは、銀河ごと・国ごとの値の中央値がこの幅に入れば合格。
 
 使い方:
@@ -30,6 +33,7 @@ import pandas as pd
 
 HERE = os.path.dirname(__file__)
 RAW = os.path.join(HERE, '..', 'raw', 'fiscal', 'JSTdatasetR6.xlsx')
+EUROSTAT = [os.path.join(HERE, '..', 'raw', 'fiscal', f) for f in ('eurostat_s13_f2_assets.json', 'eurostat_s13_revenue.json')]
 COW = os.path.join(HERE, '..', 'raw', 'history', 'cow_interstate_v4.csv')  # data/fetch/fetch_history.py で取ったもの
 OUT = os.path.join(HERE, '..', 'derived', 'fiscal.json')
 # JST の国 → Correlates of War の国の番号 (ドイツは 1945〜1990 年の西ドイツ 260 も)
@@ -50,9 +54,9 @@ def hp_trend(y, lam=100.0):
     D = np.diff(np.eye(n), 2, axis=0)
     return np.linalg.solve(np.eye(n) + lam * D.T @ D, y)
 
-def reaction(df):
-    """R28: 国ごとの財政の反応の傾き ρ (pd.Series、国 → ρ)"""
-    out = {}
+def reaction(df, full=False):
+    """R28: 国ごとの財政の反応の傾き ρ (pd.Series、国 → ρ)。full なら係数と残差の性質の表 (pd.DataFrame) と、HP のずれを返す"""
+    out, rows, gaps = {}, {}, []
     for c, d in df.sort_values('year').groupby('country'):
         d = d.copy()
         d['dl'] = d['debtgdp'].shift(1)
@@ -66,9 +70,46 @@ def reaction(df):
         if len(s) < 30:
             continue
         cols = [np.ones(len(s)), s['dl'], s['gap']] + ([s['war']] if s['war'].sum() > 0 else [])
-        b, *_ = np.linalg.lstsq(np.column_stack(cols), s['pb'].to_numpy(float), rcond=None)
+        X = np.column_stack(cols)
+        b, *_ = np.linalg.lstsq(X, s['pb'].to_numpy(float), rcond=None)
         out[c] = b[1]
+        e = s['pb'].to_numpy(float) - X @ b
+        rows[c] = {'a': b[0], 'rho': b[1], 'beta': b[2], 'war': b[3] if len(b) > 3 else np.nan, 'sd': e.std(), 'ar': np.corrcoef(e[1:], e[:-1])[0, 1]}
+        gaps += list(d['gap'].dropna())
+    if full:
+        return pd.DataFrame(rows).T, np.array(gaps)
     return pd.Series(out, dtype=float)
+
+def eurostat(path):
+    """Eurostat の JSON-stat 2.0 を {(国, 年): 値} にする"""
+    with open(path, encoding='utf-8') as f:
+        d = json.load(f)
+    dims, size = d['id'], d['size']
+    cats = [sorted(d['dimension'][k]['category']['index'].items(), key=lambda x: x[1]) for k in dims]
+    out = {}
+    for key, v in d['value'].items():
+        k, pos = int(key), []
+        for n in reversed(size):
+            pos.append(k % n)
+            k //= n
+        lab = {dims[i]: cats[i][p][0] for i, p in enumerate(reversed(pos))}
+        out[(lab['geo'], lab['time'])] = v
+    return out
+
+def params(jst):
+    """ゲームの国債の値 (src/index.html の DEBT)"""
+    coef, gaps = reaction(jst, full=True)
+    cash, rev = (eurostat(p) for p in EUROSTAT)
+    per = {}
+    for (geo, t), v in cash.items():
+        if len(geo) == 2 and rev.get((geo, t), 0) > 0:  # 国 (EU27_2020 などのまとめを除く)
+            per.setdefault(geo, []).append(v / rev[(geo, t)])
+    held = pd.Series({g: float(np.median(v)) for g, v in per.items()})
+    r = lambda x: round(float(x), 4)
+    return {'a': r(coef['a'].median()), 'rho': r(coef['rho'].median()), 'beta': r(coef['beta'].median()), 'war': r(coef['war'].median()),
+            'sd': r(coef['sd'].median()), 'ar': r(coef['ar'].median()), 'gap': [r(np.percentile(gaps, 1)), r(np.percentile(gaps, 99))],
+            'limit': r(jst.groupby('country')['debtgdp'].quantile(0.9).median()),
+            'cash': r(held.median()), 'cash_p10_p90': [r(held.quantile(0.1)), r(held.quantile(0.9))], 'cash_countries': int(held.size)}
 
 def summary(name, per, rows):
     return {'name': name, 'countries': int(per.size), 'rows': int(rows),
@@ -122,7 +163,7 @@ def main():
         return
     jst = with_war(pd.read_excel(RAW))
     res = {'source': 'Jordà–Schularick–Taylor Macrohistory Database R6 (data/raw/fiscal/JSTdatasetR6.xlsx)',
-           'all': stats(jst), '1870-1913': stats(jst, (1870, 1913)), '1950-2020': stats(jst, (1950, 2020))}
+           'all': stats(jst), '1870-1913': stats(jst, (1870, 1913)), '1950-2020': stats(jst, (1950, 2020)), 'params': params(jst)}
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, 'w', encoding='utf-8') as f:
         json.dump(res, f, ensure_ascii=False, indent=1)

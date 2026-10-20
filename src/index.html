@@ -1871,14 +1871,18 @@ const BUDGET = {
 const BUDGET_SHARES = [0, 0.05, 0.1, 0.2, 0.3];
 const BUDGET_HALF = 0.1;
 const budgetEffect = (share) => (share > 0 ? share / (share + BUDGET_HALF) : 0);
-const FISCAL_DEFAULT = { tax: 'normal', rate: 0.01, budget: { welfare: 0, security: 0, military: 0 } };
+const FISCAL_DEFAULT = { tax: 'normal', rate: 0.01, deficit: 0, budget: { welfare: 0, security: 0, military: 0 } };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)
 // に合わせて国債を出し入れする (Bohn 1998 の形。係数は JST R6 の 18 か国 1870〜2020 年を国ごとに推定した中央値。data/build/analyze_fiscal.py)。
 // trend = 傾向をならす年数、gap = 傾向からのずれの範囲 (JST の 18 か国の HP フィルターのずれの 1%〜99% 点)、
-// cash = 手元に置く資金 (税収の何年分。仮の値)、spend = それを超えた資金を行政サービスに使いきる年数
-const DEBT = { a: -0.0023, rho: 0.0336, beta: 0.056, war: -0.017, sd: 0.0269, ar: 0.6971, trend: 10, gap: [-0.176, 0.145], cash: 3, spend: 1 };
+// cash = 手元に置く資金 (税収の何年分。Eurostat の一般政府の現金・預金 ÷ 税収の、30 か国 1995〜2025 年の国ごとの中央値の中央値)、
+// spend = それを超えた資金を行政サービスに使いきる年数、limit = 買い物のために借りられる国債 ÷ GDP の上限 (JST の国ごとの 90% 点の中央値)。
+// 係数と cash・limit は data/build/analyze_fiscal.py が data/derived/fiscal.json の params に書き出す値
+const DEBT = { a: -0.0023, rho: 0.0336, beta: 0.056, war: -0.0171, sd: 0.0269, ar: 0.6971, trend: 10, gap: [-0.1756, 0.1451], cash: 0.1613, spend: 1, limit: 0.9142 };
+// 人間が動かす首都の赤字の上限 (1 年に出せる国債 ÷ GDP。財政の画面で選ぶ)。0 は国債を出さない
+const DEFICITS = [0, 0.01, 0.03, 0.05, 0.1];
 const POLICY_COST = 20;
 const POLICY_YEARS = 30; // 国家方針を変えられる間隔
 // 不満の段階: 1 不満 (離反の起きやすさ HAZARD に従って起きる) → UNREST_YEARS 年続くと 2 要求 (減税・自治を主人へ求める)
@@ -2908,7 +2912,7 @@ class Game {
     if (d.auto || d.awe || d.aweBack || PC_FREE_ACTS.has(act)) return 0;
     if (act === 'declarewar' || act === 'peace') return PC_DIPLOMACY;
     if (act === 'policy') return POLICY_COST;
-    if (act === 'fiscal') { const c = this.fiscal || FISCAL_DEFAULT; return (d.tax ?? c.tax) !== c.tax || Number(d.rate ?? c.rate) !== c.rate ? FISCAL_COST : 0; }
+    if (act === 'fiscal') { const c = this.fiscal || FISCAL_DEFAULT; return (d.tax ?? c.tax) !== c.tax || Number(d.rate ?? c.rate) !== c.rate || Number(d.deficit ?? c.deficit ?? 0) !== (c.deficit || 0) ? FISCAL_COST : 0; }
     const extra = act === 'decide' ? this.decisionOpt(d)?.pc || 0 : 0;
     const target = act === 'grant' || act === 'decide' ? Number(d.sys) : this.cmdTarget(act, d);
     if (target === undefined || target === null || target === this.cap || Number.isNaN(target)) return extra;
@@ -2954,15 +2958,18 @@ class Game {
   }
   // 国債 (docs/debt.md)。人間が動かしていない政府は、財政の反応の式 (DEBT) で決まる基礎収支に、国債の利子を足した分だけ国債を出す
   // (マイナスなら返す。手元の資金で返しきれない分は持ち越す)。銀行が国債を買い、同じ額の預金を政府に作るので、政府の純額 (資金 − 国債) は変わらない (お金は湧かない)。
-  // 手元の資金が税収の DEBT.cash 年分を超えたら、超えた分を DEBT.spend 年ほどで行政サービス (民間の賃金と買い付け) に使う
+  // 行政サービス (民間の賃金と買い付け) には、式で決まる使える額 (税収 − s* × GDP) から、ふだんの支出 (建設・船・維持費・予算など、
+  // DEBT.spend 年ほどでならした額) を除いた残りを使う (投資が先、行政サービスが後)。買い物で資金がマイナスになった分 (funds の
+  // 借りられる額で買った分) は国債で埋める。手元の資金が税収の DEBT.cash 年分を超えたら、超えた分で国債を返す (国債がなければ行政サービスに使う)。
+  // 人間が動かす首都は、財政で選んだ赤字の上限の範囲で、資金のマイナスを国債で埋め、手元の資金が多すぎれば国債を返す (行政サービスは自動では払わない)
   debtStep(h) {
     const war = new Set(Object.keys(this.realmWars).flatMap((k) => k.split('|').map(Number)));
-    const keep = GM.pow(DEBT.ar, h), out = 1 - GM.exp(-h / DEBT.spend);
+    const keep = GM.pow(DEBT.ar, h), out = 1 - GM.exp(-h / DEBT.spend), fade = GM.exp(-h);
     for (const key of Object.keys(this.govs)) {
       const id = Number(key), gv = this.govs[key];
       const paid = gv.bondPaid || 0;
       gv.bondPaid = 0;
-      if (!this.isColonized(id) || (this.isHuman(id) && !this.spectate)) continue;
+      if (!this.isColonized(id)) continue;
       const y = this.coloniesIn(id).reduce((k, c) => k + this.incomeOf(c), 0);
       if (!(y > 0)) continue;
       const fr = (gv.fr ??= { y, t: GM.log(y), g: 0, u: 0 });
@@ -2971,6 +2978,18 @@ class Game {
       const lv = fr.t + (fr.g || 0) * h, e = GM.log(fr.y) - lv, k = 1 - GM.exp(-h / DEBT.trend);
       fr.t = lv + k * e;
       fr.g = (fr.g || 0) + (k * k / h) * e;
+      const keepCash = DEBT.cash * Math.max(0, (gv.ledger?.tax || 0) + (gv.ledger?.natives || 0));
+      if (this.isHuman(id) && !this.spectate) {
+        const deficit = this.fiscalFor(id, id).deficit || 0;
+        gv.bw = (gv.bw || 0) * fade;
+        if (gv.credits < 0 && deficit > 0) { const x = -gv.credits; gv.credits = 0; gv.bond = (gv.bond || 0) + x; gv.bw += x; }
+        const extra = gv.credits - keepCash;
+        if (extra > 0 && gv.bond > 0) { const x = Math.min(gv.bond, extra * out); gv.credits -= x; gv.bond -= x; }
+        continue;
+      }
+      // ふだんの支出 = (税・先住民・利子の受け取り) − 前の刻みの終わりからの資金の増加 (国債の出し入れと行政サービスは含まない)
+      const L = gv.led || {}, inflow = (L.tax || 0) + (L.natives || 0) + (L.interest || 0);
+      if (gv.c0 !== undefined) fr.d = (fr.d ?? 0) + ((inflow - (gv.credits - gv.c0)) / h - (fr.d ?? 0)) * (1 - GM.exp(-h / DEBT.spend));
       fr.u = fr.u * keep + DEBT.sd * Math.sqrt(1 - keep * keep) * this.randNormal();
       const gap = clamp(GM.log(fr.y) - fr.t, DEBT.gap[0], DEBT.gap[1]);
       const s = DEBT.a + DEBT.rho * ((gv.bond || 0) / fr.y) + DEBT.beta * gap + (war.has(this.realmOf(id)) ? DEBT.war : 0) + fr.u;
@@ -2984,9 +3003,24 @@ class Game {
       }
       if (gv.credits + x < 0) x = -gv.credits;
       if (x) { gv.credits += x; gv.bond = Math.max(0, (gv.bond || 0) + x); }
-      const extra = gv.credits - DEBT.cash * Math.max(0, (gv.ledger?.tax || 0) + (gv.ledger?.natives || 0));
-      if (extra > 0) this.earn('public', -extra * out, id, { pv: id });
+      const T = Math.max(0, (gv.ledger?.tax || 0) + (gv.ledger?.natives || 0));
+      const pub = Math.min(Math.max(0, gv.credits), Math.max(0, T - s * fr.y - (fr.d ?? 0)) * h);
+      if (pub > 0) this.earn('public', -pub, id, { pv: id });
+      const extra = gv.credits - keepCash;
+      if (extra > 0 && gv.bond > 0) { const r = Math.min(gv.bond, extra * out); gv.credits -= r; gv.bond -= r; }
+      else if (extra > 0) this.earn('public', -extra * out, id, { pv: id });
+      gv.c0 = gv.credits;
     }
+  }
+  // 使える資金 = 手元の資金 + 国債で借りられる額。人間が動かしていない政府は、国債 ÷ GDP が DEBT.limit になるまで借りられる。
+  // 人間が動かす首都は、財政で選んだ赤字の上限 (この 1 年に出した国債を除く) まで。足りない分の国債は、刻みの終わりに出す (debtStep)
+  funds(id) {
+    const gv = this.govs[id];
+    if (!gv) return 0;
+    const y = gv.fr?.y || 0;
+    let room = Math.max(0, DEBT.limit * y - (gv.bond || 0) - (gv.due || 0));
+    if (this.isHuman(id) && !this.spectate) room = Math.min(room, Math.max(0, (this.fiscalFor(id, id).deficit || 0) * y - (gv.bw || 0)));
+    return gv.credits + room;
   }
   // 利子: 銀行から借りている民間と先住民が、その星系で効いている国の利子率で利子を払う。銀行はそれを、預金
   // (政府の資金・民間と先住民の手持ち) の額に比べて分ける。銀行の儲けは 0 (docs/fiscal.md)。運ぶ途中のお金には利子がつかない
@@ -3027,15 +3061,15 @@ class Game {
   fleetMul(x, at) { const root = this.realmOf(x); return this.modsOf(x).fleet * (1 + BUDGET.military.fleet * this.budgetAt(root, at, 'military')); }
   setFiscal(d) {
     const cur = this.fiscal || FISCAL_DEFAULT;
-    const tax = d.tax ?? cur.tax, rate = Number(d.rate ?? cur.rate);
+    const tax = d.tax ?? cur.tax, rate = Number(d.rate ?? cur.rate), deficit = Number(d.deficit ?? cur.deficit ?? 0);
     const budget = {};
     for (const k of Object.keys(BUDGET)) budget[k] = Number(d[k] ?? cur.budget?.[k] ?? 0);
-    if (!TAX_LEVELS[tax] || !RATES.includes(rate) || Object.values(budget).some((v) => !BUDGET_SHARES.includes(v))) return fail('選べない値');
+    if (!TAX_LEVELS[tax] || !RATES.includes(rate) || !DEFICITS.includes(deficit) || Object.values(budget).some((v) => !BUDGET_SHARES.includes(v))) return fail('選べない値');
     const total = Object.values(budget).reduce((a, v) => a + v, 0);
     if (total > 0.6 + 1e-9) return fail('予算は税収の 6 割まで');
-    if (tax === cur.tax && rate === cur.rate && Object.keys(BUDGET).every((k) => budget[k] === (cur.budget?.[k] || 0))) return fail('いまと同じ');
-    this.fiscal = { tax, rate, budget, since: this.year, prev: { tax: cur.tax, rate: cur.rate, budget: { ...(cur.budget || FISCAL_DEFAULT.budget) } } };
-    const parts = [`税は「${TAX_LEVELS[tax].label}」`, `利子率は年 ${(rate * 100).toFixed(0)}%`, `予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
+    if (tax === cur.tax && rate === cur.rate && deficit === (cur.deficit || 0) && Object.keys(BUDGET).every((k) => budget[k] === (cur.budget?.[k] || 0))) return fail('いまと同じ');
+    this.fiscal = { tax, rate, deficit, budget, since: this.year, prev: { tax: cur.tax, rate: cur.rate, deficit: cur.deficit || 0, budget: { ...(cur.budget || FISCAL_DEFAULT.budget) } } };
+    const parts = [`税は「${TAX_LEVELS[tax].label}」`, `利子率は年 ${(rate * 100).toFixed(0)}%`, `赤字の上限は ${deficit ? `GDP の ${Math.round(deficit * 100)}%` : 'なし (国債を出さない)'}`, `予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
     this.event('goal', this.cap, `財政を変えた (${parts.join('、')})。遠い星系には知らせが光速で届いてから効く`, true);
     return { ok: true };
   }
@@ -3082,7 +3116,7 @@ class Game {
     if (!this.spectate && dec.seen > this.year) return fail('まだ知らせが届いていない');
     const o = dec.opts.find((x) => x.k === d.opt);
     if (!o) return fail('不明な選択肢');
-    if ((o.cr || 0) > this.gov(this.cap).credits) return fail(`資金が足りない (${o.cr} cr)`);
+    if ((o.cr || 0) > this.funds(this.cap)) return fail(`資金が足りない (${o.cr} cr)`);
     if (o.cr) { this.earn('grant', -o.cr, this.cap); dec.payer = this.cap; this.cash('grant', o.cr, { way: dec, f: 'cr' }); }
     dec.state = 'sent';
     dec.reply = o.k;
@@ -3525,8 +3559,8 @@ class Game {
       if (have >= goal) continue;
       if (!this.hasShipyard(id)) {
         const big = this.coloniesIn(id).sort((a, b) => b.pop - a.pop)[0];
-        if (big && gv.credits >= 1.2 * this.upgradeCost(big, 'shipyard').credits && !this.procure(this.upgradeCost(big, 'shipyard'), id).why) this.upgrade(big, 'shipyard');
-      } else if (gv.credits >= 1.2 * WARSHIP_COST.credits && !this.procure(WARSHIP_COST, id).why) this.buildWarship(id);
+        if (big && this.funds(id) >= 1.2 * this.upgradeCost(big, 'shipyard').credits && !this.procure(this.upgradeCost(big, 'shipyard'), id).why) this.upgrade(big, 'shipyard');
+      } else if (this.funds(id) >= 1.2 * WARSHIP_COST.credits && !this.procure(WARSHIP_COST, id).why) this.buildWarship(id);
     }
   }
   // 独立国の軍備 (年1回、星系政府の自動開発より先): どの独立国も星系ごとに軍事基地を建て、平時は守りの艦隊 (首都5・他3) を保つ。
@@ -3540,8 +3574,8 @@ class Game {
         const gv = this.gov(x.id);
         const big = this.coloniesIn(x.id).sort((a, b) => b.pop - a.pop)[0];
         const goal = x.id === root ? 5 : 3;
-        if (!this.hasShipyard(x.id)) { if (big && gv.credits >= 2 * this.upgradeCost(big, 'shipyard').credits) this.upgrade(big, 'shipyard'); }
-        else if (gv.credits >= 2 * WARSHIP_COST.credits && (war || (this.garrison[x.id] || 0) + queuedWarships(this.projects, x.id) < goal)) this.buildWarship(x.id);
+        if (!this.hasShipyard(x.id)) { if (big && this.funds(x.id) >= 2 * this.upgradeCost(big, 'shipyard').credits) this.upgrade(big, 'shipyard'); }
+        else if (this.funds(x.id) >= 2 * WARSHIP_COST.credits && (war || (this.garrison[x.id] || 0) + queuedWarships(this.projects, x.id) < goal)) this.buildWarship(x.id);
       }
     }
   }
@@ -3690,7 +3724,7 @@ class Game {
   materialBill(cost, sysId) { return MARKET.buy && sysId !== undefined ? RES.reduce((k, r) => k + (cost[r] ? cost[r] * this.bulkPrice(sysId, r, cost[r]) : 0), 0) : 0; }
   lack(cost, sysId, payer = sysId ?? 0) {
     const bill = this.materialBill(cost, sysId);
-    if ((cost.credits || 0) + bill > this.gov(payer).credits) return bill ? `クレジット不足 (資材の代金 ${Math.ceil(bill)} cr を含む)` : 'クレジット不足';
+    if ((cost.credits || 0) + bill > this.funds(payer)) return bill ? `クレジット不足 (資材の代金 ${Math.ceil(bill)} cr を含む)` : 'クレジット不足';
     if ((cost.energy || 0) > this.energyOf(payer)) return `エネルギー不足 (${fmtJ(Math.max(0, this.energyOf(payer)))}/${fmtJ(cost.energy)})`;
     const st = sysId === undefined ? null : this.stockOf(sysId);
     for (const r of RES) {
@@ -3722,7 +3756,7 @@ class Game {
     return a.why ? { why: p.why } : { ...a, imp: 0, aid: a.imp };
   }
   procureFrom(cost, sysId, onlyFrom) {
-    if ((cost.credits || 0) > this.gov(sysId ?? 0).credits) return { why: 'クレジット不足' };
+    if ((cost.credits || 0) > this.funds(sysId ?? 0)) return { why: 'クレジット不足' };
     // エネルギー: 船の推進の分と、取り寄せる資材を交易路で減速させる分は受け手、加速させる分は取り寄せ元が払う
     const eHave = this.energyOf(sysId ?? 0) - (cost.energy || 0);
     if (eHave < 0) return { why: `エネルギー不足 (${fmtJ(Math.max(0, this.energyOf(sysId ?? 0)))}/${fmtJ(cost.energy)})` };
@@ -3767,7 +3801,7 @@ class Game {
     }
     const imp = plan.filter((x) => x.from !== sysId).reduce((k, x) => k + x.amt * x.price, 0);
     const local = plan.filter((x) => x.from === sysId).reduce((k, x) => k + x.amt * (x.price || 0), 0); // 地元で買う資材の代金 (MARKET.buy)
-    if (onlyFrom === undefined && imp + local > 0 && (cost.credits || 0) + imp + local > this.gov(sysId).credits) return { why: `資金不足 (資材の代金 ${Math.ceil(imp + local)} cr を含む)`, poor: true };
+    if (onlyFrom === undefined && imp + local > 0 && (cost.credits || 0) + imp + local > this.funds(sysId)) return { why: `資金不足 (資材の代金 ${Math.ceil(imp + local)} cr を含む)`, poor: true };
     return { why: '', eta, plan, imp };
   }
   // 建設を発注する。費用はその場で払い、資材が届いた時点で完成する。
@@ -4001,7 +4035,7 @@ class Game {
       if (owner && ((this.isHuman(r.a) && !this.spectate) || gv.direct) ? !owner.autoRoutes : false) continue;
       if (this.pending((j) => j.type === 'route' && j.route === r.id)) continue;
       const cost = this.routeUpCost(r);
-      if (gv.credits < 1.5 * cost.credits || this.procure(cost, r.a).why) continue;
+      if (this.funds(r.a) < 1.5 * cost.credits || this.procure(cost, r.a).why) continue;
       this.upgradeRoute(r, '[自動] ');
     }
   }
@@ -4362,7 +4396,7 @@ class Game {
         .sort((a, b) => b.gap * PRICE[b.r] - a.gap * PRICE[a.r]);
       const cols = this.coloniesIn(id).sort((a, b) => b.pop - a.pop);
       const tag = `[自動] `;
-      const tryOrder = (cost, run) => (cost && this.gov(id).credits >= 2 * (cost.credits || 0) && !this.procure(cost, id).why ? run() : null);
+      const tryOrder = (cost, run) => (cost && this.funds(id) >= 2 * (cost.credits || 0) && !this.procure(cost, id).why ? run() : null);
       for (const { r } of short) {
         let done = null;
         if (r === 'food' || r === 'goods') {
@@ -4405,14 +4439,14 @@ class Game {
           .sort((a, b) => a.d - b.d)[0];
         if (near) {
           const cost = this.routeCost(id, near.o.id);
-          if (gv.credits >= 1.5 * cost.credits) this.openRoute(id, near.o.id);
+          if (this.funds(id) >= 1.5 * cost.credits) this.openRoute(id, near.o.id);
         }
       }
       if (!this.canColonize(id) || gv.mandate === 'develop') continue;
       const best = this.colonyTarget(id);
       if (!best) continue;
       const cost = this.shipCost(best.kind, id, best.t.id);
-      if (gv.credits < (gv.mandate === 'expand' ? 1 : 1.2) * cost.credits || this.procure(cost, id).why) continue;
+      if (this.funds(id) < (gv.mandate === 'expand' ? 1 : 1.2) * cost.credits || this.procure(cost, id).why) continue;
       if (this.dispatch(id, best.t.id, best.b.id, best.kind).ok) gv.lastColony = this.year;
     }
   }
@@ -4492,7 +4526,7 @@ class Game {
       const cheapest = cands[0];
       gv.far = !cheapest || cheapest.cost.credits > 15 * Math.max(10, this.income(id));
       if (!gv.far) {
-        if (gv.credits >= reserve + (gv.mandate === 'develop' ? 1.2 : 1.5) * cheapest.cost.credits && !this.procure(cheapest.cost, id).why) cheapest.run();
+        if (this.funds(id) >= reserve + (gv.mandate === 'develop' ? 1.2 : 1.5) * cheapest.cost.credits && !this.procure(cheapest.cost, id).why) cheapest.run();
         continue;
       }
       const vassals = Object.entries(this.govs)
@@ -4520,7 +4554,7 @@ class Game {
         .sort((a, b) => score(b) - score(a));
       if (!free.length) continue;
       const cost = this.shipCost('station', id, id);
-      if (gv.credits < 2 * cost.credits || this.procure(cost, id).why) continue;
+      if (this.funds(id) < 2 * cost.credits || this.procure(cost, id).why) continue;
       if (this.dispatch(id, id, free[0].id, 'station').ok) gv.lastStation = this.year;
     }
   }
@@ -4609,7 +4643,7 @@ class Game {
     const short = this.knownSystems().filter((s) => realmK(s.id) === C).reduce((k, s) => k + gapK(s.id), 0)
       - queuedWarships(this.projects, C);
     for (let i = 0; i < Math.min(short, 5) && this.hasShipyard(C); i++) {
-      if (this.gov(C).credits < 2 * WARSHIP_COST.credits || this.procure(WARSHIP_COST, C).why) break;
+      if (this.funds(C) < 2 * WARSHIP_COST.credits || this.procure(WARSHIP_COST, C).why) break;
       this.order(WARSHIP_COST, C, { type: 'warship', label: `[自動防衛] ${this.system(C).name} の艦隊` });
     }
   }
@@ -4652,7 +4686,7 @@ class Game {
     if (!this.autoBuild || short <= 0) return;
     short -= queuedWarships(this.projects, this.cap);
     for (let i = 0; i < Math.min(short, 1000) && this.hasShipyard(this.cap); i++) {
-      if (this.gov(this.cap).credits < WARSHIP_COST.credits) break;
+      if (this.funds(this.cap) < WARSHIP_COST.credits) break;
       if (!this.order(WARSHIP_COST, this.cap, { type: 'warship', label: `[威圧] ${this.system(this.cap).name} の艦隊` }).ok) break;
     }
   }
@@ -4668,7 +4702,7 @@ class Game {
     const col = colKey(c);
     if (this.pending((j) => j.type === 'upgrade' && j.col === col && j.fac === 'habitat')) return;
     const cost = this.upgradeCost(c, 'habitat');
-    if (this.gov(c.sys).credits < 2 * cost.credits || this.procure(cost, c.sys).why) return;
+    if (this.funds(c.sys) < 2 * cost.credits || this.procure(cost, c.sys).why) return;
     this.order(cost, c.sys, { type: 'upgrade', col, fac: 'habitat', label: `[過密] ${c.name} の居住区 Lv${c.lv.habitat + 1}` });
   }
   // 恒星間移民を許すか: 人間の国はそのプレイヤーの設定、AI の国はいつも許す
@@ -4999,7 +5033,7 @@ class Game {
   barracksYearly() {
     for (const c of this.colonies) {
       for (let i = 0; i < c.lv.barracks && c.troops < 5 * c.lv.barracks; i++) {
-        if (this.gov(c.sys).credits < 2 * TROOP_COST.credits || this.procure(TROOP_COST, c.sys).why) break;
+        if (this.funds(c.sys) < 2 * TROOP_COST.credits || this.procure(TROOP_COST, c.sys).why) break;
         if (!this.trainTroop(c, true).ok) break;
       }
     }
@@ -6132,7 +6166,7 @@ class Game {
         if (ours > 5 * Math.max(1, theirs) && this.sysDist(this.cap, root) <= 25 && this.rand() < 0.05) this.declareWar(root); // AI の国と同じく首都から 25 光年まで
         continue;
       }
-      if (this.hasShipyard(this.cap) && this.gov(this.cap).credits >= 2 * WARSHIP_COST.credits) this.buildWarship(this.cap);
+      if (this.hasShipyard(this.cap) && this.funds(this.cap) >= 2 * WARSHIP_COST.credits) this.buildWarship(this.cap);
       if (ours < 0.7 * theirs || (this.exhaustion[this.cap] || 0) > 60) { if (!ordered('peace', root)) this.command('peace', { sys: root }); continue; }
       let best = null;
       for (const t of this.realmSystems(root)) {
@@ -7979,7 +8013,7 @@ function railHtml(g) {
     <div class="t clamp3">${esc(d.text)}</div>
     <div class="opts">${d.opts.map((o) => {
       const pc = g.pcCost('decide', { sys: d.sys, id: d.id, opt: o.k });
-      const why = (o.cr || 0) > g.credits ? '資金が足りない' : pc > g.pc ? '政治力が足りない' : '';
+      const why = (o.cr || 0) > g.funds(g.cap) ? '資金が足りない' : pc > g.pc ? '政治力が足りない' : '';
       return `<button data-act="decide" data-sys="${d.sys}" data-id="${d.id}" data-opt="${o.k}" ${why ? 'disabled' : ''} title="${esc(o.note || '')}">${esc(o.label)}<small>${esc(why || [o.cr ? `${o.cr} cr` : '', pc ? `政治力 ${pc}` : ''].filter(Boolean).join('・') || '費用なし')}</small><small class="clamp2">${esc(o.note || '')}</small></button>`;
     }).join('')}</div></div>`;
   const shownMajors = majors.slice(0, 3);
@@ -9042,7 +9076,7 @@ function decisionsHtml(g) {
   const rows = list.map((d) => {
     const btns = d.opts.map((o) => {
       const pc = g.pcCost('decide', { sys: d.sys, id: d.id, opt: o.k });
-      const why = (o.cr || 0) > g.credits ? `資金が足りない (${o.cr} cr)` : pc > g.pc ? `政治力が足りない (${pc} 必要)` : '';
+      const why = (o.cr || 0) > g.funds(g.cap) ? `資金が足りない (${o.cr} cr)` : pc > g.pc ? `政治力が足りない (${pc} 必要)` : '';
       const sub = [o.cr ? `${o.cr} cr` : '', pc ? `政治力 ${pc}` : '', o.note].filter(Boolean).join('・');
       return `<button data-act="decide" data-sys="${d.sys}" data-id="${d.id}" data-opt="${o.k}" ${why ? 'disabled' : ''}>${esc(o.label)}<small>${esc(why || sub)}</small></button>`;
     }).join('');
@@ -9084,6 +9118,7 @@ function councilChart(v) {
 // 帝国 → 目標の「財政」: 税・利子率・予算。変えると光速で広がる (国家方針と同じ)
 function fiscalHtml(g) {
   const f = g.fiscal || FISCAL_DEFAULT;
+  const cg = g.gov(g.cap);
   const tax = Math.max(0, g.gov(g.cap).ledger?.tax || 0);
   const pend = g.fiscal ? g.realmSystems(g.cap).filter((s) => g.year < f.since + g.sysDist(g.cap, s.id)).length : 0;
   const opt = (v, cur, l) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${l}</option>`;
@@ -9095,10 +9130,11 @@ function fiscalHtml(g) {
     return `<tr><td>${b.label}</td><td>${sel(k, BUDGET_SHARES.map((x) => [x, `${Math.round(x * 100)}%`]), sh)}</td><td>${sh ? `${fmtAmt(sh * tax)} cr/年・効き目 ${pct(budgetEffect(sh * paid))}` : '<span class="muted">使わない</span>'}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
   }).join('');
   return `<h3>${ico('credits')}財政</h3>
-    <p class="note">税と利子率を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く${pend ? ` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
+    <p class="note">税・利子率・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く${pend ? ` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
     <table class="tbl">
       <tr><td>税</td><td>${sel('tax', Object.entries(TAX_LEVELS).map(([v, t]) => [v, t.label]), f.tax)}</td><td colspan="2" class="muted wrap">人口あたりの税 ×${TAX_LEVELS[f.tax].k}${TAX_LEVELS[f.tax].loyalty ? `・家臣の忠誠度の目標 ${TAX_LEVELS[f.tax].loyalty > 0 ? '+' : ''}${TAX_LEVELS[f.tax].loyalty}` : ''}${TAX_LEVELS[f.tax].council ? `・議会の支持 年 ${TAX_LEVELS[f.tax].council > 0 ? '+' : ''}${TAX_LEVELS[f.tax].council}` : ''}</td></tr>
-      <tr><td>利子率</td><td>${sel('rate', RATES.map((x) => [x, `年 ${Math.round(x * 100)}%`]), f.rate)}</td><td colspan="2" class="muted wrap">政府の貯えにつく利子。高いほど、運ぶ年数ぶん輸入の値段が上がる (e^(利子率 × 年数) 倍)</td></tr>
+      <tr><td>利子率</td><td>${sel('rate', RATES.map((x) => [x, `年 ${Math.round(x * 100)}%`]), f.rate)}</td><td colspan="2" class="muted wrap">政府の貯えにつく利子と、国債・民間の借りに払う利子。高いほど、運ぶ年数ぶん輸入の値段が上がる (e^(利子率 × 年数) 倍)</td></tr>
+      <tr><td>赤字の上限</td><td>${sel('deficit', DEFICITS.map((x) => [x, x ? `GDP の ${Math.round(x * 100)}%/年` : 'なし']), f.deficit || 0)}</td><td colspan="2" class="muted wrap">資金が足りない分を、1 年にこの額まで国債で借りる (${ME.capName}の GDP ${fmtAmt(cg.fr?.y || 0)} cr/年)。国債 ${fmtAmt(cg.bond || 0)} cr・いま借りられる額 ${fmtAmt(Math.max(0, g.funds(g.cap) - cg.credits))} cr。手元の資金が税収の ${Math.round(DEBT.cash * 12)} か月分を超えると、超えた分で国債を返す。国債 ÷ GDP は ${Math.round(DEBT.limit * 100)}% まで</td></tr>
     </table>
     <h3>予算 (${ME.capName}の税収 ${fmtAmt(tax)} cr/年 のうち ${Math.round(used * 100)}% を使う。6 割まで)</h3>
     <table class="tbl">${rows}</table>
@@ -10950,7 +10986,7 @@ function onPanelChange(e) {
   else if (act === 'regimedefault') issue('set', { key: 'regime', value: v });
   else if (act === 'fiscal') {
     const c = app.game.fiscal || FISCAL_DEFAULT;
-    const d = { tax: c.tax, rate: c.rate, ...c.budget };
+    const d = { tax: c.tax, rate: c.rate, deficit: c.deficit || 0, ...c.budget };
     const k = e.target.dataset.k;
     d[k] = k === 'tax' ? v : Number(v);
     issue('fiscal', d);
