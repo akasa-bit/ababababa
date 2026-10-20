@@ -1,0 +1,18 @@
+[
+ {
+  "file": "IdeaPFPrograms.zip",
+  "url": "https://web.stanford.edu/~chadj/IdeaPFPrograms.zip",
+  "fetched": "2026-10-20T11:01:41Z",
+  "sha256": "4a879a9f316d908d00ff73d05fe570300a6b87fd992fd899d62b5a0cd60c754a",
+  "bytes": 72706674,
+  "stored": false,
+  "note": "Compustat (WRDS) を含むので置かない。計算に使う中のファイルの SHA-256 は members",
+  "members": {
+   "Aggregate/AggregateBLSIPP.m": "d366d0a4652a386008cb77b94c0bf1820d58d1e457fbbff2d6697879dd673567",
+   "MooresLaw/IntelGraph.m": "d91d5c8d022e5bb85df9b8d74ce9e1a40776573beb8ad4b46cf2758f015eff82",
+   "WageSci/WageEducation.m": "dfa7cf3d2c4d7a23a73cadbfdb7d87c0fc1d01b48c0a439570d1a79569d565f9",
+   "WageSci/WageNominalGDP.m": "cdb455266608d0e8bc7337bfee990c6ccc85c4b39b25d54feba6188e63079e10",
+   "ReadMe.txt": "1086a504757760c72706e07abb3112b1f5c1bfaf145be904763054f1d4408489"
+  }
+ }
+]

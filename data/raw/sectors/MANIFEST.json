@@ -1,0 +1,28 @@
+[
+ {
+  "file": "10sd_jan15_2014.xlsx",
+  "url": "https://www.rug.nl/ggdc/docs/10sd_jan15_2014.xlsx",
+  "fetched": "2026-10-20T11:00:02Z",
+  "sha256": "0a99de029c82fef8e68d7841c93a7ec1b9671f0b5e59c7094d0bbbab61c08e24",
+  "bytes": 1299476
+ },
+ {
+  "file": "mpd2023.csv.gz",
+  "url": "https://dataverse.nl/api/access/datafile/421302#mpd2023_web.xlsx/Full data",
+  "fetched": "2026-10-20T11:00:10Z",
+  "sha256": "68bf7ee4e39c3c21de4ff99e9f8a8d8d16f9eacaafa126ef6481b44ad2db1363",
+  "bytes": 225445,
+  "source_sha256": "ecc5916ca12789b983fc4be437f8a354bbf4291323605324ac3e0aea4c57cbb6",
+  "rows": 18981,
+  "filter": "「Full data」の 1800 年からの行 (所得か人口のあるもの)"
+ },
+ {
+  "file": "wdi_sectors.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{SL.AGR.EMPL.ZS,SL.IND.EMPL.ZS,SL.SRV.EMPL.ZS,NY.GDP.PCAP.PP.KD}",
+  "fetched": "2026-10-20T11:00:12Z",
+  "sha256": "982aa81c029c6cba72f6fc559031cb6c048ac2877977621f57bff2b485c21f9a",
+  "bytes": 325947,
+  "rows": 25839,
+  "filter": "国だけ (地域の集計を除く)・1960〜2024 年"
+ }
+]

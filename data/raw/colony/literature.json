@@ -1,0 +1,79 @@
+{
+ "note": "R17 (入植集団の大きさと存続) の材料。数は論文から手で写した (写した場所は where)。書誌は data/fetch/fetch_colony.py が Crossref・arXiv から取る。幅は幅のまま使う。checked に、写した数をどこまで確かめたかを書いた",
+ "studies": [
+  {
+   "id": "smith2014",
+   "cite": "Smith, C. M. 2014. Estimation of a genetically viable population for multigenerational interstellar voyaging: Review and data for project Hyperion. Acta Astronautica 97, 16-29",
+   "doi": "10.1016/j.actaastro.2013.12.013",
+   "kind": "遺伝 (ヘテロ接合度と、有効な集団の大きさ)",
+   "assumptions": {
+    "voyage_years": 150,
+    "generations": 5,
+    "keep_heterozygosity": "出発時の 90% 以上を保つ",
+    "catastrophe": "途中で人口の半分ほどを失う災害も考える"
+   },
+   "result": {
+    "crew_min": 14000,
+    "crew_max": 44000
+   },
+   "where": "要旨と結論",
+   "checked": "書誌は Crossref で確かめた。数は要旨が Crossref にないので未照合 (セッション 12 で本文と照らす)"
+  },
+  {
+   "id": "marin2018",
+   "cite": "Marin, F. & Beluffi, C. 2018. Computing the minimal crew for a multi-generational space journey towards Proxima Centauri b. Journal of the British Interplanetary Society 71, 45-52",
+   "arxiv": "1806.03856",
+   "kind": "人口学のモンテカルロ (HERITAGE)",
+   "assumptions": {
+    "voyage_years": 6300,
+    "breeding": "近親婚を避ける規則と、出産の年齢の制限",
+    "frozen_gametes": false,
+    "catastrophe": "なし (基本の場合)"
+   },
+   "result": {
+    "crew_min": 98,
+    "crew_max": 98,
+    "extinction_25_pairs_no_inbreeding": [
+     0.35,
+     0.65
+    ]
+   },
+   "where": "要旨",
+   "checked": "arXiv の要旨 (marin2018-arxiv.html) と照らした"
+  },
+  {
+   "id": "traill2007",
+   "cite": "Traill, L. W., Bradshaw, C. J. A. & Brook, B. W. 2007. Minimum viable population size: A meta-analysis of 30 years of published estimates. Biological Conservation 139, 159-166",
+   "doi": "10.1016/j.biocon.2007.06.011",
+   "kind": "保全生物学のメタ解析 (いろいろな種)",
+   "assumptions": {
+    "criterion": "40 世代で 99% 残る (補正した推定)"
+   },
+   "result": {
+    "median": 4169,
+    "ci95": [
+     3577,
+     5129
+    ]
+   },
+   "where": "要旨",
+   "checked": "書誌は Crossref で確かめた。数は要旨が Crossref にないので未照合 (セッション 12 で本文と照らす)"
+  },
+  {
+   "id": "frankham2014",
+   "cite": "Frankham, R., Bradshaw, C. J. A. & Brook, B. W. 2014. Genetics in conservation management: Revised recommendations for the 50/500 rules, Red List criteria and population viability analyses. Biological Conservation 170, 56-63",
+   "doi": "10.1016/j.biocon.2013.12.036",
+   "kind": "遺伝の目安 (有効な集団の大きさ Ne)",
+   "assumptions": {
+    "short_term": "近交弱勢を避ける (5 世代)",
+    "long_term": "進化の力を保つ"
+   },
+   "result": {
+    "ne_short": 100,
+    "ne_long": 1000
+   },
+   "where": "要旨 (50/500 を 100/1000 に改める)",
+   "checked": "書誌は Crossref で確かめた。数は要旨が Crossref にないので未照合 (セッション 12 で本文と照らす)"
+  }
+ ]
+}

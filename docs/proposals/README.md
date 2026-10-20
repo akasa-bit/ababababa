@@ -16,3 +16,4 @@
 | セッション 13 (艦隊戦) | `13-battle.md` | 決まった (今の戦い方に近く: 指数 0.5・偶然を半分・自動で解決。補正の台帳に 2 行) |
 
 Q1 で見せた表の Artifact: https://claude.ai/artifact/8yoi6iWE3z5zbGERiDbNJn
+| 目標の幅の案 (R10・R11・年齢・R17) | `targets-draft.md` | 案だけ (Q2)。固定はセッション 9・10・12 |
