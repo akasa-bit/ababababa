@@ -1,6 +1,6 @@
 # セッションの分け方と、最初のメッセージ
 
-`docs/game-plan.md` の段を、この順で 1 セッションずつ進めます (2026-10-20 のユーザーの決定。`docs/requests-log.md` の 134〜136)。どのセッションも、下の「最初のメッセージ」をそのまま送ります。どの文も「docs/session-start.md の 3 に従って」で始まり、約束・始め方・終わり方はそこにあるので、ここには「何をするか」だけを書きます (Project は使わない。requests-log の 137)。
+`docs/game-plan.md` の段を、この順で 1 セッションずつ進めます。**レーン (A〜E) に分けて、違うレーンは同時に進めてよい** (決まりは `docs/parallel.md`。2026-10-20 のユーザーの決定。`docs/requests-log.md` の 134〜136 と `docs/requests/2026-10-20-共通.md`)。どのセッションも、下の「最初のメッセージ」をそのまま送ります。どの文も「docs/session-start.md の 3 に従って」で始まり、約束・始め方・終わり方はそこにあるので、ここには「何をするか」だけを書きます (Project は使わない。requests-log の 137)。
 
 ## 1. 順番の考え方
 
@@ -18,10 +18,12 @@
 3. **困ったら補正を足す**: 遊びが崩れたら、`docs/game-plan.md` の補正の台帳に 1 行足して `EDITIONS.game` で補正する。「現実的」と「面白い」がぶつかる所は表にしてユーザーに選んでもらう。
 4. **CI で両方を見る**: 現実の目標と、面白さの代わりの数 (セッション 4 から) の両方が大きく崩れていないかを見てからマージする。
 5. **PR は区分ごとに小さく**: 社会・物理の PR と補正の PR を分ける (補正だけを戻せるように)。
-6. **終わらなかったら**: 残りを `docs/wip/` と `docs/handoff.md` に残し、次のセッションの最初のメッセージの頭に「前のセッションの残りを先に片付けてから」と足して送る。表の番号は進めない。
+6. **終わらなかったら**: 残りを `docs/wip/` と `docs/status/<レーン>.md` に残し、次のセッションの最初のメッセージの頭に「前のセッションの残りを先に片付けてから」と足して送る。表の番号は進めない。
 7. **ユーザーに決めてもらうこと**がある回 (下の表の「先に決めること」) は、セッションの最初に表で見せて、返事をもらってから作る。前のセッションの終わりに、次の回で決めることを先に見せておくとよい。
 
 ## 3. セッションの一覧
+
+レーン: A = 1・2・3、B = 4・5・17、C = 6・7・8・9、D = 10〜14、E = 15・16・18 (`docs/parallel.md` の 1)。
 
 | # | まとまり | 段 | 中身 | 先に決めること |
 |---|---|---|---|---|
@@ -60,8 +62,9 @@ docs/wip/ai-knowledge.patch を当てて、node tools/build.mjs のあと、戦�
 ### セッション 2
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン A。
 docs/sessions.md のセッション 2 (段 8 の講和と開戦の交渉)。
+最初に docs/parallel.md の 5 の後片付けをして、PR でマージする。
 最初に、交渉の型の選択肢 (Fearon の情報の非対称と約束の問題をどこまで入れるか、AI が相手の強さをどう見積もるか) と、合わせる目標 (R14 と戦争の多さ) を表で見せて、選んでもらってから作る。
 相手の強さの見積もりは、段 3 の intel (光の遅れのぶん古い記録) から作る。
 目標の変更が要るなら、先にその PR を出して固定する。
@@ -70,7 +73,7 @@ docs/sessions.md のセッション 2 (段 8 の講和と開戦の交渉)。
 ### セッション 3
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン A。
 docs/sessions.md のセッション 3 (段 8 の仕上げと、AI の難しさの補い)。
 R14 (戦争の終わり方) と戦争の多さを測り、直す。
 そのあと、光の遅れで AI が弱くなった分を、難しさの値で補うか (台帳の C11) を測って、表にして選んでもらう。補うなら EDITIONS.game の値にし、台帳を更新する。
@@ -79,7 +82,7 @@ R14 (戦争の終わり方) と戦争の多さを測り、直す。
 ### セッション 4
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン B。
 docs/sessions.md のセッション 4 (段 12 の最小版)。
 画面なしの版 (tools/headless.js) で、戦略の値を変えて勝ちを上げる探索 (必勝法を探す AI) を作る。
 CI の表に、面白さの代わりの数を足す (例: 判断の数・待つだけの時間・どれか 1 つの戦略が強すぎないか)。
@@ -89,7 +92,7 @@ CI の表に、面白さの代わりの数を足す (例: 判断の数・待つ�
 ### セッション 5
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン B。
 docs/sessions.md のセッション 5 (段 11 の最小版)。
 同意つきのプレイ記録 (同意の画面・記録の中身・消し方) を作り、PlayLog から F01〜F05 を測れる形にする。
 同意の画面の文は、作る前に見せて決めてもらう。試遊者を集めるのはセッション 16 なので、ここは仕組みまで。
@@ -98,7 +101,7 @@ docs/sessions.md のセッション 5 (段 11 の最小版)。
 ### セッション 6
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン C。
 docs/sessions.md のセッション 6 (段 4 のお金の保存)。
 税・費用・交易の代金・朝貢・資金援助が、どこかの帳簿から出てどこかへ入る形にする (湧くお金と消えるお金をなくす)。conserve.js と同じように、お金の保存の試験を足す。
 最初に、余った資源を捨ててお金が減った件 (docs/reality-check.md の 4 の 6) をどうするか、表で見せて選んでもらう。
@@ -108,7 +111,7 @@ docs/sessions.md のセッション 6 (段 4 のお金の保存)。
 ### セッション 7
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン C。
 docs/sessions.md のセッション 7 (段 4 の財政)。
 docs/wip/fiscal.patch を、セッション 6 の帳簿の上で作り直す (税・利子率・予算)。試験 fiscal.js を通し、docs/fiscal.md を書く。
 効き目の大きさのうち仮の値のものは、補正の台帳か選んでもらう表に載せる。
@@ -117,7 +120,7 @@ docs/wip/fiscal.patch を、セッション 6 の帳簿の上で作り直す (�
 ### セッション 8
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン C。
 docs/sessions.md のセッション 8 (段 5 の需要で決まる生産)。
 最初に docs/handoff.md の 17 の「決めてもらうこと」5 つを表で見せて、返事をもらう。
 そのあと、人の振り分けを需要で決め、掘った物を捨てないようにする。第三次産業と研究はセッション 9 なので、ここでは土台まで。
@@ -126,7 +129,7 @@ docs/sessions.md のセッション 8 (段 5 の需要で決まる生産)。
 ### セッション 9
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン C。
 docs/sessions.md のセッション 9 (S4: 第一次〜第三次産業と研究)。
 セッション 8 で決めたとおりに、構造転換 (R10) と研究のアイデアの生産関数 (R11) を入れる。先に要る生データ (GGDC・ILOSTAT・Bloom ほか 2020) を取得して目標の幅を決め、固定してから作る。
 農業の割合を見直し、docs/game-plan.md の 5 の表を更新する。
@@ -135,7 +138,7 @@ docs/sessions.md のセッション 9 (S4: 第一次〜第三次産業と研究)
 ### セッション 10
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン D。
 docs/sessions.md のセッション 10 (段 6 の年齢つきの人口)。
 子ども・働き手・高齢の 3 つの区分を入れる。区分の長さは 1 世代 100 年に合わせる (台帳の C01)。
 若い入植地が伸び、古い本国が高齢化することを、画面なしの版で確かめる。働き手の数を、生産 (セッション 8・9) に効かせる。
@@ -144,7 +147,7 @@ docs/sessions.md のセッション 10 (段 6 の年齢つきの人口)。
 ### セッション 11
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン D。
 docs/sessions.md のセッション 11 (段 7 の星系の中の集団)。
 階層・民族 (種族)・価値観を少数の区分で持ち、不満がどの集団から来たかを画面で見せる。離反と戦争につなげる。
 最初に、区分の数と画面での見せ方を表で見せて選んでもらう。
@@ -153,7 +156,7 @@ docs/sessions.md のセッション 11 (段 7 の星系の中の集団)。
 ### セッション 12
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン D。
 docs/sessions.md のセッション 12 (段 9 の船の設計と入植集団)。
 プレイヤーが船を設計できるようにする (質量とエネルギーは R07 の記帳を使う)。入植集団は最小の存続可能な集団の文献の幅 (R17) で、幅は幅のまま。年齢の区分 (セッション 10) を使う。
 最初に、設計で選べるもの (速さ・積む人数・遮蔽など) を表で見せて選んでもらう。
@@ -162,7 +165,7 @@ docs/sessions.md のセッション 12 (段 9 の船の設計と入植集団)。
 ### セッション 13
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン D。
 docs/sessions.md のセッション 13 (段 9 の艦隊戦)。
 戦闘の勝敗と損害を CDB90 に合わせ (R16)、戦死者を数えて戦争の規模の分布を測る (R15)。光速近くでの交戦の物理はフレーバー。
 最初に、遊びとしての戦闘の形を表で見せて選んでもらう。分かりやすさのためにずらす所は補正の台帳に載せる。
@@ -171,7 +174,7 @@ docs/sessions.md のセッション 13 (段 9 の艦隊戦)。
 ### セッション 14
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン D。
 docs/sessions.md のセッション 14 (段 10 の物理のフレーバー)。
 被曝・星間の塵・回折・M 型星のフレアを、説明文と小さな効き目で入れる (台帳の C09)。重い物理はシミュレーション版に回したままにする。
 ```
@@ -179,7 +182,7 @@ docs/sessions.md のセッション 14 (段 10 の物理のフレーバー)。
 ### セッション 15
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン E。
 docs/sessions.md のセッション 15 (段 12 のつり合いの本番)。
 セッション 4 の道具で、6 つ以上の戦略 × 30 以上の銀河を回し、F06 を判定する。必勝法が見つかったら、直し方 (補正の台帳に載せる) を表で見せて選んでもらう。
 ```
@@ -187,7 +190,7 @@ docs/sessions.md のセッション 15 (段 12 のつり合いの本番)。
 ### セッション 16
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン E。
 docs/sessions.md のセッション 16 (段 11 の試遊の本番)。
 見知らぬ人での試遊の手順 (募集・課題なしで遊ぶ・終わったあとの SUS) を整え、F01〜F05・F07 を測れるようにする。
 最初に、試遊者の集め方を表で見せて選んでもらう。結果が出たら、直す場所の優先順位を表にする。
@@ -196,7 +199,7 @@ docs/sessions.md のセッション 16 (段 11 の試遊の本番)。
 ### セッション 17
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン B。
 docs/sessions.md のセッション 17 (段 13 の Steam の形 1)。
 Electron と Tauri の両方で包んで比べ、どちらにするか選んでもらう。Steam Deck とコントローラーの操作を確かめる。目標 F08 を 73 星系に合わせて直す (目標の変更の PR)。
 ```
@@ -204,7 +207,7 @@ Electron と Tauri の両方で包んで比べ、どちらにするか選んで�
 ### セッション 18
 
 ```text
-docs/session-start.md の 3 に従って。
+docs/session-start.md の 3 と docs/parallel.md に従って。レーン E。
 docs/sessions.md のセッション 18 (段 13 の Steam の形 2)。
 画面の文字列を 1 か所に集めて翻訳できるようにし、英語と簡体中国語を入れる。最初に、翻訳のしかたを表で見せて選んでもらう。
 ```
