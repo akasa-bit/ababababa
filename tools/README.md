@@ -96,6 +96,9 @@ node tools/analyze.js out > summary.json
 # 3 つの講和の方針 × 8 つの銀河 × 400 年 (6 か国。1 回あたり 40〜60 秒)
 node tools/wars.js "$PWD/index.html" wout 400 1,2,3,4,5,6,7,8 normal,hawk,dove 6
 node tools/wars-analyze.js wout > wars-summary.json
+
+# 画面なしの版で、戦争の多さ・長さ (平均 ÷ 中央値 = R13)・終わり方 (R14) を数える。2 つめに比べる元の src を渡すと並べる (12 銀河 × 300 年で 1 つ 3 分ほど)
+node tools/wars-headless.js src/index.html <main の src> 12 300 6
 ```
 
 プレイヤーの国 (くじで決まった最初の異星の国) も観戦の AI に任せ、講和の判断だけを方針で差し替える。
