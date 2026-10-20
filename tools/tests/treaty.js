@@ -17,7 +17,8 @@ const { chromium } = require('playwright');
     const key = g.warKey(0, e);
     g.warStats[key].k[0] = 30; g.warStats[key].k[e] = 5; g.warStats[key].t[0] = 1; // 戦勝点 70
     g.exhaustion[e] = 80;
-    g.realmWars[key] = g.year - 10;
+    // 10 年前に開戦を知った戦争にする (AI の国は、開戦の知らせが首都に届いてから講和を考える)
+    g.realmWars[key] = g.warNews[key].year = g.year - 10 - Math.ceil(g.sysDist(0, e));
     for (let i = 0; i < 8; i++) g.advance(0.25);
     return [g.warScore(0, e), g.peaceOffers.length, g.realmSystems(e).length, Math.round(g.gov(e).credits)];
   });
