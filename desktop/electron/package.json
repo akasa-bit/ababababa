@@ -2,11 +2,13 @@
   "name": "nolongerubiquitous-electron",
   "private": true,
   "version": "0.0.1",
-  "description": "NoLongerUbiquitous を Electron で包む (比べるための試作)",
+  "description": "NoLongerUbiquitous を Electron で包む",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "package": "electron-packager . NoLongerUbiquitous --out=out --overwrite --asar --extra-resource=../game --extra-resource=../bench/probe.js --ignore=^/out"
+    "package": "electron-packager . NoLongerUbiquitous --out=out --overwrite --asar --extra-resource=../game --extra-resource=../bench/probe.js --ignore=^/out",
+    "package:linux": "npm run package -- --platform=linux --arch=x64",
+    "package:win": "npm run package -- --platform=win32 --arch=x64"
   },
   "devDependencies": {
     "@electron/packager": "^20.3.0",

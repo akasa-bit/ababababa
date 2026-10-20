@@ -2,19 +2,27 @@
 
 組み立てたゲーム (リポジトリの根の `index.html` と `assets/`) を、外から包んでデスクトップのアプリにする所です (レーン S。決まりは `docs/parallel.md`)。ゲームの中身・`tools/build.mjs`・CI は変えません。
 
-いまは、Electron と Tauri の両方で包んで比べている段です (セッション S1)。**どちらにするかはユーザーが選ぶ** (下の 3)。決まったら、選ばなかった方のフォルダを消します。
+**包装は Electron に決めた** (2026-10-20 のユーザーの決定。`docs/requests/2026-10-20-S.md` の S-3)。Tauri の試作は消した (比べた結果は下の 3 に残す。コードは #136 の履歴にある)。
 
 ## 1. 組み立てと起動
 
 ```sh
-node desktop/prepare.mjs                    # index.html と assets/ を desktop/game/ に写す
-cd desktop/electron && npm ci && npm run package   # → desktop/electron/out/NoLongerUbiquitous-linux-x64/
-cd desktop/tauri && npm ci && npm run build        # → desktop/tauri/src-tauri/target/release/nolongerubiquitous
+node desktop/prepare.mjs                       # index.html と assets/ を desktop/game/ に写す
+cd desktop/electron && npm ci
+npm run package:win     # → desktop/electron/out/NoLongerUbiquitous-win32-x64/ (Windows。Linux の上でも組み立てられる)
+npm run package:linux   # → desktop/electron/out/NoLongerUbiquitous-linux-x64/ (Linux・Steam Deck)
 ```
 
-- Tauri は Rust と、Linux では `libwebkit2gtk-4.1-dev`・`libgtk-3-dev`・`librsvg2-dev` が要る。
+- Steam の起動の設定 (Steamworks のアプリの管理の「起動オプション」。画面の名前は S2 で公式の文書と照らす):
+
+  | OS | 実行ファイル | 引数 |
+  |---|---|---|
+  | Windows | `NoLongerUbiquitous.exe` | なし |
+  | Linux (Steam Deck) | `NoLongerUbiquitous` | `--no-sandbox` |
+
+  Linux で `--no-sandbox` を付けるのは、Steam から起動すると Chromium の sandbox の準備 (ユーザーの名前空間) が失敗して画面が出ないことがあるため (Choice of Games は Steam の全作品でこうしている。下の 3-2)。sandbox の準備は `main.js` が動く前に始まるので、`main.js` の中からは切れない (試した)。開くのは手元の `desktop/game/` だけで、外のページへは移らない (外へのリンクはいつものブラウザで開く) ので、切っても読み込むものは変わらない。
 - 環境変数 `NLU_FULLSCREEN=1` で全画面 (Steam Deck の Game Mode を想定)。
-- 外へのリンク (出典・シミュレーション版) は、いつものブラウザで開く (Electron)。
+- Windows 版は、組み立てられることまでは確かめた。Windows の上で動かして確かめるのは、まだ (実機か CI の Windows が要る)。
 
 ## 2. 測り方
 
@@ -26,12 +34,12 @@ cd desktop/tauri && npm ci && npm run build        # → desktop/tauri/src-tauri
 4. メモリ (子のプロセスも含めた PSS の最大)
 
 ```sh
-xvfb-run -a -s "-screen 0 1280x800x24" node desktop/bench/run.mjs 3
+xvfb-run -a -s "-screen 0 1280x800x24" node desktop/bench/run.mjs 3   # Electron と、比べの元の Chromium
 ```
 
 結果の JSON は `desktop/bench/results/`。
 
-## 3. 比べた結果 (2026-10-20)
+## 3. 比べた結果 (2026-10-20。これで Electron に決めた)
 
 ### 3-1. 測った数 (3 回の中央値)
 

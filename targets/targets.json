@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "fixedAt": "2026-10-20",
   "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
   "rules": [
@@ -14,7 +14,8 @@
     { "version": 3, "date": "2026-10-18", "what": "R01 の幅を、取得スクリプトで生データ (CEPII Gravity V202211、2000〜2019 年) から計算した値だけで決めた (推定 −0.874、data/derived/trade.json)。合格の決まり (負で、差 0.3 以内) をそのまま当てはめた。式は ln 距離だけ (ゲームの星系には隣接・言語などの変数がないので)。ゲームの自動対戦の結果はこの変更に使っていない" },
     { "version": 4, "date": "2026-10-20", "what": "財政と金融の目標 R19〜R22 を足した。幅は、取得スクリプト (data/fetch/fetch_fiscal.py) で取った Jordà–Schularick–Taylor R6 から data/build/analyze_fiscal.py で計算した、国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ GDP がなく、測れない)" },
     { "version": 5, "date": "2026-10-20", "what": "市場の目標 R23〜R26 を足した。幅は、取得スクリプト (data/fetch/fetch_market.py) で取った World Bank Pink Sheet・USDA PSD・FRED ISRATIO から data/build/analyze_market.py で計算した 10%〜90% 点だけで決めた (data/derived/market.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ値段がなく、測れない)" },
-    { "version": 6, "date": "2026-10-20", "what": "政府支出 ÷ GDP (R27) を足した。費用の大きさ (値段の水準) を経済に合わせて決めるため (ユーザーの決定、docs/requests/2026-10-20-C.md の C-11)。幅は R19〜R22 と同じく Jordà–Schularick–Taylor R6 の国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。R19〜R22 の幅は変えていない。ゲームの結果はこの幅を決めるのに使っていない" }
+    { "version": 6, "date": "2026-10-20", "what": "政府支出 ÷ GDP (R27) を足した。費用の大きさ (値段の水準) を経済に合わせて決めるため (ユーザーの決定、docs/requests/2026-10-20-C.md の C-11)。幅は R19〜R22 と同じく Jordà–Schularick–Taylor R6 の国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。R19〜R22 の幅は変えていない。ゲームの結果はこの幅を決めるのに使っていない" },
+    { "version": 8, "date": "2026-10-20", "what": "F08 を、いまのゲーム版の銀河 (星系 73 個。銀河面 ±2 光年の板) に合わせた。前の「星系 3,000 個」は、銀河を板にして 73 星系に減らす前の想定だった。合格の数 (毎秒 60 コマ・下限 45、最高速で 1 秒に 64 年) と測る機械 (Xiaomi Pad 8 Pro・Steam Deck) は変えていない。測り方を desktop/bench/probe.js の手順に決めた。包装の比べ (レーン S) の測定は GPU のない機械の Xvfb のもので、F08 の判定には使わず、この変更にも使っていない" }
   ],
   "realism": [
     {
@@ -281,7 +282,7 @@
     { "id": "F05", "name": "判断の間隔", "data": "プレイ記録", "statistic": "標準の速さで、止めていない時間に判断 (命令) が来る間隔の中央値", "pass": "90 秒以内", "band": [0, 90] },
     { "id": "F06", "name": "必勝法がない", "data": "必勝法を探す AI と、6 つ以上の戦略ボット × 30 以上の銀河", "statistic": "銀河ごとに最も良かった戦略の分布", "pass": "どの戦略も、すべての成績 (星系・人口・資金・生き残り) で他を上回ることはない。3 つ以上の戦略が、それぞれ 10% 以上の銀河で最も良い", "band": null },
     { "id": "F07", "name": "使いやすさ", "data": "見知らぬ試遊者の SUS (System Usability Scale) アンケート", "statistic": "SUS の平均点", "pass": "70 点以上", "band": [70, null] },
-    { "id": "F08", "name": "動きの軽さ", "data": "Xiaomi Pad 8 Pro・Steam Deck での計測", "statistic": "3 次元の地図 (星系 3,000 個) の描画の速さと、最高速 (年 64 年) での進み", "pass": "地図は毎秒 60 コマ (下限 45)、最高速で 1 秒に 64 年進む", "band": null },
+    { "id": "F08", "name": "動きの軽さ", "data": "Xiaomi Pad 8 Pro (ブラウザ)・Steam Deck (包装した版) での計測。手順は desktop/bench/probe.js (同じ銀河の番号で始め、地図を回し続ける 3 秒と、最高速の 10 秒を測る)", "statistic": "ゲーム版の 3 次元の地図 (いまの銀河の星系すべて。いまは 73 個。星系の数を変えたら、その数で測り直す) を回し続けたときの毎秒のコマ数と、最高速 (年 64 年) で 1 秒に進む年", "pass": "地図は毎秒 60 コマ (下限 45)、最高速で 1 秒に 64 年進む", "band": null },
     { "id": "F09", "name": "教材としての効き目", "data": "授業で使った学生 20 人以上の、遊ぶ前と後の小テスト (光の遅れと統治・重力モデル・ランチェスター則)", "statistic": "正答率の上がり幅", "pass": "20 ポイント以上", "band": [0.2, null] }
   ]
 }

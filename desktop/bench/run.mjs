@@ -1,10 +1,11 @@
-// 包装の比べ: Electron・Tauri・比べの元の Chromium を同じ手順で何回か起動し、起動の速さ・描画の速さ・メモリ・大きさを表にする。
+// 包装の測り: Electron の包装と、比べの元の Chromium を同じ手順で何回か起動し、起動の速さ・描画の速さ・メモリ・大きさを表にする。
+// (2026-10-20 の S1 では Tauri とも比べた。その結果は results/2026-10-20-linux-xvfb.json と desktop/README.md の 3)
 // 使い方 (画面のない機械では xvfb-run の中で):
-//   node desktop/prepare.mjs && (cd desktop/electron && npm run package) && (cd desktop/tauri && npm run build)
+//   node desktop/prepare.mjs && (cd desktop/electron && npm run package:linux)
 //   xvfb-run -a -s "-screen 0 1280x800x24" node desktop/bench/run.mjs [回数=3] > 表.md
 // 結果の JSON は desktop/bench/results/ に書く。
 import { spawn, execSync } from 'node:child_process';
-import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -13,7 +14,6 @@ const here = dirname(fileURLToPath(import.meta.url));
 const desk = join(here, '..');
 const RUNS = Number(process.argv[2]) || 3;
 const electronBin = join(desk, 'electron/out/NoLongerUbiquitous-linux-x64/NoLongerUbiquitous');
-const tauriBin = join(desk, 'tauri/src-tauri/target/release/nolongerubiquitous');
 const chromiumBin = process.env.CHROMIUM || '/opt/pw-browsers/chromium';
 
 // 子孫も含めたメモリ (PSS。共有の分を割り振るので、足しても重ならない) [MB]
@@ -93,8 +93,7 @@ const MB = (b) => +(b / 1048576).toFixed(1);
 
 const targets = [
   ['chromium', null],
-  ['electron', () => runOnce('electron', electronBin, ['--no-sandbox'])],
-  ['tauri', () => runOnce('tauri', tauriBin, [])],
+  ['electron', () => runOnce('electron', electronBin, ['--no-sandbox'])], // Steam の起動の設定と同じ引数 (desktop/README.md の 1)
 ];
 const results = { date: new Date().toISOString(), env: 'linux x64・Xvfb (GPU なし。描画はソフトウェア)', runs: RUNS, targets: {} };
 for (const [name, fn] of targets) {
@@ -105,15 +104,10 @@ for (const [name, fn] of targets) {
   }
   results.targets[name] = list;
 }
-results.size = {
-  electron: { dirMB: MB(du(dirname(electronBin))), tgzMB: MB(gz(dirname(electronBin))) },
-  tauri: { binMB: MB(statSync(tauriBin).size), tgzMB: MB(Number(execSync(`gzip -c "${tauriBin}" | wc -c`).toString())) },
-};
-const deb = existsSync(join(desk, 'tauri/src-tauri/target/release/bundle/deb')) ? readdirSync(join(desk, 'tauri/src-tauri/target/release/bundle/deb')).find((f) => f.endsWith('.deb')) : null;
-if (deb) results.size.tauri.debMB = MB(statSync(join(desk, 'tauri/src-tauri/target/release/bundle/deb', deb)).size);
+results.size = { electron: { dirMB: MB(du(dirname(electronBin))), tgzMB: MB(gz(dirname(electronBin))) } };
 
 mkdirSync(join(here, 'results'), { recursive: true });
-writeFileSync(join(here, 'results', `${results.date.slice(0, 10)}-linux-xvfb.json`), JSON.stringify(results, null, 2) + '\n');
+writeFileSync(join(here, 'results', `${results.date.slice(0, 16).replace(':', '')}-electron-linux-xvfb.json`), JSON.stringify(results, null, 2) + '\n');
 
 // 表 (回数の中央値)
 const med = (a) => { const s = a.filter((x) => Number.isFinite(x)).sort((x, y) => x - y); return s.length ? s[Math.floor((s.length - 1) / 2)] : '—'; };
@@ -129,8 +123,8 @@ const rows = [
   ['最高速で 1 秒に進んだ年', (r) => r.yearsPerSec],
   ['メモリの最大 (PSS) [MB]', (r) => r.peakPssMB],
 ];
-console.log(`| | Chromium (比べの元) | Electron | Tauri |\n|---|---|---|---|`);
-for (const [label, f] of rows) console.log(`| ${label} | ${['chromium', 'electron', 'tauri'].map((n) => col(n, f)).join(' | ')} |`);
-console.log(`| 大きさ (展開) [MB] | — | ${results.size.electron.dirMB} | ${results.size.tauri.binMB} (WebKitGTK は別) |`);
-console.log(`| 大きさ (圧縮) [MB] | — | ${results.size.electron.tgzMB} | ${results.size.tauri.tgzMB}${results.size.tauri.debMB ? ` (.deb ${results.size.tauri.debMB})` : ''} |`);
+console.log(`| | Chromium (比べの元) | Electron |\n|---|---|---|`);
+for (const [label, f] of rows) console.log(`| ${label} | ${['chromium', 'electron'].map((n) => col(n, f)).join(' | ')} |`);
+console.log(`| 大きさ (展開) [MB] | — | ${results.size.electron.dirMB} |`);
+console.log(`| 大きさ (圧縮) [MB] | — | ${results.size.electron.tgzMB} |`);
 for (const [n, list] of Object.entries(results.targets)) for (const r of list) if (r.error) console.error(n, r.error, r.tail || '');
