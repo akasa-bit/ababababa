@@ -7,6 +7,8 @@
   - 測る道具 `tools/physics.js`、試験 `tools/tests/physics.js` (CI に入れた)、`tools/tests/energy.js` (R07) を遮蔽つきの式に直した。
 - **マージしていない** (ユーザーの指示。レーン A・B・C が動いている)。ブランチ `ccr-d03fe6bb-x7nvtx` に push しただけ。PR もまだ作っていない。
 - マージの前にすること (`docs/parallel.md` の 3):
-  - main を取り込む。`bookShip` を呼ぶ 6 か所 (入植船・資材・歩兵 2・艦隊 2) と `settlerFlight` は、レーン A (艦隊・歩兵) とレーン C (交易・資材) も触るので、衝突したら呼ぶ側に航路の長さ (ly) を渡す形を残す。
-  - `index.html` は `node tools/build.mjs` で作り直す。`node tools/ci-tests.js` を通す。
+  - main を取り込む。2026-10-20 09 時の main (#123 まで) と試しに合わせると、`src/index.html` は自動で合わさり、ぶつかるのは `data/README.md` (両方が末尾に節を足した。両方残す) と `index.html` (`node tools/build.mjs` で作り直す) だけ。
+  - `bookShip` に航路の長さ (ly) を渡す所は 4 か所 (入植船・同行する歩兵・艦隊の進路変更・`pushFleet`) と `settlerFlight`。レーン A (艦隊・歩兵) とレーン C (交易・資材) がこの行を変えていたら、ly を渡す形を残す。
+  - `node tools/ci-tests.js` を通す (この回の手元では 22 本すべて合格)。自動対戦の表は、取りこんだ main と比べ直す。
+  - Geant4 の計算はやり直さなくてよい (`data/derived/g4/` に結果がある。ゲームの式を変えても表は変わらない)。
 - 次: `docs/physics.md` の 8 (決めてもらうことと、残りの物理)。
