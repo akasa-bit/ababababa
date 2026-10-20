@@ -1277,3 +1277,42 @@ projectじゃなくて、セッションの継ぎ合わせで作業をするよ�
 
 (Project を使う手順 (`docs/claude-project.md`) を、セッションをつなぐ手順 `docs/session-start.md` に作り直し、どの回の最初のメッセージも「docs/session-start.md の 3 に従って」で始めるようにした。マージは許可を待たずに毎回行う。136 の問いはこれで決まった)
 
+
+## 2026-10-20 (セッション 1: 段 3 の仕上げ)
+
+### 138.
+
+```text
+docs/game-plan.md の段 3 の続き。docs/wip/ai-knowledge.patch を当てて、戦争の長さと終わり方を測るところから。
+```
+
+(測ったところ、長引いた戦争は観戦用の手 (`earthWarYearly`) が遠い国に仕掛けた紙の上の戦争だった。手の宣戦を 25 光年以内にそろえると、main でも R13 が幅の外 (1.65) になると分かった。Claude が「R13 は段 8 に回す」「AI の見積もりに移動中の艦隊も入れる」を提案した)
+
+```text
+いいよ。
+```
+
+```text
+一旦停止して。
+```
+
+(止めて、作業途中の変更を作業ブランチにコミットした)
+
+### 139.
+
+```text
+docs/session-start.md の 3 に従って。
+docs/sessions.md のセッション 1 (段 3 の仕上げ)。
+docs/wip/ai-knowledge.patch を当てて、node tools/build.mjs のあと、戦争の長さと終わり方を測るところから (node tools/wars-headless.js。目標 R13・R14)。
+終わったら戦争が長引く理由を調べて、直せるものは段 3 の中で直す (講和の作り直しはセッション 2 なので、そこには踏み込まない)。
+試験をすべて通し、docs/ai-knowledge.md を書いて PR にする。難しさの補い (C11) は、ここでは測るだけで入れない。
+終わりに、セッション 2 で決めてもらう「交渉の型」の選択肢を表で見せて。
+
+要するに、今の続きをしてってことだ。
+```
+
+```text
+もっかいdocs/session-start.mdを読んでから進めて
+```
+
+(main に入ったばかりの `docs/session-start.md` を読んでから続けた。試験はすべて合格、`docs/ai-knowledge.md` を書いて PR にした)
