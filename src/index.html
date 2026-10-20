@@ -5354,25 +5354,31 @@ class Game {
     };
   }
   // --- AI の国の知っていること (光の遅れ) ---
-  // 年ごとに、入植星系と艦隊のいる星系の [年, 国, 駐留艦隊] を記録する (前と同じなら足さない)。
+  // 年ごとに、入植星系と艦隊のいる星系の [年, 国, 駐留艦隊, よその艦隊] を記録する (前と同じなら足さない)。
+  // よその艦隊 = { [国]: n }: その星系を出発してまだ移動中の艦隊 (出発は見えるが、着いたかはまだ見えない)・その星系を攻囲している艦隊・攻めている艦隊。
   // いちばん遠い 2 つの星系の距離より古い記録は、もうどこからも見えないので、その時点の 1 つだけ残して捨てる
   recordIntel() {
     const span = (this.intelSpan ??= Math.ceil(Math.max(...this.galaxy.systems.map((a) => Math.max(...this.galaxy.systems.map((b) => distance(a, b))))))) + 1;
-    const ids = new Set([...this.colonizedSystems().map((x) => x.id), ...Object.keys(this.garrison).filter((k) => this.garrison[k] > 0).map(Number), ...Object.keys(this.intel).map(Number)]);
+    const away = {};
+    const add = (id, r, n) => { if (n > 0) { const a = (away[id] ??= {}); a[r] = (a[r] || 0) + n; } };
+    for (const f of this.fleets) add(f.from, f.owner ?? 0, f.n);
+    for (const g of this.sieges) add(g.sys, g.realm, g.ships);
+    for (const b of this.battles) { add(b.sys, b.realm, b.a); if (this.isColonized(b.sys)) add(b.sys, this.realmOf(b.sys), b.d); }
+    const ids = new Set([...this.colonizedSystems().map((x) => x.id), ...Object.keys(this.garrison).filter((k) => this.garrison[k] > 0).map(Number), ...Object.keys(away).map(Number), ...Object.keys(this.intel).map(Number)]);
     for (const id of ids) {
-      const realm = this.isColonized(id) ? this.realmOf(id) : null, gar = this.garrison[id] || 0;
+      const realm = this.isColonized(id) ? this.realmOf(id) : null, gar = this.garrison[id] || 0, out = away[id] || null;
       const list = (this.intel[id] ??= []);
       const last = list[list.length - 1];
-      if (!last || last[1] !== realm || last[2] !== gar) list.push([this.year, realm, gar]);
+      if (!last || last[1] !== realm || last[2] !== gar || JSON.stringify(last[3] || null) !== JSON.stringify(out)) list.push(out ? [this.year, realm, gar, out] : [this.year, realm, gar]);
       let i = 0;
       while (i + 1 < list.length && list[i + 1][0] <= this.year - span) i++;
       if (i) list.splice(0, i);
     }
   }
-  // 星系 viewer から見えている星系 id の [年, 国, 駐留艦隊]。光がまだ届いていない分は見えない。
+  // 星系 viewer から見えている星系 id の [年, 国, 駐留艦隊, よその艦隊]。光がまだ届いていない分は見えない。
   // その年の記録がなければ、いちばん古い記録 (試合の始まりの様子) を使う
   seenBy(viewer, id) {
-    if (viewer === id) return [this.year, this.isColonized(id) ? this.realmOf(id) : null, this.garrison[id] || 0];
+    if (viewer === id) { const list = this.intel[id]; return [this.year, this.isColonized(id) ? this.realmOf(id) : null, this.garrison[id] || 0, list?.[list.length - 1]?.[3]]; }
     const list = this.intel[id];
     if (!list?.length) return null;
     const t = this.year - this.sysDist(viewer, id);
@@ -5380,10 +5386,10 @@ class Game {
     for (const e of list) { if (e[0] <= t) best = e; else break; }
     return best;
   }
-  // 国 root (の首都) が知っている、国 e の艦隊の数 (星系に駐留している分だけ。移動中の艦隊は見えない)
+  // 国 root (の首都) が知っている、国 e の艦隊の数: 駐留している分と、出発したのが見えてまだ着いたのが見えていない分・攻囲や艦隊戦の分
   seenShips(root, e) {
     let n = 0;
-    for (const id of Object.keys(this.intel)) { const v = this.seenBy(root, Number(id)); if (v && v[1] === e) n += v[2]; }
+    for (const id of Object.keys(this.intel)) { const v = this.seenBy(root, Number(id)); if (v) n += (v[1] === e ? v[2] : 0) + (v[3]?.[e] || 0); }
     return n;
   }
   // 国 root (の首都) が、その戦争の開戦の知らせを受け取ったか
