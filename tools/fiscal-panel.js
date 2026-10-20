@@ -2,7 +2,7 @@
 // 画面なしの版で銀河を回し、国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとに 1 行。
 // 同じ分析の台本 data/build/analyze_fiscal.py を、現実の JST とこのパネルの両方にかける。
 // ゲームの中身は変えない (出入りの関数を道具の側で包んで数えるだけ)。定義は docs/fiscal.md の 3。
-//   gdp         = 資源の付加価値 (採掘・収穫と工業の産出 − 工業の投入。基準価格) + 政府が民間から買った分 (建設・維持費・予算。費用で測る)
+//   gdp         = 資源の付加価値 (採掘・収穫と工業の産出 − 工業の投入。その星系の市場の値段。値段のない版は基準価格) + 政府が民間から買った分 (建設・維持費・予算。費用で測る)
 //   revenue     = 税 + 先住民からの収入 + 預金の利子
 //   expenditure = revenue − 政府の純貸出 (国の政府の資金の増加。国の中の朝貢・資金援助・交易は差し引きで消える)
 //   debtgdp     = 政府の総債務 (資金がマイナスの政府のマイナス分の合計) ÷ gdp
@@ -25,7 +25,7 @@ function play(seed) {
   const acc = {}; // 星系ごとの 1 年の足し上げ { va, buy, rev, flow }
   const A = (id) => (acc[id] ??= { va: 0, buy: 0, rev: 0, flow: 0 });
   const mv = g.mv.bind(g), earn = g.earn.bind(g), cash = g.cash.bind(g);
-  g.mv = (sys, res, amt, kind) => { if (VALUE.has(kind)) A(sys).va += amt * PRICE[res]; return mv(sys, res, amt, kind); };
+  g.mv = (sys, res, amt, kind) => { if (VALUE.has(kind)) A(sys).va += amt * (g.price ? g.price(sys, res) : PRICE[res]); return mv(sys, res, amt, kind); }; // その星系の市場の値段 (段 5)
   g.earn = (kind, amount, sys = 0, other = null) => {
     const gv = g.gov(sys), c0 = gv.credits;
     const r = earn(kind, amount, sys, other);

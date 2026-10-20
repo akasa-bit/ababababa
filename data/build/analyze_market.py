@@ -13,7 +13,7 @@
 
 使い方:
   python3 data/build/analyze_market.py                          現実のデータ → data/derived/market.json
-  python3 data/build/analyze_market.py prices.csv [stocks.csv]   ゲームのパネルを同じ式で計算して表示する
+  python3 data/build/analyze_market.py prices.csv food.csv goods.csv   ゲームのパネル (tools/market-panel.js) を同じ式で計算して表示する
 """
 import json, os, sys
 import numpy as np
@@ -45,7 +45,9 @@ def series_stats(prices):
         lp = np.log(d['price'].to_numpy(float))
         t = d['year'].to_numpy(float)
         resid = lp - np.polyval(np.polyfit(t, lp, 1), t)
-        rows.append({'series': s, 'group': g, 'sd_dlog': float(np.std(np.diff(lp), ddof=1)), 'ar1': float(np.corrcoef(resid[:-1], resid[1:])[0, 1])})
+        # 値段がずっと同じ系列 (ゲームで値段が下限に張りついた星系など) は、自己相関が決まらないので NaN にする
+        ar1 = float(np.corrcoef(resid[:-1], resid[1:])[0, 1]) if np.std(resid[:-1]) > 0 and np.std(resid[1:]) > 0 else np.nan
+        rows.append({'series': s, 'group': g, 'sd_dlog': float(np.std(np.diff(lp), ddof=1)), 'ar1': ar1})
     return pd.DataFrame(rows)
 
 def price_stats(prices):
@@ -81,12 +83,25 @@ def real_stocks():
     w = w.reset_index().rename(columns={'Commodity_Description': 'series', 'Market_Year': 'year', 'Ending Stocks': 'stock', 'Domestic Consumption': 'use'})
     return w
 
+def per_galaxy(df, f):
+    """ゲームのパネル: 銀河ごとに f をかけて中央値を出し、銀河のあいだの分布にする (targets.json の sim)"""
+    v = pd.Series([f(d) for _, d in df.groupby('galaxy')]).dropna()
+    return {'galaxies': int(v.size), **(q(v) or {})}
+
+def game_stats(prices, food=None, goods=None):
+    """ゲームのパネルのフォルダから: prices.csv (series, group, galaxy, year, price)、food.csv・goods.csv (series, galaxy, year, stock, use)"""
+    p = pd.read_csv(prices)
+    out = {'R23': per_galaxy(p, lambda d: series_stats(d)['sd_dlog'].median() if len(series_stats(d)) else np.nan),
+           'R24': per_galaxy(p, lambda d: series_stats(d)['ar1'].median() if len(series_stats(d)) else np.nan)}
+    for k, f in [('R25', food), ('R26', goods)]:
+        if f:
+            d = pd.read_csv(f)
+            out[k] = per_galaxy(d, lambda x: (x['stock'] / x['use']).replace([np.inf, -np.inf], np.nan).median())
+    return out
+
 def main():
     if len(sys.argv) > 1:
-        res = {'prices': price_stats(pd.read_csv(sys.argv[1]))}
-        if len(sys.argv) > 2:
-            res['stocks'] = stock_stats(pd.read_csv(sys.argv[2]))
-        print(json.dumps(res, ensure_ascii=False, indent=1))
+        print(json.dumps(game_stats(*sys.argv[1:4]), ensure_ascii=False, indent=1))
         return
     isr = pd.read_csv(os.path.join(RAW, 'fred_isratio.csv'))
     res = {
