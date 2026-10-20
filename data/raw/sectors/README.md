@@ -10,3 +10,5 @@
 
 - ILOSTAT の窓口 (rplumber.ilo.org) は中身が空で返ったので、WDI に載っている ILOSTAT の推計を使った。
 - GGDC の 42 か国のうち、Maddison と国の記号が合った 31 か国を使った (`build_sectors.py`)。
+
+ゲームの所得を 2011 年の国際ドルに読み替える物差し (`anchor`。目標 R10 の測り方) も `build_sectors.py` で出す。材料は `data/raw/market/` の Pink Sheet (2011 年の小麦 US HRW・とうもろこし・米 Thai 5% の名目の値段) と USDA PSD (2011 年の世界の消費量)。1 t = 356.4 ドル。
