@@ -1,5 +1,5 @@
 // 市場 (値段と在庫) の年次パネルを書き出す (目標 R23〜R26)。画面なしの版で銀河を回し、入植した星系ごと・年ごとに、
-// 値段 (食料・金属・燃料・希少元素) と、在庫とふだんの消費 (食料・工業品) を書く。同じ台本 data/build/analyze_market.py を、
+// 値段 (食料・金属・燃料・希少元素。その年の平均) と、在庫とふだんの消費 (食料・工業品) を書く。同じ台本 data/build/analyze_market.py を、
 // 現実の生データ (Pink Sheet・USDA PSD・FRED) とこのパネルの両方にかける。ゲームの中身は変えない
 // 使い方: node tools/market-panel.js <出力のフォルダ> [銀河の数] [年数] [国の数] [値のファイル.json]
 //   → prices.csv (series, group, galaxy, year, price)、food.csv と goods.csv (series, galaxy, year, stock, use)。goods の use は月あたり
@@ -19,13 +19,18 @@ for (let i = 1; i <= Number(nS); i++) {
   const seed = String(i);
   const g = sim.newGame(seed, { nations: Number(natS) });
   for (let y = 0; y < Number(yS); y++) {
-    sim.run(g, 1);
+    // 値段は、その年の 4 刻みの平均 (Pink Sheet の年次の値段も、月の値段の年平均)
+    const sum = {};
+    for (let i = 0; i < 4; i++) {
+      g.advance(0.25);
+      for (const [k, m] of Object.entries(g.market)) { const a = (sum[k] ??= {}); for (const r of PRICED) a[r] = (a[r] || 0) + m.p[r] / 4; }
+    }
     const year = Math.round(g.year);
     for (const s of g.colonizedSystems()) {
       const m = g.market[s.id];
-      if (!m) continue;
+      if (!m || !sum[s.id]) continue;
       const st = g.stockOf(s.id);
-      for (const r of PRICED) if (m.u[r] > 1e-6) P.push([`${seed}-${s.id}-${r}`, r, seed, year, num(m.p[r])].join(','));
+      for (const r of PRICED) if (m.u[r] > 1e-6) P.push([`${seed}-${s.id}-${r}`, r, seed, year, num(sum[s.id][r])].join(','));
       if (m.u.food > 1e-6) FOOD.push([`${seed}-${s.id}`, seed, year, num(st.food), num(m.u.food)].join(','));
       if (m.u.goods > 1e-6) GOODS.push([`${seed}-${s.id}`, seed, year, num(st.goods), num(m.u.goods / 12)].join(','));
     }

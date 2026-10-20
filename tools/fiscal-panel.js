@@ -2,7 +2,8 @@
 // 画面なしの版で銀河を回し、国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとに 1 行。
 // 同じ分析の台本 data/build/analyze_fiscal.py を、現実の JST とこのパネルの両方にかける。
 // ゲームの中身は変えない (出入りの関数を道具の側で包んで数えるだけ)。定義は docs/fiscal.md の 3。
-//   gdp         = 資源の付加価値 (採掘・収穫と工業の産出 − 工業の投入。その星系の市場の値段。値段のない版は基準価格) + 政府が民間から買った分 (建設・維持費・予算。費用で測る)
+//   gdp         = 民間の付加価値 + 政府が民間から買った分 (建設・維持費・予算。費用で測る)。民間の付加価値は、市場のある版は税の土台と同じ所得
+//                 (物の産出 × 市場の値段 − 工業の投入 + サービス。incomeOf)、ない版は採掘・収穫と工業の産出 − 工業の投入 (基準価格)
 //   revenue     = 税 + 先住民からの収入 + 預金の利子
 //   expenditure = revenue − 政府の純貸出 (国の政府の資金の増加。国の中の朝貢・資金援助・交易は差し引きで消える)
 //   debtgdp     = 政府の総債務 (資金がマイナスの政府のマイナス分の合計) ÷ gdp
@@ -49,7 +50,9 @@ function play(seed) {
       if (!g.isColonized(id)) continue;
       const R = (realms[g.realmOf(id)] ??= { gdp: 0, revenue: 0, flow: 0, debt: 0, tloans: 0 });
       const a = acc[id] || { va: 0, buy: 0, rev: 0, flow: 0 }, gv = g.govs[key];
-      R.gdp += a.va + a.buy;
+      // 民間の付加価値: 市場のある版は、税の土台と同じ所得 (サービスを含む。incomeOf) を年の終わりの値で。ない版は、産出 × 値段の足し上げ
+      const va = g.incomeOf ? g.coloniesIn(id).reduce((k, c) => k + g.incomeOf(c), 0) : a.va;
+      R.gdp += va + a.buy;
       R.revenue += a.rev;
       R.flow += a.flow;
       R.debt += Math.max(0, -gv.credits);

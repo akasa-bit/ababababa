@@ -1,0 +1,73 @@
+{
+ "source": "Bergeaud, Cette & Lecat, Long-Term Productivity Database v2.7 (最前線 = 米国の 1 時間あたりの労働生産性)、Maddison Project Database 2023 (周期の確かめ)",
+ "frontier": {
+  "first": 1890,
+  "last": 2023,
+  "lp_first": 5.854,
+  "lp_last": 83.831,
+  "highest_country_each_year (参考)": {
+   "CHE": 80,
+   "NOR": 20,
+   "NLD": 9,
+   "IRL": 9,
+   "BEL": 7,
+   "AUS": 5,
+   "USA": 4
+  },
+  "highest_growth_1890_2023 (参考)": 0.01936
+ },
+ "trend_growth": {
+  "1890": 0.02001,
+  "1950": 0.01874,
+  "1973": 0.015,
+  "2005": 0.01266
+ },
+ "kondratiev_bcl": {
+  "P": 70.0,
+  "mu_fit": 0.02069,
+  "a": -0.00478,
+  "b": 0.00056,
+  "sse": 0.006,
+  "amplitude": 0.00481,
+  "r2": 0.201,
+  "last_peak": 2013.8,
+  "years": [
+   1896,
+   2018
+  ]
+ },
+ "kondratiev_maddison": {
+  "P": 44.5,
+  "mu_fit": 0.01468,
+  "a": -0.00438,
+  "b": -0.00171,
+  "sse": 0.01953,
+  "amplitude": 0.00471,
+  "r2": 0.10046,
+  "last_peak": 1988.7,
+  "years": [
+   1826,
+   2017
+  ]
+ },
+ "wave_effect_2023_2300": 0.989,
+ "forecast": {
+  "trend_from_1890": {
+   "growth": 0.02001,
+   "multiplier_2300": 252.76
+  },
+  "trend_from_1950": {
+   "growth": 0.01874,
+   "multiplier_2300": 177.57
+  },
+  "trend_from_1973": {
+   "growth": 0.015,
+   "multiplier_2300": 63.05
+  },
+  "trend_from_2005": {
+   "growth": 0.01266,
+   "multiplier_2300": 33.01
+  }
+ },
+ "central": 252.76
+}

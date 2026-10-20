@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "fixedAt": "2026-10-20",
   "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
   "rules": [
@@ -15,7 +15,7 @@
     { "version": 4, "date": "2026-10-20", "what": "財政と金融の目標 R19〜R22 を足した。幅は、取得スクリプト (data/fetch/fetch_fiscal.py) で取った Jordà–Schularick–Taylor R6 から data/build/analyze_fiscal.py で計算した、国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ GDP がなく、測れない)" },
     { "version": 5, "date": "2026-10-20", "what": "市場の目標 R23〜R26 を足した。幅は、取得スクリプト (data/fetch/fetch_market.py) で取った World Bank Pink Sheet・USDA PSD・FRED ISRATIO から data/build/analyze_market.py で計算した 10%〜90% 点だけで決めた (data/derived/market.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ値段がなく、測れない)" },
     { "version": 6, "date": "2026-10-20", "what": "政府支出 ÷ GDP (R27) を足した。費用の大きさ (値段の水準) を経済に合わせて決めるため (ユーザーの決定、docs/requests/2026-10-20-C.md の C-11)。幅は R19〜R22 と同じく Jordà–Schularick–Taylor R6 の国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。R19〜R22 の幅は変えていない。ゲームの結果はこの幅を決めるのに使っていない" },
-    { "version": 7, "date": "2026-10-20", "what": "F08 を、いまのゲーム版の銀河 (星系 73 個。銀河面 ±2 光年の板) に合わせた。前の「星系 3,000 個」は、銀河を板にして 73 星系に減らす前の想定だった。合格の数 (毎秒 60 コマ・下限 45、最高速で 1 秒に 64 年) と測る機械 (Xiaomi Pad 8 Pro・Steam Deck) は変えていない。測り方を desktop/bench/probe.js の手順に決めた。包装の比べ (レーン S) の測定は GPU のない機械の Xvfb のもので、F08 の判定には使わず、この変更にも使っていない" }
+    { "version": 8, "date": "2026-10-20", "what": "F08 を、いまのゲーム版の銀河 (星系 73 個。銀河面 ±2 光年の板) に合わせた。前の「星系 3,000 個」は、銀河を板にして 73 星系に減らす前の想定だった。合格の数 (毎秒 60 コマ・下限 45、最高速で 1 秒に 64 年) と測る機械 (Xiaomi Pad 8 Pro・Steam Deck) は変えていない。測り方を desktop/bench/probe.js の手順に決めた。包装の比べ (レーン S) の測定は GPU のない機械の Xvfb のもので、F08 の判定には使わず、この変更にも使っていない" }
   ],
   "realism": [
     {
@@ -261,6 +261,16 @@
       "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
       "band": [0.1135, 0.2548], "estimate": 0.185,
       "reference": "18 か国 1870〜2020 年 (2537 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R28", "area": "財政", "name": "財政の反応 (債務が増えると基礎収支を良くする強さ)",
+      "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database R6 と Correlates of War の国家間戦争のデータ v4.0", "version": "R6・v4.0", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py・data/fetch/fetch_history.py" },
+      "statistic": "国ごとの最小二乗 pb = a + ρ·d(前の年) + β·gap + γ·war の ρ の、国のあいだの分布 (Bohn 1998 の形)。pb = (revenue − expenditure) ÷ gdp + ltrate/100 × d(前の年)、d = debtgdp、gap = ln(rgdpbarro) − HP フィルター (λ = 100) の傾向、war = 国家間戦争に参戦していた年。30 年以上ある国だけ。計算は data/build/analyze_fiscal.py",
+      "sim": "R19〜R22・R27 と同じパネル (tools/fiscal-panel.js) に ltrate (国の利子率)・rgdpbarro (ゲームの GDP)・war (その年に戦争をしていた国) の列を足し、同じコードで国ごとの ρ を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
+      "band": [-0.0203, 0.0624], "estimate": 0.0336,
+      "reference": "18 か国 1870〜2020 年 (2718 国・年)。1870〜1913 年 (中央値 0.0394) と 1950〜2020 年 (0.0186) の値も data/derived/fiscal.json にある",
       "split": "calibration"
     }
   ],
