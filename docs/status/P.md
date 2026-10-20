@@ -10,4 +10,5 @@
   - Geant4: `data/build/g4_all.sh` (4 コアで 3 時間ほど)。結果は `data/derived/g4/`。
   - TESS: `data/fetch/fetch_tess.py <置き場>` (約 290 MB) → `data/build/flares_tess.py <置き場>` → `data/build/build_flares.py`。
 - 2026-10-20 (P-4): P7 スウォームの太陽電池の劣化を入れた (シミュレーション版。`docs/physics.md` の 7)。
-- 次 (`docs/physics.md` の 10): P6 ゲーム版にも物理を入れるか、P9 スウォームの素子の作り (カバーガラスの厚さと取り替えの年数)。
+- 2026-10-20 (P-5): P9 スウォームの素子の作りを、星系ごとに選べるようにした (a・b・c と自動。シミュレーション版。`docs/physics.md` の 7)。
+- 次 (`docs/physics.md` の 10): P6 ゲーム版にも物理を入れるか。

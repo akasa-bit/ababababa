@@ -69,6 +69,25 @@ if (JSON.stringify(T.PV_DAMAGE.ddd) !== JSON.stringify(pv.ddd_by_glass_um)) fail
 const rfSun = sim.evaluate('pvRemaining({ cls: "G", lum: 1 })'), rfM = sim.evaluate('pvRemaining({ cls: "M", lum: 0.005 })');
 const rfGame = H.load().evaluate('pvRemaining({ cls: "M", lum: 0.005 })');
 if (!(rfSun > 0.9 && rfSun < 1 && rfM < rfSun && rfGame === 1)) fails.push(`太陽電池の出力の残り 太陽 ${rfSun}・M ${rfM}・ゲーム版 ${rfGame}`);
+// 7. 素子の作り: 質量は部品の和 (平板 = 電池 0.0745 + ガラス、集光 = 0.060 + ガラス ÷ 8.5)。太陽は今の標準 (a) を自動で選び、
+// バーナード星 (M 型星) は集光 (c) を選ぶ。作りを変える指令は届いた星系で効き、ゲーム版の広がり方は SWARM.doubling のまま
+const D = T.PV_DESIGNS, glassG = (um) => um * 1e-4 * 2.554;
+const sig = { a: 0.0745 + glassG(100), b: 0.0745 + glassG(1000), c: 0.06 + glassG(1000) / 8.5 };
+for (const k of Object.keys(sig)) if (Math.abs(D[k].sigma - sig[k]) > 0.002) fails.push(`素子の作り ${k} の質量 ${D[k].sigma} (部品の和 ${sig[k].toFixed(4)})`);
+const gD = sim.newGame(seed, { nations: Number(nations) });
+const barnard = gD.galaxy.systems.find((s) => s.name === 'バーナード星');
+const autoSun = gD.pvAuto(0), autoM = barnard ? gD.pvAuto(barnard.id) : null;
+const pvM = barnard ? Object.fromEntries(Object.keys(D).map((k) => [k, gD.pvOf(barnard.id, k)])) : {};
+if (autoSun !== 'a' || autoM !== 'c') fails.push(`自動の作り 太陽 ${autoSun}・バーナード星 ${autoM}`);
+if (barnard && !(pvM.b.rf > pvM.c.rf && pvM.c.rf > pvM.a.rf && pvM.c.rate > pvM.b.rate)) fails.push(`バーナード星の作りごとの値 ${JSON.stringify(pvM)}`);
+sim.run(gD, 1);
+const r0 = gD.command('pvdesign', { sys: gD.cap, value: 'b' });
+if (!r0.ok || gD.pvDesign(gD.cap) !== 'b') fails.push(`作りを変える指令 ${JSON.stringify(r0)}`);
+const gG = H.load().newGame(seed, { nations: Number(nations) });
+gG.year += 10;
+const fG = gG.swarmCover(gG.cap), f0 = gG.govs[gG.cap].sw[0];
+const fExp = 1 / (1 + (1 / f0 - 1) * Math.exp((-Math.LN2 / 5) * (gG.year - gG.govs[gG.cap].sw[1])));
+if (Math.abs(fG - fExp) > 1e-9) fails.push(`ゲーム版のスウォームの広がり ${fG} (式 ${fExp})`);
 const { rows } = P.voyages(seed, Number(years), Number(nations), null);
 const withLy = rows.filter((x) => x.ly > 0);
 const noShield = withLy.filter((x) => !(x.shield > 0));
@@ -85,5 +104,6 @@ for (const [k, v] of Object.entries(sum)) console.log(`  ${k}: ${v.n} 便・航�
 console.log(`  加速の遅れ (4.37 光年・0.95c): 1g で ${ax[0].toFixed(2)} 年・10g で ${ax[1].toFixed(3)} 年`);
 console.log(`  地表の 1 年の線量 (太陽から 1 AU): 地球の大気の下 ${(earth * 1e3).toFixed(3)} mSv・空気なし ${(moon * 1e3).toFixed(0)} mSv`);
 console.log(`  スウォームの太陽電池の出力の残り (15 年で取り替え): 太陽 ${rfSun.toFixed(3)}・M 型星の中央値の陽子で光度 0.005 ${rfM.toFixed(3)}`);
+if (barnard) console.log(`  素子の作り (バーナード星): ${Object.entries(pvM).map(([k, v]) => `${k} 出力の残り ${v.rf.toFixed(2)}・倍の年数 ${(Math.LN2 / v.rate).toFixed(1)} 年`).join('・')} → 自動は ${autoM}`);
 for (const f of fails) console.log('  ×', f);
 process.exit(fails.length ? 1 : 0);
