@@ -63,6 +63,12 @@ const fl = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/derived/flares.json'
 if (JSON.stringify(T.FLARES) !== JSON.stringify(fl.game)) fails.push('FLARES が flares.json と違う');
 const earth = sim.evaluate('annualDose(FLARES.sun, 1, 1019.7)'), moon = sim.evaluate('annualDose(FLARES.sun, 1, 0)');
 if (!(earth < 1e-3 && moon > earth * 100)) fails.push(`地表の線量 地球 ${earth}・空気なし ${moon}`);
+// 6. スウォームの太陽電池の劣化: 表が pv.json と同じ。太陽 (1 AU) はほとんど傷まず、ゲーム版は傷まない (1)
+const pv = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/derived/pv.json'), 'utf8'));
+if (JSON.stringify(T.PV_DAMAGE.ddd) !== JSON.stringify(pv.ddd_by_glass_um)) fails.push('PV_DAMAGE が pv.json と違う');
+const rfSun = sim.evaluate('pvRemaining({ cls: "G", lum: 1 })'), rfM = sim.evaluate('pvRemaining({ cls: "M", lum: 0.005 })');
+const rfGame = H.load().evaluate('pvRemaining({ cls: "M", lum: 0.005 })');
+if (!(rfSun > 0.9 && rfSun < 1 && rfM < rfSun && rfGame === 1)) fails.push(`太陽電池の出力の残り 太陽 ${rfSun}・M ${rfM}・ゲーム版 ${rfGame}`);
 const { rows } = P.voyages(seed, Number(years), Number(nations), null);
 const withLy = rows.filter((x) => x.ly > 0);
 const noShield = withLy.filter((x) => !(x.shield > 0));
@@ -78,5 +84,6 @@ for (const l of lims.filter((l) => l.what === '合計' && l.ly === 10)) console.
 for (const [k, v] of Object.entries(sum)) console.log(`  ${k}: ${v.n} 便・航路の長さの中央値 ${v.lyMedian.toFixed(1)} 光年・遮蔽の厚さの中央値 ${(v.depthMedian / 100).toFixed(1)} m・遮蔽 ÷ 質量 の中央値 ${(100 * v.fracMedian).toFixed(2)}% (最大 ${(100 * v.fracMax).toFixed(1)}%)`);
 console.log(`  加速の遅れ (4.37 光年・0.95c): 1g で ${ax[0].toFixed(2)} 年・10g で ${ax[1].toFixed(3)} 年`);
 console.log(`  地表の 1 年の線量 (太陽から 1 AU): 地球の大気の下 ${(earth * 1e3).toFixed(3)} mSv・空気なし ${(moon * 1e3).toFixed(0)} mSv`);
+console.log(`  スウォームの太陽電池の出力の残り (15 年で取り替え): 太陽 ${rfSun.toFixed(3)}・M 型星の中央値の陽子で光度 0.005 ${rfM.toFixed(3)}`);
 for (const f of fails) console.log('  ×', f);
 process.exit(fails.length ? 1 : 0);

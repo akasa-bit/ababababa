@@ -124,3 +124,12 @@ node tools/build.mjs
 | 加工 | `data/build/build_flares.py` → `data/derived/flares.json` と `src/index.html` の `FLARES` | 星ごとの分布の当てはめ (露出で重み・最尤法)、太陽で測った X 線 → 陽子の関係と、陽子が来る割合、1 AU の 1 年の F(>10 MeV) |
 
 出典: Ricker ほか (2015) TESS・Stassun ほか (2019) / Paegert ほか (2021) TIC・Günther ほか (2020) AJ 159, 60・Galletta ほか (2025) A&A 698, A180・Papaioannou ほか (2023) A&A 671, A66・Cliver ほか (2020) ApJ 903, 41・NOAA NCEI GOES XRS flare reports・Davenport (2014) ApJ 797, 122
+
+## スウォームの太陽電池の劣化のデータ
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_pv.py` → `data/raw/pv/` | GaAs の陽子の NIEL (SR-NIEL v11.1 の計算機、Ed = 21 eV、0.01〜1,000 MeV)・NIST PSTAR のパイレックス (カバーガラスの代わり) |
+| 加工 | `data/build/build_pv.py` → `data/derived/pv.json` と `src/index.html` の `PV_DAMAGE` | フレアの陽子 (ε = 2.13) がカバーガラスを通って接合に与える変位損傷の線量、3 接合の電池の出力の残り (Walters ほか 2004 の C・Dx)、太陽の 1 AU での確かめ |
+
+出典: SR-NIEL (Boschini ほか、www.sr-niel.org)・NIST PSTAR・Walters, Morton & Messenger (2004) NASA/TP-2004-213338・Lohmeyer, Aniceto, Cahoy & Carlton (2018) Int. J. Space Sci. Eng. 5, 61
