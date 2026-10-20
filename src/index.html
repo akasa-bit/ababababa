@@ -1333,6 +1333,18 @@ const ISM = { nNuc: 0.1142 }; // 航路で前面に当たる核子の平均の�
 // 出力の残り = 1 − C log10(1 + DDD/Dx) (3 接合の電池。Walters ほか 2004)。使う厚さは glass、素子は life 年ごとに取り替える (設定の選択。docs/physics.md の 7)
 const PV_DAMAGE = {"ddd":{"100":0.1243,"300":0.01715,"1000":0.002211,"3000":0.0004067},"glass":100,"C":0.27,"Dx":1700000000.0,"life":15};
 /* PV_DAMAGE:END */
+// スウォームの素子の作り (物理。シミュレーション版だけ。docs/physics.md の 7)。星系ごとに選べる (選ばなければ試合の既定、それもなければ自動)。
+// glass = カバーガラス [µm]、life = 取り替えの年数、sigma = 光を受ける面 1 cm² あたりの素子の質量 [g/cm²]、pf = 平板の素子に比べた発電 (集光レンズの光の損)。
+// 平板: 3 接合の電池 (Ge 140 µm) 0.0745 g/cm² + ガラス 2.554 g/cm³。集光: SLA の 8.5 倍のレンズと電池・放熱板 0.060 g/cm² + ガラス ÷ 8.5、
+// レンズの光の効率 0.92 (O'Neill ほか、NASA/CP-2007-214494)。陽子はレンズで集まらないので、同じ厚さのガラスなら電池の傷み方は平板と同じ。
+// 自己複製で広がる速さは、素子 1 g あたりの発電に比例する (重い素子・傷んだ素子ほど遅い。基準の a の傷みなしが SWARM.doubling)。取り替えの材料と手間は数えない
+const PV_DESIGNS = {
+  a: { label: '今の宇宙機の標準', glass: 100, life: 15, sigma: 0.1, pf: 1, note: '平板・カバーガラス 100 µm・15 年ごとに取り替え' },
+  b: { label: '厚いカバーガラス', glass: 1000, life: 3, sigma: 0.33, pf: 1, note: '平板・1 mm・3 年ごと (重いので広がるのが 3.3 倍遅い)' },
+  c: { label: '集光して守る', glass: 1000, life: 15, sigma: 0.09, pf: 0.92, note: 'レンズで 8.5 倍に集め、小さな電池だけに 1 mm のカバー・15 年ごと' },
+};
+// 自動の選び方: 種のスウォームを持ちこんでから horizon 年あとの発電が一番大きい作り (母星は 2300 年の割合から)
+const PV_PICK = { ref: 'a', horizon: 50 };
 /* FLARES:BEGIN (data/build/build_flares.py が書く。手で直さない) */
 // 星系の目録の名前 → 恒星ごとの、1 AU で 1 年に届くフレアの高エネルギー陽子 F(>10 MeV) [/cm²] (M 型星だけ。ほかの恒星は 0、太陽は sun)。
 // 陽子のスペクトルは ε = 2.13 (Papaioannou ほか 2023 の中央値。Geant4 の線源。付録 C の 10〜100 MeV の比からは 1.78)。docs/physics.md の 6
@@ -1382,12 +1394,12 @@ function flareOf(star) {
   return star.flare ?? (!FLARES ? 0 : star.cls === 'M' ? FLARES.mMedian : 'FGK'.includes(star.cls) ? FLARES.sun : 0);
 }
 // スウォームの太陽電池の、陽子で傷んだあとの平均の出力の残り (物理。シミュレーション版だけ。docs/physics.md の 7)。素子は、地球と同じ明るさになる
-// 距離 √L AU を回るので、届く陽子は 1 AU の値 ÷ L。出力の残り 1 − C log10(1 + DDD/Dx) を、取り替えるまでの life 年で平均する
-function pvRemaining(star) {
+// 距離 √L AU を回るので、届く陽子は 1 AU の値 ÷ L。出力の残り 1 − C log10(1 + DDD/Dx) を、取り替えるまでの life 年で平均する (design = PV_DESIGNS の作り)
+function pvRemaining(star, design = PV_DAMAGE) {
   if (!ED.physics || !PV_DAMAGE || !(star.lum > 0)) return 1;
-  const rate = (flareOf(star) / star.lum) * PV_DAMAGE.ddd[PV_DAMAGE.glass]; // 1 年の DDD [MeV/g]
+  const rate = (flareOf(star) / star.lum) * PV_DAMAGE.ddd[design.glass]; // 1 年の DDD [MeV/g]
   let sum = 0;
-  for (let k = 0; k < 40; k++) sum += Math.max(0, 1 - PV_DAMAGE.C * GM.log10(1 + (rate * PV_DAMAGE.life * (k + 0.5)) / 40 / PV_DAMAGE.Dx));
+  for (let k = 0; k < 40; k++) sum += Math.max(0, 1 - PV_DAMAGE.C * GM.log10(1 + (rate * design.life * (k + 0.5)) / 40 / PV_DAMAGE.Dx));
   return sum / 40;
 }
 function radiationOf(b, star) {
@@ -1981,6 +1993,7 @@ class Game {
     this.stackOwner = {}; // 入植していない星系に駐留する艦隊の持ち主の国 { [sysId]: 首都 } (ないときは地球の国)
     this.nations = null; // 国家選択のある試合の国 [{ cap, body, species, traits, name }] (null なら地球だけの従来の試合)
     this.handicap = 'normal';
+    this.pvPolicy = null; // スウォームの素子の作りの試合の既定 (シミュレーション版だけ。PV_DESIGNS の名前。null なら星系ごとに自動)
     this.year = START_YEAR;
     this.colonies = [];
     this.ships = [];
@@ -5217,7 +5230,41 @@ class Game {
     const gv = this.govs[id];
     if (!gv || !this.isColonized(id)) return 0;
     const [f0, t0] = (gv.sw ??= this.isHome(id) ? [SWARM.home, START_YEAR] : [SWARM.seed, gv.founded ?? this.year]);
-    return 1 / (1 + (1 / f0 - 1) * GM.exp((-Math.LN2 / SWARM.doubling) * Math.max(0, this.year - t0)));
+    const rate = ED.physics ? this.pvOf(id, this.pvDesign(id)).rate : Math.LN2 / SWARM.doubling;
+    return 1 / (1 + (1 / f0 - 1) * GM.exp(-rate * Math.max(0, this.year - t0)));
+  }
+  // スウォームの素子の作り (シミュレーション版だけ)。星系の政府が選んだ作り、なければ試合の既定、それもなければ自動 ('auto' も選べる)
+  pvDesign(id) {
+    const k = this.govs[id]?.pvd ?? this.pvPolicy;
+    return PV_DESIGNS[k] ? k : this.pvAuto(id);
+  }
+  // 作り k の星系での、出力の残り rf (恒星の光度で平均し、集光の損も掛ける) と、スウォームが広がる速さ rate [/年]
+  pvOf(id, k) {
+    const s = this.system(id), c = (s.pv ??= {});
+    if (c[k]) return c[k];
+    const d = PV_DESIGNS[k];
+    s.lumSum ??= s.stars.reduce((a, x) => a + (x.lum || 0), 0);
+    const rf = d.pf * (s.lumSum > 0 ? s.stars.reduce((a, x) => a + (x.lum || 0) * pvRemaining(x, d), 0) / s.lumSum : 1);
+    return (c[k] = { rf, rate: ((Math.LN2 / SWARM.doubling) * PV_DESIGNS[PV_PICK.ref].sigma * rf) / d.sigma });
+  }
+  // 自動の作り: 持ちこんでから PV_PICK.horizon 年あとの発電が一番大きい作り
+  pvAuto(id) {
+    const f0 = this.isHome(id) ? SWARM.home : SWARM.seed;
+    let best = PV_PICK.ref, top = -1;
+    for (const k of Object.keys(PV_DESIGNS)) {
+      const { rf, rate } = this.pvOf(id, k);
+      const p = rf / (1 + (1 / f0 - 1) * GM.exp(-rate * PV_PICK.horizon));
+      if (p > top) { top = p; best = k; }
+    }
+    return best;
+  }
+  // 素子の作りを変える (星系に届いた指令)。いまの覆う割合から、新しい作りの速さで広がり直す (素子は一度に取り替える。簡単のため)
+  setPvDesign(id, k) {
+    const gv = this.govs[id];
+    if (!ED.physics || !gv || (k !== 'auto' && !PV_DESIGNS[k])) return fail('素子の作りを選べない');
+    if (this.isColonized(id)) gv.sw = [Math.max(SWARM.seed, this.swarmCover(id)), this.year];
+    gv.pvd = k;
+    return { ok: true };
   }
   // 星系の発電 [J/年] = 恒星の光度の和 × 覆う割合 × 発電効率
   power(id) {
@@ -5225,8 +5272,8 @@ class Game {
     if (!cover) return 0;
     const s = this.system(id);
     s.lumSum ??= s.stars.reduce((k, x) => k + (x.lum || 0), 0);
-    // 太陽電池が陽子で傷んだ分 (シミュレーション版だけ。ゲーム版は 1 で、星系に何も書かない)
-    const rf = ED.physics ? (s.pvRF ??= s.lumSum > 0 ? s.stars.reduce((k, x) => k + (x.lum || 0) * pvRemaining(x), 0) / s.lumSum : 1) : 1;
+    // 太陽電池が陽子で傷んだ分と集光の損 (シミュレーション版だけ。ゲーム版は 1 で、星系に何も書かない)
+    const rf = ED.physics ? this.pvOf(id, this.pvDesign(id)).rf : 1;
     return s.lumSum * L_SUN_W * cover * PROP.pv * rf * YEAR_S;
   }
   energyOf(id) { return this.govs[id]?.E || 0; }
@@ -5552,6 +5599,7 @@ class Game {
     if (Number.isFinite(d.rs)) this.rs = d.rs >>> 0;
     // 国家選択のある試合の国とハンディキャップ
     this.handicap = HANDICAP[d.handicap] ? d.handicap : 'normal';
+    this.pvPolicy = PV_DESIGNS[d.pvPolicy] ? d.pvPolicy : null;
     if (Array.isArray(d.nations) && d.nations.every((n) => n && sysOk(n.cap) && this.target(n.cap, n.body))) {
       this.nations = d.nations.map((n) => ({ ...n, traits: Array.isArray(n.traits) ? n.traits.filter((t) => SPECIES_TRAITS[t]) : speciesTraits(n.species) }));
       this.nmap = null;
@@ -5927,7 +5975,7 @@ class Game {
       case 'upgrade': case 'train': case 'focus': return colSys(d.col);
       case 'peace': return Number(d.sys);
       case 'policy': case 'fiscal': return this.cap;
-      case 'rule': case 'mandate': case 'governor': case 'inspect': case 'decide': return Number(d.sys);
+      case 'rule': case 'mandate': case 'governor': case 'inspect': case 'decide': case 'pvdesign': return Number(d.sys);
       default: return d.sys;
     }
   }
@@ -6072,6 +6120,7 @@ class Game {
       case 'peace': return this.offerPeace(sys);
       case 'rule': return this.setRule(sys, d.value);
       case 'mandate': { const gv = this.govs[sys]; if (!gv || !MANDATES[d.value]) return fail('政府がない'); gv.mandate = d.value; return { ok: true }; }
+      case 'pvdesign': return this.setPvDesign(sys, d.value);
       case 'governor': { const gv = this.govs[sys]; if (!gv || !GOVERNOR[d.value]) return fail('政府がない'); gv.governor = d.value; return { ok: true }; }
       case 'inspect': { const gv = this.govs[sys]; if (!gv) return fail('政府がない'); gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 3); return { ok: true }; }
       case 'decide': return this.resolveDecision(d.id, d.opt);
@@ -9011,12 +9060,21 @@ function energyBox(g, id, k) {
   const now = id === g.cap;
   const E = now ? g.energyOf(id) : k?.energy || 0, P = now ? g.power(id) : k?.power || 0;
   const sys = g.system(id), lum = sys.stars.reduce((a, x) => a + (x.lum || 0), 0);
-  const rf = sys.pvRF ?? 1; // 太陽電池が陽子で傷んだ分 (シミュレーション版だけ)
+  const rf = ED.physics ? g.pvOf(id, g.pvDesign(id)).rf : 1; // 太陽電池が陽子で傷んだ分と集光の損 (シミュレーション版だけ)
   const cover = lum ? P / (lum * L_SUN_W * PROP.pv * rf * YEAR_S) : 0;
   return `<table class="tbl"><tr><td>蓄え</td><td>${fmtJ(E)} <span class="muted">(上限 ${fmtJ(SWARM.store * P)})</span></td></tr>
     <tr><td>スウォームの発電</td><td>${fmtJ(P)}/年</td></tr><tr><td>恒星の光を覆う割合</td><td>${cover >= 0.01 ? pct(cover) : cover.toExponential(1)}</td></tr>
     <tr><td>交易路で 1 単位 (100 万 t) を運ぶ</td><td>${fmtJ(E_UNIT)} ずつ (送る側の加速・受ける側の減速)</td></tr>
-    ${ED.physics ? `<tr><td>星間の気体と宇宙線の遮蔽 (10 光年・0.95c)</td><td>${shieldNote()}</td></tr>` : ''}</table>`;
+    ${ED.physics ? `${pvDesignRows(g, id)}<tr><td>星間の気体と宇宙線の遮蔽 (10 光年・0.95c)</td><td>${shieldNote()}</td></tr>` : ''}</table>`;
+}
+// スウォームの素子の作り (シミュレーション版だけ)。作りごとの出力の残りと、覆う割合が倍になる年数。自国の星系なら選べる (光速の指令)
+function pvDesignRows(g, id) {
+  const cur = g.pvDesign(id), set = g.govs[id]?.pvd ?? g.pvPolicy ?? 'auto';
+  const yrs = (r) => (r > 1e-3 ? `${(Math.LN2 / r).toFixed(1)} 年` : '広がらない');
+  const list = Object.entries(PV_DESIGNS).map(([k, d]) => { const v = g.pvOf(id, k); return `<li><b>${k}. ${d.label}</b>${k === cur ? ' (いま)' : ''} — 出力の残り ${pct(v.rf)}・倍になる年数 ${yrs(v.rate)} <span class="muted">(${d.note})</span></li>`; }).join('');
+  const own = g.realmOf(id) === g.cap && g.isColonized(id);
+  const sel = own ? `<select data-act="pvdesign" data-sys="${id}">${['auto', ...Object.keys(PV_DESIGNS)].map((k) => `<option value="${k}" ${k === set ? 'selected' : ''}>${k === 'auto' ? `自動 (${PV_PICK.horizon} 年あとの発電が一番大きい作り)` : `${k}. ${PV_DESIGNS[k].label}`}</option>`).join('')}</select>${id === g.cap ? '' : ` <small class="muted">届くまで ${g.lightDelay(id).toFixed(1)} 年</small>`}` : '';
+  return `<tr><td>スウォームの素子の作り</td><td>いま <b>${cur}. ${PV_DESIGNS[cur].label}</b> ${sel}<ul>${list}</ul><small class="muted">フレアの陽子が電池を傷める (M 型星で強い)。重い素子ほど自己複製で広がるのが遅い。作りを変えると、いまの覆う割合から新しい速さで広がり直す</small></td></tr>`;
 }
 // エネルギーの収支 (いまの政府)。使った量は負
 function eLedgerHtml(g) {
@@ -9246,7 +9304,7 @@ function saveMeta(d) {
 function buildSave(game, extra = {}) {
   return {
     v: 2, seed: game.galaxy.seed, ...(game.galaxy.kind === 'real' ? { galaxy: 'real' } : {}), ...(game.galaxy.gen > 1 ? { gen: game.galaxy.gen } : {}), rs: game.rs, players: game.players, pi: game.pi,
-    ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
+    ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(game.pvPolicy ? { pvPolicy: game.pvPolicy } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, ...(Object.keys(game.intel).length ? { intel: game.intel } : {}), ...(game.aiOrders.length ? { aiOrders: game.aiOrders } : {}), peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, market: game.market, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
@@ -9581,6 +9639,7 @@ function homeHtml() {
       <div class="row"><label>国の数 <select id="home-nat">${NATION_COUNTS.map((n) => `<option value="${n}" ${n === (app.homeNat ?? 1) ? 'selected' : ''}>${n === 1 ? '地球だけ (国家選択なし)' : `${n} か国から選ぶ`}</option>`).join('')}</select></label>
         <label>難易度 <select id="home-hc">${Object.entries(HANDICAP).map(([k, h]) => `<option value="${k}" ${k === (app.homeHc ?? 'normal') ? 'selected' : ''}>${h.label}</option>`).join('')}</select></label></div>
       ${NationLib.list.length ? `<div class="row"><span class="muted">自作の国を出す</span>${NationLib.list.map((n) => `<label><input type="checkbox" class="home-lib" value="${n.id}" ${(app.homeLib || []).includes(n.id) ? 'checked' : ''}> ${esc(n.name)}</label>`).join('')}</div>` : ''}
+      ${ED.physics ? `<div class="row"><label>スウォームの素子の作り (全部の星系の既定) <select id="home-pv">${['auto', ...Object.keys(PV_DESIGNS)].map((k) => `<option value="${k}" ${k === (app.homePv ?? 'auto') ? 'selected' : ''}>${k === 'auto' ? '星系ごとに自動' : `${k}. ${PV_DESIGNS[k].label} — ${PV_DESIGNS[k].note}`}</option>`).join('')}</select></label></div>` : ''}
       <div class="row"><label>終わりの年 <select id="home-end">${END_CHOICES.map(([y, l]) => `<option value="${y}" ${y === (app.homeEnd ?? 500) ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
       <div class="row"><span class="muted">挑戦 (選ばなくてもよい)</span>${Object.entries(CHALLENGES).map(([k, c]) => `<label title="${esc(c.desc)}"><input type="checkbox" class="home-ch" value="${k}" ${(app.homeCh || []).includes(k) ? 'checked' : ''}> ${c.label}</label>`).join('')}
         <button data-home="new">${armed('new') ? '本当に? いまのゲームは消える' : 'はじめる'}</button></div>
@@ -9886,7 +9945,7 @@ $('home').onclick = (e) => {
   app.homeSeed = $('home-seed')?.value.trim() || '';
   app.homeSpectate = !!$('home-spectate')?.checked;
   if ($('home-end')) app.homeEnd = Number($('home-end').value);
-  if ($('home-nat')) { app.homeNat = Number($('home-nat').value); app.homeHc = $('home-hc').value; app.homeLib = [...document.querySelectorAll('#home .home-lib')].filter((x) => x.checked).map((x) => x.value); }
+  if ($('home-nat')) { app.homeNat = Number($('home-nat').value); app.homeHc = $('home-hc').value; if ($('home-pv')) app.homePv = $('home-pv').value; app.homeLib = [...document.querySelectorAll('#home .home-lib')].filter((x) => x.checked).map((x) => x.value); }
   if ($('home-end')) app.homeCh = [...document.querySelectorAll('#home .home-ch')].filter((x) => x.checked).map((x) => x.value);
   app.homeNote = '';
   // 取り返しのつかない操作は2回押して確定する (confirm() は使えない環境がある)
@@ -9925,6 +9984,7 @@ $('home').onclick = (e) => {
     app.game.endYear = app.homeEnd === 0 ? null : START_YEAR + (app.homeEnd ?? 500);
     app.game.challenges = (app.homeCh || []).filter((k) => CHALLENGES[k]).map((id) => ({ id, status: 'active' }));
     app.game.handicap = HANDICAP[app.homeHc] ? app.homeHc : 'normal';
+    if (ED.physics) app.game.pvPolicy = PV_DESIGNS[app.homePv] ? app.homePv : null;
     const customs = (app.homeLib || []).map((id) => NationLib.get(id)).filter(Boolean);
     if ((app.homeNat ?? 1) > 1 || customs.length) {
       app.game.foundNations(Math.max(app.homeNat ?? 1, customs.length + 1), app.homeHc, customs);
@@ -10697,6 +10757,7 @@ function onPanelChange(e) {
     issue('fiscal', d);
     save();
   }
+  else if (act === 'pvdesign') { issue('pvdesign', { sys: Number(e.target.dataset.sys), value: v }); save(); }
   else if (act === 'mandate' || act === 'governor') {
     // 委任方針・総督の方針の変更は光速の指令 (政治力を使う)
     issue(act, { sys: Number(e.target.dataset.sys), value: v });
