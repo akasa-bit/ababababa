@@ -3224,7 +3224,7 @@ class Game {
       for (const e of enemies) {
         const key = this.warKey(root, e);
         if (this.realmWars[key] === undefined) continue;
-        const ours = this.realmShips(root), theirs = this.seenShips(root, e), years = this.year - this.realmWars[key];
+        const ours = this.realmShips(root), theirs = this.seenShips(root, e), years = this.year - this.aiWarSince(root, key); // 知ってからの年数
         // 自分から仕掛けて大差で負けていれば、相手に全面的に任せる (持ち点 100 の講和会議)
         if (this.warBy[key] === root && years >= 5 && theirs >= 5 * Math.max(1, ours) && this.rand() < 0.08) { this.startConference(root, [{ realm: e, pts: 100 }], root); break; }
         // 疲れた・負けている国は講和を申し入れる。相手が AI なら相手の判断で、人間なら申し入れとして届く (5 年に 1 回まで)
@@ -5393,6 +5393,11 @@ class Game {
     return !news || this.year >= news.year + this.sysDist(news.from, root);
   }
   aiEnemiesOf(root) { return this.enemiesOf(root).filter((e) => this.aiKnowsWar(root, this.warKey(root, e))); }
+  // 国 root (の首都) が開戦を知った年。講和を考えるときの「戦争の年数」は、ここから数える
+  aiWarSince(root, key) {
+    const news = this.warNews[key];
+    return news ? Math.max(this.realmWars[key], news.year + this.sysDist(news.from, root)) : this.realmWars[key];
+  }
   // 届いた艦隊の指令を実行する (その星系がまだ同じ国で、相手とまだ交戦中で、艦隊が残っていれば)
   // 首都 root から、星系 from の艦隊を to へ送る指令を出す (首都の艦隊ならその場で。ほかは指令が光速で届いてから)
   aiOrder(root, from, to, n) {
