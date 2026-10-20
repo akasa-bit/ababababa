@@ -30,7 +30,7 @@ node tools/search.js --budget 40 --seeds 1,2,3,4,5,6,7,8 --years 150   # 候補 
 | 値 | 中身 | 候補 |
 |---|---|---|
 | `policy` | 国家方針 (`auto` = 観戦の AI のまま) | auto・expand・consolidate・military |
-| `warRatio`・`warChance` | 自分の艦隊が相手の何倍を超えたら、1 年にどの確率で宣戦するか (0 = 宣戦しない) | 0〜10・0.02〜0.3 |
+| `warRatio`・`warChance`・`warRange` | 自分の艦隊が相手の何倍を超えたら、1 年にどの確率で宣戦するか (0 = 宣戦しない)。首都から何光年までの国にだけ宣戦するか (0 = 遠さを問わない) | 0〜10・0.02〜0.3・10〜40 |
 | `sueRatio`・`sueEx` | 戦争中、艦隊の比がこれを下回るか、戦争疲弊がこれを超えたら講和を求める | 0.3〜1.5・30〜95 |
 | `acceptEx`・`acceptWs` | 講和の申し入れに応じる戦争疲弊・戦勝点 | 10〜90・−10〜60 |
 | `mandate` | 直属の家臣に送る委任方針 (`none` = 送らない) | none・balanced・expand・develop・arm |

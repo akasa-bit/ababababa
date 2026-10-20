@@ -12,6 +12,7 @@ const SPACE = {
   policy: ['auto', 'expand', 'consolidate', 'military'], // 国家方針 (auto = 観戦の AI のまま、戦争中は軍備・25 星系までは拡張・そのあと整備)
   warRatio: [0, 1.2, 1.5, 2, 3, 5, 10], // 自分の艦隊が相手の何倍を超えたら宣戦を考えるか
   warChance: [0.02, 0.05, 0.1, 0.3], // そのとき 1 年に宣戦する確率
+  warRange: [10, 15, 25, 40, 0], // 首都からこの光年までの国にだけ宣戦する (0 = 遠さを問わない)
   sueRatio: [0.3, 0.5, 0.7, 1, 1.5], // 戦争中、自分の艦隊が相手の何倍を下回ったら講和を求めるか
   sueEx: [30, 45, 60, 80, 95], // 戦争疲弊がいくつを超えたら講和を求めるか
   acceptEx: [10, 25, 40, 60, 90], // 講和の申し入れに応じる戦争疲弊
@@ -21,7 +22,7 @@ const SPACE = {
   peaceArm: [0, 2000, 5000, 10000], // 戦争していなくても、資金がこれを超えたら軍艦を作る (0 = 作らない)
 };
 // 観戦の AI と同じ値 (探索の出発点)
-const BASE = { policy: 'auto', warRatio: 5, warChance: 0.05, sueRatio: 0.7, sueEx: 60, acceptEx: 40, acceptWs: 10, mandate: 'none', grantBelow: 0, peaceArm: 0 };
+const BASE = { policy: 'auto', warRatio: 5, warChance: 0.05, warRange: 25, sueRatio: 0.7, sueEx: 60, acceptEx: 40, acceptWs: 10, mandate: 'none', grantBelow: 0, peaceArm: 0 };
 // 決めた 6 つの戦略 (F06 の「6 つ以上の戦略ボット」の最小の組)
 const PRESETS = {
   passive: { label: '放任', s: null },
@@ -49,7 +50,7 @@ function apply(g, s, sim) {
       if (root === this.cap || this.realmOf(root) !== root || !this.gov(root).independent) continue;
       const theirs = this.realmShips(root);
       if (!this.atWar(this.cap, root)) {
-        if (s.warRatio && ours > s.warRatio * Math.max(1, theirs) && this.rand() < s.warChance) this.declareWar(root);
+        if (s.warRatio && ours > s.warRatio * Math.max(1, theirs) && (!s.warRange || this.sysDist(this.cap, root) <= s.warRange) && this.rand() < s.warChance) this.declareWar(root);
         continue;
       }
       if (this.hasShipyard(this.cap) && this.gov(this.cap).credits >= 2 * sim.tables.WARSHIP_COST.credits) this.buildWarship(this.cap);
