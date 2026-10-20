@@ -1561,6 +1561,11 @@ const SEED_FUNDS = { planet: 200, station: 80 }; // 入植船が新しい政府�
 const BASE_TAX = { planet: 5, station: 2 }; // 入植地ごとの基本の税収 [cr/年] (小さな入植地の政府を回すため) // 従属する星系が主人に納める、年間収入の割合
 
 const stockCap = (pop) => 500 + 5 * pop; // 星系の備蓄上限 (資源ごと)
+// 市場の値段 (段 5)。星系ごと・資源ごとに、在庫 ÷ ふだんの消費 (年) が目標の在庫の厚さ cover [年] から離れるほど値段が動く:
+//   値段 = 基準価格 × (在庫 ÷ (消費 × cover))^(−eta)  (在庫の多い年は安く、少ない年は高い。Deaton & Laroque 1992 の競争的な貯蔵の形)
+// cover は現実の在庫の厚さ (食料など: 世界の穀物の在庫 ÷ 消費の中央値 0.28 年。工業品: 米国の在庫 ÷ 売上の中央値 1.39 か月)。
+// eta (値段の在庫への効き方) と smooth (ふだんの消費をならす年数) は仮の値 (docs/market.md)。いまは値段を記録するだけで、遊びには使わない
+const MARKET = { eta: 1, smooth: 1, min: 0.02, max: 50, cover: { food: 0.28, water: 0.28, metal: 0.28, fuel: 0.28, rare: 0.28, goods: 1.39 / 12, slaves: 0.28 } };
 const zeroRes = () => { const o = {}; for (const r of RES) o[r] = 0; return o; };
 const colKey = (c) => `${c.sys}|${c.body}|${c.kind}`;
 // 星系の記録 (snaps) の JSON の使い回し。記録は取ったあと変わらないので、記録ごとに一度だけ JSON にする
@@ -1852,6 +1857,7 @@ class Game {
     this.ghosts = { cargo: [], fleets: [], requests: [], troopMoves: [], migrants: [], ships: [], legs: [] };
     this.battles = []; // 艦隊戦 { sys, realm (攻める国の首都), a (攻撃側), d (防衛側), a0, d0 (投入した総数), start, progress (中断した攻囲の進捗) }
     this.stock = {}; // 星系ごとの備蓄。同じ星系の入植地は備蓄を共有する
+    this.market = {}; // 星系ごとの市場 { u: 資源ごとのふだんの消費 [/年], p: 値段 } (段 5)
     this.routes = []; // 交易路 { id, a, b, lv, transit: [A→Bの輸送中量, B→A], vol: [年あたり輸送量] }
     this.requests = []; // 物資移送要求 { id, kind: 'trade'|'build', from (要求元), to (送り手), res, amt, sent, arrive, state }
     this.cargo = []; // 輸送中の貨物 { key, path: [経由する星系], times: [各星系に着く年], arrive, load }
@@ -5099,6 +5105,21 @@ class Game {
   }
   routeMode(from, to, mt) { const e = mt * E_UNIT; return this.energyOf(from) >= e && this.energyOf(to) >= e ? 'route' : 'free'; }
 
+  // 市場の値段を決め直す (MARKET の説明)。ふだんの消費は、人の消費と工業の投入 (flow の cons) を smooth 年でならしたもの
+  marketStep(h, flow) {
+    const a = Math.min(1, h / MARKET.smooth);
+    for (const [key, st] of Object.entries(this.stock)) {
+      const m = (this.market[key] ??= { u: zeroRes(), p: { ...PRICE } });
+      const cons = flow[key]?.cons;
+      for (const r of RES) {
+        m.u[r] += ((cons?.[r] || 0) - m.u[r]) * a;
+        const need = m.u[r] * MARKET.cover[r];
+        const cover = need > 1e-9 ? Math.max(st[r], 0) / need : Infinity;
+        m.p[r] = PRICE[r] * (cover === Infinity ? MARKET.min : cover > 0 ? clamp(GM.pow(cover, -MARKET.eta), MARKET.min, MARKET.max) : MARKET.max); // 使い道がなければ最低の値段
+      }
+    }
+  }
+  price(sys, r) { return this.market[sys]?.p[r] ?? PRICE[r]; }
   economy(h) {
     this.stepH = h;
     // 0. エネルギー: スウォームの発電を蓄える。蓄えの上限 (SWARM.store 年分の出力) を超えた分は捨てる
@@ -5212,6 +5233,7 @@ class Game {
       const cap = stockCap(flow[s]?.pop || 0);
       for (const r of RES) if (st[r] > cap) this.mv(Number(s), r, cap - st[r], 'waste');
     }
+    this.marketStep(h, flow);
     // 7. 軍の維持費
     // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)。受け取るのは払う星系の民間 (兵の給料と補給の買い付け)
     const payer = (id) => (this.isColonized(id) ? id : 0);
@@ -5339,6 +5361,7 @@ class Game {
       this.snaps[sx.id] = [{ ...this.snapshot(sx.id), year: this.year - this.lightDelay(sx.id) }];
     }
     if (obj(d.stock)) this.stock = { ...this.stock, ...d.stock };
+    if (obj(d.market)) this.market = d.market;
     for (const st of Object.values(this.stock)) for (const r of RES) if (!Number.isFinite(st[r])) st[r] = 0;
     for (const c of this.colonies) this.stockOf(c.sys);
     if (Array.isArray(d.routes)) this.routes = d.routes.filter((r) => sysOk(r.a) && sysOk(r.b) && Array.isArray(r.transit));
@@ -9051,7 +9074,7 @@ function buildSave(game, extra = {}) {
   return {
     v: 2, seed: game.galaxy.seed, ...(game.galaxy.kind === 'real' ? { galaxy: 'real' } : {}), ...(game.galaxy.gen > 1 ? { gen: game.galaxy.gen } : {}), rs: game.rs, players: game.players, pi: game.pi,
     ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
-    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, ...(Object.keys(game.intel).length ? { intel: game.intel } : {}), ...(game.aiOrders.length ? { aiOrders: game.aiOrders } : {}), peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, routes: game.routes,
+    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, ...(Object.keys(game.intel).length ? { intel: game.intel } : {}), ...(game.aiOrders.length ? { aiOrders: game.aiOrders } : {}), peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, market: game.market, routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, pc: game.pc, council: game.council, policy: game.policy, decisions: game.decisions, story: game.story, era: game.era, challenges: game.challenges,
