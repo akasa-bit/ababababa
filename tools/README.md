@@ -14,6 +14,7 @@ PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメ
 
 - `node tools/ci-tests.js`: 組み立て → 目標のファイルの固定の確認 → `tools/tests` の試験 (rotate と headless を含む 16 本)。出力から合否を決め (`docs/handoff.md` の 14 と同じ見方)、Markdown の表を出す。1 つでも落ちたら失敗。名前を渡すとその試験だけ (`node tools/ci-tests.js det net`)
 - `node tools/ci-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数]`: 画面なしの版で、main と PR を同じシードで回し、入植地・人口・戦争・独立・資金などの平均と 10〜90% を並べる。合否は付けない (釣り合いが知らないうちに動いていないかを見る)
+- `node tools/fiscal-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]`: 画面なしの版で回し、国ごと・年ごとの財政と金融のパネルを、Jordà–Schularick–Taylor と同じ列 (`year, country, gdp, revenue, expenditure, debtgdp, tloans`) で書き出す。`python3 data/build/analyze_fiscal.py <出力.csv>` で、現実と同じ台本で R19〜R22 を出す (`docs/fiscal.md` の 3)
 
 手元で同じものを回すときは `CHROMIUM=/opt/pw-browsers/chromium node tools/ci-tests.js` (3 分ほど)。
 
@@ -161,6 +162,7 @@ HTML=$PWD/simulation.html NAT=1 node tools/tests/conserve.js 7 150
 | `conserve.js` | 1 年ごとに、星系ごと・資源ごとの記帳した出入りと備蓄の増加・運ぶ途中の物・工業の質量・政府ごとのエネルギーが釣り合う (誤差 ÷ 取扱量が 1e-9 以下、目標 R03)。決まっていない出入りがない |
 | `cloud.js` | アカウントとクラウド (偽の Firebase で): ゲストのログイン・名前・クラウドのセーブ・自作の国・部屋のコードでのネット対戦 |
 | `headless.js` | 画面なしの版で回した状態の要約が、公開用の index.html をブラウザで回したものと一致する (国家選択なし・6 か国)。値のファイルが効き、ない項目を拒む |
+| `fiscal.js` | 財政 (税・利子率・予算): 命令と政治力、選べない値を拒む、光速で広がる、税収・利子・予算の記帳、忠誠度・離反の起きやすさ・艦隊の戦力への効き目、保存と読み込み、画面 (横と縦) ([docs/fiscal.md](../docs/fiscal.md)) |
 | `money.js` | 1 年ごとに、お金の総額 (政府・民間・先住民・運ぶ途中 − 銀行の貸出) が変わらない、帳簿ごとの記帳した出入りと額の増加が一致する、出入りの種類ごとに帳簿の合計が 0 (誤差 ÷ 取扱量が 1e-9 以下)。決まっていない出入りがなく、手持ちと借りがマイナスにならない ([docs/money.md](../docs/money.md)) |
 | `energy.js` | 船 1 便ごとに記帳した推進のエネルギーが、試験の中で計算し直した式と 1 ± 1e-6 で一致する (目標 R07)。太陽系の発電と収支も出す |
 
