@@ -1255,6 +1255,12 @@ const SHIP_SPEED = 0.95; // 交易路上の船の速度 [c] (貨物船・資材�
 const OFFROUTE_SPEED = 0.9; // 交易路の外を飛ぶときの速度 [c] (艦隊・入植船・征服戦争の増援)
 const START_YEAR = 2300;
 const START_CREDITS = 1000;
+// 民間・先住民の帳簿 o の手持ち o[f] を v だけ動かす。足りない分は銀行から借り (o.loan)、手持ちができたら返す。純額 (手持ち − 借り) は v だけ動く
+function bankMove(o, f, v) {
+  const net = (o[f] || 0) - (o.loan || 0) + v;
+  o[f] = Math.max(0, net);
+  o.loan = Math.max(0, -net);
+}
 const STEP = 0.25; // 経済シミュレーションの刻み[年]
 const GHOST_KINDS = ['cargo', 'fleets', 'requests', 'troopMoves', 'migrants', 'ships', 'projects'];
 
@@ -1313,6 +1319,7 @@ const E_UNIT_FREE = ((p) => p.acc + p.dec)(propulsion(UNIT_KG, SHIP_SPEED, 'free
 let TRADE_AUDIT = null; // 試験用: 配列にすると、星系どうしの取引 (送った星系・受けた星系・年・基準価格での額) を書き出す (目標 R01)
 let MASS_AUDIT = null; // 試験用: { flows: {}, energy: {} } にすると、備蓄とエネルギーの出入りを星系・資源・種類ごとに足し上げる
 let ENERGY_AUDIT = null; // 試験用: 配列にすると、記帳した船を 1 便ずつ書き出す
+let MONEY_AUDIT = null; // 試験用: {} にすると、お金の出入りを種類・帳簿 (gov・pv・nat・way) ごとに足し上げる
 
 const KIND_LABEL = { station: '宇宙ステーション', planet: '惑星入植地' };
 const FOCUS = {
@@ -1689,6 +1696,7 @@ const STORY = {
     resolve(g, dec, k) {
       if (k !== 'salvage' || !g.isColonized(dec.sys)) return;
       g.mv(dec.sys, 'metal', 300, 'extract'); g.mv(dec.sys, 'rare', 40, 'extract'); // 宇宙から回収した物質
+      g.spendDecision(dec, { pv: dec.sys }); // 回収の代金は、その星系の民間 (回収した人々) へ
       g.message(`${g.system(dec.sys).name} で漂流船を回収した (金属 300・希少元素 40)`, dec.sys);
     },
   },
@@ -1704,7 +1712,7 @@ const STORY = {
     resolve(g, dec, k) {
       const gv = g.govs[dec.sys];
       if (!gv || !g.isColonized(dec.sys)) return;
-      if (k === 'aid') { g.earn('grant', 300, dec.sys); gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 10); g.attend(dec.sys); g.message(`${g.system(dec.sys).name} に復興支援が届いた`, dec.sys); }
+      if (k === 'aid') { g.release('grant', dec, 'cr', dec.sys, dec.payer ?? 0); gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 10); g.attend(dec.sys); g.message(`${g.system(dec.sys).name} に復興支援が届いた`, dec.sys); }
       else { gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - 8); g.message(`${g.system(dec.sys).name} は復興支援が来なかったことを恨んでいる (忠誠度 −8)`, dec.sys); }
     },
   },
@@ -1736,6 +1744,7 @@ const STORY = {
     resolve(g, dec, k) {
       if (!g.isColonized(dec.sys)) return;
       g.mv(dec.sys, dec.res, k === 'rush' ? 800 : 250, 'extract');
+      if (k === 'rush') g.spendDecision(dec, { pv: dec.sys });
       g.message(`${g.system(dec.sys).name} の鉱脈から${RES_LABEL[dec.res]} ${k === 'rush' ? 800 : 250} を得た`, dec.sys);
     },
   },
@@ -1752,6 +1761,7 @@ const STORY = {
       const n = g.nativeOf(dec.sys, dec.body);
       if (!n || n.st.status !== 'independent') return;
       n.st.rel = clamp(n.st.rel + (k === 'welcome' ? 20 : -10), -100, 100);
+      if (k === 'welcome') g.spendDecision(dec, { nat: `${dec.sys}|${dec.body}` }); // 歓待の費用は、使節への贈り物
       g.message(`${n.def.species}の使節を${k === 'welcome' ? '歓待した' : '追い返した'} (友好度 ${Math.round(n.st.rel)})`, dec.sys);
     },
   },
@@ -1768,7 +1778,7 @@ const STORY = {
       const c = g.colonyByKey(dec.col);
       const gv = g.govs[dec.sys];
       if (!c || !gv) return;
-      if (k === 'cure') { c.plague = 0; gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 5); g.attend(dec.sys); g.message(`${c.name} に医療団が着き、疫病が収まった`, dec.sys); }
+      if (k === 'cure') { g.spendDecision(dec, { pv: dec.sys }); c.plague = 0; gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 5); g.attend(dec.sys); g.message(`${c.name} に医療団が着き、疫病が収まった`, dec.sys); }
       else if (dec.sys !== g.cap) gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - 5);
     },
   },
@@ -2313,8 +2323,8 @@ class Game {
           got.push(this.system(t.sys).name);
         } else {
           const amt = Math.min(TREATY.cash, Math.max(0, this.gov(l).credits));
-          this.gov(l).credits -= amt;
-          this.gov(b.realm).credits += amt;
+          this.cash('treaty', -amt, { gov: l });
+          this.cash('treaty', amt, { gov: b.realm });
           got.push(`賠償金 ${fmtAmt(amt)} cr`);
         }
       }
@@ -2731,7 +2741,7 @@ class Game {
     const o = dec.opts.find((x) => x.k === d.opt);
     if (!o) return fail('不明な選択肢');
     if ((o.cr || 0) > this.gov(this.cap).credits) return fail(`資金が足りない (${o.cr} cr)`);
-    if (o.cr) this.earn('grant', -o.cr, this.cap);
+    if (o.cr) { this.earn('grant', -o.cr, this.cap); dec.payer = this.cap; this.cash('grant', o.cr, { way: dec, f: 'cr' }); }
     dec.state = 'sent';
     dec.reply = o.k;
     dec.sentAt = this.year;
@@ -2750,6 +2760,7 @@ class Game {
     dec.reply = k;
     dec.local = local;
     if (dec.kind === 'demand') {
+      if (dec.cr) this.release('grant', dec, 'cr', dec.payer ?? 0, dec.payer ?? 0);
       const gv = this.govs[dec.sys];
       if (!gv || gv.unrest?.stage !== 2) return { ok: true };
       if (k === 'accept') this.grantDemand(dec.sys, gv);
@@ -2758,7 +2769,15 @@ class Game {
     }
     const s = STORY[dec.type];
     if (s) s.resolve(this, dec, k, local);
+    if (dec.cr) this.release('grant', dec, 'cr', dec.payer ?? 0, dec.payer ?? 0); // 使われなかった額は返す
     return { ok: true };
+  }
+  // 返事に添えた額を、届いた先で使う (acct: 受け取る帳簿)
+  spendDecision(dec, acct) {
+    const v = dec.cr || 0;
+    if (!v) return;
+    this.cash('grant', -v, { way: dec, f: 'cr' });
+    this.cash('grant', v, acct);
   }
   decisionsYearly() {
     for (const dec of this.decisions) {
@@ -3338,7 +3357,7 @@ class Game {
     cost = this.aiCost(cost, payer);
     const why = this.lack(cost, sysId, payer);
     if (why) return fail(why);
-    this.gov(payer).credits -= cost.credits || 0;
+    if (cost.credits) { this.cash('build', -cost.credits, { gov: payer }); this.cash('build', cost.credits, { pv: sysId ?? payer }); } // 建てる星系の民間が受け取る (賃金と買い付け)
     if (cost.energy) this.bookE('build', -cost.energy, payer);
     for (const r of RES) if (cost[r]) this.mv(sysId, r, -cost[r], 'build');
     return { ok: true };
@@ -3407,7 +3426,10 @@ class Game {
     cost = this.aiCost(cost, sysId);
     const p = this.procure(cost, sysId);
     if (p.why) return fail(p.why);
-    this.gov(sysId).credits -= cost.credits || 0;
+    // 支払いは建てる星系の民間へ。入植船の開拓資金は船が運び、着いた星系に渡す
+    const seed = job.type === 'ship' ? SEED_FUNDS[job.kind] || 0 : 0;
+    if (cost.credits) { this.cash('build', -cost.credits, { gov: sysId }); this.cash('build', cost.credits - seed, { pv: sysId }); }
+    if (seed) this.cash('build', seed, { way: job, f: 'seed' });
     if (job.flight) this.bookShip('settler', job.flight.m, job.flight.beta, 'free', sysId);
     else if (cost.energy) this.bookE('build', -cost.energy, sysId);
     for (const x of p.plan) {
@@ -3464,7 +3486,7 @@ class Game {
       else this.outposts.push({ sys: job.sys, body: job.body, lv: 1 });
       this.message(`${this.target(job.sys, job.body).name} の採掘基地が Lv${o ? o.lv : 1} になった`, job.sys);
     } else if (job.type === 'ship') {
-      this.launch(job.sys, job.to, job.body, job.kind, job.supplies);
+      this.launch(job.sys, job.to, job.body, job.kind, job.supplies, job);
     }
   }
 
@@ -3514,7 +3536,7 @@ class Game {
     const m = SHIP_COST[kind].goods * RES_KG.goods + sup.food * RES_KG.food + sup.water * RES_KG.water + SETTLERS[kind] * 1e6 * PERSON_KG;
     return { m, beta: this.voyage(fromId, toId, OFFROUTE_SPEED).path.length > 2 ? SHIP_SPEED : OFFROUTE_SPEED };
   }
-  launch(fromId, toId, bodyId, kind, supplies = {}) {
+  launch(fromId, toId, bodyId, kind, supplies = {}, job = null) {
     // 出発地の星系に駐留する歩兵から同行させる (奴隷兵は後回し)
     let want = this.escortNeed(toId, bodyId, kind);
     const escort = { troops: 0, slave: 0 };
@@ -3529,6 +3551,7 @@ class Game {
       depart: this.year, arrive: this.year + years,
     };
     this.ships.push(ship);
+    if (job?.seed) { const v = job.seed; this.cash('build', -v, { way: job, f: 'seed' }); this.cash('build', v, { way: ship, f: 'seed' }); }
     this.message(`${this.system(fromId).name} → ${this.system(toId).name} へ入植船が出発 (${KIND_LABEL[kind]}、${v.path.length > 2 ? `交易路経由、` : ''}到着まで ${years.toFixed(2)} 年${escort.troops + escort.slave ? `、歩兵 ${escort.troops + escort.slave} 連隊が同行` : ''})`, fromId);
     return { ok: true, ship };
   }
@@ -3660,7 +3683,7 @@ class Game {
       amt = paid + aid;
       if (amt <= 0.001) { this.refund(q); continue; }
       if (paid > 0) {
-        if (prepaid) q.pre -= paid * price; else this.earn('import', -paid * price, q.from);
+        if (prepaid) this.cash('import', -paid * price, { way: q, f: 'pre' }); else this.earn('import', -paid * price, q.from);
         this.earn('trade', paid * price, q.to); this.noteLordTrade(q.from, q.to, paid * price);
       }
       if (aid > 0) { this.receiveAid(q.from, aid * price); this.noteLordTrade(q.from, q.to, aid * price); }
@@ -3749,8 +3772,9 @@ class Game {
           const amt = c.amt * scale;
           if (amt <= min) continue;
           const pre = broke ? 0 : amt * price;
-          if (pre) this.earn('import', -pre, T);
-          this.requests.push({ id: this.nextShipId++, kind: 'trade', from: T, to: c.S, res, amt, price, pre, sent: this.year, arrive: this.year + this.travelYears(T, c.S), state: 'sending' });
+          const q = { id: this.nextShipId++, kind: 'trade', from: T, to: c.S, res, amt, price, pre: 0, sent: this.year, arrive: this.year + this.travelYears(T, c.S), state: 'sending' };
+          this.requests.push(q);
+          if (pre) { this.earn('import', -pre, T); this.cash('import', pre, { way: q, f: 'pre' }); } // 先払いは、送り手に渡るまで運ぶ途中
           pendingPair.add(c.kpair);
           asked.set(ka, (asked.get(ka) || 0) + amt);
           promised.set(c.kp, (promised.get(c.kp) || 0) + amt);
@@ -3763,8 +3787,7 @@ class Game {
   }
   // 取り消した物資移送要求の先払いを、受け手に返す (返金は光速で届くが、簡単のためすぐ返す)
   refund(q) {
-    if (q.pre > 0 && this.govs[q.from]) this.earn('import', q.pre, q.from);
-    q.pre = 0;
+    if (q.pre > 0) this.release('import', q, 'pre', q.from, q.from);
     q.amt = 0;
   }
   // 貨物を積み出す。path は経由する星系の列、times は各星系に着く年
@@ -4140,8 +4163,10 @@ class Game {
   sendGrant(from, to, amt, auto = false) {
     amt = Math.min(amt, Math.max(0, this.gov(from).credits));
     if (from === to || amt < 1) return fail('送れる資金がない');
+    const q = { id: this.nextShipId++, kind: 'grant', from, to, amt: 0, auto, sent: this.year, arrive: this.year + this.travelYears(from, to), state: 'sending' };
+    this.requests.push(q);
     this.earn('grant', -amt, from);
-    this.requests.push({ id: this.nextShipId++, kind: 'grant', from, to, amt, auto, sent: this.year, arrive: this.year + this.travelYears(from, to), state: 'sending' });
+    this.cash('grant', amt, { way: q, f: 'amt' });
     if (!auto) this.message(`${this.system(to).name} へ資金援助 ${fmtAmt(amt)} cr を送った (届くまで ${this.travelYears(from, to).toFixed(1)} 年)`, from);
     return { ok: true };
   }
@@ -4166,8 +4191,10 @@ class Game {
       const rate = (gv.taxFree || 0) > this.year ? 0 : REGIMES[regimeKey(gv)].tribute; // 減税中は免除。ほかは統治体制ごと (直接統治 50%・間接統治 25% …)
       const amt = Math.min(Math.max(0, gv.credits), Math.max(0, inc) * rate);
       if (amt < 0.01) continue;
+      const q = { id: this.nextShipId++, kind: 'tribute', from: id, to: gv.lord, amt: 0, sent: this.year, arrive: this.year + this.travelYears(id, gv.lord), state: 'sending' };
+      this.requests.push(q);
       this.earn('tribute', -amt, id);
-      this.requests.push({ id: this.nextShipId++, kind: 'tribute', from: id, to: gv.lord, amt, sent: this.year, arrive: this.year + this.travelYears(id, gv.lord), state: 'sending' });
+      this.cash('tribute', amt, { way: q, f: 'amt' }); // 届くまでは運ぶ途中
     }
   }
 
@@ -4765,13 +4792,15 @@ class Game {
   }
   arrivals() {
     let changed = false;
-    for (const q of this.requests) if (q.kind === 'tribute' && q.arrive <= this.year && this.govs[q.to]) this.earn('tribute', q.amt, q.to);
+    // 届いた朝貢と資金援助は受け手の政府へ (受け手の政府がなければ送り手へ返す)
+    for (const q of this.requests) if (q.kind === 'tribute' && q.arrive <= this.year) this.release('tribute', q, 'amt', q.to, q.from);
     for (const q of this.requests) {
-      if (q.kind !== 'grant' || q.arrive > this.year || !this.govs[q.to]) continue;
-      this.earn('grant', q.amt, q.to);
-      this.receiveAid(q.to, q.amt);
+      if (q.kind !== 'grant' || q.arrive > this.year) continue;
+      if (!this.govs[q.to]) { this.release('grant', q, 'amt', q.from, q.from); continue; }
+      const amt = this.release('grant', q, 'amt', q.to, q.from);
+      this.receiveAid(q.to, amt);
       if (this.govs[q.to]?.lord === q.from) this.attend(q.to); // 主人からの資金援助は関与になる
-      if (!q.auto) this.message(`資金援助 ${fmtAmt(q.amt)} cr が ${this.system(q.to).name} に届いた`, q.to);
+      if (!q.auto) this.message(`資金援助 ${fmtAmt(amt)} cr が ${this.system(q.to).name} に届いた`, q.to);
     }
     for (const q of this.requests) {
       if (q.kind !== 'order' || q.arrive > this.year) continue;
@@ -4810,10 +4839,12 @@ class Game {
         // 積んできた食料と水は入植先の備蓄に入る (入植できなくても荷は下ろす)
         for (const [r, v] of Object.entries(s.supplies || {})) this.mv(s.to, r, v, 'arrive');
         const joinEscort = (col) => { if (col && s.escort) { col.troops += s.escort.troops; col.slaveTroops += s.escort.slave; } };
-        if (this.colonyAt(s.to, s.body, kind)) { joinEscort(this.colonyAt(s.to, s.body, kind)); continue; }
+        // 開拓資金は新しい政府へ。政府がもうある星系なら、入植者が持ち込んで民間のお金になる
+        const seedTo = (acct) => { if (s.seed) { const v = s.seed; this.cash('build', -v, { way: s, f: 'seed' }); this.cash('build', v, acct); } };
+        if (this.colonyAt(s.to, s.body, kind)) { joinEscort(this.colonyAt(s.to, s.body, kind)); seedTo({ pv: s.to }); continue; }
         const fresh = !this.govs[s.to];
         this.addColony(s.to, s.body, kind, t.name, SETTLERS[kind], s.from);
-        if (fresh) this.gov(s.to).credits += SEED_FUNDS[s.kind];
+        seedTo(fresh ? { gov: s.to } : { pv: s.to });
         joinEscort(this.colonyAt(s.to, s.body, kind));
         if (kind === 'planet' && this.hostileNatives(s.to, s.body)) this.startWar(s.to, s.body);
         const sup = Object.entries(s.supplies || {}).filter(([, v]) => v > 0).map(([r, v]) => `${RES_LABEL[r]} ${fmtAmt(v)}`).join('・');
@@ -4883,8 +4914,12 @@ class Game {
     gv.dep = (gv.dep || 0) + value / 10;
     gv.aidYear = (gv.aidYear || 0) + value;
   }
-  earn(kind, amount, sys = 0) {
+  // 政府の収支を記帳する。other を渡すと、その帳簿が相手になる (税と維持費は星系の民間、先住民は先住民)。
+  // 渡さないもの (交易・朝貢・資金援助) は、呼ぶ側が相手の政府か運ぶ途中の帳簿を動かす。
+  // 種族の特性とハンディキャップで増えた (減った) 分は、その星系の民間が出す (受け取る)
+  earn(kind, amount, sys = 0, other = null) {
     const gv = this.gov(sys);
+    const base = amount;
     if (this.nations && amount > 0) {
       if (kind === 'trade') amount *= this.modsOf(sys).trade; // 種族の特性: 商才
       if (AI_INCOME_KINDS.has(kind) && !this.isHuman(this.realmOf(sys))) amount *= HANDICAP[this.handicap].aiIncome; // ハンディキャップ: AI の国の収入
@@ -4894,6 +4929,31 @@ class Game {
     gv.led ??= {};
     gv.led[kind] = (gv.led[kind] || 0) + amount;
     if (amount > 0) gv.inc = (gv.inc || 0) + amount;
+    if (MONEY_AUDIT) { const f = (MONEY_AUDIT[kind] ??= {}); f.gov = (f.gov || 0) + amount; }
+    if (other) this.cash(kind, -amount, other);
+    else if (amount !== base) this.cash(kind, base - amount, { pv: sys });
+  }
+  // --- お金の帳簿 (段 4)。お金は湧かず消えない: どの出入りも、どこかの帳簿から出て、どこかの帳簿へ入る ---
+  // 帳簿: { gov: 星系 } = 政府 (gv.credits)、{ pv: 星系 } = 星系の民間 (人々と会社。gv.pv)、{ nat: 'sys|body' } = 先住民 (st.cr)、
+  // { way: 物, f: 欄 } = 運ぶ途中 (物資移送要求の先払い q.pre・朝貢と資金援助の q.amt・返事に添えた額 dec.cr・入植船の開拓資金 seed)。
+  // 銀行: 民間と先住民は、手持ち (pv・cr) で払えない分を銀行から借りる (loan)。銀行は貸すと同時に預金を作り、返されると消す
+  // (貸出 = 作った預金なので、銀行の純資産は 0。Godley & Lavoie 2007 の第 7 章)。手持ちができたら、まず借りを返す。
+  // 利子と借りられる上限は、まだない (財政の段で決める)。政府の収支の表 (led) に載せるものは earn を通す
+  cash(kind, v, acct) {
+    let t;
+    if (acct.gov !== undefined) { this.gov(acct.gov).credits += v; t = 'gov'; }
+    else if (acct.pv !== undefined) { bankMove(this.gov(acct.pv), 'pv', v); t = 'pv'; }
+    else if (acct.nat !== undefined) { bankMove(this.natives[acct.nat], 'cr', v); t = 'nat'; }
+    else { acct.way[acct.f] = (acct.way[acct.f] || 0) + v; t = 'way'; }
+    if (MONEY_AUDIT) { const f = (MONEY_AUDIT[kind] ??= {}); f[t] = (f[t] || 0) + v; }
+  }
+  // 運ぶ途中の額を受け手へ渡す (受け手の政府がなければ送り手へ返す)。渡した額を返す
+  release(kind, q, f, to, back) {
+    const v = q[f] || 0;
+    if (!v) return 0;
+    this.cash(kind, -v, { way: q, f });
+    if (this.govs[to]) this.earn(kind, v, to); else this.earn(kind, v, back);
+    return v;
   }
 
   // --- エネルギーの記帳 ---
@@ -5029,7 +5089,7 @@ class Game {
       const unrest = n && n.st.status !== 'integrated' && n.st.rel < -20 ? 0.02 : 0;
       c.growth = Math.min(ED.growthCap, POP_GROWTH * this.modsOf(c.sys).growth * (REGIMES[regimeKey(this.govs[c.sys])].growth || 1) * (1 - c.pop / this.capOf(c)) * life * (0.5 + 0.5 * goods) * (c.plague > this.year ? 0.2 : 1)) - 0.05 * (1 - life) - unrest;
       c.pop = Math.max(0.001, c.pop * (1 + c.growth * h));
-      this.earn('tax', (BASE_TAX[c.kind] + 0.08 * c.pop * (0.5 + 0.5 * goods)) * h, c.sys);
+      this.earn('tax', (BASE_TAX[c.kind] + 0.08 * c.pop * (0.5 + 0.5 * goods)) * h, c.sys, { pv: c.sys }); // 星系の民間が払う
     }
     // 4. 先住民: 拠点がある星系では友好度が少しずつ上がる。友好的なら交易、制圧していれば貢納
     for (const [key, st] of Object.entries(this.natives)) {
@@ -5039,11 +5099,11 @@ class Game {
         // 征服戦争中は友好度が上がらない
         if (!this.wars.some((w) => `${w.sys}|${w.body}` === key)) st.rel = Math.min(100, st.rel + 3 * h);
         if (st.rel >= 40) {
-          this.earn('natives', 0.02 * st.pop * h, sys);
+          this.earn('natives', 0.02 * st.pop * h, sys, { nat: key });
           this.mv(sys, 'rare', 0.005 * st.pop * h, 'extract'); // 先住民との交易で手に入る
         }
       } else if (st.status === 'subjugated') {
-        this.earn('natives', 0.03 * st.pop * h, sys);
+        this.earn('natives', 0.03 * st.pop * h, sys, { nat: key });
       } else {
         const stock = this.stockOf(sys);
         const fl = F(sys);
@@ -5058,17 +5118,17 @@ class Game {
       for (const r of RES) if (st[r] > cap) this.mv(Number(s), r, cap - st[r], 'waste');
     }
     // 7. 軍の維持費
-    // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)
+    // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)。受け取るのは払う星系の民間 (兵の給料と補給の買い付け)
     const payer = (id) => (this.isColonized(id) ? id : 0);
     // 国家方針が軍拡期なら、地球の国の艦隊の維持費が40%安い
     const upk = (p) => WARSHIP_UPKEEP * (this.policy && this.policyAt(p) === 'military' ? 0.6 : 1);
-    for (const [id, n] of Object.entries(this.garrison)) if (n) { const p = payer(Number(id)); this.earn('upkeep', -upk(p) * n * h, p); }
-    for (const f of this.fleets) { const p = payer(f.to); this.earn('upkeep', -upk(p) * f.n * h, p); }
+    for (const [id, n] of Object.entries(this.garrison)) if (n) { const p = payer(Number(id)); this.earn('upkeep', -upk(p) * n * h, p, { pv: p }); }
+    for (const f of this.fleets) { const p = payer(f.to); this.earn('upkeep', -upk(p) * f.n * h, p, { pv: p }); }
     for (const c of this.colonies) {
       const u = TROOP_UPKEEP * c.troops + SLAVE_TROOP_UPKEEP * c.slaveTroops;
-      if (u) this.earn('upkeep', -u * h, c.sys);
+      if (u) this.earn('upkeep', -u * h, c.sys, { pv: c.sys });
     }
-    for (const m of this.troopMoves) this.earn('upkeep', -(TROOP_UPKEEP * m.troops + SLAVE_TROOP_UPKEEP * m.slave) * h, 0);
+    for (const m of this.troopMoves) this.earn('upkeep', -(TROOP_UPKEEP * m.troops + SLAVE_TROOP_UPKEEP * m.slave) * h, 0, { pv: 0 });
     // 8. 兵站: 艦隊は1艦隊あたり年に FLEET_SUPPLY の燃料と金属を使う。駐留する星系の備蓄から出す
     //    (入植していない星系に置いた艦隊と攻撃中の艦隊は、その国の最も近い星系 = 補給の拠点から)。
     //    需要に数えるので、足りなければ交易路で運ばれてくる。備蓄で足りなければ補給不足になって戦力が落ちる
