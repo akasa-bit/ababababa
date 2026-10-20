@@ -1714,7 +1714,7 @@ const OUTPOST_RATE = 25; // 埋蔵量1・Lv1あたりの年産量
 const outpostRes = (b) => (b && !b.label && OUTPOST_RES[b.type]) || [];
 const PIRATE_START = 2320;
 const LEDGER_ICON = { tax: 'tax', trade: 'export', import: 'import', interest: 'credits', welfare: 'pop', security: 'loyalty', military: 'fleet', natives: 'natives', tribute: 'tribute', grant: 'grant', upkeep: 'fleet' };
-const LEDGER_LABEL = { tax: '税収', trade: '輸出', import: '輸入', interest: '貯えの利子', welfare: '福祉の予算', security: '治安の予算', military: '軍事の予算', natives: '先住民', tribute: '朝貢', grant: '資金援助', upkeep: '軍の維持費' };
+const LEDGER_LABEL = { tax: '税収', trade: '輸出', import: '輸入', interest: '利子 (貯えの利子 − 国債の利子)', public: '行政サービス', welfare: '福祉の予算', security: '治安の予算', military: '軍事の予算', natives: '先住民', tribute: '朝貢', grant: '資金援助', upkeep: '軍の維持費' };
 const LOYALTY_START = 70; // 新しい政府の忠誠度
 const FRIEND_SAFE = 50; // 主人との友好度がこれ以上なら、威圧の艦隊を送らない
 const FRIEND_DAMP = 0.6; // 友好度100で、最後通牒の期限に独立を宣言する確率が 1 − FRIEND_DAMP 倍になる
@@ -1873,6 +1873,11 @@ const BUDGET_HALF = 0.1;
 const budgetEffect = (share) => (share > 0 ? share / (share + BUDGET_HALF) : 0);
 const FISCAL_DEFAULT = { tax: 'normal', rate: 0.01, budget: { welfare: 0, security: 0, military: 0 } };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
+// 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
+//   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)
+// に合わせて国債を出し入れする (Bohn 1998 の形。係数は JST R6 の 18 か国 1870〜2020 年を国ごとに推定した中央値。data/build/analyze_fiscal.py)。
+// trend = 傾向をならす年数、cash = 手元に置く資金 (税収の何年分。仮の値)、spend = それを超えた資金を行政サービスに使いきる年数
+const DEBT = { a: -0.0023, rho: 0.0336, beta: 0.056, war: -0.017, sd: 0.0269, ar: 0.6971, trend: 10, cash: 3, spend: 1 };
 const POLICY_COST = 20;
 const POLICY_YEARS = 30; // 国家方針を変えられる間隔
 // 不満の段階: 1 不満 (離反の起きやすさ HAZARD に従って起きる) → UNREST_YEARS 年続くと 2 要求 (減税・自治を主人へ求める)
@@ -2944,6 +2949,33 @@ class Game {
       gv.bpaid = (gv.bpaid ?? 1) + (f - (gv.bpaid ?? 1)) * Math.min(1, h);
     }
     this.interestStep(h);
+    this.debtStep(h);
+  }
+  // 国債 (docs/debt.md)。人間が動かしていない政府は、財政の反応の式 (DEBT) で決まる基礎収支に、国債の利子を足した分だけ国債を出す
+  // (マイナスなら返す)。銀行が国債を買い、同じ額の預金を政府に作るので、政府の純額 (資金 − 国債) は変わらない (お金は湧かない)。
+  // 手元の資金が税収の DEBT.cash 年分を超えたら、超えた分を DEBT.spend 年ほどで行政サービス (民間の賃金と買い付け) に使う
+  debtStep(h) {
+    const war = new Set(Object.keys(this.realmWars).flatMap((k) => k.split('|').map(Number)));
+    const keep = GM.pow(DEBT.ar, h), out = 1 - GM.exp(-h / DEBT.spend);
+    for (const key of Object.keys(this.govs)) {
+      const id = Number(key), gv = this.govs[key];
+      const paid = gv.bondPaid || 0;
+      gv.bondPaid = 0;
+      if (!this.isColonized(id) || (this.isHuman(id) && !this.spectate)) continue;
+      const y = this.coloniesIn(id).reduce((k, c) => k + this.incomeOf(c), 0);
+      if (!(y > 0)) continue;
+      const fr = (gv.fr ??= { y, t: GM.log(y), u: 0 });
+      fr.y += (y - fr.y) * Math.min(1, h);
+      fr.t += (GM.log(fr.y) - fr.t) * Math.min(1, h / DEBT.trend);
+      fr.u = fr.u * keep + DEBT.sd * Math.sqrt(1 - keep * keep) * this.randNormal();
+      const s = DEBT.a + DEBT.rho * ((gv.bond || 0) / fr.y) + DEBT.beta * (GM.log(fr.y) - fr.t) + (war.has(this.realmOf(id)) ? DEBT.war : 0) + fr.u;
+      let x = -s * fr.y * h + paid;
+      if (x < 0) x = -Math.min(-x, gv.bond || 0, Math.max(0, gv.credits));
+      if (gv.credits + x < 0) x = -gv.credits;
+      if (x) { gv.credits += x; gv.bond = Math.max(0, (gv.bond || 0) + x); }
+      const extra = gv.credits - DEBT.cash * Math.max(0, (gv.ledger?.tax || 0) + (gv.ledger?.natives || 0));
+      if (extra > 0) this.earn('public', -extra * out, id, { pv: id });
+    }
   }
   // 利子: 銀行から借りている民間と先住民が、その星系で効いている国の利子率で利子を払う。銀行はそれを、預金
   // (政府の資金・民間と先住民の手持ち) の額に比べて分ける。銀行の儲けは 0 (docs/fiscal.md)。運ぶ途中のお金には利子がつかない
@@ -2953,6 +2985,7 @@ class Game {
     for (const key of Object.keys(this.govs)) {
       const id = Number(key), gv = this.govs[key];
       if (gv.loan > 0) { const x = gv.loan * this.rateAt(id) * h; debtors.push([{ pv: id }, x]); paid += x; }
+      if (gv.bond > 0) { const x = gv.bond * this.rateAt(id) * h; debtors.push([{ gov: id }, x]); paid += x; gv.bondPaid = (gv.bondPaid || 0) + x; }
       if (gv.credits > 0) { deposits.push([{ gov: id }, gv.credits, id]); held += gv.credits; }
       if (gv.pv > 0) { deposits.push([{ pv: id }, gv.pv]); held += gv.pv; }
     }
@@ -2962,7 +2995,7 @@ class Game {
       if (st.cr > 0) { deposits.push([{ nat: key }, st.cr]); held += st.cr; }
     }
     if (!(paid > 0) || !(held > 0)) return;
-    for (const [acct, x] of debtors) this.cash('interest', -x, acct);
+    for (const [acct, x] of debtors) if (acct.gov !== undefined) this.earn('interest', -x, acct.gov); else this.cash('interest', -x, acct);
     for (const [acct, v, gov] of deposits) {
       const x = paid * (v / held);
       if (gov !== undefined) this.earn('interest', x, gov); else this.cash('interest', x, acct);
@@ -5049,6 +5082,8 @@ class Game {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
+  // 標準正規分布の乱数 (Box–Muller。試合の乱数 rand から)
+  randNormal() { return Math.sqrt(-2 * GM.log(1 - this.rand())) * GM.cos(2 * Math.PI * this.rand()); }
   advance(dt) {
     SIM = this;
     let changed = false;
@@ -5868,7 +5903,7 @@ class Game {
       prod: fl ? { ...fl.prod } : zeroRes(), cons: fl ? { ...fl.cons } : zeroRes(),
       garrison: this.garrison[id] || 0, held: this.held[id] || 0, awe: this.awe[id] || 0, supply: this.supplied[id]?.k,
       projects: this.projects.filter((j) => j.sys === id).map((j) => ({ type: j.type, n: j.n, col: j.col, fac: j.fac, body: j.body, to: j.to, kind: j.kind, start: j.start, ready: j.ready, label: j.label })),
-      credits: gv ? gv.credits : 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null, energy: gv?.E || 0, power: this.power(id),
+      credits: gv ? gv.credits : 0, bond: gv?.bond || 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null, energy: gv?.E || 0, power: this.power(id),
       ...(() => { // その星系で効いている財政 (標準でないものだけ)
         if (!this.isColonized(id)) return {};
         const root = this.realmOf(id), t = this.fiscalAt(id).tax, w = this.budgetAt(root, id, 'welfare'), sc = this.budgetAt(root, id, 'security');
@@ -7870,7 +7905,7 @@ function systemPanel(app) {
   return `${sysHead(g, sys, k, cols)}
     <div class="acts">${acts.join('')}</div>
     ${app.view === 'system' ? bodyList(app, sys) : ''}
-    ${sec('gov', `${ico('credits')}政府と資金`, colonized ? (id === g.cap ? `資金 ${fmtAmt(g.credits)} cr` : `資金 ${fmtAmt(k?.credits || 0)} cr・収入 ${fmtAmt(k?.income || 0)}/年`) : '', govHtml)}
+    ${sec('gov', `${ico('credits')}政府と資金`, colonized ? (id === g.cap ? `資金 ${fmtAmt(g.credits)} cr` : `資金 ${fmtAmt(k?.credits || 0)} cr${k?.bond > 0 ? `・国債 ${fmtAmt(k.bond)} cr` : ''}・収入 ${fmtAmt(k?.income || 0)}/年`) : '', govHtml)}
     ${colonized ? sec('energy', 'エネルギー', `蓄え ${fmtJ(id === g.cap ? g.energyOf(id) : k?.energy || 0)}`, energyBox(g, id, k)) : ''}
     ${o ? sec('loyal', `${ico('loyalty')}忠誠と統治`, outlookText(o, true), loyaltyBox(g, id), o.warn ? 'warn' : '') : ''}
     ${colonized ? sec('cols', `${ico('colony')}入植地と採掘基地`, `${cols.length} か所・${fmtPop(pop)}`, `<ul>${cols.map((c) => `<li>${esc(c.name)} — ${KIND_LABEL[c.kind]} <span class="muted">人口 ${fmtPop(c.pop)}</span></li>`).join('')}</ul>${outpostList(g, sys)}${id === 0 ? `${autoToggle(g, id)}<p class="note">オンにすると、生産が需要に届かない資源を年に1回選び、惑星上の施設 (農場・鉱山・工場) や採掘基地を自動で建てる。過密な入植地では居住区も拡張し、${ME.capName}の空いている天体には宇宙ステーションも建てる (10年に1つまで。資金が費用の2倍以上あるとき)。</p>` : ''}`) : ''}
@@ -8066,7 +8101,7 @@ function govBox(g, id) {
   const btn = realm === g.cap ? grant : ''; // 他国への講和・宣戦は欄の上の「よく使う操作」にある
   const siege = (k.siege ? `<p class="note bad">攻囲されている: ${esc(g.system(k.siege.realm).name)} の国の ${k.siege.ships} 艦隊・進捗 ${pct(k.siege.progress)}</p>` : '')
     + (k.battle ? `<p class="note bad">艦隊戦の最中: 攻撃 ${esc(g.system(k.battle.realm).name)} の国 ${Math.ceil(k.battle.a)} 艦隊 (投入 ${Math.round(k.battle.a0)}) 対 防衛 ${Math.ceil(k.battle.d)} 艦隊 (投入 ${Math.round(k.battle.d0)})・${k.battle.start.toFixed(1)}年から</p>` : '');
-  return `<p class="note"><span class="dot" style="background:${realmColor(realm)}"></span>${status}。従属先: ${chain.map((l) => esc(g.system(l).name)).join(' → ') || 'なし'}・資金 ${fmtAmt(k.credits)} cr (収入 ${fmtAmt(k.income)}/年${k.lord !== null && k.lord !== undefined ? '、その25%を朝貢' : ''})。
+  return `<p class="note"><span class="dot" style="background:${realmColor(realm)}"></span>${status}。従属先: ${chain.map((l) => esc(g.system(l).name)).join(' → ') || 'なし'}・資金 ${fmtAmt(k.credits)} cr${k.bond > 0 ? `・国債 ${fmtAmt(k.bond)} cr` : ''} (収入 ${fmtAmt(k.income)}/年${k.lord !== null && k.lord !== undefined ? '、その25%を朝貢' : ''})。
     ${k.aid > 0.5 ? `<b>主人から支援 (物資・資金援助) を受けている</b> (年 ${fmtAmt(k.aid)} cr 相当。従属が深まり、忠誠度が上がる)。` : ''}輸入する物資は代金を払う。資源に余裕があれば自分で施設を建て、交易路を引き、入植も行う。指示は光速の指令で送る${realm === 0 ? '' : ' (他国なので従わない)'}。</p>${siege}${btn}`;
 }
 
