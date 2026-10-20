@@ -124,3 +124,15 @@ node tools/build.mjs
 | 加工 | `data/build/build_flares.py` → `data/derived/flares.json` と `src/index.html` の `FLARES` | 星ごとの分布の当てはめ (露出で重み・最尤法)、太陽で測った X 線 → 陽子の関係と、陽子が来る割合、1 AU の 1 年の F(>10 MeV) |
 
 出典: Ricker ほか (2015) TESS・Stassun ほか (2019) / Paegert ほか (2021) TIC・Günther ほか (2020) AJ 159, 60・Galletta ほか (2025) A&A 698, A180・Papaioannou ほか (2023) A&A 671, A66・Cliver ほか (2020) ApJ 903, 41・NOAA NCEI GOES XRS flare reports・Davenport (2014) ApJ 797, 122
+
+## 生産性のデータ (開始時に選ぶ「生産性」の「2300 年の予測」)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_productivity.py` → `data/raw/productivity/` | Long-Term Productivity Database v2.7 (Bergeaud, Cette & Lecat。25 か国 1890 年〜の労働生産性・TFP・1 人あたり GDP)、Maddison Project Database 2023 の「Full data」(国ごと・年ごとの 1 人あたり GDP と人口。元の xlsx から CSV にしたもの)。取得日・URL・SHA-256 を `data/raw/productivity/MANIFEST.json` に記録する |
+| 加工 | `data/build/forecast_productivity.py` → `data/derived/productivity.json` | 米国の労働生産性の伸び (1890・1950・1973・2005 年から 2023 年)、コンドラチェフの波 (周期 40〜70 年の正弦波の当てはめ。Maddison でも確かめる)、2300 年の倍率 |
+
+- **最前線は米国**: 各年にいちばん高い国をとると、2005 年以後はアイルランドやノルウェーになり、GDP の測り方の事情で高く出るので使わない
+- **限界**: 長い波の当てはまりは弱い (R² 0.1〜0.2)。2300 年の倍率は、延ばす伸びの選び方で ×33〜×253 と大きく変わる (`docs/productivity.md`)
+
+出典: Bergeaud, A., Cette, G. & Lecat, R. (2016) Productivity Trends in Advanced Countries between 1890 and 2012, Review of Income and Wealth 62(3), 420–444・Bolt, J. & van Zanden, J. L. (2024) Maddison style estimates of the evolution of the world economy: A new 2023 update, Journal of Economic Surveys
