@@ -48,8 +48,10 @@ function overlay(dst, src, where) {
   }
 }
 
-function load({ src = SRC, params = null } = {}) {
-  const html = fs.readFileSync(src, 'utf8');
+// edition = 'sim' なら、シミュレーション版として読む (src の EDITION の行を書き換える。build.mjs と同じ)
+function load({ src = SRC, params = null, edition = null } = {}) {
+  let html = fs.readFileSync(src, 'utf8');
+  if (edition) html = html.replace("const EDITION = 'game'; /* EDITION */", `const EDITION = '${edition}';`);
   const js = html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>'));
   const names = [...js.matchAll(/^const ([A-Z][A-Z0-9_]*) = [{[]/gm)].map((m) => m[1]).concat(['ED']); // ED = この版の EDITIONS の値
   const base = {

@@ -9,7 +9,8 @@ const SHOTS = fs.mkdtempSync(path.join(require('os').tmpdir(), 'nlu-shots-'));
 
 const last = (out) => out.trim().split('\n').pop().trim();
 const noPageErrors = (out) => /\[\]$/.test(last(out)) || /"errs": \[\]/.test(out);
-// [名前, 引数, 合格の決まり (出力 → 理由の文字列。合格なら空)]
+// [名前, 引数, 合格の決まり (出力 → 理由の文字列。合格なら空), { env, optional }]
+// optional = シミュレーション版の試験 (表に「参考」と出し、落ちても CI は止めない。ほかのレーンはシミュレーション版を無視してよい: docs/parallel.md の 6)
 const TESTS = [
   ['det', ['3', '120'], (o) => ((o.match(/一致/g) || []).length >= 3 && o.includes('保存→読込→保存: true') && noPageErrors(o) ? '' : '再現性が一致しない')],
   ['hot', [], (o) => (o.includes('他国の艦隊には命令できない') && /\[ true, [^\]]*\] \[ true, [^\]]*\] \[\]$/.test(last(o)) ? '' : 'ホットシートの結果が違う')],
@@ -35,6 +36,8 @@ const TESTS = [
   ['editions', [SHOTS], (o) => (noPageErrors(o) ? '' : 'ページの誤り')],
   ['energy', ['5', '150'], (o) => (o.trim().split('\n')[0].includes('R07 合格') ? '' : 'R07 不合格')],
   ['conserve', ['5', '150'], (o) => (o.trim().split('\n')[0].includes('R03 合格') && o.includes('決まっていない出入り: なし') ? '' : 'R03 不合格')],
+  ['physics', ['5', '150'], (o, code) => (code === 0 && o.trim().split('\n')[0].includes('物理 合格') ? '' : '物理 不合格'), { optional: true }],
+  ['energy', ['5', '150'], (o) => (o.trim().split('\n')[0].includes('R07 合格') ? '' : 'R07 不合格 (シミュレーション版)'), { optional: true, env: { HTML: path.join(SHOTS, 'simulation.html') } }],
   ['money', ['5', '150'], (o) => (o.trim().split('\n')[0].includes('お金の保存 合格') && o.includes('決まっていない出入り: なし') ? '' : 'お金の保存 不合格')],
   ['money', ['7', '150', '6'], (o) => (o.trim().split('\n')[0].includes('お金の保存 合格') && o.includes('決まっていない出入り: なし') ? '' : 'お金の保存 不合格 (6 か国)')],
   ['fiscal', [SHOTS], (o) => {
@@ -56,20 +59,25 @@ const t00 = Date.now();
 // 0. 組み立て (公開用の index.html を元のファイルから作り直す。試験は作り直したものを開く)
 try { execFileSync('node', [path.join(ROOT, 'tools/build.mjs')], { stdio: 'pipe' }); rows.push(['build', '合格', '']); }
 catch (e) { rows.push(['build', '**不合格**', String(e.stderr || e).slice(0, 200)]); failed++; }
+// シミュレーション版は、試験の作業場所にだけ作る (リポジトリの simulation.html は変えない。落ちても CI は止めない)
+try { execFileSync('node', [path.join(ROOT, 'tools/build.mjs'), '--sim-to', path.join(SHOTS, 'simulation.html')], { stdio: 'pipe' }); }
+catch (e) { rows.push(['build (シミュレーション版・参考)', '不合格 (参考。無視してよい)', String(e.stderr || e).slice(0, 200)]); }
 // 0'. 合わせる目標のファイルが固定したときから変わっていない
 {
   const r = spawnSync('node', [path.join(ROOT, 'tools/check-targets.js')], { encoding: 'utf8' });
   rows.push(['targets', r.status === 0 ? '合格' : '**不合格**', r.status === 0 ? '' : (r.stdout + r.stderr).trim().slice(0, 200)]);
   if (r.status !== 0) failed++;
 }
-for (const [name, args, judge] of TESTS) {
+for (const [name, args, judge, opt = {}] of TESTS) {
   if (only.length && !only.includes(name)) continue;
+  if (opt.env?.HTML && !fs.existsSync(opt.env.HTML)) continue;
   const t0 = Date.now();
-  const r = spawnSync('node', [path.join(ROOT, 'tools/tests', `${name}.js`), ...args], { encoding: 'utf8', cwd: SHOTS, timeout: 20 * 60 * 1000, maxBuffer: 64 << 20 });
+  const r = spawnSync('node', [path.join(ROOT, 'tools/tests', `${name}.js`), ...args], { encoding: 'utf8', cwd: SHOTS, timeout: 20 * 60 * 1000, maxBuffer: 64 << 20, env: { ...process.env, ...(opt.env || {}) } });
   const out = `${r.stdout || ''}`;
   const why = r.error ? String(r.error.message) : judge(out, r.status);
-  if (why) { failed++; process.stderr.write(`--- ${name}\n${out}\n${r.stderr || ''}\n`); }
-  rows.push([name, why ? '**不合格**' : '合格', `${why ? `${why}。` : ''}${((Date.now() - t0) / 1000).toFixed(0)} 秒`]);
+  if (why) { if (!opt.optional) failed++; process.stderr.write(`--- ${name}\n${out}\n${r.stderr || ''}\n`); }
+  const label = opt.optional ? `${name} (シミュレーション版・参考)` : name;
+  rows.push([label, why ? (opt.optional ? '不合格 (参考。無視してよい)' : '**不合格**') : '合格', `${why ? `${why}。` : ''}${((Date.now() - t0) / 1000).toFixed(0)} 秒`]);
 }
 console.log(`### 試験 (${failed ? `${failed} 件が不合格` : 'すべて合格'}。${((Date.now() - t00) / 60000).toFixed(1)} 分)`);
 console.log('');
