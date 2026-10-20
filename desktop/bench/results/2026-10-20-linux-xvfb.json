@@ -1,0 +1,345 @@
+{
+  "date": "2026-10-20T11:48:05.178Z",
+  "env": "linux x64・Xvfb (GPU なし。描画はソフトウェア)",
+  "runs": 3,
+  "targets": {
+    "chromium": [
+      {
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "epochOrigin": 1792496886159.7,
+        "dcl": 243,
+        "ready": 787,
+        "epochReady": 1792496886946,
+        "started": true,
+        "idle": {
+          "fps": 60,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 16.8
+        },
+        "rotate": {
+          "fps": 16.2,
+          "p50": 50.1,
+          "p95": 99.9,
+          "worst": 116.7
+        },
+        "speed1": {
+          "fps": 59.7,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 33.4
+        },
+        "speed64": {
+          "fps": 58.3,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 50
+        },
+        "yearsPerSec": 49.89,
+        "jsHeapMB": 10,
+        "startupMs": 1313,
+        "peakPssMB": null
+      },
+      {
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "epochOrigin": 1792496908911,
+        "dcl": 380,
+        "ready": 891,
+        "epochReady": 1792496909801,
+        "started": true,
+        "idle": {
+          "fps": 60,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 16.8
+        },
+        "rotate": {
+          "fps": 15.2,
+          "p50": 66.6,
+          "p95": 100,
+          "worst": 116.6
+        },
+        "speed1": {
+          "fps": 57,
+          "p50": 16.7,
+          "p95": 33.3,
+          "worst": 33.4
+        },
+        "speed64": {
+          "fps": 55.4,
+          "p50": 16.7,
+          "p95": 33.3,
+          "worst": 50
+        },
+        "yearsPerSec": 49.59,
+        "jsHeapMB": 10,
+        "startupMs": 1324,
+        "peakPssMB": null
+      },
+      {
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "epochOrigin": 1792496931895.8,
+        "dcl": 254,
+        "ready": 745,
+        "epochReady": 1792496932641,
+        "started": true,
+        "idle": {
+          "fps": 60,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 16.8
+        },
+        "rotate": {
+          "fps": 16.8,
+          "p50": 66.6,
+          "p95": 83.3,
+          "worst": 83.4
+        },
+        "speed1": {
+          "fps": 59.3,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 33.4
+        },
+        "speed64": {
+          "fps": 58.8,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 33.4
+        },
+        "yearsPerSec": 49.58,
+        "jsHeapMB": 10,
+        "startupMs": 1209,
+        "peakPssMB": null
+      }
+    ],
+    "electron": [
+      {
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) nolongerubiquitous-electron/0.0.1 Chrome/152.0.7977.167 Electron/44.8.0 Safari/537.36",
+        "epochOrigin": 1792496954242.8,
+        "dcl": 544,
+        "ready": 754,
+        "epochReady": 1792496954996,
+        "started": true,
+        "idle": {
+          "fps": 59.3,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 33.4
+        },
+        "rotate": {
+          "fps": 12.8,
+          "p50": 83.3,
+          "p95": 116.7,
+          "worst": 200
+        },
+        "speed1": {
+          "fps": 58.7,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 49.9
+        },
+        "speed64": {
+          "fps": 58.2,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 50
+        },
+        "yearsPerSec": 50.47,
+        "jsHeapMB": 11,
+        "startupMs": 984,
+        "peakPssMB": 491
+      },
+      {
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) nolongerubiquitous-electron/0.0.1 Chrome/152.0.7977.167 Electron/44.8.0 Safari/537.36",
+        "epochOrigin": 1792496976919.3,
+        "dcl": 796,
+        "ready": 996,
+        "epochReady": 1792496977914,
+        "started": true,
+        "idle": {
+          "fps": 60,
+          "p50": 16.7,
+          "p95": 16.7,
+          "worst": 16.8
+        },
+        "rotate": {
+          "fps": 13.6,
+          "p50": 66.7,
+          "p95": 116.7,
+          "worst": 133.4
+        },
+        "speed1": {
+          "fps": 59.7,
+          "p50": 16.7,
+          "p95": 16.7,
+          "worst": 33.3
+        },
+        "speed64": {
+          "fps": 58.6,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 50.1
+        },
+        "yearsPerSec": 51.02,
+        "jsHeapMB": 10,
+        "startupMs": 1279,
+        "peakPssMB": 545
+      },
+      {
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) nolongerubiquitous-electron/0.0.1 Chrome/152.0.7977.167 Electron/44.8.0 Safari/537.36",
+        "epochOrigin": 1792496999782.2,
+        "dcl": 555,
+        "ready": 753,
+        "epochReady": 1792497000535,
+        "started": true,
+        "idle": {
+          "fps": 59.7,
+          "p50": 16.7,
+          "p95": 16.7,
+          "worst": 33.3
+        },
+        "rotate": {
+          "fps": 12.3,
+          "p50": 83.3,
+          "p95": 116.7,
+          "worst": 116.8
+        },
+        "speed1": {
+          "fps": 59.7,
+          "p50": 16.7,
+          "p95": 16.8,
+          "worst": 33.3
+        },
+        "speed64": {
+          "fps": 56.2,
+          "p50": 16.7,
+          "p95": 33.3,
+          "worst": 50
+        },
+        "yearsPerSec": 50.41,
+        "jsHeapMB": 10,
+        "startupMs": 975,
+        "peakPssMB": 512
+      }
+    ],
+    "tauri": [
+      {
+        "ua": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15",
+        "epochOrigin": 1792497023030,
+        "dcl": 206,
+        "ready": 834,
+        "epochReady": 1792497023865,
+        "started": true,
+        "idle": {
+          "fps": 60.9,
+          "p50": 16,
+          "p95": 17,
+          "worst": 39
+        },
+        "rotate": {
+          "fps": 9.3,
+          "p50": 109,
+          "p95": 148,
+          "worst": 184
+        },
+        "speed1": {
+          "fps": 22.2,
+          "p50": 39,
+          "p95": 98,
+          "worst": 119
+        },
+        "speed64": {
+          "fps": 18.4,
+          "p50": 42,
+          "p95": 167,
+          "worst": 406
+        },
+        "yearsPerSec": 49.96,
+        "startupMs": 1717,
+        "peakPssMB": 678
+      },
+      {
+        "ua": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15",
+        "epochOrigin": 1792497046700,
+        "dcl": 205,
+        "ready": 855,
+        "epochReady": 1792497047555,
+        "started": true,
+        "idle": {
+          "fps": 60.7,
+          "p50": 16,
+          "p95": 17,
+          "worst": 37
+        },
+        "rotate": {
+          "fps": 8.8,
+          "p50": 115,
+          "p95": 145,
+          "worst": 151
+        },
+        "speed1": {
+          "fps": 23.1,
+          "p50": 36,
+          "p95": 94,
+          "worst": 124
+        },
+        "speed64": {
+          "fps": 19.4,
+          "p50": 40,
+          "p95": 157,
+          "worst": 448
+        },
+        "yearsPerSec": 49.95,
+        "startupMs": 1692,
+        "peakPssMB": 665
+      },
+      {
+        "ua": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/60.5 Safari/605.1.15",
+        "epochOrigin": 1792497070559,
+        "dcl": 190,
+        "ready": 838,
+        "epochReady": 1792497071398,
+        "started": true,
+        "idle": {
+          "fps": 60.7,
+          "p50": 16,
+          "p95": 17,
+          "worst": 42
+        },
+        "rotate": {
+          "fps": 8.7,
+          "p50": 114,
+          "p95": 149,
+          "worst": 160
+        },
+        "speed1": {
+          "fps": 20.9,
+          "p50": 41,
+          "p95": 104,
+          "worst": 128
+        },
+        "speed64": {
+          "fps": 16.8,
+          "p50": 45,
+          "p95": 193,
+          "worst": 396
+        },
+        "yearsPerSec": 51,
+        "startupMs": 1669,
+        "peakPssMB": 672
+      }
+    ]
+  },
+  "size": {
+    "electron": {
+      "dirMB": 292.2,
+      "tgzMB": 126.4
+    },
+    "tauri": {
+      "binMB": 12,
+      "tgzMB": 10,
+      "debMB": 10
+    }
+  }
+}
