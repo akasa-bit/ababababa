@@ -49,6 +49,7 @@ const TESTS = [
     } catch { return '出力を読めない'; }
   }],
   ['market', ['3', '80'], (o) => (o.includes('市場 合格') ? '' : '市場の結果が違う')],
+  ['debt', ['3', '100'], (o) => (o.includes('国債 合格') ? '' : '国債の結果が違う')],
   ['rotate', [SHOTS, path.join(ROOT, 'index.html')], (o) => ((o.match(/rotated == fresh redraw: true \[\]/g) || []).length === 2 ? '' : '回したあとの絵が描き直しと違う')],
   ['headless', ['100', '1,4,9'], (o, code) => (code === 0 && o.includes('画面なしの版: 一致') ? '' : '画面なしの版がブラウザと違う')],
 ];
