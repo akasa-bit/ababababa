@@ -1,6 +1,6 @@
 // エネルギーの記帳の試験 (目標 R07): 記帳した船 1 便ごとのエネルギーを、この試験の中で物理の式から計算し直して比べる。
 // 式はゲームのコードを使わずに書く (使うのは効率の値 PROP と光速だけ)。合格は、すべての便で 比 = 1 ± 1e-6
-//   交易路 ('route'): 加速も減速もレーザー。片側 = (γ−1)mc² ÷ (レーザー × 帆に当たる割合 × 帆への伝達)
+//   交易路 ('route'): 加速も減速もレーザー。加速 = (γ−1)mc² ÷ (レーザー × 帆に当たる割合 × 帆への伝達)。減速はゲーム版は同じ量、シミュレーション版は mc² (γβ − γ + 1) / 2 ÷ (レーザー × 帆に当たる割合)
 //   交易路の外 ('free'): 加速はレーザー (反物質の推進剤も運ぶ)、減速は磁気帆と、仕上げの反物質 (作るのに使う電気)
 // 帆への伝達は、完全な反射の帆のその瞬間の割合 2β/(1+β) を 0 から β まで積分したもの: 2(γ−1) / (γβ + γ − 1)
 // 質量 m は、積み荷と船に遮蔽を足したもの。遮蔽も、この試験の中で、航路の長さと深さと線量の表 (SHIELD_DOSE・SHIELD_GCR) から計算し直す
@@ -27,7 +27,7 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
     for (let i = 0; i < Y * 4; i++) g.advance(0.25);
     const govs = Object.entries(g.govs).filter(([id]) => g.isColonized(Number(id)));
     return {
-      audit: ENERGY_AUDIT, prop: PROP, c: C_LIGHT, ism: ISM, sh: SHIELD, dose: SHIELD_DOSE, gcr: SHIELD_GCR, physics: g.physics,
+      audit: ENERGY_AUDIT, prop: PROP, c: C_LIGHT, ism: ISM, sh: SHIELD, dose: SHIELD_DOSE, gcr: SHIELD_GCR, physics: g.physics, simOnly: EDITION === 'sim',
       govs: govs.length, negative: govs.filter(([, v]) => (v.E || 0) < 0).length,
       earth: { E: g.govs[0].E, power: g.power(0), cover: g.swarmCover(0), ledger: g.govs[0].eledger },
       colonies: g.colonies.length, routes: g.routes.length,
@@ -52,9 +52,9 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
     const crew = r.sh.crew.includes(x.kind), k = x.beta > 0.925 ? '0.95' : '0.9';
     const L = x.ly * 9.4607e17, V = x.m / r.sh.rho[crew ? 'crew' : 'cargo'];
     if (!crew) return shape(V, depth(r.dose[k], 'D', Math.log(r.sh.cargoGy / (r.ism.nNuc * L))), 0);
-    // 船の時間 [s]: 1g の加速と減速のあいだは (c/a) atanh β (physics.accel のとき)、そのほかは道のり ÷ γβc
+    // 船の時間 [s]: 1g の加速と減速のあいだは (c/a) atanh β (physics.accel のとき)、そのほかは道のり ÷ γβc。加速を終える前に折り返す短い航路は 2 (c/a) acosh(1 + 道のり ÷ 2(c²/a))
     const ga = 1 / Math.sqrt(1 - x.beta ** 2), T1 = c / 9.80665 / 31557600, xa = T1 * (ga - 1);
-    const tau = r.physics.accel && x.ly >= 2 * xa ? (2 * T1 * Math.atanh(x.beta) + (x.ly - 2 * xa) / (ga * x.beta)) * 31557600 : L / (ga * x.beta * c * 100);
+    const tau = !r.physics.accel ? L / (ga * x.beta * c * 100) : x.ly >= 2 * xa ? (2 * T1 * Math.atanh(x.beta) + (x.ly - 2 * xa) / (ga * x.beta)) * 31557600 : 2 * T1 * Math.acosh(1 + x.ly / 2 / T1) * 31557600; // 短い航路は中点で折り返す
     const kg = (f) => shape(V, depth(r.dose[k], 'H', Math.log((r.sh.crewSv * f) / (r.ism.nNuc * L))), depth(r.gcr[k], 'H', Math.log((r.sh.crewSv * (1 - f)) / tau)));
     if (r.sh.frontShare) return kg(r.sh.frontShare);
     // 一番軽い割り振り: 0.01〜0.99 を 2,000 に刻んで探し、ゲームの値がそれより重くないことを見る (ゲームは黄金分割)
@@ -73,7 +73,8 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
     x = { ...x, m: x.m + (x.shield || 0) }; // 記帳のエネルギーは、(上で確かめた) ゲームの遮蔽の質量を足して計算し直す
     const ga = 1 / Math.sqrt(1 - x.beta * x.beta);
     const chain = P.laser * P.beam * sail(x.beta);
-    if (x.mode === 'route') return (2 * (ga - 1) * x.m * c * c) / chain;
+    // 減速: シミュレーション版は、近づく帆を止める光 mc² (γβ − γ + 1) / 2 (加速の時間反転)。ゲーム版は加速と同じ量
+    if (x.mode === 'route') return ((ga - 1) * x.m * c * c) / chain + (r.simOnly ? (x.m * c * c * (ga * x.beta - ga + 1)) / 2 / (P.laser * P.beam) : ((ga - 1) * x.m * c * c) / chain);
     const R = Math.exp(Math.atanh(P.magsailTo) / P.amExhaust); // 反物質ロケットの質量比
     return ((ga - 1) * x.m * R * c * c) / chain + ((x.m * (R - 1)) / 2) * c * c / P.amEff;
   };

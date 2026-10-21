@@ -1,0 +1,948 @@
+[
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Starships jump from rest to large fractions of light speed in seconds with crew unharmed; 'inertial dampers' cancel acceleration",
+  "critique": "Humans tolerate only ~3 g; at that limit it would take ~2.5 months to reach half light speed, and sudden acceleration would turn the crew into 'chunky salsa'; inertial dampers amount to suspending Newton's laws and are never explained",
+  "domains": [
+   "propulsion_energy",
+   "gravity_artificial",
+   "biology_physics"
+  ],
+  "date_of_critique": "1999",
+  "source_url": "https://news.mit.edu/1999/startrek-0331",
+  "status": "valid",
+  "status_reason": "Basic Newtonian mechanics and human g-tolerance; no known mechanism shields bodies from inertial forces (equivalence principle)."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Crews travel near light speed on long missions yet stay in sync with Starfleet Command and home time",
+  "critique": "Special-relativistic time dilation means a 10-year crew mission near light speed could correspond to ~25,000 years at home; commanders back home would have retired; a quarter-light-speed cap keeps clocks synchronized but makes ships far too slow",
+  "domains": [
+   "relativity_time_dilation",
+   "light_speed_communication",
+   "scale_distances"
+  ],
+  "date_of_critique": "1999",
+  "source_url": "https://news.mit.edu/1999/startrek-0331",
+  "status": "valid",
+  "status_reason": "Time dilation is experimentally confirmed (muon lifetimes, GPS, atomic clocks on aircraft)."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Warp drive lets ships travel faster than light by warping space",
+  "critique": "GR permits space to expand behind and contract ahead of a ship, but it needs exotic negative-energy matter never observed and a gravitational field whose creation would require more energy than the Sun emits over its whole lifetime",
+  "domains": [
+   "ftl_wormholes",
+   "propulsion_energy",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "1996",
+  "source_url": "https://www.csmonitor.com/1996/0116/16132.html",
+  "status": "partly",
+  "status_reason": "The negative-energy requirement still holds (all warp metrics violate the energy conditions, Santiago-Schuster-Visser 2022), but energy estimates have dropped a lot since 1995 (Van Den Broeck 1999; White 2011; Bobrick & Martire 2021), so the 'Sun's lifetime output' figure is no longer the consensus number."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek (franchise, incl. Deep Space Nine)",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Stable traversable wormholes used as travel routes (e.g., the Bajoran wormhole)",
+  "critique": "Holding a wormhole open would need large, long-lasting amounts of negative energy; negative energy has only been seen briefly and in tiny amounts (Casimir effect), so whether it is possible is unknown",
+  "domains": [
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "1999",
+  "source_url": "https://news.mit.edu/1999/startrek-0331",
+  "status": "valid",
+  "status_reason": "Still the standard view (Morris-Thorne; quantum inequalities limit negative energy); no macroscopic exotic matter has been found."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek: The Next Generation",
+  "medium": "tv",
+  "year_of_work": 1987,
+  "depiction": "Holodeck creates solid, touchable objects and people from projected light",
+  "critique": "Projecting light images is consistent with physics and limited mostly by computing, but 'there's no way to make an image of light solid'",
+  "domains": [
+   "other",
+   "quantum"
+  ],
+  "date_of_critique": "1999",
+  "source_url": "https://news.mit.edu/1999/startrek-0331",
+  "status": "valid",
+  "status_reason": "Photons don't form rigid bound structures at everyday intensities; lab 'molecules of light' (2013 Rydberg experiments) are microscopic and transient."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Transporter dematerializes a person and sends their actual atoms elsewhere",
+  "critique": "Breaking the electromagnetic bonds of an adult-mass body would take over 1,000 times the world's annual energy output; moving the actual atoms as shown is not possible; at best you could send information and rebuild, vaporizing the original",
+  "domains": [
+   "propulsion_energy",
+   "quantum",
+   "biology_physics"
+  ],
+  "date_of_critique": "1996",
+  "source_url": "https://mndaily.com/254878/uncategorized/physics-prof-blasts-holes-science-star-trek",
+  "status": "valid",
+  "status_reason": "The energy scale argument (mc^2 and binding energies) is sound; quantum teleportation moves states, not matter."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Transporter scans every atom of a person precisely enough to rebuild them",
+  "critique": "The Heisenberg uncertainty principle makes it impossible to resolve atoms and their energy states accurately enough to recreate a human pattern; resolving atom-sized detail at 40,000 km range would need X/gamma-ray optics with a 'lens' ~50,000 km across",
+  "domains": [
+   "quantum",
+   "scale_distances"
+  ],
+  "date_of_critique": "1996",
+  "source_url": "https://www.csmonitor.com/1996/0116/16132.html",
+  "status": "valid",
+  "status_reason": "Reinforced by the no-cloning theorem; quantum teleportation (demonstrated since 1997) needs pre-shared entanglement and destroys the original state, unlike the show's scanner."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Phaser beams are visible as bright streaks crossing empty space",
+  "critique": "A laser beam in a vacuum is invisible except where it hits dust or a target; it is visible 'only at the point of impact'",
+  "domains": [
+   "vacuum_sound_light",
+   "combat_weapons"
+  ],
+  "date_of_critique": "1996",
+  "source_url": "https://mndaily.com/254878/uncategorized/physics-prof-blasts-holes-science-star-trek",
+  "status": "valid",
+  "status_reason": "Light is only seen when scattered into the eye; interplanetary space has almost nothing to scatter it."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Crew hears explosions and ship flybys outside the ship in space",
+  "critique": "Sound cannot travel through a vacuum ('In space, no one can hear you scream'), yet the crew hears external explosions",
+  "domains": [
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "1996",
+  "source_url": "https://mndaily.com/254878/uncategorized/physics-prof-blasts-holes-science-star-trek",
+  "status": "valid",
+  "status_reason": "Sound needs a medium; interstellar gas is far too thin to carry audible sound."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek (franchise episode)",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "An episode gives an object's temperature as -293 degrees C",
+  "critique": "Blooper: absolute zero is -273 C, so -293 C is impossible",
+  "domains": [
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "1996",
+  "source_url": "https://mndaily.com/254878/uncategorized/physics-prof-blasts-holes-science-star-trek",
+  "status": "valid",
+  "status_reason": "Absolute zero is the lower bound on the Kelvin/Celsius scale; lab 'negative absolute temperatures' (2013) are hotter than any positive temperature, not colder."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); Ambrose Swasey Professor of Physics, Case Western Reserve University at time of writing",
+  "work": "Independence Day",
+  "medium": "film",
+  "year_of_work": 1996,
+  "depiction": "The alien Mother Ship, about 1/4 the Moon's mass, parks in geostationary orbit while the attack goes ahead",
+  "critique": "At ~22,500 miles (about 1/10 the lunar distance) its gravitational pull on Earth would be ~25 times the Moon's; the resulting tides would flood coastal cities and tidal stress would trigger earthquakes and eruptions before a shot was fired; it would also perturb Earth's motion and could brake Earth's rotation",
+  "domains": [
+   "orbital_mechanics",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "https://excerpts.cdn.overdrive.com/FormatType-410/0293-1/E4A/740/48/BeyondStarTrek9780062040879.epub",
+  "status": "valid",
+  "status_reason": "Inverse-square gravity; tidal forces scale as M/r^3, so the tidal effect would actually be ~250x lunar, which makes the point stronger."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); Ambrose Swasey Professor of Physics, Case Western Reserve University at time of writing",
+  "work": "Independence Day",
+  "medium": "film",
+  "year_of_work": 1996,
+  "depiction": "15-mile-wide alien saucers hover silently a few thousand feet above cities",
+  "critique": "A craft that size (~100 billion tons) hovering that low must push on the air below with ~450 psi (~30 atm), roughly 30 tons per square foot; buildings collapse at ~5 atm overpressure, so the saucers would flatten cities just by hovering, whatever their lift mechanism",
+  "domains": [
+   "materials_structures",
+   "gravity_artificial"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "https://excerpts.cdn.overdrive.com/FormatType-410/0293-1/E4A/740/48/BeyondStarTrek9780062040879.epub",
+  "status": "valid",
+  "status_reason": "Momentum conservation: any hovering craft must transfer its weight to the air below; at altitude much less than its width, the pressure isn't spread out."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); Ambrose Swasey Professor of Physics, Case Western Reserve University at time of writing",
+  "work": "Independence Day",
+  "medium": "film",
+  "year_of_work": 1996,
+  "depiction": "Downed alien city-destroyers crash to Earth and humanity celebrates victory",
+  "critique": "A single saucer falling from ~1 mile would release ~10,000 Hiroshima bombs' worth of energy, comparable to a dinosaur-killing impact; accelerating one to 3 mi/s in a minute would need ~5x10^19 W, ~300 times the solar power reaching Earth",
+  "domains": [
+   "propulsion_energy",
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "https://excerpts.cdn.overdrive.com/FormatType-410/0293-1/E4A/740/48/BeyondStarTrek9780062040879.epub",
+  "status": "valid",
+  "status_reason": "Simple mgh with his assumed mass gives ~1.6e18 J (~25,000 Hiroshimas), consistent with his order of magnitude."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); Ambrose Swasey Professor of Physics, Case Western Reserve University at time of writing",
+  "work": "Independence Day",
+  "medium": "film",
+  "year_of_work": 1996,
+  "depiction": "The quarter-Moon-mass Mother Ship decelerates into Earth orbit",
+  "critique": "Slowing an object that massive into orbit within an hour would require engines radiating almost 10 times the Sun's entire luminosity, from only 22,500 miles away, toasting Earth",
+  "domains": [
+   "propulsion_energy",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "https://excerpts.cdn.overdrive.com/FormatType-410/0293-1/E4A/740/48/BeyondStarTrek9780062040879.epub",
+  "status": "valid",
+  "status_reason": "Kinetic-energy bookkeeping (½mv^2 over a short time) gives power of order the solar luminosity; no new physics changes this."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); Ambrose Swasey Professor of Physics, Case Western Reserve University at time of writing",
+  "work": "The X-Files",
+  "medium": "tv",
+  "year_of_work": 1993,
+  "depiction": "UFOs at a secret air base fly at great speed and make instant 90-degree turns; human test pilots fly them",
+  "critique": "A craft at ~twice the speed of sound turning 90 degrees in 0.1 s feels ~700 g; neither the pilots nor the craft's structure could survive that, so real alien craft would not move that way",
+  "domains": [
+   "propulsion_energy",
+   "materials_structures",
+   "biology_physics"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "https://excerpts.cdn.overdrive.com/FormatType-410/0293-1/E4A/740/48/BeyondStarTrek9780062040879.epub",
+  "status": "valid",
+  "status_reason": "a = Δv/Δt ≈ 700 m/s / 0.1 s ≈ 7,000 m/s² ≈ 700 g; Newton's second law still holds."
+ },
+ {
+  "physicist": "Kip Thorne",
+  "credentials": "PhD physics (Princeton 1965); Feynman Professor of Theoretical Physics Emeritus, Caltech; Nobel Prize in Physics 2017; science advisor and executive producer of Interstellar",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Mann's planet has frozen clouds and ice structures that hold up large overhangs and the crew walk on them",
+  "critique": "Thorne named this the film's most troubling physics error: ice is not strong enough to support the frozen-cloud structures shown, though he called it minor",
+  "domains": [
+   "materials_structures",
+   "exoplanets_habitability"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.scientificamerican.com/blog/observations/parsing-the-science-of-interstellar-with-physicist-kip-thorne/",
+  "status": "valid",
+  "status_reason": "Ice's compressive and tensile strength (~1-10 MPa) can't support km-scale floating overhangs in Earth-like gravity."
+ },
+ {
+  "physicist": "Kip Thorne",
+  "credentials": "PhD physics (Princeton 1965); Feynman Professor of Theoretical Physics Emeritus, Caltech; Nobel Prize in Physics 2017; science advisor and executive producer of Interstellar",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Miller's planet orbits extremely close to Gargantua, where 1 hour equals ~7 Earth years, and isn't torn apart",
+  "critique": "He first thought this was impossible, then calculated it works only if Gargantua spins extremely fast (very close to maximal) and is very massive (>=100 million solar masses), allowing a stable close orbit with huge time dilation and tolerable tides",
+  "domains": [
+   "black_holes",
+   "relativity_time_dilation",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.scientificamerican.com/blog/observations/parsing-the-science-of-interstellar-with-physicist-kip-thorne/",
+  "status": "partly",
+  "status_reason": "Kerr geometry allows it in principle, but the spin needed (within ~1e-14 of maximal) is far above the ~0.998 'Thorne limit' that accretion and radiation should cap real black holes at."
+ },
+ {
+  "physicist": "Kip Thorne",
+  "credentials": "PhD physics (Princeton 1965); Feynman Professor of Theoretical Physics Emeritus, Caltech; Nobel Prize in Physics 2017; science advisor and executive producer of Interstellar",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Huge mountain-height waves sweep Miller's planet about once an hour",
+  "critique": "Explained speculatively: the tidally locked planet rocks back and forth in Gargantua's tidal field, driving giant tides; the waves look like non-breaking solitons, perhaps like tidal bores; the rocking period would also need to be about one hour",
+  "domains": [
+   "astrophysics_stars_planets",
+   "orbital_mechanics",
+   "exoplanets_habitability"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.scientificamerican.com/blog/observations/parsing-the-science-of-interstellar-with-physicist-kip-thorne/",
+  "status": "partly",
+  "status_reason": "A forced libration can drive tides in principle, but a planet in a stable tidally locked orbit should damp the rocking, and later analyses (e.g., arXiv:1503.08305) find no worked-out model for 1-km waves."
+ },
+ {
+  "physicist": "Kip Thorne",
+  "credentials": "PhD physics (Princeton 1965); Feynman Professor of Theoretical Physics Emeritus, Caltech; Nobel Prize in Physics 2017; science advisor and executive producer of Interstellar",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Astronauts and a planet sit near Gargantua's accretion disk without being irradiated",
+  "critique": "Gargantua's disk is 'anemic': cool, no longer fed by inflowing gas, so it lacks the X-rays and gamma rays a typical quasar-like disk would emit and that would kill the humans",
+  "domains": [
+   "black_holes",
+   "radiation_shielding"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.scientificamerican.com/blog/observations/parsing-the-science-of-interstellar-with-physicist-kip-thorne/",
+  "status": "partly",
+  "status_reason": "Low-luminosity disks exist (Sgr A* is very faint, as EHT 2022 confirmed), but a disk shining as brightly in visible light as shown would be fairly hot and still emit UV/X-rays."
+ },
+ {
+  "physicist": "Kip Thorne",
+  "credentials": "PhD physics (Princeton 1965); Feynman Professor of Theoretical Physics Emeritus, Caltech; Nobel Prize in Physics 2017; science advisor and executive producer of Interstellar",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "A wormhole near Saturn makes interstellar travel possible (Thorne also dropped warp drive and FTL from early drafts)",
+  "critique": "The laws of physics forbid FTL travel and 'very probably forbid warp drives and traversable wormholes', though this isn't fully proven; the wormhole is placed in the film's speculative category",
+  "domains": [
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.scientificamerican.com/blog/observations/parsing-the-science-of-interstellar-with-physicist-kip-thorne/",
+  "status": "valid",
+  "status_reason": "Still the mainstream view: traversable wormholes need exotic matter; recent constructions (Maldacena-Milekhin 2018, the 2022 'wormhole-on-a-chip' simulation) are tiny, need special conditions, or aren't usable for travel."
+ },
+ {
+  "physicist": "Kip Thorne",
+  "credentials": "PhD physics (Princeton 1965); Feynman Professor of Theoretical Physics Emeritus, Caltech; Nobel Prize in Physics 2017; co-author with DNEG VFX team",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Gargantua's accretion disk is shown symmetric in colour and brightness",
+  "critique": "A real disk with material moving at ~0.55c would be Doppler-shifted and beamed: blue and very bright on the approaching side, red and dim on the receding side (frequency factors ~1.5 and ~0.4 with ~20% gravitational redshift); the filmmakers deliberately left this out to avoid confusing audiences",
+  "domains": [
+   "black_holes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1502.03808",
+  "status": "valid",
+  "status_reason": "Confirmed by Event Horizon Telescope images of M87* (2019) and Sgr A* (2022), which show strong brightness asymmetry from relativistic beaming."
+ },
+ {
+  "physicist": "Kip Thorne",
+  "credentials": "PhD physics (Princeton 1965); Feynman Professor of Theoretical Physics Emeritus, Caltech; Nobel Prize in Physics 2017; co-author with DNEG VFX team",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Gargantua's on-screen image has a nearly circular shadow and centred disk",
+  "critique": "The story's huge time losses need a near-maximally spinning hole (a/M≈1), whose shadow is flattened on one side with an off-centre disk; for visual clarity the filmmakers rendered it with spin a/M=0.6, inconsistent with the plot",
+  "domains": [
+   "black_holes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1502.03808",
+  "status": "valid",
+  "status_reason": "Standard Kerr ray-tracing result; EHT work confirms the spin-dependent shadow shapes such codes predict."
+ },
+ {
+  "physicist": "Kevin Grazier",
+  "credentials": "PhD planetary physics (UCLA); NASA JPL research scientist on the Cassini mission; science advisor to Battlestar Galactica, Eureka, Gravity",
+  "work": "Battlestar Galactica",
+  "medium": "tv",
+  "year_of_work": 2004,
+  "depiction": "Galactica (over a km long) jumps into New Caprica's atmosphere, falls in a 'belly flop', launches Vipers and jumps out intact (episode 'Exodus, Part 2')",
+  "critique": "A ship that size plunging into an atmosphere would 'do what Columbia did' and break up; he let the scene stand for its 'coolness factor'",
+  "domains": [
+   "materials_structures",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2009",
+  "source_url": "https://scriptphd.com/interview/2009/07/18/the-brains-behind-battlestars-science-a-conversation-with-nasas-kevin-grazier/",
+  "status": "partly",
+  "status_reason": "Aerodynamic and thermal loads on a huge non-aerodynamic hull are severe, but since the ship arrives by FTL jump with little orbital velocity, it wouldn't get Columbia-style reentry heating, so breakup isn't certain."
+ },
+ {
+  "physicist": "Kevin Grazier",
+  "credentials": "PhD planetary physics (UCLA); NASA JPL research scientist on the Cassini mission; science advisor to Battlestar Galactica",
+  "work": "Battlestar Galactica",
+  "medium": "tv",
+  "year_of_work": 2004,
+  "depiction": "Galactica rams the Cylon Colony at speed after jumping in about 100 m away (series finale 'Daybreak')",
+  "critique": "With KE = ½mv², a ship that close couldn't build much speed even at 'flank speed' over ~100 m, so the ram couldn't deliver the energy implied",
+  "domains": [
+   "propulsion_energy",
+   "combat_weapons"
+  ],
+  "date_of_critique": "2009",
+  "source_url": "https://scriptphd.com/interview/2009/07/18/the-brains-behind-battlestars-science-a-conversation-with-nasas-kevin-grazier/",
+  "status": "valid",
+  "status_reason": "Basic kinematics: v = √(2ad) is small for any survivable acceleration over 100 m."
+ },
+ {
+  "physicist": "Kevin Grazier",
+  "credentials": "PhD planetary physics (UCLA); NASA JPL research scientist on the Cassini mission; science advisor to Battlestar Galactica",
+  "work": "Battlestar Galactica",
+  "medium": "tv",
+  "year_of_work": 2004,
+  "depiction": "Ships have uniform artificial gravity from deck-plate generators; 'zero-g' is rarely shown",
+  "critique": "FTL and artificial gravity have no known physics; a line of gravity generators would make a cylindrical field falling off as 1/r (not 1/r²), so hallway floors would effectively bow; spin gravity on a ring ship would need fast rotation and has its own problems; zero-g is mostly avoided for production reasons",
+  "domains": [
+   "gravity_artificial",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2009",
+  "source_url": "https://scriptphd.com/interview/2009/07/18/the-brains-behind-battlestars-science-a-conversation-with-nasas-kevin-grazier/",
+  "status": "valid",
+  "status_reason": "Gauss's-law geometry gives 1/r for line sources; no mechanism for artificial gravity other than acceleration/rotation is known."
+ },
+ {
+  "physicist": "Kevin Grazier",
+  "credentials": "PhD planetary physics (UCLA); NASA JPL research scientist on the Cassini mission; science advisor to Battlestar Galactica",
+  "work": "Battlestar Galactica",
+  "medium": "tv",
+  "year_of_work": 2004,
+  "depiction": "Humanoid Cylons are physically indistinguishable from humans, yet Baltar builds a 'Cylon detector'",
+  "critique": "The Cylons' 'silica pathways' mean SiO2 (glass), which is inert, so a Cylon would show an anomalously high silica level in a mass spectrometer, which makes a detector plausible",
+  "domains": [
+   "biology_physics"
+  ],
+  "date_of_critique": "2009",
+  "source_url": "https://scriptphd.com/interview/2009/07/18/the-brains-behind-battlestars-science-a-conversation-with-nasas-kevin-grazier/",
+  "status": "valid",
+  "status_reason": "Mass spectrometry readily measures elemental silicon abundance; human tissue has very little silicon."
+ },
+ {
+  "physicist": "Kevin Grazier",
+  "credentials": "PhD geophysics and space physics (UCLA); 15 years at NASA JPL (Cassini); science advisor to Gravity",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Astronauts at Hubble reach the ISS with jetpack and spacesuit oxygen",
+  "critique": "From Hubble's orbit you can't reach the ISS on one spacewalk's oxygen; the trip is at least about LA-to-Mexico-border distance; he suggested a telescope in a closer orbit, but the production kept Hubble for drama",
+  "domains": [
+   "orbital_mechanics",
+   "scale_distances"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://amazingstories.com/?p=28379",
+  "status": "valid",
+  "status_reason": "Hubble (~540 km, 28.5°) and ISS (~420 km, 51.6°) are in different orbital planes; the plane change alone needs km/s of delta-v, far beyond an MMU."
+ },
+ {
+  "physicist": "Kevin Grazier",
+  "credentials": "PhD geophysics and space physics (UCLA); 15 years at NASA JPL (Cassini); science advisor to Gravity",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "A debris cascade from a destroyed satellite shreds spacecraft and keeps returning",
+  "critique": "The premise rests on the Kessler Syndrome; the scale of damage is plausible 'for the level of scientific veracity needed to tell this story'",
+  "domains": [
+   "orbital_mechanics",
+   "combat_weapons"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://amazingstories.com/?p=28379",
+  "status": "partly",
+  "status_reason": "Kessler cascades are a real risk (cf. the 2021 Russian ASAT test debris), but they develop over years, and debris from one breakup wouldn't hit objects in very different orbits within hours."
+ },
+ {
+  "physicist": "Kevin Grazier",
+  "credentials": "PhD geophysics and space physics (UCLA); 15 years at NASA JPL (Cassini); science advisor to Gravity",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "The shuttle is hit by debris and sent spinning rapidly with Dr. Stone attached to the arm",
+  "critique": "Spin rate depends on impactor speed and mass; he isn't sure the film's spin is realistic, and the wing would more likely be sheared off than the orbiter sent spinning",
+  "domains": [
+   "orbital_mechanics",
+   "materials_structures"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://amazingstories.com/?p=28379",
+  "status": "valid",
+  "status_reason": "Hypervelocity (~km/s) impacts of small debris punch through or shear structures; they transfer little angular momentum to a 100-tonne orbiter."
+ },
+ {
+  "physicist": "Kevin Grazier",
+  "credentials": "PhD geophysics and space physics (UCLA); 15 years at NASA JPL (Cassini); science advisor to Gravity",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Stone is spinning on the end of the shuttle's robotic arm and Kowalski tells her to detach so he can rescue her",
+  "critique": "The arm is far more massive than the astronaut on it, so it's much more realistic to find enough delta-v to stop Stone alone; on release her velocity is the arm's centre-of-mass motion plus the rotational component, which could send her 'a pretty good kick' back toward Kowalski and Earth",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://amazingstories.com/?p=28379",
+  "status": "valid",
+  "status_reason": "Momentum and rigid-body kinematics: a released body keeps its tangential velocity, and its small mass makes it easier to arrest than the arm-plus-shuttle."
+ },
+ {
+  "physicist": "Jean-Pierre Luminet",
+  "credentials": "PhD astrophysics; Directeur de recherche émérite CNRS (Centre de Physique Théorique / Laboratoire d'Astrophysique de Marseille); made the first computed image of a black hole with an accretion disk (1979)",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Gargantua is taken to spin within ~1e-10 (or less) of the maximal Kerr value to allow Miller's planet's orbit and the 1 hour = 7 years dilation",
+  "critique": "Theoretically possible but 'by no ways realistic': prograde matter is hard to accrete while retrograde matter falls in easily and slows the spin, so real holes should top out near 0.998 J_max",
+  "domains": [
+   "black_holes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1503.08305",
+  "status": "valid",
+  "status_reason": "The Thorne (1974) spin limit of ~0.998 still holds; spin measurements by X-ray reflection and LIGO-Virgo-KAGRA give high spins but none near 1 - 1e-10."
+ },
+ {
+  "physicist": "Jean-Pierre Luminet",
+  "credentials": "PhD astrophysics; Directeur de recherche émérite CNRS, Marseille; pioneer of black-hole imaging (1979)",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "The planets around Gargantua are lit and warmed with no star nearby, and astronauts aren't harmed by the accretion disk",
+  "critique": "A normal accretion disk is millions of degrees and would fry the astronauts as they leave the wormhole (and Cooper later when he falls in); Thorne's 'anemic' sun-temperature disk would be optically thin, so Luminet doubts it could give a planet Sun-like light and heat",
+  "domains": [
+   "black_holes",
+   "exoplanets_habitability",
+   "radiation_shielding",
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1503.08305",
+  "status": "valid",
+  "status_reason": "Radiatively inefficient, low-accretion flows (like Sgr A*'s, measured by EHT/GRAVITY) are very dim and couldn't warm a habitable planet."
+ },
+ {
+  "physicist": "Jean-Pierre Luminet",
+  "credentials": "PhD astrophysics; Directeur de recherche émérite CNRS, Marseille; pioneer of black-hole imaging (1979)",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Gargantua's accretion disk is shown uniformly bright, billed as the most realistic black-hole image ever made",
+  "critique": "Basic effects are missing: a thin disk's emission peaks in the hot inner regions, and gravitational (Einstein) redshift plus Doppler shifts and beaming make the apparent brightness strongly non-uniform and asymmetric; his own 1979 simulation already included these",
+  "domains": [
+   "black_holes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1503.08305",
+  "status": "valid",
+  "status_reason": "Confirmed by EHT images of M87* (2019) and Sgr A* (2022), which show the predicted beaming asymmetry."
+ },
+ {
+  "physicist": "Jean-Pierre Luminet",
+  "credentials": "PhD astrophysics; Directeur de recherche émérite CNRS, Marseille; researcher on tidal disruption of stars by black holes",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Miller's planet orbits just outside Gargantua's horizon without being torn apart",
+  "critique": "Bloggers claimed it should be shredded, but the Roche limit for a 1e8-solar-mass hole and a ~1 g/cm³ planet (~1e13 cm) is about the gravitational radius, so the planet feels large tides but survives; the film is 'marginally correct'",
+  "domains": [
+   "black_holes",
+   "astrophysics_stars_planets",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1503.08305",
+  "status": "valid",
+  "status_reason": "Roche limit scales as (M/ρ)^(1/3) while horizon radius scales as M, so very massive holes have Roche limits near or inside the horizon, consistent with observed tidal disruption events around lower-mass SMBHs."
+ },
+ {
+  "physicist": "Jean-Pierre Luminet",
+  "credentials": "PhD astrophysics; Directeur de recherche émérite CNRS, Marseille",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Kilometre-high waves sweep Miller's planet about once an hour",
+  "critique": "He suspects an inconsistency: a tidal 'wave' is really a fixed bulge the planet rotates through, but with tides this strong the planet should tidally lock almost instantly (he estimates ~1 ms), after which the water stays put pointing at the hole, so no periodic waves",
+  "domains": [
+   "astrophysics_stars_planets",
+   "orbital_mechanics",
+   "exoplanets_habitability"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1503.08305",
+  "status": "partly",
+  "status_reason": "The tidal-locking argument is sound, but a ~1 ms locking time is implausibly short as an estimate, and Thorne's alternative (forced libration of a locked planet) isn't ruled out by it."
+ },
+ {
+  "physicist": "Jean-Pierre Luminet",
+  "credentials": "PhD astrophysics; Directeur de recherche émérite CNRS, Marseille",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "The Endurance gets a boost from a slingshot past Gargantua while shedding part of the craft into the hole",
+  "critique": "He reads this as a correct depiction of the Penrose process: a fragment dropped into the ergosphere on a retrograde orbit lets the rest escape with more energy, and repeated processes could extract up to 29% of a near-maximal hole's mass",
+  "domains": [
+   "black_holes",
+   "propulsion_energy",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1503.08305",
+  "status": "partly",
+  "status_reason": "The Penrose physics is right (29% extractable for a=1), but the film and Thorne's book describe the boost as a slingshot plus Newton's-third-law ejection, not a true negative-energy-orbit Penrose process."
+ },
+ {
+  "physicist": "Jean-Pierre Luminet",
+  "credentials": "PhD astrophysics; Directeur de recherche émérite CNRS, Marseille",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Future humans in a five-dimensional 'bulk' build the wormhole and talk to our brane using gravity only",
+  "critique": "Matches Randall-Sundrum brane cosmology, where matter and light are confined to our 4-D brane and only gravitational waves move in the bulk; creating mini black holes or wormholes (e.g., at the LHC) to exploit this is 'very unrealistic'",
+  "domains": [
+   "cosmology",
+   "quantum",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1503.08305",
+  "status": "partly",
+  "status_reason": "The model matches RS theory, but LHC searches through Run 3 found no extra-dimension signals or micro black holes, and LIGO/Virgo GW170817 showed no gravitational-wave leakage into large extra dimensions."
+ },
+ {
+  "physicist": "Jean-Pierre Luminet",
+  "credentials": "PhD astrophysics; Directeur de recherche émérite CNRS, Marseille",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Murph writes the 'ultimate equation' uniting gravity and quantum mechanics on a blackboard",
+  "critique": "The equation looks like the lowest-order effective action of M-theory in 5 dimensions; it's a nod to string theorists, but unification is unsolved and M-theory is 'probably not' the right framework; the idea that one equation solves humanity's problems is naive",
+  "domains": [
+   "quantum",
+   "cosmology"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1503.08305",
+  "status": "valid",
+  "status_reason": "As of 2026 there is no experimentally confirmed theory of quantum gravity; string/M-theory has no direct empirical support."
+ },
+ {
+  "physicist": "Clifford Johnson",
+  "credentials": "PhD theoretical physics (Southampton); Professor of Physics, USC (later UC Santa Barbara); science advisor for Marvel films/TV and Star Trek: Discovery",
+  "work": "Star Trek",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Warp drive moves ships faster than light inside a spacetime 'bubble'",
+  "critique": "You can write down the bubble solution (Alcubierre 1994), but like traversable wormholes it needs exotic matter/energy that violates the averaged null energy condition, which has never been seen, has no compelling reason to exist, and no known way to make or control it",
+  "domains": [
+   "ftl_wormholes",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "https://asymptotia.com/2007/11/17/warped-ambitions/",
+  "status": "valid",
+  "status_reason": "Reinforced by Santiago, Schuster & Visser (2022): all warp-drive spacetimes violate the null energy condition; 2021 'positive-energy' warp proposals (Lentz; Fell & Heisenberg) were shown to still need energy-condition violations or to be subluminal."
+ },
+ {
+  "physicist": "Clifford Johnson",
+  "credentials": "PhD theoretical physics (Southampton); Professor of Physics, USC; science advisor to Agent Carter season 2",
+  "work": "Agent Carter",
+  "medium": "tv",
+  "year_of_work": 2016,
+  "depiction": "Draft scripts called the show's exotic substance 'Element 0' because it 'did not fit anywhere in the periodic table'",
+  "critique": "He urgently asked the writers to change it: the 0 slot is informally already taken by neutronium, neutron-star matter, which is physically nothing like the show's substance, so the name would confuse; it became 'Zero Matter'",
+  "domains": [
+   "astrophysics_stars_planets",
+   "materials_structures"
+  ],
+  "date_of_critique": "2016",
+  "source_url": "https://asymptotia.com/2016/02/05/containing-zero-matter/",
+  "status": "valid",
+  "status_reason": "Atomic number counts protons; a zero-proton 'element' can only mean neutron matter (neutronium), as in neutron stars, which NICER/LIGO observations continue to constrain."
+ },
+ {
+  "physicist": "Jean-Pierre Luminet",
+  "credentials": "PhD astrophysics; Directeur de recherche émérite CNRS, Marseille",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "The Endurance passes smoothly through a spherical wormhole near Saturn, shown as a tunnel ride",
+  "critique": "Except for the correct spherical look on approach, most of Thorne's wormhole-crossing calculations were dropped as too confusing; a traversable wormhole is 'very improbable' and, if one existed, crossing it 'would not at all look like it is shown in the movie'; it's also unclear that normal-matter humans could safely cross the negative-energy region",
+  "domains": [
+   "ftl_wormholes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1503.08305",
+  "status": "valid",
+  "status_reason": "Ray-traced views (James et al. 2015, Am. J. Phys.) differ from the film's tunnel sequence, and no macroscopic traversable wormhole solution with ordinary matter is known."
+ },
+ {
+  "physicist": "Jean-Pierre Luminet",
+  "credentials": "PhD astrophysics; Directeur de recherche émérite CNRS, Marseille",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Cooper falls into Gargantua, survives, and reaches a tesseract from which he can affect the past",
+  "critique": "In a Schwarzschild hole tidal forces at the centre would destroy him, but Gargantua's high spin gives an avoidable ring singularity, so idealized Kerr geometry lets him pass through as through a wormhole; black-hole physics gives 'no firm answers' on travel to the past",
+  "domains": [
+   "black_holes",
+   "ftl_wormholes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1503.08305",
+  "status": "partly",
+  "status_reason": "The ideal Kerr interior allows this, but in realistic perturbed holes the inner (Cauchy) horizon is unstable (mass inflation, Poisson-Israel 1990; Dafermos-Luk 2017), so the passage through to other regions likely doesn't survive."
+ },
+ {
+  "physicist": "Kip Thorne",
+  "credentials": "PhD physics (Princeton 1965); Feynman Professor of Theoretical Physics Emeritus, Caltech; Nobel Prize in Physics 2017; science advisor of Interstellar",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Inside the black hole Cooper uses a tesseract built by bulk beings to send messages back in time to Murph",
+  "critique": "Time travel to the past is an open question: the film's rules were constrained less by known physics because 'we don't understand the laws of physics in that domain yet', so it sits in the speculative category",
+  "domains": [
+   "relativity_time_dilation",
+   "black_holes",
+   "quantum"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.scientificamerican.com/blog/observations/parsing-the-science-of-interstellar-with-physicist-kip-thorne/",
+  "status": "valid",
+  "status_reason": "Still true in 2026: no accepted theory of quantum gravity decides whether closed timelike curves are allowed (Hawking's chronology protection conjecture is unproven)."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Crews often travel into the past and interact with history (e.g., visits to the 1960s and 1980s)",
+  "critique": "Relativity doesn't strictly rule out time travel, but it creates paradoxes 'no sensible universe would allow'; replying to Hawking's 'where are the tourists from the future?' argument, he joked that they 'all went back to the '60s and nobody noticed'",
+  "domains": [
+   "relativity_time_dilation",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "1999",
+  "source_url": "https://news.mit.edu/1999/startrek-0331",
+  "status": "partly",
+  "status_reason": "The paradox objection is widely held, but GR has closed-timelike-curve solutions and self-consistent (Novikov) or branching (Deutsch) models avoid paradoxes; the question remains open."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); then chair of physics, Case Western Reserve University",
+  "work": "Star Trek",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "An early episode ('Tomorrow Is Yesterday', 1967) has the Enterprise thrown back in time by the gravity of a 'black star'",
+  "critique": "Krauss credits the show with depicting a black-hole-like object before the term 'black hole' was coined and widely discussed",
+  "domains": [
+   "black_holes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "1995",
+  "source_url": "https://wc.arizona.edu/papers/90/60/24_2_m.html",
+  "status": "partly",
+  "status_reason": "Collapsed stars were known (Oppenheimer-Snyder 1939) and Wheeler popularised 'black hole' in late 1967, so the show was early; but a black hole's gravity doesn't send ships back in time."
+ },
+ {
+  "physicist": "Michio Kaku",
+  "credentials": "PhD physics (UC Berkeley 1972); Henry Semat Professor of Theoretical Physics, City College of New York; co-founder of string field theory",
+  "work": "Star Trek",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "The transporter 'beams' Captain Kirk from ship to planet",
+  "critique": "Real (quantum) teleportation doesn't move matter: it destroys the original and makes a twin at the destination ('you are destroying the original'); he puts a Kirk-style human transporter about two centuries away and notes beaming was invented to save the cost of landing effects",
+  "domains": [
+   "quantum",
+   "biology_physics"
+  ],
+  "date_of_critique": "2008",
+  "source_url": "https://mg.co.za/article/2008-04-07-vision-of-tomorrow-today",
+  "status": "partly",
+  "status_reason": "Destroying the original is required by the no-cloning theorem, but a ~200-year timeline for teleporting ~1e28 atoms' quantum states is very optimistic; record quantum teleportation in 2026 is still limited to a few qubits."
+ },
+ {
+  "physicist": "Michio Kaku",
+  "credentials": "PhD physics (UC Berkeley 1972); Henry Semat Professor of Theoretical Physics, City College of New York",
+  "work": "Star Wars",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "Starships routinely jump to faster-than-light hyperspace/warp travel",
+  "critique": "Physicists are inspired by warp drive and Einstein's equations allow warp-like solutions, but the energy ('gasoline') needed to power such a starship 'is far beyond anything ... in our laboratory'",
+  "domains": [
+   "ftl_wormholes",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "https://abcnews.com/Technology/story?id=3210177",
+  "status": "valid",
+  "status_reason": "Warp metrics still need negative energy and huge energy budgets (Santiago-Schuster-Visser 2022), far beyond any lab."
+ },
+ {
+  "physicist": "Kevin Grazier",
+  "credentials": "PhD geophysics and space physics (UCLA); NASA JPL research scientist (Cassini); science advisor to Virtuality and Battlestar Galactica",
+  "work": "Virtuality",
+  "medium": "tv",
+  "year_of_work": 2009,
+  "depiction": "The starship Phaeton uses an Orion-style pulse drive fired by antimatter charges",
+  "critique": "Based on Project Orion with antimatter charges instead of nuclear warheads; calculations suggest such a ship could reach about 0.5-0.8 c",
+  "domains": [
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2009",
+  "source_url": "https://scriptphd.com/interview/2009/07/18/the-brains-behind-battlestars-science-a-conversation-with-nasas-kevin-grazier/",
+  "status": "partly",
+  "status_reason": "Antimatter has the right energy density in principle, but pusher-plate pulse drives are limited to a few % of c by plate ablation and heat, and the tonnes of antimatter needed are ~1e15x current production (CERN makes nanograms)."
+ },
+ {
+  "physicist": "Kevin Grazier",
+  "credentials": "PhD geophysics and space physics (UCLA); NASA JPL research scientist (Cassini); science advisor to Virtuality",
+  "work": "Virtuality",
+  "medium": "tv",
+  "year_of_work": 2009,
+  "depiction": "The crew make a 10-year round trip to Epsilon Eridani (~10.5 light-years away)",
+  "critique": "The target was chosen because, at ~0.9 c and taking relativistic time dilation/length contraction into account, it is reachable within a ten-year round trip of crew time",
+  "domains": [
+   "relativity_time_dilation",
+   "scale_distances"
+  ],
+  "date_of_critique": "2009",
+  "source_url": "https://scriptphd.com/interview/2009/07/18/the-brains-behind-battlestars-science-a-conversation-with-nasas-kevin-grazier/",
+  "status": "valid",
+  "status_reason": "21 ly at 0.9 c is ~23 Earth years but ~10 years of proper time (γ ≈ 2.3), ignoring acceleration phases; Epsilon Eridani's distance (10.5 ly) is confirmed by Gaia."
+ },
+ {
+  "physicist": "Brian Cox",
+  "credentials": "PhD high-energy physics (Manchester 1998); Professor of Particle Physics, University of Manchester; science advisor to Sunshine",
+  "work": "Sunshine",
+  "medium": "film",
+  "year_of_work": 2007,
+  "depiction": "The Sun is dying because a Q-ball (exotic supersymmetric particle) has lodged in it; a Moon-mass bomb was planned to reignite it",
+  "critique": "In reality the Sun is not dense enough to stop a Q-ball, so the backstory is creative licence; he had the bomb scaled down from the mass of the Moon to the size of Manhattan, and said several inaccuracies were allowed to serve the plot",
+  "domains": [
+   "astrophysics_stars_planets",
+   "quantum",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "https://en.wikipedia.org/wiki/Sunshine_(2007_film)",
+  "status": "valid",
+  "status_reason": "Q-balls are still hypothetical (no detection at LHC or in dark-matter searches), and a weakly interacting relativistic particle would pass through solar plasma; any bomb is negligible next to the Sun's ~4e26 W output."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); Ambrose Swasey Professor of Physics, Case Western Reserve University at time of writing",
+  "work": "Star Wars",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "The Millennium Falcon banks like an aircraft when it turns in space",
+  "critique": "Planes bank because they turn using air pressure on their wings; in space wings play no part in propulsion, so there's no reason to bank. It's done because 'it looks good'",
+  "domains": [
+   "vacuum_sound_light",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "https://excerpts.cdn.overdrive.com/FormatType-410/0293-1/E4A/740/48/BeyondStarTrek9780062040879.epub",
+  "status": "valid",
+  "status_reason": "Spacecraft change direction by thrust vectoring and attitude control; no aerodynamic lift exists in vacuum."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); Ambrose Swasey Professor of Physics, Case Western Reserve University at time of writing",
+  "work": "Star Trek: Voyager",
+  "medium": "tv",
+  "year_of_work": 1995,
+  "depiction": "Voyager (like the Enterprise) banks into turns and lifts its warp nacelles just before going to warp",
+  "critique": "There's no air in space, so banking and the nacelle movement serve no physical purpose; the answer to 'why?' is simply 'It looks good'",
+  "domains": [
+   "vacuum_sound_light",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "https://excerpts.cdn.overdrive.com/FormatType-410/0293-1/E4A/740/48/BeyondStarTrek9780062040879.epub",
+  "status": "valid",
+  "status_reason": "Without an atmosphere, attitude changes give no lift; nacelle geometry has no known physical role in any real warp metric."
+ },
+ {
+  "physicist": "Lawrence Krauss",
+  "credentials": "PhD physics (MIT 1982); Ambrose Swasey Professor of Physics, Case Western Reserve University at time of writing",
+  "work": "2001: A Space Odyssey",
+  "medium": "film",
+  "year_of_work": 1968,
+  "depiction": "Rotating spacecraft and stations create artificial gravity by spin",
+  "critique": "Praised as a correct depiction: spinning a large structure throws occupants against the outer wall, which is exactly how long flights will produce artificial gravity; by contrast, small, rapidly spinning TV flying saucers would pin their crew to the perimeter and gain nothing from saucer aerodynamics in vacuum",
+  "domains": [
+   "gravity_artificial",
+   "materials_structures"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "https://excerpts.cdn.overdrive.com/FormatType-410/0293-1/E4A/740/48/BeyondStarTrek9780062040879.epub",
+  "status": "valid",
+  "status_reason": "Centripetal acceleration ω²r is the only practical artificial-gravity method known; studies favour large radii (>~100 m) to limit Coriolis effects, as 2001's large wheel station does."
+ },
+ {
+  "physicist": "Kevin Grazier",
+  "credentials": "PhD planetary physics (UCLA); NASA JPL research scientist on the Cassini mission; science advisor to Battlestar Galactica",
+  "work": "Battlestar Galactica",
+  "medium": "tv",
+  "year_of_work": 2004,
+  "depiction": "Nuclear missiles hit the Cylon Colony, knocking it out of position near a black hole while the fleet holds station amid rocks and gas (finale 'Daybreak')",
+  "critique": "Nukes striking the hull would vaporize material and impart a change of velocity (Δv) to the Colony; drag from rocks and gas around it would force the ships to keep thrusting to hold attitude and orbit",
+  "domains": [
+   "orbital_mechanics",
+   "combat_weapons",
+   "black_holes"
+  ],
+  "date_of_critique": "2009",
+  "source_url": "https://scriptphd.com/interview/2009/07/18/the-brains-behind-battlestars-science-a-conversation-with-nasas-kevin-grazier/",
+  "status": "valid",
+  "status_reason": "Ablation-driven momentum transfer is the basis of nuclear standoff deflection studies (LLNL 2010s-2020s) and was seen in NASA's DART impact (2022), where ejecta boosted momentum transfer ~3-4x."
+ },
+ {
+  "physicist": "Jean-Pierre Luminet",
+  "credentials": "PhD astrophysics; Directeur de recherche émérite CNRS, Marseille",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "A wormhole appears near Saturn, placed there by unknown beings",
+  "critique": "A natural black hole/wormhole mouth this close is extraordinarily improbable (stellar black holes are ~1e-5 per cubic light-year locally), and a black-hole-mass object at Saturn's distance would wreck the solar system's stability; hence the film's pure-SF choice of an artificially made wormhole",
+  "domains": [
+   "ftl_wormholes",
+   "black_holes",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://arxiv.org/abs/1503.08305",
+  "status": "valid",
+  "status_reason": "Gaia astrometry has since found the nearest dormant black holes (Gaia BH1, 2022) at ~1,560 light-years, consistent with their rarity; a solar-mass-plus object at ~10 AU would strongly perturb planetary orbits."
+ }
+]

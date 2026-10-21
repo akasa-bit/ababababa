@@ -1,0 +1,954 @@
+[
+ {
+  "physicist": "James Kakalios",
+  "credentials": "PhD physics (Univ. of Chicago); Professor, School of Physics & Astronomy, Univ. of Minnesota; author of The Physics of Superheroes",
+  "work": "The Amazing Spider-Man #121 ('The Night Gwen Stacy Died')",
+  "medium": "comic",
+  "year_of_work": 1973,
+  "depiction": "Gwen Stacy falls from the George Washington Bridge and is caught by Spider-Man's web line; the Green Goblin claims the fall killed her.",
+  "critique": "Caught ~300 ft down at ~95 mph, stopping her almost instantly requires a large impulse (~10 g or more over a short time); the abrupt web stop, not the fall, snapped her neck ('It's not surprising her neck broke').",
+  "domains": [
+   "other"
+  ],
+  "date_of_critique": "2002",
+  "source_url": "https://news.uct.ac.za/article/-2002-06-02-how-strong-is-spider-mans-web-reallya",
+  "status": "valid",
+  "status_reason": "Impulse-momentum reasoning is sound: short stopping times produce injurious forces, exactly the physics behind airbags."
+ },
+ {
+  "physicist": "James Kakalios",
+  "credentials": "PhD physics; Professor of Physics, Univ. of Minnesota",
+  "work": "Superman (Action Comics #1 / early Superman comics)",
+  "medium": "comic",
+  "year_of_work": 1938,
+  "depiction": "Superman can 'leap an eighth of a mile' / over tall buildings because he comes from Krypton, a planet with much stronger gravity.",
+  "critique": "Working backward from the ~140 mph launch speed needed for a ~650 ft leap, Krypton's surface gravity would have to be about 15 times Earth's for Superman's Earth-normal muscles to have adapted to it.",
+  "domains": [
+   "gravity_artificial",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2002",
+  "source_url": "https://physicstoday.aip.org/news/teaching-physics-with-superheroes",
+  "status": "valid",
+  "status_reason": "Correct kinematics (v^2=2gh) and scaling; the inference is a consistent back-of-envelope estimate given the comic's premise."
+ },
+ {
+  "physicist": "James Kakalios",
+  "credentials": "PhD physics; Professor of Physics, Univ. of Minnesota",
+  "work": "Superman (origin of Krypton)",
+  "medium": "comic",
+  "year_of_work": 1938,
+  "depiction": "Krypton, Superman's home world, explodes.",
+  "critique": "A planet with ~15x Earth's surface gravity but Earth-like size would need a core of superdense, unstable matter, which 'explains' why Krypton exploded.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2002",
+  "source_url": "https://news.uct.ac.za/article/-2002-06-02-how-strong-is-spider-mans-web-reallya",
+  "status": "partly",
+  "status_reason": "High surface gravity on a modest-size planet does require very high mean density, but degenerate/neutron-star matter cannot be stable at planetary masses, so the 'explanation' is playful rather than physical."
+ },
+ {
+  "physicist": "James Kakalios",
+  "credentials": "PhD physics; Professor of Physics, Univ. of Minnesota",
+  "work": "Spider-Man comics (web-slinging)",
+  "medium": "comic",
+  "year_of_work": 1962,
+  "depiction": "Spider-Man's webbing is stated to have the tensile strength of steel.",
+  "critique": "Taking the comic's claim at face value, a web line of that thickness could hold roughly two tons, enough for the feats shown.",
+  "domains": [
+   "materials_structures"
+  ],
+  "date_of_critique": "2002",
+  "source_url": "https://news.uct.ac.za/article/-2002-06-02-how-strong-is-spider-mans-web-reallya",
+  "status": "valid",
+  "status_reason": "Real spider dragline silk has tensile strength comparable to high-strength steel, so the estimate is physically reasonable."
+ },
+ {
+  "physicist": "James Kakalios",
+  "credentials": "PhD physics; Professor of Physics, Univ. of Minnesota; science consultant on the film",
+  "work": "Watchmen",
+  "medium": "film",
+  "year_of_work": 2009,
+  "depiction": "Dr. Manhattan gains godlike powers after his 'intrinsic field' is removed, including teleportation and being in several places at once.",
+  "critique": "The 'intrinsic field' is invented; fields could in principle be cancelled by superposition but would need enormous energy. 'Teleportation isn't real' though quantum tunnelling is; being in two places at once at macroscopic scale is 'intrinsically ridiculous'.",
+  "domains": [
+   "quantum"
+  ],
+  "date_of_critique": "2009",
+  "source_url": "https://www.scientificamerican.com/article/how-accurate-is-watchmen",
+  "status": "valid",
+  "status_reason": "Quantum tunnelling and superposition are real only at microscopic scales; decoherence rules out macroscopic multi-location; quantum 'teleportation' transfers states, not matter."
+ },
+ {
+  "physicist": "James Kakalios",
+  "credentials": "PhD physics; Professor of Physics, Univ. of Minnesota",
+  "work": "Iron Man",
+  "medium": "film",
+  "year_of_work": 2008,
+  "depiction": "Tony Stark hovers and flies using boot thrusters powered by a palm-sized arc reactor.",
+  "critique": "A ~3 mm iron-density suit (~67-76 kg) plus Stark (~81 kg) means boot thrusters must continuously supply >330 lb of thrust just to hover; the energy needed for continuous downward thrust is enormous and the power source is the film's big cheat.",
+  "domains": [
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.theregister.com/2013/01/04/avengers_reality?page=2",
+  "status": "valid",
+  "status_reason": "Hovering requires continuous thrust and power far beyond any compact power source; no compact arc/fusion reactor exists in 2026."
+ },
+ {
+  "physicist": "James Kakalios",
+  "credentials": "PhD physics; Professor of Physics, Univ. of Minnesota",
+  "work": "Ant-Man",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "Scott Lang shrinks to insect size yet can ride ants and also punch with full-size force.",
+  "critique": "If density stays constant he can ride ants, but punching with full force needs full-size mass; keeping full mass at ant size would raise pressure under his feet ~10,000x. Decoupling mass from size would require altering coupling to the Higgs field, which nobody knows how to do.",
+  "domains": [
+   "materials_structures",
+   "quantum"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://geekdad.com/2015/07/ant-man-physics/",
+  "status": "valid",
+  "status_reason": "Square-cube and pressure scaling are correct; most nucleon mass comes from QCD binding, so even Higgs tinkering would barely change body mass."
+ },
+ {
+  "physicist": "James Kakalios",
+  "credentials": "PhD physics; Professor of Physics, Univ. of Minnesota",
+  "work": "Ant-Man (Pym Particles)",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "Pym Particles shrink a person by reducing the distance between atoms.",
+  "critique": "Atom sizes are fixed by fundamental constants (electron charge, Planck's constant), and atoms in the body are already packed tightly; squeezing them even slightly would need huge pressures: 'It would just smush you.'",
+  "domains": [
+   "quantum",
+   "materials_structures"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.snexplores.org/article/tech-shrinking-people-possible",
+  "status": "valid",
+  "status_reason": "Bohr radius depends on fundamental constants; condensed matter is nearly incompressible at survivable pressures."
+ },
+ {
+  "physicist": "James Kakalios",
+  "credentials": "PhD physics; Professor of Physics, Univ. of Minnesota",
+  "work": "The Flash (Silver Age comics)",
+  "medium": "comic",
+  "year_of_work": 1956,
+  "depiction": "The Flash runs at enormous speeds and can still breathe.",
+  "critique": "Kakalios explains that a running Flash would be surrounded by a pocket of air dragged along with him (boundary layer), which is what would let him breathe while ignoring drag.",
+  "domains": [
+   "thermodynamics_heat",
+   "other"
+  ],
+  "date_of_critique": "2005",
+  "source_url": "https://www.publishersweekly.com/9781592401468",
+  "status": "partly",
+  "status_reason": "A boundary layer does move with a body, but at supersonic speeds drag, shock heating and air compression would be devastating; the explanation is a generous rationalization."
+ },
+ {
+  "physicist": "Sidney Perkowitz",
+  "credentials": "PhD physics (Univ. of Pennsylvania); Charles Howard Candler Professor of Physics Emeritus, Emory University; author of Hollywood Science (2007)",
+  "work": "The Core",
+  "medium": "film",
+  "year_of_work": 2003,
+  "depiction": "When Earth's core stops rotating, its 'electromagnetic field' fails and people with pacemakers drop dead.",
+  "critique": "It is a magnetic field, not an 'electromagnetic field' ('the main scientific error'), and Earth's field is so weak that switching it off 'wouldn't have the slightest effect' on a pacemaker.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "other"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://salon.com/2023/02/05/the-core-science-entertainment-exchange",
+  "status": "valid",
+  "status_reason": "The geomagnetic field is ~50 microtesla, far too weak to affect pacemakers; the geodynamo also cannot 'stop' in days."
+ },
+ {
+  "physicist": "Sidney Perkowitz",
+  "credentials": "PhD physics; Professor Emeritus of Physics, Emory University",
+  "work": "The Core",
+  "medium": "film",
+  "year_of_work": 2003,
+  "depiction": "A portable 'subterranean' ship uses lasers and ultrasonics to burn and drill through thousands of miles of rock and mantle.",
+  "critique": "The energy needed to power lasers and ultrasonics through thousands of miles of rock 'is so immense that I just can't see how any kind of portable ship could carry it.'",
+  "domains": [
+   "propulsion_energy",
+   "materials_structures"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://salon.com/2023/02/05/the-core-science-entertainment-exchange",
+  "status": "valid",
+  "status_reason": "Vaporizing/melting a ~3000 km path of rock needs energies far beyond any vehicle-borne source; no material survives core temperatures and pressures."
+ },
+ {
+  "physicist": "Sidney Perkowitz",
+  "credentials": "PhD physics; Professor Emeritus of Physics, Emory University",
+  "work": "The Core",
+  "medium": "film",
+  "year_of_work": 2003,
+  "depiction": "Hydrogen bombs detonated in the outer core restart its rotation; the ship hull is made of a magic material ('Unobtainium').",
+  "critique": "Gives the film 'a special place in the annals of bad physics': the hull is a magic material and focusing nuclear explosions to re-spin the core is 'just a crazy idea'.",
+  "domains": [
+   "propulsion_energy",
+   "astrophysics_stars_planets",
+   "materials_structures"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "https://physicsworld.com/a/hollywood-physics/",
+  "status": "valid",
+  "status_reason": "The core's rotational kinetic energy dwarfs the entire nuclear arsenal by many orders of magnitude; explosions cannot be 'focused' to add angular momentum."
+ },
+ {
+  "physicist": "Sidney Perkowitz",
+  "credentials": "PhD physics; Professor Emeritus of Physics, Emory University",
+  "work": "Destination Moon",
+  "medium": "film",
+  "year_of_work": 1950,
+  "depiction": "A realistic rocket voyage to the Moon (with Heinlein and Chesley Bonestell input).",
+  "critique": "Praised as scientifically accurate in its depiction of spaceflight (weightlessness, rocket physics, lunar landing).",
+  "domains": [
+   "orbital_mechanics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "https://physicsworld.com/a/hollywood-physics/",
+  "status": "valid",
+  "status_reason": "Its depiction of free-fall, reaction propulsion and the airless Moon holds up well, though a single-stage nuclear rocket remains unrealized."
+ },
+ {
+  "physicist": "Sidney Perkowitz",
+  "credentials": "PhD physics; Professor Emeritus of Physics, Emory University",
+  "work": "Armageddon (with Meteor and Deep Impact)",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "Asteroid/comet fragments strike major cities causing massive destruction.",
+  "critique": "The size and speed of the impactors are consistent with the destruction shown, but a random space rock hitting a major city is very improbable.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "scale_distances"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "https://physicsworld.com/a/hollywood-physics/",
+  "status": "valid",
+  "status_reason": "Impact energy scales as 1/2 m v^2 at ~20 km/s; cities cover a tiny fraction of Earth's surface, so targeted urban hits are unlikely."
+ },
+ {
+  "physicist": "Sidney Perkowitz",
+  "credentials": "PhD physics; Professor Emeritus of Physics, Emory University",
+  "work": "Starship Troopers",
+  "medium": "film",
+  "year_of_work": 1997,
+  "depiction": "Alien Arachnids fling an asteroid across interstellar space that precisely destroys Buenos Aires.",
+  "critique": "Kinetic bombardment ('rods from God') is a real concept, but hitting a single city with a rock launched from another star system is implausible.",
+  "domains": [
+   "orbital_mechanics",
+   "combat_weapons",
+   "scale_distances"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "https://physicsworld.com/a/hollywood-physics/",
+  "status": "valid",
+  "status_reason": "Interstellar ballistic targeting over light-years with no course correction would require absurd precision; kinetic impactors themselves are physically sound."
+ },
+ {
+  "physicist": "Sidney Perkowitz",
+  "credentials": "PhD physics; Professor Emeritus of Physics, Emory University",
+  "work": "The Day After Tomorrow",
+  "medium": "film",
+  "year_of_work": 2004,
+  "depiction": "Global warming shuts down the North Atlantic circulation and triggers an ice age within days.",
+  "critique": "The idea that warming can cool regions by disrupting ocean circulation is sound, but the ice age arrives unrealistically fast.",
+  "domains": [
+   "thermodynamics_heat",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "https://physicsworld.com/a/hollywood-physics/",
+  "status": "valid",
+  "status_reason": "AMOC weakening is a real concern (2020s studies), but heat capacity of oceans/ice sheets makes glaciation over days physically impossible."
+ },
+ {
+  "physicist": "Sidney Perkowitz",
+  "credentials": "PhD physics; Professor Emeritus of Physics, Emory University",
+  "work": "The Saint",
+  "medium": "film",
+  "year_of_work": 1997,
+  "depiction": "A scientist's cold-fusion formula is the coveted MacGuffin that would solve the world's energy needs.",
+  "critique": "The plot rests on cold fusion, a claim discredited in the real world after 1989.",
+  "domains": [
+   "propulsion_energy",
+   "quantum"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "https://physicsworld.com/a/hollywood-physics/",
+  "status": "valid",
+  "status_reason": "Room-temperature fusion remains unreplicated (incl. Google-funded 2019 study); Coulomb barrier makes it implausible."
+ },
+ {
+  "physicist": "Erin Macdonald",
+  "credentials": "PhD astrophysics (Univ. of Glasgow, gravitational-wave research with LIGO collaboration); Star Trek franchise science advisor since 2019",
+  "work": "Star Trek (transporters, TOS/TNG era)",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Transporters dematerialize a person and reassemble them elsewhere.",
+  "critique": "Heisenberg's uncertainty principle is 'why we don't have transporters': you can never know where every particle in your body is, so scanning and reassembling a person exactly is not possible.",
+  "domains": [
+   "quantum"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.startrek.com/news/dispatches-stlv-physics-trek-teaches-physicists-and-non-scientists-alike",
+  "status": "valid",
+  "status_reason": "Uncertainty and the no-cloning theorem forbid exact copying of an unknown quantum state; real quantum teleportation moves states of a few qubits, not matter."
+ },
+ {
+  "physicist": "Erin Macdonald",
+  "credentials": "PhD astrophysics (Univ. of Glasgow); Star Trek science advisor",
+  "work": "Star Trek (warp drive)",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Starships travel faster than light by warping space.",
+  "critique": "Warp works by compressing spacetime ahead of the ship and expanding it behind, like the Alcubierre metric; no law forbids spacetime itself expanding faster than light, but it seems to need an unrealistic amount of energy (she remains optimistic).",
+  "domains": [
+   "ftl_wormholes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.startrek.com/news/dispatches-stlv-physics-trek-teaches-physicists-and-non-scientists-alike",
+  "status": "partly",
+  "status_reason": "Alcubierre geometry is a valid GR solution, but superluminal versions still require negative energy density and face causality/horizon problems; 2021 'positive-energy' warp proposals are subluminal."
+ },
+ {
+  "physicist": "Erin Macdonald",
+  "credentials": "PhD astrophysics (Univ. of Glasgow); Star Trek science advisor",
+  "work": "Star Trek (inertial dampeners)",
+  "medium": "tv",
+  "year_of_work": 1987,
+  "depiction": "Inertial dampeners let crews survive enormous accelerations with no felt effect.",
+  "critique": "Considered unlikely physics; writers know they are breaking physics: 'We know we're breaking physics but it's okay because we're acknowledging it.'",
+  "domains": [
+   "gravity_artificial",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.startrek.com/news/dispatches-stlv-physics-trek-teaches-physicists-and-non-scientists-alike",
+  "status": "valid",
+  "status_reason": "There is no known way to cancel inertia locally; only free-fall (uniform gravitational acceleration) gives tidal-free acceleration."
+ },
+ {
+  "physicist": "Erin Macdonald",
+  "credentials": "PhD astrophysics (Univ. of Glasgow); Star Trek science advisor",
+  "work": "Star Trek: Deep Space Nine (Bajoran wormhole)",
+  "medium": "tv",
+  "year_of_work": 1993,
+  "depiction": "A stable wormhole links the Bajoran system to the distant Gamma Quadrant.",
+  "critique": "Wormholes are valid physics (solutions of general relativity) and an underused device in Trek because they allow long-distance travel without inventing new technology.",
+  "domains": [
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.startrek.com/news/dispatches-stlv-physics-trek-teaches-physicists-and-non-scientists-alike",
+  "status": "partly",
+  "status_reason": "Wormholes are GR solutions, but traversable ones require exotic negative-energy matter and none has been observed."
+ },
+ {
+  "physicist": "Erin Macdonald",
+  "credentials": "PhD astrophysics (Univ. of Glasgow); Star Trek science advisor",
+  "work": "Star Trek: Discovery (Season 3, Book's ship riding gravitational waves)",
+  "medium": "tv",
+  "year_of_work": 2020,
+  "depiction": "Cleveland Booker 'surfs' gravitational waves with his ship.",
+  "critique": "Surfing gravitational waves is not physically possible: 'you wouldn't really be able to do that'; the show made real gravitational-wave science 'a little bit more fuzzy'.",
+  "domains": [
+   "relativity_time_dilation",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://reactormag.com/star-treks-science-advisor-explains-the-burn-star-burps-and-more/",
+  "status": "valid",
+  "status_reason": "Gravitational-wave strains reaching a ship are ~1e-21 even from mergers; they carry no usable 'push' at any survivable distance."
+ },
+ {
+  "physicist": "Erin Macdonald",
+  "credentials": "PhD astrophysics (Univ. of Glasgow); Star Trek science advisor",
+  "work": "Star Trek: Strange New Worlds ('Memento Mori')",
+  "medium": "tv",
+  "year_of_work": 2022,
+  "depiction": "The Enterprise slingshots near a brown dwarf/black hole system while the Gorn fail to see the maneuver in time.",
+  "critique": "Gravitational time dilation and delayed light near the massive body mean the Gorn would not see Pike's slingshot right away.",
+  "domains": [
+   "relativity_time_dilation",
+   "black_holes",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://reactormag.com/star-treks-science-advisor-explains-the-burn-star-burps-and-more/",
+  "status": "partly",
+  "status_reason": "Shapiro delay and redshift near a compact object are real, but at survivable distances from a black hole the delays are tiny, so the tactical effect is exaggerated."
+ },
+ {
+  "physicist": "Erin Macdonald",
+  "credentials": "PhD astrophysics (Univ. of Glasgow); Star Trek science advisor",
+  "work": "Star Trek: Prodigy (protostar drive)",
+  "medium": "tv",
+  "year_of_work": 2021,
+  "depiction": "The USS Protostar is powered by a captive protostar compressed by gravitational compressors to create a warp bubble.",
+  "critique": "Explains the drive as super-dense hot material compressed until it fuses, providing energy to open a wormhole/warp bubble; jokes that building a protostar aboard ship is the most outlandish idea and relies on 'exotic matter'.",
+  "domains": [
+   "propulsion_energy",
+   "astrophysics_stars_planets",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2024",
+  "source_url": "https://blog.trekcore.com/2024/07/interview-star-trek-prodigy-erin-macdonald/",
+  "status": "partly",
+  "status_reason": "Protostars do heat by gravitational contraction toward fusion, but containing one in a ship and converting it to a wormhole requires unknown exotic matter."
+ },
+ {
+  "physicist": "Charles L. Adler",
+  "credentials": "PhD physics (Cornell); Professor of Physics, St. Mary's College of Maryland; author of Wizards, Aliens, and Starships (Princeton UP, 2014)",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Time runs far slower on Miller's planet near Gargantua and for the crew near the black hole; relativity drives the plot.",
+  "critique": "The use of relativity, especially time dilation, was handled well and is central to the plot.",
+  "domains": [
+   "relativity_time_dilation",
+   "black_holes"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://physicstoday.aip.org/news/questions-and-answers-with-charles-adler",
+  "status": "valid",
+  "status_reason": "Extreme gravitational time dilation is achievable in principle near a near-extremal Kerr black hole, as the film's GR modelling showed (with tidal/orbit-stability caveats)."
+ },
+ {
+  "physicist": "Charles L. Adler",
+  "credentials": "PhD physics; Professor of Physics, St. Mary's College of Maryland",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Near the end, Cooper detaches his Ranger (and TARS) citing 'Newton's third law' to help the Endurance escape Gargantua.",
+  "critique": "Identifies a misuse of Newton's third law near the end, and says some space travel past the wormhole was poorly thought out.",
+  "domains": [
+   "orbital_mechanics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://physicstoday.aip.org/news/questions-and-answers-with-charles-adler",
+  "status": "valid",
+  "status_reason": "Simply releasing mass without pushing against it gives the remaining ship no velocity change; a reaction requires actively expelling mass."
+ },
+ {
+  "physicist": "Charles L. Adler",
+  "credentials": "PhD physics; Professor of Physics, St. Mary's College of Maryland",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Cooper falls into Gargantua, enters a tesseract built by 'bulk beings', and transmits quantum data about the singularity to his daughter via gravity.",
+  "critique": "The ending is a deus ex machina that abandons the film's otherwise careful science.",
+  "domains": [
+   "black_holes",
+   "quantum"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://physicstoday.aip.org/news/questions-and-answers-with-charles-adler",
+  "status": "valid",
+  "status_reason": "No known physics allows retrieving information from inside an event horizon or sending signals back through time via higher-dimensional bulk; it is speculative fiction."
+ },
+ {
+  "physicist": "Charles L. Adler",
+  "credentials": "PhD physics; Professor of Physics, St. Mary's College of Maryland",
+  "work": "Star Trek (transporter)",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "The transporter disassembles a person and reassembles them at a destination.",
+  "critique": "The first step, disassembling a person into a beamable form, is not physically possible; he also argues the reassembled person would not be the same person.",
+  "domains": [
+   "quantum",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://physicstoday.aip.org/news/questions-and-answers-with-charles-adler",
+  "status": "valid",
+  "status_reason": "Converting ~70 kg of matter to energy releases ~6e18 J (≈1.5 Gt TNT) and exact quantum-state readout is forbidden by no-cloning."
+ },
+ {
+  "physicist": "Jan Kaufman",
+  "credentials": "Ing., PhD; researcher, Institute of Physics of the Czech Academy of Sciences (HiLASE Centre, laser physics)",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Ryan Stone, tangled in parachute cords on the ISS, must let Matt Kowalski go as he is pulled away and drifts off to his death.",
+  "critique": "By Newton's first law, once the cords halted their motion relative to the station, there was no external force pulling Kowalski away; the astronauts should have stayed put.",
+  "domains": [
+   "orbital_mechanics",
+   "other"
+  ],
+  "date_of_critique": "2026",
+  "source_url": "https://www.avcr.cz/en/news-archive/When-Cars-Fly-and-Bullets-Swerve-Physics-Gone-Wrong-on-the-Silver-Screen/",
+  "status": "valid",
+  "status_reason": "In near free-fall with relative motion arrested (and negligible tidal/drag effects over seconds), nothing tugs Kowalski away; a gentle tug would have reeled him in."
+ },
+ {
+  "physicist": "Adam Weiner",
+  "credentials": "Physics teacher, The Bishop's School (La Jolla); author of Don't Try This at Home! The Physics of Hollywood Movies (Kaplan, 2007). NOTE: not a PhD researcher/professor",
+  "work": "Spider-Man",
+  "medium": "film",
+  "year_of_work": 2002,
+  "depiction": "Peter Parker clings to walls and ceilings using tiny hairs on his fingertips.",
+  "critique": "With ~300 fingertip hairs, each hair would need to support about 0.25 N of Peter's weight, far more than a short hair-like strand can bear without bending.",
+  "domains": [
+   "materials_structures",
+   "biology_physics"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "https://physicstoday.aip.org/reviews/dont-try-this-at-home-the-physics-of-hollywood-movies",
+  "status": "partly",
+  "status_reason": "Load-per-hair argument is right for few coarse hairs, but geckos show that millions of nanoscale setae using van der Waals forces can hold a body; the film's visible hairs are the wrong scale."
+ },
+ {
+  "physicist": "Costas J. Efthimiou & Ralph A. Llewellyn",
+  "credentials": "Efthimiou: PhD physics, Professor of Physics, Univ. of Central Florida; Llewellyn: PhD physics, Professor Emeritus of Physics, UCF (co-author of Tipler & Llewellyn, Modern Physics)",
+  "work": "Armageddon",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "NASA splits a Texas-sized asteroid with a nuclear bomb planted in a borehole so the two halves miss Earth.",
+  "critique": "With a generous 100,000-Hiroshima (5e18 J) bomb and a 2e21 kg asteroid, each half gains only ~7 cm/s sideways, i.e. ~500 m of separation in the final two hours; the fragments would hit Earth a few city blocks apart.",
+  "domains": [
+   "orbital_mechanics",
+   "propulsion_energy",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2003",
+  "source_url": "https://arxiv.org/abs/physics/0303005",
+  "status": "valid",
+  "status_reason": "Momentum/energy conservation numbers are correct; real planetary defense (e.g. DART 2022) relies on early, small nudges, not last-minute splitting."
+ },
+ {
+  "physicist": "Costas J. Efthimiou & Ralph A. Llewellyn",
+  "credentials": "Efthimiou: PhD physics, Professor, UCF; Llewellyn: PhD physics, Professor Emeritus, UCF",
+  "work": "2001: A Space Odyssey",
+  "medium": "film",
+  "year_of_work": 1968,
+  "depiction": "Passengers on the slowly rotating wheel space station walk normally with Earth-like gravity.",
+  "critique": "Estimating radius ~300 m from window sizes and a 36 s rotation period from the real-time footage gives omega^2 r ≈ 9.1 m/s^2, very close to Earth's g: the film's artificial gravity is consistent.",
+  "domains": [
+   "gravity_artificial",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "https://arxiv.org/abs/physics/0608058",
+  "status": "valid",
+  "status_reason": "Centripetal acceleration a = omega^2 r is exactly how spin gravity works; Kubrick's station parameters are realistic."
+ },
+ {
+  "physicist": "Costas J. Efthimiou & Ralph A. Llewellyn",
+  "credentials": "Efthimiou: PhD physics, Professor, UCF; Llewellyn: PhD physics, Professor Emeritus, UCF",
+  "work": "Independence Day",
+  "medium": "film",
+  "year_of_work": 1996,
+  "depiction": "Humans destroy 15-mile-wide alien city destroyers hovering ~2 km over major cities and celebrate victory.",
+  "critique": "Even at water-like density and 10% fill, each ship is ~4.5e13 kg; its ~8.8e17 J of potential energy released when it crashes equals ~17,640 Hiroshima bombs per city, so 'victory is worse than defeat'.",
+  "domains": [
+   "combat_weapons",
+   "scale_distances",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "https://arxiv.org/abs/physics/0608058",
+  "status": "valid",
+  "status_reason": "E = mgh estimate is sound; the energy release from dropping such masses would be catastrophic."
+ },
+ {
+  "physicist": "Costas J. Efthimiou & Ralph A. Llewellyn",
+  "credentials": "Efthimiou: PhD physics, Professor, UCF; Llewellyn: PhD physics, Professor Emeritus, UCF",
+  "work": "The Core",
+  "medium": "film",
+  "year_of_work": 2003,
+  "depiction": "A 1,000-megaton nuclear device detonated in the outer core restores its rotation.",
+  "critique": "Even if all 4.2e18 J went into rotation, the outer core (I = 8πρ(Ro^5-Ri^5)/15) would gain only ~1e-9 rad/s, 70,000 times too little; ~4e14 Hiroshima bombs would be needed.",
+  "domains": [
+   "propulsion_energy",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "https://arxiv.org/abs/physics/0608058",
+  "status": "valid",
+  "status_reason": "Rotational kinetic energy of the outer core (~1e29 J) dwarfs any nuclear explosion."
+ },
+ {
+  "physicist": "Costas J. Efthimiou & Ralph A. Llewellyn",
+  "credentials": "Efthimiou: PhD physics, Professor, UCF; Llewellyn: PhD physics, Professor Emeritus, UCF",
+  "work": "The Core",
+  "medium": "film",
+  "year_of_work": 2003,
+  "depiction": "A crew member's body falls into lava 700 miles down and sinks within seconds; the crew walks normally at depth.",
+  "critique": "Human body (~1000 kg/m^3) in molten rock (~3300 kg/m^3) would float once a third submerged; also gravity at that depth is ~20% weaker (g scales with r inside a uniform sphere), which the film ignores.",
+  "domains": [
+   "materials_structures",
+   "gravity_artificial",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "https://arxiv.org/abs/0707.1167",
+  "status": "valid",
+  "status_reason": "Archimedes' principle is clear; the uniform-density gravity estimate is crude (Earth's real g rises slightly into the mantle) but buoyancy point stands."
+ },
+ {
+  "physicist": "Costas J. Efthimiou & Ralph A. Llewellyn",
+  "credentials": "Efthimiou: PhD physics, Professor, UCF; Llewellyn: PhD physics, Professor Emeritus, UCF",
+  "work": "Superman (Superman: The Movie)",
+  "medium": "film",
+  "year_of_work": 1978,
+  "depiction": "Superman flies around Earth so fast that Earth's rotation reverses, turning back time to save Lois Lane.",
+  "critique": "Earth's rotation has no link to the flow of time; in vacuum Superman has nothing to push against; he flies the wrong direction (his reaction would speed Earth up); and absorbing Earth's angular momentum would require near light speed at a radius >2.3e23 m.",
+  "domains": [
+   "relativity_time_dilation",
+   "orbital_mechanics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "https://arxiv.org/abs/0707.1167",
+  "status": "valid",
+  "status_reason": "Angular momentum conservation and Newton's third law make the feat impossible as shown; time direction is set by entropy, not Earth's spin."
+ },
+ {
+  "physicist": "Costas J. Efthimiou & Ralph A. Llewellyn",
+  "credentials": "Efthimiou: PhD physics, Professor, UCF; Llewellyn: PhD physics, Professor Emeritus, UCF",
+  "work": "X-Men: The Last Stand",
+  "medium": "film",
+  "year_of_work": 2006,
+  "depiction": "Magneto magnetically tears loose the Golden Gate Bridge and moves it ~5 km to Alcatraz.",
+  "critique": "Moving ~4e8 kg at ~10 m/s needs ~2e10 J; from food energy Magneto would burn ~1,350 lb of fat; even with mass-energy conversion his ~37 MW output would make him glow ~926 times brighter than a 60 W bulb; and cutting the suspension cables would collapse the deck.",
+  "domains": [
+   "propulsion_energy",
+   "thermodynamics_heat",
+   "materials_structures"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "https://arxiv.org/abs/0707.1167",
+  "status": "valid",
+  "status_reason": "Energy bookkeeping is correct to order of magnitude; biological power output is limited to hundreds of watts."
+ },
+ {
+  "physicist": "Costas J. Efthimiou & Ralph A. Llewellyn",
+  "credentials": "Efthimiou: PhD physics, Professor, UCF; Llewellyn: PhD physics, Professor Emeritus, UCF",
+  "work": "The Chronicles of Riddick",
+  "medium": "film",
+  "year_of_work": 2004,
+  "depiction": "Planet Crematoria swings from -300 to +700 degrees; sunrise incinerates a prisoner in seconds, while Riddick survives with a flask of water poured on himself.",
+  "critique": "In Celsius (the script's units) -300 C is below absolute zero; in Fahrenheit 700 F cannot cremate a body in seconds (cremation needs ~1000 C for 1-2 h); a ~10 g water film on his head would evaporate in <9 s under Mercury-like insolation, and the planet should have lost its atmosphere.",
+  "domains": [
+   "thermodynamics_heat",
+   "exoplanets_habitability"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "https://arxiv.org/abs/0707.1167",
+  "status": "valid",
+  "status_reason": "Absolute zero (-273.15 C) is inviolable; latent-heat and insolation estimates are sound."
+ },
+ {
+  "physicist": "Costas J. Efthimiou & Ralph A. Llewellyn",
+  "credentials": "Efthimiou: PhD physics, Professor, UCF; Llewellyn: PhD physics, Professor Emeritus, UCF",
+  "work": "Aeon Flux",
+  "medium": "film",
+  "year_of_work": 2005,
+  "depiction": "Aeon lands from a somersault and freezes, leaning over a field of blades, without falling.",
+  "critique": "Nothing supplies the impulse to stop her forward momentum except foot friction, whose torque adds to gravity's and tips her onto the blades; with her center of mass outside her base of support the pose is not an equilibrium.",
+  "domains": [
+   "other"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "https://arxiv.org/abs/0707.1167",
+  "status": "valid",
+  "status_reason": "Standard impulse, torque and static-equilibrium analysis; internal muscle torques cannot move the center of mass."
+ },
+ {
+  "physicist": "Costas J. Efthimiou & Ralph A. Llewellyn",
+  "credentials": "Efthimiou: PhD physics, Professor, UCF; Llewellyn: PhD physics, Professor Emeritus, UCF",
+  "work": "Spider-Man",
+  "medium": "film",
+  "year_of_work": 2002,
+  "depiction": "Atop the Queensboro Bridge tower, the Green Goblin holds Mary Jane in one hand and the cable supporting a full tram car in the other.",
+  "critique": "Nothing balances the horizontal cable tension; static friction would need mu_s >= cot(7°)/2 ≈ 4, implausibly high, and the misaligned forces would create an unbalanced torque.",
+  "domains": [
+   "materials_structures",
+   "other"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "https://arxiv.org/abs/0707.1167",
+  "status": "valid",
+  "status_reason": "Free-body analysis is correct; shallow cable angles produce tensions far exceeding the load."
+ },
+ {
+  "physicist": "Costas J. Efthimiou & Ralph A. Llewellyn",
+  "credentials": "Efthimiou: PhD physics, Professor, UCF; Llewellyn: PhD physics, Professor Emeritus, UCF",
+  "work": "Red Planet",
+  "medium": "film",
+  "year_of_work": 2000,
+  "depiction": "Astronauts walk and move on Mars exactly as on Earth.",
+  "critique": "Mars' surface gravity is 0.38 g, so gait must change: the maximum walking speed (V <= sqrt(gL)) drops from ~3.1 m/s on Earth to ~1.9 m/s on Mars.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "biology_physics"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "https://arxiv.org/abs/physics/0608058",
+  "status": "valid",
+  "status_reason": "Froude-number gait scaling is well supported by reduced-gravity experiments and Apollo footage."
+ },
+ {
+  "physicist": "Jeffrey Bennett",
+  "credentials": "PhD astrophysics (Univ. of Colorado Boulder); astronomy educator and textbook author (The Cosmic Perspective; What Is Relativity?, Columbia UP 2014)",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Habitable, Earth-like planets (Miller's, Mann's, Edmunds') orbit the supermassive black hole Gargantua, warmed by its accretion disk.",
+  "critique": "'Probably not real': heat and light would come from the accretion disk, which emits mostly high-energy (X-ray/UV) radiation, making habitable conditions implausible.",
+  "domains": [
+   "exoplanets_habitability",
+   "black_holes"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.jeffreybennett.com/interstellar-science-thats-relativity/",
+  "status": "partly",
+  "status_reason": "Typical disks emit X-rays/UV, but the film posits an unusually cool, quiescent disk, and later work (e.g. Schnittman 2019) shows habitability near SMBHs is not strictly ruled out, though extreme blueshift/radiation problems remain."
+ },
+ {
+  "physicist": "Jeffrey Bennett",
+  "credentials": "PhD astrophysics (Univ. of Colorado Boulder); author of What Is Relativity?",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Miller's planet has a shallow ocean swept by kilometer-high waves.",
+  "critique": "Huge waves in a very shallow ocean seem unrealistic (though less important than whether the planets could exist at all).",
+  "domains": [
+   "exoplanets_habitability",
+   "black_holes"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.jeffreybennett.com/interstellar-science-thats-relativity/",
+  "status": "partly",
+  "status_reason": "Ordinary wind waves cannot be that tall in shallow water, but the film's rationale (tidal bores from a planet rocking in Gargantua's tidal field) is a debated but not impossible mechanism."
+ },
+ {
+  "physicist": "Jeffrey Bennett",
+  "credentials": "PhD astrophysics (Univ. of Colorado Boulder); author of What Is Relativity?",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "A wormhole near Saturn lets the crew reach another galaxy.",
+  "critique": "Wormholes arise from general relativity's equations, but 'there is no known way to make a stable wormhole' people could travel through; this element is speculative (unlike the film's time dilation and black-hole visuals, which he calls real science).",
+  "domains": [
+   "ftl_wormholes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.jeffreybennett.com/interstellar-science-thats-relativity/",
+  "status": "valid",
+  "status_reason": "Traversable wormholes still require exotic negative-energy matter in 2026; none is known to exist."
+ },
+ {
+  "physicist": "Jonathan McDowell",
+  "credentials": "PhD astrophysics (Univ. of Cambridge); astrophysicist, Harvard-Smithsonian Center for Astrophysics (Chandra X-ray Center)",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Hubble, the ISS and a Chinese 'Tiangong' station are all within jetpack (MMU) reach of each other at ~600 km.",
+  "critique": "In reality Hubble (28.5° inclination) and ISS (51.6°) are in very different orbits; the film only works if one invents a backstory in which Hubble's inclination and altitude were changed and the ISS raised ~200 km ('retconning' needed to make HST MMU-accessible).",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://planet4589.org/space/articles/gravity.html",
+  "status": "valid",
+  "status_reason": "Plane changes cost delta-v ~ 2v sin(Δi/2), ~3 km/s for 23°, far beyond any jetpack; real orbits are as he states."
+ },
+ {
+  "physicist": "Jonathan McDowell",
+  "credentials": "PhD astrophysics (Univ. of Cambridge); Harvard-Smithsonian Center for Astrophysics",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "A Russian anti-satellite test creates a debris cascade that sweeps through the astronauts' orbit every ~90 minutes.",
+  "critique": "A debris field moving slowly relative to the ISS, dense, thin and repeatedly returning must share nearly the ISS's orbital period and span hundreds of km; 'None of this makes sense with the Russian military test explanation'—the source would have to be something co-orbiting like a cargo ship.",
+  "domains": [
+   "orbital_mechanics",
+   "combat_weapons"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://planet4589.org/space/articles/gravity.html",
+  "status": "valid",
+  "status_reason": "Debris from a distant ASAT test would be in different orbits with large relative velocities and would disperse, not return as a coherent cloud."
+ },
+ {
+  "physicist": "Sergey Krasnikov",
+  "credentials": "Doctor of Physical and Mathematical Sciences; leading researcher, Laboratory of Stellar Physics, Pulkovo Observatory (known for the 'Krasnikov tube' spacetime)",
+  "work": "Tenet",
+  "medium": "film",
+  "year_of_work": 2020,
+  "depiction": "'Inverted' people and objects have reversed entropy and move backward in time among normal ones (e.g. wind hitting an inverted person's back).",
+  "critique": "The film's 'inversion' is reversal of the arrow of time; reversed entropy as Nolan presents it is illogical and impossible, and details like the wind contradict common sense. No known law forbids a region with a reversed arrow of time, but it would look like a 'miracle'; the realistic time-machine concept is the Morris-Thorne moving wormhole.",
+  "domains": [
+   "thermodynamics_heat",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2022",
+  "source_url": "https://en.scientificrussia.ru/articles/masina-vremeni-v-krotovoj-nore-i-resenie-vremennyh-paradoksov-intervu-s-fizikom-teoretikom-s-krasnikovym-2",
+  "status": "valid",
+  "status_reason": "Entropy's arrow is statistical and tied to cosmological low-entropy initial conditions; locally reversed objects interacting with normal surroundings would be overwhelmingly improbable."
+ },
+ {
+  "physicist": "Amy Mainzer",
+  "credentials": "PhD astronomy (UCLA); Professor of Planetary Science, Univ. of Arizona/UCLA; PI of NASA NEOWISE and NEO Surveyor; science advisor to the film",
+  "work": "Don't Look Up",
+  "medium": "film",
+  "year_of_work": 2021,
+  "depiction": "A newly discovered planet-killing comet will hit Earth only months after detection.",
+  "critique": "Short warning times are realistic for long-period comets (cf. Comet NEOWISE 2020: months from discovery to closest approach) because surveys have catalogued most large near-Earth asteroids but a much smaller fraction of comets; but no known asteroid or comet is on an impact trajectory, so the premise is fiction.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://www.universetoday.com/articles/the-real-science-behind-the-movie-dont-look-up",
+  "status": "valid",
+  "status_reason": "Long-period comets arrive with months of warning and remain the hardest impact threat to catalog; no known >1 km impactor exists."
+ },
+ {
+  "physicist": "Michael D. Smith",
+  "credentials": "PhD (Cornell, astronomy/planetary science); planetary scientist, NASA Goddard Space Flight Center, specialist in Martian dust storms",
+  "work": "The Martian",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "A violent Martian dust storm topples the ascent vehicle, impales Watney with debris and forces evacuation.",
+  "critique": "Martian air has ~1% of Earth's density, so a 60 mph wind feels like ~6 mph: 'you would probably feel a breeze, but it wouldn't be knocking you over,' though real dust storms are dramatic and have consequences (e.g. for solar power).",
+  "domains": [
+   "astrophysics_stars_planets",
+   "other"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://csmonitor.com/Science/2015/0930/That-dust-storm-in-The-Martian-wouldn-t-actually-be-that-bad",
+  "status": "valid",
+  "status_reason": "Dynamic pressure scales with density x v^2; Mars' ~0.6 kPa atmosphere cannot exert the forces shown."
+ },
+ {
+  "physicist": "Seth Shostak",
+  "credentials": "PhD astronomy (Caltech); Senior Astronomer, SETI Institute",
+  "work": "Independence Day",
+  "medium": "film",
+  "year_of_work": 1996,
+  "depiction": "SETI researchers detect the aliens' signal and enormous alien ships cross interstellar space to attack Earth.",
+  "critique": "The SETI premise is broadly right ('We are looking for the aliens'), but interstellar travel is enormously expensive—'Our fastest rocket would take almost 100,000 years' to reach the nearest star—and there is little motive to come 'just to flatten the White House'.",
+  "domains": [
+   "scale_distances",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2022",
+  "source_url": "https://www.inverse.com/science/independence-day-real-science",
+  "status": "valid",
+  "status_reason": "At ~17 km/s (Voyager), 4.2 ly takes ~75,000 years; interstellar energy costs scale with kinetic energy of huge masses."
+ },
+ {
+  "physicist": "Seth Shostak",
+  "credentials": "PhD astronomy (Caltech); Senior Astronomer, SETI Institute; science consultant on the film",
+  "work": "Battleship",
+  "medium": "film",
+  "year_of_work": 2012,
+  "depiction": "Aliens arrive at Earth in 2012 in response to a radio signal beamed toward an Earth-like exoplanet in 2005.",
+  "critique": "Arriving that quickly is implausible: without faster-than-light travel the round trip (signal out, ships back) would take closer to a thousand years; any species that could do it would be vastly more advanced than us.",
+  "domains": [
+   "light_speed_communication",
+   "scale_distances",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2012",
+  "source_url": "https://www.ksl.com/article/news/features/battleship-and-the-science-of-alien-invasion-movies/20476034",
+  "status": "valid",
+  "status_reason": "A 7-year signal-plus-travel round trip limits the source to <3.5 ly even at light speed, and no star lies that close."
+ },
+ {
+  "physicist": "Jonathan McDowell",
+  "credentials": "PhD astrophysics (Univ. of Cambridge); Harvard-Smithsonian Center for Astrophysics",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "After the tethers arrest their motion at the ISS, Kowalski is still pulled away and must let go to save Stone.",
+  "critique": "Questions why Clooney is pulled away at all when his relative velocity starts at zero; the only fix he can offer is that the ISS is venting and accelerating away from him.",
+  "domains": [
+   "orbital_mechanics",
+   "other"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://planet4589.org/space/articles/gravity.html",
+  "status": "valid",
+  "status_reason": "With relative motion arrested and no thrust, nothing separates them; tidal/differential orbital effects over seconds are negligible."
+ },
+ {
+  "physicist": "Jonathan McDowell",
+  "credentials": "PhD astrophysics (Univ. of Cambridge); Harvard-Smithsonian Center for Astrophysics",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Stone uses the Soyuz's engines to fly from the ISS to the Chinese station 'Tiangong'.",
+  "critique": "The thrust available is plausible, but there is no way to point the spacecraft in the right direction for the transfer; he also notes the station shown is misnamed (Tiangong-1 was a small lab).",
+  "domains": [
+   "orbital_mechanics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://planet4589.org/space/articles/gravity.html",
+  "status": "valid",
+  "status_reason": "Orbital rendezvous needs precise attitude control and phased burns; eyeballed pointing would miss by kilometres."
+ },
+ {
+  "physicist": "Jeffrey Bennett",
+  "credentials": "PhD astrophysics (Univ. of Colorado Boulder); author of What Is Relativity?",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Planets near Gargantua (e.g. Edmunds') have breathable oxygen atmospheres without any life having been found.",
+  "critique": "'Probably not real': oxygen is highly reactive, so breathable levels would likely require photosynthesis or a similar ongoing process.",
+  "domains": [
+   "exoplanets_habitability"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.jeffreybennett.com/interstellar-science-thats-relativity/",
+  "status": "partly",
+  "status_reason": "Abiotic O2 build-up (e.g. via water photolysis and hydrogen escape) is now modelled as possible, though Earth-like breathable levels without life remain unlikely."
+ },
+ {
+  "physicist": "Jeffrey Bennett",
+  "credentials": "PhD astrophysics (Univ. of Colorado Boulder); author of What Is Relativity?",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "The Endurance spins its ring to create artificial gravity and takes about two years to reach Saturn.",
+  "critique": "Rated 'real': rotating ships create artificial gravity and the film shows the interior correctly; a two-year trip to Saturn is plausible with current technology, and Saturn is depicted realistically.",
+  "domains": [
+   "gravity_artificial",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.jeffreybennett.com/interstellar-science-thats-relativity/",
+  "status": "valid",
+  "status_reason": "Spin gravity follows a = omega^2 r; Cassini took ~7 years with gravity assists, but a ~2-year transfer is feasible with higher delta-v."
+ },
+ {
+  "physicist": "James Kakalios",
+  "credentials": "PhD physics; Professor of Physics, Univ. of Minnesota",
+  "work": "Superman comics (lifting/holding up skyscrapers)",
+  "medium": "comic",
+  "year_of_work": 1938,
+  "depiction": "Superman holds up or carries an entire skyscraper with his hands.",
+  "critique": "Even granting the strength, the building's whole weight concentrated on the small area of Superman's hands produces enormous pressure; the structure would fail at the contact point rather than lift as a unit.",
+  "domains": [
+   "materials_structures"
+  ],
+  "date_of_critique": "2016",
+  "source_url": "https://students.aip.org/sps/communicating-physics-with-the-community-through-superheroes",
+  "status": "valid",
+  "status_reason": "Pressure = force/area; buildings are not designed to be supported at a single point and would punch through or collapse."
+ }
+]
