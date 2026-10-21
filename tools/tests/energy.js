@@ -27,7 +27,7 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
     for (let i = 0; i < Y * 4; i++) g.advance(0.25);
     const govs = Object.entries(g.govs).filter(([id]) => g.isColonized(Number(id)));
     return {
-      audit: ENERGY_AUDIT, prop: PROP, c: C_LIGHT, ism: ISM, sh: SHIELD, dose: SHIELD_DOSE, gcr: SHIELD_GCR, physics: g.physics,
+      audit: ENERGY_AUDIT, prop: PROP, c: C_LIGHT, ism: ISM, sh: SHIELD, dose: SHIELD_DOSE, gcr: SHIELD_GCR, physics: g.physics, simOnly: EDITION === 'sim',
       govs: govs.length, negative: govs.filter(([, v]) => (v.E || 0) < 0).length,
       earth: { E: g.govs[0].E, power: g.power(0), cover: g.swarmCover(0), ledger: g.govs[0].eledger },
       colonies: g.colonies.length, routes: g.routes.length,
@@ -74,7 +74,7 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
     const ga = 1 / Math.sqrt(1 - x.beta * x.beta);
     const chain = P.laser * P.beam * sail(x.beta);
     // 減速: シミュレーション版は、近づく帆を止める光 mc² (γβ − γ + 1) / 2 (加速の時間反転)。ゲーム版は加速と同じ量
-    if (x.mode === 'route') return ((ga - 1) * x.m * c * c) / chain + (r.physics ? (x.m * c * c * (ga * x.beta - ga + 1)) / 2 / (P.laser * P.beam) : ((ga - 1) * x.m * c * c) / chain);
+    if (x.mode === 'route') return ((ga - 1) * x.m * c * c) / chain + (r.simOnly ? (x.m * c * c * (ga * x.beta - ga + 1)) / 2 / (P.laser * P.beam) : ((ga - 1) * x.m * c * c) / chain);
     const R = Math.exp(Math.atanh(P.magsailTo) / P.amExhaust); // 反物質ロケットの質量比
     return ((ga - 1) * x.m * R * c * c) / chain + ((x.m * (R - 1)) / 2) * c * c / P.amEff;
   };

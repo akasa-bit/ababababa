@@ -5212,7 +5212,7 @@ class Game {
     const base = bases.reduce((a, b) => (this.sysDist(b.id, sys.id) < this.sysDist(a.id, sys.id) ? b : a));
     const ly = this.sysDist(base.id, sys.id);
     this.bookShip('pirate', power * FLEET_KG, OFFROUTE_SPEED, 'free', base.id, base.id, ly);
-    (this.pirateRaids ??= []).push({ sys: sys.id, power, from: base.id, depart: this.year, arrive: this.year + ly / OFFROUTE_SPEED + accelExtra(ly, OFFROUTE_SPEED, ACCEL.crew) });
+    (this.pirateRaids ??= []).push({ sys: sys.id, power, from: base.id, depart: this.year, arrive: this.year + ly / OFFROUTE_SPEED + accelExtra(ly, OFFROUTE_SPEED, ACCEL.crew, this.physics) });
     return false;
   }
   // 海賊の襲撃 (戦力 power)。駐留艦隊が戦力以上なら撃退、足りなければ略奪される
@@ -7986,7 +7986,7 @@ class GalaxyView {
       ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(hx, hy); ctx.stroke();
       const st = this.hover.stars[0];
       const lines = [this.hover.name, `${st.label}${this.hover.stars.length > 1 ? ` 他${this.hover.stars.length - 1}星` : ''}`,
-        `距離 ${d.toFixed(1)} ly (通信 ${t.toFixed(1)} 年・船 ${(game.shipYears(sel.id, this.hover.id) + accelExtra(d, SHIP_SPEED, ACCEL.crew)).toFixed(1)}〜${(game.shipYears(sel.id, this.hover.id, false) + accelExtra(d, OFFROUTE_SPEED, ACCEL.crew)).toFixed(1)} 年)`,
+        `距離 ${d.toFixed(1)} ly (通信 ${t.toFixed(1)} 年・船 ${(game.shipYears(sel.id, this.hover.id) + accelExtra(d, SHIP_SPEED, ACCEL.crew, game.physics)).toFixed(1)}〜${(game.shipYears(sel.id, this.hover.id, false) + accelExtra(d, OFFROUTE_SPEED, ACCEL.crew, game.physics)).toFixed(1)} 年)`,
         `乗っている人の時計では ${shipTime(d, SHIP_SPEED, game.physics).toFixed(1)}〜${shipTime(d, OFFROUTE_SPEED, game.physics).toFixed(1)} 年 (相対論の時間の遅れ)`];
       if (this.app.mapMode === 'vassal') lines.push(...vassalHoverLines(game, this.hover.id));
       const [mx, my] = this.mouse || [hx, hy];
