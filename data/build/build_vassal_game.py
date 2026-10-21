@@ -78,7 +78,19 @@ def main():
             'n': n, 'median': r['km_median'], 'ratio': bf[r['family']].get('median_ratio'),
             'cases': [c['name'] for c in cs[:3]],
         }
-    out = {'model': model, 'base': BASE, 'types': types}
+    # AI の国の型の決め方 (H3-2): 歴史の事例を、宗主との位置で 3 つに分け (陸続き・近い海 (3,000 km 以下)・遠い海)、区分ごとの家族の数を数える。
+    # 入植で生まれる従属国には、既にある国家を従えた型 (傀儡と衛星・法と交易だけ) と直轄 (人間だけ、上限あり) は使わない
+    import csv
+    cond = {r['case_id']: r for r in csv.DictReader(open(os.path.join(ROOT, 'raw', 'vassal', 'conditions.csv'), encoding='utf-8'))}
+    ai = {'contiguous': Counter(), 'near': Counter(), 'far': Counter()}
+    for c in cases:
+        k = cond[c['case_id']]
+        cls = 'contiguous' if k['contiguous'] == 'Y' else 'near' if float(k['distance_km']) <= 3000 else 'far'
+        ai[cls][c['type_id']] += 1
+    share = {cls: round(sum(v.values()) / len(cases), 3) for cls, v in ai.items()}
+    skip = {'T10', 'T11', 'T17', 'T20'}
+    out = {'model': model, 'base': BASE, 'types': types,
+           'ai': {'share': share, 'types': {cls: {t: n for t, n in sorted(v.items()) if t not in skip} for cls, v in ai.items()}}}
     block = ('/* VASSAL:BEGIN (data/build/build_vassal_game.py が書く。手で直さない。docs/vassal-game.md) */\n'
              'const VASSAL_DATA = ' + json.dumps(out, ensure_ascii=False, separators=(',', ':')) + ';\n/* VASSAL:END */')
     src = open(SRC, encoding='utf-8').read()
