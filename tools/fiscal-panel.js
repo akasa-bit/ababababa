@@ -7,7 +7,7 @@
 //   revenue     = 税 + 先住民からの収入 + 預金の利子
 //   expenditure = revenue − 政府の純貸出 (国の政府の資金の増加。国の中の朝貢・資金援助・交易は差し引きで消える)
 //   debtgdp     = 政府の総債務 (国債の残高の合計。資金がマイナスの政府があれば、そのマイナス分も) ÷ gdp
-//   tloans      = 国の星系の民間と先住民の、銀行からの借り
+//   tloans      = 国の星系の会社 (在庫の分) と家計と先住民の、銀行からの借り
 //   ltrate      = 国の首都で効いている利子率 [%/年] (国債の利子率と同じ)
 //   rgdpbarro   = gdp (ゲームの値段の水準は動かないので、名目 = 実質とみなす)
 //   war         = その年の終わりに、国がどこかと戦争をしていれば 1
@@ -41,7 +41,7 @@ function play(seed) {
   };
   g.cash = (kind, v, acct) => {
     if (acct.gov !== undefined) A(acct.gov).flow += v;
-    else if (acct.pv !== undefined && GOV_BUY.has(kind) && v > 0) A(acct.pv).buy += v;
+    else if ((acct.hh !== undefined || acct.fm !== undefined || acct.pv !== undefined) && GOV_BUY.has(kind) && v > 0) A(acct.hh ?? acct.fm ?? acct.pv).buy += v;
     return cash(kind, v, acct);
   };
   const rows = [];
@@ -60,7 +60,7 @@ function play(seed) {
       R.revenue += a.rev;
       R.flow += a.flow;
       R.debt += (gv.bond || 0) + Math.max(0, -gv.credits);
-      R.tloans += gv.loan || 0;
+      R.tloans += (gv.loan || 0) + (gv.hloan || 0);
       R.pop += g.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
     }
     for (const [key, st] of Object.entries(g.natives)) {
