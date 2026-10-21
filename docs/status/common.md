@@ -4,7 +4,8 @@
 - 2026-10-20: レーン Q (下準備。#128)・S (Steam。#131)・U (画面。#141) を足した。
 - 2026-10-20: レーン C の最後に、現実の経済政策のセッション 19〜25 を足した (`docs/econ-policy.md`。common-11・common-12)。D は C の 19〜25 を待たず、E は C の 25 のあと。
 - 2026-10-20: レーン H (従属国の歴史。H1〜H4) を足した (`docs/vassal-history.md`。common-13・common-14)。
-- 次: なし。
+- 2026-10-20〜21: 評論家の目での批評と、Steam で 1 位を取るための改造計画 (`docs/critique/`。common-15・common-16)。コードと段取りの文書は変えていない。
+- 次: `docs/critique/04-plan.md` の 6 (決めてもらうこと Q1〜Q11) の返事待ち。段取りを変える返事 (Q2 など) が来たら、`docs/sessions.md` と `docs/parallel.md` を直す PR を出す。
 
 ## handoff.md から移したもの (2026-10-20、並行に移るときの後片付け。`docs/parallel.md` の 5)
 
