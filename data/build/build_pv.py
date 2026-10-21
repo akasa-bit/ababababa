@@ -2,7 +2,7 @@
 """スウォームの太陽電池が、フレアの高エネルギー陽子で傷む割合を作る。docs/physics.md の 7。
 
 入力: data/raw/pv/ (data/fetch/fetch_pv.py が取る)、data/derived/flares.json (星ごとの陽子)
-出力: data/derived/pv.json、src/index.html の PV_DAMAGE:BEGIN〜PV_DAMAGE:END
+出力: data/derived/pv.json、src/ship/physics.js の PV_DAMAGE:BEGIN〜PV_DAMAGE:END
 
 やり方 (NRL の変位損傷の線量 DDD の方法。Summers ほか 1993・Messenger ほか 2001・Walters ほか 2004):
   1. 陽子のスペクトル: 全方向の積分のスペクトル F(>E) = F10 (E/10 MeV)^−ε、ε = 2.13 (フレアの陽子と同じ。Papaioannou ほか 2023 の中央値)。
@@ -21,7 +21,7 @@ import bisect, json, math, os, re
 HERE = os.path.dirname(__file__)
 RAW = os.path.join(HERE, '..', 'raw', 'pv')
 OUT = os.path.join(HERE, '..', 'derived', 'pv.json')
-SRC = os.path.join(HERE, '..', '..', 'src', 'index.html')
+SRC = os.path.join(HERE, '..', '..', 'src', 'ship', 'physics.js')  # src/index.html を分けたあとの、区切りのあるファイル (回 R3)
 EPS = 2.13
 GLASS = 100e-4 * 2.554  # [g/cm²]
 C, DX = 0.27, 1.70e9
@@ -96,7 +96,7 @@ def main():
     if '/* PV_DAMAGE:BEGIN' in src:
         src = re.sub(r'/\* PV_DAMAGE:BEGIN.*?/\* PV_DAMAGE:END \*/', lambda m: block, src, flags=re.S)
         open(SRC, 'w', encoding='utf-8').write(src)
-        print('src/index.html に書いた')
+        print('src/ship/physics.js に書いた')
     print(f'F(>10 MeV) 1 /cm² あたりの DDD = {k:.3e} MeV/g (カバーガラス 150 µm で ×{sens["glass_150um"]:.2f}・ε 1.78 で ×{sens["eps_1.78"]:.2f}・刻みを倍にして ×{sens["converge_6000x400"]:.3f})')
     print(f'太陽の 1 AU: 1 年に F10 {sun:.2e} /cm² → 出力の劣化 {100*geo:.3f}%/年 (静止軌道の GaAs の実測 {100*GEO_FLIGHT[0]:.2f}〜{100*GEO_FLIGHT[1]:.2f}%/年。陽子のほかの原因も入る)')
     for F in (1e10, 1e11, 1e12, 1e13, 1e14, 1e15):

@@ -1,0 +1,532 @@
+<style>:root { color-scheme: dark; --bg:#05070d; --panel:#0d121d; --line:#1d2840; --fg:#d7e1f3; --muted:#7f8da8; --accent:#4de3d0; }
+* { box-sizing: border-box; }
+html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:14px/1.5 system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+body { display:flex; flex-direction:column; }
+header { display:flex; align-items:center; gap:16px; padding:8px 14px; background:var(--panel); border-bottom:1px solid var(--line); flex-wrap:wrap; }
+h1 { margin:0; font-size:18px; letter-spacing:.1em; color:var(--accent); }
+#date { font-variant-numeric:tabular-nums; min-width:9em; }
+/* 財政・政治力の行は1行に保つ (数字が変わってもヘッダーの高さが変わらず、地図がずれないように) */
+#treasury { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1 1 280px; }
+nav button.hot { border-color:#ffb347; color:#ffb347; }
+main { flex:1; display:flex; min-height:0; }
+#stage { flex:1; min-width:0; min-height:0; position:relative; }
+canvas { position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+#empire { position:absolute; inset:0; overflow:auto; background:var(--bg); padding:12px 16px 40px; z-index:1; }
+#empire h2 { margin-bottom:6px; }
+#empire .scroll { overflow-x:auto; }
+#empire .tbl { font-size:12.5px; }
+#empire .tbl td, #empire .tbl th { padding:4px 10px 4px 0; white-space:nowrap; }
+#empire .tbl td.wrap { white-space:normal; min-width:12em; }
+#empire .tbl tr.total td { border-top:1px solid var(--line); font-weight:bold; }
+#empire .tbl select { width:auto; margin:0; padding:2px 4px; }
+#empire .slider { display:inline-flex; align-items:center; gap:8px; }
+#empire .slider input[type=range] { width:140px; margin:0; accent-color:var(--accent); height:44px; }
+#empire .slider output { min-width:7.5em; font-variant-numeric:tabular-nums; }
+@media (max-width:900px) { #empire .slider input[type=range] { width:110px; } }
+#empire .tbl button { padding:2px 8px; min-height:0; }
+#empire .tbl button small { display:inline; margin-left:4px; }
+#empire .bulk { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; font-size:12px; }
+#empire .bulk select { width:auto; }
+.chips { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 10px; }
+.chips button.on { border-color:var(--accent); color:var(--accent); }
+.ev { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--line); font-size:13px; align-items:baseline; }
+.ev .yr { color:var(--muted); font-variant-numeric:tabular-nums; min-width:4.5em; }
+.ev .tag { font-size:11px; border-radius:3px; padding:0 5px; white-space:nowrap; }
+.tag.famine { background:#5a2020; } .tag.shortage { background:#5a4320; } .tag.pirate { background:#4a2050; }
+.tag.natives { background:#3a2f60; } .tag.politics { background:#5a4a10; } .tag.battle { background:#7a1f1f; } .tag.war { background:#6a2030; } tr.enroute td { background:color-mix(in srgb, var(--own) 6%, transparent); } .tag.migration { background:#1d3f5a; } .tag.colony { background:#1d4a45; }
+.ev.good .txt { color:#9fe0b4; }
+.ev.major { border-left:3px solid #ffb347; padding-left:6px; }
+.yearrep { border-bottom:1px solid var(--line); padding:4px 0 6px; }
+.yearrep .yh { font-size:12px; color:var(--accent); margin-top:4px; }
+.yearrep details summary { cursor:pointer; color:var(--muted); font-size:12.5px; padding:3px 0; }
+.chips .muted { align-self:center; font-size:12px; }
+details.evkinds summary { cursor:pointer; font-size:12px; }
+.decide { border:1px solid #5a4a20; border-radius:6px; padding:8px 10px; margin:6px 0; background:rgba(255,179,71,.05); }
+.btns.wrap { flex-wrap:wrap; } .btns.wrap button { flex:1 1 180px; }
+button.hot { padding:1px 8px; min-height:0; border-color:#ffb347; color:#ffb347; }
+#skipbtn.on { border-color:var(--accent); color:var(--accent); }
+#endbox { position:fixed; inset:0; z-index:25; background:rgba(5,7,13,.9); display:flex; justify-content:center; align-items:flex-start; padding:60px 16px; overflow:auto; }
+#endbox[hidden] { display:none; }
+#endbox .card { width:min(520px,100%); background:var(--panel); border:1px solid var(--accent); border-radius:10px; padding:20px 22px; }
+.tag.demand { background:#7a3a10; } .tag.story { background:#2a4a6a; } .tag.goal { background:#4a5a10; }
+label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:12px; color:var(--accent); margin:6px 0 0; }
+#empire label.check { font-size:12px; color:var(--muted); display:inline-flex; gap:4px; align-items:center; }
+.kpi { display:flex; gap:10px; flex-wrap:wrap; } .kpi div { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:8px 12px; }
+.kpi b { display:block; font-size:18px; color:var(--fg); } .kpi span { font-size:11px; color:var(--muted); }
+.age { font-size:11px; color:var(--muted); border:1px solid var(--line); border-radius:3px; padding:0 4px; margin-left:4px; white-space:nowrap; }
+.age.now { color:var(--accent); }
+#home { position:fixed; inset:0; z-index:20; background:rgba(5,7,13,.94); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
+#home[hidden] { display:none; }
+#pick { position:fixed; z-index:15; left:12px; top:var(--pick-top,140px); width:min(380px,calc(100% - 24px)); max-height:calc(100% - 88px); overflow:auto; background:rgba(10,14,24,.93); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+#pick[hidden] { display:none; }
+#pick .nb { display:flex; gap:6px; margin-top:6px; }
+#pick .nb button { margin:0; min-height:36px; padding:2px 12px; font-size:12px; }
+#pick .hm.on { outline:2px solid var(--accent); outline-offset:1px; }
+#pick .go button + button { margin-top:6px; }
+#pick .ed { margin-top:8px; border-top:1px solid var(--line); padding-top:6px; cursor:default; }
+#pick .ed label { display:block; margin:4px 0; }
+#pick .ed input[type=text], #pick .ed input:not([type]) { width:100%; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:4px 6px; }
+#pick .ed .trs { display:flex; flex-wrap:wrap; gap:2px 10px; } #pick .ed .trs label { display:inline-flex; gap:4px; align-items:center; margin:2px 0; }
+#pick .ed .btns { display:flex; flex-wrap:wrap; gap:4px; } #pick .ed .btns button small { display:block; font-size:11px; opacity:.8; }
+#curtain { position:fixed; inset:0; z-index:40; background:#05070d; display:flex; align-items:center; justify-content:center; padding:16px; }
+#curtain[hidden] { display:none; }
+#netbox { position:fixed; inset:0; z-index:35; background:rgba(5,7,13,.94); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
+#netbox[hidden] { display:none; }
+#treatybox { position:fixed; inset:0; z-index:36; background:rgba(5,7,13,.9); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
+#treatybox[hidden] { display:none; }
+#treatybox .card { width:min(560px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 22px; }
+#treatybox .terms { display:flex; flex-direction:column; gap:4px; margin:8px 0; }
+#treatybox .terms button { text-align:left; min-height:40px; } #treatybox .terms button.on { outline:2px solid var(--accent); }
+#treatybox .terms small { float:right; opacity:.8; } #treatybox .row { display:flex; gap:8px; flex-wrap:wrap; }
+#netbox .card { width:min(620px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 22px; }
+#netbox textarea { width:100%; font:11px monospace; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; margin:6px 0; padding:6px; word-break:break-all; }
+#netbox section { border-top:1px solid var(--line); margin-top:10px; padding-top:6px; }
+#netbox .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+#netbox .roomcode { font:22px var(--font-num); letter-spacing:.2em; color:var(--accent); margin-left:8px; }
+#netbox input { font:16px var(--font-num); padding:8px; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; min-height:44px; }
+#toast { position:fixed; z-index:45; left:50%; bottom:24px; transform:translateX(-50%); background:var(--panel); border:1px solid var(--accent); border-radius:8px; padding:10px 16px; max-width:calc(100% - 32px); font-size:14px; }
+#toast[hidden] { display:none; }
+#curtain .card { width:min(460px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:22px 24px; text-align:center; }
+#curtain h2 { font-size:24px; margin-bottom:8px; }
+#curtain .big { width:100%; min-height:48px; margin-top:14px; font-size:17px; }
+#turnbtn small { font-size:11px; opacity:.8; margin-left:4px; }
+#pick h2 { font-size:18px; margin:0 0 4px; }
+#pick .nat { border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-top:8px; cursor:pointer; font-size:13px; }
+#pick .nat.on { border-color:var(--accent); background:rgba(120,170,255,.08); }
+#pick .nat b.nm { font-size:15px; }
+#pick .nat .tr { display:inline-block; border:1px solid var(--line); border-radius:4px; padding:0 5px; margin:2px 3px 0 0; font-size:12px; }
+#pick .go { position:sticky; bottom:-12px; background:rgba(10,14,24,.97); padding:8px 0 4px; margin-top:8px; }
+#pick .go button { width:100%; min-height:44px; font-size:16px; }
+@media (max-width: 900px) and (orientation: portrait) { #pick { top:auto; bottom:8px; max-height:48%; } }
+#memobox { position:fixed; top:58px; right:12px; z-index:15; width:min(360px, calc(100vw - 24px)); background:var(--panel); border:1px solid var(--own); border-radius:8px; padding:10px 12px; box-shadow:0 6px 24px rgba(0,0,0,.5); }
+#memobox[hidden] { display:none; }
+#memobox .tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
+#memobox .tags button.on { border-color:var(--own); color:var(--own); }
+#memobox textarea { width:100%; box-sizing:border-box; background:#0b1120; color:inherit; border:1px solid var(--line); border-radius:5px; padding:6px; font:inherit; }
+#memobox .row { display:flex; gap:8px; margin-top:6px; }
+#home .log td, #home .log th { padding:2px 6px; font-size:12px; text-align:left; }
+#home .card { width:min(660px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:22px 24px 26px; }
+#home h1 { font-size:34px; margin-bottom:2px; }
+#home section { margin-top:14px; }
+#home .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 0; border-bottom:1px solid var(--line); }
+#home .row label { white-space:nowrap; }
+#home .row .info { flex:1; min-width:200px; font-size:13px; }
+#home .row button.ghost { margin-top:0; }
+#home .big { font-size:16px; padding:10px 22px; border-color:var(--accent); color:var(--accent); }
+#home .htabs { display:flex; gap:6px; margin:10px 0 4px; } #home .htabs button { flex:1; min-height:44px; font-size:15px; } #home .htabs button.on { outline:2px solid var(--accent); }
+#home .natc { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px 0; border-bottom:1px solid var(--line); }
+#home .natc .info { flex:1; min-width:220px; font-size:14px; } #home .natc .nm { font-size:17px; } #home .natc .btns { display:flex; gap:6px; } #home .natc .btns button { white-space:nowrap; min-width:64px; margin:0; }
+#home .tr { display:inline-block; border:1px solid var(--line); border-radius:4px; padding:0 6px; margin:3px 4px 0 0; font-size:13px; }
+#home .nated { border:1px solid var(--accent); border-radius:8px; padding:12px 14px; margin:8px 0; }
+#home .nated label { display:block; margin:8px 0; font-size:14px; }
+#home .nated input:not([type]), #home .nated select { width:100%; font-size:15px; padding:6px 8px; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; margin-top:4px; }
+#home .nated .trs { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:4px 12px; }
+#home .nated .trs label { display:flex; gap:6px; align-items:flex-start; margin:2px 0; } #home .nated .trs b { font-weight:normal; white-space:nowrap; } #home .nated .trs small { display:block; color:var(--muted); font-size:11px; }
+#home input[type=text] { background:#0a0f1a; color:var(--fg); border:1px solid var(--line); border-radius:5px; padding:5px 8px; font:inherit; width:10em; }
+#home input[type=email], #home input[type=password], #home #acct-name { background:#0a0f1a; color:var(--fg); border:1px solid var(--line); border-radius:5px; padding:8px; font:inherit; min-height:44px; width:min(18em, 100%); }
+#home textarea { width:100%; font:11px monospace; background:#0a0f1a; color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:6px; }
+#home label { display:inline-flex; gap:6px; align-items:center; font-size:13px; }
+#legend { position:absolute; right:10px; bottom:10px; background:rgba(13,18,29,.85); border:1px solid var(--line); border-radius:6px; padding:4px 10px; font-size:12px; }
+#legend summary { cursor:pointer; color:var(--muted); }
+#legend div { display:flex; align-items:center; gap:6px; margin:3px 0; }
+#legend i { display:inline-block; width:9px; height:9px; }
+#fleetbar { position:absolute; left:50%; top:8px; transform:translateX(-50%); z-index:2; max-width:calc(100% - 24px); background:rgba(13,18,29,.94); border:1px solid #2f6f66; border-radius:8px; padding:8px 12px; font-size:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; }
+#fleetbar[hidden] { display:none; }
+#fleetbar button { padding:3px 9px; min-height:0; }
+#fleetbar .warn { flex-basis:100%; color:#ff8a80; text-align:center; }
+@media (max-width: 700px) { #fleetbar { left:6px; right:6px; top:6px; transform:none; max-width:none; font-size:11px; padding:4px 6px; gap:4px; flex-wrap:nowrap; } #fleetbar .hint, #fleetbar .lbl, #fleetbar button small { display:none; } #fleetbar button, #fleetbar > span { white-space:nowrap; } #fleetbar button { padding:2px 6px; } #fleetbar.confirm { flex-wrap:wrap; } #fleetbar .warn { flex-basis:100%; } }
+#zoom { position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:6px; }
+#zoom button { min-width:46px; min-height:46px; font-size:18px; background:rgba(13,18,29,.85); }
+#zoom #vassalbtn { font-size:13px; }
+#zoom #vassalbtn.on { border-color:var(--own); color:var(--own); }
+#zoom #rotbtn.on { outline:2px solid var(--accent); outline-offset:1px; }
+aside { width:340px; background:var(--panel); border-left:1px solid var(--line); padding:12px 14px; overflow-y:auto; }
+button { background:#17213a; color:var(--fg); border:1px solid #2a3a60; border-radius:5px; padding:5px 10px; font:inherit; cursor:pointer; }
+button:hover:not(:disabled) { background:#1f2d4f; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+button.on { background:#1f3a4a; border-color:var(--accent); color:var(--accent); }
+button.ghost { background:transparent; margin-top:10px; }
+button small { display:block; font-size:11px; color:var(--muted); }
+#ctrl { display:flex; gap:8px 16px; flex-wrap:wrap; align-items:center; }
+#speed, #tools { display:flex; gap:4px; flex-wrap:wrap; }
+/* 狭い画面: ヘッダーを詰め、速さと操作のボタンを横にスクロールする1行にまとめる (地図を広く) */
+@media (max-width: 900px) {
+  header { gap:4px 10px; padding:6px 8px; }
+  header h1 { font-size:15px; }
+  #date { min-width:0; }
+  #treasury { width:100%; }
+}
+#speed button.on { border-color:var(--accent); color:var(--accent); }
+h2 { margin:0 0 2px; font-size:17px; }
+h3 { margin:16px 0 6px; font-size:13px; color:var(--muted); border-bottom:1px solid var(--line); padding-bottom:3px; }
+.sub, .note, .muted { color:var(--muted); }
+.sub { margin:0 0 8px; } .note { margin:4px 0; font-size:12px; }
+.tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.regimes .rg { border-top:1px solid var(--line); padding:6px 0; }
+.regimes .rh { display:flex; align-items:center; gap:8px; }
+.regimes .rh > div { flex:1; min-width:0; font-size:12px; }
+.regimes .rh > div span { color:var(--muted); }
+.regimes .rh button { flex:none; min-width:5.5em; padding:4px 8px; }
+.regimes p { margin:2px 0 0; font-size:12px; color:var(--muted); } .regimes > p { margin:0 0 4px; }
+.hist p { margin:4px 0; font-size:12px; line-height:1.6; } .hist p b { color:var(--fg, inherit); }
+.tbl th, .tbl td { text-align:left; padding:2px 6px 2px 0; vertical-align:top; }
+.tbl th { color:var(--muted); font-weight:normal; }
+.kv th { width:7.5em; }
+.dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; }
+.dot.big { width:13px; height:13px; }
+ul { margin:4px 0; padding-left:18px; } ul.bodies { list-style:none; padding:0; }
+ul.bodies li { padding:3px 6px; border-radius:4px; cursor:pointer; }
+ul.bodies li:hover, ul.bodies li.sel { background:#16213a; }
+.mk { color:var(--accent); float:right; }
+.hz { color:#6fdc96; }
+.grade { padding:0 6px; border-radius:3px; background:#2a2f3d; }
+.grade.g1 { background:#5a4320; } .grade.g2 { background:#2f5a2a; } .grade.g3 { background:#1d6a5d; }
+.field { display:block; font-size:12px; color:var(--muted); } select { width:100%; margin-top:2px; background:#111a2e; color:var(--fg); border:1px solid #2a3a60; border-radius:4px; padding:4px; }
+.btns { display:flex; gap:8px; } .btns button { flex:1; text-align:left; }
+.btns.batch { flex-wrap:wrap; } .btns.batch button { flex:1 1 130px; }
+td .btns.batch { flex-wrap:nowrap; } td .btns.batch button { flex:0 0 auto; width:10em; } td .btns.batch button, td .btns.batch button small { white-space:normal; } td .btns.batch button small { display:block; }
+.ship { font-size:12px; margin-bottom:6px; }
+.bar { display:block; height:3px; background:#1d2840; margin:2px 0; } .bar i { display:block; height:100%; background:#ffb347; }
+#log { font-size:12px; }
+#treasury { font-variant-numeric:tabular-nums; font-size:13px; }
+.bad { color:#ff7a6b; } .nat { font-size:11px; color:#c9a2ff; border:1px solid #6a4fa0; border-radius:3px; padding:0 4px; }
+.route { font-size:12px; margin:6px 0; padding:6px 8px; background:#111a2e; border-radius:5px; }
+/* 拡張ボタンは文章の下に欄いっぱいの幅で置く。数字の桁が変わって文章の折り返しが変わっても横には動かない (縦のずれは keepAnchor が戻す) */
+.route button { display:block; width:100%; margin-top:4px; }
+td > button[data-act="uproute"] { width:11em; }
+.facs { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px; }
+.fac { display:flex; flex-direction:column; gap:3px; font-size:12px; background:#111a2e; border-radius:5px; padding:6px; }
+.fac button { text-align:left; }
+aside > div > button, #panel > button { margin-top:6px; } #log div { margin-bottom:2px; }
+@media (max-width: 800px) { body.sheet-view aside { display:none; } main { flex-direction:column; } aside { width:auto; max-height:45%; border-left:0; border-top:1px solid var(--line); } }
+
+@media (pointer: coarse) {
+  button { min-height:40px; padding:6px 14px; }
+  ul.bodies li { padding:9px 8px; }
+  select { padding:9px; font-size:16px; }
+}
+html, body { height:100%; }
+[hidden] { display:none!important; }
+</style>
+<style id="ds">
+/* --- デザインの決まり ---
+   色は意味にだけ使う: 自国 (青緑)・敵 (赤)・中立 (黄)・警告 (橙)・良い知らせ (緑)・情報 (青)。それ以外は灰色の濃淡。
+   文字の大きさは4段階 (12・14・16・20px)。余白は8pxの倍数。説明文は「説明」を押したときだけ開く。
+   情報の古さは薄さで表す (古いほど薄い) とともに、年数を文字で添える */
+:root {
+  --fs1:12px; --fs2:14px; --fs3:16px; --fs4:20px;
+  --font-ui:system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; --font-display:var(--font-ui); --font-num:var(--font-ui);
+}
+body { font-family:var(--font-ui); }
+h1, h2, .syshead h2, #home h1 { font-family:var(--font-display); }
+.stats b, .kpi b, #treasury .v, #date { font-family:var(--font-num); }
+#legend, #fleetbar, #zoom button { background:var(--glass); }
+#fleetbar { border-color:var(--line); }
+html, body { background:var(--bg); color:var(--fg); font-size:var(--fs2); }
+h1 { font-size:var(--fs3); letter-spacing:.08em; }
+h2 { font-size:var(--fs4); margin:0; }
+h3 { font-size:var(--fs1); letter-spacing:.04em; margin:16px 0 8px; padding-bottom:0; }
+.note, .sub, .tbl, .ship, #log, .age, button small, .kpi span, #legend, .field, label.check.auto, #empire label.check, #empire .bulk, .ev .tag, .ev .yr, details.evkinds summary, .yearrep .yh, .yearrep details summary, .chips .muted, #fleetbar, .route, .fac, .nat { font-size:var(--fs1); }
+.ev, #empire .tbl, #treasury, #date, #home .row .info, #home label, .decide p { font-size:var(--fs2); }
+.kpi b { font-size:var(--fs4); }
+#home h1 { font-size:var(--fs4); }
+.muted, .sub, .note { color:var(--muted); }
+.bad { color:var(--enemy); } .hz { color:var(--good); }
+.age { color:var(--dim); border-color:var(--line); padding:0 4px; }
+.age.now { color:var(--own); }
+/* ボタン: 灰色が基本。選んでいるものだけ自国の色。指で押せる高さ (タッチ 44px) */
+button { background:var(--raise); border:1px solid var(--line); border-radius:var(--radius); padding:8px 16px; color:var(--fg); }
+button:hover:not(:disabled) { background:var(--hover); }
+button.on, #speed button.on, .chips button.on { background:var(--on-bg); border-color:var(--own); color:var(--own); }
+button small { color:var(--muted); }
+select { background:var(--raise); border-color:var(--line); }
+@media (pointer: coarse) {
+  button, select, #empire .tbl button, #fleetbar button, #empire .tbl select { min-height:44px; }
+  #zoom button { min-width:48px; min-height:48px; }
+  details > summary { min-height:44px; }
+}
+/* ヘッダー: 1行に、見る頻度の高いものだけ */
+header { gap:8px 16px; padding:8px 16px; flex-wrap:wrap; }
+header nav { display:flex; gap:8px; }
+header nav button { padding:8px 16px; }
+#status { display:flex; gap:16px; align-items:center; min-width:0; flex:1 1 320px; }
+#date { min-width:0; white-space:nowrap; }
+#treasury { flex:1 1 auto; }
+#treasury .k { color:var(--muted); font-size:var(--fs1); margin-right:4px; }
+#treasury .v { font-variant-numeric:tabular-nums; }
+#ctrl { display:flex; gap:8px; align-items:center; position:relative; flex-wrap:nowrap; }
+#speed { display:flex; gap:0; flex-wrap:nowrap; }
+#speed button { border-radius:0; padding:8px 8px; min-width:44px; margin-left:-1px; }
+#speed button:first-child { border-radius:var(--radius) 0 0 var(--radius); margin-left:0; }
+#speed button:last-child { border-radius:0 var(--radius) var(--radius) 0; }
+#skipbtn, #menubtn { min-width:44px; padding:8px 8px; }
+#menu { position:absolute; right:0; top:calc(100% + 8px); z-index:30; display:flex; flex-direction:column; gap:8px; padding:8px; background:var(--panel); border:1px solid var(--line); border-radius:8px; min-width:200px; box-shadow:0 8px 24px rgba(0,0,0,.5); }
+#menu[hidden] { display:none; }
+#menu button { text-align:left; }
+#menu #savestat { display:block; font-size:var(--fs1); padding:0 8px; }
+@media (max-width: 900px) {
+  header { gap:8px; padding:8px; }
+  #status { flex-basis:100%; order:3; }
+  #ctrl { overflow-x:visible; width:auto; }
+  #speed button { padding:8px 4px; }
+  header h1 { font-size:var(--fs3); }
+}
+/* 電話の幅: 題名を外し、1段目にタブとメモ・メニュー、2段目に速さ、3段目に日付と資金 */
+@media (max-width: 560px) {
+  header { position:relative; }
+  header h1 { display:none; }
+  header nav { order:1; flex:1 1 auto; gap:4px; }
+  header nav button { flex:1 1 auto; padding:8px 2px; min-width:44px; white-space:nowrap; }
+  #memobtn { padding:8px 4px; min-width:44px; }
+  #ctrl { display:contents; }
+  #memobtn { order:2; } #menubtn { order:3; }
+  #speed { order:4; flex:1 1 calc(100% - 60px); min-width:0; } #speed button { flex:1 1 0; padding:8px 0; }
+  #skipbtn { order:5; }
+  #status { order:6; flex-wrap:wrap; gap:4px 16px; }
+  #date { font-size:var(--fs2); }
+}
+#rail .railbar button, #legend summary { min-width:44px; }
+#legend summary { min-height:44px; display:flex; align-items:center; padding:0 8px; }
+label.check, label.check.auto { min-height:44px; }
+label.check input, label.check.auto input { width:20px; height:20px; }
+/* 右の欄: いちばん上に要約、そのあとは開け閉めできる節 */
+aside { padding:16px; }
+.syshead { display:grid; gap:8px; margin-bottom:8px; }
+.syshead h2 { display:flex; align-items:center; gap:8px; }
+.syshead .meta { color:var(--muted); font-size:var(--fs1); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(64px, 1fr)); gap:8px; }
+.stats div { background:var(--raise); border-radius:var(--radius); padding:8px; }
+.stats b { display:block; font-size:var(--fs3); font-variant-numeric:tabular-nums; }
+.stats span { color:var(--muted); font-size:var(--fs1); }
+.flags { display:grid; gap:8px; margin:8px 0; padding:0; list-style:none; }
+.flags li { border-left:3px solid var(--dim); padding:0 8px; font-size:var(--fs2); }
+.flags li.enemy { border-color:var(--enemy); } .flags li.warn { border-color:var(--warn); } .flags li.good { border-color:var(--good); } .flags li.info { border-color:var(--info); }
+.flags li small { display:block; color:var(--muted); font-size:var(--fs1); }
+.acts { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+.acts button { flex:1 1 140px; text-align:left; }
+details.sec { border-top:1px solid var(--line); }
+details.sec > summary { cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; padding:8px 0; font-size:var(--fs2); }
+details.sec > summary::-webkit-details-marker { display:none; }
+details.sec > summary::before { content:'▸'; color:var(--dim); width:12px; }
+details.sec[open] > summary::before { content:'▾'; }
+details.sec > summary .syn { margin-left:auto; color:var(--muted); font-size:var(--fs1); text-align:right; }
+details.sec > summary .syn.bad { color:var(--enemy); } details.sec > summary .syn.warn { color:var(--warn); }
+details.sec > :not(summary) { margin-bottom:8px; }
+details.help { margin:8px 0; }
+details.help > summary { cursor:pointer; display:inline-flex; align-items:center; color:var(--info); font-size:var(--fs1); list-style:none; padding:0 8px; border:1px solid var(--line); border-radius:12px; min-height:24px; }
+details.help > summary::-webkit-details-marker { display:none; }
+details.help[open] > summary { margin-bottom:8px; }
+@media (pointer: coarse) { details.help > summary { min-height:44px; padding:0 16px; } }
+/* 地図の左上の知らせの帯: 決めることと重大な知らせは残り、普通の知らせは流れて消える。押すと地図がそこへ飛ぶ */
+#rail { position:absolute; left:8px; top:8px; z-index:2; width:min(320px, calc(100% - 96px)); max-height:calc(100% - 16px); overflow-y:auto; display:grid; gap:8px; align-content:start; pointer-events:none; }
+#rail > * { pointer-events:auto; }
+#rail .ri { display:grid; grid-template-columns:1fr auto; background:var(--glass); border:1px solid var(--line); border-left:3px solid var(--dim); border-radius:var(--radius); }
+#rail .ri.enemy { border-left-color:var(--enemy); } #rail .ri.warn { border-left-color:var(--warn); } #rail .ri.good { border-left-color:var(--good); } #rail .ri.info { border-left-color:var(--info); } #rail .ri.own { border-left-color:var(--own); }
+#rail .ri > button { background:transparent; border:0; border-radius:0; text-align:left; padding:8px; min-height:44px; display:grid; gap:0; color:var(--fg); }
+#rail .ri .t { font-size:var(--fs2); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+#rail .ri .m { font-size:var(--fs1); color:var(--muted); }
+#rail .ri .ack { color:var(--muted); padding:8px; min-width:44px; border-left:1px solid var(--line); }
+#rail .dec { background:var(--glass); border:1px solid var(--warn); border-radius:var(--radius); padding:8px; display:grid; gap:8px; }
+#rail .dec .t { font-size:var(--fs2); }
+#rail .dec .m { font-size:var(--fs1); color:var(--muted); }
+#rail .dec .opts { display:grid; gap:8px; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); }
+#rail .clamp3 { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+#rail .clamp2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+#rail .dec .opts button { text-align:left; padding:8px; }
+#rail .railbar { display:flex; gap:8px; }
+#rail .railbar button { background:var(--glass); font-size:var(--fs1); padding:8px; min-height:44px; }
+#rail .railbar button.due { border-color:var(--warn); color:var(--warn); }
+#rail .more { font-size:var(--fs1); color:var(--muted); padding:0 8px; }
+#fleetbar { top:auto; bottom:12px; max-width:calc(100% - 160px); }
+/* 拡大縮小は右下 (知らせの帯は左上)。凡例はその下 */
+#zoom { left:auto; right:8px; bottom:64px; }
+#zoom button { font-size:var(--fs4); }
+#zoom #vassalbtn { font-size:var(--fs2); }
+#legend { right:8px; bottom:8px; }
+#rail { max-height:calc(100% - 16px); }
+@media (max-width: 700px) { #fleetbar { top:auto; bottom:6px; } }
+
+/* 走査線: 昔のレーダー画面のような、動かない白く淡い横線をボタンに入れる (動かないので、毎フレームの計算はない)。
+   選んでいる白い地のボタンには、黒く淡い線。文字はときどき (1〜3つずつ) 色ずれしてぶれる (「≡ → 画面の動き」で切れる) */
+:root { --scan:repeating-linear-gradient(180deg, rgba(255,255,255,.075) 0 1px, transparent 1px 3px); --scan-on:repeating-linear-gradient(180deg, rgba(0,0,0,.07) 0 1px, transparent 1px 3px); }
+button { position:relative; isolation:isolate; }
+button::before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background:var(--scan); }
+button.on::before { background:var(--scan-on); }
+@keyframes fx-jit {
+  0% { text-shadow:-2.5px 0 rgba(255,107,107,.7), 2.5px 0 rgba(201,204,209,.7); }
+  15% { text-shadow:1.5px 0 rgba(255,107,107,.7), -1.5px 0 rgba(201,204,209,.7); }
+  30% { text-shadow:-3px 0 rgba(255,107,107,.55), 3px 0 rgba(201,204,209,.55), 0 0 4px rgba(227,233,243,.6); }
+  45% { text-shadow:none; }
+  60% { text-shadow:2px 0 rgba(255,107,107,.65), -2px 0 rgba(201,204,209,.65); }
+  75% { text-shadow:-1px 0 rgba(255,107,107,.5), 1px 0 rgba(201,204,209,.5); }
+  90%, 100% { text-shadow:none; }
+}
+body.fx .jit { animation:fx-jit .6s steps(1) 1; }
+@media (prefers-reduced-motion: reduce) {
+  :where(body.fx) * { animation:none !important; }
+}
+/* 選択を外すボタン・何も選んでいないときの欄 */
+.syshead h2 { display:flex; align-items:center; gap:8px; }
+.syshead h2 .x { margin-left:auto; min-width:44px; min-height:44px; padding:0; font-size:var(--fs3); color:var(--muted); background:transparent; }
+/* 星系を選んでいないときは、右 (狭い画面では下) の欄そのものを出さず、地図を広げる */
+body.nosel aside { display:none; }
+/* 宇宙の背景: 星間マップは天の川の全天星図 (NASA SVS の Deep Star Maps 2020、銀河の中心のあたり)、
+   星系マップは太陽系がスピッツァー望遠鏡の北アメリカ星雲、ほかの星系は星系ごとに決まった1枚 (systemBg。どれも色を抑えて暗くしたもの)。地図 (canvas) は透明にして、その後ろに置く。
+   文字と星が読めるよう暗くかぶせ、星間マップでは視点の動きにわずかに遅れて動かす (奥行き) */
+#sky { position:absolute; inset:0; overflow:hidden; background:var(--map-bg); pointer-events:none; }
+#sky > div { position:absolute; inset:-12%; background:center / cover no-repeat; opacity:0; transition:opacity .4s; will-change:transform; }
+#sky > .sky-galaxy { inset:-50%; } /* 回しても角が見えないよう、対角線より大きく */
+#sky .sky-galaxy { background-image:linear-gradient(rgba(11,12,13,.28), rgba(11,12,13,.28)), url("assets/space-galaxy.jpg"); }
+#sky .sky-system { background-image:linear-gradient(rgba(11,12,13,.5), rgba(11,12,13,.5)), url("assets/space-system.jpg"); }
+#sky[data-view="galaxy"] .sky-galaxy, #sky[data-view="system"] .sky-system { opacity:1; }
+#sky::after { content:""; position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 45%, rgba(11,12,13,.6) 100%); }
+.council { margin:4px 0 8px; max-width:420px; }
+.council svg { display:block; width:100%; height:auto; }
+.council .num { font-family:var(--font-num); }
+.council figcaption { font-size:var(--fs1); color:var(--muted); display:flex; gap:6px; align-items:center; justify-content:center; }
+.council .sw { display:inline-block; width:10px; height:10px; border-radius:50%; } .council .sw.own { background:var(--own); } .council .sw.opp { background:var(--enemy); margin-left:10px; }
+small .ico { width:1em; height:1em; margin-right:0.15em; }
+.ico.body { width:1.35em; height:1.35em; vertical-align:-0.3em; }
+.ico.body.big { width:1.6em; height:1.6em; vertical-align:-0.35em; }
+.ico { width:1.15em; height:1.15em; vertical-align:-0.2em; margin-right:0.3em; fill:currentColor; flex:none; }
+#menu #credits { display:block; font-size:var(--fs1); padding:0 8px; max-width:260px; line-height:1.5; }
+</style>
+<style id="theme">
+/* --- 見た目: 黒鉛色・白・赤橙ひとつ (NASA の 1975 年の標準書にならう) と、額縁の縁、掠れた報告書の書体 ---
+   色は意味にだけ (赤橙は敵・危険)。ボタンとタブの縁は額縁 (外の縁・面取りの光と影・内側の細い線・四隅の飾り)。
+   見出しと数字はタイプライター体と古い活字の明朝で、少し掠れさせる */
+:root {
+  --bg:#111214; --panel:#18191c; --raise:#212226; --line:#3b3d42; --fg:#f2f2f0; --muted:#b5b6b9; --dim:#97989c;
+  --own:#ffffff; --enemy:#f0533a; --neutral:#e0da7f; --warn:#f89a2b; --good:#7cc790; --info:#8fb1e6; --accent:var(--own);
+  --hover:color-mix(in oklab, var(--raise), var(--fg) 7%); --on-bg:var(--own); --glass:color-mix(in srgb, var(--panel) 92%, transparent);
+  --map-bg:#0b0c0d; --radius:0;
+  --frame:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23c3c6cc'/%3E%3Cstop offset='1' stop-color='%236f7278'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0' y1='1' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%23151619'/%3E%3Cstop offset='1' stop-color='%2334363a'/%3E%3C/linearGradient%3E%3ClinearGradient id='l' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23a3a6ac'/%3E%3Cstop offset='1' stop-color='%235d6066'/%3E%3C/linearGradient%3E%3ClinearGradient id='r' x1='1' y1='0' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%231c1d20'/%3E%3Cstop offset='1' stop-color='%233a3c41'/%3E%3C/linearGradient%3E%3CradialGradient id='k'%3E%3Cstop offset='0' stop-color='%23d2d5da'/%3E%3Cstop offset='1' stop-color='%233e4146'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpolygon points='0,0 48,0 32,16 16,16' fill='url%28%23t%29'/%3E%3Cpolygon points='0,48 48,48 32,32 16,32' fill='url%28%23b%29'/%3E%3Cpolygon points='0,0 16,16 16,32 0,48' fill='url%28%23l%29'/%3E%3Cpolygon points='48,0 32,16 32,32 48,48' fill='url%28%23r%29'/%3E%3Crect x='.5' y='.5' width='47' height='47' fill='none' stroke='%2308080a'/%3E%3Crect x='14.5' y='14.5' width='19' height='19' fill='none' stroke='%2308080a'/%3E%3Crect x='13.5' y='13.5' width='21' height='21' fill='none' stroke='%23e4e6ea' stroke-opacity='.55'/%3E%3Crect x='7' y='7' width='34' height='34' fill='none' stroke='%23eef0f3' stroke-width='1.7' stroke-linecap='round' stroke-dasharray='0 3.2' stroke-opacity='.7'/%3E%3Crect x='2' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='8' cy='8' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='8' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='8' cy='3.4000000000000004' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='12.6' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='12.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='3.4000000000000004' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Crect x='34' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='40' cy='8' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='8' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='40' cy='3.4000000000000004' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='44.6' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='12.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='35.4' cy='8' r='1.1' fill='%23d2d5da'/%3E%3Crect x='2' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='8' cy='40' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='40' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='8' cy='35.4' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='12.6' cy='40' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='8' cy='44.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='3.4000000000000004' cy='40' r='1.1' fill='%23d2d5da'/%3E%3Crect x='34' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%2308080a'/%3E%3Ccircle cx='40' cy='40' r='3.6' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='40' r='1.5' fill='%232a2c30'/%3E%3Ccircle cx='40' cy='35.4' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='44.6' cy='40' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='40' cy='44.6' r='1.1' fill='%23d2d5da'/%3E%3Ccircle cx='35.4' cy='40' r='1.1' fill='%23d2d5da'/%3E%3C/svg%3E"); --frame-on:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23c9ccd1'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0' y1='1' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%236f7278'/%3E%3Cstop offset='1' stop-color='%23a3a6ac'/%3E%3C/linearGradient%3E%3ClinearGradient id='l' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23f2f3f5'/%3E%3Cstop offset='1' stop-color='%23b4b7bc'/%3E%3C/linearGradient%3E%3ClinearGradient id='r' x1='1' y1='0' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%237d8086'/%3E%3Cstop offset='1' stop-color='%23b9bcc1'/%3E%3C/linearGradient%3E%3CradialGradient id='k'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%239da0a6'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpolygon points='0,0 48,0 32,16 16,16' fill='url%28%23t%29'/%3E%3Cpolygon points='0,48 48,48 32,32 16,32' fill='url%28%23b%29'/%3E%3Cpolygon points='0,0 16,16 16,32 0,48' fill='url%28%23l%29'/%3E%3Cpolygon points='48,0 32,16 32,32 48,48' fill='url%28%23r%29'/%3E%3Crect x='.5' y='.5' width='47' height='47' fill='none' stroke='%232a2c30'/%3E%3Crect x='14.5' y='14.5' width='19' height='19' fill='none' stroke='%232a2c30'/%3E%3Crect x='13.5' y='13.5' width='21' height='21' fill='none' stroke='%23ffffff' stroke-opacity='.55'/%3E%3Crect x='7' y='7' width='34' height='34' fill='none' stroke='%23ffffff' stroke-width='1.7' stroke-linecap='round' stroke-dasharray='0 3.2' stroke-opacity='.7'/%3E%3Crect x='2' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='8' cy='8' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='8' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='8' cy='3.4000000000000004' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='12.6' cy='8' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='12.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='3.4000000000000004' cy='8' r='1.1' fill='%23ffffff'/%3E%3Crect x='34' y='2' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='40' cy='8' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='8' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='40' cy='3.4000000000000004' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='44.6' cy='8' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='12.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='35.4' cy='8' r='1.1' fill='%23ffffff'/%3E%3Crect x='2' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='8' cy='40' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='40' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='8' cy='35.4' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='12.6' cy='40' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='8' cy='44.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='3.4000000000000004' cy='40' r='1.1' fill='%23ffffff'/%3E%3Crect x='34' y='34' width='12' height='12' fill='url%28%23k%29' stroke='%232a2c30'/%3E%3Ccircle cx='40' cy='40' r='3.6' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='40' r='1.5' fill='%235d6066'/%3E%3Ccircle cx='40' cy='35.4' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='44.6' cy='40' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='40' cy='44.6' r='1.1' fill='%23ffffff'/%3E%3Ccircle cx='35.4' cy='40' r='1.1' fill='%23ffffff'/%3E%3C/svg%3E");
+  --font-ui:"Courier Prime", "Zen Old Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  --font-display:"Special Elite", "Zen Antique", "Zen Old Mincho", "Hiragino Mincho ProN", serif;
+  --font-num:"Special Elite", "Zen Old Mincho", "Hiragino Mincho ProN", serif;
+}
+body { background:var(--bg); }
+header { border-bottom:3px double var(--line); }
+h1 { text-transform:uppercase; letter-spacing:.3em; color:var(--fg); }
+header h1, #home h1 { text-transform:none; letter-spacing:.06em; } h1 .ed { font-size:.6em; letter-spacing:.05em; margin-left:.5em; color:var(--warn); }
+h3 { text-transform:uppercase; letter-spacing:.16em; border-top:2px solid var(--fg); padding-top:6px; color:var(--fg); }
+.stats div, .kpi div { border-top:2px solid var(--line); }
+.stats { gap:4px; } .stats div { padding:8px 6px; } .stats b { white-space:nowrap; }
+nav button, .chips button, h3, .syshead h2 { font-family:var(--font-display); }
+/* 額縁: 9 分割の絵。面取りの帯 (上と左が明るく、下と右が暗い)、帯の中の粒 (玉縁)、内側の段、四隅の花形の飾り。
+   辺は繰り返して敷く (粒が伸びないように)。選んでいるものは明るい銀の額に白い地 */
+button { border:7px solid transparent; border-image:var(--frame) 16 / 7px round; padding:4px 12px; letter-spacing:.02em; }
+button.on, #speed button.on, .chips button.on { border-image-source:var(--frame-on); background:var(--own); color:#111; }
+nav button, .chips button { border-width:8px; border-image-width:8px; padding:4px 14px; }
+nav button.hot { box-shadow:inset 0 0 0 2px var(--warn); }
+#speed button { white-space:nowrap; }
+/* 電話の幅では額を細くする (速さのボタンが1段に収まるように) */
+@media (max-width: 560px) {
+  button { border-width:4px; border-image-width:4px; padding:4px 8px; }
+  nav button, .chips button { border-width:5px; border-image-width:5px; padding:4px 4px; }
+  #speed button { padding:4px 0; }
+}
+#speed { gap:0; } #speed button { margin-left:0; padding:4px 4px; }
+/* 額にしないもの: 表の中の小さなボタン、知らせの札の中、閉じるボタン */
+.tbl button, #rail .ri button, .syshead h2 .x { border-image:none; }
+.tbl button { border:1px solid var(--line); }
+.syshead h2 .x { border:1px solid var(--line); }
+/* 出来事の種類の札は、ゴム印のように枠と文字の色だけで */
+.ev .tag { background:transparent !important; border:1px solid currentColor; border-radius:2px; letter-spacing:.08em; font-family:var(--font-display); }
+.tag.famine, .tag.battle, .tag.war, .tag.pirate { color:var(--enemy); }
+.tag.shortage, .tag.demand, .tag.politics { color:var(--warn); }
+.tag.natives, .tag.colony, .tag.migration, .tag.trade, .tag.story { color:var(--info); }
+.tag.goal { color:var(--good); }
+#home { background:color-mix(in srgb, var(--bg) 94%, transparent); }
+/* 掠れ: 見出しと数字だけ (動くものには掛けない) */
+h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url(#worn); }
+</style>
+
+  <header>
+    <h1 id="brand">NoLongerUbiquitous</h1>
+    <nav>
+      <button id="tab-galaxy" class="tab on" title="星間マップ">星間</button>
+      <button id="tab-system" class="tab" title="星系マップ">星系</button>
+      <button id="tab-empire" class="tab">帝国</button>
+      <button id="tab-events" class="tab" title="出来事の履歴 (いまの知らせは地図の左上に出る)">イベント</button>
+      <button id="tab-cands" class="tab">候補地</button>
+    </nav>
+    <div id="status"><div id="date">西暦 2300年 1月</div><div id="treasury"></div></div>
+    <div id="ctrl">
+      <div id="speed" role="group" aria-label="速さ (1秒あたり)">
+        <button data-speed="0" aria-label="一時停止">⏸</button>
+        <button data-speed="1" title="1秒で1ヶ月">1月</button>
+        <button data-speed="2" title="1秒で3ヶ月">3月</button>
+        <button data-speed="3" title="1秒で1年">1年</button>
+        <button data-speed="4" title="1秒で4年">4年</button>
+        <button data-speed="5" title="1秒で16年">16年</button>
+        <button data-speed="6" title="1秒で64年">64年</button>
+      </div>
+      <button id="skipbtn" title="速く進め、知らせ (重大・普通の出来事、決めること) が届いたら止める (最長100年)" aria-label="次の知らせまで進む">⏭</button>
+      <button id="turnbtn" hidden title="次の人間のプレイヤーに交代する (ホットシート)">交代</button>
+      <button id="memobtn" title="いま感じたことを、その時点のゲームの状態と一緒に記録する (プレイ記録。ホーム画面で見られる)">メモ</button>
+      <button id="menubtn" aria-label="メニュー" aria-expanded="false">≡</button>
+      <div id="menu" hidden>
+        <button id="homebtn">ホーム</button>
+        <button id="savenow">セーブ</button>
+        <button id="sigbtn" title="地図に光速の通信 (物資移送要求・指令・朝貢・送金) をどう描くか">通信: 表示しない</button>
+        <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
+        <button id="fxbtn" title="文字がときどき色ずれしてぶれる">画面の動き: 入</button>
+        <span id="savestat" class="muted"></span>
+        <span id="credits" class="muted">背景画像: 天の川の星図 NASA/Goddard Space Flight Center Scientific Visualization Studio・Gaia DR2: ESA/Gaia/DPAC ／ 北アメリカ星雲 NASA/JPL-Caltech ／ 星系ごとの背景 NASA, ESA, JPL-Caltech, STScI ほか ／ アイコン: game-icons.net (Lorc, Delapouite ほか, CC BY 3.0)、Font Awesome・Solar・Streamline (CC BY 4.0)、Material・MDI・MingCute (Apache 2.0)・Tabler・Boxicons・Lucide Lab・Pinhead ほか、恒星・惑星はこのゲームで描いたもの (詳しくは README)</span>
+      </div>
+    </div>
+    <input id="importfile" type="file" accept="application/json,.json" hidden>
+  </header>
+  <main>
+    <div id="stage">
+      <div id="sky" aria-hidden="true"><div class="sky-galaxy"></div><div class="sky-system"></div></div>
+      <canvas id="map"></canvas>
+      <div id="empire" hidden></div>
+      <div id="rail" aria-live="polite"></div>
+      <details id="legend"><summary>凡例</summary>
+        <div><i style="background:#ffb347;border-radius:50%"></i>入植船</div>
+        <div><i style="background:#5aa9ff;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>自艦隊 (地球が動かす)</div>
+        <div><i style="background:#8be36a;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>従属艦隊 (従属星系の守り)</div>
+        <div><i style="background:#f0c94a;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>中立艦隊</div>
+        <div><i style="background:#ff5a5a;clip-path:polygon(50% 0,100% 100%,0 100%)"></i>敵艦隊</div>
+        <div><i style="border:2px solid var(--own);width:9px;height:9px;border-radius:2px"></i>国境 (国ごとの色。地球の国は太線)</div>
+        <div><i style="background:#6fdc96"></i>交易の貨物船 (緑の線は交易路)</div>
+        <div><i style="background:#ffd24d;transform:rotate(45deg) scale(.8)"></i>資材輸送船</div>
+        <div><i style="background:#8fd3ff;border-radius:50%;transform:scale(.7)"></i>移民船</div>
+        <div><i style="background:#ff9f8f"></i>歩兵</div>
+        <div><i style="background:radial-gradient(#c9a2ff,transparent 70%)"></i>物資移送要求 (光速の通信)</div>
+        <div><i style="background:radial-gradient(#aadcff,transparent 70%)"></i>地球からの指令</div>
+        <div><i style="background:radial-gradient(#a0e678,transparent 70%)"></i>朝貢 (主人の星系への送金)</div>
+        <div><i style="background:radial-gradient(#ffd778,transparent 70%)"></i>資金援助 (主人の星系からの送金)</div>
+        <div class="muted" style="max-width:220px">通信の描き方はヘッダーの「通信」ボタンで切り替える (表示しない・光の点)。光の点は見やすくするための印で、こちらへ向かっていない通信の光は、実際には見えない。</div>
+        <div class="muted" style="max-width:220px">左下の「従属」で従属マップ (家臣 → 主人の矢印。色は従属の深さのグラデーション) に切り替える。</div>
+        <div class="muted" style="max-width:220px">地図は首都 (地球の国なら地球) に届いている光で描く。遠くの星系は昔の様子で、船は見かけの位置に見える。</div>
+        <div><i style="border:2px solid #ff5a5a;border-radius:50%;width:7px;height:7px"></i>征服戦争 (赤い輪と ⚔ の数字が進捗)</div>
+        <div><i style="border:2px dashed #ff5a5a;border-radius:50%;width:7px;height:7px"></i>艦隊戦 (下の棒が両軍の残りの比)</div>
+        <div><i style="border:2px solid #ffaa3c;border-radius:50%;width:7px;height:7px"></i>攻囲 (国家間の戦争)</div>
+        <div><i style="border:2px solid #ff9f43;border-radius:50%;width:7px;height:7px"></i>入植星系の輪の色 = 所属する国 (青緑は地球の国)</div>
+      </details>
+      <div id="fleetbar" hidden></div>
+      <div id="zoom"><button id="zoom-in" aria-label="拡大">＋</button><button id="zoom-out" aria-label="縮小">－</button><button id="zoom-fit" aria-label="全体表示">全体</button><button id="rotbtn" title="オンにすると、ドラッグで地図を回す・傾ける (マウスは中ボタンか Alt+ドラッグでも回る。2 本指でひねっても回る)">回す</button><button id="topbtn" title="真上から見る / 斜めから見る">真上</button><button id="vassalbtn" title="誰が誰に従属しているかを矢印で表示する (家臣 → 主人)">従属</button></div>
+    </div>
+    <aside>
+      <div id="panel"></div>
+      <details class="sec" id="sec-ledger"><summary>地球政府の収支</summary><table id="ledger" class="tbl"></table></details>
+      <details class="sec" id="sec-ships"><summary>航行中の船</summary><div id="ships"></div></details>
+      <details class="sec" id="sec-log"><summary>ログ</summary><div id="log"></div></details>
+    </aside>
+  </main>
+  <div id="home" hidden></div>
+  <div id="pick" hidden></div>
+  <div id="curtain" hidden></div>
+  <div id="netbox" hidden></div>
+  <div id="treatybox" hidden></div>
+  <div id="endbox" hidden></div>
+  <div id="memobox" hidden>
+    <div class="tags"><button data-tag="bored">退屈</button><button data-tag="confused">分からない</button><button data-tag="torn">迷う</button><button data-tag="fun">面白い</button></div>
+    <textarea id="memotext" rows="3" placeholder="いま感じたこと・したかったこと (書かなくてもよい)"></textarea>
+    <div class="row"><button id="memosave">記録する</button><button id="memoclose" class="ghost">やめる</button></div>
+    <p class="muted" style="font-size:11px;margin:6px 0 0">開いた時点のゲームの状態も一緒に残る (ホーム →「プレイ記録」からその時点をロードできる)。開いているあいだは時間を止める。</p>
+  </div>
+  

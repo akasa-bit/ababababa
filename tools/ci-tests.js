@@ -66,7 +66,13 @@ catch (e) { rows.push(['build', '**不合格**', String(e.stderr || e).slice(0, 
 // シミュレーション版は、試験の作業場所にだけ作る (リポジトリの simulation.html は変えない。落ちても CI は止めない)
 try { execFileSync('node', [path.join(ROOT, 'tools/build.mjs'), '--sim-to', path.join(SHOTS, 'simulation.html')], { stdio: 'pipe' }); }
 catch (e) { rows.push(['build (シミュレーション版・参考)', '不合格 (参考。無視してよい)', String(e.stderr || e).slice(0, 200)]); }
-// 0'. 合わせる目標のファイルが固定したときから変わっていない
+// 0'. src/ の下のファイルが、どれも 1 回ずつ組み込まれている (tools/src.js。足したファイルの //#include の忘れ)
+{
+  const r = spawnSync('node', [path.join(ROOT, 'tools/src.js'), '--check'], { encoding: 'utf8' });
+  rows.push(['src', r.status === 0 ? '合格' : '**不合格**', r.status === 0 ? '' : (r.stdout + r.stderr).trim().slice(0, 200)]);
+  if (r.status !== 0) failed++;
+}
+// 0''. 合わせる目標のファイルが固定したときから変わっていない
 {
   const r = spawnSync('node', [path.join(ROOT, 'tools/check-targets.js')], { encoding: 'utf8' });
   rows.push(['targets', r.status === 0 ? '合格' : '**不合格**', r.status === 0 ? '' : (r.stdout + r.stderr).trim().slice(0, 200)]);

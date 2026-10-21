@@ -18,7 +18,7 @@
                               pb = 基礎収支 ÷ GDP = (revenue − expenditure) / gdp + ltrate/100 × d(前の年) (利子の払いは
                               JST にないので、長期の利子率 × 前の年の債務で近づける)、d = debtgdp、
                               gap = ln(rgdpbarro) − HP フィルター (λ = 100) の傾向。30 年以上ある国だけ (2026-10-20 に足した)
-ゲームの国債の値 (params。src/index.html の DEBT に写す): 財政の反応の式の係数 (国ごとの最小二乗の中央値)・
+ゲームの国債の値 (params。src/economy/fiscal-consts.js の DEBT に写す): 財政の反応の式の係数 (国ごとの最小二乗の中央値)・
   景気のずれの範囲 (HP フィルターのずれの 1%〜99% 点)・借りられる上限 (debtgdp の国ごとの中央値の中央値 = R21 の estimate。国ごとの 90% 点の中央値 limit_p90 では、ゲームの R21 が 1.13 と幅を超えた)・
   手元に置く資金 (Eurostat の一般政府の現金・預金 ÷ 総収入の、国ごとの中央値の中央値。単位は年)
 幅の決め方 (ゲームの結果を見る前に決めた): 現実の国ごとの値の 10%〜90% 点。ゲームは、銀河ごと・国ごとの値の中央値がこの幅に入れば合格。
@@ -97,7 +97,7 @@ def eurostat(path):
     return out
 
 def params(jst):
-    """ゲームの国債の値 (src/index.html の DEBT)"""
+    """ゲームの国債の値 (src/economy/fiscal-consts.js の DEBT)"""
     coef, gaps = reaction(jst, full=True)
     cash, rev = (eurostat(p) for p in EUROSTAT)
     per = {}

@@ -2,7 +2,7 @@
 """M 型星のフレアから、惑星の軌道に届く高エネルギー陽子 (>10 MeV) の 1 年のフルエンスを星ごとに作る。docs/physics.md の 6。
 
 入力: data/raw/flares/ (data/fetch/fetch_flares.py が取る)、data/derived/stars.json
-出力: data/derived/flares.json、src/index.html の FLARES:BEGIN〜FLARES:END
+出力: data/derived/flares.json、src/ship/physics.js の FLARES:BEGIN〜FLARES:END
 
 鎖 (どれも太陽で測られた関係を、星のフレアに当てはめる。いちばん大きな仮定は「M 型星でも太陽と同じ割合で陽子が飛び出す」こと):
   1. 星ごとのフレアの頻度: 累積の回数 R(>E) = R_c (E/E_c)^(1−α) [回/日] (E = ボロメトリックのエネルギー [erg])。
@@ -22,7 +22,7 @@ import gzip, json, math, os, re, statistics
 HERE = os.path.dirname(__file__)
 RAW = os.path.join(HERE, '..', 'raw', 'flares')
 OUT = os.path.join(HERE, '..', 'derived', 'flares.json')
-SRC = os.path.join(HERE, '..', '..', 'src', 'index.html')
+SRC = os.path.join(HERE, '..', '..', 'src', 'ship', 'physics.js')  # src/index.html を分けたあとの、区切りのあるファイル (回 R3)
 YEARS = 2017 + 1 - 1984 - 0.5  # NOAA の記録の年数 (2017 年は年の途中まで: 約 34 年。1984-01〜2017-06 とみなす)
 C6 = 6e-6  # Papaioannou の標本の下限 (C6.0、古い較正 [W/m²])
 OLD_TO_NEW = 1 / 0.7
@@ -234,7 +234,7 @@ def main():
     if '/* FLARES:BEGIN' in src:
         src = re.sub(r'/\* FLARES:BEGIN.*?/\* FLARES:END \*/', lambda m: block, src, flags=re.S)
         open(SRC, 'w', encoding='utf-8').write(src)
-        print('src/index.html に書いた')
+        print('src/ship/physics.js に書いた')
     print(f"太陽: 65 回の RMA log F10 = {fit['A']:.2f} + {fit['B']:.2f} log F_SXR (r = {fit['r']:.2f}、散らばり {fit['scatter_dex']:.2f} 桁)・ε = {eps:.2f}")
     print('  陽子が来る割合:', ' / '.join(f"{b['lo']:.0e}〜{b['hi']:.0e}: {b['sep']}/{b['flares']} = {b['p']:.3f}" for b in prob))
     print(f"  1 AU の 1 年の F(>10 MeV): 鎖で {sun_pred:.2e}、よくつながった 65 回の和 {sun_obs:.2e} /cm²")

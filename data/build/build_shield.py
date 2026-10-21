@@ -3,7 +3,7 @@
 
 入力: data/derived/g4/<名前>_<段>.json (data/build/g4_shield.py が書く。段 k は深さ (k−1)×段の厚さ から始まる)
       data/raw/ism/pstar_water.txt・pdg_water.txt (確かめ用)
-出力: data/derived/shield.json、src/index.html の SHIELD:BEGIN〜SHIELD:END
+出力: data/derived/shield.json、src/ship/physics.js の SHIELD:BEGIN〜SHIELD:END
 
 線量は、船の前面に当たる核子 1 個/cm² あたり (Gy cm² と Sv cm²)。ヘリウムの原子核は、4 核子が別々に当たるのと同じとみなす
 (重ね合わせの近似。宇宙線の物理の普通のやり方。a95 の計算で確かめる)。
@@ -13,7 +13,7 @@ import glob, json, math, os, re
 HERE = os.path.dirname(__file__)
 G4 = os.path.join(HERE, '..', 'derived', 'g4')
 OUT = os.path.join(HERE, '..', 'derived', 'shield.json')
-SRC = os.path.join(HERE, '..', '..', 'src', 'index.html')
+SRC = os.path.join(HERE, '..', '..', 'src', 'ship', 'physics.js')  # src/index.html を分けたあとの、区切りのあるファイル (回 R3)
 RUNS = {'p95': 'FTFP_BERT・陽子 0.95c (2066.6 MeV)', 'p90': 'FTFP_BERT・陽子 0.9c (1214.2 MeV)',
         'g95': 'FTFP_BERT・横の壁の銀河宇宙線 0.95c (線量は 1 秒あたり)', 'g90': 'FTFP_BERT・横の壁の銀河宇宙線 0.9c (線量は 1 秒あたり)',
         's00': 'FTFP_BERT・惑星の地面のフレアの陽子 (ε = 2.13、全方向の F(>10 MeV) 1 /cm² あたり)', 'c00': 'FTFP_BERT・惑星の地面の銀河宇宙線 (止まった所、1 秒あたり)',
@@ -167,7 +167,7 @@ def main():
     if '/* SHIELD:BEGIN' in src:
         src = re.sub(r'/\* SHIELD:BEGIN.*?/\* SHIELD:END \*/', lambda m: block, src, flags=re.S)
         open(SRC, 'w', encoding='utf-8').write(src)
-        print('src/index.html に書いた')
+        print('src/ship/physics.js に書いた')
     for name, r in res.items():
         print(f"{name}: {r['label']}  段 {r['stages']}・深さ {r['deepest']['H']:.0f} g/cm² まで  一番奥の減る長さ D {r['tailD']['lambda']:.1f}±{r['tailD']['lambda_err']:.1f}・H {r['tailH']['lambda']:.1f}±{r['tailH']['lambda_err']:.1f} g/cm²")
     if chk:

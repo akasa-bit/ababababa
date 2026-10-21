@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""従属国の型 (19 型 + 植民地) を、ゲームの値の表 VASSAL_TYPES にして src/index.html に書く (レーン H・セッション H3-1)。
+"""従属国の型 (19 型 + 植民地) を、ゲームの値の表 VASSAL_TYPES にして src/politics/pc-vassal.js に書く (レーン H・セッション H3-1)。
 
 材料は data/derived/vassal.json (事例ごとの最終の束) と data/derived/vassal_survival.json (型ごとのまとめ)。
-src/index.html の /* VASSAL:BEGIN … VASSAL:END */ のあいだを書き換える (手で直さない)。
+src/politics/pc-vassal.js の /* VASSAL:BEGIN … VASSAL:END */ のあいだを書き換える (手で直さない)。
 
 ゲームの値の決め方 (docs/vassal-game.md):
   - 束 law・fact: 型の事例の最頻の符号 (宗 S・分 M・従 V。8 項目: 外交・軍事・課税と朝貢・法と裁判・任免・交易・宗教と文化・継承)
@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from analyze_history import cox, coef  # noqa: E402
 
 ROOT = os.path.join(os.path.dirname(__file__), '..')
-SRC = os.path.join(ROOT, '..', 'src', 'index.html')
+SRC = os.path.join(ROOT, '..', 'src', 'politics', 'pc-vassal.js')  # src/index.html を分けたあとの、区切りのあるファイル (回 R3)
 ITEMS = ['dip', 'mil', 'tax', 'law', 'appt', 'trade', 'rel', 'succ']
 NUM = {'S': 0.0, 'M': 0.5, 'V': 1.0}
 BASE = 'T04'

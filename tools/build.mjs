@@ -1,4 +1,4 @@
-// 公開用の HTML を作る: src/index.html を最小化し、LZMA で圧縮して、自分で展開する 1 枚の HTML にする。
+// 公開用の HTML を作る: src/index.html (分けたファイルを tools/src.js で組み立てたもの) を最小化し、LZMA で圧縮して、自分で展開する 1 枚の HTML にする。
 // 版ごとに作る: index.html (ゲーム版) と simulation.html (シミュレーション版)。違いは src の EDITION の値だけ
 // ふだんはゲーム版だけを作る。シミュレーション版はレーン P (物理) が --sim を付けたときだけ作る。ほかのレーンはシミュレーション版を無視する (docs/parallel.md の 6)
 // 使い方: (cd tools && npm ci) のあと node tools/build.mjs   (シミュレーション版も: node tools/build.mjs --sim)
@@ -15,7 +15,7 @@ import { minify } from 'terser';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const unlzma = require('./unlzma.js');
-const source = fs.readFileSync(path.join(root, 'src/index.html'), 'utf8');
+const source = require('./src.js').assemble();
 const EDITION_LINE = "const EDITION = 'game'; /* EDITION */";
 if (!source.includes(EDITION_LINE)) throw new Error('src/index.html に EDITION の行がない');
 const ALL_EDITIONS = [['game', 'index.html', 'NoLongerUbiquitous'], ['sim', 'simulation.html', 'NoLongerUbiquitous シミュレーション版']];
