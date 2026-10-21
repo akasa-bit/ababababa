@@ -1,0 +1,3043 @@
+{
+ "generated": "2026-10-21T08:33:35Z",
+ "n": 131,
+ "bundle_source": {
+  "none": 131
+ },
+ "families": {
+  "ritual": "儀礼の宗主権 (冊封朝貢・藩部・貢納公国)",
+  "treaty": "条約の保護 (保護国・藩王国・委任統治 A・緩衝国・プラット型)",
+  "legal": "法と交易だけ (不平等条約)",
+  "settler": "入植者の自治と自由連合 (自治領・自由連合)",
+  "colony": "直轄 (植民地・委任統治 B/C・特許会社領)",
+  "client": "傀儡と衛星",
+  "dynastic": "君主と封の網 (封臣・藩・同君連合・共同統治)"
+ },
+ "by_type": {
+  "T01": {
+   "n": 6,
+   "n_censored": 0,
+   "km_median": 245.0,
+   "km_q25_q75": [
+    201.0,
+    457.0
+   ],
+   "durations": [
+    95,
+    201,
+    245,
+    258,
+    457,
+    507
+   ],
+   "end_kinds": {
+    "transferred": 3,
+    "indep": 2,
+    "annexed": 1
+   },
+   "violent_end_share": 0.0,
+   "indep_share": 0.333,
+   "next": {
+    "other_suzerain_or_type": 2,
+    "INDEP": 2,
+    "T20": 1,
+    "T03": 1
+   },
+   "name": "冊封朝貢国",
+   "family": "ritual"
+  },
+  "T02": {
+   "n": 5,
+   "n_censored": 0,
+   "km_median": 192.0,
+   "km_q25_q75": [
+    188.0,
+    220.0
+   ],
+   "durations": [
+    125,
+    188,
+    192,
+    220,
+    276
+   ],
+   "end_kinds": {
+    "suzerain_end": 2,
+    "transferred": 2,
+    "annexed": 1
+   },
+   "violent_end_share": 0.4,
+   "indep_share": 0.0,
+   "next": {
+    "INDEP": 2,
+    "other_suzerain_or_type": 2,
+    "T20": 1
+   },
+   "name": "藩部 (理藩院の管轄)",
+   "family": "ritual"
+  },
+  "T03": {
+   "n": 8,
+   "n_censored": 0,
+   "km_median": 44.0,
+   "km_q25_q75": [
+    8.0,
+    70.0
+   ],
+   "durations": [
+    5,
+    8,
+    11,
+    44,
+    52,
+    70,
+    75,
+    90
+   ],
+   "end_kinds": {
+    "indep": 5,
+    "annexed": 3
+   },
+   "violent_end_share": 0.875,
+   "indep_share": 0.625,
+   "next": {
+    "INDEP": 5,
+    "T20": 3
+   },
+   "name": "保護国 (条約型)",
+   "family": "treaty"
+  },
+  "T04": {
+   "n": 8,
+   "n_censored": 0,
+   "km_median": 64.0,
+   "km_q25_q75": [
+    57.0,
+    147.0
+   ],
+   "durations": [
+    55,
+    57,
+    62,
+    64,
+    83,
+    147,
+    148,
+    150
+   ],
+   "end_kinds": {
+    "annexed": 2,
+    "transferred": 6
+   },
+   "violent_end_share": 0.125,
+   "indep_share": 0.0,
+   "next": {
+    "T20": 2,
+    "other_suzerain_or_type": 6
+   },
+   "name": "藩王国・土侯国 (従属同盟と至上権)",
+   "family": "treaty"
+  },
+  "T05": {
+   "n": 7,
+   "n_censored": 0,
+   "km_median": 27.0,
+   "km_q25_q75": [
+    15.0,
+    41.0
+   ],
+   "durations": [
+    3,
+    15,
+    21,
+    27,
+    40,
+    41,
+    64
+   ],
+   "end_kinds": {
+    "indep": 6,
+    "annexed": 1
+   },
+   "violent_end_share": 0.0,
+   "indep_share": 0.857,
+   "next": {
+    "INDEP": 6,
+    "T20": 1
+   },
+   "name": "自治領",
+   "family": "settler"
+  },
+  "T06": {
+   "n": 5,
+   "n_censored": 0,
+   "km_median": 23.0,
+   "km_q25_q75": [
+    20.0,
+    25.0
+   ],
+   "durations": [
+    12,
+    20,
+    23,
+    25,
+    25
+   ],
+   "end_kinds": {
+    "indep": 4,
+    "suzerain_end": 1
+   },
+   "violent_end_share": 0.4,
+   "indep_share": 0.8,
+   "next": {
+    "INDEP": 5
+   },
+   "name": "委任統治領 A",
+   "family": "treaty"
+  },
+  "T07": {
+   "n": 7,
+   "n_censored": 0,
+   "km_median": 39.0,
+   "km_q25_q75": [
+    38.0,
+    48.0
+   ],
+   "durations": [
+    25,
+    38,
+    39,
+    39,
+    42,
+    48,
+    70
+   ],
+   "end_kinds": {
+    "indep": 5,
+    "suzerain_end": 1,
+    "transferred": 1
+   },
+   "violent_end_share": 0.286,
+   "indep_share": 0.714,
+   "next": {
+    "INDEP": 6,
+    "other_suzerain_or_type": 1
+   },
+   "name": "委任統治領 B・C と信託統治",
+   "family": "colony"
+  },
+  "T08": {
+   "n": 6,
+   "n_censored": 0,
+   "km_median": 57.0,
+   "km_q25_q75": [
+    10.0,
+    104.0
+   ],
+   "durations": [
+    2,
+    10,
+    57,
+    74,
+    104,
+    715
+   ],
+   "end_kinds": {
+    "indep": 3,
+    "transferred": 1,
+    "annexed": 2
+   },
+   "violent_end_share": 0.167,
+   "indep_share": 0.5,
+   "next": {
+    "INDEP": 3,
+    "other_suzerain_or_type": 1,
+    "T20": 2
+   },
+   "name": "共同統治",
+   "family": "dynastic"
+  },
+  "T09": {
+   "n": 7,
+   "n_censored": 0,
+   "km_median": 33.0,
+   "km_q25_q75": [
+    14.0,
+    93.0
+   ],
+   "durations": [
+    6,
+    14,
+    33,
+    33,
+    65,
+    93,
+    180
+   ],
+   "end_kinds": {
+    "transferred": 7
+   },
+   "violent_end_share": 0.286,
+   "indep_share": 0.0,
+   "next": {
+    "other_suzerain_or_type": 7
+   },
+   "name": "特許会社領",
+   "family": "colony"
+  },
+  "T10": {
+   "n": 7,
+   "n_censored": 0,
+   "km_median": 6.0,
+   "km_q25_q75": [
+    4.0,
+    6.0
+   ],
+   "durations": [
+    4,
+    4,
+    5,
+    6,
+    6,
+    6,
+    13
+   ],
+   "end_kinds": {
+    "suzerain_end": 6,
+    "annexed": 1
+   },
+   "violent_end_share": 0.0,
+   "indep_share": 0.0,
+   "next": {
+    "INDEP": 6,
+    "T20": 1
+   },
+   "name": "傀儡国",
+   "family": "client"
+  },
+  "T11": {
+   "n": 7,
+   "n_censored": 0,
+   "km_median": 41.0,
+   "km_q25_q75": [
+    40.0,
+    42.0
+   ],
+   "durations": [
+    15,
+    40,
+    41,
+    41,
+    42,
+    42,
+    66
+   ],
+   "end_kinds": {
+    "indep": 6,
+    "merger": 1
+   },
+   "violent_end_share": 0.0,
+   "indep_share": 0.857,
+   "next": {
+    "INDEP": 6,
+    "MERGED": 1
+   },
+   "name": "衛星国",
+   "family": "client"
+  },
+  "T12": {
+   "n": 7,
+   "n_censored": 5,
+   "km_median": null,
+   "km_q25_q75": [
+    11.0,
+    null
+   ],
+   "durations": [
+    7,
+    11,
+    32,
+    40,
+    40,
+    52,
+    61
+   ],
+   "end_kinds": {
+    "continuing": 5,
+    "indep": 2
+   },
+   "violent_end_share": 0.0,
+   "indep_share": 0.286,
+   "next": {
+    "INDEP": 2
+   },
+   "name": "自由連合",
+   "family": "settler"
+  },
+  "T13": {
+   "n": 7,
+   "n_censored": 0,
+   "km_median": 114.0,
+   "km_q25_q75": [
+    16.0,
+    319.0
+   ],
+   "durations": [
+    15,
+    16,
+    47,
+    114,
+    293,
+    319,
+    522
+   ],
+   "end_kinds": {
+    "annexed": 4,
+    "indep": 3
+   },
+   "violent_end_share": 0.571,
+   "indep_share": 0.429,
+   "next": {
+    "T20": 4,
+    "INDEP": 3
+   },
+   "name": "封臣 (中世西欧)",
+   "family": "dynastic"
+  },
+  "T14": {
+   "n": 6,
+   "n_censored": 0,
+   "km_median": 268.0,
+   "km_q25_q75": [
+    268.0,
+    268.0
+   ],
+   "durations": [
+    225,
+    268,
+    268,
+    268,
+    268,
+    268
+   ],
+   "end_kinds": {
+    "annexed": 6
+   },
+   "violent_end_share": 0.167,
+   "indep_share": 0.0,
+   "next": {
+    "T20": 6
+   },
+   "name": "幕藩制の藩 (近世日本)",
+   "family": "dynastic"
+  },
+  "T15": {
+   "n": 7,
+   "n_censored": 0,
+   "km_median": 123.0,
+   "km_q25_q75": [
+    60.0,
+    184.0
+   ],
+   "durations": [
+    51,
+    60,
+    91,
+    123,
+    126,
+    184,
+    434
+   ],
+   "end_kinds": {
+    "indep": 4,
+    "merger": 1,
+    "transferred": 1,
+    "suzerain_end": 1
+   },
+   "violent_end_share": 0.286,
+   "indep_share": 0.571,
+   "next": {
+    "INDEP": 5,
+    "MERGED": 1,
+    "other_suzerain_or_type": 1
+   },
+   "name": "同君連合",
+   "family": "dynastic"
+  },
+  "T16": {
+   "n": 6,
+   "n_censored": 0,
+   "km_median": 40.0,
+   "km_q25_q75": [
+    37.0,
+    75.0
+   ],
+   "durations": [
+    14,
+    37,
+    40,
+    47,
+    75,
+    107
+   ],
+   "end_kinds": {
+    "indep": 3,
+    "annexed": 1,
+    "suzerain_end": 2
+   },
+   "violent_end_share": 0.333,
+   "indep_share": 0.5,
+   "next": {
+    "INDEP": 5,
+    "T20": 1
+   },
+   "name": "緩衝国",
+   "family": "treaty"
+  },
+  "T17": {
+   "n": 7,
+   "n_censored": 0,
+   "km_median": 83.0,
+   "km_q25_q75": [
+    32.0,
+    101.0
+   ],
+   "durations": [
+    29,
+    32,
+    41,
+    83,
+    100,
+    101,
+    174
+   ],
+   "end_kinds": {
+    "indep": 5,
+    "transferred": 2
+   },
+   "violent_end_share": 0.0,
+   "indep_share": 0.714,
+   "next": {
+    "INDEP": 5,
+    "T03": 2
+   },
+   "name": "不平等条約の半主権国 (非公式の帝国)",
+   "family": "legal"
+  },
+  "T18": {
+   "n": 7,
+   "n_censored": 0,
+   "km_median": 299.0,
+   "km_q25_q75": [
+    48.0,
+    350.0
+   ],
+   "durations": [
+    30,
+    48,
+    73,
+    299,
+    321,
+    350,
+    402
+   ],
+   "end_kinds": {
+    "indep": 3,
+    "merger": 1,
+    "transferred": 3
+   },
+   "violent_end_share": 0.286,
+   "indep_share": 0.429,
+   "next": {
+    "INDEP": 3,
+    "MERGED": 1,
+    "other_suzerain_or_type": 2,
+    "T03": 1
+   },
+   "name": "貢納公国 (オスマン型)",
+   "family": "ritual"
+  },
+  "T19": {
+   "n": 5,
+   "n_censored": 0,
+   "km_median": 32.0,
+   "km_q25_q75": [
+    31.0,
+    34.0
+   ],
+   "durations": [
+    21,
+    31,
+    32,
+    34,
+    36
+   ],
+   "end_kinds": {
+    "indep": 5
+   },
+   "violent_end_share": 0.2,
+   "indep_share": 1.0,
+   "next": {
+    "INDEP": 5
+   },
+   "name": "財政保護と介入権 (プラット型)",
+   "family": "treaty"
+  },
+  "T20": {
+   "n": 6,
+   "n_censored": 0,
+   "km_median": 50.0,
+   "km_q25_q75": [
+    44.0,
+    132.0
+   ],
+   "durations": [
+    43,
+    44,
+    50,
+    83,
+    132,
+    149
+   ],
+   "end_kinds": {
+    "indep": 5,
+    "suzerain_end": 1
+   },
+   "violent_end_share": 0.5,
+   "indep_share": 0.833,
+   "next": {
+    "INDEP": 6
+   },
+   "name": "植民地 (直轄)",
+   "family": "colony"
+  }
+ },
+ "by_family": {
+  "client": {
+   "n": 14,
+   "n_censored": 0,
+   "km_median": 13.0,
+   "km_q25_q75": [
+    6.0,
+    41.0
+   ],
+   "durations": [
+    4,
+    4,
+    5,
+    6,
+    6,
+    6,
+    13,
+    15,
+    40,
+    41,
+    41,
+    42,
+    42,
+    66
+   ],
+   "end_kinds": {
+    "suzerain_end": 6,
+    "annexed": 1,
+    "indep": 6,
+    "merger": 1
+   },
+   "violent_end_share": 0.0,
+   "indep_share": 0.429,
+   "next": {
+    "INDEP": 12,
+    "T20": 1,
+    "MERGED": 1
+   }
+  },
+  "colony": {
+   "n": 20,
+   "n_censored": 0,
+   "km_median": 43.0,
+   "km_q25_q75": [
+    33.0,
+    70.0
+   ],
+   "durations": [
+    6,
+    14,
+    25,
+    33,
+    33,
+    38,
+    39,
+    39,
+    42,
+    43,
+    44,
+    48,
+    50,
+    65,
+    70,
+    83,
+    93,
+    132,
+    149,
+    180
+   ],
+   "end_kinds": {
+    "indep": 10,
+    "suzerain_end": 2,
+    "transferred": 8
+   },
+   "violent_end_share": 0.35,
+   "indep_share": 0.5,
+   "next": {
+    "INDEP": 12,
+    "other_suzerain_or_type": 8
+   }
+  },
+  "dynastic": {
+   "n": 26,
+   "n_censored": 0,
+   "km_median": 123.0,
+   "km_q25_q75": [
+    57.0,
+    268.0
+   ],
+   "durations": [
+    2,
+    10,
+    15,
+    16,
+    47,
+    51,
+    57,
+    60,
+    74,
+    91,
+    104,
+    114,
+    123,
+    126,
+    184,
+    225,
+    268,
+    268,
+    268,
+    268,
+    268,
+    293,
+    319,
+    434,
+    522,
+    715
+   ],
+   "end_kinds": {
+    "indep": 10,
+    "transferred": 2,
+    "annexed": 12,
+    "merger": 1,
+    "suzerain_end": 1
+   },
+   "violent_end_share": 0.308,
+   "indep_share": 0.385,
+   "next": {
+    "INDEP": 11,
+    "other_suzerain_or_type": 2,
+    "T20": 12,
+    "MERGED": 1
+   }
+  },
+  "legal": {
+   "n": 7,
+   "n_censored": 0,
+   "km_median": 83.0,
+   "km_q25_q75": [
+    32.0,
+    101.0
+   ],
+   "durations": [
+    29,
+    32,
+    41,
+    83,
+    100,
+    101,
+    174
+   ],
+   "end_kinds": {
+    "indep": 5,
+    "transferred": 2
+   },
+   "violent_end_share": 0.0,
+   "indep_share": 0.714,
+   "next": {
+    "INDEP": 5,
+    "T03": 2
+   }
+  },
+  "ritual": {
+   "n": 18,
+   "n_censored": 0,
+   "km_median": 220.0,
+   "km_q25_q75": [
+    125.0,
+    321.0
+   ],
+   "durations": [
+    30,
+    48,
+    73,
+    95,
+    125,
+    188,
+    192,
+    201,
+    220,
+    245,
+    258,
+    276,
+    299,
+    321,
+    350,
+    402,
+    457,
+    507
+   ],
+   "end_kinds": {
+    "transferred": 8,
+    "indep": 5,
+    "annexed": 2,
+    "suzerain_end": 2,
+    "merger": 1
+   },
+   "violent_end_share": 0.222,
+   "indep_share": 0.278,
+   "next": {
+    "other_suzerain_or_type": 6,
+    "INDEP": 7,
+    "T20": 2,
+    "T03": 2,
+    "MERGED": 1
+   }
+  },
+  "settler": {
+   "n": 14,
+   "n_censored": 5,
+   "km_median": 40.0,
+   "km_q25_q75": [
+    15.0,
+    64.0
+   ],
+   "durations": [
+    3,
+    7,
+    11,
+    15,
+    21,
+    27,
+    32,
+    40,
+    40,
+    40,
+    41,
+    52,
+    61,
+    64
+   ],
+   "end_kinds": {
+    "indep": 8,
+    "annexed": 1,
+    "continuing": 5
+   },
+   "violent_end_share": 0.0,
+   "indep_share": 0.571,
+   "next": {
+    "INDEP": 8,
+    "T20": 1
+   }
+  },
+  "treaty": {
+   "n": 32,
+   "n_censored": 0,
+   "km_median": 40.0,
+   "km_q25_q75": [
+    23.0,
+    70.0
+   ],
+   "durations": [
+    5,
+    8,
+    11,
+    12,
+    14,
+    20,
+    21,
+    23,
+    25,
+    25,
+    31,
+    32,
+    34,
+    36,
+    37,
+    40,
+    44,
+    47,
+    52,
+    55,
+    57,
+    62,
+    64,
+    70,
+    75,
+    75,
+    83,
+    90,
+    107,
+    147,
+    148,
+    150
+   ],
+   "end_kinds": {
+    "indep": 17,
+    "annexed": 6,
+    "transferred": 6,
+    "suzerain_end": 3
+   },
+   "violent_end_share": 0.406,
+   "indep_share": 0.531,
+   "next": {
+    "INDEP": 20,
+    "T20": 6,
+    "other_suzerain_or_type": 6
+   }
+  }
+ },
+ "all": {
+  "n": 131,
+  "km_median": 55.0,
+  "km_q25_q75": [
+   30.0,
+   147.0
+  ],
+  "curve": [
+   [
+    2.0,
+    0.9924
+   ],
+   [
+    3.0,
+    0.9847
+   ],
+   [
+    4.0,
+    0.9695
+   ],
+   [
+    5.0,
+    0.9542
+   ],
+   [
+    6.0,
+    0.9237
+   ],
+   [
+    7.0,
+    0.916
+   ],
+   [
+    8.0,
+    0.9084
+   ],
+   [
+    10.0,
+    0.9008
+   ],
+   [
+    11.0,
+    0.8855
+   ],
+   [
+    12.0,
+    0.8779
+   ],
+   [
+    13.0,
+    0.8702
+   ],
+   [
+    14.0,
+    0.855
+   ],
+   [
+    15.0,
+    0.8321
+   ],
+   [
+    16.0,
+    0.8244
+   ],
+   [
+    20.0,
+    0.8168
+   ],
+   [
+    21.0,
+    0.8015
+   ],
+   [
+    23.0,
+    0.7939
+   ],
+   [
+    25.0,
+    0.771
+   ],
+   [
+    27.0,
+    0.7634
+   ],
+   [
+    29.0,
+    0.7557
+   ],
+   [
+    30.0,
+    0.7481
+   ],
+   [
+    31.0,
+    0.7405
+   ],
+   [
+    32.0,
+    0.7252
+   ],
+   [
+    33.0,
+    0.7098
+   ],
+   [
+    34.0,
+    0.702
+   ],
+   [
+    36.0,
+    0.6943
+   ],
+   [
+    37.0,
+    0.6866
+   ],
+   [
+    38.0,
+    0.6789
+   ],
+   [
+    39.0,
+    0.6635
+   ],
+   [
+    40.0,
+    0.6403
+   ],
+   [
+    41.0,
+    0.6087
+   ],
+   [
+    42.0,
+    0.585
+   ],
+   [
+    43.0,
+    0.5771
+   ],
+   [
+    44.0,
+    0.5613
+   ],
+   [
+    47.0,
+    0.5455
+   ],
+   [
+    48.0,
+    0.5297
+   ],
+   [
+    50.0,
+    0.5217
+   ],
+   [
+    51.0,
+    0.5138
+   ],
+   [
+    52.0,
+    0.5059
+   ],
+   [
+    55.0,
+    0.4979
+   ],
+   [
+    57.0,
+    0.4818
+   ],
+   [
+    60.0,
+    0.4738
+   ],
+   [
+    62.0,
+    0.4656
+   ],
+   [
+    64.0,
+    0.4493
+   ],
+   [
+    65.0,
+    0.4411
+   ],
+   [
+    66.0,
+    0.433
+   ],
+   [
+    70.0,
+    0.4166
+   ],
+   [
+    73.0,
+    0.4085
+   ],
+   [
+    74.0,
+    0.4003
+   ],
+   [
+    75.0,
+    0.384
+   ],
+   [
+    83.0,
+    0.3594
+   ],
+   [
+    90.0,
+    0.3513
+   ],
+   [
+    91.0,
+    0.3431
+   ],
+   [
+    93.0,
+    0.3349
+   ],
+   [
+    95.0,
+    0.3268
+   ],
+   [
+    100.0,
+    0.3186
+   ],
+   [
+    101.0,
+    0.3104
+   ],
+   [
+    104.0,
+    0.3023
+   ],
+   [
+    107.0,
+    0.2941
+   ],
+   [
+    114.0,
+    0.2859
+   ],
+   [
+    123.0,
+    0.2778
+   ],
+   [
+    125.0,
+    0.2696
+   ],
+   [
+    126.0,
+    0.2614
+   ],
+   [
+    132.0,
+    0.2532
+   ],
+   [
+    147.0,
+    0.2451
+   ],
+   [
+    148.0,
+    0.2369
+   ],
+   [
+    149.0,
+    0.2287
+   ],
+   [
+    150.0,
+    0.2206
+   ],
+   [
+    174.0,
+    0.2124
+   ],
+   [
+    180.0,
+    0.2042
+   ],
+   [
+    184.0,
+    0.1961
+   ],
+   [
+    188.0,
+    0.1879
+   ],
+   [
+    192.0,
+    0.1797
+   ],
+   [
+    201.0,
+    0.1716
+   ],
+   [
+    220.0,
+    0.1634
+   ],
+   [
+    225.0,
+    0.1552
+   ],
+   [
+    245.0,
+    0.147
+   ],
+   [
+    258.0,
+    0.1389
+   ],
+   [
+    268.0,
+    0.098
+   ],
+   [
+    276.0,
+    0.0899
+   ],
+   [
+    293.0,
+    0.0817
+   ],
+   [
+    299.0,
+    0.0735
+   ],
+   [
+    319.0,
+    0.0654
+   ],
+   [
+    321.0,
+    0.0572
+   ],
+   [
+    350.0,
+    0.049
+   ],
+   [
+    402.0,
+    0.0408
+   ],
+   [
+    434.0,
+    0.0327
+   ],
+   [
+    457.0,
+    0.0245
+   ],
+   [
+    507.0,
+    0.0163
+   ],
+   [
+    522.0,
+    0.0082
+   ],
+   [
+    715.0,
+    0.0
+   ]
+  ]
+ },
+ "cox": {
+  "M1_family_any_end": {
+   "name": "型の家族 (基準: 直轄) + 始まりの世紀",
+   "n": 131,
+   "events": 126,
+   "terms": [
+    {
+     "name": "family=ritual",
+     "coef": -0.7618,
+     "se": 0.4156,
+     "ci95": [
+      -1.5765,
+      0.0528
+     ],
+     "p": 0.0668,
+     "hr": 0.4668,
+     "hr_ci95": [
+      0.2067,
+      1.0542
+     ]
+    },
+    {
+     "name": "family=treaty",
+     "coef": 0.0915,
+     "se": 0.2859,
+     "ci95": [
+      -0.4688,
+      0.6518
+     ],
+     "p": 0.749,
+     "hr": 1.0958,
+     "hr_ci95": [
+      0.6257,
+      1.919
+     ]
+    },
+    {
+     "name": "family=legal",
+     "coef": -0.1717,
+     "se": 0.4456,
+     "ci95": [
+      -1.0451,
+      0.7016
+     ],
+     "p": 0.6999,
+     "hr": 0.8422,
+     "hr_ci95": [
+      0.3517,
+      2.017
+     ]
+    },
+    {
+     "name": "family=settler",
+     "coef": -0.143,
+     "se": 0.4174,
+     "ci95": [
+      -0.9611,
+      0.6752
+     ],
+     "p": 0.732,
+     "hr": 0.8668,
+     "hr_ci95": [
+      0.3825,
+      1.9644
+     ]
+    },
+    {
+     "name": "family=client",
+     "coef": 0.6251,
+     "se": 0.365,
+     "ci95": [
+      -0.0903,
+      1.3405
+     ],
+     "p": 0.0868,
+     "hr": 1.8684,
+     "hr_ci95": [
+      0.9136,
+      3.8209
+     ]
+    },
+    {
+     "name": "family=dynastic",
+     "coef": -0.1808,
+     "se": 0.3896,
+     "ci95": [
+      -0.9444,
+      0.5828
+     ],
+     "p": 0.6426,
+     "hr": 0.8346,
+     "hr_ci95": [
+      0.3889,
+      1.791
+     ]
+    },
+    {
+     "name": "start_century",
+     "coef": 0.6994,
+     "se": 0.1308,
+     "ci95": [
+      0.443,
+      0.9559
+     ],
+     "p": 0.0,
+     "hr": 2.0126,
+     "hr_ci95": [
+      1.5574,
+      2.6009
+     ]
+    }
+   ]
+  },
+  "M1_family_independence": {
+   "name": "型の家族 (基準: 直轄) + 始まりの世紀",
+   "n": 131,
+   "events": 61,
+   "terms": [
+    {
+     "name": "family=ritual",
+     "coef": -0.6056,
+     "se": 0.6409,
+     "ci95": [
+      -1.8617,
+      0.6506
+     ],
+     "p": 0.3447,
+     "hr": 0.5458,
+     "hr_ci95": [
+      0.1554,
+      1.9166
+     ]
+    },
+    {
+     "name": "family=treaty",
+     "coef": 0.1841,
+     "se": 0.3995,
+     "ci95": [
+      -0.599,
+      0.9672
+     ],
+     "p": 0.645,
+     "hr": 1.2021,
+     "hr_ci95": [
+      0.5493,
+      2.6305
+     ]
+    },
+    {
+     "name": "family=legal",
+     "coef": 0.1865,
+     "se": 0.5588,
+     "ci95": [
+      -0.9088,
+      1.2818
+     ],
+     "p": 0.7386,
+     "hr": 1.2051,
+     "hr_ci95": [
+      0.403,
+      3.6033
+     ]
+    },
+    {
+     "name": "family=settler",
+     "coef": 0.4703,
+     "se": 0.5047,
+     "ci95": [
+      -0.5189,
+      1.4595
+     ],
+     "p": 0.3514,
+     "hr": 1.6004,
+     "hr_ci95": [
+      0.5952,
+      4.3036
+     ]
+    },
+    {
+     "name": "family=client",
+     "coef": 0.5212,
+     "se": 0.5412,
+     "ci95": [
+      -0.5396,
+      1.582
+     ],
+     "p": 0.3356,
+     "hr": 1.684,
+     "hr_ci95": [
+      0.583,
+      4.8646
+     ]
+    },
+    {
+     "name": "family=dynastic",
+     "coef": -0.0294,
+     "se": 0.5519,
+     "ci95": [
+      -1.111,
+      1.0522
+     ],
+     "p": 0.9575,
+     "hr": 0.971,
+     "hr_ci95": [
+      0.3292,
+      2.8641
+     ]
+    },
+    {
+     "name": "start_century",
+     "coef": 0.758,
+     "se": 0.2089,
+     "ci95": [
+      0.3485,
+      1.1674
+     ],
+     "p": 0.0003,
+     "hr": 2.1339,
+     "hr_ci95": [
+      1.4169,
+      3.2137
+     ]
+    }
+   ]
+  }
+ },
+ "violence": {
+  "by_type": {
+   "T01": 0.0,
+   "T02": 0.4,
+   "T03": 0.875,
+   "T04": 0.125,
+   "T05": 0.0,
+   "T06": 0.4,
+   "T07": 0.286,
+   "T08": 0.167,
+   "T09": 0.286,
+   "T10": 0.0,
+   "T11": 0.0,
+   "T12": 0.0,
+   "T13": 0.571,
+   "T14": 0.167,
+   "T15": 0.286,
+   "T16": 0.333,
+   "T17": 0.0,
+   "T18": 0.286,
+   "T19": 0.2,
+   "T20": 0.5
+  },
+  "by_family": {
+   "client": 0.0,
+   "colony": 0.35,
+   "dynastic": 0.308,
+   "legal": 0.0,
+   "ritual": 0.222,
+   "settler": 0.0,
+   "treaty": 0.406
+  },
+  "by_suzerain_kind": {
+   "company": {
+    "n": 12,
+    "share": 0.25
+   },
+   "concert": {
+    "n": 2,
+    "share": 0.0
+   },
+   "feudal_kingdom": {
+    "n": 6,
+    "share": 0.667
+   },
+   "land_empire": {
+    "n": 34,
+    "share": 0.176
+   },
+   "maritime_empire": {
+    "n": 63,
+    "share": 0.254
+   },
+   "papacy": {
+    "n": 1,
+    "share": 0.0
+   },
+   "personal_union": {
+    "n": 7,
+    "share": 0.286
+   },
+   "shogunate": {
+    "n": 6,
+    "share": 0.167
+   }
+  },
+  "by_fact_mil": {}
+ },
+ "qca": {
+  "peaceful_independence": {
+   "outcome": "戦争なしの独立",
+   "n": 126,
+   "outcome_share": 0.349,
+   "truth_table": [
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 19,
+     "consistency": 0.16,
+     "cases": [
+      "T01-04",
+      "T01-06",
+      "T02-01",
+      "T02-02",
+      "T02-03",
+      "T02-05",
+      "T08-04",
+      "T08-05",
+      "T08-06",
+      "T10-04",
+      "T10-07",
+      "T11-03",
+      "T11-05",
+      "T13-06",
+      "T14-01",
+      "T14-02",
+      "T14-03",
+      "T14-04",
+      "T14-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 18,
+     "consistency": 0.44,
+     "cases": [
+      "T03-06",
+      "T03-08",
+      "T04-05",
+      "T04-06",
+      "T04-07",
+      "T06-01",
+      "T06-02",
+      "T06-03",
+      "T06-04",
+      "T07-01",
+      "T07-04",
+      "T07-05",
+      "T08-01",
+      "T08-02",
+      "T08-03",
+      "T17-04",
+      "T20-02",
+      "T20-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 11,
+     "consistency": 0.45,
+     "cases": [
+      "T01-01",
+      "T01-02",
+      "T11-01",
+      "T13-01",
+      "T13-02",
+      "T13-03",
+      "T13-04",
+      "T13-05",
+      "T13-07",
+      "T15-05",
+      "T15-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 11,
+     "consistency": 0.73,
+     "cases": [
+      "T03-05",
+      "T05-03",
+      "T05-05",
+      "T06-05",
+      "T07-06",
+      "T07-07",
+      "T12-06",
+      "T12-07",
+      "T19-02",
+      "T19-05",
+      "T20-03"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 8,
+     "consistency": 0.25,
+     "cases": [
+      "T04-02",
+      "T04-04",
+      "T11-02",
+      "T18-01",
+      "T18-02",
+      "T18-03",
+      "T18-04",
+      "T18-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 7,
+     "consistency": 0.14,
+     "cases": [
+      "T01-03",
+      "T10-05",
+      "T10-06",
+      "T14-05",
+      "T15-01",
+      "T16-05",
+      "T18-05"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 7,
+     "consistency": 0.57,
+     "cases": [
+      "T03-04",
+      "T05-07",
+      "T07-02",
+      "T16-06",
+      "T17-01",
+      "T17-02",
+      "T20-05"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 6,
+     "consistency": 0.0,
+     "cases": [
+      "T04-08",
+      "T09-03",
+      "T09-04",
+      "T09-05",
+      "T09-06",
+      "T09-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 5,
+     "consistency": 0.8,
+     "cases": [
+      "T05-06",
+      "T19-01",
+      "T19-03",
+      "T19-04",
+      "T20-04"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 4,
+     "consistency": 0.0,
+     "cases": [
+      "T03-03",
+      "T10-01",
+      "T10-03",
+      "T17-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 4,
+     "consistency": 0.0,
+     "cases": [
+      "T04-01",
+      "T04-03",
+      "T15-02",
+      "T15-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 1
+     },
+     "n": 4,
+     "consistency": 0.25,
+     "cases": [
+      "T07-03",
+      "T16-01",
+      "T16-02",
+      "T16-03"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 4,
+     "consistency": 0.0,
+     "cases": [
+      "T15-03",
+      "T15-04",
+      "T16-04",
+      "T18-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 3,
+     "consistency": 0.33,
+     "cases": [
+      "T02-04",
+      "T03-07",
+      "T11-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 3,
+     "consistency": 0.0,
+     "cases": [
+      "T03-01",
+      "T10-02",
+      "T20-01"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 3,
+     "consistency": 0.33,
+     "cases": [
+      "T03-02",
+      "T17-03",
+      "T17-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 3,
+     "consistency": 1.0,
+     "cases": [
+      "T05-01",
+      "T05-02",
+      "T05-04"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 2,
+     "consistency": 0.0,
+     "cases": [
+      "T09-01",
+      "T09-02"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 2,
+     "consistency": 0.5,
+     "cases": [
+      "T11-04",
+      "T11-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 1,
+     "consistency": 1.0,
+     "cases": [
+      "T01-05"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 1,
+     "consistency": 1.0,
+     "cases": [
+      "T17-05"
+     ]
+    }
+   ],
+   "sufficient": [
+    {
+     "conditions": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 1,
+      "maritime": 1
+     },
+     "n": 5,
+     "consistency": 0.8
+    },
+    {
+     "conditions": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 1
+     },
+     "n": 3,
+     "consistency": 1.0
+    }
+   ]
+  },
+  "annexation": {
+   "outcome": "宗主への併合",
+   "n": 126,
+   "outcome_share": 0.175,
+   "truth_table": [
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 19,
+     "consistency": 0.47,
+     "cases": [
+      "T01-04",
+      "T01-06",
+      "T02-01",
+      "T02-02",
+      "T02-03",
+      "T02-05",
+      "T08-04",
+      "T08-05",
+      "T08-06",
+      "T10-04",
+      "T10-07",
+      "T11-03",
+      "T11-05",
+      "T13-06",
+      "T14-01",
+      "T14-02",
+      "T14-03",
+      "T14-04",
+      "T14-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 18,
+     "consistency": 0.06,
+     "cases": [
+      "T03-06",
+      "T03-08",
+      "T04-05",
+      "T04-06",
+      "T04-07",
+      "T06-01",
+      "T06-02",
+      "T06-03",
+      "T06-04",
+      "T07-01",
+      "T07-04",
+      "T07-05",
+      "T08-01",
+      "T08-02",
+      "T08-03",
+      "T17-04",
+      "T20-02",
+      "T20-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 11,
+     "consistency": 0.27,
+     "cases": [
+      "T01-01",
+      "T01-02",
+      "T11-01",
+      "T13-01",
+      "T13-02",
+      "T13-03",
+      "T13-04",
+      "T13-05",
+      "T13-07",
+      "T15-05",
+      "T15-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 11,
+     "consistency": 0.09,
+     "cases": [
+      "T03-05",
+      "T05-03",
+      "T05-05",
+      "T06-05",
+      "T07-06",
+      "T07-07",
+      "T12-06",
+      "T12-07",
+      "T19-02",
+      "T19-05",
+      "T20-03"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 8,
+     "consistency": 0.0,
+     "cases": [
+      "T04-02",
+      "T04-04",
+      "T11-02",
+      "T18-01",
+      "T18-02",
+      "T18-03",
+      "T18-04",
+      "T18-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 7,
+     "consistency": 0.29,
+     "cases": [
+      "T01-03",
+      "T10-05",
+      "T10-06",
+      "T14-05",
+      "T15-01",
+      "T16-05",
+      "T18-05"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 7,
+     "consistency": 0.0,
+     "cases": [
+      "T03-04",
+      "T05-07",
+      "T07-02",
+      "T16-06",
+      "T17-01",
+      "T17-02",
+      "T20-05"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 6,
+     "consistency": 0.0,
+     "cases": [
+      "T04-08",
+      "T09-03",
+      "T09-04",
+      "T09-05",
+      "T09-06",
+      "T09-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 5,
+     "consistency": 0.0,
+     "cases": [
+      "T05-06",
+      "T19-01",
+      "T19-03",
+      "T19-04",
+      "T20-04"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 4,
+     "consistency": 0.25,
+     "cases": [
+      "T03-03",
+      "T10-01",
+      "T10-03",
+      "T17-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 4,
+     "consistency": 0.5,
+     "cases": [
+      "T04-01",
+      "T04-03",
+      "T15-02",
+      "T15-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 1
+     },
+     "n": 4,
+     "consistency": 0.25,
+     "cases": [
+      "T07-03",
+      "T16-01",
+      "T16-02",
+      "T16-03"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 4,
+     "consistency": 0.0,
+     "cases": [
+      "T15-03",
+      "T15-04",
+      "T16-04",
+      "T18-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 3,
+     "consistency": 0.67,
+     "cases": [
+      "T02-04",
+      "T03-07",
+      "T11-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 3,
+     "consistency": 0.0,
+     "cases": [
+      "T03-01",
+      "T10-02",
+      "T20-01"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 3,
+     "consistency": 0.0,
+     "cases": [
+      "T03-02",
+      "T17-03",
+      "T17-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 3,
+     "consistency": 0.0,
+     "cases": [
+      "T05-01",
+      "T05-02",
+      "T05-04"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 2,
+     "consistency": 0.0,
+     "cases": [
+      "T09-01",
+      "T09-02"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 2,
+     "consistency": 0.0,
+     "cases": [
+      "T11-04",
+      "T11-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 1,
+     "consistency": 0.0,
+     "cases": [
+      "T01-05"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 1,
+     "consistency": 0.0,
+     "cases": [
+      "T17-05"
+     ]
+    }
+   ],
+   "sufficient": []
+  },
+  "violent_end": {
+   "outcome": "終わりに暴力",
+   "n": 126,
+   "outcome_share": 0.254,
+   "truth_table": [
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 19,
+     "consistency": 0.21,
+     "cases": [
+      "T01-04",
+      "T01-06",
+      "T02-01",
+      "T02-02",
+      "T02-03",
+      "T02-05",
+      "T08-04",
+      "T08-05",
+      "T08-06",
+      "T10-04",
+      "T10-07",
+      "T11-03",
+      "T11-05",
+      "T13-06",
+      "T14-01",
+      "T14-02",
+      "T14-03",
+      "T14-04",
+      "T14-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 18,
+     "consistency": 0.28,
+     "cases": [
+      "T03-06",
+      "T03-08",
+      "T04-05",
+      "T04-06",
+      "T04-07",
+      "T06-01",
+      "T06-02",
+      "T06-03",
+      "T06-04",
+      "T07-01",
+      "T07-04",
+      "T07-05",
+      "T08-01",
+      "T08-02",
+      "T08-03",
+      "T17-04",
+      "T20-02",
+      "T20-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 11,
+     "consistency": 0.36,
+     "cases": [
+      "T01-01",
+      "T01-02",
+      "T11-01",
+      "T13-01",
+      "T13-02",
+      "T13-03",
+      "T13-04",
+      "T13-05",
+      "T13-07",
+      "T15-05",
+      "T15-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 11,
+     "consistency": 0.09,
+     "cases": [
+      "T03-05",
+      "T05-03",
+      "T05-05",
+      "T06-05",
+      "T07-06",
+      "T07-07",
+      "T12-06",
+      "T12-07",
+      "T19-02",
+      "T19-05",
+      "T20-03"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 8,
+     "consistency": 0.25,
+     "cases": [
+      "T04-02",
+      "T04-04",
+      "T11-02",
+      "T18-01",
+      "T18-02",
+      "T18-03",
+      "T18-04",
+      "T18-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 7,
+     "consistency": 0.0,
+     "cases": [
+      "T01-03",
+      "T10-05",
+      "T10-06",
+      "T14-05",
+      "T15-01",
+      "T16-05",
+      "T18-05"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 7,
+     "consistency": 0.43,
+     "cases": [
+      "T03-04",
+      "T05-07",
+      "T07-02",
+      "T16-06",
+      "T17-01",
+      "T17-02",
+      "T20-05"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 6,
+     "consistency": 0.17,
+     "cases": [
+      "T04-08",
+      "T09-03",
+      "T09-04",
+      "T09-05",
+      "T09-06",
+      "T09-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 5,
+     "consistency": 0.0,
+     "cases": [
+      "T05-06",
+      "T19-01",
+      "T19-03",
+      "T19-04",
+      "T20-04"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 4,
+     "consistency": 0.25,
+     "cases": [
+      "T03-03",
+      "T10-01",
+      "T10-03",
+      "T17-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 4,
+     "consistency": 0.25,
+     "cases": [
+      "T04-01",
+      "T04-03",
+      "T15-02",
+      "T15-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 1
+     },
+     "n": 4,
+     "consistency": 0.75,
+     "cases": [
+      "T07-03",
+      "T16-01",
+      "T16-02",
+      "T16-03"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 4,
+     "consistency": 0.25,
+     "cases": [
+      "T15-03",
+      "T15-04",
+      "T16-04",
+      "T18-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 3,
+     "consistency": 0.67,
+     "cases": [
+      "T02-04",
+      "T03-07",
+      "T11-06"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 3,
+     "consistency": 0.67,
+     "cases": [
+      "T03-01",
+      "T10-02",
+      "T20-01"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 3,
+     "consistency": 0.33,
+     "cases": [
+      "T03-02",
+      "T17-03",
+      "T17-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 1
+     },
+     "n": 3,
+     "consistency": 0.0,
+     "cases": [
+      "T05-01",
+      "T05-02",
+      "T05-04"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 2,
+     "consistency": 0.5,
+     "cases": [
+      "T09-01",
+      "T09-02"
+     ]
+    },
+    {
+     "config": {
+      "far": 0,
+      "big": 0,
+      "close_culture": 0,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 2,
+     "consistency": 0.0,
+     "cases": [
+      "T11-04",
+      "T11-07"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 0,
+      "close_culture": 1,
+      "contiguous": 0,
+      "maritime": 0
+     },
+     "n": 1,
+     "consistency": 0.0,
+     "cases": [
+      "T01-05"
+     ]
+    },
+    {
+     "config": {
+      "far": 1,
+      "big": 1,
+      "close_culture": 0,
+      "contiguous": 1,
+      "maritime": 0
+     },
+     "n": 1,
+     "consistency": 0.0,
+     "cases": [
+      "T17-05"
+     ]
+    }
+   ],
+   "sufficient": []
+  }
+ },
+ "conditions_to_family": {
+  "far=0,big=0,culture=1,contiguous=1,maritime=0": {
+   "ritual": 6,
+   "dynastic": 9,
+   "client": 4
+  },
+  "far=1,big=0,culture=0,contiguous=0,maritime=1": {
+   "treaty": 9,
+   "colony": 5,
+   "dynastic": 3,
+   "legal": 1
+  },
+  "far=1,big=0,culture=1,contiguous=0,maritime=1": {
+   "treaty": 4,
+   "settler": 8,
+   "colony": 3
+  },
+  "far=0,big=1,culture=1,contiguous=1,maritime=0": {
+   "ritual": 2,
+   "client": 1,
+   "dynastic": 8
+  },
+  "far=0,big=0,culture=0,contiguous=1,maritime=0": {
+   "treaty": 2,
+   "client": 1,
+   "ritual": 5
+  },
+  "far=0,big=0,culture=1,contiguous=0,maritime=0": {
+   "ritual": 2,
+   "client": 2,
+   "dynastic": 2,
+   "treaty": 1
+  },
+  "far=1,big=1,culture=0,contiguous=0,maritime=1": {
+   "treaty": 2,
+   "settler": 1,
+   "colony": 2,
+   "legal": 2
+  },
+  "far=1,big=0,culture=0,contiguous=0,maritime=0": {
+   "treaty": 1,
+   "colony": 5
+  },
+  "far=0,big=0,culture=1,contiguous=0,maritime=1": {
+   "settler": 2,
+   "treaty": 3,
+   "colony": 1
+  },
+  "far=0,big=1,culture=1,contiguous=0,maritime=1": {
+   "treaty": 1,
+   "client": 2,
+   "legal": 1
+  },
+  "far=0,big=1,culture=0,contiguous=1,maritime=0": {
+   "treaty": 2,
+   "dynastic": 2
+  },
+  "far=0,big=0,culture=0,contiguous=1,maritime=1": {
+   "colony": 1,
+   "treaty": 3
+  },
+  "far=0,big=1,culture=1,contiguous=0,maritime=0": {
+   "dynastic": 2,
+   "treaty": 1,
+   "ritual": 1
+  },
+  "far=1,big=0,culture=0,contiguous=1,maritime=0": {
+   "ritual": 1,
+   "treaty": 1,
+   "client": 1
+  },
+  "far=0,big=0,culture=0,contiguous=0,maritime=1": {
+   "treaty": 1,
+   "client": 1,
+   "colony": 1
+  },
+  "far=0,big=1,culture=0,contiguous=0,maritime=1": {
+   "treaty": 1,
+   "legal": 2
+  },
+  "far=1,big=1,culture=1,contiguous=0,maritime=1": {
+   "settler": 3
+  },
+  "far=1,big=1,culture=0,contiguous=0,maritime=0": {
+   "colony": 2
+  },
+  "far=0,big=0,culture=0,contiguous=0,maritime=0": {
+   "client": 2
+  },
+  "far=1,big=0,culture=1,contiguous=0,maritime=0": {
+   "ritual": 1
+  },
+  "far=1,big=1,culture=0,contiguous=1,maritime=0": {
+   "legal": 1
+  }
+ },
+ "condition_marginals": {
+  "far=0": {
+   "n": 75,
+   "family_share": {
+    "ritual": 0.21,
+    "treaty": 0.2,
+    "legal": 0.04,
+    "settler": 0.03,
+    "colony": 0.04,
+    "client": 0.17,
+    "dynastic": 0.31
+   }
+  },
+  "far=1": {
+   "n": 56,
+   "family_share": {
+    "ritual": 0.04,
+    "treaty": 0.3,
+    "legal": 0.07,
+    "settler": 0.21,
+    "colony": 0.3,
+    "client": 0.02,
+    "dynastic": 0.05
+   }
+  },
+  "big=0": {
+   "n": 92,
+   "family_share": {
+    "ritual": 0.16,
+    "treaty": 0.27,
+    "legal": 0.01,
+    "settler": 0.11,
+    "colony": 0.17,
+    "client": 0.12,
+    "dynastic": 0.15
+   }
+  },
+  "big=1": {
+   "n": 39,
+   "family_share": {
+    "ritual": 0.08,
+    "treaty": 0.18,
+    "legal": 0.15,
+    "settler": 0.1,
+    "colony": 0.1,
+    "client": 0.08,
+    "dynastic": 0.31
+   }
+  },
+  "close_culture=0": {
+   "n": 61,
+   "family_share": {
+    "ritual": 0.1,
+    "treaty": 0.36,
+    "legal": 0.1,
+    "settler": 0.02,
+    "colony": 0.26,
+    "client": 0.08,
+    "dynastic": 0.08
+   }
+  },
+  "close_culture=1": {
+   "n": 70,
+   "family_share": {
+    "ritual": 0.17,
+    "treaty": 0.14,
+    "legal": 0.01,
+    "settler": 0.19,
+    "colony": 0.06,
+    "client": 0.13,
+    "dynastic": 0.3
+   }
+  },
+  "contiguous=0": {
+   "n": 81,
+   "family_share": {
+    "ritual": 0.05,
+    "treaty": 0.3,
+    "legal": 0.07,
+    "settler": 0.17,
+    "colony": 0.23,
+    "client": 0.09,
+    "dynastic": 0.09
+   }
+  },
+  "contiguous=1": {
+   "n": 50,
+   "family_share": {
+    "ritual": 0.28,
+    "treaty": 0.16,
+    "legal": 0.02,
+    "settler": 0.0,
+    "colony": 0.02,
+    "client": 0.14,
+    "dynastic": 0.38
+   }
+  },
+  "maritime=0": {
+   "n": 68,
+   "family_share": {
+    "ritual": 0.26,
+    "treaty": 0.12,
+    "legal": 0.01,
+    "settler": 0.0,
+    "colony": 0.1,
+    "client": 0.16,
+    "dynastic": 0.34
+   }
+  },
+  "maritime=1": {
+   "n": 63,
+   "family_share": {
+    "ritual": 0.0,
+    "treaty": 0.38,
+    "legal": 0.1,
+    "settler": 0.22,
+    "colony": 0.21,
+    "client": 0.05,
+    "dynastic": 0.05
+   }
+  }
+ }
+}
