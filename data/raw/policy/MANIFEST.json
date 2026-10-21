@@ -1,0 +1,20 @@
+[
+ {
+  "file": "bis_cbpol.csv.gz",
+  "url": "https://stats.bis.org/api/v1/data/WS_CBPOL/M.?format=csv",
+  "fetched": "2026-10-21T07:57:15Z",
+  "sha256": "660acdd3dbd6f4fb0eaa2277320c3343a672d2e4249c42b6d2728a8aef7f8976",
+  "bytes": 163177,
+  "rows": 25134,
+  "note": "中央銀行の政策金利 (月次、期末)。列は BIS の SDMX の CSV のまま"
+ },
+ {
+  "file": "wdi_policy.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{FP.CPI.TOTL.ZG,FR.INR.LEND,FR.INR.DPST,GC.TAX.TOTL.GD.ZS,GC.XPN.TOTL.GD.ZS,GC.DOD.TOTL.GD.ZS,GC.NLD.TOTL.GD.ZS,TM.TAX.MRCH.WM.AR.ZS,GC.TAX.GSRV.RV.ZS,GC.TAX.YPKG.RV.ZS,GC.TAX.INTT.RV.ZS,FM.LBL.BMNY.GD.ZS}",
+  "fetched": "2026-10-21T07:57:29Z",
+  "sha256": "35b53f378274397fd5c1de45852b5f39781f21d8541a8781497206a431d14fe8",
+  "bytes": 675206,
+  "rows": 59163,
+  "filter": "国だけ (地域の集計を除く)・1960〜2024 年"
+ }
+]
