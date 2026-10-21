@@ -111,7 +111,28 @@ def main():
     for tid, r in out['by_type'].items():
         r['name'] = V['types'][tid]['name']; r['family'] = FAMILY[tid]
     allc, q = km_curve([c['duration'] for c in cases], [c['event_any'] for c in cases])
+    # 家族ごとの中央値 ÷ 全体の中央値 (時間の物差しによらない比。ゲーム版は 1 世代を 100 年にし、存続も長めにしているので、目標には比を使う)
+    # 事例全体を引き直すブートストラップの 90% 区間 (2000 回、乱数の種は固定)
+    rng2 = np.random.default_rng(20261022)
+    fams_all = sorted({c['family'] for c in cases})
+    ratios = {f: [] for f in fams_all}
+    for _ in range(2000):
+        pick = [cases[i] for i in rng2.integers(0, len(cases), len(cases))]
+        _, qa = km_curve([c['duration'] for c in pick], [c['event_any'] for c in pick])
+        if qa.get(0.5) is None:
+            continue
+        for f in fams_all:
+            cs = [c for c in pick if c['family'] == f]
+            if not cs:
+                continue
+            _, qf = km_curve([c['duration'] for c in cs], [c['event_any'] for c in cs])
+            if qf.get(0.5) is not None:
+                ratios[f].append(qf[0.5] / qa[0.5])
     out['all'] = {'n': len(cases), 'km_median': q.get(0.5), 'km_q25_q75': [q.get(0.75), q.get(0.25)], 'curve': allc}
+    for f in fams_all:
+        r = out['by_family'][f]
+        r['median_ratio'] = round(r['km_median'] / q[0.5], 3) if r['km_median'] else None
+        r['median_ratio_boot90'] = [round(float(np.percentile(ratios[f], 5)), 3), round(float(np.percentile(ratios[f], 95)), 3)] if ratios[f] else None
 
     # ---- Cox ----
     have_bundle = all('bundle' in c for c in cases)

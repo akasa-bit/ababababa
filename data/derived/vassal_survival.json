@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-21T12:59:41Z",
+ "generated": "2026-10-21T13:01:31Z",
  "n": 131,
  "bundle_source": {
   "final": 131
@@ -1161,6 +1161,11 @@
    "violent_end_boot90": [
     0.0,
     0.0
+   ],
+   "median_ratio": 0.236,
+   "median_ratio_boot90": [
+    0.092,
+    0.833
    ]
   },
   "colony": {
@@ -1235,6 +1240,11 @@
    "violent_end_boot90": [
     0.2,
     0.55
+   ],
+   "median_ratio": 0.782,
+   "median_ratio_boot90": [
+    0.609,
+    1.048
    ]
   },
   "dynastic": {
@@ -1319,6 +1329,11 @@
    "violent_end_boot90": [
     0.154,
     0.462
+   ],
+   "median_ratio": 2.236,
+   "median_ratio_boot90": [
+    1.451,
+    4.873
    ]
   },
   "legal": {
@@ -1379,6 +1394,11 @@
    "violent_end_boot90": [
     0.0,
     0.0
+   ],
+   "median_ratio": 1.509,
+   "median_ratio_boot90": [
+    0.561,
+    2.083
    ]
   },
   "ritual": {
@@ -1456,6 +1476,11 @@
    "violent_end_boot90": [
     0.056,
     0.389
+   ],
+   "median_ratio": 4.0,
+   "median_ratio_boot90": [
+    2.909,
+    5.75
    ]
   },
   "settler": {
@@ -1524,6 +1549,11 @@
    "violent_end_boot90": [
     0.0,
     0.0
+   ],
+   "median_ratio": 0.727,
+   "median_ratio_boot90": [
+    0.312,
+    1.164
    ]
   },
   "treaty": {
@@ -1612,6 +1642,11 @@
    "violent_end_boot90": [
     0.281,
     0.562
+   ],
+   "median_ratio": 0.727,
+   "median_ratio_boot90": [
+    0.544,
+    1.04
    ]
   }
  },
