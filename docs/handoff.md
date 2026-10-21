@@ -85,7 +85,7 @@
 - **試験の家臣の選び方**: 星系の数や試合の筋が変わると、`regime.js` のように「家臣を 3 つ選ぶ」試験が外れる。指令は地球に届いている記録 (`known`) で判断されるので、試験でも `g.known(id)?.lord` を見る。
 - **銀河の版**: 星の表を変えずに使う星を変えるときは、`GALAXY_GEN` を上げて、古い版のセーブは古い作り方のまま読む (版 3 = `THIN_SLAB` の板)。星系の番号は並びの位置 (`systems[id]`) なので、間を飛ばさない。
 
-- `src/index.html` を直したら、かならず `node tools/build.mjs` で 2 つの版を作り直す。試験は公開用の HTML を開いて動かす。
+- `src/` を直したら、手元で試すときは `node tools/build.mjs` でゲーム版を作り直す (試験は公開用の HTML を開いて動かす)。組み立てた `index.html` はコミットしない (回 R3。`docs/src-files.md` の 3)。
 - **決まった計算**: 試合と銀河の計算に `Math.pow`・`**`・`Math.exp/log/sin/cos/cbrt/atanh/hypot/log10` を書かない。`GM.pow(…)` などを使う (`DMath`。ブラウザの版で末尾の桁が変わらない)。画面の描画は `Math` でよい。守らないと `tools/tests/headless.js` が落ち、ネット対戦が端末の間でずれる
 - **CI**: PR を作ると GitHub Actions (`.github/workflows/ci.yml`) が試験と自動対戦を回し、表を PR のコメントに書く。マージの前にコメントの表がすべて合格か見る。手元では `node tools/ci-tests.js`
 - **画面なしの版**: `tools/headless.js` (Node で試合を回す。ボット・CI・つり合いの点検の土台)
@@ -114,7 +114,7 @@
 - `main` にプッシュすると、`.github/workflows/pages.yml` がリポジトリの根をそのまま GitHub Pages に公開する。
   - ゲーム版: https://akasa-bit.github.io/ababababa/
   - シミュレーション版: https://akasa-bit.github.io/ababababa/simulation.html
-- 公開されるのは、組み立て済みの `index.html` と `simulation.html` (と `assets/`)。**`src/index.html` を直したら、組み立てた 2 つの HTML も一緒にコミットする。** 忘れると、公開されているゲームに変更が入らない。
+- 公開されるのは、組み立てた `index.html` と `simulation.html` (と `assets/`)。**ゲーム版の `index.html` は、公開の手順 (`pages.yml`) が `src/` から組み立てる**ので、コミットしない (回 R3 から。`docs/src-files.md` の 3)。シミュレーション版 (凍結中) はリポジトリに入っているものを載せる。
 
 ## 9. 文書の地図
 
@@ -144,9 +144,9 @@
 | `tools/WARS-REPORT.md` | 戦争の自動対戦の報告 (MP7。リアルチェックの前のもの) |
 | `data/README.md` | 生データの取得と加工の手順・決まり・限界・出典 |
 
-## 10. ソースの地図 (`src/index.html`)
+## 10. ソースの地図 (`src/`)
 
-1 つのファイルに全部入っています。行番号は変わるので、名前で探してください。
+回 R3 で、場所ごとの 74 のファイルに分けた (`src/index.html` は骨組みで、`//#include` でつなぐ)。どの名前がどのファイルにあるかは `docs/src-files.md` の 5、または `grep -rn <名前> src/`。下は名前で探すときの手がかり。
 
 | 名前 | 中身 |
 |---|---|
@@ -194,7 +194,7 @@
 - `cloud.js`: `sync` の 2 つの要約が同じ、`hostSees` が参加者の名前、`roomClosed` が `true`、`errs` が `[]`。
 - `energy.js`: 1 行目が「R07 合格」(|比 − 1| の最大が 1e-6 以下)。
 - `conserve.js`: 1 行目が「R03 合格」で、「決まっていない出入り: なし」。
-- 古い版と比べるとき (読み込みの互換・描画の違い) は、`git show <コミット>:index.html > /tmp/old.html` で古い公開用の HTML を取り出して渡す (例: `node tools/tests/rotate.js shots /tmp/old.html`)。
+- 古い版と比べるとき (読み込みの互換・描画の違い) は、古いコミットで `node tools/build.mjs` を回すか (回 R3 より前のコミットなら `git show <コミット>:index.html > /tmp/old.html` で取り出せる)、その HTML を渡す (例: `node tools/tests/rotate.js shots /tmp/old.html`)。
 
 ## 15. 画面の決まり (ユーザーと決めたこと)
 
