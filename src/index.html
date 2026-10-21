@@ -1169,7 +1169,7 @@ const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番
 // 忠誠度の目標の内訳。目標 = 先頭から順に足した値 (0〜100 に収める)
 // 忠誠度の目標の内訳。距離は直接には小さく効き、主人の関与 (指令・援助・艦隊・視察) が途絶えた年数が大きく効く
 // (遠い星系ほど関与が届くのに時間と政治力がかかるので、距離は間接的に効く)
-function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = 'indirect', concession = false, policy = null, exhaustion = 0, tax = 'normal', ctax = 0, welfare = 0 }) {
+function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = BASE_REGIME, concession = false, policy = null, exhaustion = 0, tax = 'normal', ctax = 0, welfare = 0 }) {
   const taxK = burdenK({ tax, ctax });
   return [
     { label: '基準', v: 85 },
@@ -1855,32 +1855,41 @@ const MANDATE_NOTE = { balanced: '入植・開発・交易をほどほどに', e
 // 総督の方針: 不満を持った星系が要求を出したとき、地球に問い合わせずに現地で決める方針 (光速の指令で前もって預けておく)
 const GOVERNOR = { ask: '地球の判断を仰ぐ', yield: '譲歩する', suppress: '鎮圧する', ignore: '放っておく' };
 const GOVERNOR_NOTE = { ask: '要求は光速で地球へ届き、返事も光速で戻る', yield: '要求をその場で認める (減税・自治)', suppress: 'その場で拒み、駐留の艦隊で威圧する (恐怖度 +25)', ignore: '返事をしない (10年後に拒んだとみなされる)' };
-// 統治体制 (家臣の星系ごとに主人が選ぶ)。hr = 離反の起きやすさ (ハザード) の倍率 (間接統治 = 1)、delay = 通信の遅れへの敏感さ、
-// tribute = 朝貢の割合、loyalty = 忠誠度の目標への効き、rank = 自治の度合い (下げると忠誠度が下がる)。
-// war = 独立が戦争になる確率 (ICOW の植民地の独立のうち暴力を伴ったものの割合)。why = 根拠。
-// 直接統治の hr と、直接統治・間接統治・エンコミエンダ制の war は歴史の実データから推定した値 (data/derived/history.json)。ほかの hr・delay は文献の向きに合わせた仮の値
-const REGIMES = {
-  direct: { label: '直接統治', hr: 1.39, delay: 1.6, tribute: 0.5, loyalty: 10, rank: 0, war: 0.32,
-    note: '総督府が直接治める。指令にかならず従い、朝貢 50%・指令の政治力は半分。離反は間接統治の 1.4 倍、独立の 32% が戦争になる (上限あり・年に政治力 1)',
-    why: 'COLDAT の英仏の植民地 101 で推定: フランス (直接統治) はイギリス (間接統治) の 1.39 倍 (95% 信頼区間 0.84〜2.31) 独立しやすい。ICOW: フランスからの独立の 32% が暴力を伴った。直接統治・間接統治の区分は Lange 2009・Crowder 1964' },
-  indirect: { label: '間接統治', hr: 1, delay: 1, tribute: 0.25, loyalty: 0, rank: 1, war: 0.09,
-    note: '現地の政府に治めさせ、委任方針に沿って自分で動かす。朝貢 25%。独立の 9% が戦争になる',
-    why: '基準 (イギリスの植民地の間接統治。Lange 2009)。ICOW: イギリスからの独立 56 のうち暴力を伴ったのは 9%' },
-  feudal: { label: '封建制', hr: 1.3, delay: 0.5, tribute: 0.15, loyalty: 0, rank: 2, war: 0.31,
-    note: '現地の領主に封じる。朝貢 15%。遠さが効きにくいが、もとから離れやすい',
-    why: 'Seshat: 分権の強い国家ほど分裂しやすい。領主が現地で治めるので、本国との遠さは効きにくい' },
-  federal: { label: '連邦制', hr: 0.6, delay: 0.7, tribute: 0.1, loyalty: 5, rank: 3, refuseAt: 70, war: 0.31,
-    note: '連邦の一員として自治を認める。朝貢 10%。忠誠度が 70 未満だと指令を拒むことがある',
-    why: 'Cederman ほか 2015・地域の権限の指標 (RAI): 早く自治を認めると分離の紛争が減る (分離を目指す政党は増える: Brancati 2006)' },
-  dominion: { label: '自治領', hr: 0.4, delay: 0.6, tribute: 0.05, loyalty: 10, rank: 4, noOrders: true, peaceful: true, war: 0,
-    note: '指令は受けず、朝貢 5%。離反しにくく、独立するときも戦争にならない',
-    why: 'ICOW: カナダ・オーストラリアなどの自治領は、交渉を重ねて段階的に、戦争なしで独立した' },
-  encomienda: { label: 'エンコミエンダ制', hr: 1.6, delay: 1, tribute: 0.4, loyalty: -10, rank: 0, mine: 1.3, growth: 0.7, forced: true, war: 0.89,
-    note: '住民に労役を課す (強制労働)。採掘 +30%・朝貢 40%、人口の増え方 ×0.7・忠誠度の目標 −10。独立の 89% が戦争になる。やめたあとも税収が最大 25% 減る後遺症が長く残る',
-    why: 'Dell 2010: ポトシのミタ制 (強制労働) の地域は、廃止から約 200 年後の 2001 年でも家計の消費が約 25% 低く、子どもの発育不良が約 6 ポイント多い。ミタの地域ではトゥパク・アマルの反乱 (1780 年) が起きた。ICOW: スペインからの独立 9 のうち 8 が暴力を伴った' },
-};
-const REGIME_ORDER = ['direct', 'indirect', 'feudal', 'federal', 'dominion', 'encomienda'];
-const regimeKey = (gv) => (gv ? (gv.direct ? 'direct' : REGIMES[gv.regime] ? gv.regime : 'indirect') : 'indirect');
+/* VASSAL:BEGIN (data/build/build_vassal_game.py が書く。手で直さない。docs/vassal-game.md) */
+const VASSAL_DATA = {"model":[{"name":"law_fact_gap","coef":0.3168,"se":0.0598,"ci95":[0.1995,0.4341],"p":0.0,"hr":1.3727,"hr_ci95":[1.2208,1.5436]},{"name":"start_century","coef":0.8165,"se":0.1134,"ci95":[0.5943,1.0388],"p":0.0,"hr":2.2626,"hr_ci95":[1.8117,2.8258]}],"base":"T04","types":{"T01":{"label":"冊封朝貢国","family":"ritual","law":"VVMVMMVM","fact":"VVVVVMVM","gap":2.5,"hr":1.884,"war":0.089,"tribute":0.05,"rank":3.0,"delay":0.654,"loyalty":0,"noOrders":true,"refuseAt":65,"n":6,"median":245.0,"ratio":4.0,"cases":["朝鮮 (明の冊封)","朝鮮 (清の冊封)","琉球 (明・清の冊封と薩摩への両属)"]},"T02":{"label":"藩部 (理藩院の管轄)","family":"ritual","law":"SMMMMSMM","fact":"SMMMMMMM","gap":1.6,"hr":1.417,"war":0.321,"tribute":0.25,"rank":1.5,"delay":1.023,"loyalty":0,"noOrders":false,"refuseAt":48,"n":5,"median":192.0,"ratio":4.0,"cases":["外モンゴル (ハルハ 4 部)","内モンゴル (49 旗)","チベット (ガンデンポタン)"]},"T03":{"label":"保護国 (条約型)","family":"treaty","law":"SSMMMMVM","fact":"SSSMSMMS","gap":2.0,"hr":1.608,"war":0.719,"tribute":0.5,"rank":1.75,"delay":1.321,"loyalty":0,"noOrders":false,"refuseAt":38,"n":8,"median":44.0,"ratio":0.727,"cases":["チュニジア","モロッコ","大韓帝国"]},"T04":{"label":"藩王国・土侯国 (従属同盟と至上権)","family":"treaty","law":"SMMMMMVM","fact":"SMMMMMVM","gap":0.5,"hr":1.0,"war":0.089,"tribute":0.25,"rank":2.0,"delay":0.96,"loyalty":0,"noOrders":false,"refuseAt":50,"n":8,"median":64.0,"ratio":0.727,"cases":["ハイダラーバード","マイソール","アワド"]},"T05":{"label":"自治領","family":"settler","law":"SMVMMMVS","fact":"MMVMMVVS","gap":1.86,"hr":1.539,"war":0.0,"tribute":0.05,"rank":2.0,"delay":0.844,"loyalty":0,"noOrders":false,"refuseAt":55,"n":7,"median":27.0,"ratio":0.727,"cases":["カナダ","オーストラリア","ニュージーランド"]},"T06":{"label":"委任統治領 A","family":"treaty","law":"SSMMMMMM","fact":"SSMMSMMS","gap":1.0,"hr":1.172,"war":0.403,"tribute":0.25,"rank":1.5,"delay":1.239,"loyalty":0,"noOrders":false,"refuseAt":40,"n":5,"median":23.0,"ratio":0.727,"cases":["イラク","パレスチナ","トランスヨルダン"]},"T07":{"label":"委任統治領 B・C と信託統治","family":"colony","law":"SSSSSSMS","fact":"SSSMSSMS","gap":1.14,"hr":1.225,"war":0.309,"tribute":0.5,"rank":0.25,"delay":1.408,"loyalty":0,"noOrders":false,"refuseAt":35,"n":7,"median":39.0,"ratio":0.782,"cases":["タンガニーカ (B)","ルアンダ=ウルンディ (B)","南西アフリカ (C)"]},"T08":{"label":"共同統治","family":"dynastic","law":"SSSMSSMS","fact":"SSSMSSMS","gap":0.67,"hr":1.055,"war":0.223,"tribute":0.5,"rank":0.5,"delay":1.408,"loyalty":0,"noOrders":false,"refuseAt":35,"n":6,"median":57.0,"ratio":2.236,"cases":["英埃スーダン","ニューヘブリディーズ","サモア (三国共同統治)"]},"T09":{"label":"特許会社領","family":"colony","law":"SSSMSSVS","fact":"SSSMSSVS","gap":1.0,"hr":1.172,"war":0.309,"tribute":0.5,"rank":0.75,"delay":1.321,"loyalty":0,"noOrders":false,"refuseAt":38,"n":7,"median":33.0,"ratio":0.782,"cases":["ベンガル (東インド会社)","ジャワ (連合東インド会社)","南ローデシア (英南アフリカ会社)"]},"T10":{"label":"傀儡国","family":"client","law":"MMVVVMVV","fact":"SSMMMSVS","gap":5.43,"hr":4.768,"war":0.0,"tribute":0.25,"rank":3.25,"delay":1.162,"loyalty":0,"noOrders":false,"refuseAt":42,"n":7,"median":6.0,"ratio":0.236,"cases":["満洲国","蒙古聯合自治政府 (蒙疆)","汪兆銘政権 (南京国民政府)"]},"T11":{"label":"衛星国","family":"client","law":"MMVVVMVV","fact":"MMVVMMVM","gap":2.14,"hr":1.681,"war":0.0,"tribute":0.05,"rank":3.25,"delay":0.792,"loyalty":0,"noOrders":false,"refuseAt":58,"n":7,"median":41.0,"ratio":0.236,"cases":["ポーランド人民共和国","ハンガリー人民共和国","チェコスロヴァキア"]},"T12":{"label":"自由連合","family":"settler","law":"MSMMVVVS","fact":"MSMMVVVS","gap":0.0,"hr":0.854,"war":0.0,"tribute":0.25,"rank":2.25,"delay":0.9,"loyalty":0,"noOrders":false,"refuseAt":52,"n":7,"median":null,"ratio":0.727,"cases":["マーシャル諸島","ミクロネシア連邦","パラオ"]},"T13":{"label":"封臣 (中世西欧)","family":"dynastic","law":"MMVMVVVM","fact":"VVVVVVVM","gap":2.0,"hr":1.608,"war":0.476,"tribute":0.05,"rank":3.0,"delay":0.613,"loyalty":0,"noOrders":true,"refuseAt":68,"n":7,"median":114.0,"ratio":2.236,"cases":["ノルマンディー公","スコットランド王 (ファレーズ条約)","シチリア・ナポリ王国 (教皇の封)"]},"T14":{"label":"幕藩制の藩 (近世日本)","family":"dynastic","law":"SMMMMMMM","fact":"SMMMMMMM","gap":0.0,"hr":0.854,"war":0.223,"tribute":0.25,"rank":1.75,"delay":1.023,"loyalty":0,"noOrders":false,"refuseAt":48,"n":6,"median":268.0,"ratio":2.236,"cases":["薩摩藩 (島津)","長州藩 (毛利)","加賀藩 (前田)"]},"T15":{"label":"同君連合","family":"dynastic","law":"MMVVVVVM","fact":"MMVVVVVM","gap":1.0,"hr":1.172,"war":0.294,"tribute":0.05,"rank":3.25,"delay":0.697,"loyalty":0,"noOrders":false,"refuseAt":62,"n":7,"median":123.0,"ratio":2.236,"cases":["ハノーファー=英 (同君連合)","ポーランド=リトアニア (クレヴォ)","デンマーク=ノルウェー"]},"T16":{"label":"緩衝国","family":"treaty","law":"MVVVVMVV","fact":"MVVVVVVV","gap":1.67,"hr":1.449,"war":0.362,"tribute":0.05,"rank":3.5,"delay":0.613,"loyalty":0,"noOrders":false,"refuseAt":68,"n":6,"median":40.0,"ratio":0.727,"cases":["アフガニスタン","ネパール","チベット (1913〜1950)"]},"T17":{"label":"不平等条約の半主権国 (非公式の帝国)","family":"legal","law":"VVVMVMMV","fact":"VVVMVMVV","gap":1.29,"hr":1.284,"war":0.0,"tribute":0.05,"rank":3.25,"delay":0.654,"loyalty":0,"noOrders":true,"refuseAt":65,"n":7,"median":83.0,"ratio":1.509,"cases":["清・中華民国","日本","オスマン帝国 (カピチュレーション)"]},"T18":{"label":"貢納公国 (オスマン型)","family":"ritual","law":"MMMVSMVS","fact":"MMMVSMVS","gap":1.14,"hr":1.225,"war":0.263,"tribute":0.25,"rank":2.0,"delay":0.96,"loyalty":0,"noOrders":false,"refuseAt":50,"n":7,"median":299.0,"ratio":4.0,"cases":["ワラキア公国","モルダヴィア公国","セルビア公国"]},"T19":{"label":"財政保護と介入権 (プラット型)","family":"treaty","law":"VMSVVMVV","fact":"MSSVMMVM","gap":2.6,"hr":1.945,"war":0.292,"tribute":0.5,"rank":3.0,"delay":0.96,"loyalty":0,"noOrders":false,"refuseAt":50,"n":5,"median":32.0,"ratio":0.727,"cases":["キューバ","パナマ","ドミニカ共和国"]},"T20":{"label":"植民地 (直轄)","family":"colony","law":"SSSMSSMS","fact":"SSSMSSMS","gap":0.0,"hr":1.394,"war":0.32,"tribute":0.5,"rank":0.5,"delay":1.408,"loyalty":0,"noOrders":false,"refuseAt":35,"n":6,"median":50.0,"ratio":0.782,"cases":["アルジェリア","ゴールドコースト","フィリピン (米)"]}}};
+/* VASSAL:END */
+// 統治体制 = 従属国の型 (レーン H。docs/vassal-typology.md・docs/vassal-cases.md・docs/vassal-game.md)。
+// 主権を 8 つの束 (外交・軍事・課税と朝貢・法と裁判・統治者の任免・交易・宗教と文化・継承) に分け、項目ごとに 宗 (宗主が握る)・分 (分け合う)・従 (従属国が握る) を、
+// 法 (条約の文) と実態 (実際の力関係) の 2 層で持つ。19 の歴史の型と植民地 (直轄) は、その組み合わせの雛形。値は事例 131 件から data/build/build_vassal_game.py が作る (上の VASSAL_DATA)。
+// hr = 離反の起きやすさ (ハザード) の倍率 (藩王国 = いまの間接統治 = 1)、delay = 通信の遅れへの敏感さ、tribute = 朝貢の割合、loyalty = 忠誠度の目標への効き、
+// rank = 自治の度合い (法の束の点 ÷ 2。下げると忠誠度が下がる)、war = 独立が戦争になる確率、noOrders = 指令を受けない、refuseAt = 指令を拒むことがある忠誠度
+const BUNDLE_ITEMS = ['dip', 'mil', 'tax', 'law', 'appt', 'trade', 'rel', 'succ'];
+const BUNDLE_LABELS = { dip: '外交', mil: '軍事', tax: '課税と朝貢', law: '法と裁判', appt: '統治者の任免', trade: '交易', rel: '宗教と文化', succ: '継承' };
+const BUNDLE_CODES = { S: '宗', M: '分', V: '従' };
+const VASSAL_FAMILIES = { ritual: '儀礼の宗主権', treaty: '条約の保護', legal: '法と交易だけ', settler: '入植者の自治', colony: '直轄', client: '傀儡と衛星', dynastic: '君主と封の網' };
+const bundleText = (b) => [...b].map((c) => BUNDLE_CODES[c]).join('');
+const REGIMES = (() => {
+  const R = {};
+  for (const [id, t] of Object.entries(VASSAL_DATA.types)) {
+    const key = id === 'T20' ? 'direct' : id;
+    R[key] = { id, label: id === 'T20' ? '直接統治 (植民地)' : t.label, family: t.family, law: t.law, fact: t.fact, gap: t.gap, hr: t.hr, delay: t.delay, tribute: t.tribute,
+      loyalty: id === 'T20' ? 10 : t.loyalty, rank: t.rank, war: t.war, ...(t.noOrders ? { noOrders: true } : {}), refuseAt: t.refuseAt, ...(t.war < 0.05 ? { peaceful: true } : {}),
+      note: `法 ${bundleText(t.law)}・実態 ${bundleText(t.fact)}。離反 ×${t.hr.toFixed(2)}・朝貢 ${Math.round(t.tribute * 100)}%・独立の ${Math.round(t.war * 100)}% が戦争${t.noOrders ? '・指令を受けない' : ''}${id === 'T20' ? '・指令にかならず従い、指令の政治力は半分 (上限あり・年に政治力 1)' : ''}`,
+      why: `事例 ${t.n} 件 (${t.cases.join('・')} など)。存続の中央値 ${t.median ? `${Math.round(t.median)} 年` : '続いている'}・法と実態の差 ${t.gap.toFixed(1)} 項目。${VASSAL_FAMILIES[t.family]}の家族` };
+  }
+  // 強制労働 (エンコミエンダ制) は統治の型ではなく労働の制度。植民地 (直轄) の束に強制労働を足したもの (Dell 2010・ICOW のスペインの植民地)
+  R.encomienda = { ...R.direct, id: 'T20', label: '植民地 + 強制労働 (エンコミエンダ制)', hr: 1.6, delay: 1, tribute: 0.4, loyalty: -10, rank: 0, mine: 1.3, growth: 0.7, forced: true, war: 0.89, refuseAt: 50,
+    note: '植民地 (直轄) の束で、住民に労役を課す (強制労働)。採掘 +30%・朝貢 40%、人口の増え方 ×0.7・忠誠度の目標 −10。独立の 89% が戦争になる。やめたあとも税収が最大 25% 減る後遺症が長く残る',
+    why: 'Dell 2010: ポトシのミタ制 (強制労働) の地域は、廃止から約 200 年後の 2001 年でも家計の消費が約 25% 低く、子どもの発育不良が約 6 ポイント多い。ミタの地域ではトゥパク・アマルの反乱 (1780 年) が起きた。ICOW: スペインからの独立 9 のうち 8 が暴力を伴った。統治の型ではなく労働の制度なので、植民地の束に足した (Lockhart 1969・Yeager 1995)' };
+  return R;
+})();
+// 前の 6 種類の名前は、歴史の型の別名として読む (古いセーブと指令のため): 間接統治 → 藩王国、封建制 → 封臣、連邦制 → 幕藩制の藩 (国の中の自治の束)、自治領 → 自治領
+const REGIME_ALIAS = { indirect: 'T04', delegate: 'T04', feudal: 'T13', federal: 'T14', dominion: 'T05' };
+const BASE_REGIME = 'T04';
+const regimeNorm = (r) => (REGIMES[r] ? r : REGIMES[REGIME_ALIAS[r]] ? REGIME_ALIAS[r] : null);
+// 選ぶ表の並び: 家族ごと (直轄 → 条約の保護 → 儀礼 → 君主と封 → 法と交易 → 入植者の自治 → 傀儡と衛星)
+const REGIME_ORDER = ['direct', 'encomienda', ...['colony', 'treaty', 'ritual', 'dynastic', 'legal', 'settler', 'client'].flatMap((f) => Object.keys(REGIMES).filter((k) => /^T\d\d$/.test(k) && REGIMES[k].family === f))];
+const regimeKey = (gv) => (gv ? (gv.direct ? 'direct' : regimeNorm(gv.regime) || BASE_REGIME) : BASE_REGIME);
 // 離反の起きやすさ (年あたりのハザード) = 基準 × 統治体制の倍率 × ((通信の遅れ ÷ 1 世代) ÷ 歴史の中央値)^(べき指数 × 敏感さ) × 人口の比^pop × exp(loyalty × (loyaltyRef − 忠誠度))。
 // 遅れの項は、英仏の植民地の Cox モデル (説明変数: 本国・遅れ・植民の始まりの年) の係数 −0.15 (95% 信頼区間 −0.64〜0.33)。シミュレーション版は推定値そのもの、
 // ゲーム版は「遅れが長いほど離れやすい」遊びを残すため信頼区間の上端 0.33 を使う。delayRef = 帆船の時代の英仏の植民地の (知らせの片道の年数 ÷ 28 年) の中央値
@@ -1891,7 +1900,7 @@ const VIOLENT_SHARE = 0.31; // 植民地の独立のうち暴力を伴った割�
 // 強制労働の後遺症 (0〜1): 続けた年ごとに scarRate ずつ増え、やめたあとは年に ×scarKeep ずつ消える (半減に約 140 年)。税収 × (1 − scarTax × 後遺症)
 const FORCED = { scarRate: 0.02, scarKeep: 0.995, scarTax: 0.25 };
 function secessionTermsOf({ regime, delay, popRatio, loyalty, security = 0 }) {
-  const r = REGIMES[regime] || REGIMES.indirect;
+  const r = REGIMES[regimeNorm(regime) || BASE_REGIME];
   const ratio = clamp(popRatio || 0, 0.01, 100);
   return [
     { label: '基準', f: ED.hazardBase, note: '年あたり' },
@@ -2709,17 +2718,17 @@ class Game {
   }
   // 統治体制 (主人がいなければ null)
   regimeOf(gv) { return regimeKey(gv); }
-  knownRegime(k) { return k ? (k.regime && REGIMES[k.regime] ? k.regime : k.direct ? 'direct' : 'indirect') : 'indirect'; }
+  knownRegime(k) { return k ? (k.direct ? 'direct' : regimeNorm(k.regime) || BASE_REGIME) : BASE_REGIME; }
   // 新しい家臣の星系の統治体制: 人間の国はプレイヤーの選んだもの、AI の国は国号から (連邦・合衆国 → 連邦制、王国・公国など → 封建制、帝国 → エンコミエンダ制、自治領 → 自治領)
   defaultRegime(root) {
     const p = this.players[this.playerOf(root)];
-    if (p && this.isHuman(root)) return REGIMES[p.regime] && p.regime !== 'direct' ? p.regime : 'indirect';
+    if (p && this.isHuman(root)) { const r = regimeNorm(p.regime); return r && r !== 'direct' ? r : BASE_REGIME; }
     const name = this.nationOf(root)?.name || '';
-    if (/(連邦|合衆国|同盟|連邦共和国)$/.test(name)) return 'federal';
-    if (/自治領$/.test(name)) return 'dominion';
+    if (/(連邦|合衆国|同盟|連邦共和国)$/.test(name)) return 'T14';
+    if (/自治領$/.test(name)) return 'T05';
     if (/帝国$/.test(name)) return 'encomienda';
-    if (/(王国|公国|侯国|辺境伯領|ハン国|藩王国|首長国|スルタン国)$/.test(name)) return 'feudal';
-    return 'indirect';
+    if (/(王国|公国|侯国|辺境伯領|ハン国|藩王国|首長国|スルタン国)$/.test(name)) return 'T13';
+    return BASE_REGIME;
   }
   // 離反の起きやすさの内訳 (いまの実際の値で)。主人がいなければ null
   secessionTerms(id) {
@@ -2735,7 +2744,7 @@ class Game {
     const pop = (x) => this.knownColonies(x).reduce((a, c) => a + c.pop, 0);
     const capital = k.lord === this.cap ? this.cap : this.known(k.lord)?.realm ?? k.realm ?? this.cap;
     const cur = this.knownRegime(k);
-    const r = regime || cur;
+    const r = regimeNorm(regime) || cur;
     const loyalty = clamp((k.loyalty ?? LOYALTY_START) + (REGIMES[r].loyalty - REGIMES[cur].loyalty) - HAZARD.revoke * Math.max(0, REGIMES[cur].rank - REGIMES[r].rank), 0, 100);
     return secessionTermsOf({ regime: r, delay: this.sysDist(id, capital), popRatio: pop(id) / Math.max(1e-3, pop(k.lord)), loyalty, security: k.security || 0 });
   }
@@ -2743,14 +2752,16 @@ class Game {
   setRegime(id, regime) {
     const gv = this.govs[id];
     if (!gv || !this.isColonized(id) || gv.lord === null || gv.lord === undefined) return fail('家臣の星系がない');
+    regime = regimeNorm(regime);
+    if (!regime) return fail('不明な統治体制');
     const old = regimeKey(gv);
     if (old === regime) return { ok: true };
     const drop = Math.max(0, REGIMES[old].rank - REGIMES[regime].rank);
     delete gv.direct;
     delete gv.regime;
-    if (regime === 'direct') gv.direct = true; else if (regime !== 'indirect') gv.regime = regime;
-    if (drop) gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - HAZARD.revoke * drop);
-    this.event('politics', id, `${this.system(id).name} の統治体制を${REGIMES[old].label}から${REGIMES[regime].label}に変えた${drop ? ` (自治を狭めたので忠誠度 −${HAZARD.revoke * drop})` : ''}`, true);
+    if (regime === 'direct') gv.direct = true; else if (regime !== BASE_REGIME) gv.regime = regime;
+    if (drop) gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - Math.round(HAZARD.revoke * drop));
+    this.event('politics', id, `${this.system(id).name} の統治体制を${REGIMES[old].label}から${REGIMES[regime].label}に変えた${drop ? ` (自治を狭めたので忠誠度 −${Math.round(HAZARD.revoke * drop)})` : ''}`, true);
     return { ok: true };
   }
   // 強制労働の後遺症 (年1回)。独立したあとも残る
@@ -2961,7 +2972,7 @@ class Game {
         if (earth >= 1) clashes.push([x.id, earth]);
       }
     }
-    this.event('politics', id, `${this.system(id).name} が ${this.system(lord).name} への従属をやめ、${peaceful ? '自治領から交渉で' : ''}独立を宣言した${followers ? ` (従属する ${followers} 星系も従う)` : ''}${cause}${war ? `。${this.realmName(formerRealm)}と戦争状態に入った (独立軍 ${raised} 艦隊)` : ''}`);
+    this.event('politics', id, `${this.system(id).name} が ${this.system(lord).name} への従属をやめ、${peaceful ? `${reg.label}から交渉で` : ''}独立を宣言した${followers ? ` (従属する ${followers} 星系も従う)` : ''}${cause}${war ? `。${this.realmName(formerRealm)}と戦争状態に入った (独立軍 ${raised} 艦隊)` : ''}`);
     for (const [x, earth] of clashes) this.startBattle(x, formerRealm, earth, 0);
   }
   // 指令が届いたとき: 地球の国の外なら拒否、忠誠度が50未満なら (50−忠誠度)/50 の確率で拒否
@@ -2974,7 +2985,7 @@ class Game {
     if (gv.direct) { gv.orders = (gv.orders || 0) + 1; return { ok: true }; } // 直轄の星系はかならず従う
     const reg = REGIMES[regimeKey(gv)];
     if (reg.noOrders && act !== 'rule') return fail(`${reg.label}なので指令を受けない (統治体制を変える指令だけは受ける)`);
-    const at = reg.refuseAt || 50; // 連邦制は忠誠度 70 未満から拒むことがある
+    const at = reg.refuseAt || 50; // 型ごと (実態で従属国が握る項目が多いほど、高い忠誠度でも拒む)
     if (loyalty < at && this.rand() < (at - loyalty) / at) {
       gv.loyalty = Math.max(0, loyalty - 2);
       return fail(`忠誠度が低く (${Math.round(loyalty)}) 指令を拒否した`);
@@ -3197,8 +3208,8 @@ class Game {
   setRule(id, value) {
     const gv = this.govs[id];
     if (!gv || !this.isColonized(id)) return fail('入植地がない');
-    const regime = value === 'delegate' ? 'indirect' : value;
-    if (!REGIMES[regime]) return fail('不明な統治体制');
+    const regime = regimeNorm(value);
+    if (!regime) return fail('不明な統治体制');
     if (regime === 'direct') {
       if (gv.lord !== this.cap || this.realmOf(id) !== this.cap) return fail('直属の従属星系だけを直轄にできる');
       if ((gv.autonomy || 0) > this.year) return fail('自治を認めているので直轄にできない');
@@ -4149,8 +4160,8 @@ class Game {
     const fresh = !this.isColonized(sysId);
     if (!this.govs[sysId]) {
       this.govs[sysId] = { lord: sysId === 0 ? null : lord, credits: 0, founded: this.year, loyalty: LOYALTY_START };
-      const reg = sysId === 0 ? 'indirect' : this.defaultRegime(this.realmOf(lord));
-      if (reg !== 'indirect') this.govs[sysId].regime = reg;
+      const reg = sysId === 0 ? BASE_REGIME : this.defaultRegime(this.realmOf(lord));
+      if (reg !== BASE_REGIME) this.govs[sysId].regime = reg;
     }
     this.colonies.push({
       sys: sysId, body: bodyId, kind, founded: this.year, name, pop, focus: 'balanced',
@@ -6550,11 +6561,11 @@ class Game {
       autoGrant: () => '', autoBuild: () => '',
       autoAwe: (x) => `反乱防止のための威圧を${x ? 'オン' : 'オフ'}にした`,
       autoDefense: (x) => `自動防衛配備を${x ? 'オン' : 'オフ'}にした`,
-      regime: (x) => `新しい入植地の統治体制を「${REGIMES[x].label}」にした`,
+      regime: (x) => `新しい入植地の統治体制を「${REGIMES[regimeNorm(x)].label}」にした`,
     };
-    if (d.key === 'regime' && (!REGIMES[v] || v === 'direct')) return fail('選べない統治体制');
+    if (d.key === 'regime' && (!regimeNorm(v) || regimeNorm(v) === 'direct')) return fail('選べない統治体制');
     if (!SET[d.key]) return fail('設定がない');
-    const x = d.key === 'warThreshold' ? Number(v) : d.key === 'regime' ? v : !!v;
+    const x = d.key === 'warThreshold' ? Number(v) : d.key === 'regime' ? regimeNorm(v) : !!v;
     this[d.key] = x;
     if (d.key === 'autoAwe' && x) this.aweYearly();
     if (d.key === 'autoDefense' && x) this.autoDefend();
@@ -6587,7 +6598,7 @@ class Game {
     }
     if (act === 'rule' && d.value !== 'direct' && d.value !== 'delegate') {
       const id = Number(d.sys);
-      if (!REGIMES[d.value]) return fail('不明な統治体制');
+      if (!regimeNorm(d.value)) return fail('不明な統治体制');
       if (this.known(id)?.lord !== this.cap || (this.known(id)?.realm ?? this.cap) !== this.cap) return fail('直属の従属星系だけ統治体制を選べる');
     }
     if (act === 'rule' && d.value === 'direct') {
@@ -8226,7 +8237,7 @@ function sysFlags(g, sys, k, cols) {
     if ((k.autonomy || 0) > g.year) flags.push(['info', `自治を認めている (${Math.round(k.autonomy)}年まで)`]);
     else if ((k.taxFree || 0) > g.year) flags.push(['info', `朝貢を免除している (${Math.round(k.taxFree)}年まで)`]);
     if (k.direct) flags.push(['own', '直轄']);
-    else if (k.regime) flags.push([REGIMES[k.regime]?.forced ? 'warn' : 'info', REGIMES[k.regime]?.label || k.regime]);
+    else if (k.regime) flags.push([REGIMES[regimeNorm(k.regime)]?.forced ? 'warn' : 'info', REGIMES[regimeNorm(k.regime)]?.label || k.regime]);
   }
   const famine = cols.filter((c) => c.alerts?.food || c.alerts?.water).length;
   const short = cols.filter((c) => c.alerts?.goods || c.alerts?.industry).length;
@@ -8377,7 +8388,7 @@ function outlookText(o, short = false) {
   if (!o) return '';
   const u = o.unrest;
   if (o.stage === 3) {
-    return short ? `最後通牒: ${Math.round(u.end)}年に${pct(o.p)}で独立` : `最後通牒を突きつけている。${Math.round(u.end)}年に、${pct(o.p)}の確率で独立を宣言する (恐怖度・主人との友好度・忠誠度が高いほど下がる)${REGIMES[o.regime].peaceful ? '。自治領なので戦争にはならない' : ''}`;
+    return short ? `最後通牒: ${Math.round(u.end)}年に${pct(o.p)}で独立` : `最後通牒を突きつけている。${Math.round(u.end)}年に、${pct(o.p)}の確率で独立を宣言する (恐怖度・主人との友好度・忠誠度が高いほど下がる)${REGIMES[o.regime].peaceful ? `。${REGIMES[o.regime].label}なので戦争にはならない` : ''}`;
   }
   const what = u.kind === 'autonomy' ? '自治' : '朝貢の免除';
   if (o.stage === 2) return short ? `${what}を要求中` : `${what}を求めて返事を待っている。拒めば最後通牒になる`;
@@ -8430,22 +8441,27 @@ function ruleBox(g, id, k) {
     ${pcBtn(`data-act="inspect" data-sys="${id}"`, '視察団を送る', 'inspect', '関与になり、忠誠度 +3', pending('inspect') ? '視察団を送っている' : '')}`;
 }
 
-// 統治体制を選ぶ表: 体制ごとの離反の起きやすさ (いま変えたら)・朝貢・忠誠度の目標の差を並べて比べる
+// 統治体制を選ぶ表: いまの型と、型ごとの離反の起きやすさ (いま変えたら)・朝貢・忠誠度の目標の差を、家族ごとに畳んで並べる
 function regimeBox(g, id, k, cur, sending, autonomy) {
   const c = g.pcCost('rule', { sys: id });
   const full = g.directPlanned() >= g.directMax();
-  const rows = REGIME_ORDER.map((r) => {
+  const row = (r) => {
     const R = REGIMES[r];
     const t = g.knownSecessionTerms(id, r);
     const hp = t ? hazardYear(hazardOf(t)) : 0;
     const drop = Math.max(0, REGIMES[cur].rank - R.rank);
     const why = r === cur ? '選択中' : sending ? '送信中' : c > g.pc ? '政治力不足' : r === 'direct' && autonomy ? '自治中' : r === 'direct' && full ? `上限 ${g.directMax()}` : '';
     const loy = `${R.loyalty > 0 ? '+' : R.loyalty < 0 ? '−' : '±'}${Math.abs(R.loyalty)}`;
-    return `<div class="rg"><div class="rh"><div><b>${R.label}</b><br><span>離反 年${pctH(hp)}・朝貢 ${pct(R.tribute)}・忠誠度 ${loy}</span>${drop ? `<br><span class="bad">変えると忠誠度 −${HAZARD.revoke * drop} (自治を狭める)</span>` : ''}</div>
+    return `<div class="rg"><div class="rh"><div><b>${esc(R.label)}</b><br><span>離反 年${pctH(hp)}・朝貢 ${pct(R.tribute)}・忠誠度 ${loy}</span>${drop ? `<br><span class="bad">変えると忠誠度 −${Math.round(HAZARD.revoke * drop)} (自治を狭める)</span>` : ''}</div>
       <button data-act="rule" data-sys="${id}" data-value="${r}" ${why ? 'disabled' : ''}>${why || '変える'}</button></div><p>${esc(R.note)}</p></div>`;
-  }).join('');
-  return `<div class="regimes"><p class="muted">統治体制 — 変えるのは光速の指令 (政治力 ${c}・届くまで ${g.lightDelay(id).toFixed(1)} 年)。離反は、いま変えたときの見込み</p>${rows}</div>
-    <details class="note"><summary>数値の根拠 (向き)</summary>${REGIME_ORDER.map((r) => `<p><b>${REGIMES[r].label}</b>: ${esc(REGIMES[r].why)}</p>`).join('')}<p class="muted">離反の起きやすさ = 基準 × 統治体制 × 通信の遅れ ÷ 1 世代 (${GENERATION_YEARS} 年) × 人口の比 × 忠誠度。自治を狭める変更は、狭めた段ごとに忠誠度 −${HAZARD.revoke}。係数は仮の値。</p></details>`;
+  };
+  const C = REGIMES[cur];
+  const bundle = `<div class="scroll"><table class="tbl"><tr><th>主権の束</th><th>法</th><th>実態</th></tr>${BUNDLE_ITEMS.map((it, i) => `<tr><td>${BUNDLE_LABELS[it]}</td><td>${BUNDLE_CODES[C.law[i]]}</td><td class="${C.law[i] !== C.fact[i] ? 'bad' : ''}">${BUNDLE_CODES[C.fact[i]]}</td></tr>`).join('')}</table></div>
+    <p class="muted">宗 = 宗主が握る・分 = 分け合う・従 = 従属国が握る。法 = 条約の文、実態 = 実際の力関係。法と実態の差が 1 項目増えるごとに離反が 1.37 倍起きやすい (事例 131 件)</p>`;
+  const groups = [['いまの型と直轄', ['direct', 'encomienda', cur].filter((r, i, a) => a.indexOf(r) === i)], ...Object.entries(VASSAL_FAMILIES).map(([f, label]) => [label, REGIME_ORDER.filter((r) => /^T\d\d$/.test(r) && REGIMES[r].family === f && r !== cur)])].filter(([, rs]) => rs.length);
+  const rows = groups.map(([label, rs], i) => (i === 0 ? rs.map(row).join('') : `<details class="note"><summary>${esc(label)} (${rs.length})</summary>${rs.map(row).join('')}</details>`)).join('');
+  return `<div class="regimes"><p class="muted">統治体制 (従属国の型) — いまは <b>${esc(C.label)}</b>。変えるのは光速の指令 (政治力 ${c}・届くまで ${g.lightDelay(id).toFixed(1)} 年)。離反は、いま変えたときの見込み</p>${bundle}${rows}</div>
+    <details class="note"><summary>数値の根拠</summary>${REGIME_ORDER.map((r) => `<p><b>${esc(REGIMES[r].label)}</b>: ${esc(REGIMES[r].why)}</p>`).join('')}<p class="muted">離反の起きやすさ = 基準 × 型の倍率 × 通信の遅れ ÷ 1 世代 (${GENERATION_YEARS} 年) × 人口の比 × 忠誠度。型の倍率は法と実態の差から (植民地は COLDAT の推定)。自治を狭める変更は、法の束の点が下がった分だけ忠誠度が下がる (2 点で −${HAZARD.revoke})。</p></details>`;
 }
 // 情報の古さの表示
 function ageBadge(g, id) {
@@ -9534,7 +9550,7 @@ function goalsSheet(app) {
     <table class="tbl">${sc.parts.map(([l, v]) => `<tr><td>${esc(l)}</td><td class="${v < 0 ? 'bad' : ''}">${v}</td></tr>`).join('')}<tr class="total"><td>合計</td><td>${sc.total}</td></tr></table>
     <h3>統治体制</h3>
     <p class="note">家臣の星系ごとに統治体制を選べる (星系の詳細欄の「統治」から。光速の指令)。体制によって、離反の起きやすさ・朝貢・指令の通りやすさが変わる。遠い星系ほど通信の遅れが効くので、現地に任せる体制が保ちやすい。</p>
-    <label class="field">新しい入植地の統治体制<select data-act="regimedefault">${REGIME_ORDER.filter((r) => r !== 'direct').map((r) => `<option value="${r}" ${r === (REGIMES[g.regime] ? g.regime : 'indirect') ? 'selected' : ''}>${REGIMES[r].label} — ${esc(REGIMES[r].note)}</option>`).join('')}</select></label>
+    <label class="field">新しい入植地の統治体制<select data-act="regimedefault">${REGIME_ORDER.filter((r) => r !== 'direct').map((r) => `<option value="${r}" ${r === (regimeNorm(g.regime) || BASE_REGIME) ? 'selected' : ''}>${REGIMES[r].label} — ${esc(REGIMES[r].note)}</option>`).join('')}</select></label>
     ${regimeCounts(g)}
     <h3>直轄の星系 (${g.directCount()} / ${g.directMax()})</h3>
     <p class="note">${ME.home}の直属の従属星系を、星系の詳細欄の「統治」から直接統治 (直轄) にできる。直轄の星系は自分では動かないので、施設や交易路は${ME.home}が指令で決める。</p>

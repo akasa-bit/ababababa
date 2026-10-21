@@ -29,20 +29,20 @@ const { chromium } = require('playwright');
       // 試すのは統治体制の仕組みなので、待つあいだに不満から自治を求めて指令を受けなくならないよう、3 つを落ち着かせておく
       for (const x of [a, c, e]) { delete g.govs[x].unrest; g.govs[x].loyalty = 90; g.decisions = g.decisions.filter((q) => q.sys !== x); }
       g.pc = 100;
-      res.cmd = [issue('rule', { sys: a, value: 'federal' }).ok, issue('rule', { sys: c, value: 'dominion' }).ok, issue('rule', { sys: e, value: 'encomienda' }).ok, issue('rule', { sys: a, value: 'nonsense' }).ok];
+      res.cmd = [issue('rule', { sys: a, value: 'T14' }).ok, issue('rule', { sys: c, value: 'T01' }).ok, issue('rule', { sys: e, value: 'encomienda' }).ok, issue('rule', { sys: a, value: 'nonsense' }).ok];
       const far = Math.max(...[a, c, e].map((x) => g.lightDelay(x)));
       for (let i = 0; i < Math.ceil(far * 4) + 4; i++) g.advance(0.25);
       res.regimes = [a, c, e].map((x) => g.regimeOf(g.govs[x]));
-      // 自治領は指令を受けない (統治体制の変更は受ける)
+      // 冊封朝貢国 (実態で外交と任免を従属国が握る) は指令を受けない (統治体制の変更は受ける)
       g.pc = 100;
       res.mandate = issue('mandate', { sys: c, value: 'develop' }).ok;
       for (let i = 0; i < Math.ceil(g.lightDelay(c) * 4) + 4; i++) g.advance(0.25);
-      res.dominionLog = g.log.filter((m) => /自治領なので指令を受けない/.test(m.text || m.t || '')).length > 0 || JSON.stringify(g.log.slice(-40)).includes('自治領なので');
+      res.dominionLog = g.log.filter((m) => /冊封朝貢国なので指令を受けない/.test(m.text || m.t || '')).length > 0 || JSON.stringify(g.log.slice(-40)).includes('冊封朝貢国なので');
       res.mandateNow = g.govs[c].mandate || 'balanced';
       // 強制労働の後遺症: 20 年で 0.4 前後
       for (let i = 0; i < 80; i++) g.advance(0.25);
       res.scar = +(g.govs[e].scar || 0).toFixed(2);
-      // 自治領 → 直接統治は忠誠度 −32
+      // 冊封朝貢国 (法の束の点 6 = 自治の度合い 3) → 直接統治 (0.5) は忠誠度 −20
       const L0 = g.govs[c].loyalty;
       const r1 = g.setRule(c, 'direct');
       res.revoke = [r1.ok, Math.round(L0 - g.govs[c].loyalty)];
@@ -55,10 +55,12 @@ const { chromium } = require('playwright');
       const before = new Set(Object.keys(g.govs));
       g.setSpectate(true); for (let i = 0; i < 200; i++) g.advance(0.25); g.setSpectate(false);
       const fresh = Object.keys(g.govs).filter((k) => !before.has(k) && g.realmOf(Number(k)) === 0 && g.govs[k].lord !== null);
-      res.freshFeudal = [fresh.length, fresh.filter((k) => g.regimeOf(g.govs[k]) === 'feudal').length];
+      res.freshFeudal = [fresh.length, fresh.filter((k) => g.regimeOf(g.govs[k]) === 'T13').length];
       // 離反の起きやすさは 0 より大きく、体制で並ぶ
       const t = (r) => hazardOf(g.knownSecessionTerms(a, r) || [{ f: 0 }]);
-      res.hz = ['direct', 'indirect', 'feudal', 'federal', 'dominion', 'encomienda'].map((r) => +t(r).toFixed(4));
+      res.hz = REGIME_ORDER.map((r) => [r, +t(r).toFixed(4)]);
+      // 古い名前 (間接統治・封建制…) は型の別名として受ける
+      res.alias = [issue('set', { key: 'regime', value: 'feudal' }).ok, g.regime];
       // 保存 → 読み込み
       const s1 = JSON.stringify((() => { const x = buildSave(g); delete x.savedAt; return x; })());
       loadSave(JSON.parse(s1));
