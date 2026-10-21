@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-21T12:44:19Z",
+ "generated": "2026-10-21T12:59:11Z",
  "n_cases": 131,
  "types": {
   "T01": {
@@ -22,7 +22,7 @@
    "war_at_end_share": 0.0,
    "modal_bundle": {
     "law": {
-     "dip": "M",
+     "dip": "V",
      "mil": "V",
      "tax": "M",
      "law": "V",
@@ -39,10 +39,10 @@
      "appt": "V",
      "trade": "M",
      "rel": "V",
-     "succ": "V"
+     "succ": "M"
     }
    },
-   "mean_gap": 3.17
+   "mean_gap": 2.5
   },
   "T02": {
    "name": "藩部 (理藩院の管轄)",
@@ -67,7 +67,7 @@
      "mil": "M",
      "tax": "M",
      "law": "M",
-     "appt": "S",
+     "appt": "M",
      "trade": "S",
      "rel": "M",
      "succ": "M"
@@ -75,15 +75,15 @@
     "fact": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
-     "rel": "V",
+     "rel": "M",
      "succ": "M"
     }
    },
-   "mean_gap": 2.8
+   "mean_gap": 1.6
   },
   "T03": {
    "name": "保護国 (条約型)",
@@ -112,7 +112,7 @@
      "law": "M",
      "appt": "M",
      "trade": "M",
-     "rel": "M",
+     "rel": "V",
      "succ": "M"
     },
     "fact": {
@@ -150,7 +150,7 @@
    "modal_bundle": {
     "law": {
      "dip": "S",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "M",
@@ -160,7 +160,7 @@
     },
     "fact": {
      "dip": "S",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "M",
@@ -169,7 +169,7 @@
      "succ": "M"
     }
    },
-   "mean_gap": 0.75
+   "mean_gap": 0.5
   },
   "T05": {
    "name": "自治領",
@@ -198,20 +198,20 @@
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     },
     "fact": {
-     "dip": "S",
+     "dip": "M",
      "mil": "M",
      "tax": "V",
      "law": "M",
      "appt": "M",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "mean_gap": 0.86
+   "mean_gap": 1.86
   },
   "T06": {
    "name": "委任統治領 A",
@@ -248,10 +248,10 @@
      "appt": "S",
      "trade": "M",
      "rel": "M",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "mean_gap": 0.4
+   "mean_gap": 1.0
   },
   "T07": {
    "name": "委任統治領 B・C と信託統治",
@@ -277,7 +277,7 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "M",
+     "law": "S",
      "appt": "S",
      "trade": "S",
      "rel": "M",
@@ -294,7 +294,7 @@
      "succ": "S"
     }
    },
-   "mean_gap": 0.57
+   "mean_gap": 1.14
   },
   "T08": {
    "name": "共同統治",
@@ -336,7 +336,7 @@
      "succ": "S"
     }
    },
-   "mean_gap": 0.33
+   "mean_gap": 0.67
   },
   "T09": {
    "name": "特許会社領",
@@ -413,13 +413,13 @@
      "mil": "S",
      "tax": "M",
      "law": "M",
-     "appt": "S",
+     "appt": "M",
      "trade": "S",
      "rel": "V",
      "succ": "S"
     }
    },
-   "mean_gap": 4.71
+   "mean_gap": 5.43
   },
   "T11": {
    "name": "衛星国",
@@ -452,7 +452,7 @@
     },
     "fact": {
      "dip": "M",
-     "mil": "S",
+     "mil": "M",
      "tax": "V",
      "law": "V",
      "appt": "M",
@@ -461,7 +461,7 @@
      "succ": "M"
     }
    },
-   "mean_gap": 3.0
+   "mean_gap": 2.14
   },
   "T12": {
    "name": "自由連合",
@@ -483,27 +483,27 @@
    "war_at_end_share": 0.0,
    "modal_bundle": {
     "law": {
-     "dip": "V",
-     "mil": "S",
-     "tax": "M",
-     "law": "M",
-     "appt": "M",
-     "trade": "V",
-     "rel": "V",
-     "succ": "V"
-    },
-    "fact": {
-     "dip": "V",
+     "dip": "M",
      "mil": "S",
      "tax": "M",
      "law": "M",
      "appt": "V",
      "trade": "V",
      "rel": "V",
-     "succ": "V"
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "S",
+     "tax": "M",
+     "law": "M",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "S"
     }
    },
-   "mean_gap": 0.29
+   "mean_gap": 0.0
   },
   "T13": {
    "name": "封臣 (中世西欧)",
@@ -527,7 +527,7 @@
     "law": {
      "dip": "M",
      "mil": "M",
-     "tax": "M",
+     "tax": "V",
      "law": "M",
      "appt": "V",
      "trade": "V",
@@ -538,14 +538,14 @@
      "dip": "V",
      "mil": "V",
      "tax": "V",
-     "law": "M",
+     "law": "V",
      "appt": "V",
      "trade": "V",
      "rel": "V",
      "succ": "M"
     }
    },
-   "mean_gap": 2.57
+   "mean_gap": 2.0
   },
   "T14": {
    "name": "幕藩制の藩 (近世日本)",
@@ -567,7 +567,7 @@
     "law": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -577,7 +577,7 @@
     "fact": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -629,7 +629,7 @@
      "succ": "M"
     }
    },
-   "mean_gap": 0.57
+   "mean_gap": 1.0
   },
   "T16": {
    "name": "緩衝国",
@@ -666,12 +666,12 @@
      "tax": "V",
      "law": "V",
      "appt": "V",
-     "trade": "M",
+     "trade": "V",
      "rel": "V",
      "succ": "V"
     }
    },
-   "mean_gap": 1.33
+   "mean_gap": 1.67
   },
   "T17": {
    "name": "不平等条約の半主権国 (非公式の帝国)",
@@ -704,8 +704,8 @@
     },
     "fact": {
      "dip": "V",
-     "mil": "M",
-     "tax": "M",
+     "mil": "V",
+     "tax": "V",
      "law": "M",
      "appt": "V",
      "trade": "M",
@@ -713,7 +713,7 @@
      "succ": "V"
     }
    },
-   "mean_gap": 1.71
+   "mean_gap": 1.29
   },
   "T18": {
    "name": "貢納公国 (オスマン型)",
@@ -756,7 +756,7 @@
      "succ": "S"
     }
    },
-   "mean_gap": 0.71
+   "mean_gap": 1.14
   },
   "T19": {
    "name": "財政保護と介入権 (プラット型)",
@@ -775,9 +775,9 @@
    "war_at_end_share": 0.2,
    "modal_bundle": {
     "law": {
-     "dip": "M",
+     "dip": "V",
      "mil": "M",
-     "tax": "M",
+     "tax": "S",
      "law": "V",
      "appt": "V",
      "trade": "M",
@@ -786,16 +786,16 @@
     },
     "fact": {
      "dip": "M",
-     "mil": "M",
-     "tax": "M",
-     "law": "M",
+     "mil": "S",
+     "tax": "S",
+     "law": "V",
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "V"
+     "succ": "M"
     }
    },
-   "mean_gap": 2.0
+   "mean_gap": 2.6
   },
   "T20": {
    "name": "植民地 (直轄)",
@@ -836,7 +836,7 @@
      "succ": "S"
     }
    },
-   "mean_gap": 0.17
+   "mean_gap": 0.0
   }
  },
  "items": [
@@ -1035,6 +1035,14 @@
     "n": 96,
     "percent_agreement": 0.906
    }
+  },
+  "resolution": {
+   "n": 335,
+   "took_A": 141,
+   "took_B": 194,
+   "third_value": 0,
+   "uncertain": 12,
+   "missing": []
   }
  },
  "disagreements": [
@@ -3719,7 +3727,7 @@
    "B": "S"
   }
  ],
- "final_coding_available": false,
+ "final_coding_available": true,
  "cases": [
   {
    "case_id": "T01-01",
@@ -3735,7 +3743,7 @@
    "violent_end": false,
    "bundle": {
     "law": {
-     "dip": "M",
+     "dip": "V",
      "mil": "V",
      "tax": "M",
      "law": "V",
@@ -3752,14 +3760,14 @@
      "appt": "V",
      "trade": "M",
      "rel": "V",
-     "succ": "V"
+     "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 4,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
-    "law": 3,
-    "fact": 7
+    "law": 4,
+    "fact": 6
    }
   },
   {
@@ -3793,14 +3801,14 @@
      "appt": "V",
      "trade": "M",
      "rel": "V",
-     "succ": "V"
+     "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 5,
+   "bundle_source": "final",
+   "law_fact_gap": 4,
    "v_count": {
     "law": 2,
-    "fact": 7
+    "fact": 6
    }
   },
   {
@@ -3837,7 +3845,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 1,
@@ -3858,7 +3866,7 @@
    "violent_end": false,
    "bundle": {
     "law": {
-     "dip": "M",
+     "dip": "V",
      "mil": "V",
      "tax": "M",
      "law": "V",
@@ -3875,14 +3883,14 @@
      "appt": "V",
      "trade": "M",
      "rel": "V",
-     "succ": "V"
+     "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 4,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
-    "law": 3,
-    "fact": 7
+    "law": 4,
+    "fact": 6
    }
   },
   {
@@ -3919,7 +3927,7 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 3,
    "v_count": {
     "law": 4,
@@ -3955,16 +3963,16 @@
      "tax": "V",
      "law": "V",
      "appt": "V",
-     "trade": "M",
+     "trade": "V",
      "rel": "V",
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 4,
    "v_count": {
     "law": 4,
-    "fact": 7
+    "fact": 8
    }
   },
   {
@@ -3983,9 +3991,9 @@
     "law": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
-     "appt": "S",
+     "appt": "M",
      "trade": "S",
      "rel": "M",
      "succ": "M"
@@ -3993,19 +4001,19 @@
     "fact": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
-     "rel": "V",
+     "rel": "M",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
-    "law": 1,
-    "fact": 2
+    "law": 0,
+    "fact": 0
    }
   },
   {
@@ -4024,9 +4032,9 @@
     "law": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
-     "appt": "S",
+     "appt": "M",
      "trade": "S",
      "rel": "M",
      "succ": "M"
@@ -4034,19 +4042,19 @@
     "fact": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
-     "rel": "V",
+     "rel": "M",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
-    "law": 1,
-    "fact": 2
+    "law": 0,
+    "fact": 0
    }
   },
   {
@@ -4074,20 +4082,20 @@
     },
     "fact": {
      "dip": "M",
-     "mil": "V",
+     "mil": "M",
      "tax": "V",
      "law": "V",
      "appt": "M",
-     "trade": "V",
+     "trade": "M",
      "rel": "M",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 5,
+   "bundle_source": "final",
+   "law_fact_gap": 3,
    "v_count": {
     "law": 0,
-    "fact": 4
+    "fact": 2
    }
   },
   {
@@ -4106,7 +4114,7 @@
     "law": {
      "dip": "S",
      "mil": "S",
-     "tax": "M",
+     "tax": "S",
      "law": "M",
      "appt": "S",
      "trade": "S",
@@ -4124,8 +4132,8 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 1,
     "fact": 1
@@ -4161,15 +4169,15 @@
      "law": "M",
      "appt": "M",
      "trade": "M",
-     "rel": "V",
+     "rel": "M",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 2,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 0,
-    "fact": 1
+    "fact": 0
    }
   },
   {
@@ -4206,7 +4214,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 3,
    "v_count": {
     "law": 0,
@@ -4240,15 +4248,15 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "S",
+     "law": "M",
      "appt": "S",
      "trade": "M",
      "rel": "M",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 4,
+   "bundle_source": "final",
+   "law_fact_gap": 3,
    "v_count": {
     "law": 0,
     "fact": 0
@@ -4274,7 +4282,7 @@
      "law": "M",
      "appt": "M",
      "trade": "M",
-     "rel": "M",
+     "rel": "V",
      "succ": "M"
     },
     "fact": {
@@ -4288,10 +4296,10 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 4,
+   "bundle_source": "final",
+   "law_fact_gap": 5,
    "v_count": {
-    "law": 0,
+    "law": 1,
     "fact": 0
    }
   },
@@ -4325,15 +4333,15 @@
      "law": "M",
      "appt": "S",
      "trade": "M",
-     "rel": "V",
+     "rel": "M",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 1,
-    "fact": 1
+    "fact": 0
    }
   },
   {
@@ -4355,7 +4363,7 @@
      "tax": "M",
      "law": "M",
      "appt": "M",
-     "trade": "M",
+     "trade": "V",
      "rel": "V",
      "succ": "V"
     },
@@ -4365,16 +4373,16 @@
      "tax": "M",
      "law": "M",
      "appt": "M",
-     "trade": "M",
+     "trade": "V",
      "rel": "V",
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 2,
-    "fact": 2
+    "law": 3,
+    "fact": 3
    }
   },
   {
@@ -4404,15 +4412,15 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "S",
+     "law": "M",
      "appt": "S",
      "trade": "S",
      "rel": "M",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 0,
     "fact": 0
@@ -4452,7 +4460,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 3,
@@ -4493,7 +4501,7 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 3,
@@ -4525,7 +4533,7 @@
     },
     "fact": {
      "dip": "S",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "M",
@@ -4534,8 +4542,8 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 2,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 2,
     "fact": 1
@@ -4566,7 +4574,7 @@
     },
     "fact": {
      "dip": "S",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "M",
@@ -4575,8 +4583,8 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 0,
    "v_count": {
     "law": 1,
     "fact": 1
@@ -4597,26 +4605,26 @@
    "bundle": {
     "law": {
      "dip": "S",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "S"
+     "succ": "M"
     },
     "fact": {
      "dip": "S",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "S"
+     "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 1,
@@ -4648,7 +4656,7 @@
     },
     "fact": {
      "dip": "S",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "M",
@@ -4657,8 +4665,8 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 2,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 2,
     "fact": 1
@@ -4692,17 +4700,17 @@
      "mil": "S",
      "tax": "S",
      "law": "M",
-     "appt": "S",
+     "appt": "M",
      "trade": "S",
-     "rel": "V",
+     "rel": "M",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 1,
-    "fact": 1
+    "fact": 0
    }
   },
   {
@@ -4739,7 +4747,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 1,
@@ -4762,7 +4770,7 @@
     "law": {
      "dip": "S",
      "mil": "S",
-     "tax": "M",
+     "tax": "S",
      "law": "M",
      "appt": "M",
      "trade": "S",
@@ -4772,19 +4780,19 @@
     "fact": {
      "dip": "S",
      "mil": "S",
-     "tax": "M",
+     "tax": "S",
      "law": "M",
      "appt": "M",
      "trade": "S",
-     "rel": "V",
+     "rel": "M",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 0,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 1,
-    "fact": 1
+    "fact": 0
    }
   },
   {
@@ -4807,7 +4815,7 @@
      "law": "M",
      "appt": "M",
      "trade": "S",
-     "rel": "V",
+     "rel": "M",
      "succ": "M"
     },
     "fact": {
@@ -4817,15 +4825,15 @@
      "law": "M",
      "appt": "M",
      "trade": "S",
-     "rel": "V",
+     "rel": "M",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 1,
-    "fact": 1
+    "law": 0,
+    "fact": 0
    }
   },
   {
@@ -4849,21 +4857,21 @@
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     },
     "fact": {
-     "dip": "S",
+     "dip": "M",
      "mil": "M",
      "tax": "V",
      "law": "M",
      "appt": "M",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 2,
     "fact": 3
@@ -4890,21 +4898,21 @@
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     },
     "fact": {
-     "dip": "S",
+     "dip": "M",
      "mil": "M",
      "tax": "V",
      "law": "M",
      "appt": "M",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 2,
     "fact": 3
@@ -4931,21 +4939,21 @@
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     },
     "fact": {
-     "dip": "S",
+     "dip": "M",
      "mil": "M",
      "tax": "V",
      "law": "M",
      "appt": "M",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 2,
     "fact": 3
@@ -4972,21 +4980,21 @@
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     },
     "fact": {
-     "dip": "S",
+     "dip": "M",
      "mil": "M",
      "tax": "V",
      "law": "M",
      "appt": "M",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 2,
     "fact": 3
@@ -5013,7 +5021,7 @@
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     },
     "fact": {
      "dip": "S",
@@ -5023,10 +5031,10 @@
      "appt": "M",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 2,
@@ -5054,24 +5062,24 @@
      "appt": "M",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     },
     "fact": {
-     "dip": "M",
+     "dip": "V",
      "mil": "M",
      "tax": "V",
-     "law": "M",
+     "law": "V",
      "appt": "M",
      "trade": "V",
      "rel": "V",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 0,
+   "bundle_source": "final",
+   "law_fact_gap": 3,
    "v_count": {
     "law": 3,
-    "fact": 3
+    "fact": 5
    }
   },
   {
@@ -5108,7 +5116,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 5,
@@ -5130,29 +5138,29 @@
    "bundle": {
     "law": {
      "dip": "S",
-     "mil": "S",
+     "mil": "M",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "M",
+     "rel": "M",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
      "rel": "V",
      "succ": "M"
-    },
-    "fact": {
-     "dip": "S",
-     "mil": "S",
-     "tax": "M",
-     "law": "M",
-     "appt": "S",
-     "trade": "M",
-     "rel": "V",
-     "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
-    "law": 1,
+    "law": 0,
     "fact": 1
    }
   },
@@ -5190,7 +5198,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 0,
@@ -5231,7 +5239,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 1,
@@ -5256,7 +5264,7 @@
      "mil": "S",
      "tax": "M",
      "law": "M",
-     "appt": "S",
+     "appt": "M",
      "trade": "M",
      "rel": "M",
      "succ": "S"
@@ -5272,8 +5280,8 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 0,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 0,
     "fact": 0
@@ -5310,11 +5318,11 @@
      "appt": "S",
      "trade": "M",
      "rel": "M",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 0,
     "fact": 0
@@ -5354,7 +5362,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 0,
@@ -5395,7 +5403,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 0,
@@ -5419,7 +5427,7 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "M",
+     "law": "S",
      "appt": "S",
      "trade": "S",
      "rel": "M",
@@ -5436,8 +5444,8 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 0,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 0,
     "fact": 0
@@ -5470,14 +5478,14 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "S",
+     "law": "M",
      "appt": "S",
      "trade": "S",
-     "rel": "S",
+     "rel": "M",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 0,
@@ -5511,15 +5519,15 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "S",
+     "law": "M",
      "appt": "S",
      "trade": "S",
      "rel": "M",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 0,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 0,
     "fact": 0
@@ -5543,10 +5551,10 @@
      "mil": "S",
      "tax": "S",
      "law": "M",
-     "appt": "M",
+     "appt": "S",
      "trade": "S",
      "rel": "M",
-     "succ": "M"
+     "succ": "S"
     },
     "fact": {
      "dip": "S",
@@ -5556,11 +5564,11 @@
      "appt": "M",
      "trade": "S",
      "rel": "M",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 0,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 0,
     "fact": 0
@@ -5583,7 +5591,7 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "M",
+     "law": "S",
      "appt": "S",
      "trade": "S",
      "rel": "M",
@@ -5600,8 +5608,8 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 2,
+   "bundle_source": "final",
+   "law_fact_gap": 3,
    "v_count": {
     "law": 0,
     "fact": 0
@@ -5641,7 +5649,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 0,
@@ -5682,7 +5690,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 0,
@@ -5713,18 +5721,18 @@
      "succ": "M"
     },
     "fact": {
-     "dip": "M",
-     "mil": "S",
+     "dip": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "M",
-     "trade": "M",
+     "trade": "S",
      "rel": "V",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 2,
+   "bundle_source": "final",
+   "law_fact_gap": 3,
    "v_count": {
     "law": 1,
     "fact": 1
@@ -5764,7 +5772,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 1,
@@ -5786,30 +5794,30 @@
    "bundle": {
     "law": {
      "dip": "S",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "M",
-     "trade": "M",
+     "trade": "V",
      "rel": "M",
      "succ": "S"
     },
     "fact": {
      "dip": "S",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "M",
-     "trade": "M",
+     "trade": "V",
      "rel": "M",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 0,
-    "fact": 0
+    "law": 1,
+    "fact": 1
    }
   },
   {
@@ -5839,15 +5847,15 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "S",
+     "law": "M",
      "appt": "S",
      "trade": "S",
      "rel": "V",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 0,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 1,
     "fact": 1
@@ -5887,7 +5895,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 1,
@@ -5919,17 +5927,17 @@
     },
     "fact": {
      "dip": "S",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
-     "appt": "S",
+     "appt": "M",
      "trade": "S",
      "rel": "V",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 1,
     "fact": 1
@@ -5952,7 +5960,7 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "S",
+     "law": "M",
      "appt": "S",
      "trade": "S",
      "rel": "V",
@@ -5962,18 +5970,18 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "S",
+     "law": "M",
      "appt": "S",
      "trade": "S",
-     "rel": "V",
+     "rel": "M",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 0,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 1,
-    "fact": 1
+    "fact": 0
    }
   },
   {
@@ -5993,7 +6001,7 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "S",
+     "law": "M",
      "appt": "S",
      "trade": "S",
      "rel": "V",
@@ -6003,14 +6011,14 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "S",
+     "law": "M",
      "appt": "S",
      "trade": "S",
      "rel": "V",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 1,
@@ -6051,7 +6059,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 1,
@@ -6092,7 +6100,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 1,
@@ -6116,7 +6124,7 @@
      "dip": "S",
      "mil": "S",
      "tax": "S",
-     "law": "M",
+     "law": "S",
      "appt": "S",
      "trade": "S",
      "rel": "V",
@@ -6133,8 +6141,8 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 4,
    "v_count": {
     "law": 1,
     "fact": 1
@@ -6155,18 +6163,18 @@
    "bundle": {
     "law": {
      "dip": "V",
-     "mil": "M",
+     "mil": "S",
      "tax": "V",
      "law": "V",
      "appt": "V",
-     "trade": "V",
+     "trade": "M",
      "rel": "V",
      "succ": "V"
     },
     "fact": {
      "dip": "S",
      "mil": "S",
-     "tax": "M",
+     "tax": "S",
      "law": "M",
      "appt": "S",
      "trade": "S",
@@ -6174,10 +6182,10 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 8,
+   "bundle_source": "final",
+   "law_fact_gap": 7,
    "v_count": {
-    "law": 7,
+    "law": 6,
     "fact": 0
    }
   },
@@ -6207,19 +6215,19 @@
     "fact": {
      "dip": "S",
      "mil": "S",
-     "tax": "M",
+     "tax": "S",
      "law": "M",
      "appt": "S",
      "trade": "S",
-     "rel": "V",
+     "rel": "M",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 7,
+   "bundle_source": "final",
+   "law_fact_gap": 8,
    "v_count": {
     "law": 6,
-    "fact": 1
+    "fact": 0
    }
   },
   {
@@ -6237,7 +6245,7 @@
    "bundle": {
     "law": {
      "dip": "M",
-     "mil": "S",
+     "mil": "M",
      "tax": "V",
      "law": "M",
      "appt": "V",
@@ -6248,19 +6256,19 @@
     "fact": {
      "dip": "S",
      "mil": "S",
-     "tax": "M",
+     "tax": "S",
      "law": "M",
      "appt": "S",
      "trade": "S",
-     "rel": "V",
+     "rel": "M",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 5,
+   "bundle_source": "final",
+   "law_fact_gap": 7,
    "v_count": {
     "law": 4,
-    "fact": 1
+    "fact": 0
    }
   },
   {
@@ -6289,7 +6297,7 @@
     "fact": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "V",
      "appt": "M",
      "trade": "M",
@@ -6297,11 +6305,11 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 4,
    "v_count": {
     "law": 5,
-    "fact": 3
+    "fact": 2
    }
   },
   {
@@ -6325,7 +6333,7 @@
      "appt": "V",
      "trade": "M",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     },
     "fact": {
      "dip": "S",
@@ -6333,13 +6341,13 @@
      "tax": "M",
      "law": "M",
      "appt": "M",
-     "trade": "M",
+     "trade": "S",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 5,
+   "bundle_source": "final",
+   "law_fact_gap": 6,
    "v_count": {
     "law": 4,
     "fact": 1
@@ -6373,17 +6381,17 @@
      "mil": "S",
      "tax": "M",
      "law": "M",
-     "appt": "S",
+     "appt": "M",
      "trade": "S",
-     "rel": "M",
+     "rel": "V",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 3,
    "v_count": {
     "law": 0,
-    "fact": 0
+    "fact": 1
    }
   },
   {
@@ -6414,14 +6422,14 @@
      "mil": "M",
      "tax": "M",
      "law": "V",
-     "appt": "S",
+     "appt": "M",
      "trade": "S",
      "rel": "V",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 4,
+   "bundle_source": "final",
+   "law_fact_gap": 3,
    "v_count": {
     "law": 3,
     "fact": 2
@@ -6452,7 +6460,7 @@
     },
     "fact": {
      "dip": "M",
-     "mil": "S",
+     "mil": "M",
      "tax": "V",
      "law": "V",
      "appt": "M",
@@ -6461,8 +6469,8 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 5,
     "fact": 3
@@ -6493,7 +6501,7 @@
     },
     "fact": {
      "dip": "M",
-     "mil": "S",
+     "mil": "M",
      "tax": "V",
      "law": "V",
      "appt": "M",
@@ -6502,8 +6510,8 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 5,
     "fact": 3
@@ -6534,7 +6542,7 @@
     },
     "fact": {
      "dip": "M",
-     "mil": "S",
+     "mil": "M",
      "tax": "V",
      "law": "V",
      "appt": "M",
@@ -6543,8 +6551,8 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 5,
     "fact": 3
@@ -6574,7 +6582,7 @@
      "succ": "V"
     },
     "fact": {
-     "dip": "S",
+     "dip": "M",
      "mil": "S",
      "tax": "V",
      "law": "V",
@@ -6584,8 +6592,8 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 4,
+   "bundle_source": "final",
+   "law_fact_gap": 3,
    "v_count": {
     "law": 5,
     "fact": 3
@@ -6625,7 +6633,7 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 5,
@@ -6648,7 +6656,7 @@
     "law": {
      "dip": "M",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "V",
      "appt": "V",
      "trade": "M",
@@ -6656,8 +6664,8 @@
      "succ": "V"
     },
     "fact": {
-     "dip": "S",
-     "mil": "S",
+     "dip": "M",
+     "mil": "M",
      "tax": "M",
      "law": "V",
      "appt": "S",
@@ -6666,10 +6674,10 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 7,
+   "bundle_source": "final",
+   "law_fact_gap": 4,
    "v_count": {
-    "law": 5,
+    "law": 4,
     "fact": 1
    }
   },
@@ -6699,7 +6707,7 @@
     "fact": {
      "dip": "M",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "V",
      "appt": "V",
      "trade": "M",
@@ -6707,11 +6715,11 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 0,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
     "law": 5,
-    "fact": 5
+    "fact": 4
    }
   },
   {
@@ -6728,7 +6736,7 @@
    "violent_end": false,
    "bundle": {
     "law": {
-     "dip": "V",
+     "dip": "M",
      "mil": "S",
      "tax": "M",
      "law": "V",
@@ -6738,7 +6746,7 @@
      "succ": "V"
     },
     "fact": {
-     "dip": "V",
+     "dip": "M",
      "mil": "S",
      "tax": "M",
      "law": "V",
@@ -6748,11 +6756,11 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 6,
-    "fact": 6
+    "law": 5,
+    "fact": 5
    }
   },
   {
@@ -6769,7 +6777,7 @@
    "violent_end": false,
    "bundle": {
     "law": {
-     "dip": "V",
+     "dip": "M",
      "mil": "S",
      "tax": "M",
      "law": "V",
@@ -6779,7 +6787,7 @@
      "succ": "V"
     },
     "fact": {
-     "dip": "V",
+     "dip": "M",
      "mil": "S",
      "tax": "M",
      "law": "V",
@@ -6789,11 +6797,11 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 6,
-    "fact": 6
+    "law": 5,
+    "fact": 5
    }
   },
   {
@@ -6810,7 +6818,7 @@
    "violent_end": false,
    "bundle": {
     "law": {
-     "dip": "V",
+     "dip": "M",
      "mil": "S",
      "tax": "M",
      "law": "V",
@@ -6820,7 +6828,7 @@
      "succ": "V"
     },
     "fact": {
-     "dip": "V",
+     "dip": "M",
      "mil": "S",
      "tax": "M",
      "law": "V",
@@ -6830,11 +6838,11 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 6,
-    "fact": 6
+    "law": 5,
+    "fact": 5
    }
   },
   {
@@ -6852,30 +6860,30 @@
    "bundle": {
     "law": {
      "dip": "M",
-     "mil": "S",
-     "tax": "M",
-     "law": "M",
-     "appt": "M",
-     "trade": "V",
-     "rel": "V",
-     "succ": "V"
-    },
-    "fact": {
-     "dip": "M",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "V",
      "trade": "V",
      "rel": "V",
-     "succ": "V"
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "M",
+     "law": "M",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 0,
    "v_count": {
     "law": 3,
-    "fact": 4
+    "fact": 3
    }
   },
   {
@@ -6893,30 +6901,30 @@
    "bundle": {
     "law": {
      "dip": "M",
-     "mil": "S",
-     "tax": "M",
-     "law": "M",
-     "appt": "M",
-     "trade": "V",
-     "rel": "V",
-     "succ": "V"
-    },
-    "fact": {
-     "dip": "M",
-     "mil": "S",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "V",
      "trade": "V",
      "rel": "V",
-     "succ": "V"
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "M",
+     "law": "M",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 0,
    "v_count": {
     "law": 3,
-    "fact": 4
+    "fact": 3
    }
   },
   {
@@ -6937,27 +6945,27 @@
      "mil": "S",
      "tax": "V",
      "law": "M",
-     "appt": "M",
+     "appt": "V",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     },
     "fact": {
      "dip": "S",
      "mil": "S",
      "tax": "V",
      "law": "M",
-     "appt": "M",
+     "appt": "V",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 3,
-    "fact": 3
+    "law": 4,
+    "fact": 4
    }
   },
   {
@@ -6978,27 +6986,27 @@
      "mil": "S",
      "tax": "V",
      "law": "M",
-     "appt": "M",
+     "appt": "V",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     },
     "fact": {
      "dip": "S",
      "mil": "S",
      "tax": "V",
      "law": "M",
-     "appt": "M",
+     "appt": "V",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 3,
-    "fact": 3
+    "law": 4,
+    "fact": 4
    }
   },
   {
@@ -7017,7 +7025,7 @@
     "law": {
      "dip": "M",
      "mil": "M",
-     "tax": "M",
+     "tax": "V",
      "law": "M",
      "appt": "V",
      "trade": "V",
@@ -7035,10 +7043,10 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 4,
+   "bundle_source": "final",
+   "law_fact_gap": 3,
    "v_count": {
-    "law": 3,
+    "law": 4,
     "fact": 7
    }
   },
@@ -7056,11 +7064,11 @@
    "violent_end": false,
    "bundle": {
     "law": {
-     "dip": "S",
+     "dip": "M",
      "mil": "S",
      "tax": "M",
      "law": "M",
-     "appt": "M",
+     "appt": "V",
      "trade": "V",
      "rel": "M",
      "succ": "M"
@@ -7069,18 +7077,18 @@
      "dip": "M",
      "mil": "S",
      "tax": "M",
-     "law": "M",
+     "law": "V",
      "appt": "V",
      "trade": "V",
      "rel": "V",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
-    "law": 1,
-    "fact": 3
+    "law": 2,
+    "fact": 4
    }
   },
   {
@@ -7117,7 +7125,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 2,
    "v_count": {
     "law": 3,
@@ -7158,7 +7166,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 2,
    "v_count": {
     "law": 4,
@@ -7181,7 +7189,7 @@
     "law": {
      "dip": "M",
      "mil": "M",
-     "tax": "M",
+     "tax": "V",
      "law": "M",
      "appt": "V",
      "trade": "V",
@@ -7190,7 +7198,7 @@
     },
     "fact": {
      "dip": "V",
-     "mil": "V",
+     "mil": "M",
      "tax": "V",
      "law": "M",
      "appt": "V",
@@ -7199,11 +7207,11 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
-    "law": 3,
-    "fact": 6
+    "law": 4,
+    "fact": 5
    }
   },
   {
@@ -7240,7 +7248,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 2,
    "v_count": {
     "law": 3,
@@ -7263,7 +7271,7 @@
     "law": {
      "dip": "M",
      "mil": "M",
-     "tax": "M",
+     "tax": "V",
      "law": "V",
      "appt": "V",
      "trade": "V",
@@ -7278,14 +7286,14 @@
      "appt": "V",
      "trade": "V",
      "rel": "V",
-     "succ": "M"
+     "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 2,
    "v_count": {
-    "law": 4,
-    "fact": 6
+    "law": 5,
+    "fact": 7
    }
   },
   {
@@ -7304,7 +7312,7 @@
     "law": {
      "dip": "M",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7314,7 +7322,7 @@
     "fact": {
      "dip": "M",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7322,11 +7330,11 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 1,
-    "fact": 1
+    "law": 0,
+    "fact": 0
    }
   },
   {
@@ -7345,7 +7353,7 @@
     "law": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7355,7 +7363,7 @@
     "fact": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7363,11 +7371,11 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 1,
-    "fact": 1
+    "law": 0,
+    "fact": 0
    }
   },
   {
@@ -7386,7 +7394,7 @@
     "law": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7396,7 +7404,7 @@
     "fact": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7404,11 +7412,11 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 1,
-    "fact": 1
+    "law": 0,
+    "fact": 0
    }
   },
   {
@@ -7427,7 +7435,7 @@
     "law": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7437,7 +7445,7 @@
     "fact": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7445,11 +7453,11 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 1,
-    "fact": 1
+    "law": 0,
+    "fact": 0
    }
   },
   {
@@ -7468,7 +7476,7 @@
     "law": {
      "dip": "M",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7478,7 +7486,7 @@
     "fact": {
      "dip": "M",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7486,11 +7494,11 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 1,
-    "fact": 1
+    "law": 0,
+    "fact": 0
    }
   },
   {
@@ -7509,7 +7517,7 @@
     "law": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7519,7 +7527,7 @@
     "fact": {
      "dip": "S",
      "mil": "M",
-     "tax": "V",
+     "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
@@ -7527,11 +7535,11 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 1,
-    "fact": 1
+    "law": 0,
+    "fact": 0
    }
   },
   {
@@ -7549,7 +7557,7 @@
    "bundle": {
     "law": {
      "dip": "M",
-     "mil": "M",
+     "mil": "V",
      "tax": "V",
      "law": "V",
      "appt": "V",
@@ -7568,10 +7576,10 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 0,
+   "bundle_source": "final",
+   "law_fact_gap": 1,
    "v_count": {
-    "law": 5,
+    "law": 6,
     "fact": 5
    }
   },
@@ -7609,7 +7617,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 4,
@@ -7631,7 +7639,7 @@
    "bundle": {
     "law": {
      "dip": "S",
-     "mil": "M",
+     "mil": "S",
      "tax": "S",
      "law": "M",
      "appt": "S",
@@ -7641,7 +7649,7 @@
     },
     "fact": {
      "dip": "S",
-     "mil": "M",
+     "mil": "S",
      "tax": "S",
      "law": "M",
      "appt": "S",
@@ -7650,7 +7658,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 0,
@@ -7676,26 +7684,26 @@
      "tax": "M",
      "law": "V",
      "appt": "M",
-     "trade": "M",
+     "trade": "V",
      "rel": "V",
      "succ": "M"
     },
     "fact": {
      "dip": "V",
      "mil": "M",
-     "tax": "M",
+     "tax": "V",
      "law": "V",
-     "appt": "M",
+     "appt": "V",
      "trade": "V",
      "rel": "V",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 2,
+   "bundle_source": "final",
+   "law_fact_gap": 3,
    "v_count": {
-    "law": 2,
-    "fact": 4
+    "law": 3,
+    "fact": 6
    }
   },
   {
@@ -7732,7 +7740,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 4,
@@ -7760,7 +7768,7 @@
      "appt": "V",
      "trade": "M",
      "rel": "V",
-     "succ": "S"
+     "succ": "M"
     },
     "fact": {
      "dip": "M",
@@ -7770,10 +7778,10 @@
      "appt": "V",
      "trade": "M",
      "rel": "V",
-     "succ": "S"
+     "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 3,
@@ -7799,7 +7807,7 @@
      "tax": "V",
      "law": "V",
      "appt": "M",
-     "trade": "M",
+     "trade": "V",
      "rel": "V",
      "succ": "S"
     },
@@ -7814,10 +7822,10 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
-    "law": 3,
+    "law": 4,
     "fact": 2
    }
   },
@@ -7842,7 +7850,7 @@
      "appt": "V",
      "trade": "M",
      "rel": "V",
-     "succ": "M"
+     "succ": "V"
     },
     "fact": {
      "dip": "S",
@@ -7850,16 +7858,16 @@
      "tax": "M",
      "law": "V",
      "appt": "V",
-     "trade": "M",
+     "trade": "V",
      "rel": "V",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 0,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
-    "law": 4,
-    "fact": 4
+    "law": 5,
+    "fact": 5
    }
   },
   {
@@ -7877,7 +7885,7 @@
    "bundle": {
     "law": {
      "dip": "M",
-     "mil": "M",
+     "mil": "V",
      "tax": "V",
      "law": "V",
      "appt": "V",
@@ -7896,10 +7904,10 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
-    "law": 6,
+    "law": 7,
     "fact": 7
    }
   },
@@ -7937,7 +7945,7 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 2,
    "v_count": {
     "law": 5,
@@ -7978,7 +7986,7 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 7,
@@ -8019,7 +8027,7 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 5,
@@ -8057,14 +8065,14 @@
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "M"
+     "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 5,
+   "bundle_source": "final",
+   "law_fact_gap": 4,
    "v_count": {
     "law": 6,
-    "fact": 1
+    "fact": 2
    }
   },
   {
@@ -8082,7 +8090,7 @@
    "bundle": {
     "law": {
      "dip": "V",
-     "mil": "V",
+     "mil": "M",
      "tax": "M",
      "law": "M",
      "appt": "V",
@@ -8101,10 +8109,10 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 0,
    "v_count": {
-    "law": 4,
+    "law": 3,
     "fact": 3
    }
   },
@@ -8142,7 +8150,7 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 5,
@@ -8174,7 +8182,7 @@
     },
     "fact": {
      "dip": "V",
-     "mil": "M",
+     "mil": "V",
      "tax": "V",
      "law": "M",
      "appt": "V",
@@ -8183,11 +8191,11 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 0,
    "v_count": {
     "law": 5,
-    "fact": 4
+    "fact": 5
    }
   },
   {
@@ -8206,7 +8214,7 @@
     "law": {
      "dip": "V",
      "mil": "V",
-     "tax": "M",
+     "tax": "V",
      "law": "M",
      "appt": "V",
      "trade": "M",
@@ -8216,7 +8224,7 @@
     "fact": {
      "dip": "V",
      "mil": "V",
-     "tax": "M",
+     "tax": "V",
      "law": "M",
      "appt": "V",
      "trade": "M",
@@ -8224,11 +8232,11 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
-    "law": 4,
-    "fact": 5
+    "law": 5,
+    "fact": 6
    }
   },
   {
@@ -8252,7 +8260,7 @@
      "appt": "V",
      "trade": "M",
      "rel": "V",
-     "succ": "V"
+     "succ": "M"
     },
     "fact": {
      "dip": "V",
@@ -8262,14 +8270,14 @@
      "appt": "V",
      "trade": "M",
      "rel": "V",
-     "succ": "V"
+     "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
-    "law": 6,
-    "fact": 6
+    "law": 5,
+    "fact": 5
    }
   },
   {
@@ -8306,7 +8314,7 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 5,
    "v_count": {
     "law": 5,
@@ -8341,17 +8349,17 @@
      "mil": "M",
      "tax": "M",
      "law": "M",
-     "appt": "M",
+     "appt": "V",
      "trade": "M",
      "rel": "V",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 4,
-    "fact": 1
+    "fact": 2
    }
   },
   {
@@ -8388,7 +8396,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 2,
@@ -8429,7 +8437,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 2,
@@ -8456,7 +8464,7 @@
      "law": "V",
      "appt": "V",
      "trade": "M",
-     "rel": "V",
+     "rel": "M",
      "succ": "M"
     },
     "fact": {
@@ -8470,10 +8478,10 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
-    "law": 3,
+    "law": 2,
     "fact": 3
    }
   },
@@ -8511,7 +8519,7 @@
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 5,
@@ -8552,7 +8560,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 2,
@@ -8574,7 +8582,7 @@
    "bundle": {
     "law": {
      "dip": "M",
-     "mil": "M",
+     "mil": "S",
      "tax": "M",
      "law": "M",
      "appt": "M",
@@ -8590,10 +8598,10 @@
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "S"
+     "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 1,
    "v_count": {
     "law": 1,
@@ -8620,12 +8628,12 @@
      "law": "M",
      "appt": "V",
      "trade": "M",
-     "rel": "V",
+     "rel": "M",
      "succ": "M"
     },
     "fact": {
      "dip": "V",
-     "mil": "M",
+     "mil": "V",
      "tax": "V",
      "law": "M",
      "appt": "V",
@@ -8634,11 +8642,11 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 2,
+   "bundle_source": "final",
+   "law_fact_gap": 4,
    "v_count": {
-    "law": 2,
-    "fact": 4
+    "law": 1,
+    "fact": 5
    }
   },
   {
@@ -8672,14 +8680,14 @@
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "V"
+     "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
     "law": 4,
-    "fact": 3
+    "fact": 2
    }
   },
   {
@@ -8696,8 +8704,8 @@
    "violent_end": false,
    "bundle": {
     "law": {
-     "dip": "M",
-     "mil": "M",
+     "dip": "V",
+     "mil": "S",
      "tax": "M",
      "law": "M",
      "appt": "V",
@@ -8707,20 +8715,20 @@
     },
     "fact": {
      "dip": "M",
-     "mil": "M",
+     "mil": "S",
      "tax": "M",
      "law": "M",
      "appt": "M",
      "trade": "M",
      "rel": "V",
-     "succ": "V"
+     "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 3,
    "v_count": {
-    "law": 3,
-    "fact": 2
+    "law": 4,
+    "fact": 1
    }
   },
   {
@@ -8737,7 +8745,7 @@
    "violent_end": false,
    "bundle": {
     "law": {
-     "dip": "M",
+     "dip": "V",
      "mil": "V",
      "tax": "S",
      "law": "V",
@@ -8747,21 +8755,21 @@
      "succ": "V"
     },
     "fact": {
-     "dip": "M",
+     "dip": "V",
      "mil": "M",
      "tax": "S",
-     "law": "M",
+     "law": "V",
      "appt": "M",
      "trade": "M",
      "rel": "V",
      "succ": "V"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 3,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
-    "law": 5,
-    "fact": 2
+    "law": 6,
+    "fact": 4
    }
   },
   {
@@ -8781,7 +8789,7 @@
      "dip": "M",
      "mil": "S",
      "tax": "S",
-     "law": "M",
+     "law": "V",
      "appt": "M",
      "trade": "M",
      "rel": "V",
@@ -8798,10 +8806,10 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 2,
    "v_count": {
-    "law": 2,
+    "law": 3,
     "fact": 1
    }
   },
@@ -8819,9 +8827,9 @@
    "violent_end": true,
    "bundle": {
     "law": {
-     "dip": "M",
+     "dip": "V",
      "mil": "M",
-     "tax": "M",
+     "tax": "S",
      "law": "V",
      "appt": "V",
      "trade": "M",
@@ -8831,19 +8839,19 @@
     "fact": {
      "dip": "M",
      "mil": "S",
-     "tax": "M",
-     "law": "M",
+     "tax": "S",
+     "law": "V",
      "appt": "M",
      "trade": "M",
      "rel": "V",
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 4,
    "v_count": {
-    "law": 4,
-    "fact": 1
+    "law": 5,
+    "fact": 2
    }
   },
   {
@@ -8880,7 +8888,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 0,
@@ -8921,7 +8929,7 @@
      "succ": "M"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 0,
@@ -8945,8 +8953,8 @@
      "dip": "S",
      "mil": "S",
      "tax": "M",
-     "law": "S",
-     "appt": "S",
+     "law": "M",
+     "appt": "M",
      "trade": "S",
      "rel": "M",
      "succ": "S"
@@ -8955,15 +8963,15 @@
      "dip": "S",
      "mil": "S",
      "tax": "M",
-     "law": "S",
+     "law": "M",
      "appt": "M",
      "trade": "S",
      "rel": "M",
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
-   "law_fact_gap": 1,
+   "bundle_source": "final",
+   "law_fact_gap": 0,
    "v_count": {
     "law": 0,
     "fact": 0
@@ -9003,7 +9011,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 0,
@@ -9044,7 +9052,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 0,
@@ -9085,7 +9093,7 @@
      "succ": "S"
     }
    },
-   "bundle_source": "A (provisional)",
+   "bundle_source": "final",
    "law_fact_gap": 0,
    "v_count": {
     "law": 0,

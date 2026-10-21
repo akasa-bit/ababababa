@@ -1,8 +1,8 @@
 {
- "generated": "2026-10-21T08:33:35Z",
+ "generated": "2026-10-21T12:59:41Z",
  "n": 131,
  "bundle_source": {
-  "none": 131
+  "final": 131
  },
  "families": {
   "ritual": "儀礼の宗主権 (冊封朝貢・藩部・貢納公国)",
@@ -43,6 +43,30 @@
     "T20": 1,
     "T03": 1
    },
+   "mean_gap": 2.5,
+   "mean_v_fact": 5.67,
+   "modal_bundle": {
+    "law": {
+     "dip": "V",
+     "mil": "V",
+     "tax": "M",
+     "law": "V",
+     "appt": "M",
+     "trade": "M",
+     "rel": "V",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "V",
+     "mil": "V",
+     "tax": "V",
+     "law": "V",
+     "appt": "V",
+     "trade": "M",
+     "rel": "V",
+     "succ": "M"
+    }
+   },
    "name": "冊封朝貢国",
    "family": "ritual"
   },
@@ -72,6 +96,30 @@
     "INDEP": 2,
     "other_suzerain_or_type": 2,
     "T20": 1
+   },
+   "mean_gap": 1.6,
+   "mean_v_fact": 0.6,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "M",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "S",
+     "rel": "M",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "M",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "M",
+     "rel": "M",
+     "succ": "M"
+    }
    },
    "name": "藩部 (理藩院の管轄)",
    "family": "ritual"
@@ -104,6 +152,30 @@
     "INDEP": 5,
     "T20": 3
    },
+   "mean_gap": 2.0,
+   "mean_v_fact": 1.12,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "M",
+     "rel": "V",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "S",
+     "law": "M",
+     "appt": "S",
+     "trade": "M",
+     "rel": "M",
+     "succ": "S"
+    }
+   },
    "name": "保護国 (条約型)",
    "family": "treaty"
   },
@@ -135,6 +207,30 @@
     "T20": 2,
     "other_suzerain_or_type": 6
    },
+   "mean_gap": 0.5,
+   "mean_v_fact": 0.62,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "M",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "M",
+     "rel": "V",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "M",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "M",
+     "rel": "V",
+     "succ": "M"
+    }
+   },
    "name": "藩王国・土侯国 (従属同盟と至上権)",
    "family": "treaty"
   },
@@ -165,6 +261,30 @@
     "INDEP": 6,
     "T20": 1
    },
+   "mean_gap": 1.86,
+   "mean_v_fact": 3.71,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "M",
+     "tax": "V",
+     "law": "M",
+     "appt": "M",
+     "trade": "M",
+     "rel": "V",
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "V",
+     "law": "M",
+     "appt": "M",
+     "trade": "V",
+     "rel": "V",
+     "succ": "S"
+    }
+   },
    "name": "自治領",
    "family": "settler"
   },
@@ -191,6 +311,30 @@
    "indep_share": 0.8,
    "next": {
     "INDEP": 5
+   },
+   "mean_gap": 1.0,
+   "mean_v_fact": 0.4,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "M",
+     "rel": "M",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "M",
+     "law": "M",
+     "appt": "S",
+     "trade": "M",
+     "rel": "M",
+     "succ": "S"
+    }
    },
    "name": "委任統治領 A",
    "family": "treaty"
@@ -223,6 +367,30 @@
     "INDEP": 6,
     "other_suzerain_or_type": 1
    },
+   "mean_gap": 1.14,
+   "mean_v_fact": 0.0,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "S",
+     "law": "S",
+     "appt": "S",
+     "trade": "S",
+     "rel": "M",
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "S",
+     "law": "M",
+     "appt": "S",
+     "trade": "S",
+     "rel": "M",
+     "succ": "S"
+    }
+   },
    "name": "委任統治領 B・C と信託統治",
    "family": "colony"
   },
@@ -254,6 +422,30 @@
     "other_suzerain_or_type": 1,
     "T20": 2
    },
+   "mean_gap": 0.67,
+   "mean_v_fact": 0.67,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "S",
+     "law": "M",
+     "appt": "S",
+     "trade": "S",
+     "rel": "M",
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "S",
+     "law": "M",
+     "appt": "S",
+     "trade": "S",
+     "rel": "M",
+     "succ": "S"
+    }
+   },
    "name": "共同統治",
    "family": "dynastic"
   },
@@ -281,6 +473,30 @@
    "indep_share": 0.0,
    "next": {
     "other_suzerain_or_type": 7
+   },
+   "mean_gap": 1.0,
+   "mean_v_fact": 0.71,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "S",
+     "law": "M",
+     "appt": "S",
+     "trade": "S",
+     "rel": "V",
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "S",
+     "law": "M",
+     "appt": "S",
+     "trade": "S",
+     "rel": "V",
+     "succ": "S"
+    }
    },
    "name": "特許会社領",
    "family": "colony"
@@ -312,6 +528,30 @@
     "INDEP": 6,
     "T20": 1
    },
+   "mean_gap": 5.43,
+   "mean_v_fact": 0.86,
+   "modal_bundle": {
+    "law": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "V",
+     "law": "V",
+     "appt": "V",
+     "trade": "M",
+     "rel": "V",
+     "succ": "V"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "S",
+     "rel": "V",
+     "succ": "S"
+    }
+   },
    "name": "傀儡国",
    "family": "client"
   },
@@ -342,6 +582,30 @@
     "INDEP": 6,
     "MERGED": 1
    },
+   "mean_gap": 2.14,
+   "mean_v_fact": 3.29,
+   "modal_bundle": {
+    "law": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "V",
+     "law": "V",
+     "appt": "V",
+     "trade": "M",
+     "rel": "V",
+     "succ": "V"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "V",
+     "law": "V",
+     "appt": "M",
+     "trade": "M",
+     "rel": "V",
+     "succ": "M"
+    }
+   },
    "name": "衛星国",
    "family": "client"
   },
@@ -370,6 +634,30 @@
    "indep_share": 0.286,
    "next": {
     "INDEP": 2
+   },
+   "mean_gap": 0.0,
+   "mean_v_fact": 4.14,
+   "modal_bundle": {
+    "law": {
+     "dip": "M",
+     "mil": "S",
+     "tax": "M",
+     "law": "M",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "S",
+     "tax": "M",
+     "law": "M",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "S"
+    }
    },
    "name": "自由連合",
    "family": "settler"
@@ -401,6 +689,30 @@
     "T20": 4,
     "INDEP": 3
    },
+   "mean_gap": 2.0,
+   "mean_v_fact": 5.57,
+   "modal_bundle": {
+    "law": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "V",
+     "law": "M",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "V",
+     "mil": "V",
+     "tax": "V",
+     "law": "V",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "M"
+    }
+   },
    "name": "封臣 (中世西欧)",
    "family": "dynastic"
   },
@@ -427,6 +739,30 @@
    "indep_share": 0.0,
    "next": {
     "T20": 6
+   },
+   "mean_gap": 0.0,
+   "mean_v_fact": 0.0,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "M",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "M",
+     "rel": "M",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "M",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "M",
+     "rel": "M",
+     "succ": "M"
+    }
    },
    "name": "幕藩制の藩 (近世日本)",
    "family": "dynastic"
@@ -461,6 +797,30 @@
     "MERGED": 1,
     "other_suzerain_or_type": 1
    },
+   "mean_gap": 1.0,
+   "mean_v_fact": 3.57,
+   "modal_bundle": {
+    "law": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "V",
+     "law": "V",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "V",
+     "law": "V",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "M"
+    }
+   },
    "name": "同君連合",
    "family": "dynastic"
   },
@@ -491,6 +851,30 @@
     "INDEP": 5,
     "T20": 1
    },
+   "mean_gap": 1.67,
+   "mean_v_fact": 5.5,
+   "modal_bundle": {
+    "law": {
+     "dip": "M",
+     "mil": "V",
+     "tax": "V",
+     "law": "V",
+     "appt": "V",
+     "trade": "M",
+     "rel": "V",
+     "succ": "V"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "V",
+     "tax": "V",
+     "law": "V",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "V"
+    }
+   },
    "name": "緩衝国",
    "family": "treaty"
   },
@@ -520,6 +904,30 @@
    "next": {
     "INDEP": 5,
     "T03": 2
+   },
+   "mean_gap": 1.29,
+   "mean_v_fact": 4.14,
+   "modal_bundle": {
+    "law": {
+     "dip": "V",
+     "mil": "V",
+     "tax": "V",
+     "law": "M",
+     "appt": "V",
+     "trade": "M",
+     "rel": "M",
+     "succ": "V"
+    },
+    "fact": {
+     "dip": "V",
+     "mil": "V",
+     "tax": "V",
+     "law": "M",
+     "appt": "V",
+     "trade": "M",
+     "rel": "V",
+     "succ": "V"
+    }
    },
    "name": "不平等条約の半主権国 (非公式の帝国)",
    "family": "legal"
@@ -554,6 +962,30 @@
     "other_suzerain_or_type": 2,
     "T03": 1
    },
+   "mean_gap": 1.14,
+   "mean_v_fact": 3.0,
+   "modal_bundle": {
+    "law": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "M",
+     "law": "V",
+     "appt": "S",
+     "trade": "M",
+     "rel": "V",
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "M",
+     "law": "V",
+     "appt": "S",
+     "trade": "M",
+     "rel": "V",
+     "succ": "S"
+    }
+   },
    "name": "貢納公国 (オスマン型)",
    "family": "ritual"
   },
@@ -579,6 +1011,30 @@
    "indep_share": 1.0,
    "next": {
     "INDEP": 5
+   },
+   "mean_gap": 2.6,
+   "mean_v_fact": 2.0,
+   "modal_bundle": {
+    "law": {
+     "dip": "V",
+     "mil": "M",
+     "tax": "S",
+     "law": "V",
+     "appt": "V",
+     "trade": "M",
+     "rel": "V",
+     "succ": "V"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "S",
+     "tax": "S",
+     "law": "V",
+     "appt": "M",
+     "trade": "M",
+     "rel": "V",
+     "succ": "M"
+    }
    },
    "name": "財政保護と介入権 (プラット型)",
    "family": "treaty"
@@ -607,6 +1063,30 @@
    "indep_share": 0.833,
    "next": {
     "INDEP": 6
+   },
+   "mean_gap": 0.0,
+   "mean_v_fact": 0.0,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "S",
+     "law": "M",
+     "appt": "S",
+     "trade": "S",
+     "rel": "M",
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "S",
+     "law": "M",
+     "appt": "S",
+     "trade": "S",
+     "rel": "M",
+     "succ": "S"
+    }
    },
    "name": "植民地 (直轄)",
    "family": "colony"
@@ -649,7 +1129,39 @@
     "INDEP": 12,
     "T20": 1,
     "MERGED": 1
-   }
+   },
+   "mean_gap": 3.79,
+   "mean_v_fact": 2.07,
+   "modal_bundle": {
+    "law": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "V",
+     "law": "V",
+     "appt": "V",
+     "trade": "M",
+     "rel": "V",
+     "succ": "V"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "M",
+     "tax": "M",
+     "law": "V",
+     "appt": "M",
+     "trade": "S",
+     "rel": "V",
+     "succ": "S"
+    }
+   },
+   "km_median_boot90": [
+    6.0,
+    41.0
+   ],
+   "violent_end_boot90": [
+    0.0,
+    0.0
+   ]
   },
   "colony": {
    "n": 20,
@@ -691,7 +1203,39 @@
    "next": {
     "INDEP": 12,
     "other_suzerain_or_type": 8
-   }
+   },
+   "mean_gap": 0.75,
+   "mean_v_fact": 0.25,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "S",
+     "law": "M",
+     "appt": "S",
+     "trade": "S",
+     "rel": "M",
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "S",
+     "law": "M",
+     "appt": "S",
+     "trade": "S",
+     "rel": "M",
+     "succ": "S"
+    }
+   },
+   "km_median_boot90": [
+    39.0,
+    65.0
+   ],
+   "violent_end_boot90": [
+    0.2,
+    0.55
+   ]
   },
   "dynastic": {
    "n": 26,
@@ -743,7 +1287,39 @@
     "other_suzerain_or_type": 2,
     "T20": 12,
     "MERGED": 1
-   }
+   },
+   "mean_gap": 0.96,
+   "mean_v_fact": 2.62,
+   "modal_bundle": {
+    "law": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "V",
+     "rel": "V",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "M",
+     "tax": "M",
+     "law": "M",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "M"
+    }
+   },
+   "km_median_boot90": [
+    74.0,
+    268.0
+   ],
+   "violent_end_boot90": [
+    0.154,
+    0.462
+   ]
   },
   "legal": {
    "n": 7,
@@ -771,7 +1347,39 @@
    "next": {
     "INDEP": 5,
     "T03": 2
-   }
+   },
+   "mean_gap": 1.29,
+   "mean_v_fact": 4.14,
+   "modal_bundle": {
+    "law": {
+     "dip": "V",
+     "mil": "V",
+     "tax": "V",
+     "law": "M",
+     "appt": "V",
+     "trade": "M",
+     "rel": "M",
+     "succ": "V"
+    },
+    "fact": {
+     "dip": "V",
+     "mil": "V",
+     "tax": "V",
+     "law": "M",
+     "appt": "V",
+     "trade": "M",
+     "rel": "V",
+     "succ": "V"
+    }
+   },
+   "km_median_boot90": [
+    32.0,
+    101.0
+   ],
+   "violent_end_boot90": [
+    0.0,
+    0.0
+   ]
   },
   "ritual": {
    "n": 18,
@@ -816,7 +1424,39 @@
     "T20": 2,
     "T03": 2,
     "MERGED": 1
-   }
+   },
+   "mean_gap": 1.72,
+   "mean_v_fact": 3.22,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "M",
+     "tax": "M",
+     "law": "V",
+     "appt": "M",
+     "trade": "M",
+     "rel": "V",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "V",
+     "mil": "M",
+     "tax": "M",
+     "law": "V",
+     "appt": "V",
+     "trade": "M",
+     "rel": "V",
+     "succ": "M"
+    }
+   },
+   "km_median_boot90": [
+    188.0,
+    276.0
+   ],
+   "violent_end_boot90": [
+    0.056,
+    0.389
+   ]
   },
   "settler": {
    "n": 14,
@@ -852,7 +1492,39 @@
    "next": {
     "INDEP": 8,
     "T20": 1
-   }
+   },
+   "mean_gap": 0.93,
+   "mean_v_fact": 3.93,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "M",
+     "tax": "V",
+     "law": "M",
+     "appt": "M",
+     "trade": "V",
+     "rel": "V",
+     "succ": "S"
+    },
+    "fact": {
+     "dip": "M",
+     "mil": "M",
+     "tax": "V",
+     "law": "M",
+     "appt": "V",
+     "trade": "V",
+     "rel": "V",
+     "succ": "S"
+    }
+   },
+   "km_median_boot90": [
+    15.0,
+    64.0
+   ],
+   "violent_end_boot90": [
+    0.0,
+    0.0
+   ]
   },
   "treaty": {
    "n": 32,
@@ -908,7 +1580,39 @@
     "INDEP": 20,
     "T20": 6,
     "other_suzerain_or_type": 6
-   }
+   },
+   "mean_gap": 1.5,
+   "mean_v_fact": 1.84,
+   "modal_bundle": {
+    "law": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "M",
+     "rel": "V",
+     "succ": "M"
+    },
+    "fact": {
+     "dip": "S",
+     "mil": "S",
+     "tax": "M",
+     "law": "M",
+     "appt": "M",
+     "trade": "M",
+     "rel": "V",
+     "succ": "M"
+    }
+   },
+   "km_median_boot90": [
+    31.950000000000003,
+    57.0
+   ],
+   "violent_end_boot90": [
+    0.281,
+    0.562
+   ]
   }
  },
  "all": {
@@ -1398,6 +2102,215 @@
     }
    ]
   },
+  "M2_bundle_any_end": {
+   "name": "実態で従属国が握る項目の数 + 法と実態の差 + 始まりの世紀 + ln 距離",
+   "n": 131,
+   "events": 126,
+   "terms": [
+    {
+     "name": "v_count_fact",
+     "coef": 0.0003,
+     "se": 0.0396,
+     "ci95": [
+      -0.0772,
+      0.0779
+     ],
+     "p": 0.9934,
+     "hr": 1.0003,
+     "hr_ci95": [
+      0.9257,
+      1.081
+     ]
+    },
+    {
+     "name": "law_fact_gap",
+     "coef": 0.3136,
+     "se": 0.0616,
+     "ci95": [
+      0.1929,
+      0.4343
+     ],
+     "p": 0.0,
+     "hr": 1.3684,
+     "hr_ci95": [
+      1.2128,
+      1.5439
+     ]
+    },
+    {
+     "name": "start_century",
+     "coef": 0.8386,
+     "se": 0.1201,
+     "ci95": [
+      0.6033,
+      1.0739
+     ],
+     "p": 0.0,
+     "hr": 2.3131,
+     "hr_ci95": [
+      1.8281,
+      2.9269
+     ]
+    },
+    {
+     "name": "ln_distance_km",
+     "coef": -0.0628,
+     "se": 0.0987,
+     "ci95": [
+      -0.2562,
+      0.1306
+     ],
+     "p": 0.5243,
+     "hr": 0.9391,
+     "hr_ci95": [
+      0.774,
+      1.1395
+     ]
+    }
+   ]
+  },
+  "M3_items_any_end": {
+   "name": "束の 8 項目 (実態。S=0・M=0.5・V=1) + 始まりの世紀",
+   "n": 131,
+   "events": 126,
+   "terms": [
+    {
+     "name": "fact_dip",
+     "coef": 0.5238,
+     "se": 0.4119,
+     "ci95": [
+      -0.2835,
+      1.3312
+     ],
+     "p": 0.2035,
+     "hr": 1.6885,
+     "hr_ci95": [
+      0.7531,
+      3.7854
+     ]
+    },
+    {
+     "name": "fact_mil",
+     "coef": -0.7219,
+     "se": 0.4723,
+     "ci95": [
+      -1.6477,
+      0.2039
+     ],
+     "p": 0.1264,
+     "hr": 0.4858,
+     "hr_ci95": [
+      0.1925,
+      1.2261
+     ]
+    },
+    {
+     "name": "fact_tax",
+     "coef": 0.2238,
+     "se": 0.4504,
+     "ci95": [
+      -0.6589,
+      1.1065
+     ],
+     "p": 0.6192,
+     "hr": 1.2509,
+     "hr_ci95": [
+      0.5174,
+      3.0238
+     ]
+    },
+    {
+     "name": "fact_law",
+     "coef": -0.1661,
+     "se": 0.4535,
+     "ci95": [
+      -1.055,
+      0.7228
+     ],
+     "p": 0.7142,
+     "hr": 0.847,
+     "hr_ci95": [
+      0.3482,
+      2.0602
+     ]
+    },
+    {
+     "name": "fact_appt",
+     "coef": 0.0463,
+     "se": 0.4834,
+     "ci95": [
+      -0.9012,
+      0.9937
+     ],
+     "p": 0.9238,
+     "hr": 1.0473,
+     "hr_ci95": [
+      0.4061,
+      2.7011
+     ]
+    },
+    {
+     "name": "fact_trade",
+     "coef": -0.0345,
+     "se": 0.3697,
+     "ci95": [
+      -0.7592,
+      0.6902
+     ],
+     "p": 0.9257,
+     "hr": 0.9661,
+     "hr_ci95": [
+      0.4681,
+      1.9942
+     ]
+    },
+    {
+     "name": "fact_rel",
+     "coef": 0.8727,
+     "se": 0.4377,
+     "ci95": [
+      0.0149,
+      1.7306
+     ],
+     "p": 0.0462,
+     "hr": 2.3934,
+     "hr_ci95": [
+      1.015,
+      5.644
+     ]
+    },
+    {
+     "name": "fact_succ",
+     "coef": -0.4442,
+     "se": 0.3743,
+     "ci95": [
+      -1.1777,
+      0.2894
+     ],
+     "p": 0.2353,
+     "hr": 0.6414,
+     "hr_ci95": [
+      0.308,
+      1.3356
+     ]
+    },
+    {
+     "name": "start_century",
+     "coef": 0.7832,
+     "se": 0.1129,
+     "ci95": [
+      0.5618,
+      1.0045
+     ],
+     "p": 0.0,
+     "hr": 2.1884,
+     "hr_ci95": [
+      1.7539,
+      2.7306
+     ]
+    }
+   ]
+  },
   "M1_family_independence": {
    "name": "型の家族 (基準: 直轄) + 始まりの世紀",
    "n": 131,
@@ -1509,6 +2422,215 @@
      ]
     }
    ]
+  },
+  "M2_bundle_independence": {
+   "name": "実態で従属国が握る項目の数 + 法と実態の差 + 始まりの世紀 + ln 距離",
+   "n": 131,
+   "events": 61,
+   "terms": [
+    {
+     "name": "v_count_fact",
+     "coef": 0.0917,
+     "se": 0.054,
+     "ci95": [
+      -0.0141,
+      0.1976
+     ],
+     "p": 0.0892,
+     "hr": 1.0961,
+     "hr_ci95": [
+      0.986,
+      1.2184
+     ]
+    },
+    {
+     "name": "law_fact_gap",
+     "coef": 0.3008,
+     "se": 0.0934,
+     "ci95": [
+      0.1177,
+      0.484
+     ],
+     "p": 0.0013,
+     "hr": 1.351,
+     "hr_ci95": [
+      1.1249,
+      1.6225
+     ]
+    },
+    {
+     "name": "start_century",
+     "coef": 0.9522,
+     "se": 0.1903,
+     "ci95": [
+      0.5791,
+      1.3252
+     ],
+     "p": 0.0,
+     "hr": 2.5913,
+     "hr_ci95": [
+      1.7844,
+      3.7631
+     ]
+    },
+    {
+     "name": "ln_distance_km",
+     "coef": 0.1253,
+     "se": 0.1372,
+     "ci95": [
+      -0.1436,
+      0.3942
+     ],
+     "p": 0.3612,
+     "hr": 1.1335,
+     "hr_ci95": [
+      0.8662,
+      1.4831
+     ]
+    }
+   ]
+  },
+  "M3_items_independence": {
+   "name": "束の 8 項目 (実態。S=0・M=0.5・V=1) + 始まりの世紀",
+   "n": 131,
+   "events": 61,
+   "terms": [
+    {
+     "name": "fact_dip",
+     "coef": 2.1208,
+     "se": 0.6912,
+     "ci95": [
+      0.766,
+      3.4755
+     ],
+     "p": 0.0022,
+     "hr": 8.3375,
+     "hr_ci95": [
+      2.1512,
+      32.314
+     ]
+    },
+    {
+     "name": "fact_mil",
+     "coef": -1.2006,
+     "se": 0.7438,
+     "ci95": [
+      -2.6584,
+      0.2571
+     ],
+     "p": 0.1065,
+     "hr": 0.301,
+     "hr_ci95": [
+      0.0701,
+      1.2932
+     ]
+    },
+    {
+     "name": "fact_tax",
+     "coef": -0.0847,
+     "se": 0.6123,
+     "ci95": [
+      -1.2847,
+      1.1154
+     ],
+     "p": 0.89,
+     "hr": 0.9188,
+     "hr_ci95": [
+      0.2767,
+      3.0508
+     ]
+    },
+    {
+     "name": "fact_law",
+     "coef": 0.7563,
+     "se": 0.6941,
+     "ci95": [
+      -0.6042,
+      2.1167
+     ],
+     "p": 0.2759,
+     "hr": 2.1303,
+     "hr_ci95": [
+      0.5465,
+      8.3041
+     ]
+    },
+    {
+     "name": "fact_appt",
+     "coef": -1.0901,
+     "se": 0.6983,
+     "ci95": [
+      -2.4588,
+      0.2786
+     ],
+     "p": 0.1185,
+     "hr": 0.3362,
+     "hr_ci95": [
+      0.0855,
+      1.3213
+     ]
+    },
+    {
+     "name": "fact_trade",
+     "coef": 0.9773,
+     "se": 0.5823,
+     "ci95": [
+      -0.164,
+      2.1186
+     ],
+     "p": 0.0933,
+     "hr": 2.6573,
+     "hr_ci95": [
+      0.8487,
+      8.3199
+     ]
+    },
+    {
+     "name": "fact_rel",
+     "coef": 0.436,
+     "se": 0.6739,
+     "ci95": [
+      -0.8848,
+      1.7569
+     ],
+     "p": 0.5176,
+     "hr": 1.5465,
+     "hr_ci95": [
+      0.4128,
+      5.7944
+     ]
+    },
+    {
+     "name": "fact_succ",
+     "coef": -0.8016,
+     "se": 0.5565,
+     "ci95": [
+      -1.8923,
+      0.2892
+     ],
+     "p": 0.1498,
+     "hr": 0.4486,
+     "hr_ci95": [
+      0.1507,
+      1.3354
+     ]
+    },
+    {
+     "name": "start_century",
+     "coef": 0.8676,
+     "se": 0.1671,
+     "ci95": [
+      0.5401,
+      1.1952
+     ],
+     "p": 0.0,
+     "hr": 2.3813,
+     "hr_ci95": [
+      1.7162,
+      3.3041
+     ]
+    }
+   ]
   }
  },
  "violence": {
@@ -1577,7 +2699,23 @@
     "share": 0.167
    }
   },
-  "by_fact_mil": {}
+  "by_fact_mil": {
+   "S": {
+    "n": 51,
+    "share": 0.333,
+    "indep_share": 0.51
+   },
+   "M": {
+    "n": 56,
+    "share": 0.179,
+    "indep_share": 0.446
+   },
+   "V": {
+    "n": 19,
+    "share": 0.263,
+    "indep_share": 0.526
+   }
+  }
  },
  "qca": {
   "peaceful_independence": {

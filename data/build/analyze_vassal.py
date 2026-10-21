@@ -92,6 +92,22 @@ def main():
         return res
     out['by_type'] = group_stats('type_id')
     out['by_family'] = group_stats('family')
+    # 家族ごとの中央値の 90% 区間 (事例を引き直すブートストラップ、2000 回、乱数の種は固定)
+    rng = np.random.default_rng(20261021)
+    for f, r in out['by_family'].items():
+        cs = [c for c in cases if c['family'] == f]
+        meds = []
+        for _ in range(2000):
+            pick = [cs[i] for i in rng.integers(0, len(cs), len(cs))]
+            _, q = km_curve([c['duration'] for c in pick], [c['event_any'] for c in pick])
+            if q.get(0.5) is not None:
+                meds.append(q[0.5])
+        r['km_median_boot90'] = [float(np.percentile(meds, 5)), float(np.percentile(meds, 95))] if meds else None
+        vs = []
+        for _ in range(2000):
+            pick = [cs[i] for i in rng.integers(0, len(cs), len(cs))]
+            vs.append(sum(1 for c in pick if c['violent_end']) / len(pick))
+        r['violent_end_boot90'] = [round(float(np.percentile(vs, 5)), 3), round(float(np.percentile(vs, 95)), 3)]
     for tid, r in out['by_type'].items():
         r['name'] = V['types'][tid]['name']; r['family'] = FAMILY[tid]
     allc, q = km_curve([c['duration'] for c in cases], [c['event_any'] for c in cases])
