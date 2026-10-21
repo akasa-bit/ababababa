@@ -144,3 +144,13 @@ node tools/build.mjs
 | 加工 | `data/build/build_pv.py` → `data/derived/pv.json` と `src/index.html` の `PV_DAMAGE` | フレアの陽子 (ε = 2.13) がカバーガラスを通って接合に与える変位損傷の線量、3 接合の電池の出力の残り (Walters ほか 2004 の C・Dx)、太陽の 1 AU での確かめ |
 
 出典: SR-NIEL (Boschini ほか、www.sr-niel.org)・NIST PSTAR・Walters, Morton & Messenger (2004) NASA/TP-2004-213338・Lohmeyer, Aniceto, Cahoy & Carlton (2018) Int. J. Space Sci. Eng. 5, 61
+
+## 従属国の歴史のデータ (レーン H)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_vassal.py` → `data/raw/vassal/` | ISD 2.2・Lake 2009 の国・年の複製データ・Seshat Equinox-2020 (CC BY-NC-SA 4.0)・COW Colonial/Dependency Contiguity 3.1。手で作った事例の一覧・コードブック・2 回の符号化・裁定・条件も同じフォルダ (出典と決め方は `data/raw/vassal/README.md`) |
+| 加工 | `data/build/build_vassal.py` → `data/derived/vassal.json` | 事例ごとの最終の束 (8 項目 × 法と実態)・Krippendorff の α・ISD と ICOW との突き合わせ・Lake の指標 |
+| 解析 | `data/build/analyze_vassal.py` → `data/derived/vassal_survival.json` | 型と家族ごとの存続 (Kaplan–Meier とブートストラップの区間)・Cox (家族・束・項目)・移り変わり・暴力の割合・QCA・条件と型 |
+
+結果の説明は `docs/vassal-cases.md`。
