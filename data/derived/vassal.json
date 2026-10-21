@@ -1,0 +1,5130 @@
+{
+ "generated": "2026-10-21T08:29:51Z",
+ "n_cases": 131,
+ "types": {
+  "T01": {
+   "name": "冊封朝貢国",
+   "n": 6,
+   "durations": [
+    95,
+    201,
+    245,
+    258,
+    457,
+    507
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "transferred": 3,
+    "indep": 2,
+    "annexed": 1
+   },
+   "war_at_end_share": 0.0
+  },
+  "T02": {
+   "name": "藩部 (理藩院の管轄)",
+   "n": 5,
+   "durations": [
+    125,
+    188,
+    192,
+    220,
+    276
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "suzerain_end": 2,
+    "transferred": 2,
+    "annexed": 1
+   },
+   "war_at_end_share": 0.4
+  },
+  "T03": {
+   "name": "保護国 (条約型)",
+   "n": 8,
+   "durations": [
+    5,
+    8,
+    11,
+    44,
+    52,
+    70,
+    75,
+    90
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 5,
+    "annexed": 3
+   },
+   "war_at_end_share": 0.875
+  },
+  "T04": {
+   "name": "藩王国・土侯国 (従属同盟と至上権)",
+   "n": 8,
+   "durations": [
+    55,
+    57,
+    62,
+    64,
+    83,
+    147,
+    148,
+    150
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "annexed": 2,
+    "transferred": 6
+   },
+   "war_at_end_share": 0.125
+  },
+  "T05": {
+   "name": "自治領",
+   "n": 7,
+   "durations": [
+    3,
+    15,
+    21,
+    27,
+    40,
+    41,
+    64
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 6,
+    "annexed": 1
+   },
+   "war_at_end_share": 0.0
+  },
+  "T06": {
+   "name": "委任統治領 A",
+   "n": 5,
+   "durations": [
+    12,
+    20,
+    23,
+    25,
+    25
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 4,
+    "suzerain_end": 1
+   },
+   "war_at_end_share": 0.4
+  },
+  "T07": {
+   "name": "委任統治領 B・C と信託統治",
+   "n": 7,
+   "durations": [
+    25,
+    38,
+    39,
+    39,
+    42,
+    48,
+    70
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 5,
+    "suzerain_end": 1,
+    "transferred": 1
+   },
+   "war_at_end_share": 0.286
+  },
+  "T08": {
+   "name": "共同統治",
+   "n": 6,
+   "durations": [
+    2,
+    10,
+    57,
+    74,
+    104,
+    715
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 3,
+    "transferred": 1,
+    "annexed": 2
+   },
+   "war_at_end_share": 0.167
+  },
+  "T09": {
+   "name": "特許会社領",
+   "n": 7,
+   "durations": [
+    6,
+    14,
+    33,
+    33,
+    65,
+    93,
+    180
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "transferred": 7
+   },
+   "war_at_end_share": 0.286
+  },
+  "T10": {
+   "name": "傀儡国",
+   "n": 7,
+   "durations": [
+    4,
+    4,
+    5,
+    6,
+    6,
+    6,
+    13
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "suzerain_end": 6,
+    "annexed": 1
+   },
+   "war_at_end_share": 0.0
+  },
+  "T11": {
+   "name": "衛星国",
+   "n": 7,
+   "durations": [
+    15,
+    40,
+    41,
+    41,
+    42,
+    42,
+    66
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 6,
+    "merger": 1
+   },
+   "war_at_end_share": 0.0
+  },
+  "T12": {
+   "name": "自由連合",
+   "n": 7,
+   "durations": [
+    7,
+    11,
+    32,
+    40,
+    40,
+    52,
+    61
+   ],
+   "n_censored": 5,
+   "end_kinds": {
+    "continuing": 5,
+    "indep": 2
+   },
+   "war_at_end_share": 0.0
+  },
+  "T13": {
+   "name": "封臣 (中世西欧)",
+   "n": 7,
+   "durations": [
+    15,
+    16,
+    47,
+    114,
+    293,
+    319,
+    522
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "annexed": 4,
+    "indep": 3
+   },
+   "war_at_end_share": 0.571
+  },
+  "T14": {
+   "name": "幕藩制の藩 (近世日本)",
+   "n": 6,
+   "durations": [
+    225,
+    268,
+    268,
+    268,
+    268,
+    268
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "annexed": 6
+   },
+   "war_at_end_share": 0.167
+  },
+  "T15": {
+   "name": "同君連合",
+   "n": 7,
+   "durations": [
+    51,
+    60,
+    91,
+    123,
+    126,
+    184,
+    434
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 4,
+    "merger": 1,
+    "transferred": 1,
+    "suzerain_end": 1
+   },
+   "war_at_end_share": 0.286
+  },
+  "T16": {
+   "name": "緩衝国",
+   "n": 6,
+   "durations": [
+    14,
+    37,
+    40,
+    47,
+    75,
+    107
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 3,
+    "annexed": 1,
+    "suzerain_end": 2
+   },
+   "war_at_end_share": 0.333
+  },
+  "T17": {
+   "name": "不平等条約の半主権国 (非公式の帝国)",
+   "n": 7,
+   "durations": [
+    29,
+    32,
+    41,
+    83,
+    100,
+    101,
+    174
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 5,
+    "transferred": 2
+   },
+   "war_at_end_share": 0.0
+  },
+  "T18": {
+   "name": "貢納公国 (オスマン型)",
+   "n": 7,
+   "durations": [
+    30,
+    48,
+    73,
+    299,
+    321,
+    350,
+    402
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 3,
+    "merger": 1,
+    "transferred": 3
+   },
+   "war_at_end_share": 0.286
+  },
+  "T19": {
+   "name": "財政保護と介入権 (プラット型)",
+   "n": 5,
+   "durations": [
+    21,
+    31,
+    32,
+    34,
+    36
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 5
+   },
+   "war_at_end_share": 0.2
+  },
+  "T20": {
+   "name": "植民地 (直轄)",
+   "n": 6,
+   "durations": [
+    43,
+    44,
+    50,
+    83,
+    132,
+    149
+   ],
+   "n_censored": 0,
+   "end_kinds": {
+    "indep": 5,
+    "suzerain_end": 1
+   },
+   "war_at_end_share": 0.5
+  }
+ },
+ "items": [
+  "dip",
+  "mil",
+  "tax",
+  "law",
+  "appt",
+  "trade",
+  "rel",
+  "succ"
+ ],
+ "layers": [
+  "law",
+  "fact"
+ ],
+ "agreement": {},
+ "disagreements": [],
+ "final_coding_available": false,
+ "cases": [
+  {
+   "case_id": "T01-01",
+   "type_id": "T01",
+   "name": "朝鮮 (明の冊封)",
+   "polity": "Joseon",
+   "suzerain": "Ming",
+   "start": 1392,
+   "end": 1637,
+   "duration": 245,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T01-02",
+   "type_id": "T01",
+   "name": "朝鮮 (清の冊封)",
+   "polity": "Joseon",
+   "suzerain": "Qing",
+   "start": 1637,
+   "end": 1895,
+   "duration": 258,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T01-03",
+   "type_id": "T01",
+   "name": "琉球 (明・清の冊封と薩摩への両属)",
+   "polity": "Ryukyu",
+   "suzerain": "Ming/Qing (and Satsuma from 1609)",
+   "start": 1372,
+   "end": 1879,
+   "duration": 507,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": false
+  },
+  {
+   "case_id": "T01-04",
+   "type_id": "T01",
+   "name": "越南 (黎朝・阮朝)",
+   "polity": "Dai Viet / Nguyen",
+   "suzerain": "Ming/Qing",
+   "start": 1428,
+   "end": 1885,
+   "duration": 457,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T01-05",
+   "type_id": "T01",
+   "name": "暹羅 (アユタヤ・ラタナコーシン)",
+   "polity": "Siam",
+   "suzerain": "Ming/Qing",
+   "start": 1652,
+   "end": 1853,
+   "duration": 201,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T01-06",
+   "type_id": "T01",
+   "name": "ビルマ (コンバウン朝)",
+   "polity": "Burma (Konbaung)",
+   "suzerain": "Qing",
+   "start": 1790,
+   "end": 1885,
+   "duration": 95,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T02-01",
+   "type_id": "T02",
+   "name": "外モンゴル (ハルハ 4 部)",
+   "polity": "Khalkha Mongolia",
+   "suzerain": "Qing",
+   "start": 1691,
+   "end": 1911,
+   "duration": 220,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T02-02",
+   "type_id": "T02",
+   "name": "内モンゴル (49 旗)",
+   "polity": "Inner Mongolia (49 banners)",
+   "suzerain": "Qing",
+   "start": 1636,
+   "end": 1912,
+   "duration": 276,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T02-03",
+   "type_id": "T02",
+   "name": "チベット (ガンデンポタン)",
+   "polity": "Tibet (Ganden Phodrang)",
+   "suzerain": "Qing",
+   "start": 1720,
+   "end": 1912,
+   "duration": 192,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": true
+  },
+  {
+   "case_id": "T02-04",
+   "type_id": "T02",
+   "name": "回部 (新疆)",
+   "polity": "Xinjiang (Hui territories)",
+   "suzerain": "Qing",
+   "start": 1759,
+   "end": 1884,
+   "duration": 125,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": true
+  },
+  {
+   "case_id": "T02-05",
+   "type_id": "T02",
+   "name": "青海 (ココノールのモンゴル)",
+   "polity": "Kokonor Mongols",
+   "suzerain": "Qing",
+   "start": 1724,
+   "end": 1912,
+   "duration": 188,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T03-01",
+   "type_id": "T03",
+   "name": "チュニジア",
+   "polity": "Tunisia",
+   "suzerain": "France",
+   "start": 1881,
+   "end": 1956,
+   "duration": 75,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T03-02",
+   "type_id": "T03",
+   "name": "モロッコ",
+   "polity": "Morocco",
+   "suzerain": "France (and Spain for the northern zone)",
+   "start": 1912,
+   "end": 1956,
+   "duration": 44,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T03-03",
+   "type_id": "T03",
+   "name": "大韓帝国",
+   "polity": "Korean Empire",
+   "suzerain": "Japan",
+   "start": 1905,
+   "end": 1910,
+   "duration": 5,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": true
+  },
+  {
+   "case_id": "T03-04",
+   "type_id": "T03",
+   "name": "エジプト (英の保護国)",
+   "polity": "Egypt",
+   "suzerain": "United Kingdom",
+   "start": 1914,
+   "end": 1922,
+   "duration": 8,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T03-05",
+   "type_id": "T03",
+   "name": "トンガ",
+   "polity": "Tonga",
+   "suzerain": "United Kingdom",
+   "start": 1900,
+   "end": 1970,
+   "duration": 70,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T03-06",
+   "type_id": "T03",
+   "name": "カンボジア",
+   "polity": "Cambodia",
+   "suzerain": "France",
+   "start": 1863,
+   "end": 1953,
+   "duration": 90,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T03-07",
+   "type_id": "T03",
+   "name": "ブハラ・アミール国",
+   "polity": "Emirate of Bukhara",
+   "suzerain": "Russia",
+   "start": 1868,
+   "end": 1920,
+   "duration": 52,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": true
+  },
+  {
+   "case_id": "T03-08",
+   "type_id": "T03",
+   "name": "マダガスカル (メリナ王国)",
+   "polity": "Merina Kingdom (Madagascar)",
+   "suzerain": "France",
+   "start": 1885,
+   "end": 1896,
+   "duration": 11,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": true
+  },
+  {
+   "case_id": "T04-01",
+   "type_id": "T04",
+   "name": "ハイダラーバード",
+   "polity": "Hyderabad",
+   "suzerain": "East India Company / British Crown",
+   "start": 1798,
+   "end": 1948,
+   "duration": 150,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": true
+  },
+  {
+   "case_id": "T04-02",
+   "type_id": "T04",
+   "name": "マイソール",
+   "polity": "Mysore",
+   "suzerain": "East India Company / British Crown",
+   "start": 1799,
+   "end": 1947,
+   "duration": 148,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T04-03",
+   "type_id": "T04",
+   "name": "アワド",
+   "polity": "Awadh (Oudh)",
+   "suzerain": "East India Company",
+   "start": 1801,
+   "end": 1856,
+   "duration": 55,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": false
+  },
+  {
+   "case_id": "T04-04",
+   "type_id": "T04",
+   "name": "バローダ",
+   "polity": "Baroda",
+   "suzerain": "East India Company / British Crown",
+   "start": 1802,
+   "end": 1949,
+   "duration": 147,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T04-05",
+   "type_id": "T04",
+   "name": "ペラ",
+   "polity": "Perak",
+   "suzerain": "United Kingdom",
+   "start": 1874,
+   "end": 1957,
+   "duration": 83,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T04-06",
+   "type_id": "T04",
+   "name": "北ナイジェリアの首長国 (ソコト・カノ)",
+   "polity": "Sokoto Caliphate emirates",
+   "suzerain": "United Kingdom",
+   "start": 1903,
+   "end": 1960,
+   "duration": 57,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T04-07",
+   "type_id": "T04",
+   "name": "ブガンダ",
+   "polity": "Buganda",
+   "suzerain": "United Kingdom",
+   "start": 1900,
+   "end": 1962,
+   "duration": 62,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T04-08",
+   "type_id": "T04",
+   "name": "バロツェランド",
+   "polity": "Barotseland",
+   "suzerain": "British South Africa Company / United Kingdom",
+   "start": 1900,
+   "end": 1964,
+   "duration": 64,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T05-01",
+   "type_id": "T05",
+   "name": "カナダ",
+   "polity": "Canada",
+   "suzerain": "United Kingdom",
+   "start": 1867,
+   "end": 1931,
+   "duration": 64,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T05-02",
+   "type_id": "T05",
+   "name": "オーストラリア",
+   "polity": "Australia",
+   "suzerain": "United Kingdom",
+   "start": 1901,
+   "end": 1942,
+   "duration": 41,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T05-03",
+   "type_id": "T05",
+   "name": "ニュージーランド",
+   "polity": "New Zealand",
+   "suzerain": "United Kingdom",
+   "start": 1907,
+   "end": 1947,
+   "duration": 40,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T05-04",
+   "type_id": "T05",
+   "name": "南アフリカ連邦",
+   "polity": "Union of South Africa",
+   "suzerain": "United Kingdom",
+   "start": 1910,
+   "end": 1931,
+   "duration": 21,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T05-05",
+   "type_id": "T05",
+   "name": "ニューファンドランド",
+   "polity": "Newfoundland",
+   "suzerain": "United Kingdom",
+   "start": 1907,
+   "end": 1934,
+   "duration": 27,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": false
+  },
+  {
+   "case_id": "T05-06",
+   "type_id": "T05",
+   "name": "アイルランド自由国",
+   "polity": "Irish Free State",
+   "suzerain": "United Kingdom",
+   "start": 1922,
+   "end": 1937,
+   "duration": 15,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T05-07",
+   "type_id": "T05",
+   "name": "インド (自治領)",
+   "polity": "Dominion of India",
+   "suzerain": "United Kingdom",
+   "start": 1947,
+   "end": 1950,
+   "duration": 3,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T06-01",
+   "type_id": "T06",
+   "name": "イラク",
+   "polity": "Iraq",
+   "suzerain": "United Kingdom (League mandate)",
+   "start": 1920,
+   "end": 1932,
+   "duration": 12,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T06-02",
+   "type_id": "T06",
+   "name": "パレスチナ",
+   "polity": "Palestine",
+   "suzerain": "United Kingdom (League mandate)",
+   "start": 1923,
+   "end": 1948,
+   "duration": 25,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": true
+  },
+  {
+   "case_id": "T06-03",
+   "type_id": "T06",
+   "name": "トランスヨルダン",
+   "polity": "Transjordan",
+   "suzerain": "United Kingdom (League mandate)",
+   "start": 1921,
+   "end": 1946,
+   "duration": 25,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T06-04",
+   "type_id": "T06",
+   "name": "シリア",
+   "polity": "Syria",
+   "suzerain": "France (League mandate)",
+   "start": 1923,
+   "end": 1946,
+   "duration": 23,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T06-05",
+   "type_id": "T06",
+   "name": "レバノン",
+   "polity": "Lebanon",
+   "suzerain": "France (League mandate)",
+   "start": 1923,
+   "end": 1943,
+   "duration": 20,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T07-01",
+   "type_id": "T07",
+   "name": "タンガニーカ (B)",
+   "polity": "Tanganyika",
+   "suzerain": "United Kingdom (B mandate → UN trust)",
+   "start": 1922,
+   "end": 1961,
+   "duration": 39,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T07-02",
+   "type_id": "T07",
+   "name": "ルアンダ=ウルンディ (B)",
+   "polity": "Ruanda-Urundi",
+   "suzerain": "Belgium (B mandate → UN trust)",
+   "start": 1924,
+   "end": 1962,
+   "duration": 38,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T07-03",
+   "type_id": "T07",
+   "name": "南西アフリカ (C)",
+   "polity": "South West Africa",
+   "suzerain": "South Africa (C mandate)",
+   "start": 1920,
+   "end": 1990,
+   "duration": 70,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T07-04",
+   "type_id": "T07",
+   "name": "南洋群島 (C)",
+   "polity": "Nan'yo (South Seas Mandate)",
+   "suzerain": "Japan (C mandate)",
+   "start": 1920,
+   "end": 1945,
+   "duration": 25,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T07-05",
+   "type_id": "T07",
+   "name": "ナウル (C)",
+   "polity": "Nauru",
+   "suzerain": "Australia (for UK, Australia, NZ)",
+   "start": 1920,
+   "end": 1968,
+   "duration": 48,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T07-06",
+   "type_id": "T07",
+   "name": "西サモア (C)",
+   "polity": "Western Samoa",
+   "suzerain": "New Zealand (C mandate → UN trust)",
+   "start": 1920,
+   "end": 1962,
+   "duration": 42,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T07-07",
+   "type_id": "T07",
+   "name": "太平洋諸島信託統治領",
+   "polity": "Trust Territory of the Pacific Islands",
+   "suzerain": "United States (UN strategic trust)",
+   "start": 1947,
+   "end": 1986,
+   "duration": 39,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T08-01",
+   "type_id": "T08",
+   "name": "英埃スーダン",
+   "polity": "Anglo-Egyptian Sudan",
+   "suzerain": "United Kingdom and Egypt",
+   "start": 1899,
+   "end": 1956,
+   "duration": 57,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T08-02",
+   "type_id": "T08",
+   "name": "ニューヘブリディーズ",
+   "polity": "New Hebrides",
+   "suzerain": "United Kingdom and France",
+   "start": 1906,
+   "end": 1980,
+   "duration": 74,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T08-03",
+   "type_id": "T08",
+   "name": "サモア (三国共同統治)",
+   "polity": "Samoa (tripartite)",
+   "suzerain": "Germany, UK, USA",
+   "start": 1889,
+   "end": 1899,
+   "duration": 10,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T08-04",
+   "type_id": "T08",
+   "name": "モレネ",
+   "polity": "Neutral Moresnet",
+   "suzerain": "Prussia and Netherlands (Belgium from 1830)",
+   "start": 1816,
+   "end": 1920,
+   "duration": 104,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": false
+  },
+  {
+   "case_id": "T08-05",
+   "type_id": "T08",
+   "name": "アンドラ",
+   "polity": "Andorra",
+   "suzerain": "Bishop of Urgell and Count of Foix (later French head of state)",
+   "start": 1278,
+   "end": 1993,
+   "duration": 715,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T08-06",
+   "type_id": "T08",
+   "name": "シュレースヴィヒ=ホルシュタイン",
+   "polity": "Schleswig-Holstein",
+   "suzerain": "Prussia and Austria",
+   "start": 1864,
+   "end": 1866,
+   "duration": 2,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": true
+  },
+  {
+   "case_id": "T09-01",
+   "type_id": "T09",
+   "name": "ベンガル (東インド会社)",
+   "polity": "Bengal (EIC)",
+   "suzerain": "East India Company (under British Crown)",
+   "start": 1765,
+   "end": 1858,
+   "duration": 93,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": true
+  },
+  {
+   "case_id": "T09-02",
+   "type_id": "T09",
+   "name": "ジャワ (連合東インド会社)",
+   "polity": "Java (VOC)",
+   "suzerain": "VOC (under Dutch States General)",
+   "start": 1619,
+   "end": 1799,
+   "duration": 180,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T09-03",
+   "type_id": "T09",
+   "name": "南ローデシア (英南アフリカ会社)",
+   "polity": "Southern Rhodesia (BSAC)",
+   "suzerain": "British South Africa Company",
+   "start": 1890,
+   "end": 1923,
+   "duration": 33,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T09-04",
+   "type_id": "T09",
+   "name": "北ローデシア (英南アフリカ会社)",
+   "polity": "Northern Rhodesia (BSAC)",
+   "suzerain": "British South Africa Company",
+   "start": 1891,
+   "end": 1924,
+   "duration": 33,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T09-05",
+   "type_id": "T09",
+   "name": "北ボルネオ (英北ボルネオ会社)",
+   "polity": "North Borneo (BNBC)",
+   "suzerain": "British North Borneo Company",
+   "start": 1881,
+   "end": 1946,
+   "duration": 65,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T09-06",
+   "type_id": "T09",
+   "name": "王立ニジェール会社の領域",
+   "polity": "Royal Niger Company territories",
+   "suzerain": "Royal Niger Company",
+   "start": 1886,
+   "end": 1900,
+   "duration": 14,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T09-07",
+   "type_id": "T09",
+   "name": "ドイツ東アフリカ会社の領域",
+   "polity": "German East Africa (DOAG)",
+   "suzerain": "Deutsch-Ostafrikanische Gesellschaft",
+   "start": 1885,
+   "end": 1891,
+   "duration": 6,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": true
+  },
+  {
+   "case_id": "T10-01",
+   "type_id": "T10",
+   "name": "満洲国",
+   "polity": "Manchukuo",
+   "suzerain": "Japan",
+   "start": 1932,
+   "end": 1945,
+   "duration": 13,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T10-02",
+   "type_id": "T10",
+   "name": "蒙古聯合自治政府 (蒙疆)",
+   "polity": "Mengjiang",
+   "suzerain": "Japan",
+   "start": 1939,
+   "end": 1945,
+   "duration": 6,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T10-03",
+   "type_id": "T10",
+   "name": "汪兆銘政権 (南京国民政府)",
+   "polity": "Wang Jingwei regime",
+   "suzerain": "Japan",
+   "start": 1940,
+   "end": 1945,
+   "duration": 5,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T10-04",
+   "type_id": "T10",
+   "name": "スロヴァキア共和国",
+   "polity": "Slovak Republic",
+   "suzerain": "Germany",
+   "start": 1939,
+   "end": 1945,
+   "duration": 6,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T10-05",
+   "type_id": "T10",
+   "name": "クロアチア独立国",
+   "polity": "Independent State of Croatia (NDH)",
+   "suzerain": "Germany and Italy",
+   "start": 1941,
+   "end": 1945,
+   "duration": 4,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T10-06",
+   "type_id": "T10",
+   "name": "ヴェストファーレン王国",
+   "polity": "Kingdom of Westphalia",
+   "suzerain": "France (Napoleon)",
+   "start": 1807,
+   "end": 1813,
+   "duration": 6,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T10-07",
+   "type_id": "T10",
+   "name": "ホラント王国",
+   "polity": "Kingdom of Holland",
+   "suzerain": "France (Napoleon)",
+   "start": 1806,
+   "end": 1810,
+   "duration": 4,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": false
+  },
+  {
+   "case_id": "T11-01",
+   "type_id": "T11",
+   "name": "ポーランド人民共和国",
+   "polity": "Poland",
+   "suzerain": "Soviet Union",
+   "start": 1947,
+   "end": 1989,
+   "duration": 42,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T11-02",
+   "type_id": "T11",
+   "name": "ハンガリー人民共和国",
+   "polity": "Hungary",
+   "suzerain": "Soviet Union",
+   "start": 1949,
+   "end": 1989,
+   "duration": 40,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T11-03",
+   "type_id": "T11",
+   "name": "チェコスロヴァキア",
+   "polity": "Czechoslovakia",
+   "suzerain": "Soviet Union",
+   "start": 1948,
+   "end": 1989,
+   "duration": 41,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T11-04",
+   "type_id": "T11",
+   "name": "ドイツ民主共和国",
+   "polity": "East Germany",
+   "suzerain": "Soviet Union",
+   "start": 1949,
+   "end": 1990,
+   "duration": 41,
+   "censored": false,
+   "end_kind": "merger",
+   "violent_end": false
+  },
+  {
+   "case_id": "T11-05",
+   "type_id": "T11",
+   "name": "ルーマニア人民共和国",
+   "polity": "Romania",
+   "suzerain": "Soviet Union",
+   "start": 1947,
+   "end": 1989,
+   "duration": 42,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T11-06",
+   "type_id": "T11",
+   "name": "モンゴル人民共和国",
+   "polity": "Mongolia",
+   "suzerain": "Soviet Union",
+   "start": 1924,
+   "end": 1990,
+   "duration": 66,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T11-07",
+   "type_id": "T11",
+   "name": "アルバニア人民共和国",
+   "polity": "Albania",
+   "suzerain": "Soviet Union",
+   "start": 1946,
+   "end": 1961,
+   "duration": 15,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T12-01",
+   "type_id": "T12",
+   "name": "マーシャル諸島",
+   "polity": "Marshall Islands",
+   "suzerain": "United States",
+   "start": 1986,
+   "end": null,
+   "duration": 40,
+   "censored": true,
+   "end_kind": "continuing",
+   "violent_end": false
+  },
+  {
+   "case_id": "T12-02",
+   "type_id": "T12",
+   "name": "ミクロネシア連邦",
+   "polity": "Federated States of Micronesia",
+   "suzerain": "United States",
+   "start": 1986,
+   "end": null,
+   "duration": 40,
+   "censored": true,
+   "end_kind": "continuing",
+   "violent_end": false
+  },
+  {
+   "case_id": "T12-03",
+   "type_id": "T12",
+   "name": "パラオ",
+   "polity": "Palau",
+   "suzerain": "United States",
+   "start": 1994,
+   "end": null,
+   "duration": 32,
+   "censored": true,
+   "end_kind": "continuing",
+   "violent_end": false
+  },
+  {
+   "case_id": "T12-04",
+   "type_id": "T12",
+   "name": "クック諸島",
+   "polity": "Cook Islands",
+   "suzerain": "New Zealand",
+   "start": 1965,
+   "end": null,
+   "duration": 61,
+   "censored": true,
+   "end_kind": "continuing",
+   "violent_end": false
+  },
+  {
+   "case_id": "T12-05",
+   "type_id": "T12",
+   "name": "ニウエ",
+   "polity": "Niue",
+   "suzerain": "New Zealand",
+   "start": 1974,
+   "end": null,
+   "duration": 52,
+   "censored": true,
+   "end_kind": "continuing",
+   "violent_end": false
+  },
+  {
+   "case_id": "T12-06",
+   "type_id": "T12",
+   "name": "グレナダ (西インド連合州)",
+   "polity": "Grenada (Associated State)",
+   "suzerain": "United Kingdom",
+   "start": 1967,
+   "end": 1974,
+   "duration": 7,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T12-07",
+   "type_id": "T12",
+   "name": "ドミニカ (西インド連合州)",
+   "polity": "Dominica (Associated State)",
+   "suzerain": "United Kingdom",
+   "start": 1967,
+   "end": 1978,
+   "duration": 11,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T13-01",
+   "type_id": "T13",
+   "name": "ノルマンディー公",
+   "polity": "Duchy of Normandy",
+   "suzerain": "King of France",
+   "start": 911,
+   "end": 1204,
+   "duration": 293,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": true
+  },
+  {
+   "case_id": "T13-02",
+   "type_id": "T13",
+   "name": "スコットランド王 (ファレーズ条約)",
+   "polity": "Kingdom of Scotland",
+   "suzerain": "King of England",
+   "start": 1174,
+   "end": 1189,
+   "duration": 15,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T13-03",
+   "type_id": "T13",
+   "name": "シチリア・ナポリ王国 (教皇の封)",
+   "polity": "Kingdom of Naples (papal fief)",
+   "suzerain": "Pope",
+   "start": 1266,
+   "end": 1788,
+   "duration": 522,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T13-04",
+   "type_id": "T13",
+   "name": "ブルゴーニュ公 (ヴァロワ家)",
+   "polity": "Duchy of Burgundy (Valois)",
+   "suzerain": "King of France",
+   "start": 1363,
+   "end": 1477,
+   "duration": 114,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": true
+  },
+  {
+   "case_id": "T13-05",
+   "type_id": "T13",
+   "name": "ブルターニュ公",
+   "polity": "Duchy of Brittany",
+   "suzerain": "King of France",
+   "start": 1213,
+   "end": 1532,
+   "duration": 319,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": false
+  },
+  {
+   "case_id": "T13-06",
+   "type_id": "T13",
+   "name": "ウェールズ公 (モンゴメリー条約)",
+   "polity": "Principality of Wales",
+   "suzerain": "King of England",
+   "start": 1267,
+   "end": 1283,
+   "duration": 16,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": true
+  },
+  {
+   "case_id": "T13-07",
+   "type_id": "T13",
+   "name": "ポルトガル伯・王 (レオンの封)",
+   "polity": "County/Kingdom of Portugal",
+   "suzerain": "King of León",
+   "start": 1096,
+   "end": 1143,
+   "duration": 47,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T14-01",
+   "type_id": "T14",
+   "name": "薩摩藩 (島津)",
+   "polity": "Satsuma (Shimazu)",
+   "suzerain": "Tokugawa shogunate (Meiji government from 1868)",
+   "start": 1603,
+   "end": 1871,
+   "duration": 268,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": false
+  },
+  {
+   "case_id": "T14-02",
+   "type_id": "T14",
+   "name": "長州藩 (毛利)",
+   "polity": "Choshu (Mori)",
+   "suzerain": "Tokugawa shogunate (Meiji government from 1868)",
+   "start": 1603,
+   "end": 1871,
+   "duration": 268,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": false
+  },
+  {
+   "case_id": "T14-03",
+   "type_id": "T14",
+   "name": "加賀藩 (前田)",
+   "polity": "Kaga (Maeda)",
+   "suzerain": "Tokugawa shogunate (Meiji government from 1868)",
+   "start": 1603,
+   "end": 1871,
+   "duration": 268,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": false
+  },
+  {
+   "case_id": "T14-04",
+   "type_id": "T14",
+   "name": "仙台藩 (伊達)",
+   "polity": "Sendai (Date)",
+   "suzerain": "Tokugawa shogunate (Meiji government from 1868)",
+   "start": 1603,
+   "end": 1871,
+   "duration": 268,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": false
+  },
+  {
+   "case_id": "T14-05",
+   "type_id": "T14",
+   "name": "対馬藩 (宗)",
+   "polity": "Tsushima (So)",
+   "suzerain": "Tokugawa shogunate (Meiji government from 1868)",
+   "start": 1603,
+   "end": 1871,
+   "duration": 268,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": false
+  },
+  {
+   "case_id": "T14-06",
+   "type_id": "T14",
+   "name": "会津藩 (松平)",
+   "polity": "Aizu (Matsudaira)",
+   "suzerain": "Tokugawa shogunate (Meiji government from 1868)",
+   "start": 1643,
+   "end": 1868,
+   "duration": 225,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": true
+  },
+  {
+   "case_id": "T15-01",
+   "type_id": "T15",
+   "name": "ハノーファー=英 (同君連合)",
+   "polity": "Hanover–Great Britain",
+   "suzerain": "common monarch (House of Hanover)",
+   "start": 1714,
+   "end": 1837,
+   "duration": 123,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T15-02",
+   "type_id": "T15",
+   "name": "ポーランド=リトアニア (クレヴォ)",
+   "polity": "Poland–Lithuania (personal union)",
+   "suzerain": "common monarch (Jagiellon)",
+   "start": 1385,
+   "end": 1569,
+   "duration": 184,
+   "censored": false,
+   "end_kind": "merger",
+   "violent_end": false
+  },
+  {
+   "case_id": "T15-03",
+   "type_id": "T15",
+   "name": "デンマーク=ノルウェー",
+   "polity": "Denmark–Norway",
+   "suzerain": "common monarch (Oldenburg)",
+   "start": 1380,
+   "end": 1814,
+   "duration": 434,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T15-04",
+   "type_id": "T15",
+   "name": "カルマル連合 (スウェーデン)",
+   "polity": "Kalmar Union (Sweden)",
+   "suzerain": "common monarch (Denmark)",
+   "start": 1397,
+   "end": 1523,
+   "duration": 126,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T15-05",
+   "type_id": "T15",
+   "name": "スウェーデン=ノルウェー",
+   "polity": "Sweden–Norway",
+   "suzerain": "common monarch (Bernadotte)",
+   "start": 1814,
+   "end": 1905,
+   "duration": 91,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T15-06",
+   "type_id": "T15",
+   "name": "オーストリア=ハンガリー",
+   "polity": "Austria–Hungary",
+   "suzerain": "common monarch (Habsburg)",
+   "start": 1867,
+   "end": 1918,
+   "duration": 51,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T15-07",
+   "type_id": "T15",
+   "name": "イベリア連合 (ポルトガル)",
+   "polity": "Iberian Union (Portugal)",
+   "suzerain": "common monarch (Habsburg Spain)",
+   "start": 1580,
+   "end": 1640,
+   "duration": 60,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T16-01",
+   "type_id": "T16",
+   "name": "アフガニスタン",
+   "polity": "Afghanistan",
+   "suzerain": "United Kingdom (foreign relations)",
+   "start": 1879,
+   "end": 1919,
+   "duration": 40,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T16-02",
+   "type_id": "T16",
+   "name": "ネパール",
+   "polity": "Nepal",
+   "suzerain": "United Kingdom (foreign relations)",
+   "start": 1816,
+   "end": 1923,
+   "duration": 107,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T16-03",
+   "type_id": "T16",
+   "name": "チベット (1913〜1950)",
+   "polity": "Tibet (1913-1950)",
+   "suzerain": "none formally (buffer between British India and China; 1907 convention)",
+   "start": 1913,
+   "end": 1950,
+   "duration": 37,
+   "censored": false,
+   "end_kind": "annexed",
+   "violent_end": true
+  },
+  {
+   "case_id": "T16-04",
+   "type_id": "T16",
+   "name": "ベルギー (永世中立)",
+   "polity": "Belgium (guaranteed neutrality)",
+   "suzerain": "guarantor powers (UK, France, Prussia, Austria, Russia)",
+   "start": 1839,
+   "end": 1914,
+   "duration": 75,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T16-05",
+   "type_id": "T16",
+   "name": "ルクセンブルク (永世中立)",
+   "polity": "Luxembourg (guaranteed neutrality)",
+   "suzerain": "guarantor powers (London 1867)",
+   "start": 1867,
+   "end": 1914,
+   "duration": 47,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T16-06",
+   "type_id": "T16",
+   "name": "ペルシア (英露の勢力圏)",
+   "polity": "Persia (Anglo-Russian spheres)",
+   "suzerain": "United Kingdom and Russia (spheres of influence)",
+   "start": 1907,
+   "end": 1921,
+   "duration": 14,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T17-01",
+   "type_id": "T17",
+   "name": "清・中華民国",
+   "polity": "Qing China / Republic of China",
+   "suzerain": "treaty powers (UK, France, USA, Russia, Japan, others)",
+   "start": 1842,
+   "end": 1943,
+   "duration": 101,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T17-02",
+   "type_id": "T17",
+   "name": "日本",
+   "polity": "Japan",
+   "suzerain": "treaty powers (USA, UK, France, Russia, Netherlands)",
+   "start": 1858,
+   "end": 1899,
+   "duration": 41,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T17-03",
+   "type_id": "T17",
+   "name": "オスマン帝国 (カピチュレーション)",
+   "polity": "Ottoman Empire (capitulations)",
+   "suzerain": "European powers (France 1740 etc.)",
+   "start": 1740,
+   "end": 1914,
+   "duration": 174,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T17-04",
+   "type_id": "T17",
+   "name": "シャム",
+   "polity": "Siam",
+   "suzerain": "treaty powers (UK 1855, others)",
+   "start": 1855,
+   "end": 1938,
+   "duration": 83,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T17-05",
+   "type_id": "T17",
+   "name": "ペルシア (トルコマンチャーイ)",
+   "polity": "Persia (Turkmenchay regime)",
+   "suzerain": "Russia (and UK by MFN)",
+   "start": 1828,
+   "end": 1928,
+   "duration": 100,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T17-06",
+   "type_id": "T17",
+   "name": "朝鮮 (江華島条約の体制)",
+   "polity": "Korea (Ganghwa treaty regime)",
+   "suzerain": "Japan (1876), then treaty powers",
+   "start": 1876,
+   "end": 1905,
+   "duration": 29,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T17-07",
+   "type_id": "T17",
+   "name": "モロッコ (マドリード・アルヘシラス)",
+   "polity": "Morocco (Madrid/Algeciras regime)",
+   "suzerain": "treaty powers (Madrid 1880, Algeciras 1906)",
+   "start": 1880,
+   "end": 1912,
+   "duration": 32,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T18-01",
+   "type_id": "T18",
+   "name": "ワラキア公国",
+   "polity": "Wallachia",
+   "suzerain": "Ottoman Empire",
+   "start": 1476,
+   "end": 1878,
+   "duration": 402,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T18-02",
+   "type_id": "T18",
+   "name": "モルダヴィア公国",
+   "polity": "Moldavia",
+   "suzerain": "Ottoman Empire",
+   "start": 1538,
+   "end": 1859,
+   "duration": 321,
+   "censored": false,
+   "end_kind": "merger",
+   "violent_end": false
+  },
+  {
+   "case_id": "T18-03",
+   "type_id": "T18",
+   "name": "セルビア公国",
+   "polity": "Principality of Serbia",
+   "suzerain": "Ottoman Empire",
+   "start": 1830,
+   "end": 1878,
+   "duration": 48,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T18-04",
+   "type_id": "T18",
+   "name": "ラグーザ共和国",
+   "polity": "Republic of Ragusa",
+   "suzerain": "Ottoman Empire",
+   "start": 1458,
+   "end": 1808,
+   "duration": 350,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T18-05",
+   "type_id": "T18",
+   "name": "クリミア汗国",
+   "polity": "Crimean Khanate",
+   "suzerain": "Ottoman Empire",
+   "start": 1475,
+   "end": 1774,
+   "duration": 299,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T18-06",
+   "type_id": "T18",
+   "name": "エジプト (ムハンマド・アリー朝)",
+   "polity": "Egypt (Muhammad Ali dynasty)",
+   "suzerain": "Ottoman Empire",
+   "start": 1841,
+   "end": 1914,
+   "duration": 73,
+   "censored": false,
+   "end_kind": "transferred",
+   "violent_end": false
+  },
+  {
+   "case_id": "T18-07",
+   "type_id": "T18",
+   "name": "ブルガリア公国",
+   "polity": "Principality of Bulgaria",
+   "suzerain": "Ottoman Empire",
+   "start": 1878,
+   "end": 1908,
+   "duration": 30,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T19-01",
+   "type_id": "T19",
+   "name": "キューバ",
+   "polity": "Cuba",
+   "suzerain": "United States",
+   "start": 1903,
+   "end": 1934,
+   "duration": 31,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T19-02",
+   "type_id": "T19",
+   "name": "パナマ",
+   "polity": "Panama",
+   "suzerain": "United States",
+   "start": 1903,
+   "end": 1939,
+   "duration": 36,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T19-03",
+   "type_id": "T19",
+   "name": "ドミニカ共和国",
+   "polity": "Dominican Republic",
+   "suzerain": "United States",
+   "start": 1907,
+   "end": 1941,
+   "duration": 34,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T19-04",
+   "type_id": "T19",
+   "name": "ハイチ",
+   "polity": "Haiti",
+   "suzerain": "United States",
+   "start": 1915,
+   "end": 1947,
+   "duration": 32,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T19-05",
+   "type_id": "T19",
+   "name": "ニカラグア",
+   "polity": "Nicaragua",
+   "suzerain": "United States",
+   "start": 1912,
+   "end": 1933,
+   "duration": 21,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T20-01",
+   "type_id": "T20",
+   "name": "アルジェリア",
+   "polity": "Algeria",
+   "suzerain": "France",
+   "start": 1830,
+   "end": 1962,
+   "duration": 132,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T20-02",
+   "type_id": "T20",
+   "name": "ゴールドコースト",
+   "polity": "Gold Coast",
+   "suzerain": "United Kingdom",
+   "start": 1874,
+   "end": 1957,
+   "duration": 83,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T20-03",
+   "type_id": "T20",
+   "name": "フィリピン (米)",
+   "polity": "Philippines",
+   "suzerain": "United States",
+   "start": 1902,
+   "end": 1946,
+   "duration": 44,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": false
+  },
+  {
+   "case_id": "T20-04",
+   "type_id": "T20",
+   "name": "台湾 (日本)",
+   "polity": "Taiwan",
+   "suzerain": "Japan",
+   "start": 1895,
+   "end": 1945,
+   "duration": 50,
+   "censored": false,
+   "end_kind": "suzerain_end",
+   "violent_end": false
+  },
+  {
+   "case_id": "T20-05",
+   "type_id": "T20",
+   "name": "オランダ領東インド",
+   "polity": "Dutch East Indies",
+   "suzerain": "Netherlands",
+   "start": 1800,
+   "end": 1949,
+   "duration": 149,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  },
+  {
+   "case_id": "T20-06",
+   "type_id": "T20",
+   "name": "ケニア",
+   "polity": "Kenya",
+   "suzerain": "United Kingdom",
+   "start": 1920,
+   "end": 1963,
+   "duration": 43,
+   "censored": false,
+   "end_kind": "indep",
+   "violent_end": true
+  }
+ ],
+ "checks": {
+  "isd": [
+   {
+    "case_id": "T01-02",
+    "name": "朝鮮 (清の冊封)",
+    "case_start": 1637,
+    "case_end": 1895,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Korea",
+      "start": 1816,
+      "end": 1905,
+      "start_type": 4,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "North Korea",
+      "start": 1948,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "South Korea",
+      "start": 1949,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T01-03",
+    "name": "琉球 (明・清の冊封と薩摩への両属)",
+    "case_start": 1372,
+    "case_end": 1879,
+    "end_kind": "annexed",
+    "isd": []
+   },
+   {
+    "case_id": "T01-04",
+    "name": "越南 (黎朝・阮朝)",
+    "case_start": 1428,
+    "case_end": 1885,
+    "end_kind": "transferred",
+    "isd": [
+     {
+      "state": "Annam",
+      "start": 1816,
+      "end": 1885,
+      "start_type": 4,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 2
+     },
+     {
+      "state": "Republic of Vietnam",
+      "start": 1954,
+      "end": 1975,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Vietnam",
+      "start": 1954,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T01-05",
+    "name": "暹羅 (アユタヤ・ラタナコーシン)",
+    "case_start": 1652,
+    "case_end": 1853,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Thailand",
+      "start": 1816,
+      "end": 2016,
+      "start_type": 2,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T01-06",
+    "name": "ビルマ (コンバウン朝)",
+    "case_start": 1790,
+    "case_end": 1885,
+    "end_kind": "transferred",
+    "isd": [
+     {
+      "state": "Myanmar",
+      "start": 1816,
+      "end": 1885,
+      "start_type": 4,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T02-01",
+    "name": "外モンゴル (ハルハ 4 部)",
+    "case_start": 1691,
+    "case_end": 1911,
+    "end_kind": "suzerain_end",
+    "isd": [
+     {
+      "state": "Mongolia",
+      "start": 1921,
+      "end": 2016,
+      "start_type": 2,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T02-03",
+    "name": "チベット (ガンデンポタン)",
+    "case_start": 1720,
+    "case_end": 1912,
+    "end_kind": "suzerain_end",
+    "isd": [
+     {
+      "state": "Tibet",
+      "start": 1912,
+      "end": 1951,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 1,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T03-01",
+    "name": "チュニジア",
+    "case_start": 1881,
+    "case_end": 1956,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Tunisia",
+      "start": 1956,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Tunisia",
+      "start": 1816,
+      "end": 1881,
+      "start_type": 2,
+      "end_type": 1,
+      "vio_start": 0,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T03-02",
+    "name": "モロッコ",
+    "case_start": 1912,
+    "case_end": 1956,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Morocco",
+      "start": 1956,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Morocco",
+      "start": 1816,
+      "end": 1912,
+      "start_type": 2,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T03-03",
+    "name": "大韓帝国",
+    "case_start": 1905,
+    "case_end": 1910,
+    "end_kind": "annexed",
+    "isd": [
+     {
+      "state": "Korea",
+      "start": 1816,
+      "end": 1905,
+      "start_type": 4,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "North Korea",
+      "start": 1948,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "South Korea",
+      "start": 1949,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T03-04",
+    "name": "エジプト (英の保護国)",
+    "case_start": 1914,
+    "case_end": 1922,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Egypt",
+      "start": 1833,
+      "end": 1882,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Egypt",
+      "start": 1937,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T03-05",
+    "name": "トンガ",
+    "case_start": 1900,
+    "case_end": 1970,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Tonga",
+      "start": 1970,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Tonga",
+      "start": 1845,
+      "end": 1900,
+      "start_type": 4,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 0,
+      "sovereignty_ambiguous": 0,
+      "category": 3
+     }
+    ]
+   },
+   {
+    "case_id": "T03-06",
+    "name": "カンボジア",
+    "case_start": 1863,
+    "case_end": 1953,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Cambodia",
+      "start": 1953,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Cambodia",
+      "start": 1816,
+      "end": 1863,
+      "start_type": 1,
+      "end_type": 1,
+      "vio_start": -9,
+      "vio_end": 0,
+      "sovereignty_ambiguous": 1,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T03-07",
+    "name": "ブハラ・アミール国",
+    "case_start": 1868,
+    "case_end": 1920,
+    "end_kind": "annexed",
+    "isd": [
+     {
+      "state": "Bukhara",
+      "start": 1816,
+      "end": 1868,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T03-08",
+    "name": "マダガスカル (メリナ王国)",
+    "case_start": 1885,
+    "case_end": 1896,
+    "end_kind": "annexed",
+    "isd": [
+     {
+      "state": "Madagascar",
+      "start": 1960,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Madagascar",
+      "start": 1816,
+      "end": 1895,
+      "start_type": 1,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T04-01",
+    "name": "ハイダラーバード",
+    "case_start": 1798,
+    "case_end": 1948,
+    "end_kind": "annexed",
+    "isd": []
+   },
+   {
+    "case_id": "T04-02",
+    "name": "マイソール",
+    "case_start": 1799,
+    "case_end": 1947,
+    "end_kind": "transferred",
+    "isd": []
+   },
+   {
+    "case_id": "T04-03",
+    "name": "アワド",
+    "case_start": 1801,
+    "case_end": 1856,
+    "end_kind": "annexed",
+    "isd": []
+   },
+   {
+    "case_id": "T04-04",
+    "name": "バローダ",
+    "case_start": 1802,
+    "case_end": 1949,
+    "end_kind": "transferred",
+    "isd": []
+   },
+   {
+    "case_id": "T04-05",
+    "name": "ペラ",
+    "case_start": 1874,
+    "case_end": 1957,
+    "end_kind": "transferred",
+    "isd": [
+     {
+      "state": "Perak",
+      "start": 1826,
+      "end": 1874,
+      "start_type": 2,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T04-06",
+    "name": "北ナイジェリアの首長国 (ソコト・カノ)",
+    "case_start": 1903,
+    "case_end": 1960,
+    "end_kind": "transferred",
+    "isd": [
+     {
+      "state": "Sokoto Caliphate",
+      "start": 1816,
+      "end": 1903,
+      "start_type": 2,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T04-07",
+    "name": "ブガンダ",
+    "case_start": 1900,
+    "case_end": 1962,
+    "end_kind": "transferred",
+    "isd": [
+     {
+      "state": "Buganda",
+      "start": 1816,
+      "end": 1893,
+      "start_type": 1,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T04-08",
+    "name": "バロツェランド",
+    "case_start": 1900,
+    "case_end": 1964,
+    "end_kind": "transferred",
+    "isd": []
+   },
+   {
+    "case_id": "T05-01",
+    "name": "カナダ",
+    "case_start": 1867,
+    "case_end": 1931,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Canada",
+      "start": 1920,
+      "end": 2016,
+      "start_type": 5,
+      "end_type": -9,
+      "vio_start": 0,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T05-02",
+    "name": "オーストラリア",
+    "case_start": 1901,
+    "case_end": 1942,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Australia",
+      "start": 1920,
+      "end": 2016,
+      "start_type": 5,
+      "end_type": -9,
+      "vio_start": 0,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T05-03",
+    "name": "ニュージーランド",
+    "case_start": 1907,
+    "case_end": 1947,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "New Zealand",
+      "start": 1920,
+      "end": 2016,
+      "start_type": 5,
+      "end_type": -9,
+      "vio_start": 0,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T05-04",
+    "name": "南アフリカ連邦",
+    "case_start": 1910,
+    "case_end": 1931,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "South Africa",
+      "start": 1885,
+      "end": 2016,
+      "start_type": 2,
+      "end_type": -9,
+      "vio_start": 0,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Transvaal",
+      "start": 1852,
+      "end": 1877,
+      "start_type": 5,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T05-05",
+    "name": "ニューファンドランド",
+    "case_start": 1907,
+    "case_end": 1934,
+    "end_kind": "annexed",
+    "isd": []
+   },
+   {
+    "case_id": "T05-06",
+    "name": "アイルランド自由国",
+    "case_start": 1922,
+    "case_end": 1937,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Ireland",
+      "start": 1922,
+      "end": 2016,
+      "start_type": 2,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T05-07",
+    "name": "インド (自治領)",
+    "case_start": 1947,
+    "case_end": 1950,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "India",
+      "start": 1947,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Sind",
+      "start": 1816,
+      "end": 1843,
+      "start_type": 2,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T06-01",
+    "name": "イラク",
+    "case_start": 1920,
+    "case_end": 1932,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Iraq",
+      "start": 1932,
+      "end": 2016,
+      "start_type": 5,
+      "end_type": -9,
+      "vio_start": 0,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T06-03",
+    "name": "トランスヨルダン",
+    "case_start": 1921,
+    "case_end": 1946,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Jordan",
+      "start": 1946,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T06-04",
+    "name": "シリア",
+    "case_start": 1923,
+    "case_end": 1946,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Syria",
+      "start": 1946,
+      "end": 1958,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Syria",
+      "start": 1961,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T06-05",
+    "name": "レバノン",
+    "case_start": 1923,
+    "case_end": 1943,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Lebanon",
+      "start": 1946,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T07-01",
+    "name": "タンガニーカ (B)",
+    "case_start": 1922,
+    "case_end": 1961,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Tanzania",
+      "start": 1961,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T07-03",
+    "name": "南西アフリカ (C)",
+    "case_start": 1920,
+    "case_end": 1990,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Namibia",
+      "start": 1990,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T07-05",
+    "name": "ナウル (C)",
+    "case_start": 1920,
+    "case_end": 1968,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Nauru",
+      "start": 1968,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T07-06",
+    "name": "西サモア (C)",
+    "case_start": 1920,
+    "case_end": 1962,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Samoa",
+      "start": 1962,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Samoa",
+      "start": 1873,
+      "end": 1899,
+      "start_type": 4,
+      "end_type": 1,
+      "vio_start": 0,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 1,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T08-01",
+    "name": "英埃スーダン",
+    "case_start": 1899,
+    "case_end": 1956,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "South Sudan",
+      "start": 2011,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Sudan",
+      "start": 1956,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Sudan",
+      "start": 1885,
+      "end": 1898,
+      "start_type": 2,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T08-02",
+    "name": "ニューヘブリディーズ",
+    "case_start": 1906,
+    "case_end": 1980,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Vanuatu",
+      "start": 1980,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T08-05",
+    "name": "アンドラ",
+    "case_start": 1278,
+    "case_end": 1993,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Andorra",
+      "start": 1993,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T10-01",
+    "name": "満洲国",
+    "case_start": 1932,
+    "case_end": 1945,
+    "end_kind": "suzerain_end",
+    "isd": []
+   },
+   {
+    "case_id": "T10-04",
+    "name": "スロヴァキア共和国",
+    "case_start": 1939,
+    "case_end": 1945,
+    "end_kind": "suzerain_end",
+    "isd": [
+     {
+      "state": "Czechoslovakia",
+      "start": 1918,
+      "end": 1939,
+      "start_type": 3,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Czechoslovakia",
+      "start": 1945,
+      "end": 1992,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Slovakia",
+      "start": 1993,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T10-05",
+    "name": "クロアチア独立国",
+    "case_start": 1941,
+    "case_end": 1945,
+    "end_kind": "suzerain_end",
+    "isd": [
+     {
+      "state": "Croatia",
+      "start": 1992,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T11-01",
+    "name": "ポーランド人民共和国",
+    "case_start": 1947,
+    "case_end": 1989,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Poland",
+      "start": 1945,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Poland",
+      "start": 1918,
+      "end": 1939,
+      "start_type": 3,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T11-02",
+    "name": "ハンガリー人民共和国",
+    "case_start": 1949,
+    "case_end": 1989,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Austria-Hungary",
+      "start": 1816,
+      "end": 1918,
+      "start_type": 4,
+      "end_type": 4,
+      "vio_start": 0,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Hungary",
+      "start": 1918,
+      "end": 2016,
+      "start_type": 3,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T11-03",
+    "name": "チェコスロヴァキア",
+    "case_start": 1948,
+    "case_end": 1989,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Czechoslovakia",
+      "start": 1918,
+      "end": 1939,
+      "start_type": 3,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Czechoslovakia",
+      "start": 1945,
+      "end": 1992,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T11-04",
+    "name": "ドイツ民主共和国",
+    "case_start": 1949,
+    "case_end": 1990,
+    "end_kind": "merger",
+    "isd": [
+     {
+      "state": "German Democratic Republic",
+      "start": 1954,
+      "end": 1990,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T11-05",
+    "name": "ルーマニア人民共和国",
+    "case_start": 1947,
+    "case_end": 1989,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Romania",
+      "start": 1878,
+      "end": 2016,
+      "start_type": 2,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T11-06",
+    "name": "モンゴル人民共和国",
+    "case_start": 1924,
+    "case_end": 1990,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Mongolia",
+      "start": 1921,
+      "end": 2016,
+      "start_type": 2,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T11-07",
+    "name": "アルバニア人民共和国",
+    "case_start": 1946,
+    "case_end": 1961,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Albania",
+      "start": 1913,
+      "end": 1939,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Albania",
+      "start": 1944,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T12-01",
+    "name": "マーシャル諸島",
+    "case_start": 1986,
+    "case_end": 9999,
+    "end_kind": "continuing",
+    "isd": [
+     {
+      "state": "Marshall Islands",
+      "start": 1986,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T12-02",
+    "name": "ミクロネシア連邦",
+    "case_start": 1986,
+    "case_end": 9999,
+    "end_kind": "continuing",
+    "isd": [
+     {
+      "state": "Federated States of Micronesia",
+      "start": 1986,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T12-03",
+    "name": "パラオ",
+    "case_start": 1994,
+    "case_end": 9999,
+    "end_kind": "continuing",
+    "isd": [
+     {
+      "state": "Palau",
+      "start": 1994,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T12-06",
+    "name": "グレナダ (西インド連合州)",
+    "case_start": 1967,
+    "case_end": 1974,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Grenada",
+      "start": 1974,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T12-07",
+    "name": "ドミニカ (西インド連合州)",
+    "case_start": 1967,
+    "case_end": 1978,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Dominica",
+      "start": 1978,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Dominican Republic",
+      "start": 1844,
+      "end": 1861,
+      "start_type": 2,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 0,
+      "sovereignty_ambiguous": 1,
+      "category": 1
+     },
+     {
+      "state": "Dominican Republic",
+      "start": 1865,
+      "end": 1916,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Dominican Republic",
+      "start": 1924,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T15-01",
+    "name": "ハノーファー=英 (同君連合)",
+    "case_start": 1714,
+    "case_end": 1837,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Hanover",
+      "start": 1816,
+      "end": 1866,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 0,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T15-05",
+    "name": "スウェーデン=ノルウェー",
+    "case_start": 1814,
+    "case_end": 1905,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Norway",
+      "start": 1945,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Norway",
+      "start": 1905,
+      "end": 1940,
+      "start_type": 3,
+      "end_type": 2,
+      "vio_start": 0,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T15-06",
+    "name": "オーストリア=ハンガリー",
+    "case_start": 1867,
+    "case_end": 1918,
+    "end_kind": "suzerain_end",
+    "isd": [
+     {
+      "state": "Austria",
+      "start": 1918,
+      "end": 1938,
+      "start_type": 3,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 0,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Austria",
+      "start": 1955,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Austria-Hungary",
+      "start": 1816,
+      "end": 1918,
+      "start_type": 4,
+      "end_type": 4,
+      "vio_start": 0,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T16-01",
+    "name": "アフガニスタン",
+    "case_start": 1879,
+    "case_end": 1919,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Afghanistan",
+      "start": 1816,
+      "end": 1879,
+      "start_type": 2,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 1,
+      "category": 1
+     },
+     {
+      "state": "Afghanistan",
+      "start": 1919,
+      "end": 2016,
+      "start_type": 5,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T16-02",
+    "name": "ネパール",
+    "case_start": 1816,
+    "case_end": 1923,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Nepal",
+      "start": 1816,
+      "end": 2016,
+      "start_type": 4,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T16-03",
+    "name": "チベット (1913〜1950)",
+    "case_start": 1913,
+    "case_end": 1950,
+    "end_kind": "annexed",
+    "isd": [
+     {
+      "state": "Tibet",
+      "start": 1912,
+      "end": 1951,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 1,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T16-04",
+    "name": "ベルギー (永世中立)",
+    "case_start": 1839,
+    "case_end": 1914,
+    "end_kind": "suzerain_end",
+    "isd": [
+     {
+      "state": "Belgium",
+      "start": 1830,
+      "end": 1940,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Belgium",
+      "start": 1945,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T16-05",
+    "name": "ルクセンブルク (永世中立)",
+    "case_start": 1867,
+    "case_end": 1914,
+    "end_kind": "suzerain_end",
+    "isd": [
+     {
+      "state": "Luxembourg",
+      "start": 1890,
+      "end": 1940,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 0,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Luxembourg",
+      "start": 1944,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T16-06",
+    "name": "ペルシア (英露の勢力圏)",
+    "case_start": 1907,
+    "case_end": 1921,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Iran",
+      "start": 1816,
+      "end": 2016,
+      "start_type": 1,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T17-01",
+    "name": "清・中華民国",
+    "case_start": 1842,
+    "case_end": 1943,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "China",
+      "start": 1816,
+      "end": 2016,
+      "start_type": 6,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T17-02",
+    "name": "日本",
+    "case_start": 1858,
+    "case_end": 1899,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Japan",
+      "start": 1952,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Japan",
+      "start": 1816,
+      "end": 1945,
+      "start_type": 1,
+      "end_type": 2,
+      "vio_start": 0,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T17-03",
+    "name": "オスマン帝国 (カピチュレーション)",
+    "case_start": 1740,
+    "case_end": 1914,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Turkey",
+      "start": 1816,
+      "end": 2016,
+      "start_type": 1,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T17-04",
+    "name": "シャム",
+    "case_start": 1855,
+    "case_end": 1938,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Thailand",
+      "start": 1816,
+      "end": 2016,
+      "start_type": 2,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T17-05",
+    "name": "ペルシア (トルコマンチャーイ)",
+    "case_start": 1828,
+    "case_end": 1928,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Iran",
+      "start": 1816,
+      "end": 2016,
+      "start_type": 1,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T17-06",
+    "name": "朝鮮 (江華島条約の体制)",
+    "case_start": 1876,
+    "case_end": 1905,
+    "end_kind": "transferred",
+    "isd": [
+     {
+      "state": "Korea",
+      "start": 1816,
+      "end": 1905,
+      "start_type": 4,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "North Korea",
+      "start": 1948,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "South Korea",
+      "start": 1949,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T17-07",
+    "name": "モロッコ (マドリード・アルヘシラス)",
+    "case_start": 1880,
+    "case_end": 1912,
+    "end_kind": "transferred",
+    "isd": [
+     {
+      "state": "Morocco",
+      "start": 1956,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Morocco",
+      "start": 1816,
+      "end": 1912,
+      "start_type": 2,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T18-01",
+    "name": "ワラキア公国",
+    "case_start": 1476,
+    "case_end": 1878,
+    "end_kind": "indep",
+    "isd": []
+   },
+   {
+    "case_id": "T18-02",
+    "name": "モルダヴィア公国",
+    "case_start": 1538,
+    "case_end": 1859,
+    "end_kind": "merger",
+    "isd": []
+   },
+   {
+    "case_id": "T18-03",
+    "name": "セルビア公国",
+    "case_start": 1830,
+    "case_end": 1878,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Serbia",
+      "start": 1878,
+      "end": 1941,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Yugoslavia",
+      "start": 1944,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T18-06",
+    "name": "エジプト (ムハンマド・アリー朝)",
+    "case_start": 1841,
+    "case_end": 1914,
+    "end_kind": "transferred",
+    "isd": [
+     {
+      "state": "Egypt",
+      "start": 1833,
+      "end": 1882,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Egypt",
+      "start": 1937,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T18-07",
+    "name": "ブルガリア公国",
+    "case_start": 1878,
+    "case_end": 1908,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Bulgaria",
+      "start": 1908,
+      "end": 2016,
+      "start_type": 2,
+      "end_type": -9,
+      "vio_start": 1,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 2
+     }
+    ]
+   },
+   {
+    "case_id": "T19-01",
+    "name": "キューバ",
+    "case_start": 1903,
+    "case_end": 1934,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Cuba",
+      "start": 1902,
+      "end": 1906,
+      "start_type": 2,
+      "end_type": 6,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 1,
+      "category": 1
+     },
+     {
+      "state": "Cuba",
+      "start": 1909,
+      "end": 2016,
+      "start_type": 2,
+      "end_type": -9,
+      "vio_start": 0,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T19-02",
+    "name": "パナマ",
+    "case_start": 1903,
+    "case_end": 1939,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Panama",
+      "start": 1903,
+      "end": 2016,
+      "start_type": 2,
+      "end_type": -9,
+      "vio_start": 0,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 1,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T19-03",
+    "name": "ドミニカ共和国",
+    "case_start": 1907,
+    "case_end": 1941,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Dominican Republic",
+      "start": 1844,
+      "end": 1861,
+      "start_type": 2,
+      "end_type": 1,
+      "vio_start": 1,
+      "vio_end": 0,
+      "sovereignty_ambiguous": 1,
+      "category": 1
+     },
+     {
+      "state": "Dominican Republic",
+      "start": 1865,
+      "end": 1916,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Dominican Republic",
+      "start": 1924,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T19-04",
+    "name": "ハイチ",
+    "case_start": 1915,
+    "case_end": 1947,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Haiti",
+      "start": 1816,
+      "end": 1915,
+      "start_type": 2,
+      "end_type": 2,
+      "vio_start": 1,
+      "vio_end": 1,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     },
+     {
+      "state": "Haiti",
+      "start": 1934,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T19-05",
+    "name": "ニカラグア",
+    "case_start": 1912,
+    "case_end": 1933,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Nicaragua",
+      "start": 1840,
+      "end": 2016,
+      "start_type": 3,
+      "end_type": -9,
+      "vio_start": 0,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 1,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T20-03",
+    "name": "フィリピン (米)",
+    "case_start": 1902,
+    "case_end": 1946,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Philippines",
+      "start": 1946,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T20-05",
+    "name": "オランダ領東インド",
+    "case_start": 1800,
+    "case_end": 1949,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Indonesia",
+      "start": 1949,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   },
+   {
+    "case_id": "T20-06",
+    "name": "ケニア",
+    "case_start": 1920,
+    "case_end": 1963,
+    "end_kind": "indep",
+    "isd": [
+     {
+      "state": "Kenya",
+      "start": 1963,
+      "end": 2016,
+      "start_type": -9,
+      "end_type": -9,
+      "vio_start": -9,
+      "vio_end": -9,
+      "sovereignty_ambiguous": 0,
+      "category": 1
+     }
+    ]
+   }
+  ],
+  "icow": [
+   {
+    "case_id": "T03-01",
+    "name": "チュニジア",
+    "case_end": 1956,
+    "violent_end": "Y",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Tunisia",
+      "ind_from": "640",
+      "ind_date": "159100",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T03-02",
+    "name": "モロッコ",
+    "case_end": 1956,
+    "violent_end": "Y",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Morocco",
+      "ind_from": "-9",
+      "ind_date": "166606",
+      "ind_viol": "1",
+      "ind_type": "1"
+     }
+    ]
+   },
+   {
+    "case_id": "T03-04",
+    "name": "エジプト (英の保護国)",
+    "case_end": 1922,
+    "violent_end": "Y",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Egypt",
+      "ind_from": "640",
+      "ind_date": "183111",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T03-05",
+    "name": "トンガ",
+    "case_end": 1970,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Tonga",
+      "ind_from": "200",
+      "ind_date": "197006",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T03-06",
+    "name": "カンボジア",
+    "case_end": 1953,
+    "violent_end": "Y",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Cambodia",
+      "ind_from": "220",
+      "ind_date": "195311",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T05-01",
+    "name": "カナダ",
+    "case_end": 1931,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Canada",
+      "ind_from": "200",
+      "ind_date": "186707",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T05-02",
+    "name": "オーストラリア",
+    "case_end": 1942,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Australia",
+      "ind_from": "200",
+      "ind_date": "190101",
+      "ind_viol": "0",
+      "ind_type": "1"
+     }
+    ]
+   },
+   {
+    "case_id": "T05-03",
+    "name": "ニュージーランド",
+    "case_end": 1947,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "New Zealand",
+      "ind_from": "200",
+      "ind_date": "190709",
+      "ind_viol": "0",
+      "ind_type": "1"
+     }
+    ]
+   },
+   {
+    "case_id": "T05-04",
+    "name": "南アフリカ連邦",
+    "case_end": 1931,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "South Africa",
+      "ind_from": "200",
+      "ind_date": "191005",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T05-06",
+    "name": "アイルランド自由国",
+    "case_end": 1937,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Ireland",
+      "ind_from": "200",
+      "ind_date": "192212",
+      "ind_viol": "1",
+      "ind_type": "3"
+     }
+    ]
+   },
+   {
+    "case_id": "T05-07",
+    "name": "インド (自治領)",
+    "case_end": 1950,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "India",
+      "ind_from": "200",
+      "ind_date": "194708",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T06-01",
+    "name": "イラク",
+    "case_end": 1932,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Iraq",
+      "ind_from": "200",
+      "ind_date": "193210",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T06-02",
+    "name": "パレスチナ",
+    "case_end": 1948,
+    "violent_end": "Y",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Israel",
+      "ind_from": "200",
+      "ind_date": "194805",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T06-03",
+    "name": "トランスヨルダン",
+    "case_end": 1946,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Jordan",
+      "ind_from": "200",
+      "ind_date": "194605",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T06-04",
+    "name": "シリア",
+    "case_end": 1946,
+    "violent_end": "Y",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Syria",
+      "ind_from": "220",
+      "ind_date": "194604",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T06-05",
+    "name": "レバノン",
+    "case_end": 1943,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Lebanon",
+      "ind_from": "220",
+      "ind_date": "194311",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T07-01",
+    "name": "タンガニーカ (B)",
+    "case_end": 1961,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Tanzania (Tanganyika)",
+      "ind_from": "200",
+      "ind_date": "196112",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T07-02",
+    "name": "ルアンダ=ウルンディ (B)",
+    "case_end": 1962,
+    "violent_end": "Y",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Rwanda",
+      "ind_from": "211",
+      "ind_date": "196207",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T07-03",
+    "name": "南西アフリカ (C)",
+    "case_end": 1990,
+    "violent_end": "Y",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Namibia",
+      "ind_from": "560",
+      "ind_date": "199003",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T07-05",
+    "name": "ナウル (C)",
+    "case_end": 1968,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Nauru",
+      "ind_from": "900",
+      "ind_date": "196801",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T07-06",
+    "name": "西サモア (C)",
+    "case_end": 1962,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Samoa (Western Samoa)",
+      "ind_from": "920",
+      "ind_date": "196201",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T08-01",
+    "name": "英埃スーダン",
+    "case_end": 1956,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Sudan",
+      "ind_from": "200",
+      "ind_date": "195601",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T08-02",
+    "name": "ニューヘブリディーズ",
+    "case_end": 1980,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Vanuatu",
+      "ind_from": "220",
+      "ind_date": "198007",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T12-01",
+    "name": "マーシャル諸島",
+    "case_end": 9999,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Marshall Islands",
+      "ind_from": "2",
+      "ind_date": "198610",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T12-02",
+    "name": "ミクロネシア連邦",
+    "case_end": 9999,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": []
+   },
+   {
+    "case_id": "T12-03",
+    "name": "パラオ",
+    "case_end": 9999,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Palau",
+      "ind_from": "2",
+      "ind_date": "199410",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T12-06",
+    "name": "グレナダ (西インド連合州)",
+    "case_end": 1974,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Grenada",
+      "ind_from": "200",
+      "ind_date": "197402",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T12-07",
+    "name": "ドミニカ (西インド連合州)",
+    "case_end": 1978,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Dominica",
+      "ind_from": "200",
+      "ind_date": "197811",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T16-01",
+    "name": "アフガニスタン",
+    "case_end": 1919,
+    "violent_end": "Y",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Afghanistan",
+      "ind_from": "200",
+      "ind_date": "191908",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T16-02",
+    "name": "ネパール",
+    "case_end": 1923,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Nepal",
+      "ind_from": "-9",
+      "ind_date": "176809",
+      "ind_viol": "1",
+      "ind_type": "1"
+     }
+    ]
+   },
+   {
+    "case_id": "T18-01",
+    "name": "ワラキア公国",
+    "case_end": 1878,
+    "violent_end": "Y",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Romania",
+      "ind_from": "640",
+      "ind_date": "187807",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T18-03",
+    "name": "セルビア公国",
+    "case_end": 1878,
+    "violent_end": "Y",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Serbia / Yugoslavia",
+      "ind_from": "640",
+      "ind_date": "187807",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T18-07",
+    "name": "ブルガリア公国",
+    "case_end": 1908,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Bulgaria",
+      "ind_from": "640",
+      "ind_date": "187803",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T19-01",
+    "name": "キューバ",
+    "case_end": 1934,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Cuba",
+      "ind_from": "2",
+      "ind_date": "190205",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T19-02",
+    "name": "パナマ",
+    "case_end": 1939,
+    "violent_end": "N",
+    "same_event": false,
+    "icow": [
+     {
+      "name": "Panama",
+      "ind_from": "100",
+      "ind_date": "190311",
+      "ind_viol": "1",
+      "ind_type": "3"
+     }
+    ]
+   },
+   {
+    "case_id": "T20-01",
+    "name": "アルジェリア",
+    "case_end": 1962,
+    "violent_end": "Y",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Algeria",
+      "ind_from": "220",
+      "ind_date": "196207",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T20-02",
+    "name": "ゴールドコースト",
+    "case_end": 1957,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Ghana",
+      "ind_from": "200",
+      "ind_date": "195703",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T20-03",
+    "name": "フィリピン (米)",
+    "case_end": 1946,
+    "violent_end": "N",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Philippines",
+      "ind_from": "2",
+      "ind_date": "194607",
+      "ind_viol": "0",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T20-05",
+    "name": "オランダ領東インド",
+    "case_end": 1949,
+    "violent_end": "Y",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Indonesia",
+      "ind_from": "210",
+      "ind_date": "194912",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   },
+   {
+    "case_id": "T20-06",
+    "name": "ケニア",
+    "case_end": 1963,
+    "violent_end": "Y",
+    "same_event": true,
+    "icow": [
+     {
+      "name": "Kenya",
+      "ind_from": "200",
+      "ind_date": "196312",
+      "ind_viol": "1",
+      "ind_type": "2"
+     }
+    ]
+   }
+  ],
+  "icow_violence_agreement": {
+   "n_same_event": 25,
+   "agree": 24,
+   "mismatch": [
+    "T16-01"
+   ]
+  }
+ },
+ "lake": {
+  "cases": [
+   {
+    "case_id": "T11-01",
+    "name": "ポーランド人民共和国",
+    "years": [
+     1950,
+     1989
+    ],
+    "n_years": 40,
+    "us_security_hierarchy_mean": 0.0,
+    "us_economic_hierarchy_mean": 0.0,
+    "warsaw_pact_share": 0.875
+   },
+   {
+    "case_id": "T11-02",
+    "name": "ハンガリー人民共和国",
+    "years": [
+     1950,
+     1989
+    ],
+    "n_years": 40,
+    "us_security_hierarchy_mean": 0.0,
+    "us_economic_hierarchy_mean": 0.0,
+    "warsaw_pact_share": 0.875
+   },
+   {
+    "case_id": "T11-03",
+    "name": "チェコスロヴァキア",
+    "years": [
+     1950,
+     1989
+    ],
+    "n_years": 40,
+    "us_security_hierarchy_mean": 0.0,
+    "us_economic_hierarchy_mean": null,
+    "warsaw_pact_share": 0.875
+   },
+   {
+    "case_id": "T11-04",
+    "name": "ドイツ民主共和国",
+    "years": [
+     1950,
+     1990
+    ],
+    "n_years": 41,
+    "us_security_hierarchy_mean": 0.0,
+    "us_economic_hierarchy_mean": null,
+    "warsaw_pact_share": 0.854
+   },
+   {
+    "case_id": "T11-05",
+    "name": "ルーマニア人民共和国",
+    "years": [
+     1950,
+     1989
+    ],
+    "n_years": 40,
+    "us_security_hierarchy_mean": 0.0,
+    "us_economic_hierarchy_mean": 0.0,
+    "warsaw_pact_share": 0.875
+   },
+   {
+    "case_id": "T11-06",
+    "name": "モンゴル人民共和国",
+    "years": [
+     1950,
+     1990
+    ],
+    "n_years": 41,
+    "us_security_hierarchy_mean": 0.0,
+    "us_economic_hierarchy_mean": 0.0,
+    "warsaw_pact_share": 0.0
+   },
+   {
+    "case_id": "T11-07",
+    "name": "アルバニア人民共和国",
+    "years": [
+     1950,
+     1961
+    ],
+    "n_years": 12,
+    "us_security_hierarchy_mean": 0.0,
+    "us_economic_hierarchy_mean": null,
+    "warsaw_pact_share": 0.583
+   },
+   {
+    "case_id": "T12-01",
+    "name": "マーシャル諸島",
+    "years": [
+     1986,
+     2000
+    ],
+    "n_years": 15,
+    "us_security_hierarchy_mean": 0.0,
+    "us_economic_hierarchy_mean": null,
+    "warsaw_pact_share": 0.0
+   },
+   {
+    "case_id": "T12-02",
+    "name": "ミクロネシア連邦",
+    "years": [
+     1986,
+     2000
+    ],
+    "n_years": 15,
+    "us_security_hierarchy_mean": 0.0,
+    "us_economic_hierarchy_mean": 0.75,
+    "warsaw_pact_share": 0.0
+   },
+   {
+    "case_id": "T12-03",
+    "name": "パラオ",
+    "years": [
+     1994,
+     2000
+    ],
+    "n_years": 7,
+    "us_security_hierarchy_mean": 0.0,
+    "us_economic_hierarchy_mean": null,
+    "warsaw_pact_share": 0.0
+   }
+  ],
+  "all_country_years": {
+   "n": 5151,
+   "security_q": [
+    0.0,
+    0.001,
+    0.524
+   ],
+   "economic_q": [
+    0.0,
+    0.0,
+    0.75
+   ]
+  },
+  "note": "Lake 2009 の指標は米に対する上下関係だけ。ソ連の衛星国には米の指標は低く出るので、衛星国の実態は warsaw (ワルシャワ条約の加盟) で見る"
+ },
+ "seshat_polities": {
+  "note": "Equinox-2020 の政体の一覧 (Polities) で、事例の宗主か従属国に当たる政体の年代。上位政体との関係の符号は Equinox には入っていない",
+  "by_type": {
+   "T01": [
+    {
+     "polity": "Ming Dynasty",
+     "id": "CnMing*",
+     "start": 1368,
+     "end": 1643
+    },
+    {
+     "polity": "Late Qing",
+     "id": "CnQingL",
+     "start": 1796,
+     "end": 1912
+    },
+    {
+     "polity": "Early Qing",
+     "id": "CnQingE",
+     "start": 1644,
+     "end": 1795
+    },
+    {
+     "polity": "Late Qing",
+     "id": "CnQingL",
+     "start": 1796,
+     "end": 1912
+    },
+    {
+     "polity": "Hmong - Late Qing",
+     "id": "CnHQngL",
+     "start": 1701,
+     "end": 1895
+    }
+   ],
+   "T13": [
+    {
+     "polity": "Proto-Carolingian",
+     "id": "FrMervL",
+     "start": 687,
+     "end": 750
+    },
+    {
+     "polity": "Carolingian Empire I",
+     "id": "FrCarlE",
+     "start": 752,
+     "end": 839
+    },
+    {
+     "polity": "Carolingian Empire II",
+     "id": "FrCarlL",
+     "start": 840,
+     "end": 986
+    },
+    {
+     "polity": "French Kingdom - Late Capetian",
+     "id": "FrCaptL",
+     "start": 1150,
+     "end": 1327
+    },
+    {
+     "polity": "Papal States - High Medieval Period",
+     "id": "ItPapHM",
+     "start": 1198,
+     "end": 1308
+    },
+    {
+     "polity": "Papal States - Renaissance Period",
+     "id": "ItPapRn",
+     "start": 1378,
+     "end": 1526
+    },
+    {
+     "polity": "Papal States - Medieval Period I",
+     "id": "ItPapM1",
+     "start": 1527,
+     "end": 1647
+    },
+    {
+     "polity": "Papal States - Medieval Period II",
+     "id": "ItPapM2",
+     "start": 1648,
+     "end": 1800
+    }
+   ],
+   "T14": [
+    {
+     "polity": "Tokugawa Shogunate",
+     "id": "JpTokgw",
+     "start": 1603,
+     "end": 1868
+    },
+    {
+     "polity": "Japan - Sengoku Jidai",
+     "id": "JpSengk",
+     "start": 1467,
+     "end": 1567
+    },
+    {
+     "polity": "Japan - Azuchi, Momoyama",
+     "id": "JpAzMom",
+     "start": 1568,
+     "end": 1602
+    }
+   ],
+   "T15": [],
+   "T18": [
+    {
+     "polity": "Ottoman Empire III",
+     "id": "TrOttm4",
+     "start": 1683,
+     "end": 1838
+    },
+    {
+     "polity": "Ottoman Empire II",
+     "id": "TrOttm3",
+     "start": 1517,
+     "end": 1682
+    },
+    {
+     "polity": "Ottoman Empire III",
+     "id": "TrOttm4",
+     "start": 1683,
+     "end": 1798
+    },
+    {
+     "polity": "Ottoman Empire II",
+     "id": "TrOttm3",
+     "start": 1534,
+     "end": 1682
+    },
+    {
+     "polity": "Ottoman Empire III",
+     "id": "TrOttm4",
+     "start": 1683,
+     "end": 1838
+    },
+    {
+     "polity": "Ottoman Emirate",
+     "id": "TrOttm1",
+     "start": 1393,
+     "end": 1402
+    },
+    {
+     "polity": "Ottoman Empire I",
+     "id": "TrOttm2",
+     "start": 1421,
+     "end": 1516
+    },
+    {
+     "polity": "Ottoman Empire II",
+     "id": "TrOttm3",
+     "start": 1517,
+     "end": 1682
+    },
+    {
+     "polity": "Ottoman Empire III",
+     "id": "TrOttm4",
+     "start": 1683,
+     "end": 1838
+    },
+    {
+     "polity": "Ottoman Empire II",
+     "id": "TrOttm3",
+     "start": 1538,
+     "end": 1636
+    }
+   ],
+   "T09": [
+    {
+     "polity": "Mughal Empire",
+     "id": "InMugl*",
+     "start": 1526,
+     "end": 1740
+    },
+    {
+     "polity": "Mughal Empire",
+     "id": "InMugl*",
+     "start": 1526,
+     "end": 1803
+    },
+    {
+     "polity": "Mughal Empire",
+     "id": "InMugl*",
+     "start": 1687,
+     "end": 1720
+    }
+   ]
+  }
+ }
+}
