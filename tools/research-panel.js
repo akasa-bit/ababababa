@@ -8,7 +8,7 @@ const H = require('./headless');
 
 const [out = 'research-panel.csv', nS = '30', yS = '150', natS = '6', paramFile] = process.argv.slice(2);
 const params = paramFile && paramFile !== '-' ? JSON.parse(fs.readFileSync(paramFile, 'utf8')) : null;
-const sim = H.load({ params });
+const sim = H.load({ params, ...(process.env.HTML ? { src: process.env.HTML } : {}) }); // HTML=… で別の版 (main など) を測れる
 const { RESEARCH } = sim.tables;
 
 function play(seed) {

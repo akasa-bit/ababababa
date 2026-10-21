@@ -13,7 +13,7 @@ const H = require('./headless');
 
 const [out = 'sector-panel.csv', nS = '30', yS = '150', natS = '6', paramFile, prodS = '1'] = process.argv.slice(2);
 const params = paramFile && paramFile !== '-' ? JSON.parse(fs.readFileSync(paramFile, 'utf8')) : null;
-const sim = H.load({ params });
+const sim = H.load({ params, ...(process.env.HTML ? { src: process.env.HTML } : {}) }); // HTML=… で別の版 (main など) を測れる
 const { STRUCTURE } = sim.tables;
 const anchor = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'derived', 'sectors.json'), 'utf8')).anchor.usd_per_t;
 if (Math.abs(anchor - STRUCTURE.usdPerT) > 0.05) throw new Error(`物差しが合わない: sectors.json ${anchor} / src ${STRUCTURE.usdPerT}`);
