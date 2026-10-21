@@ -14,7 +14,13 @@ const { chromium } = require('playwright');
       // ページを開いてから実時間で進んだ分に左右されないよう、同じシードで作り直してから進める (機械の速さで家臣の数が変わり、CI で落ちた)
       __app.speed = 0; newGame('11');
       const g = __app.game;
-      g.setSpectate(true); for (let i = 0; i < 280; i++) g.advance(0.25); g.setSpectate(false);
+      // 統治体制を試すには直属の家臣が要る。値段で動く経済 (段 5) では広がりが遅いので、開始時の生産性を「2300 年の予測」にして家臣を早く育てる
+      g.productivity = PRODUCTIVITY.forecast.k;
+      // 70 年進め、直属の家臣が 3 つできていなければ、できるまで (最大 200 年) 進める (経済の速さで、家臣のできる年が変わる)
+      const direct = () => Object.keys(g.govs).map(Number).filter((id) => g.govs[id].lord === 0 && g.known(id)?.lord === 0 && g.isColonized(id) && g.realmOf(id) === 0 && !g.govs[id].autonomy && !g.govs[id].direct).length;
+      // 数えるのは、観戦を終えたあとと同じ見え方 (地球に届いた光の記録) で。観戦中の実際の様子で数えると、終えたときに足りないことがある
+      const seen = () => { g.spectate = false; g.live = null; const n = direct(); g.spectate = true; g.live = null; return n; };
+      g.setSpectate(true); for (let i = 0; i < 280 || (seen() < 3 && i < 800); i++) g.advance(0.25); g.setSpectate(false);
       const res = {};
       // 直属の家臣を 3 つ選ぶ
       const vs = Object.keys(g.govs).map(Number).filter((id) => g.govs[id].lord === 0 && g.known(id)?.lord === 0 && g.isColonized(id) && g.realmOf(id) === 0 && !g.govs[id].autonomy && !g.govs[id].direct) // 地球に届いている記録でも直属の家臣のもの (指令はその記録で判断する).sort((a, c) => g.sysDist(0, a) - g.sysDist(0, c));
@@ -23,20 +29,20 @@ const { chromium } = require('playwright');
       // 試すのは統治体制の仕組みなので、待つあいだに不満から自治を求めて指令を受けなくならないよう、3 つを落ち着かせておく
       for (const x of [a, c, e]) { delete g.govs[x].unrest; g.govs[x].loyalty = 90; g.decisions = g.decisions.filter((q) => q.sys !== x); }
       g.pc = 100;
-      res.cmd = [issue('rule', { sys: a, value: 'federal' }).ok, issue('rule', { sys: c, value: 'dominion' }).ok, issue('rule', { sys: e, value: 'encomienda' }).ok, issue('rule', { sys: a, value: 'nonsense' }).ok];
+      res.cmd = [issue('rule', { sys: a, value: 'T14' }).ok, issue('rule', { sys: c, value: 'T01' }).ok, issue('rule', { sys: e, value: 'encomienda' }).ok, issue('rule', { sys: a, value: 'nonsense' }).ok];
       const far = Math.max(...[a, c, e].map((x) => g.lightDelay(x)));
       for (let i = 0; i < Math.ceil(far * 4) + 4; i++) g.advance(0.25);
       res.regimes = [a, c, e].map((x) => g.regimeOf(g.govs[x]));
-      // 自治領は指令を受けない (統治体制の変更は受ける)
+      // 冊封朝貢国 (実態で外交と任免を従属国が握る) は指令を受けない (統治体制の変更は受ける)
       g.pc = 100;
       res.mandate = issue('mandate', { sys: c, value: 'develop' }).ok;
       for (let i = 0; i < Math.ceil(g.lightDelay(c) * 4) + 4; i++) g.advance(0.25);
-      res.dominionLog = g.log.filter((m) => /自治領なので指令を受けない/.test(m.text || m.t || '')).length > 0 || JSON.stringify(g.log.slice(-40)).includes('自治領なので');
+      res.dominionLog = g.log.filter((m) => /冊封朝貢国なので指令を受けない/.test(m.text || m.t || '')).length > 0 || JSON.stringify(g.log.slice(-40)).includes('冊封朝貢国なので');
       res.mandateNow = g.govs[c].mandate || 'balanced';
       // 強制労働の後遺症: 20 年で 0.4 前後
       for (let i = 0; i < 80; i++) g.advance(0.25);
       res.scar = +(g.govs[e].scar || 0).toFixed(2);
-      // 自治領 → 直接統治は忠誠度 −32
+      // 冊封朝貢国 (法の束の点 6 = 自治の度合い 3) → 直接統治 (0.5) は忠誠度 −20
       const L0 = g.govs[c].loyalty;
       const r1 = g.setRule(c, 'direct');
       res.revoke = [r1.ok, Math.round(L0 - g.govs[c].loyalty)];
@@ -49,10 +55,38 @@ const { chromium } = require('playwright');
       const before = new Set(Object.keys(g.govs));
       g.setSpectate(true); for (let i = 0; i < 200; i++) g.advance(0.25); g.setSpectate(false);
       const fresh = Object.keys(g.govs).filter((k) => !before.has(k) && g.realmOf(Number(k)) === 0 && g.govs[k].lord !== null);
-      res.freshFeudal = [fresh.length, fresh.filter((k) => g.regimeOf(g.govs[k]) === 'feudal').length];
+      res.freshFeudal = [fresh.length, fresh.filter((k) => g.regimeOf(g.govs[k]) === 'T13').length];
       // 離反の起きやすさは 0 より大きく、体制で並ぶ
       const t = (r) => hazardOf(g.knownSecessionTerms(a, r) || [{ f: 0 }]);
-      res.hz = ['direct', 'indirect', 'feudal', 'federal', 'dominion', 'encomienda'].map((r) => +t(r).toFixed(4));
+      res.hz = REGIME_ORDER.map((r) => [r, +t(r).toFixed(4)]);
+      // 古い名前 (間接統治・封建制…) は型の別名として受ける
+      res.alias = [issue('set', { key: 'regime', value: 'feudal' }).ok, g.regime];
+      // 約定の交渉 (束の 1 項目): 幕藩制の藩 (課税と朝貢は「分」) の課税を「宗」にする → 届いたら法が変わり、狭めた分だけ忠誠度が下がる
+      // (ここまでに独立した家臣もあるので、いまの直属の家臣 (直轄でない) を選び直す)
+      const w = Object.keys(g.govs).map(Number).find((id) => g.govs[id].lord === 0 && g.known(id)?.lord === 0 && g.isColonized(id) && g.realmOf(id) === 0 && !g.govs[id].direct && !g.known(id)?.direct);
+      res.bundleSys = w ?? null;
+      g.pc = 100; delete g.govs[w].unrest; g.govs[w].loyalty = 90; delete g.govs[w].autonomy;
+      g.setRegime(w, 'T14');
+      res.bundleCmd = issue('bundle', { sys: w, item: 'tax', value: 'S' }).ok;
+      for (let i = 0; i < Math.ceil(g.lightDelay(w) * 4) + 4; i++) { g.govs[w].loyalty = 90; g.advance(0.25); }
+      const B = g.bundleOf(g.govs[w]);
+      res.bundle = { law: B.law[2], gap: bundleGap(B.law, B.fact) };
+      // 現地のエリートの抵抗: 忠誠度が低いままなら、実態が「従」へ寄っていく
+      for (let i = 0; i < 150; i++) { g.govs[w].loyalty = 10; g.bundleYearly(); }
+      res.elite = g.govs[w].elite;
+      res.factV = [...g.bundleOf(g.govs[w]).fact].filter((c) => c === 'V').length;
+      g.govs[w].loyalty = 90;
+      // H3-3: 統治者の任免 (実態で任免が「分」の幕藩制の藩) → 実態が約定どおりに戻り、エリートは協力
+      g.setRegime(w, 'T14'); g.govs[w].fact = 'VVVVMVMV'; // 任免 (5 番目) は「分」
+      const dep = g.depose(w);
+      res.depose = [dep.ok, g.bundleOf(g.govs[w]).fact === g.bundleOf(g.govs[w]).law, g.govs[w].elite];
+      // 関税受領官 (プラット型): 払えない朝貢は滞納として持ち越す
+      g.setRegime(w, 'T19'); delete g.govs[w].taxFree; g.govs[w].credits = 0; g.govs[w].inc = 100; g.tributeYearly();
+      res.arrears = +(g.govs[w].arrears || 0).toFixed(1);
+      // 同君連合: 継承を実態で従属国が握っていれば、継承の危機で戦争なしに解ける
+      g.setRegime(w, 'T15'); g.govs[w].fact = 'MMVVVVVV'; g.govs[w].loyalty = 90;
+      for (let i = 0; i < 2000 && g.govs[w].lord !== null; i++) g.vassalTypesYearly();
+      res.union = [g.govs[w].lord === null, g.events.slice(0, 60).some((e) => /同君連合が解けた/.test(e.text))];
       // 保存 → 読み込み
       const s1 = JSON.stringify((() => { const x = buildSave(g); delete x.savedAt; return x; })());
       loadSave(JSON.parse(s1));
@@ -72,7 +106,23 @@ const { chromium } = require('playwright');
     await p.waitForTimeout(300);
     await p.screenshot({ path: `${process.argv[2]}/hazard-${tag}.png` });
     const wide = await p.evaluate(() => [...document.querySelectorAll('table.regimes')].map((t) => [t.scrollWidth, t.parentElement.clientWidth]));
-    out[tag] = { ...r, wide, errs: errs.slice(0, 3) };
+    // 史料の欄 (H4-1): 統治の欄の中にあり、型を選ぶと中身が替わる
+    const hist = await p.evaluate(async () => {
+      const g = __app.game;
+      const v = Object.keys(g.govs).map(Number).find((id) => g.known(id)?.lord === g.cap && (g.known(id)?.realm ?? g.cap) === g.cap && !g.known(id)?.direct && g.isColonized(id));
+      if (v === undefined) return null;
+      __app.selectSystem(v); __app.dirty = true;
+      await new Promise((ok) => setTimeout(ok, 400));
+      const d = document.querySelector('details.hist');
+      if (!d) return null;
+      const before = d.querySelector('summary').textContent;
+      app.histType = 'T01'; __app.dirty = true;
+      await new Promise((ok) => setTimeout(ok, 400));
+      const after = document.querySelector('details.hist summary')?.textContent || '';
+      app.histType = null;
+      return [before.startsWith('史料'), /冊封朝貢国/.test(after), /一次史料の出典/.test(document.querySelector('details.hist').textContent)];
+    });
+    out[tag] = { ...r, wide, hist, errs: errs.slice(0, 3) };
   }
   console.log(JSON.stringify(out, null, 1));
   await b.close();

@@ -48,8 +48,10 @@ function overlay(dst, src, where) {
   }
 }
 
-function load({ src = SRC, params = null } = {}) {
-  const html = fs.readFileSync(src, 'utf8');
+// edition = 'sim' なら、シミュレーション版として読む (src の EDITION の行を書き換える。build.mjs と同じ)
+function load({ src = SRC, params = null, edition = null } = {}) {
+  let html = fs.readFileSync(src, 'utf8');
+  if (edition) html = html.replace("const EDITION = 'game'; /* EDITION */", `const EDITION = '${edition}';`);
   const js = html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>'));
   const names = [...js.matchAll(/^const ([A-Z][A-Z0-9_]*) = [{[]/gm)].map((m) => m[1]).concat(['ED']); // ED = この版の EDITIONS の値
   const base = {
@@ -78,6 +80,8 @@ function load({ src = SRC, params = null } = {}) {
   if (params) overlay(N.tables, params, '値');
   return {
     ...N,
+    // ページの中で式を評価する (試験用の let の値 MASS_AUDIT・MONEY_AUDIT などを読み書きする)
+    evaluate: (code) => vm.runInContext(code, ctx),
     // 新しい試合 (ゲームの newGame と同じ銀河)。nations を渡すと国家選択のある試合にし、プレイヤーの国も AI に任せる (観戦)
     newGame(seed, { nations = 0, spectate = true } = {}) {
       const g = new N.Game(N.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: N.GALAXY_GEN }));

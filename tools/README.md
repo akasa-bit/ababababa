@@ -14,6 +14,11 @@ PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメ
 
 - `node tools/ci-tests.js`: 組み立て → 目標のファイルの固定の確認 → `tools/tests` の試験 (rotate と headless を含む 16 本)。出力から合否を決め (`docs/handoff.md` の 14 と同じ見方)、Markdown の表を出す。1 つでも落ちたら失敗。名前を渡すとその試験だけ (`node tools/ci-tests.js det net`)
 - `node tools/ci-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数]`: 画面なしの版で、main と PR を同じシードで回し、入植地・人口・戦争・独立・資金などの平均と 10〜90% を並べる。合否は付けない (釣り合いが知らないうちに動いていないかを見る)
+- `node tools/fiscal-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]`: 画面なしの版で回し、国ごと・年ごとの財政と金融のパネルを、Jordà–Schularick–Taylor と同じ列 (`year, country, gdp, revenue, expenditure, debtgdp, tloans`) で書き出す。`python3 data/build/analyze_fiscal.py <出力.csv>` で、現実と同じ台本で R19〜R22 を出す (`docs/fiscal.md` の 3)
+- `node tools/market-panel.js <出力のフォルダ> [銀河の数] [年数] [国の数] [値のファイル.json]`: 画面なしの版で回し、星系ごと・年ごとの値段 (`prices.csv`) と在庫とふだんの消費 (`food.csv`・`goods.csv`) を書き出す。`python3 data/build/analyze_market.py <フォルダ>/prices.csv <フォルダ>/food.csv <フォルダ>/goods.csv` で、現実と同じ台本で R23〜R26 を出す (`docs/market.md` の 2)
+- `fiscal-panel.js`・`market-panel.js`・`sector-panel.js`・`research-panel.js` は `HTML=<別の src/index.html>` で別の版 (main など) を測れる (`money.js` と同じ)。
+- `node tools/sector-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json or -] [開始時の生産性]`: 画面なしの版で回し、星系ごと・年ごとの 1 人あたりの実質の所得 (2011 年の国際ドル) と農業・工業・サービスの就業の割合を書き出す。`python3 data/build/build_sectors.py --game <出力.csv>` で、実データと同じ関数で R10 の合否を出す (`docs/structure.md` の 5)
+- `node tools/research-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]`: 国ごと・年ごとの技術の伸びと研究者の数を書き出す。`python3 data/build/build_ideas.py --game <出力.csv>` で、Bloom ほか 2020 と同じ式で R11 の合否を出す
 
 - `node tools/fun-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数] [探索の予算] [探索の銀河の数]`: 面白さの代わりの数 (判断を求められる回数・待つだけの年・1 つの戦略が強すぎないか・逆転・選ぶ意味の大きさ) を main と並べ、PR の版で必勝法を探す AI の小さな探索を回す。合否は付けない。数の中身は `docs/fun.md`
 
@@ -162,9 +167,11 @@ HTML=$PWD/simulation.html NAT=1 node tools/tests/det.js 7 120   # 決定性 (シ
 for t in hot treaty edit lib home real net; do node tools/tests/$t.js; done
 node tools/tests/cloud.js shots                                 # アカウントとクラウド (偽の Firebase)
 for t in pick regime editions; do node tools/tests/$t.js shots; done
-node tools/tests/energy.js 5 150                                # 船のエネルギーの記帳 (目標 R07)
+node tools/tests/energy.js 5 150                                # 船のエネルギーの記帳 (目標 R07。遮蔽の質量まで)
+EDITION=game node tools/tests/physics.js 5 150                  # 物理 (遮蔽・加速の時間・フレアの表示・古いセーブ。画面なしの版。EDITION=sim でシミュレーション版の分)
 HTML=$PWD/simulation.html NAT=1 node tools/tests/energy.js 7 150
 node tools/tests/conserve.js 5 150                              # 物質とエネルギーの保存 (目標 R03)
+node tools/tests/money.js 5 150                                 # お金の保存 (画面なしの版。6 か国なら 3 つめに 6)
 node tools/tests/headless.js 100 1,4,9                          # 画面なしの版がブラウザと一致する
 HTML=$PWD/simulation.html NAT=1 node tools/tests/conserve.js 7 150
 ```
@@ -184,6 +191,9 @@ HTML=$PWD/simulation.html NAT=1 node tools/tests/conserve.js 7 150
 | `conserve.js` | 1 年ごとに、星系ごと・資源ごとの記帳した出入りと備蓄の増加・運ぶ途中の物・工業の質量・政府ごとのエネルギーが釣り合う (誤差 ÷ 取扱量が 1e-9 以下、目標 R03)。決まっていない出入りがない |
 | `cloud.js` | アカウントとクラウド (偽の Firebase で): ゲストのログイン・名前・クラウドのセーブ・自作の国・部屋のコードでのネット対戦 |
 | `headless.js` | 画面なしの版で回した状態の要約が、公開用の index.html をブラウザで回したものと一致する (国家選択なし・6 か国)。値のファイルが効き、ない項目を拒む |
+| `fiscal.js` | 財政 (税・利子率・予算): 命令と政治力、選べない値を拒む、光速で広がる、税収・利子・予算の記帳、忠誠度・離反の起きやすさ・艦隊の戦力への効き目、保存と読み込み、画面 (横と縦) ([docs/fiscal.md](../docs/fiscal.md)) |
+| `market.js` | 市場 (段 5): 値段が決まった幅に入る、在庫が少ないほど高い、就業の割合の合計が 1 でどの部門もほぼ 1% 以上、方針の命令を断る、保存と読み込みで値段と就業が変わらない、開始時の生産性の倍率が産出に効いて保存に残る ([docs/market.md](../docs/market.md)・[docs/productivity.md](../docs/productivity.md)) |
+| `money.js` | 1 年ごとに、お金の総額 (政府・民間・先住民・運ぶ途中 − 銀行の貸出) が変わらない、帳簿ごとの記帳した出入りと額の増加が一致する、出入りの種類ごとに帳簿の合計が 0 (誤差 ÷ 取扱量が 1e-9 以下)。決まっていない出入りがなく、手持ちと借りがマイナスにならない ([docs/money.md](../docs/money.md)) |
 | `energy.js` | 船 1 便ごとに記帳した推進のエネルギーが、試験の中で計算し直した式と 1 ± 1e-6 で一致する (目標 R07)。太陽系の発電と収支も出す |
 
 各試験は結果を表示します。`[]` で終わる行は、ページの誤りがなかったことを表します。

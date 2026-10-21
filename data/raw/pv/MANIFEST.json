@@ -1,0 +1,16 @@
+[
+ {
+  "file": "srniel_proton_GaAs_Ed21.txt",
+  "url": "https://www.sr-niel.org/index.php/sr-niel-web-calculators/niel-calculator-for-electrons-protons-and-ions/protons-ions-niel-calculator (POST Zi=1&Ionmodel=1&Scale=0&TARGET=0&NELEM=2&Z1=31&Stoich1=1&Th1=21&Z2=33&Stoich2=1&Th2=21&Emin=0.01&Emax=1000&AddEnergy=&Fluence=1&formSubmit=CALCULATE)",
+  "fetched": "2026-10-20T10:39:44Z",
+  "sha256": "f11332db85e1e058e75936957345e048ca009abd298dd21102e7f35f84bf38c2",
+  "lines": 93
+ },
+ {
+  "file": "pstar_pyrex.txt",
+  "url": "https://physics.nist.gov/cgi-bin/Star/ap_table-t.pl (POST matno=169&ShowDefault=on&prog=PSTAR)",
+  "fetched": "2026-10-20T10:39:44Z",
+  "sha256": "7c7ab41d25341c100471adaccb3ab07275f32c4a942d447096828586352122e6",
+  "lines": 150
+ }
+]

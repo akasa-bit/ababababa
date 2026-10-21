@@ -1,0 +1,89 @@
+Atomic and nuclear properties of water (liquid) (H 2 O)
+Quantity Value Units
+Value Units
+&#060; Z/A &#062;
+0.55509
+mol g -1
+&nbsp; &nbsp;
+Density
+1.000
+g cm -3
+&nbsp; &nbsp;
+Mean excitation energy
+79.7
+eV
+&nbsp; &nbsp;
+Minimum ionization
+1.981
+MeV g -1 cm 2
+1.981
+MeV cm -1
+Nuclear interaction length
+83.3
+g cm -2
+83.33
+cm
+Nuclear collision length
+58.5
+g cm -2
+58.50
+cm
+Pion interaction length
+115.6
+g cm -2
+115.6
+cm
+Pion collision length
+86.0
+g cm -2
+86.00
+cm
+Radiation length
+36.08
+g cm -2
+36.08
+cm
+Critical energy
+78.33
+MeV (for e - )
+76.24
+MeV (for e + )
+Muon critical energy
+1029.
+GeV
+&nbsp; &nbsp;
+Moli&egrave;re radius
+9.77
+g cm -2
+9.768
+cm
+Plasma energy &#8463; &#969; p
+21.47
+eV
+&nbsp; &nbsp;
+Index of refraction (Na D)
+1.333
+&nbsp;
+&nbsp; &nbsp;
+Melting point
+273.1
+K
+0.000E+00
+C
+Boiling point @ 1 atm
+373.1
+K
+99.96
+C
+Composition:
+Elem Z Atomic frac* A Mass frac
+H 1 2.00 1.0080 0.111894
+O 8 1.00 15.9990 0.888106
+* calculated from mass fraction data
+For muons, dE/dx = a(E) + b(E) E . Tables of b(E) :
+PDF
+TEXT
+Table of muon dE/dx and Range:
+PDF
+TEXT
+Explanation of some entries

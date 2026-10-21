@@ -1,0 +1,11 @@
+[
+ {
+  "file": "wdi_research.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{SP.POP.SCIE.RD.P6,GB.XPD.RSDV.GD.ZS,SL.TLF.TOTL.IN}",
+  "fetched": "2026-10-20T14:44:54Z",
+  "sha256": "3bb9114351c7fad4ff56069649180ee21664418b992714323dc0a7c7ac1837b3",
+  "bytes": 89454,
+  "rows": 10976,
+  "filter": "国だけ (地域の集計を除く)・1960〜2024 年"
+ }
+]

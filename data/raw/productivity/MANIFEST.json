@@ -1,0 +1,19 @@
+[
+ {
+  "file": "BCLDatabase_online_v2.7.xlsx",
+  "url": "http://www.longtermproductivity.com/download/BCLDatabase_online_v2.7.xlsx",
+  "fetched": "2026-10-20T10:58:14Z",
+  "sha256": "0942674fec8ee88929c1bd16f8ddd25ccc4828eaf5c37c9a38a1b3bf497bd28c",
+  "bytes": 277375
+ },
+ {
+  "file": "mpd2023_full.csv.gz",
+  "url": "https://dataverse.nl/api/access/datafile/421302#Full data",
+  "fetched": "2026-10-20T10:58:25Z",
+  "sha256": "dba02896aafd9445f434c4e0e0938745065f77c5d5d8e37e12371b398b748afa",
+  "bytes": 588650,
+  "source_sha256": "ecc5916ca12789b983fc4be437f8a354bbf4291323605324ac3e0aea4c57cbb6",
+  "rows": 131144,
+  "source_file": "mpd2023_web.xlsx (Maddison Project Database 2023)"
+ }
+]

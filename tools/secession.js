@@ -28,7 +28,10 @@ const fs = require('fs');
       const done = [];
       const close = (id, how) => { const t = ties.get(id); if (!t) return; ties.delete(id); done.push({ ...t, end: g.year, dur: g.year - t.start, how }); };
       const orig = g.declareIndependence.bind(g);
-      g.declareIndependence = function (id) { close(id, 'independence'); return orig(id); };
+      // 独立のときは、戦争になったか (人間の国からだけ判定) と、型の戦争の確率も残す (従属国の型の目標 R32)
+      g.declareIndependence = function (id) { const t = ties.get(id); const r = orig(id); const li = g.lastIndependence; if (t && li?.id === id) { t.war = !!li.war; t.warP = li.p; } close(id, 'independence'); return r; };
+      // 法と実態の差 (従属国の型の目標 R31。束がない前の版では null)
+      const gapOf = (gv) => (typeof g.bundleOf === 'function' && typeof bundleGap === 'function' ? (() => { const b = g.bundleOf(gv); return bundleGap(b.law, b.fact); })() : null);
       const scan = () => {
         for (const [k, gv] of Object.entries(g.govs)) {
           const id = Number(k);
@@ -37,18 +40,20 @@ const fs = require('fs');
           if (lord === null || lord === undefined || !g.isColonized(id)) { if (t) close(id, g.isColonized(id) ? 'other' : 'abandoned'); continue; }
           const root = g.realmOf(id);
           if (t && (t.lord !== lord || t.root !== root)) close(id, 'transfer');
-          if (!ties.has(id)) ties.set(id, { id, lord, root, start: g.year, regime: regime(gv), dCap: g.sysDist(id, root), dLord: g.sysDist(id, lord), onsets: 0, human: g.isHuman(root) });
+          if (!ties.has(id)) ties.set(id, { id, lord, root, start: g.year, regime: regime(gv), regime0: regime(gv), gap0: gapOf(gv), gapSum: 0, gapN: 0, dCap: g.sysDist(id, root), dLord: g.sysDist(id, lord), onsets: 0, human: g.isHuman(root) });
           const r = ties.get(id);
           const st = gv.unrest?.stage || 0;
           if (st >= 1 && !r.inUnrest) r.onsets++;
           r.inUnrest = st >= 1;
           r.regime = regime(gv);
           r.loyalty = Math.round(gv.loyalty ?? 70);
+          const gp = gapOf(gv);
+          if (gp !== null) { r.gapSum += gp; r.gapN++; }
         }
       };
       for (let y = 0; y < years; y++) { g.advance(1); scan(); }
       for (const id of [...ties.keys()]) close(id, 'censored');
-      return { seed, years, nations: n, edition: typeof EDITION === 'undefined' ? null : EDITION, set, ties: done.map(({ inUnrest, ...x }) => x) };
+      return { seed, years, nations: n, edition: typeof EDITION === 'undefined' ? null : EDITION, set, ties: done.map(({ inUnrest, gapSum, gapN, ...x }) => ({ ...x, gap: gapN ? +(gapSum / gapN).toFixed(3) : null })) };
     }, [seed, Number(yearsS), Number(nS), JSON.parse(setS)]);
     res.errs = errs.slice(0, 5); res.secs = Math.round((Date.now() - t0) / 1000);
     fs.writeFileSync(out, JSON.stringify(res));

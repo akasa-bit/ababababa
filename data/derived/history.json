@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-18T10:37:36Z",
+ "generated": "2026-10-20T06:55:50Z",
  "colonies": {
   "n": 161,
   "note": "COLDAT の期間 (平均の版)。いまの独立国だけが載るので、どの植民地も独立で終わっている (打ち切りなし)",
@@ -223,6 +223,20 @@
     "boots": 500
    }
   }
+ },
+ "war_onsets_cow": {
+  "period": [
+   1816,
+   2007
+  ],
+  "state_years": 14199,
+  "participations": 332,
+  "wars": 95,
+  "per_100_state_years": 2.338,
+  "ci95_poisson": [
+   2.087,
+   2.59
+  ]
  },
  "termination_ucdp": {
   "all": {

@@ -1,6 +1,6 @@
 {
-  "version": 3,
-  "fixedAt": "2026-10-18",
+  "version": 11,
+  "fixedAt": "2026-10-21",
   "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
   "rules": [
     "数値の合格幅がまだ決まっていない目標 (band が null) は、取得スクリプトで生データから統計量を計算した時点で、その計算結果だけから幅を決めて書き込み、固定する。シミュレーションの結果を見てから幅を決めてはいけない",
@@ -11,7 +11,14 @@
   ],
   "changes": [
     { "version": 2, "date": "2026-10-18", "what": "R06・R08・R09・R13・R14・R15・R16 の幅を、取得スクリプトで生データから計算した値だけで決めた (data/derived/history.json)。ゲームの自動対戦の結果はこの変更に使っていない" },
-    { "version": 3, "date": "2026-10-18", "what": "R01 の幅を、取得スクリプトで生データ (CEPII Gravity V202211、2000〜2019 年) から計算した値だけで決めた (推定 −0.874、data/derived/trade.json)。合格の決まり (負で、差 0.3 以内) をそのまま当てはめた。式は ln 距離だけ (ゲームの星系には隣接・言語などの変数がないので)。ゲームの自動対戦の結果はこの変更に使っていない" }
+    { "version": 3, "date": "2026-10-18", "what": "R01 の幅を、取得スクリプトで生データ (CEPII Gravity V202211、2000〜2019 年) から計算した値だけで決めた (推定 −0.874、data/derived/trade.json)。合格の決まり (負で、差 0.3 以内) をそのまま当てはめた。式は ln 距離だけ (ゲームの星系には隣接・言語などの変数がないので)。ゲームの自動対戦の結果はこの変更に使っていない" },
+    { "version": 4, "date": "2026-10-20", "what": "財政と金融の目標 R19〜R22 を足した。幅は、取得スクリプト (data/fetch/fetch_fiscal.py) で取った Jordà–Schularick–Taylor R6 から data/build/analyze_fiscal.py で計算した、国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ GDP がなく、測れない)" },
+    { "version": 5, "date": "2026-10-20", "what": "市場の目標 R23〜R26 を足した。幅は、取得スクリプト (data/fetch/fetch_market.py) で取った World Bank Pink Sheet・USDA PSD・FRED ISRATIO から data/build/analyze_market.py で計算した 10%〜90% 点だけで決めた (data/derived/market.json)。ゲームの自動対戦の結果はこの変更に使っていない (ゲームにはまだ値段がなく、測れない)" },
+    { "version": 6, "date": "2026-10-20", "what": "政府支出 ÷ GDP (R27) を足した。費用の大きさ (値段の水準) を経済に合わせて決めるため (ユーザーの決定、docs/requests/2026-10-20-C.md の C-11)。幅は R19〜R22 と同じく Jordà–Schularick–Taylor R6 の国ごとの値の 10%〜90% 点だけで決めた (data/derived/fiscal.json)。R19〜R22 の幅は変えていない。ゲームの結果はこの幅を決めるのに使っていない" },
+    { "version": 8, "date": "2026-10-20", "what": "F08 を、いまのゲーム版の銀河 (星系 73 個。銀河面 ±2 光年の板) に合わせた。前の「星系 3,000 個」は、銀河を板にして 73 星系に減らす前の想定だった。合格の数 (毎秒 60 コマ・下限 45、最高速で 1 秒に 64 年) と測る機械 (Xiaomi Pad 8 Pro・Steam Deck) は変えていない。測り方を desktop/bench/probe.js の手順に決めた。包装の比べ (レーン S) の測定は GPU のない機械の Xvfb のもので、F08 の判定には使わず、この変更にも使っていない" },
+    { "version": 9, "date": "2026-10-20", "what": "R29 (国家間戦争の多さ) を足した。幅は、取得スクリプトで生データ (COW 国家間戦争 4.0 と国家の一覧 2016、1816〜2007 年) から計算した値 (国 100 年あたり 2.338、data/derived/history.json の war_onsets_cow) に、R13 と同じ「実データの ±30% 以内」を当てはめた。値は段 8 (講和と開戦の交渉、#121) を作る前に計算した。ゲームの自動対戦の結果はこの幅を決めるのに使っていない" },
+    { "version": 10, "date": "2026-10-20", "what": "R10 (産業構造と所得) と R11 (研究の生産性の低下) の幅を、取得スクリプトで取った生データの計算結果だけから決めた。R10: GGDC 10 部門 × Maddison 2023 (31 か国 1948〜2012 年) の所得 5 分位ごとの就業の割合の四分位範囲と、工業の頂点の所得のブートストラップの 5〜95% 点 (6,200〜10,660 ドル)。ゲームの所得をドルに読み替える物差しは、食料の基準の値段を 2011 年の世界の穀物の値段 (Pink Sheet × USDA PSD、1 t = 356.4 ドル) に合わせるものとし、これも生データだけから決めた。R11: Bloom ほか 2020 の台本と同じ計算の全体の値 (年 −5.09%) の ±50%。どちらも構造転換と研究をゲームに入れる前に決め、ゲームの自動対戦の結果は見ていない" },
+    { "version": 11, "date": "2026-10-21", "what": "従属国の型の目標 R30 (家族ごとの存続の比)・R31 (法と実態の差のハザード比)・R32 (家族ごとの暴力の割合) を足した (レーン H・H2-2)。値は data/build/analyze_vassal.py が事例 131 件から計算したものだけから決めた。主権の束をゲームに入れる (H3-1) 前で、ゲームの自動対戦の結果は見ていない" }
   ],
   "realism": [
     {
@@ -55,7 +62,7 @@
     },
     {
       "id": "R06", "area": "天文", "name": "M 型星の地球型惑星の頻度",
-      "data": {"source": "Dressing & Charbonneau 2015", "version": "論文の表", "script": "data/fetch/eta_earth_m"},
+      "data": { "source": "Dressing & Charbonneau 2015", "version": "論文の表", "script": "data/fetch/eta_earth_m" },
       "statistic": "M 型星あたりの、保守的なハビタブルゾーンの地球型惑星の数",
       "sim": "同じ定義", "pass": "論文の 95% 信頼区間の中",
       "band": [0.09, 0.33], "split": "holdout",
@@ -72,7 +79,7 @@
     },
     {
       "id": "R08", "area": "政治", "name": "植民地の離反の起きやすさ (統治体制別)",
-      "data": {"source": "ICOW Colonial History・COLDAT (Becker 2019)・Lange の間接統治データ・Seshat・V-Dem・EPR・Regional Authority Index・Dell 2010", "version": "COLDAT (Harvard Dataverse doi:10.7910/DVN/T9SDEW, 2023-09-21 更新版)・ICOW Colonial History 1.1", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "ICOW Colonial History・COLDAT (Becker 2019)・Lange の間接統治データ・Seshat・V-Dem・EPR・Regional Authority Index・Dell 2010", "version": "COLDAT (Harvard Dataverse doi:10.7910/DVN/T9SDEW, 2023-09-21 更新版)・ICOW Colonial History 1.1", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "独立 (離反) までの時間の Cox 比例ハザードモデル。説明変数は統治体制・本国からの距離・通信の遅れ ÷ 1 世代の長さ・人口の比。統治体制ごとのハザード比と、植民地の存続年数の中央値 (Kaplan–Meier)",
       "sim": "星系の離反の記録を ICOW と同じ形式で書き出し、同じモデルで推定",
       "pass": "主な説明変数のハザード比が、実データの 95% 信頼区間の中。統治体制ごとの存続年数の中央値が実データの ±25% 以内",
@@ -83,7 +90,7 @@
     },
     {
       "id": "R09", "area": "政治", "name": "植民地の離反 (別の本国)",
-      "data": {"source": "R08 と同じ", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "R08 と同じ", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "R08 と同じ", "sim": "R08 と同じ",
       "pass": "R08 で較正したモデルのまま、スペイン・ポルトガル・オランダの植民地の存続年数の中央値が ±35% 以内",
       "band": [187.8, 390.2], "split": "holdout",
@@ -92,19 +99,26 @@
     },
     {
       "id": "R10", "area": "経済", "name": "産業構造と所得",
-      "data": { "source": "GGDC 10 部門データベース・ILOSTAT", "version": "取得時の版を記録", "script": "data/fetch/sectors" },
-      "statistic": "1 人あたり所得 (対数) に対する、農業・工業・サービスの就業者の割合の曲線 (工業はこぶ型)",
-      "sim": "星系ごとの所得と就業構造",
-      "pass": "所得の各分位で、シミュレーションの割合が実データの四分位範囲の中。工業の割合が最大になる所得が、実データの範囲の中",
-      "band": null, "split": "calibration"
+      "data": { "source": "GGDC 10 部門データベース (Timmer, de Vries & de Vries 2015、2014 年 1 月版) × Maddison Project Database 2023。確かめに世界銀行 WDI (ILOSTAT のモデル推計)", "version": "10SD jan15 2014・MPD 2023・WDI (2026-10 取得)", "years": "1948-2012 (WDI は 1991-2024)", "script": "data/fetch/fetch_sectors.py → data/build/build_sectors.py" },
+      "statistic": "国・年ごとの農業・工業・サービスの就業者の割合 (農業 = Agriculture、工業 = 鉱業・製造業・電気ガス水道・建設、サービス = 残りの 5 部門。Herrendorf・Rogerson・Valentinyi 2014 の分け方) を、1 人あたり所得 (2011 年の国際ドル) の 5 分位で分けた四分位範囲。工業の割合を ln 所得の 2 次式で当てはめた頂点の所得 (国の固定効果つき)。計算は data/build/build_sectors.py",
+      "sim": "ゲームの星系・年ごとの就業の割合 (農業 = farm、工業 = mine + ind、サービス = serv。研究者はサービスに入る) と 1 人あたり所得を、同じ列のパネルに書き出し、同じコードで計算する。所得は、星系の民間の所得 (付加価値) を地元の消費者物価 (食料 1・工業品 0.3・水 0.1 (水が要る星系だけ) の基準の量の値段 ÷ 基準の値段) で割った実質の所得を、食料の基準の値段を 2011 年の世界の穀物の値段 (1 t = 356.4 ドル。data/derived/sectors.json の anchor) に合わせて 2011 年の国際ドルに読み替え、人口 (100 万人) で割ったもの。人口 100 万人以上の星系・年だけを使う。分位の境目は実データ (GGDC) のもので固定し、604 ドル未満と 50,902 ドルを超える星系・年は比べない。銀河 (シード) ごとに分位・部門ごとの割合の中央値 (星系・年が 10 以上ある分位だけ) と頂点 (2 次の係数が負でなければ頂点なし) を出し、30 以上の銀河の中央値で判定する。ゲームの 1 年 = 1 年",
+      "pass": "半分以上の銀河で値のある分位がすべて、3 部門とも実データの四分位範囲の中 (比べられる分位が 3 つ以上あること)。工業の頂点の所得 (銀河の中央値) が幅の中 (半分以上の銀河で頂点がなければ不合格)",
+      "band": [6200, 10660], "estimate": 7944, "reference": "GGDC × Maddison の 31 か国 1948〜2012 年 (1632 国・年)。幅は工業の頂点の所得を国を引き直すブートストラップ 500 回の 5%〜95% 点。確かめ用の WDI (177 か国 1991〜2024 年、2021 年の国際ドル) の値も data/derived/sectors.json にある (頂点 10,882、8,242〜14,486)", "split": "calibration",
+      "quintiles": [
+        { "income": [604, 1999], "agr": [0.689, 0.861], "ind": [0.035, 0.101], "srv": [0.091, 0.216] },
+        { "income": [1999, 5516], "agr": [0.483, 0.611], "ind": [0.127, 0.186], "srv": [0.245, 0.346] },
+        { "income": [5516, 11305], "agr": [0.228, 0.37], "ind": [0.221, 0.315], "srv": [0.382, 0.48] },
+        { "income": [11305, 22463], "agr": [0.075, 0.162], "ind": [0.303, 0.38], "srv": [0.481, 0.591] },
+        { "income": [22463, 50902], "agr": [0.025, 0.055], "ind": [0.222, 0.301], "srv": [0.645, 0.75] }
+      ]
     },
     {
       "id": "R11", "area": "経済", "name": "研究の生産性の低下",
-      "data": { "source": "Bloom ほか 2020 (American Economic Review) の再現用データ", "version": "論文の公開データ", "script": "data/fetch/ideas" },
-      "statistic": "研究者 1 人あたりのアイデアの生産 (研究の生産性) が年に何 % 下がるか",
-      "sim": "同じ定義で数えた研究の生産性",
+      "data": { "source": "Bloom, Jones, Van Reenen & Webb 2020, Are Ideas Getting Harder to Find? (American Economic Review 110(4)) の再現用の一式 IdeaPFPrograms.zip", "version": "論文の公開の台本と、台本に書き込まれた公開の統計 (BEA NIPA・BLS・CPS)", "years": "1930 年代〜2000 年代", "script": "data/fetch/fetch_ideas.py → data/build/build_ideas.py" },
+      "statistic": "研究の生産性 = TFP の伸び (Ȧ/A) ÷ 実効の研究者の数 (研究費 ÷ 大卒の賃金) の、年あたりの変化率 (10 年ごとの平均の、最初と最後の 10 年の比の対数 ÷ 年数)。米国全体 (Aggregate) の値",
+      "sim": "ゲームの国ごとに、技術の伸び (分野ごとの ln A の伸びを部門の付加価値で重みづけた平均) ÷ 研究者の数 (人) を 10 年ごとに出し (伸びは 10 年の平均、研究者は 10 年の幾何平均)、最初と最後の 10 年の比の対数 ÷ その間の年数。試合の始めから終わりまである国だけを使う。銀河 (シード) ごとに国の中央値をとり、30 以上の銀河の中央値で判定する。ゲームの 1 年 = 1 年",
       "pass": "実データの推定値の ±50% 以内",
-      "band": null, "split": "calibration"
+      "band": [-7.63, -2.54], "estimate": -5.086, "reference": "研究者 ×22.2 (1930 年代 → 2000 年代)、研究の生産性 年 −5.09% (論文 −5.3%)。分野ごとの確かめにムーアの法則の広い定義 (年 −6.76%、論文 −6.8%) も data/derived/ideas.json にある", "split": "calibration"
     },
     {
       "id": "R12", "area": "人口", "name": "人口の増え方の上限",
@@ -116,7 +130,7 @@
     },
     {
       "id": "R13", "area": "戦争", "name": "戦争の長さの偏り",
-      "data": {"source": "Correlates of War 国家間戦争データ", "version": "Inter-State War Data v4.0", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "Correlates of War 国家間戦争データ", "version": "Inter-State War Data v4.0", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "戦争の長さの平均 ÷ 中央値",
       "sim": "tools/wars.js の出力を COW と同じ形式にしたもの",
       "pass": "実データの値の ±30% 以内",
@@ -125,7 +139,7 @@
     },
     {
       "id": "R14", "area": "戦争", "name": "戦争の終わり方の内訳",
-      "data": {"source": "UCDP Conflict Termination", "version": "UCDP Conflict Termination 4-2024 (紛争単位)", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "UCDP Conflict Termination", "version": "UCDP Conflict Termination 4-2024 (紛争単位)", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "終わり方 (勝利・和平合意・停戦・活動低下) の割合",
       "sim": "白紙講和 = 活動低下、講和条約 = 和平合意、全面降伏と首都の陥落 = 勝利として対応させる",
       "pass": "最も多い終わり方が一致し、各割合の差が 15 ポイント以内",
@@ -135,7 +149,7 @@
     },
     {
       "id": "R15", "area": "戦争", "name": "戦争の規模の分布",
-      "data": {"source": "Correlates of War 国家間戦争データ (戦死者数)", "version": "Inter-State War Data v4.0", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "Correlates of War 国家間戦争データ (戦死者数)", "version": "Inter-State War Data v4.0", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "戦死者数の分布の裾のべき指数 α (Clauset–Shalizi–Newman の方法)",
       "sim": "戦争ごとの死者数 (艦隊の乗員の損失を含む)",
       "pass": "べき乗則の当てはめの検定で p ≥ 0.1、α が実データの推定値 ±0.3 以内",
@@ -144,7 +158,7 @@
     },
     {
       "id": "R16", "area": "戦争", "name": "戦闘の勝敗と兵力比",
-      "data": {"source": "CDB90 (約 660 の戦闘)", "version": "jrnold/CDB90 (2015 年版の data/)", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py"},
+      "data": { "source": "CDB90 (約 660 の戦闘)", "version": "jrnold/CDB90 (2015 年版の data/)", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
       "statistic": "攻撃側の勝ちを、兵力比の対数でロジスティック回帰したときの傾き。ランチェスター則の指数の推定値",
       "sim": "艦隊戦を同じ形式で書き出して同じ回帰",
       "pass": "傾きと指数が、実データの推定値の 95% 信頼区間の中",
@@ -168,6 +182,152 @@
       "sim": "刻み 0.5・0.25・0.125・0.0625 年",
       "pass": "1 次の方法なら 1.8〜2.2 倍、2 次の方法なら 3.6〜4.4 倍ずつ小さくなる",
       "band": null, "split": "test"
+    },
+    {
+      "id": "R19", "area": "財政", "name": "税収 ÷ GDP",
+      "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
+      "statistic": "revenue ÷ gdp の国ごとの中央値 (GDP はゲームでは付加価値の合計。定義は docs/fiscal.md)。計算は data/build/analyze_fiscal.py",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
+      "band": [0.105, 0.2634], "estimate": 0.1545,
+      "reference": "18 か国 1870〜2020 年 (2520 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R20", "area": "財政", "name": "政府が黒字だった年の割合",
+      "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
+      "statistic": "revenue > expenditure だった年の割合 (国ごと)。計算は data/build/analyze_fiscal.py",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
+      "band": [0.1252, 0.5609], "estimate": 0.2682,
+      "reference": "18 か国 1870〜2020 年 (2538 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R21", "area": "財政", "name": "政府債務 ÷ GDP",
+      "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
+      "statistic": "debtgdp の国ごとの中央値 (政府の総債務)。計算は data/build/analyze_fiscal.py",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
+      "band": [0.2017, 0.7295], "estimate": 0.4687,
+      "reference": "18 か国 1870〜2020 年 (2489 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R22", "area": "金融", "name": "民間の信用 ÷ GDP",
+      "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
+      "statistic": "tloans ÷ gdp の国ごとの中央値 (銀行から民間への貸出)。計算は data/build/analyze_fiscal.py",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
+      "band": [0.2943, 0.7847], "estimate": 0.474,
+      "reference": "18 か国 1870〜2020 年 (2445 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R23", "area": "市場", "name": "値段の変化のばらつき",
+      "data": { "source": "World Bank Pink Sheet・USDA PSD・FRED ISRATIO", "years": "1960-2025 (ISRATIO は 1992 年〜)", "script": "data/fetch/fetch_market.py" },
+      "statistic": "各系列の Δln(実質の値段) の標準偏差 (年次)。現実は Pink Sheet の 31 品目 (食料 18・金属 7・燃料 3・貴金属 3)、ゲームは星系ごとの食料・金属・燃料・希少元素の値段。計算は data/build/analyze_market.py",
+      "sim": "ゲームの星系ごとの値段と在庫を、同じ列のパネルに書き出し (tools/market-panel.js)、同じコード (data/build/analyze_market.py) で計算する。銀河 (シード) ごとに中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの 10%〜90% 点の中",
+      "band": [0.1358, 0.273], "estimate": 0.1962,
+      "reference": "31 の系列・年・月の分布。品目の組ごとの値も data/derived/market.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R24", "area": "市場", "name": "値段の続き方",
+      "data": { "source": "World Bank Pink Sheet・USDA PSD・FRED ISRATIO", "years": "1960-2025 (ISRATIO は 1992 年〜)", "script": "data/fetch/fetch_market.py" },
+      "statistic": "各系列の ln(実質の値段) から直線の傾向を除いたものの 1 年の自己相関 (Deaton & Laroque 1992 の形)。系列は R23 と同じ。計算は data/build/analyze_market.py",
+      "sim": "ゲームの星系ごとの値段と在庫を、同じ列のパネルに書き出し (tools/market-panel.js)、同じコード (data/build/analyze_market.py) で計算する。銀河 (シード) ごとに中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの 10%〜90% 点の中",
+      "band": [0.6781, 0.8955], "estimate": 0.8305,
+      "reference": "31 の系列・年・月の分布。品目の組ごとの値も data/derived/market.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R25", "area": "市場", "name": "穀物の在庫 ÷ 消費",
+      "data": { "source": "World Bank Pink Sheet・USDA PSD・FRED ISRATIO", "years": "1960-2025 (ISRATIO は 1992 年〜)", "script": "data/fetch/fetch_market.py" },
+      "statistic": "世界の小麦・とうもろこし・米の期末在庫 ÷ その年の国内消費 (1960〜2024 年の作物・年)。ゲームは星系ごとの食料の在庫 ÷ その年の食料の消費。計算は data/build/analyze_market.py",
+      "sim": "ゲームの星系ごとの値段と在庫を、同じ列のパネルに書き出し (tools/market-panel.js)、同じコード (data/build/analyze_market.py) で計算する。銀河 (シード) ごとに中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの 10%〜90% 点の中",
+      "band": [0.1412, 0.3606], "estimate": 0.2773,
+      "reference": "195 の系列・年・月の分布。品目の組ごとの値も data/derived/market.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R26", "area": "市場", "name": "工業品の在庫 ÷ 売上",
+      "data": { "source": "World Bank Pink Sheet・USDA PSD・FRED ISRATIO", "years": "1960-2025 (ISRATIO は 1992 年〜)", "script": "data/fetch/fetch_market.py" },
+      "statistic": "米国の企業全体の在庫 ÷ 月の売上 (月数。1992 年〜の月)。ゲームは星系ごとの工業品の在庫 ÷ 月あたりの工業品の消費。計算は data/build/analyze_market.py",
+      "sim": "ゲームの星系ごとの値段と在庫を、同じ列のパネルに書き出し (tools/market-panel.js)、同じコード (data/build/analyze_market.py) で計算する。銀河 (シード) ごとに中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの 10%〜90% 点の中",
+      "band": [1.27, 1.47], "estimate": 1.39,
+      "reference": "416 の系列・年・月の分布。品目の組ごとの値も data/derived/market.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R27", "area": "財政", "name": "政府支出 ÷ GDP",
+      "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
+      "statistic": "expenditure ÷ gdp の国ごとの中央値。計算は data/build/analyze_fiscal.py",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
+      "band": [0.1135, 0.2548], "estimate": 0.185,
+      "reference": "18 か国 1870〜2020 年 (2537 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R28", "area": "財政", "name": "財政の反応 (債務が増えると基礎収支を良くする強さ)",
+      "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database R6 と Correlates of War の国家間戦争のデータ v4.0", "version": "R6・v4.0", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py・data/fetch/fetch_history.py" },
+      "statistic": "国ごとの最小二乗 pb = a + ρ·d(前の年) + β·gap + γ·war の ρ の、国のあいだの分布 (Bohn 1998 の形)。pb = (revenue − expenditure) ÷ gdp + ltrate/100 × d(前の年)、d = debtgdp、gap = ln(rgdpbarro) − HP フィルター (λ = 100) の傾向、war = 国家間戦争に参戦していた年。30 年以上ある国だけ。計算は data/build/analyze_fiscal.py",
+      "sim": "R19〜R22・R27 と同じパネル (tools/fiscal-panel.js) に ltrate (国の利子率)・rgdpbarro (ゲームの GDP)・war (その年に戦争をしていた国) の列を足し、同じコードで国ごとの ρ を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
+      "band": [-0.0203, 0.0624], "estimate": 0.0336,
+      "reference": "18 か国 1870〜2020 年 (2718 国・年)。1870〜1913 年 (中央値 0.0394) と 1950〜2020 年 (0.0186) の値も data/derived/fiscal.json にある",
+      "split": "calibration"
+    },
+    {
+      "id": "R29", "area": "戦争", "name": "国家間戦争の多さ",
+      "data": { "source": "Correlates of War 国家間戦争データと国家の一覧", "version": "Inter-State War Data v4.0・State System Membership 2016", "years": "1816-2007", "script": "data/fetch/fetch_history.py → data/build/analyze_history.py" },
+      "statistic": "国 1 つが 100 年のうちに新しく国家間戦争に入る回数 (戦争への参加の始まり ÷ 国・年 × 100)",
+      "sim": "tools/wars-headless.js: 国どうしの戦争 (独立戦争を除く。1 つの戦争で参加は 2) の始まり ÷ 国・年 × 100 (国 = 毎年の独立した国の数、ゲームの 1 年 = 1 年)",
+      "pass": "実データの値の ±30% 以内",
+      "band": [1.637, 3.039], "reference": "COW 4.0 の 95 の戦争への 332 の参加、14,199 国・年 (1816〜2007 年) で 100 年あたり 2.338 (ポアソンの 95% 区間 2.087〜2.590)", "split": "calibration",
+      "observed": { "per_100_state_years": 2.338, "participations": 332, "state_years": 14199, "wars": 95 }
+    },
+    {
+      "id": "R30", "area": "政治", "name": "従属関係の存続 (型の家族ごと)",
+      "data": {"source": "従属国の事例 131 件 (20 型)。条約・法の本文と研究から、主権の束 8 項目 × 法と実態の 2 層を 2 回別々に符号化し (Krippendorff の α = 0.754)、食い違いを裁定したもの", "version": "data/raw/vassal/ (2026-10-21)。照合: ISD 2.2・ICOW Colonial History 1.1", "script": "data/fetch/fetch_vassal.py → data/build/build_vassal.py → data/build/analyze_vassal.py"},
+      "statistic": "型の家族ごとの存続年数の Kaplan–Meier の中央値 ÷ 全体の中央値 (時間の物差しによらない比)",
+      "sim": "主従の結びつきの記録 (tools/secession.js) に型を足し、同じ台本 (analyze_vassal.py の km_curve) で家族ごとの中央値 ÷ 全体の中央値を出す。試合で 5 結びつき未満の家族は判定しない",
+      "pass": "判定できる家族の 3 分の 2 以上で、比が実データの区間の中。儀礼の宗主権がいちばん長く、傀儡と衛星がいちばん短い順は保つ",
+      "band": null,
+      "bands": {"client": [0.092, 0.833], "colony": [0.609, 1.048], "dynastic": [1.451, 4.873], "legal": [0.561, 2.083], "ritual": [2.909, 5.75], "settler": [0.312, 1.164], "treaty": [0.544, 1.04]},
+      "split": "calibration",
+      "observed": {"client": {"name": "傀儡と衛星", "n": 14, "median_years": 13.0, "ratio": 0.236, "ratio_boot90": [0.092, 0.833]}, "colony": {"name": "直轄 (植民地・委任統治 B/C・特許会社領)", "n": 20, "median_years": 43.0, "ratio": 0.782, "ratio_boot90": [0.609, 1.048]}, "dynastic": {"name": "君主と封の網 (封臣・藩・同君連合・共同統治)", "n": 26, "median_years": 123.0, "ratio": 2.236, "ratio_boot90": [1.451, 4.873]}, "legal": {"name": "法と交易だけ (不平等条約)", "n": 7, "median_years": 83.0, "ratio": 1.509, "ratio_boot90": [0.561, 2.083]}, "ritual": {"name": "儀礼の宗主権 (冊封朝貢・藩部・貢納公国)", "n": 18, "median_years": 220.0, "ratio": 4.0, "ratio_boot90": [2.909, 5.75]}, "settler": {"name": "入植者の自治と自由連合 (自治領・自由連合)", "n": 14, "median_years": 40.0, "ratio": 0.727, "ratio_boot90": [0.312, 1.164]}, "treaty": {"name": "条約の保護 (保護国・藩王国・委任統治 A・緩衝国・プラット型)", "n": 32, "median_years": 40.0, "ratio": 0.727, "ratio_boot90": [0.544, 1.04]}, "all_median_years": 55.0},
+      "bandMeaning": "家族ごとの比の、事例全体を引き直したブートストラップの 5〜95% 点",
+      "note": "ゲーム版は 1 世代を 100 年にし (C01)、離反を少なくしている (C02) ので、年数ではなく比で比べる。事例は無作為の標本ではない"
+    },
+    {
+      "id": "R31", "area": "政治", "name": "法と実態の差と、従属関係の終わり",
+      "data": {"source": "従属国の事例 131 件 (20 型)。条約・法の本文と研究から、主権の束 8 項目 × 法と実態の 2 層を 2 回別々に符号化し (Krippendorff の α = 0.754)、食い違いを裁定したもの", "version": "data/raw/vassal/ (2026-10-21)。照合: ISD 2.2・ICOW Colonial History 1.1", "script": "data/fetch/fetch_vassal.py → data/build/build_vassal.py → data/build/analyze_vassal.py"},
+      "statistic": "従属関係の終わり (どの終わり方でも) までの時間の Cox 比例ハザードモデル (説明変数: 実態で従属国が握る項目の数・法と実態の差の項目の数・始まりの世紀・ln 距離) の、法と実態の差のハザード比",
+      "sim": "結びつきの記録に、始まりの束 (法・実態) と差の年ごとの平均を足し、同じ Cox を推定する (始まりの世紀は使わない)",
+      "pass": "ハザード比が実データの 95% 信頼区間の中",
+      "band": [1.2128, 1.5439],
+      "split": "calibration",
+      "observed": {"hr": 1.3684, "hr_ci95": [1.2128, 1.5439], "p": 0.0, "n": 131, "events": 126},
+      "bandMeaning": "ハザード比の 95% 信頼区間"
+    },
+    {
+      "id": "R32", "area": "政治", "name": "従属関係の終わりが暴力を伴う割合 (型の家族ごと)",
+      "data": {"source": "従属国の事例 131 件 (20 型)。条約・法の本文と研究から、主権の束 8 項目 × 法と実態の 2 層を 2 回別々に符号化し (Krippendorff の α = 0.754)、食い違いを裁定したもの", "version": "data/raw/vassal/ (2026-10-21)。照合: ISD 2.2・ICOW Colonial History 1.1", "script": "data/fetch/fetch_vassal.py → data/build/build_vassal.py → data/build/analyze_vassal.py"},
+      "statistic": "型の家族ごとの、終わりの前 5 年に従属国の側の組織的な武装闘争があった割合",
+      "sim": "結びつきが独立で終わったときに戦争になった割合を家族ごとに出す (独立戦争の始まり)",
+      "pass": "判定できる家族 (終わった結びつき 5 以上) の 3 分の 2 以上で、割合が実データの区間の中",
+      "band": null,
+      "bands": {"client": [0.0, 0.0], "colony": [0.2, 0.55], "dynastic": [0.154, 0.462], "legal": [0.0, 0.0], "ritual": [0.056, 0.389], "settler": [0.0, 0.0], "treaty": [0.281, 0.562]},
+      "split": "calibration",
+      "observed": {"client": {"name": "傀儡と衛星", "n": 14, "share": 0.0, "boot90": [0.0, 0.0]}, "colony": {"name": "直轄 (植民地・委任統治 B/C・特許会社領)", "n": 20, "share": 0.35, "boot90": [0.2, 0.55]}, "dynastic": {"name": "君主と封の網 (封臣・藩・同君連合・共同統治)", "n": 26, "share": 0.308, "boot90": [0.154, 0.462]}, "legal": {"name": "法と交易だけ (不平等条約)", "n": 7, "share": 0.0, "boot90": [0.0, 0.0]}, "ritual": {"name": "儀礼の宗主権 (冊封朝貢・藩部・貢納公国)", "n": 18, "share": 0.222, "boot90": [0.056, 0.389]}, "settler": {"name": "入植者の自治と自由連合 (自治領・自由連合)", "n": 14, "share": 0.0, "boot90": [0.0, 0.0]}, "treaty": {"name": "条約の保護 (保護国・藩王国・委任統治 A・緩衝国・プラット型)", "n": 32, "share": 0.406, "boot90": [0.281, 0.562]}},
+      "bandMeaning": "家族ごとの割合の、家族の中の事例を引き直したブートストラップの 5〜95% 点",
+      "note": "入植者の自治・傀儡と衛星・法と交易だけ の 3 家族は実データで 0 (区間も 0〜0)。ゲームでは 0 でなくても 5% 以下なら区間の中とみなす"
     }
   ],
   "fun": [
@@ -178,7 +338,7 @@
     { "id": "F05", "name": "判断の間隔", "data": "プレイ記録", "statistic": "標準の速さで、止めていない時間に判断 (命令) が来る間隔の中央値", "pass": "90 秒以内", "band": [0, 90] },
     { "id": "F06", "name": "必勝法がない", "data": "必勝法を探す AI と、6 つ以上の戦略ボット × 30 以上の銀河", "statistic": "銀河ごとに最も良かった戦略の分布", "pass": "どの戦略も、すべての成績 (星系・人口・資金・生き残り) で他を上回ることはない。3 つ以上の戦略が、それぞれ 10% 以上の銀河で最も良い", "band": null },
     { "id": "F07", "name": "使いやすさ", "data": "見知らぬ試遊者の SUS (System Usability Scale) アンケート", "statistic": "SUS の平均点", "pass": "70 点以上", "band": [70, null] },
-    { "id": "F08", "name": "動きの軽さ", "data": "Xiaomi Pad 8 Pro・Steam Deck での計測", "statistic": "3 次元の地図 (星系 3,000 個) の描画の速さと、最高速 (年 64 年) での進み", "pass": "地図は毎秒 60 コマ (下限 45)、最高速で 1 秒に 64 年進む", "band": null },
+    { "id": "F08", "name": "動きの軽さ", "data": "Xiaomi Pad 8 Pro (ブラウザ)・Steam Deck (包装した版) での計測。手順は desktop/bench/probe.js (同じ銀河の番号で始め、地図を回し続ける 3 秒と、最高速の 10 秒を測る)", "statistic": "ゲーム版の 3 次元の地図 (いまの銀河の星系すべて。いまは 73 個。星系の数を変えたら、その数で測り直す) を回し続けたときの毎秒のコマ数と、最高速 (年 64 年) で 1 秒に進む年", "pass": "地図は毎秒 60 コマ (下限 45)、最高速で 1 秒に 64 年進む", "band": null },
     { "id": "F09", "name": "教材としての効き目", "data": "授業で使った学生 20 人以上の、遊ぶ前と後の小テスト (光の遅れと統治・重力モデル・ランチェスター則)", "statistic": "正答率の上がり幅", "pass": "20 ポイント以上", "band": [0.2, null] }
   ]
 }

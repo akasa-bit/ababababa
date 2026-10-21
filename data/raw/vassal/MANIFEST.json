@@ -1,0 +1,90 @@
+[
+ {
+  "file": "isd_2_2_update.xlsx",
+  "url": "https://dataverse.harvard.edu/api/access/datafile/12128047?format=original",
+  "fetched": "2026-10-21T08:22:45Z",
+  "sha256": "9b54086e1014ac2adafe0e4b0316648abf1244f71a6dac28aa142add221a427e",
+  "bytes": 120671,
+  "lines": 396,
+  "note": "ISD 2.2 本体 (シート ISD V2)"
+ },
+ {
+  "file": "isd_2_2_codebook.pdf",
+  "url": "https://dataverse.harvard.edu/api/access/datafile/12128044?format=original",
+  "fetched": "2026-10-21T08:22:46Z",
+  "sha256": "0b63c4fb6675a74e70b8b31cc938ed0e6678ba703e32692cf4342831b7090406",
+  "bytes": 122438,
+  "lines": 585,
+  "note": "ISD 2.2 のコードブック"
+ },
+ {
+  "file": "lake_hir_country_year.dta",
+  "url": "https://dataverse.harvard.edu/api/access/datafile/3202537?format=original",
+  "fetched": "2026-10-21T08:22:47Z",
+  "sha256": "af5da327ecb4b4027200b71d6dde8cd2b44293783fcb8f09be5d615aab1dd9d5",
+  "bytes": 1187700,
+  "lines": 2782,
+  "note": "Lake 2009 の国・年の複製データ (表 4.1・6.1〜6.3)"
+ },
+ {
+  "file": "lake_hir_country_year_results.do",
+  "url": "https://dataverse.harvard.edu/api/access/datafile/3202534?format=original",
+  "fetched": "2026-10-21T08:22:48Z",
+  "sha256": "a00f2c164d6356e2c7d95cbcdad5d6ac2be8415098c72854c0ea1298654e47db",
+  "bytes": 3558,
+  "lines": 0,
+  "note": "同じ表を再現する Stata の台本 (変数の定義の手がかり)"
+ },
+ {
+  "file": "seshat_equinox_2020.xlsx",
+  "url": "https://zenodo.org/api/records/6642230/files/seshatdb/Equinox_Data-v.1.zip/content#seshatdb-Equinox_Data-ed8f570/Equinox_on_GitHub_June9_2022.xlsx",
+  "fetched": "2026-10-21T08:22:52Z",
+  "sha256": "48c7fbd00b6ebca4405d171e1d8e4fb2ea74a2fcd3edd0762e699e7d472f0556",
+  "bytes": 4681760,
+  "lines": 19059,
+  "note": "Seshat Equinox-2020 (CC BY-NC-SA 4.0。シート Polities・Equinox2020_CanonDat・Variables ほか)"
+ },
+ {
+  "file": "seshat_LICENSE",
+  "url": "https://zenodo.org/api/records/6642230/files/seshatdb/Equinox_Data-v.1.zip/content#seshatdb-Equinox_Data-ed8f570/LICENSE",
+  "fetched": "2026-10-21T08:22:52Z",
+  "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+  "bytes": 7048,
+  "lines": 121
+ },
+ {
+  "file": "cow_colonial_contiguity_codebook.pdf",
+  "url": "https://correlatesofwar.org/wp-content/uploads/ColonialContiguity310.zip#ColonialContiguity310/Colonial Contiguity Codebook.pdf",
+  "fetched": "2026-10-21T08:22:53Z",
+  "sha256": "3e2f265e4d0cbeb76daf64160a13328df19451de3a20ca3295967e23170e0d73",
+  "bytes": 155398,
+  "lines": 1173
+ },
+ {
+  "file": "cow_contcol.csv",
+  "url": "https://correlatesofwar.org/wp-content/uploads/ColonialContiguity310.zip#ColonialContiguity310/contcol.csv",
+  "fetched": "2026-10-21T08:22:53Z",
+  "sha256": "ac09371e8be348a11b8aaf337871f2a893518cb73e6eda3ff443d28b2ab9a3e8",
+  "bytes": 66616,
+  "lines": 1350,
+  "note": "隣接の始まりと終わり"
+ },
+ {
+  "file": "cow_contcold.csv",
+  "url": "https://correlatesofwar.org/wp-content/uploads/ColonialContiguity310.zip#ColonialContiguity310/contcold.csv",
+  "fetched": "2026-10-21T08:22:53Z",
+  "sha256": "b1d927305fe6e121793bc5d2484a244056e35ba3b9c16383a887fc2b0ea03fdd",
+  "bytes": 596578,
+  "lines": 14539,
+  "note": "二国間 (dyadic) の植民地・従属の隣接"
+ },
+ {
+  "file": "cow_contcols.csv",
+  "url": "https://correlatesofwar.org/wp-content/uploads/ColonialContiguity310.zip#ColonialContiguity310/contcols.csv",
+  "fetched": "2026-10-21T08:22:53Z",
+  "sha256": "65a87edd739be576f3d0c46cc592208090139d00337c96caa779d74ec00ab3e0",
+  "bytes": 399156,
+  "lines": 15952,
+  "note": "国と従属の組"
+ }
+]

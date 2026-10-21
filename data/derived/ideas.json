@@ -1,0 +1,189 @@
+{
+ "source": "Bloom, Jones, Van Reenen & Webb 2020, AER 110(4) 1104-44。IdeaPFPrograms.zip の台本と同じ計算",
+ "wage": "大卒の男性の平均所得 (CPS)",
+ "aggregate": {
+  "decades": [
+   "1930s",
+   "1940s",
+   "1950s",
+   "1960s",
+   "1970s",
+   "1980s",
+   "1990s",
+   "2000s"
+  ],
+  "tfp_growth_pct": [
+   1.8155,
+   3.3888,
+   1.6948377530466943,
+   2.0593843263554934,
+   0.985214332318165,
+   0.9049233536258505,
+   1.5068153179690835,
+   1.0082107531226165
+  ],
+  "researchers_index": [
+   1.0,
+   1.6338095221295232,
+   2.575863404598838,
+   5.249651891274282,
+   6.515679508768595,
+   10.547951755977506,
+   14.581912630028373,
+   22.183921790440117
+  ],
+  "research_productivity_index": [
+   1.0,
+   1.1424790954663733,
+   0.3624174056218086,
+   0.216078046013348,
+   0.08328652718638764,
+   0.04725496091765269,
+   0.05691795415162191,
+   0.025033221746706958
+  ],
+  "growth_researchers_pct": 4.274990045259611,
+  "growth_research_productivity_pct": -5.08627788470591,
+  "factor_researchers": 22.183921790440117,
+  "factor_productivity_decline": 39.94691574733272
+ },
+ "moore": {
+  "years": [
+   1971,
+   2014
+  ],
+  "idea_growth_pct": 34.657359027997266,
+  "versions": {
+   "Narrow": {
+    "factor_researchers": 7.790619343175265,
+    "growth_researchers_pct": 4.774233399122924,
+    "growth_research_productivity_pct": -4.774233399122924
+   },
+   "Narrow (half)": {
+    "factor_researchers": 11.324773393157264,
+    "growth_researchers_pct": 5.644168980778301,
+    "growth_research_productivity_pct": -5.644168980778301
+   },
+   "Broad": {
+    "factor_researchers": 18.31272976140527,
+    "growth_researchers_pct": 6.761852170689478,
+    "growth_research_productivity_pct": -6.761852170689478
+   },
+   "Broad (half)": {
+    "factor_researchers": 26.44916499195896,
+    "growth_researchers_pct": 7.616801368613649,
+    "growth_research_productivity_pct": -7.616801368613649
+   },
+   "Intel only": {
+    "factor_researchers": 346.7284697958011,
+    "growth_researchers_pct": 13.601260385662203,
+    "growth_research_productivity_pct": -13.601260385662203
+   },
+   "Intel+AMD": {
+    "factor_researchers": 351.9938597032596,
+    "growth_researchers_pct": 13.636311003304924,
+    "growth_research_productivity_pct": -13.636311003304924
+   }
+  },
+  "baseline": "Broad"
+ },
+ "robustness_gdp_per_person": {
+  "aggregate": {
+   "decades": [
+    "1930s",
+    "1940s",
+    "1950s",
+    "1960s",
+    "1970s",
+    "1980s",
+    "1990s",
+    "2000s"
+   ],
+   "tfp_growth_pct": [
+    1.8155,
+    3.3888,
+    1.6948377530466943,
+    2.0593843263554934,
+    0.985214332318165,
+    0.9049233536258505,
+    1.5068153179690835,
+    1.0082107531226165
+   ],
+   "researchers_index": [
+    1.0,
+    1.2107375761072985,
+    2.393127682314268,
+    4.989133888064036,
+    5.189355198592459,
+    7.1741986742039465,
+    9.601928142894195,
+    12.921111566748527
+   ],
+   "research_productivity_index": [
+    1.0,
+    1.541699259891033,
+    0.39009106753054423,
+    0.22736101062162242,
+    0.10457336177181237,
+    0.06947717377583087,
+    0.0864381218196393,
+    0.04297889005314398
+   ],
+   "growth_researchers_pct": 3.5294655575610387,
+   "growth_research_productivity_pct": -4.340753397007338,
+   "factor_researchers": 12.921111566748527,
+   "factor_productivity_decline": 23.267236514565322
+  },
+  "moore": {
+   "years": [
+    1971,
+    2014
+   ],
+   "idea_growth_pct": 34.657359027997266,
+   "versions": {
+    "Narrow": {
+     "factor_researchers": 4.8086572804976475,
+     "growth_researchers_pct": 3.6521346360090714,
+     "growth_research_productivity_pct": -3.6521346360090714
+    },
+    "Narrow (half)": {
+     "factor_researchers": 6.990067365401068,
+     "growth_researchers_pct": 4.522070217664448,
+     "growth_research_productivity_pct": -4.522070217664448
+    },
+    "Broad": {
+     "factor_researchers": 11.30329148607541,
+     "growth_researchers_pct": 5.639753407575626,
+     "growth_research_productivity_pct": -5.639753407575626
+    },
+    "Broad (half)": {
+     "factor_researchers": 16.32539907280715,
+     "growth_researchers_pct": 6.494702605499796,
+     "growth_research_productivity_pct": -6.494702605499796
+    },
+    "Intel only": {
+     "factor_researchers": 214.01358572344748,
+     "growth_researchers_pct": 12.479161622548352,
+     "growth_research_productivity_pct": -12.479161622548352
+    },
+    "Intel+AMD": {
+     "factor_researchers": 217.26357836175285,
+     "growth_researchers_pct": 12.514212240191071,
+     "growth_research_productivity_pct": -12.514212240191071
+    }
+   },
+   "baseline": "Broad"
+  }
+ },
+ "paper": {
+  "aggregate_growth_research_productivity_pct": -5.3,
+  "aggregate_factor_researchers": 23,
+  "moore_growth_research_productivity_pct": -6.8,
+  "moore_factor_researchers": 18
+ },
+ "game": {
+  "beta": 3.044835352736284,
+  "g0_pct": 1.6704607295547378,
+  "note": "beta = 研究の生産性の下がり方 (年 %) ÷ TFP の伸びの 10 年ごとの平均 (年 %)。g0 は本星の始めの技術の伸び"
+ }
+}

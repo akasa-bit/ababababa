@@ -1,7 +1,8 @@
 // 公開用の HTML を作る: src/index.html を最小化し、LZMA で圧縮して、自分で展開する 1 枚の HTML にする。
 // 版ごとに作る: index.html (ゲーム版) と simulation.html (シミュレーション版)。違いは src の EDITION の値だけ
-// いまはゲーム版だけを作る。シミュレーション版はゲーム版を公開するまで凍結し、組み立て直さない (docs/game-plan.md の 1)
-// 使い方: (cd tools && npm ci) のあと node tools/build.mjs
+// ふだんはゲーム版だけを作る。シミュレーション版はレーン P (物理) が --sim を付けたときだけ作る。ほかのレーンはシミュレーション版を無視する (docs/parallel.md の 6)
+// 使い方: (cd tools && npm ci) のあと node tools/build.mjs   (シミュレーション版も: node tools/build.mjs --sim)
+//   --sim-to <ファイル>: シミュレーション版だけを、そのファイルに作る (CI の試験用。リポジトリの simulation.html は変えない)
 // 圧縮は python3 の lzma を使う。できあがりは展開して元の最小化 HTML と 1 バイトずつ照らし合わせてから書き出す
 import fs from 'fs';
 import path from 'path';
@@ -18,7 +19,8 @@ const source = fs.readFileSync(path.join(root, 'src/index.html'), 'utf8');
 const EDITION_LINE = "const EDITION = 'game'; /* EDITION */";
 if (!source.includes(EDITION_LINE)) throw new Error('src/index.html に EDITION の行がない');
 const ALL_EDITIONS = [['game', 'index.html', 'NoLongerUbiquitous'], ['sim', 'simulation.html', 'NoLongerUbiquitous シミュレーション版']];
-const EDITIONS = ALL_EDITIONS.filter(([e]) => e === 'game'); // シミュレーション版は凍結中
+const simTo = process.argv.includes('--sim-to') ? path.resolve(process.argv[process.argv.indexOf('--sim-to') + 1]) : null;
+const EDITIONS = simTo ? ALL_EDITIONS.filter(([e]) => e === 'sim') : ALL_EDITIONS.filter(([e]) => e === 'game' || process.argv.includes('--sim')); // シミュレーション版は --sim のときだけ
 // LZMA の圧縮 (文脈のビット数を変えて、いちばん小さいものを使う)
 const py = `import lzma,sys,json
 b=sys.stdin.buffer.read();best=None
@@ -82,6 +84,6 @@ for (const [edition, file, title] of EDITIONS) {
   const loader = (await minify(loaderSrc, { ecma: 2022, compress: { passes: 2 }, mangle: { toplevel: true }, format: { comments: false } })).code;
   // 展開器の名前はゲーム本体の名前とぶつからないよう、関数の中に閉じ込める
   const out = `<!doctype html><meta charset="utf-8"><title>${title}</title><script>(()=>{const D=\`${text}\`;${loader}})()</script>`;
-  fs.writeFileSync(path.join(root, file), out);
+  fs.writeFileSync(simTo || path.join(root, file), out);
   console.log(`${edition}: src ${kb(Buffer.byteLength(src))} → 最小化 ${kb(page.length)} → LZMA ${kb(packed.length)} (lc=${lc}) → ${file} ${kb(Buffer.byteLength(out))}`);
 }
