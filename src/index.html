@@ -1515,7 +1515,8 @@ function shieldOf(kind, m, beta, ly) {
 const TRADE = { sigma: 5, rate: 0.01, sources: 16, wait: 10 }; // rate は財政の標準 (FISCAL_DEFAULT.rate と同じ)
 const tradeCost = (years, rate = TRADE.rate) => GM.exp(rate * years); // rate = 買い手の国の利子率 (財政で選ぶ。人間でない国は標準の TRADE.rate)
 const E_UNIT = propulsion(UNIT_KG, SHIP_SPEED, 'route').acc; // 交易路で 100 万 t を運ぶときの、送る側の加速のエネルギー [J]
-const E_UNIT_DEC = propulsion(UNIT_KG, SHIP_SPEED, 'route').dec; // 同じく、受ける側の減速 [J] (ゲーム版は加速と同じ。シミュレーション版は 0.16 倍)
+const E_UNIT_DEC = propulsion(UNIT_KG, SHIP_SPEED, 'route').dec; // 同じく、受ける側の減速 [J] (シミュレーション版は 0.16 倍。使うのは decUnit())
+const decUnit = () => (ED.physics ? E_UNIT_DEC : E_UNIT); // 受ける側の減速 (読み込みのあとで物理を切っても効くように、使うときに決める)
 const E_UNIT_FREE = ((p) => p.acc + p.dec)(propulsion(UNIT_KG, SHIP_SPEED, 'free')); // 同じく、減速を磁気帆と反物質で行うとき (送る側がすべて払う) [J]
 let TRADE_AUDIT = null; // 試験用: 配列にすると、星系どうしの取引 (送った星系・受けた星系・年・基準価格での額) を書き出す (目標 R01)
 let MASS_AUDIT = null; // 試験用: { flows: {}, energy: {} } にすると、備蓄とエネルギーの出入りを星系・資源・種類ごとに足し上げる
@@ -3701,9 +3702,9 @@ class Game {
         const amt = Math.min(x.spare, need, this.routeRoom(x.id, sysId, eF, eT) / kg);
         if (amt <= 1e-9) continue;
         plan.push({ from: x.id, r, amt, price: PRICE[r] * tradeCost(x.t, this.rateAt(sysId)) }); // 航行の年数ぶんの利子を乗せた値段
-        const both = eF >= amt * kg * E_UNIT && eT >= amt * kg * E_UNIT_DEC;
+        const both = eF >= amt * kg * E_UNIT && eT >= amt * kg * decUnit();
         eUsed.set(x.id, (eUsed.get(x.id) || 0) + amt * kg * (both ? E_UNIT : E_UNIT_FREE));
-        if (both) eIn += amt * kg * E_UNIT_DEC;
+        if (both) eIn += amt * kg * decUnit();
         need -= amt;
         eta = Math.max(eta, x.d);
         if (need <= 1e-9) break;
@@ -5424,9 +5425,9 @@ class Game {
   // 受ける側が払えなければ (入植したばかりの星系など)、送る側が磁気帆と反物質の分も払う
   routeRoom(from, to, eF = this.energyOf(from), eT = this.energyOf(to)) {
     eF = Math.max(0, eF); eT = Math.max(0, eT);
-    return Math.max(Math.min(eF / E_UNIT, eT / E_UNIT_DEC), eF / E_UNIT_FREE);
+    return Math.max(Math.min(eF / E_UNIT, eT / decUnit()), eF / E_UNIT_FREE);
   }
-  routeMode(from, to, mt) { return this.energyOf(from) >= mt * E_UNIT && this.energyOf(to) >= mt * E_UNIT_DEC ? 'route' : 'free'; }
+  routeMode(from, to, mt) { return this.energyOf(from) >= mt * E_UNIT && this.energyOf(to) >= mt * decUnit() ? 'route' : 'free'; }
 
   // 市場の値段を決め直す (MARKET の説明)。ふだんの消費は、人の消費と工業の投入 (flow の cons) を smooth 年でならしたもの
   marketStep(h, flow) {
@@ -9184,7 +9185,7 @@ function energyBox(g, id, k) {
   const cover = lum ? P / (lum * L_SUN_W * PROP.pv * rf * YEAR_S) : 0;
   return `<table class="tbl"><tr><td>蓄え</td><td>${fmtJ(E)} <span class="muted">(上限 ${fmtJ(SWARM.store * P)})</span></td></tr>
     <tr><td>スウォームの発電</td><td>${fmtJ(P)}/年</td></tr><tr><td>恒星の光を覆う割合</td><td>${cover >= 0.01 ? pct(cover) : cover.toExponential(1)}${id === 0 ? ' <span class="muted">(地球の方向は空けて回る。地球が受ける光は太陽の光の 22 億分の 1 なので、空けても発電はほとんど減らず、地球の気候も変わらない)</span>' : ''}</td></tr>
-    <tr><td>交易路で 1 単位 (100 万 t) を運ぶ</td><td>${E_UNIT_DEC === E_UNIT ? `${fmtJ(E_UNIT)} ずつ (送る側の加速・受ける側の減速)` : `送る側の加速 ${fmtJ(E_UNIT)}・受ける側の減速 ${fmtJ(E_UNIT_DEC)} (近づく帆を止める光は少なくて済む)`}</td></tr>
+    <tr><td>交易路で 1 単位 (100 万 t) を運ぶ</td><td>${decUnit() === E_UNIT ? `${fmtJ(E_UNIT)} ずつ (送る側の加速・受ける側の減速)` : `送る側の加速 ${fmtJ(E_UNIT)}・受ける側の減速 ${fmtJ(decUnit())} (近づく帆を止める光は少なくて済む)`}</td></tr>
     ${ED.physics ? `${pvDesignRows(g, id)}<tr><td>星間の気体と宇宙線の遮蔽 (10 光年・0.95c)</td><td>${shieldNote()}</td></tr>` : ''}</table>`;
 }
 // スウォームの素子の作り (シミュレーション版だけ)。作りごとの出力の残りと、覆う割合が倍になる年数。自国の星系なら選べる (光速の指令)

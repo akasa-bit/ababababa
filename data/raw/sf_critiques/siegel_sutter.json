@@ -1,0 +1,997 @@
+[
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "After Kowalski (Clooney) and Stone are snagged by the Soyuz parachute cords near the ISS, Kowalski unclips and drifts away, implying the tether was under tension.",
+  "critique": "Once the cords are taut, all bodies share the same orbit and velocity, so per Newton's first law there should be essentially no tension; differential atmospheric drag at ISS altitude is far too weak, so Kowalski would not drift away and a gentle tug would have saved him.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2016",
+  "source_url": "https://bigthink.com/starts-with-a-bang/does-the-climax-of-the-movie-gravity-violate-simple-physics/",
+  "status": "valid",
+  "status_reason": "Co-orbiting bodies in free fall feel no net tension apart from tiny tidal/drag effects, so the scene's dramatic pull is unphysical."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Wars: A New Hope / Solo: A Star Wars Story",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "Han Solo boasts the Millennium Falcon made the Kessel Run in less than 12 parsecs.",
+  "critique": "A parsec (~3.26 light-years) is a distance, not a time, so the boast only makes sense as a shorter route; Siegel argues that in general relativity a curved path threading a dense field of low-mass black holes (like a galactic center) could be a shorter, more dangerous route than avoiding them.",
+  "domains": [
+   "relativity_time_dilation",
+   "black_holes",
+   "scale_distances"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://bigthink.com/starts-with-a-bang/did-han-solo-use-a-trick-of-einsteins-relativity-to-make-the-kessel-run/",
+  "status": "partly",
+  "status_reason": "The parsec-is-distance point is correct, but routes skimming black holes generally increase coordinate travel time (Shapiro delay) rather than yielding shorter-than-straight shortcuts."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Wars: The Empire Strikes Back",
+  "medium": "film",
+  "year_of_work": 1980,
+  "depiction": "Massive AT-AT walkers stride across the frozen surface of the ice planet Hoth without breaking through.",
+  "critique": "Ice load capacity scales roughly as thickness squared (double the thickness, quadruple the load); a ~100+ ton AT-AT needs on the order of 4-5 feet of solid ice, implying Hoth's ice is extremely thick and cold.",
+  "domains": [
+   "materials_structures",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://bigthink.com/starts-with-a-bang/science-shows-us-just-how-frozen-star-wars-ice-planet-hoth-must-be/",
+  "status": "valid",
+  "status_reason": "The thickness-squared bearing-capacity rule (Gold's formula) is standard ice engineering and the estimate is reasonable."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Wars: A New Hope",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "The Death Star's superlaser blows up the Earth-like planet Alderaan in seconds.",
+  "critique": "Unbinding an Earth-like planet takes ~2.2x10^32 J (about a week of the Sun's output); a laser would need to be quadrillions of times more powerful than petawatt lasers and releasing that energy on the station would destroy the Death Star itself; delivering antimatter into the planet's core is the only physically sensible route.",
+  "domains": [
+   "combat_weapons",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://bigthink.com/starts-with-a-bang/this-is-how-you-can-create-your-own-real-life-death-star/",
+  "status": "valid",
+  "status_reason": "The gravitational binding energy figure and the energy-delivery problem are correct order-of-magnitude physics."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Don't Look Up",
+  "medium": "film",
+  "year_of_work": 2021,
+  "depiction": "The plan to save Earth from a 9-km comet is to carve it into many smaller fragments that would supposedly be survivable.",
+  "critique": "Siegel calls the fragmentation strategy 'simply stupid': 100 small masses at the same speed deliver the same total kinetic energy as one large mass, merely spreading the catastrophe around the globe (as with Shoemaker-Levy 9 at Jupiter); deflection with enough lead time is the right approach.",
+  "domains": [
+   "orbital_mechanics",
+   "propulsion_energy",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2022",
+  "source_url": "https://bigthink.com/starts-with-a-bang/dont-look-up/",
+  "status": "partly",
+  "status_reason": "Total energy is conserved, but later terminal-defense studies (e.g., Lubin's PI concept) show that fragmenting into sub-~100 m pieces with adequate lead time turns ground impacts into dispersed airbursts and greatly reduces damage, and debris spreading out also lets part of it miss Earth."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek: Picard",
+  "medium": "tv",
+  "year_of_work": 2020,
+  "depiction": "An artificially arranged octuple star system with the planet Aia (the 'Grief World') sitting at its center.",
+  "critique": "Multi-star systems are common and septuple systems (AR Cas, Nu Sco) exist, so a natural octuple system is plausible, but a planet at the system's center would sit at an unstable Lagrange-like equilibrium (like L1-L3) and would need active thrusters to stay put.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2020",
+  "source_url": "https://bigthink.com/starts-with-a-bang/is-star-trek-picards-hypothesized-octuple-star-system-really-possible/",
+  "status": "valid",
+  "status_reason": "Hierarchical high-multiplicity systems are observed (Gaia-era surveys keep finding 6-7 star systems) and central equilibria in N-body systems are dynamically unstable."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek: Discovery (S1E4 'The Butcher's Knife Cares Not for the Lamb's Cry')",
+  "medium": "tv",
+  "year_of_work": 2017,
+  "depiction": "The ship must avoid a 'Hawking radiation firewall' during a spore jump.",
+  "critique": "The term mashes together two unrelated black-hole ideas; Hawking radiation from astrophysical black holes is utterly negligible (none will emit enough to ionize an atom for ~10^60 years), so the 'firewall' is nonsense, and a future fleet would have black holes mapped anyway.",
+  "domains": [
+   "black_holes",
+   "quantum"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://bigthink.com/starts-with-a-bang/star-trek-discovery-is-smart-sounding-scientific-nonsense-season-1-episode-4-recap/",
+  "status": "valid",
+  "status_reason": "Hawking temperatures of stellar-mass black holes are ~10^-8 K, far below the CMB; no observable radiation hazard exists."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek: Discovery (S1E4)",
+  "medium": "tv",
+  "year_of_work": 2017,
+  "depiction": "'Ripper', a bear-sized tardigrade-like creature, lives and travels through space, feeding on spores.",
+  "critique": "Real tardigrades are microscopic aquatic animals that only survive vacuum/radiation in a suspended cryptobiotic state; they are not extremophiles that thrive there, so a giant hairy space-faring version is 'science fantasy, not science fiction'.",
+  "domains": [
+   "biology_physics",
+   "radiation_shielding"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://bigthink.com/starts-with-a-bang/star-trek-discovery-is-smart-sounding-scientific-nonsense-season-1-episode-4-recap/",
+  "status": "valid",
+  "status_reason": "Tardigrade space-exposure experiments (e.g., FOTON-M3) show survival only in dormant tun state, consistent with the critique."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek: Discovery (S1E3 'Context Is for Kings')",
+  "medium": "tv",
+  "year_of_work": 2017,
+  "depiction": "Stamets claims there is 'no difference at the quantum level between biology and physics' and links the fungal spore network to the cosmic network of matter and energy.",
+  "critique": "Shared quantum underpinnings don't erase the distinction between living and non-living systems (which is about energy transport), fungi are evolutionary latecomers rather than cosmic seeds, and mycelial networks have no connection to the cosmic web of matter and dark matter.",
+  "domains": [
+   "quantum",
+   "biology_physics",
+   "cosmology"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://bigthink.com/starts-with-a-bang/the-suspect-science-of-star-trek-discovery-context-is-for-kings-season-1-episode-3/",
+  "status": "valid",
+  "status_reason": "No known physics couples biological networks to large-scale structure; the cosmic web is governed by gravity on Mpc scales."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek: Discovery",
+  "medium": "tv",
+  "year_of_work": 2017,
+  "depiction": "The spore drive uses a galaxy-spanning mycelial network to jump instantly between distant points.",
+  "critique": "Mycelium needed billions of years of terrestrial evolution and could not pervade the galaxy, and even entangled spores could not teleport matter or signal faster than light; the concept only works if one adds an extra, traversable spatial dimension.",
+  "domains": [
+   "ftl_wormholes",
+   "quantum"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://bigthink.com/starts-with-a-bang/a-fifth-dimension-could-make-star-trek-discoverys-spore-drive-physically-possible/",
+  "status": "valid",
+  "status_reason": "No-communication theorem forbids FTL signaling via entanglement, and LHC and sub-mm gravity tests have found no large traversable extra dimensions."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek: Discovery (S1E10 'Despite Yourself')",
+  "medium": "tv",
+  "year_of_work": 2018,
+  "depiction": "Discovery is stranded in the Mirror Universe, a parallel universe populated by the same people and ships.",
+  "critique": "Parallel universes have a basis in the many-worlds interpretation of quantum mechanics and the show handles them 'plausibly enough', but it is implausible that so much (same people, personalities, ships) would be identical across branches.",
+  "domains": [
+   "quantum",
+   "cosmology"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://bigthink.com/starts-with-a-bang/what-star-trek-discovery-gets-right-and-wrong-about-parallel-universes-season-1-episode-10/",
+  "status": "partly",
+  "status_reason": "The 'too similar' objection is sound, but in many-worlds decohered branches cannot interact, so travel between them has no physical basis, making 'plausible enough' generous."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek: Discovery (S1E8 'Si Vis Pacem, Para Bellum')",
+  "medium": "tv",
+  "year_of_work": 2017,
+  "depiction": "Klingon ships use cloaking devices to become invisible.",
+  "critique": "Unlike earlier Trek eras, cloaking is 'well on its way' to reality thanks to multilayer metamaterials that bend light around objects; covering the full visible spectrum is the remaining hurdle that he expected to be overcome relatively soon.",
+  "domains": [
+   "vacuum_sound_light",
+   "materials_structures"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://bigthink.com/starts-with-a-bang/overwhelming-cloaking-devices-and-false-peace-highlights-star-trek-discovery-season-1-episode-8/",
+  "status": "partly",
+  "status_reason": "As of 2026 metamaterial cloaks remain narrowband, small, or ray-optics-only; causality/passivity bounds limit broadband visible cloaking of large objects, so the optimism was premature."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek (franchise; incl. Star Trek Into Darkness)",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "The transporter dematerializes people and reassembles them elsewhere, even from Earth to Kronos.",
+  "critique": "The transporter is the 'most impossible' Trek technology: tunneling of macroscopic bodies is exponentially improbable, and teleporting the information requires circumventing the Heisenberg uncertainty principle (a 'Heisenberg compensator'); quantum teleportation of states is real but nothing like reconstructing a human.",
+  "domains": [
+   "quantum"
+  ],
+  "date_of_critique": "2016",
+  "source_url": "https://bigthink.com/starts-with-a-bang/the-most-impossible-technology-from-star-trek/",
+  "status": "valid",
+  "status_reason": "No-cloning and uncertainty constraints still forbid such scanning; quantum teleportation remains limited to small numbers of qubits/photons."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek (franchise warp drive)",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Starships travel faster than light using warp drive.",
+  "critique": "The Alcubierre metric makes warp drive a GR solution, but it needs negative mass/energy; the 2023 ALPHA-g measurement that antimatter falls down killed the hope (from Siegel's book Treknology) that antimatter could supply negative gravitational mass.",
+  "domains": [
+   "ftl_wormholes",
+   "relativity_time_dilation",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://bigthink.com/starts-with-a-bang/warp-drives-best-hope-dies/",
+  "status": "valid",
+  "status_reason": "ALPHA-g (Nature, 2023) found antihydrogen accelerates downward at ~0.75+/-0.29 g, consistent with ordinary gravity."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Wars (franchise)",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "Ships jump to hyperspace and arrive at distant destinations with no consequences for the passage of time.",
+  "critique": "Going fast has real consequences for the passage of time, so Star Wars' hyperdrive is 'dissatisfying' compared with Planet of the Apes, which correctly sends a near-light-speed traveler far into Earth's future.",
+  "domains": [
+   "relativity_time_dilation",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://bigthink.com/starts-with-a-bang/ask-ethan-which-movies-get-the-science-of-time-travel-right/",
+  "status": "partly",
+  "status_reason": "Time dilation for near-c travel is correct, but hyperspace is an FTL jump outside known physics whose time effects are undefined; within relativity FTL implies causality paradoxes rather than simple dilation."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Deep in Gargantua's gravitational field (Miller's planet), time passes far more slowly than for those farther away.",
+  "critique": "Siegel singles out Interstellar (and Contact) as the most scientifically accurate time-travel films, with gravitational time dilation near a black hole and wormhole physics 'on full display'.",
+  "domains": [
+   "relativity_time_dilation",
+   "black_holes"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://bigthink.com/starts-with-a-bang/ask-ethan-which-movies-get-the-science-of-time-travel-right/",
+  "status": "partly",
+  "status_reason": "Gravitational time dilation is real, but the film's 1 hour = 7 years factor requires a near-extremal spin and an orbit so close that tidal and disk-radiation environments would make Miller's planet implausible."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "3 Body Problem",
+  "medium": "tv",
+  "year_of_work": 2024,
+  "depiction": "During a syzygy of Trisolaris' three suns, oceans fly off, buildings disintegrate and helicopters are pulled into space.",
+  "critique": "Alignments do add tidal pull (as with Earth's spring tides), but nothing like this; if gravity were ever that strong the planet would have been destroyed eons ago. The chaotic three-sun orbits themselves are a real (hard) three-body problem.",
+  "domains": [
+   "orbital_mechanics",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "Tidal accelerations scale as M/d^3 and would need implausibly close stars to strip a planet's surface without disrupting it entirely."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "3 Body Problem",
+  "medium": "tv",
+  "year_of_work": 2024,
+  "depiction": "The San-Ti 'unfold' a proton's compact higher dimensions to make it enormous (creating the sophon).",
+  "critique": "Compact extra dimensions are a legitimate string-theory idea, but 'unfolding a dimension is not a real thing'; you can't take a compact dimension and make it bigger. He rated the scene 3/10.",
+  "domains": [
+   "quantum",
+   "other"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "No mechanism exists to decompactify extra dimensions locally, and the LHC has found no evidence for extra dimensions at all."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "The Martian",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "The Rich Purnell maneuver: Hermes slingshots around Earth to return to Mars quickly, but arrives too fast to enter orbit and can only do a flyby.",
+  "critique": "Mathematically sound, solid orbital mechanics: a gravity assist gives a speed boost, and the resulting excess energy means the planet's gravity can't capture the ship, so the trade-off of speed for a flyby is correct. Rated 10/10.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "Flyby vs. capture is governed by hyperbolic excess velocity, exactly as depicted."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "The Martian",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "Watney punctures the palm of his glove and uses the escaping air as a thruster ('Iron Man') to reach Lewis.",
+  "critique": "Newton's third law makes the thrust real, but a jet from the hand is off the center of mass and would produce torque, sending him tumbling uncontrollably; a puncture on a line through his center of mass would have worked.",
+  "domains": [
+   "propulsion_energy",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "Off-axis thrust produces torque about the center of mass, as any spacecraft attitude-control analysis shows."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Gargantua's accretion disk appears to arc over and under the black hole, showing the far side of the disk.",
+  "critique": "'So much good science': light follows spacetime curvature set by mass, and a black hole bends light so strongly that light from the hidden back of the disk is redirected toward the viewer; one of the most accurate black-hole depictions ever made.",
+  "domains": [
+   "black_holes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "The lensed-disk morphology matches GR ray-tracing and is consistent with EHT images of M87* and Sgr A* (2019, 2022)."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "After Cooper crosses Gargantua's event horizon everything goes completely black.",
+  "critique": "It wouldn't be dark: light from the rest of the universe falls in with you; for a supermassive black hole like Gargantua you have only a 'handful of seconds' between horizon and singularity. Rated 9/10, docking a point for the darkness.",
+  "domains": [
+   "black_holes"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "partly",
+  "status_reason": "Infalling observers do see outside light, but for a ~10^8 solar-mass black hole the maximum proper time from horizon to singularity (pi*GM/c^3) is ~25 minutes, not seconds."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Cooper detaches part of the ship (TARS and his Ranger) toward the black hole so the Endurance can escape Gargantua's pull.",
+  "critique": "Newton's third law is the fundamental basis for space travel: throwing mass toward the black hole pushes the rest of the craft the opposite way, nudging it onto a safe escape trajectory.",
+  "domains": [
+   "propulsion_energy",
+   "orbital_mechanics",
+   "black_holes"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "Momentum exchange by jettisoning mass is standard rocket physics (and detaching mass deep in a potential well can also exploit the Oberth effect)."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "Avengers: Infinity War",
+  "medium": "film",
+  "year_of_work": 2018,
+  "depiction": "At Nidavellir, Thor 'awakens the heart of a dying star' inside a Dyson-sphere-like ring to forge Stormbreaker, standing in the energy beam and surviving.",
+  "critique": "Stars 'die' when fusion stops at iron, so a dead star can't be re-awakened; neutron stars do store enormous rotational energy, but outbursts that can rip apart planets would vaporize anyone nearby rather than being watched. Rated 4/10 (some good Newtonian mechanics in moving the ring).",
+  "domains": [
+   "astrophysics_stars_planets",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "Iron-peak fusion limits and the lethality of neutron-star-scale energy release are well-established astrophysics."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "Contact",
+  "medium": "film",
+  "year_of_work": 1997,
+  "depiction": "The alien Machine's spinning rings open a wormhole and drop a passenger pod through it.",
+  "critique": "There's nothing scientific about spinning rings creating a wormhole; the only known route needs exotic negative-mass matter, which probably doesn't exist; also the observers' ship merely tilting toward a device with immense gravitational pull is inconsistent. Still rated 7/10 since no one knows what a wormhole looks like.",
+  "domains": [
+   "ftl_wormholes",
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "Traversable wormholes still require energy-condition-violating matter; no macroscopic negative mass exists (antimatter falls down, ALPHA-g 2023)."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "Armageddon",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "The shuttles bank into their lunar slingshot like fighter jets and the crew endures 9.5 g for 11 minutes during the maneuver.",
+  "critique": "There is no air to bank against in space; a gravity assist is a gentle hours-long free-fall so no g-forces are felt; 9.5 g sustained for 11 minutes would make the crew pass out and die of oxygen starvation; and with enough fuel to burn there you might as well skip the Moon. Rated 3/10.",
+  "domains": [
+   "orbital_mechanics",
+   "biology_physics"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "Free-falling spacecraft feel no gravitational g-load, and human tolerance for sustained ~9 g is measured in seconds to a minute or two."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "Sunshine",
+  "medium": "film",
+  "year_of_work": 2007,
+  "depiction": "Icarus II approaches the Sun; a crew member views the Sun at 3.1% brightness through the observation filter.",
+  "critique": "The images of the solar surface (arcs, flares, prominences) are beautiful and accurate, matching high-resolution solar imagery, but a crewed ship couldn't get that close with current technology. Rated 6/10.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "radiation_shielding",
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "Inouye Solar Telescope and Solar Orbiter imagery confirm the dynamic surface; Parker Solar Probe's ~6.9 million km record required a heat shield no crewed vehicle has."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "Event Horizon",
+  "medium": "film",
+  "year_of_work": 1997,
+  "depiction": "The gravity drive creates an artificial singularity that folds space; a crewman is sucked toward it while the ship stays intact, and the black hole is shown as a 2D funnel.",
+  "critique": "Wormholes act like tunnels shortening distance, but a singularity strong enough to pull in a person would produce tidal forces ripping the whole ship apart; and black holes are spheres you can approach from any direction, not two-dimensional funnels. Rated 4/10.",
+  "domains": [
+   "ftl_wormholes",
+   "black_holes",
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "Event horizons are 3D surfaces and tidal gradients would act on the entire ship, not selectively on one person."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "Event Horizon",
+  "medium": "film",
+  "year_of_work": 1997,
+  "depiction": "Dr. Weir explains the ship doesn't break relativity by going faster than light but folds space to make points A and B coincide.",
+  "critique": "Going faster than light lets effects precede causes and breaks the causal structure of the universe, which is why it's likely impossible; folding space is only an analogy for how wormhole geometry shortens distances.",
+  "domains": [
+   "ftl_wormholes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "Any effective FTL travel in relativity permits closed timelike curves, and no causality-safe mechanism is known."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); cosmologist, research professor at Stony Brook University IACS; NASA advisor; host of Ask a Spaceman",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2015,
+  "depiction": "Interplanetary politics and travel in a settled Solar System with realistic acceleration, low-gravity Belters and space logistics.",
+  "critique": "His favorite space movie/TV show: despite some non-realistic 'magical' elements (e.g., the protomolecule and drive), the makers work hard to get the physics right and to depict what society in space would look like.",
+  "domains": [
+   "propulsion_energy",
+   "gravity_artificial",
+   "other"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.dailymotion.com/video/x9gi5v8",
+  "status": "valid",
+  "status_reason": "The show's Newtonian thrust gravity, inertia and lightspeed lag are standard physics; the Epstein drive's efficiency remains the acknowledged exception."
+ },
+ {
+  "physicist": "Paul M. Sutter",
+  "credentials": "PhD physics (University of Illinois Urbana-Champaign, 2011); then astrophysicist at Ohio State University CCAPP; later research professor at Stony Brook University",
+  "work": "A Wrinkle in Time",
+  "medium": "film",
+  "year_of_work": 2018,
+  "depiction": "The children 'tesser' instantly across the universe by wrinkling space-time with a tesseract.",
+  "critique": "Tessering resembles wormhole transit, but wormholes need to be threaded with negative mass, 'not a thing in our universe'; even a held-open wormhole could become a time machine (by moving one mouth at near light speed), opening 'a gigantic causality can of worms', and steering one to a chosen location is mathematically unclear.",
+  "domains": [
+   "ftl_wormholes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.space.com/39928-wrinkle-in-time-tesseract-space-travel.html",
+  "status": "valid",
+  "status_reason": "Traversable wormholes still require exotic matter violating energy conditions, and the wormhole-to-time-machine construction (Morris-Thorne-Yurtsever) remains standard."
+ },
+ {
+  "physicist": "Adam Frank",
+  "credentials": "PhD physics (University of Washington, 1992); professor of astrophysics, University of Rochester; co-founder of NPR's 13.7 Cosmos & Culture",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2015,
+  "depiction": "Ships have no 'artificial gravity'; crews experience thrust gravity when engines burn, spin gravity on rotating stations, and float otherwise.",
+  "critique": "Frank praises the show for using 'the science I teach in my physics classes': no imaginary artificial-gravity babble, only thrust gravity from acceleration and spin gravity from rotation, 'just like what will happen in real spaceships'.",
+  "domains": [
+   "gravity_artificial",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://bigthink.com/13-8/the-expanse-review/",
+  "status": "valid",
+  "status_reason": "By the equivalence principle, acceleration and rotation are the only known ways to produce sustained apparent gravity in spacecraft."
+ },
+ {
+  "physicist": "Adam Frank",
+  "credentials": "PhD physics (University of Washington, 1992); professor of astrophysics, University of Rochester; co-founder of NPR's 13.7 Cosmos & Culture",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2015,
+  "depiction": "Whiskey poured on a rotating space station spirals out of the bottle.",
+  "critique": "Cited as an example of the show's wonderful attention to realism: the curving pour reflects the Coriolis effect in a rotating frame.",
+  "domains": [
+   "gravity_artificial",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://bigthink.com/13-8/the-expanse-review/",
+  "status": "partly",
+  "status_reason": "The Coriolis effect is real in spin habitats, but Jacques Distler (2016) calculated that for Ceres' depicted 40-minute spin the deflection of a 16 cm pour should be ~1000 times smaller than shown."
+ },
+ {
+  "physicist": "Adam Frank",
+  "credentials": "PhD physics (University of Washington, 1992); professor of astrophysics, University of Rochester; co-founder of NPR's 13.7 Cosmos & Culture",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2015,
+  "depiction": "During space battles, as ships roll and pivot, unsecured tools fly across the cabin as dangerous projectiles.",
+  "critique": "The writers use real physics as 'an extra character': Newton's first law (inertia) means loose objects keep moving when the ship maneuvers around them.",
+  "domains": [
+   "combat_weapons",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://bigthink.com/13-8/the-expanse-review/",
+  "status": "valid",
+  "status_reason": "Basic Newtonian inertia; the depiction is correct."
+ },
+ {
+  "physicist": "Katie Mack",
+  "credentials": "PhD astrophysics (Princeton University, 2009); theoretical cosmologist; then Assistant Professor of Physics, North Carolina State University; later Hawking Chair, Perimeter Institute",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2015,
+  "depiction": "Off-planet gravity comes only from constant accelerating thrust (lost when engines cut) or spinning habitats; there are no artificial gravity generators or FTL travel; Belters are tortured by questioning under Earth gravity.",
+  "critique": "Mack praises the show for resisting shortcuts like artificial-gravity generators and faster-than-light travel, making gravity 'a resource, as precious as water or air' that drives the conflicts, and letting real physics pose questions about how humans would cope with interplanetary living.",
+  "domains": [
+   "gravity_artificial",
+   "ftl_wormholes",
+   "biology_physics"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://sloanwp.movingimage.org/?p=33018",
+  "status": "valid",
+  "status_reason": "Thrust and rotation remain the only physically known ways to produce sustained apparent gravity; no gravity-generating technology exists."
+ },
+ {
+  "physicist": "Katie Mack",
+  "credentials": "PhD astrophysics (Princeton University, 2009); theoretical cosmologist; then Assistant Professor of Physics, North Carolina State University; later Hawking Chair, Perimeter Institute",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2015,
+  "depiction": "Ceres has been hollowed out and spun up to give residents centrifugal gravity, which is weaker on levels closer to the center.",
+  "critique": "Mack cites the spun-up Ceres, with gravity stratified so that it weakens toward the center, as part of the show's dedication to verisimilitude in basic physical laws.",
+  "domains": [
+   "gravity_artificial",
+   "materials_structures",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://sloanwp.movingimage.org/?p=33018",
+  "status": "partly",
+  "status_reason": "Centrifugal gravity does scale with radius, but spinning Ceres (surface gravity ~0.03 g) up to ~0.3 g would require hoop stresses far beyond the strength of its rubble/ice body, so it would fly apart without massive reinforcement."
+ },
+ {
+  "physicist": "Katie Mack",
+  "credentials": "PhD astrophysics (Princeton University, 2009); theoretical cosmologist; then Assistant Professor of Physics, North Carolina State University; later Hawking Chair, Perimeter Institute",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2015,
+  "depiction": "Crews tie down tools when switching from zero-g to high thrust; a drink poured in a spinning habitat doesn't flow straight down.",
+  "critique": "Mack highlights these as 'fascinating or mundane realities' the show gets right: loose tools become deadly projectiles under sudden thrust, and Coriolis effects bend a pour in a rotating habitat.",
+  "domains": [
+   "gravity_artificial",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://sloanwp.movingimage.org/?p=33018",
+  "status": "partly",
+  "status_reason": "Both effects are real, but Distler's 2016 calculation shows the Ceres whiskey pour's Coriolis deflection is depicted ~1000x too large for the stated spin rate."
+ },
+ {
+  "physicist": "Jacques Distler",
+  "credentials": "PhD physics (Harvard University, 1987); professor of physics, University of Texas at Austin (string theory)",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2015,
+  "depiction": "Detective Miller pours whiskey on a lower level of spun-up Ceres and the stream visibly curves sideways due to the Coriolis effect.",
+  "critique": "Solving the rotating-frame equations for Ceres' 40-minute spin (~0.1 g on the innermost level), a 16 cm pour should be deflected by only ~10^-3 of its fall height, so the depicted effect is about three orders of magnitude too large (and the stream's slope should be monotonic).",
+  "domains": [
+   "gravity_artificial",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2016",
+  "source_url": "https://golem.ph.utexas.edu/~distler/blog/archives/002890.html",
+  "status": "valid",
+  "status_reason": "Standard rotating-frame kinematics; the lateral displacement estimate (2/3)h*sqrt(2h/R_eff) is correct for these parameters."
+ },
+ {
+  "physicist": "Sabine Hossenfelder",
+  "credentials": "PhD theoretical physics (Goethe University Frankfurt, 2003); former research fellow at Frankfurt Institute for Advanced Studies and Munich Center for Mathematical Philosophy; author of Backreaction blog and YouTube channel",
+  "work": "Star Trek (franchise)",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "The transporter converts Kirk into an energy pattern, beams it at light speed and reassembles him at the destination.",
+  "critique": "Physics doesn't forbid sending the information instead of the particles, but reading out a human is far beyond current technology and transmitting even one cell's data at ~30 GHz bandwidth would take >10^15 years; the quantum no-cloning theorem may force the original to be destroyed, which leaves open whether Kirk dies and a copy appears.",
+  "domains": [
+   "quantum",
+   "biology_physics",
+   "light_speed_communication"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://backreaction.blogspot.com/2021/10/does-captain-kirk-die-when-he-goes.html",
+  "status": "valid",
+  "status_reason": "No-cloning holds and the information-transfer estimate (from Leicester student paper) is consistent with the vast information content of biological matter."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek: Discovery (S1E9 'Into the Forest I Go')",
+  "medium": "tv",
+  "year_of_work": 2017,
+  "depiction": "The Klingon cloaking device hides a ship by altering the gravitational field around it.",
+  "critique": "Bending light around a ship gravitationally would require a negative (repulsive) gravitational effect on one side and a series of positive/negative lensing regions to refocus it; and such a field should also deflect photon torpedoes, so the ship would be shielded as well as cloaked. 'I'm not sure the science adds up.'",
+  "domains": [
+   "combat_weapons",
+   "vacuum_sound_light",
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://bigthink.com/starts-with-a-bang/star-trek-discoverys-unanswered-scientific-questions-after-season-1-episode-9/",
+  "status": "valid",
+  "status_reason": "Ordinary (positive-mass) gravity only converges light; diverging it needs negative energy density, which is not known to exist macroscopically."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek: Discovery (S1E13 'What's Past Is Prologue')",
+  "medium": "tv",
+  "year_of_work": 2018,
+  "depiction": "Destroying the mycelial network threatens to end all life in every universe at once.",
+  "critique": "The only physical analogue is false-vacuum decay, which would change the constants and make life impossible; but a real decay bubble expands at light speed and, thanks to dark energy, could only reach us if it nucleated in the nearest ~3% of the observable universe's volume, rather than acting everywhere at once.",
+  "domains": [
+   "cosmology",
+   "quantum"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://bigthink.com/starts-with-a-bang/star-trek-discovery-the-no-win-situation-and-the-cause-of-all-life-season-1-episode-13/",
+  "status": "valid",
+  "status_reason": "Measured Higgs and top masses still indicate a metastable electroweak vacuum, and bubble walls propagate at most at c within an accelerating universe."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek: Discovery (S1E13 'What's Past Is Prologue')",
+  "medium": "tv",
+  "year_of_work": 2018,
+  "depiction": "Discovery 'surfs' the shock wave/ripples of the collapsing mycelial network to get home.",
+  "critique": "Siegel likens this to surfing a gravitational wave, which he says is 'no in practice, but yes in theory': a craft that stayed pinned inside a compressed region of the wave could ride it as far as its energy allowed.",
+  "domains": [
+   "relativity_time_dilation",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://bigthink.com/starts-with-a-bang/star-trek-discovery-the-no-win-situation-and-the-cause-of-all-life-season-1-episode-13/",
+  "status": "wrong",
+  "status_reason": "Gravitational waves are transverse and produce only oscillating tidal strain (~10^-21) on free masses, with at most a minuscule permanent memory offset; there is no longitudinal force that could trap and carry a craft along at light speed."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek: Discovery (S1E6 'Lethe')",
+  "medium": "tv",
+  "year_of_work": 2017,
+  "depiction": "A pink-and-green, lightning-filled nebula described as full of 'radioactive' material.",
+  "critique": "Not realistic: nebular greens (doubly ionized oxygen at ~50,000 K) and pinks (ionized hydrogen) come from ionizing radiation, not radioactivity, and real emission nebulae are large, diffuse regions lit by young stars, not compact lightning clouds.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "interstellar_medium"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://bigthink.com/starts-with-a-bang/star-trek-discovery-goes-psychic-psychedelic-in-lethe-season-1-episode-6-review/",
+  "status": "valid",
+  "status_reason": "[O III] 500.7 nm and H-alpha emission from photoionized gas explain nebular colors; densities are so low a ship would see little from inside."
+ },
+ {
+  "physicist": "Adam Frank",
+  "credentials": "PhD physics (University of Washington, 1992); professor of astrophysics, University of Rochester; co-founder of NPR's 13.7 Cosmos & Culture",
+  "work": "Star Trek (franchise warp drive)",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "The Enterprise accelerates to faster-than-light warp speeds.",
+  "critique": "Using Bobrick & Martire's 2021 general analysis of warp drives, Frank concludes that 'the Star Trek version of the warp drive is still not a thing': it still needs negative energy and, worse, there is no way to accelerate an Alcubierre bubble from sub-light to faster-than-light speed, though subluminal warp drives from normal matter are possible.",
+  "domains": [
+   "ftl_wormholes",
+   "relativity_time_dilation",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://bigthink.com/13-8/warp-drive/",
+  "status": "valid",
+  "status_reason": "Subsequent work (e.g., Fell & Heisenberg 2021, 2024 constant-velocity positive-energy subluminal solutions) still finds no way to cross c without exotic matter."
+ },
+ {
+  "physicist": "Adam Frank",
+  "credentials": "PhD physics (University of Washington, 1992); professor of astrophysics, University of Rochester; co-founder of NPR's 13.7 Cosmos & Culture",
+  "work": "Foundation",
+  "medium": "tv",
+  "year_of_work": 2021,
+  "depiction": "Hari Seldon's psychohistory mathematically predicts the fall of the Galactic Empire.",
+  "critique": "Frank characterizes psychohistory as 'basically statistical physics applied to societies' that predicts the behavior of large collections of humans, and notes it inspired real 'social physics' work (including his own 'Psychohistorians' group).",
+  "domains": [
+   "other"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://bigthink.com/13-8/foundation-asimov/",
+  "status": "partly",
+  "status_reason": "Statistical physics does capture aggregate social regularities, but chaos and reflexive feedback in human systems prevent the millennia-scale deterministic forecasts the story depicts."
+ },
+ {
+  "physicist": "Martin Hendry",
+  "credentials": "PhD astrophysics; Professor of Gravitational Astrophysics and Cosmology, University of Glasgow (LIGO Scientific Collaboration member)",
+  "work": "Star Wars (franchise)",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "The Millennium Falcon jumps through hyperspace between star systems faster than light.",
+  "critique": "Relativity forbids FTL travel; Hendry speculates that wormholes in quantum spacetime foam might bridge interstellar distances but they would be unimaginably small, and suggests dark energy might have the right properties to 'blow up' and hold a wormhole open, though we can't harness it.",
+  "domains": [
+   "ftl_wormholes",
+   "cosmology",
+   "quantum"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://theconversation.com/star-wars-inspired-me-to-become-an-astrophysicist-and-i-wasnt-disappointed-50812",
+  "status": "partly",
+  "status_reason": "Planck-scale foam wormholes are unobserved and untraversable; a cosmological-constant-like dark energy (w = -1) does not violate the null energy condition needed to hold a wormhole open, and DESI 2024-25 hints of evolving dark energy point away from, not toward, phantom behavior today."
+ },
+ {
+  "physicist": "Martin Hendry",
+  "credentials": "PhD astrophysics; Professor of Gravitational Astrophysics and Cosmology, University of Glasgow (LIGO Scientific Collaboration member)",
+  "work": "Star Wars: A New Hope",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "Tatooine, Luke's desert home world, orbits a pair of suns.",
+  "critique": "Circumbinary planets are real: Kepler-16b, a roughly Saturn-sized world orbiting twin stars, is a real 'Tatooine', but with a likely surface temperature around -100 C it is a better match for the ice planet Hoth.",
+  "domains": [
+   "exoplanets_habitability",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://theconversation.com/star-wars-inspired-me-to-become-an-astrophysicist-and-i-wasnt-disappointed-50812",
+  "status": "valid",
+  "status_reason": "Kepler and TESS have since found over a dozen transiting circumbinary planets (e.g., TOI-1338b), and stability studies show habitable-zone circumbinary orbits are possible."
+ },
+ {
+  "physicist": "Martin Archer",
+  "credentials": "PhD space plasma physics (Imperial College London); space plasma physicist at Queen Mary University of London (later Imperial College London)",
+  "work": "Star Wars (franchise; Solo: A Star Wars Story)",
+  "medium": "film",
+  "year_of_work": 2018,
+  "depiction": "Blasters fire glowing bolts often mistaken for lasers.",
+  "critique": "Per canon, blaster bolts are blobs of plasma; self-confined plasmoids (spheromaks) fired from plasma railguns reach ~200 km/s and last hundreds of microseconds, and US Air Force MARAUDER research produced such plasma projectiles, so blasters are plausible and more powerful than real lightsabers would be (though far slower than the films' light-like bolts).",
+  "domains": [
+   "combat_weapons",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://theconversation.com/versions-of-han-solos-blaster-exist-and-theyre-way-more-powerful-than-real-lightsabers-would-be-97053",
+  "status": "valid",
+  "status_reason": "Compact-toroid plasma accelerators with the stated speeds and lifetimes are documented in the plasma-physics literature."
+ },
+ {
+  "physicist": "Martin Archer",
+  "credentials": "PhD space plasma physics (Imperial College London); space plasma physicist at Queen Mary University of London (later Imperial College London)",
+  "work": "Star Wars (franchise)",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "Lightsabers clash repeatedly in duels and block Force lightning.",
+  "critique": "A physically real lightsaber would be magnetically confined plasma; when two blades met, magnetic reconnection would explosively release both blades' hot plasma, likely vaporizing both duelists; and as an excellent conductor the plasma blade would attract lightning and channel the current through the wielder's body, causing burns and cardiac arrest.",
+  "domains": [
+   "combat_weapons",
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://theconversation.com/heres-how-a-real-lightsaber-would-fare-in-a-star-wars-style-lightning-attack-89102",
+  "status": "valid",
+  "status_reason": "Magnetic reconnection between interacting confined plasmas and the high conductivity of plasma channels are well established."
+ },
+ {
+  "physicist": "Carsten P. Welsch",
+  "credentials": "PhD physics (Goethe University Frankfurt); Professor of Physics, University of Liverpool; Cockcroft Institute accelerator physicist",
+  "work": "Star Wars (franchise)",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "Lightsabers are blades of light that stop at about a metre and clash with one another.",
+  "critique": "A light-based saber can't work: light emitted from a source keeps going to infinity unless it hits something, and two light beams would simply pass through each other; a plasma blade confined by electromagnetic fields could reproduce many lightsaber features but would be even more deadly.",
+  "domains": [
+   "combat_weapons",
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://theconversation.com/star-wars-from-the-force-to-r2d2-does-the-science-hold-up-128822",
+  "status": "valid",
+  "status_reason": "Photons do not self-terminate and linear optics in vacuum has no beam-beam interaction (photon-photon scattering is negligibly small)."
+ },
+ {
+  "physicist": "Carsten P. Welsch",
+  "credentials": "PhD physics (Goethe University Frankfurt); Professor of Physics, University of Liverpool; Cockcroft Institute accelerator physicist",
+  "work": "Star Wars (franchise)",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "The Force is an energy field created by all living things that surrounds everything and gives Jedi powers.",
+  "critique": "Physics knows four fundamental forces not yet unified; there is an energy of empty space (vacuum/dark energy) that 'surrounds everything' and can give rise to forces, but its effect is tiny and certainly can't confer special powers.",
+  "domains": [
+   "cosmology",
+   "quantum"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://theconversation.com/star-wars-from-the-force-to-r2d2-does-the-science-hold-up-128822",
+  "status": "valid",
+  "status_reason": "Vacuum-energy effects (Casimir forces, cosmic acceleration) are real but negligible on human scales."
+ },
+ {
+  "physicist": "Christopher Wiebe",
+  "credentials": "PhD physics (McMaster University); Professor and Canada Research Chair in Quantum Materials Discovery, University of Winnipeg",
+  "work": "Star Wars: A New Hope",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "Obi-Wan feels a disturbance in the Force the instant Alderaan is destroyed light-years away.",
+  "critique": "Relativity limits communication to light speed, so no warning (or feeling) could reach anyone instantly; quantum entanglement produces correlations over large distances but cannot beat Einstein's speed limit for transmitting information.",
+  "domains": [
+   "light_speed_communication",
+   "quantum"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://theconversation.com/star-wars-last-jedi-may-use-the-force-of-quantum-science-88764",
+  "status": "valid",
+  "status_reason": "The no-communication theorem and all loophole-free Bell tests confirm entanglement cannot carry signals faster than light."
+ },
+ {
+  "physicist": "Erin Macdonald",
+  "credentials": "PhD astrophysics (University of Glasgow, gravitational-wave research with LIGO); later science consultant for the Star Trek franchise",
+  "work": "Star Wars (franchise)",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "Lightsabers as fixed-length blades of high-energy light.",
+  "critique": "Treating lightsabers as high-energy lasers, 'building a lightsaber that keeps going forever isn't hard; it's stopping it' that's difficult; there is no known way to give a laser beam a definite end point (though lab lasers are already deadly).",
+  "domains": [
+   "combat_weapons",
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2016",
+  "source_url": "https://www.space.com/35060-rogue-star-wars-science-answers.html",
+  "status": "valid",
+  "status_reason": "A beam in vacuum propagates until absorbed or diverges; no mechanism truncates it at a fixed length."
+ },
+ {
+  "physicist": "Katy Clough",
+  "credentials": "PhD theoretical physics/numerical relativity (King's College London); Ernest Rutherford Fellow and Senior Lecturer in Mathematics, Queen Mary University of London (black holes and early universe)",
+  "work": "Star Trek: The Motion Picture",
+  "medium": "film",
+  "year_of_work": 1979,
+  "depiction": "Inside a warp-induced wormhole, the Enterprise crew experience 'temporal distortion' and move and speak in slow motion.",
+  "critique": "Gravitational time dilation can occur in wormhole spacetimes, but those flying in would never perceive slow motion: their clocks tick at one second per second; they would only find on emerging that a different amount of time had passed for others (as with GPS clocks).",
+  "domains": [
+   "relativity_time_dilation",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2026",
+  "source_url": "https://theconversation.com/star-trek-used-wormholes-to-jump-through-space-whats-the-science-behind-them-291297",
+  "status": "valid",
+  "status_reason": "Proper time is always experienced normally locally; time dilation is only a comparison between frames."
+ },
+ {
+  "physicist": "Katy Clough",
+  "credentials": "PhD theoretical physics/numerical relativity (King's College London); Ernest Rutherford Fellow and Senior Lecturer in Mathematics, Queen Mary University of London (black holes and early universe)",
+  "work": "Star Trek (franchise)",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Wormhole mouths appear as swirling vortices or tunnels on screen.",
+  "critique": "Simulations show a wormhole opening would look like a soap bubble or crystal ball whose surface shows distorted, multiplied images of what lies on the other side; you could enter it from any direction and emerge from a similar bubble elsewhere.",
+  "domains": [
+   "ftl_wormholes",
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2026",
+  "source_url": "https://theconversation.com/star-trek-used-wormholes-to-jump-through-space-whats-the-science-behind-them-291297",
+  "status": "valid",
+  "status_reason": "GR ray-tracing of Ellis-type wormholes (e.g., James, von Tunzelmann, Franklin & Thorne 2015) produces spherical lensing mouths."
+ },
+ {
+  "physicist": "Katy Clough",
+  "credentials": "PhD theoretical physics/numerical relativity (King's College London); Ernest Rutherford Fellow and Senior Lecturer in Mathematics, Queen Mary University of London (black holes and early universe)",
+  "work": "Star Trek: The Next Generation ('The Price')",
+  "medium": "tv",
+  "year_of_work": 1989,
+  "depiction": "A traversable wormhole is put up for sale but turns out to be unstable.",
+  "critique": "The TNG depiction resembles Thorne's 1988 traversable-wormhole framework, which requires exotic matter violating energy conditions; and stability is the real issue, since numerical simulations show the Ellis-Bronnikov wormhole rapidly collapses under tiny disturbances (spinning versions' nonlinear stability is unproven).",
+  "domains": [
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2026",
+  "source_url": "https://theconversation.com/star-trek-used-wormholes-to-jump-through-space-whats-the-science-behind-them-291297",
+  "status": "valid",
+  "status_reason": "Matches current numerical-relativity results on wormhole instability and energy-condition requirements."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Star Trek / Star Wars / Battlestar Galactica",
+  "medium": "tv",
+  "year_of_work": 1966,
+  "depiction": "Crews stand normally on starship floors under artificial gravity and survive rapid acceleration to impulse speeds.",
+  "critique": "Only gravitational, linear and rotational acceleration produce gravity-like effects (as in 2001's rotating ship); reaching 'full impulse' in about an hour would subject crews to thousands of g, so artificial gravity/inertial shielding would require undiscovered negative gravitational mass, possibly antimatter, which had not yet been tested.",
+  "domains": [
+   "gravity_artificial",
+   "propulsion_energy",
+   "biology_physics"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://bigthink.com/starts-with-a-bang/why-dont-we-have-artificial-gravity-in-space/",
+  "status": "partly",
+  "status_reason": "The equivalence-principle argument holds, but the antimatter loophole was closed by ALPHA-g (2023: antimatter falls down), and the >4,000 g figure corresponds to ~0.5c in an hour (a few percent of c gives a few hundred g)."
+ },
+ {
+  "physicist": "Ethan Siegel",
+  "credentials": "PhD astrophysics (University of Florida, 2006); former physics/astronomy professor (Lewis & Clark College, University of Portland); author of Starts With A Bang",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Gargantua is shown as a dark shadow with gravitationally lensed light and a warped accretion disk around it.",
+  "critique": "Interstellar's illustration is more accurate than many NASA artist renderings: an event horizon is opaque and should appear as a dark region magnified by lensing of background light, rather than a cutaway or transparent shell.",
+  "domains": [
+   "black_holes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://bigthink.com/starts-with-a-bang/ask-ethan-what-should-a-black-holes-event-horizon-look-like/",
+  "status": "valid",
+  "status_reason": "EHT images of M87* (2019) and Sgr A* (2022) show the predicted lensed shadow and bright ring, though Gargantua omits Doppler beaming asymmetry."
+ }
+]

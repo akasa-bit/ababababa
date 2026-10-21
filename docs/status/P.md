@@ -11,4 +11,5 @@
   - TESS: `data/fetch/fetch_tess.py <置き場>` (約 290 MB) → `data/build/flares_tess.py <置き場>` → `data/build/build_flares.py`。
 - 2026-10-20 (P-4): P7 スウォームの太陽電池の劣化を入れた (シミュレーション版。`docs/physics.md` の 7)。
 - 2026-10-20 (P-5): P9 スウォームの素子の作りを、星系ごとに選べるようにした (a・b・c と自動。シミュレーション版。`docs/physics.md` の 7)。
-- 次 (`docs/physics.md` の 10): P6 ゲーム版にも物理を入れるか。
+- 2026-10-20〜21 (P-6): 物理学者が SF の描写に付けた文句を 349 件集め、今の知見で正しい 266 件のうち、ゲームに当てはまった欠点 49 件を直した (`docs/sf-critiques.md`)。ゲーム版の試合は main と同じ。
+- 次: P6 ゲーム版にも物理を入れるか、D1〜D6 (`docs/sf-critiques.md` の 5)。

@@ -88,6 +88,26 @@ gG.year += 10;
 const fG = gG.swarmCover(gG.cap), f0 = gG.govs[gG.cap].sw[0];
 const fExp = 1 / (1 + (1 / f0 - 1) * Math.exp((-Math.LN2 / 5) * (gG.year - gG.govs[gG.cap].sw[1])));
 if (Math.abs(fG - fExp) > 1e-9) fails.push(`ゲーム版のスウォームの広がり ${fG} (式 ${fExp})`);
+// 8. 物理学者の指摘 (P-6。docs/sf-critiques.md): 近づく帆を止める光は加速の (γβ−γ+1)/(γβ+γ−1) 倍 (0.95c で 0.160)。
+// ゲーム版は加速と同じ。M 型星の近すぎる岩の惑星 (プロキシマ d) は大気を持たない (ゲーム版は持つ)。乗る人の時計は 0.95c・20 光年で 6.6 年 (ゲーム版)
+const pr = sim.evaluate('propulsion(1e9, 0.95, "route")'), prG = H.load().evaluate('propulsion(1e9, 0.95, "route")');
+const gb = 1 / Math.sqrt(1 - 0.95 ** 2), want = (gb * 0.95 - gb + 1) / (gb * 0.95 + gb - 1);
+if (Math.abs(pr.dec / pr.acc - want) > 1e-9 || prG.dec !== prG.acc) fails.push(`減速のエネルギー ${pr.dec / pr.acc} (式 ${want})・ゲーム版 ${prG.dec / prG.acc}`);
+const prox = (G) => G.galaxy.systems.find((s) => s.cat === 'GJ 559')?.bodies.find((b) => /d$/.test(b.name));
+const g1S = sim.newGame('1', { nations: 6 }), g1G = H.load().newGame('1', { nations: 6 }); // 銀河 1 のプロキシマ d は、ゲーム版で 3.3 気圧の海の星
+const pdS = prox(g1S), pdG = prox(g1G);
+if (!pdS || !pdG || !(pdS.pressure === 0 && pdS.stripped && pdG.pressure > 0)) fails.push(`プロキシマ d の大気 シミュレーション ${pdS?.pressure}・ゲーム ${pdG?.pressure}`);
+const tG = H.load().evaluate('shipTime(20, 0.95)');
+if (Math.abs(tG - 20 * Math.sqrt(1 - 0.95 ** 2) / 0.95) > 1e-9) fails.push(`乗る人の時計 ${tG}`);
+// 進路変更: 止まるまで (c/a)γβ 年 (0.9c・1g で 2.0 年)
+let flt = null;
+for (let k = 0; k < 40 && !flt; k++) { sim.run(g1S, 2); flt = g1S.fleets.find((f) => f.arrive - g1S.year > 3 && !f.prev); }
+if (flt) {
+  const other = g1S.galaxy.systems.find((s) => s.id !== flt.to && s.id !== flt.from).id;
+  g1S.redirectFleet(flt.id, other);
+  const ts = ((299792458 / 9.80665 / 31557600) * 0.9) / Math.sqrt(1 - 0.81), leg = flt.prev.at(-1);
+  if (!(leg?.toXY && flt.depart > g1S.year && flt.depart - g1S.year <= ts + 1e-6)) fails.push(`進路変更で止まるまで ${flt.depart - g1S.year} 年 (多くて ${ts})`);
+} else fails.push('進路変更を試す艦隊がない');
 const { rows } = P.voyages(seed, Number(years), Number(nations), null);
 const withLy = rows.filter((x) => x.ly > 0);
 const noShield = withLy.filter((x) => !(x.shield > 0));

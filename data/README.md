@@ -133,3 +133,10 @@ node tools/build.mjs
 | 加工 | `data/build/build_pv.py` → `data/derived/pv.json` と `src/index.html` の `PV_DAMAGE` | フレアの陽子 (ε = 2.13) がカバーガラスを通って接合に与える変位損傷の線量、3 接合の電池の出力の残り (Walters ほか 2004 の C・Dx)、太陽の 1 AU での確かめ |
 
 出典: SR-NIEL (Boschini ほか、www.sr-niel.org)・NIST PSTAR・Walters, Morton & Messenger (2004) NASA/TP-2004-213338・Lohmeyer, Aniceto, Cahoy & Carlton (2018) Int. J. Space Sci. Eng. 5, 61
+
+## 物理学者が SF に付けた文句 (P-6)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 集め | `data/raw/sf_critiques/` | 物理学者・天文学者が、SF の映画・テレビ・ゲーム・アニメ・コミックの描写を物理で論じた 349 件 (6 組に分けて集め、どれも出典のページを開いて確かめた URL つき)。`classified.json` は事例ごとの分類 (今の知見で正しいか・物理の論点・ゲームに当てはまるか) |
+| 加工 | `data/build/build_sf_critiques.py` → `data/derived/sf_critiques.json` | 物理学者の指摘で、今の知見で正しい 266 件を選び、ゲームへの当てはまりを集計する。中身は `docs/sf-critiques.md` |

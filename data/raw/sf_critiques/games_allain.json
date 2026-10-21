@@ -1,0 +1,938 @@
+[
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: The Empire Strikes Back",
+  "medium": "film",
+  "year_of_work": 1980,
+  "depiction": "TIE bombers drop bombs onto an asteroid that 'fall' with large downward acceleration and lag behind the moving bomber.",
+  "critique": "Video analysis shows bombs accelerating downward much faster than Earth gravity and slowing horizontally (~32 m/s^2) as if by air drag; with no air and a tiny asteroid's weak gravity a released bomb should keep the bomber's horizontal velocity and barely fall, so they'd have to be self-propelled.",
+  "domains": [
+   "orbital_mechanics",
+   "vacuum_sound_light",
+   "combat_weapons"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.wired.com/story/the-physics-of-a-star-wars-bomber-dropping-bombs-in-space/",
+  "status": "valid",
+  "status_reason": "Newtonian mechanics: no horizontal force in vacuum and negligible gravity from a small asteroid."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: The Last Jedi",
+  "medium": "film",
+  "year_of_work": 2017,
+  "depiction": "Resistance bombers release bombs that drop out of the bay onto a Star Destroyer like WWII gravity bombs.",
+  "critique": "Unpowered bombs in space have no reason to 'fall' onto the target; only a launcher or the dreadnought's own (implausibly strong) gravity could explain it.",
+  "domains": [
+   "orbital_mechanics",
+   "combat_weapons"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.wired.com/story/the-physics-of-a-star-wars-bomber-dropping-bombs-in-space/",
+  "status": "valid",
+  "status_reason": "A ship's gravity is negligible; released ordnance co-moves with the bomber absent a force."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: The Last Jedi",
+  "medium": "film",
+  "year_of_work": 2017,
+  "depiction": "Turbolaser bolts from the Supremacy travel in arcs like artillery shells during the space chase, implying a maximum range.",
+  "critique": "Real lasers move at c, are invisible from the side and travel straight; modeling the arc requires a vertical acceleration of ~2.4x10^4 m/s^2, inconsistent with straight bolts in earlier films and with any gravity in space.",
+  "domains": [
+   "combat_weapons",
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.wired.com/story/somethings-off-with-the-turbolaser-shots-in-the-last-jedi/",
+  "status": "valid",
+  "status_reason": "No plausible field in open space produces ballistic arcs of that curvature; light-speed beams are straight."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: A New Hope",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "X-wings bank like airplanes to turn and keep thrusters firing to maintain speed near the Death Star.",
+  "critique": "In vacuum there is no lift to redirect, so banking is pointless; turning requires redirecting thrust, and constant velocity needs no thrust at all.",
+  "domains": [
+   "vacuum_sound_light",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.wired.com/story/somethings-off-with-the-turbolaser-shots-in-the-last-jedi/",
+  "status": "valid",
+  "status_reason": "Newton's first law and absence of aerodynamic lift in vacuum."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: The Empire Strikes Back",
+  "medium": "film",
+  "year_of_work": 1980,
+  "depiction": "The Millennium Falcon jumps to hyperspace, shrinking from ~100 m to ~8 km away in half a second while Leia and R2-D2 are only mildly jolted.",
+  "critique": "Angular-size video analysis gives ~34,000 m/s^2 (~3,500 g), enough to crush humans, while R2-D2's roll indicates only ~0.28 g inside, requiring near-perfect 'inertial dampers' with no known physics.",
+  "domains": [
+   "ftl_wormholes",
+   "propulsion_energy",
+   "biology_physics"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.wired.com/story/the-physics-of-the-millennium-falcons-jump-to-hyperspace/",
+  "status": "valid",
+  "status_reason": "Thousands of g is lethal; no known mechanism cancels inertial forces."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: The Rise of Skywalker",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Huge, largely intact chunks of Death Star wreckage rise from the sea on a moon/planet (Kef Bir).",
+  "critique": "Debris falling from space hits at roughly escape speed (~11 km/s for an Earth-size world); even a crude atmospheric-drag estimate only lowers this to ~10.9 km/s, so wreckage would be obliterated, not preserved; it would have to be placed there deliberately.",
+  "domains": [
+   "orbital_mechanics",
+   "materials_structures"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.wired.com/story/whats-up-with-that-death-star-wreckage-in-rise-of-skywalker/",
+  "status": "partly",
+  "status_reason": "Impact-speed argument is sound, but very large low-density slabs could fragment and decelerate differently; intact km-scale pieces remain implausible."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: A New Hope",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "The opening Star Destroyer passes overhead with an audible engine rumble in space.",
+  "critique": "Sound needs a medium; interplanetary plasma and dust are far too tenuous to carry audible pressure waves, so the rumble is impossible (included for audience intuition).",
+  "domains": [
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2025",
+  "source_url": "https://www.wired.com/story/the-phony-physics-of-star-wars-are-a-blast/",
+  "status": "valid",
+  "status_reason": "Mean free paths in interplanetary space are astronomical-unit scale; no audible sound propagates."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: Episode I - The Phantom Menace",
+  "medium": "film",
+  "year_of_work": 1999,
+  "depiction": "Qui-Gon Jinn melts a long cut through a thick blast door with a handheld lightsaber.",
+  "critique": "Melting ~2.7 kg of aluminum in 11.5 s needs ~2.3x10^5 W (~300 hp); a lithium-ion battery would need ~3.3 m^3 for realistic run time, so a hilt-sized power source would require nuclear or antimatter energy densities (~2x10^13 J/m^3).",
+  "domains": [
+   "propulsion_energy",
+   "thermodynamics_heat",
+   "combat_weapons"
+  ],
+  "date_of_critique": "2024",
+  "source_url": "https://www.wired.com/story/what-kind-of-battery-would-you-need-to-power-a-lightsaber/",
+  "status": "valid",
+  "status_reason": "Calorimetry and battery energy densities are well established; no chemical battery comes close."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: Return of the Jedi",
+  "medium": "film",
+  "year_of_work": 1983,
+  "depiction": "Lightsabers are called 'laser swords', clash like metal, and Vader's thrown saber spins about a point inside the blade.",
+  "critique": "A laser blade would be invisible from the side, have no end, and pass through another beam; the effortful swings and the thrown saber's rotation about a center of mass in the blade imply the blade has mass, so it cannot be light.",
+  "domains": [
+   "combat_weapons",
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2026",
+  "source_url": "https://www.wired.com/story/do-lightsaber-blades-have-mass/",
+  "status": "valid",
+  "status_reason": "Photons don't collide appreciably in vacuum and a beam can't terminate; rigid-body rotation argument is correct."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "The Mandalorian",
+  "medium": "tv",
+  "year_of_work": 2019,
+  "depiction": "Mando jetpacks up and grapples onto Moff Gideon's TIE fighter in flight (season 1 finale).",
+  "critique": "Video analysis gives a TIE speed of ~117 m/s, a launch acceleration ~3.6 g and grapple acceleration ~7.8 g over ~1.5 s, surprisingly survivable for a human.",
+  "domains": [
+   "biology_physics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2020",
+  "source_url": "https://www.wired.com/story/mandalorian-vs-tie-fighter/",
+  "status": "valid",
+  "status_reason": "Kinematics and human g-tolerance figures are standard (assuming the rope/harness could take the load)."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "The Mandalorian",
+  "medium": "tv",
+  "year_of_work": 2019,
+  "depiction": "In the trailer, Mando's phase-pulse blast sends a ~100 kg opponent flying across a cave while Mando stays planted on gravel.",
+  "critique": "Momentum change (~389 kg m/s over 0.17 s) implies ~2,300 N; by Newton's third law Mando would need a shoe-ground friction coefficient of ~2.4 to avoid sliding back, far above any real surface, especially loose sand.",
+  "domains": [
+   "combat_weapons",
+   "other"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.wired.com/story/dont-underestimate-the-forces-mandalorian/",
+  "status": "valid",
+  "status_reason": "Newton's third law and Coulomb friction; μ≈2.4 on gravel is unrealistic."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "The Mandalorian",
+  "medium": "tv",
+  "year_of_work": 2019,
+  "depiction": "Mando's Amban rifle scope lets him see people through a building wall.",
+  "critique": "Infrared (thermal) imaging cannot see through walls or even glass; radio or X-ray illumination/backscatter or muon-shadow methods could in principle image through walls, so the scope is plausible only as an active radar/X-ray device.",
+  "domains": [
+   "vacuum_sound_light",
+   "other"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.wired.com/story/how-the-mandalorian-might-see-through-walls/",
+  "status": "valid",
+  "status_reason": "Through-wall radar and backscatter imaging exist; thermal IR is blocked by walls and glass."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: The Rise of Skywalker",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "A Xyston-class Star Destroyer's 'superlaser' blows up planet Kijimi in ~10 s, with fragments flying outward.",
+  "critique": "Fragment speeds (~0.3 planet radii/s) imply ~7x10^35 J of kinetic energy, a power of ~7x10^34 W—over 10^8 times the Sun's luminosity—per ship; and a true laser beam would be invisible in space.",
+  "domains": [
+   "propulsion_energy",
+   "combat_weapons",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2020",
+  "source_url": "https://www.wired.com/story/how-much-energy-does-it-take-to-blow-up-a-planet/",
+  "status": "valid",
+  "status_reason": "Energetics far exceed Earth's ~2x10^32 J binding energy; invisibility of collimated beams in vacuum is correct."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: The Last Jedi",
+  "medium": "film",
+  "year_of_work": 2017,
+  "depiction": "Two Star Destroyers appear in the sky over the Resistance base on D'Qar, clearly visible from the ground.",
+  "critique": "Using the eye's ~0.02° resolution, a 2.9-km Resurgent-class destroyer at ~221–400 km subtends 0.4–0.75°, so it would genuinely be visible (unlike the 100-m ISS's shape); the scene is plausible.",
+  "domains": [
+   "scale_distances",
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.wired.com/story/lets-use-star-wars-to-explain-the-concept-of-angular-size/",
+  "status": "valid",
+  "status_reason": "Small-angle geometry and ~1 arcmin human acuity are standard; a non-orbiting ship at that altitude would however need constant thrust."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2018,
+  "depiction": "The generation ship Nauvoo is spun up to provide 0.1 g spin gravity in its drum after previously using thrust gravity, with one bridge.",
+  "critique": "For 0.1 g at the drum radius the ship needs only ~0.6 rpm (0.063 rad/s); the spin-up seen on screen (0.00038 rad/s^2) is slower than the stated 30 s; and since thrust gravity and spin gravity point in perpendicular directions, the ship really needs separate 'floors'/bridges for each mode.",
+  "domains": [
+   "gravity_artificial",
+   "materials_structures"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.wired.com/story/the-physics-of-a-spinning-spacecraft-in-the-expanse/",
+  "status": "valid",
+  "status_reason": "Centripetal acceleration a=ω²R and the orthogonality of thrust vs spin 'down' are correct."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2015,
+  "depiction": "Holden kicks Naomi off a gangway when the Donnager's engines cut out, sending himself back to the gangway while she floats free (S1E4).",
+  "critique": "Praised as correct: by Newton's third law and momentum conservation, pushing Naomi away sends Holden the opposite way, and his tether lets the pair recover—a rare accurate portrayal of free-fall mechanics.",
+  "domains": [
+   "gravity_artificial",
+   "other"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.wired.com/story/the-expanse-gets-artificial-gravity-right-in-this-neat-trick/",
+  "status": "valid",
+  "status_reason": "Straightforward momentum conservation in free fall."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2018,
+  "depiction": "Solomon Epstein, testing his new fusion drive, is pinned by high-g acceleration and cannot lift his arm to cut the engine.",
+  "critique": "Thrust acceleration acts like an enhanced gravitational field: at ~8 g a 35 N arm 'weighs' ~284 N (64 lb), so being unable to reach the controls is physically realistic.",
+  "domains": [
+   "propulsion_energy",
+   "biology_physics",
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.wired.com/story/the-physics-of-accelerating-spacecraft-in-the-expanse/",
+  "status": "valid",
+  "status_reason": "Equivalence principle and human g-tolerance support the depiction."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2018,
+  "depiction": "The Epstein test-flight control panel displays speed (MPS), acceleration in g and fuel percentage.",
+  "critique": "On-screen speeds increase far faster than the displayed 3–4 g—implying up to ~46,000 m/s^2 (~4,700 g) and ~25,000 km/s—while the fuel figures imply a ~19-day burn that would reach relativistic speeds, so the readouts are mutually inconsistent.",
+  "domains": [
+   "propulsion_energy",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.wired.com/story/how-fast-do-spacecraft-travel-in-the-expanse/",
+  "status": "valid",
+  "status_reason": "Simple kinematics shows the displayed numbers don't match; prolonged 3–4 g for weeks does approach c."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "The Expanse",
+  "medium": "tv",
+  "year_of_work": 2020,
+  "depiction": "Bobbie Draper in power armor holds the Razorback and a departing Belter ship together by gripping the gangplank (S5E6 'Tribes').",
+  "critique": "Estimating the Razorback at ~13,000 kg and the Belter ship's acceleration at ~0.125 m/s^2, Bobbie must exert ~1,700 N (~380 lb)—entirely plausible for powered armor.",
+  "domains": [
+   "materials_structures",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://www.wired.com/story/could-bobbie-hold-two-spaceships-together-expanse/",
+  "status": "valid",
+  "status_reason": "Newton's second law with reasonable mass/acceleration estimates."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Stowaway",
+  "medium": "film",
+  "year_of_work": 2021,
+  "depiction": "The Mars-bound ship spins against a counterweight on long tethers, and the commander says artificial gravity will reach 'close to 5 g's'.",
+  "critique": "5 g would be a mistake (likely meant 0.5 g); the rotation rate measured from the film (~0.10 rad/s) needs a 450 m radius (900 m tether) for 0.5 g, whereas the stated 450 m tether gives only ~0.25 g.",
+  "domains": [
+   "gravity_artificial",
+   "materials_structures"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://www.wired.com/story/stowaway-anna-kendrick-spinning-ship-artificial-gravity-physics/",
+  "status": "valid",
+  "status_reason": "a=ω²R arithmetic is correct."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Lightyear",
+  "medium": "film",
+  "year_of_work": 2022,
+  "depiction": "Buzz Lightyear's rocket lifts off and climbs at a roughly constant speed (~192 m/s) in the trailer.",
+  "critique": "Real rockets have thrust exceeding weight and accelerate continuously (Falcon 9 ~5 m/s^2); constant-velocity ascent is unrealistic, and reaching 192 m/s in 2.5 s implies ~78 m/s^2 (~9 g)—survivable but extreme.",
+  "domains": [
+   "propulsion_energy",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://www.wired.com/story/why-buzz-lightyears-rocket-launch-looks-better-than-reality/",
+  "status": "valid",
+  "status_reason": "Rocket ascent profiles accelerate; kinematics is straightforward."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Moonfall",
+  "medium": "film",
+  "year_of_work": 2022,
+  "depiction": "A 'mysterious force' knocks the Moon from orbit so it spirals toward Earth, pulling oceans off the surface.",
+  "critique": "A brief push only changes the Moon to an elliptical orbit; a crash requires nearly removing its orbital angular momentum; even with the Moon nearly touching, Earth's gravity beats the Moon's on surface water, though extreme tides and tidal stresses would wreck mountains and buildings.",
+  "domains": [
+   "orbital_mechanics",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://www.wired.com/story/could-the-moon-actually-crash-toward-the-earth/",
+  "status": "valid",
+  "status_reason": "Orbital mechanics and tidal analysis are correct; Roche-limit breakup of the Moon would also occur."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Foundation",
+  "medium": "tv",
+  "year_of_work": 2021,
+  "depiction": "Terrorists sever the Galactic Empire's space elevator (Star Bridge) from its top station; the cable falls and wraps around the planet causing destruction.",
+  "critique": "A 36,000-km cable needs extreme material strength; modeling the severed cable as co-rotating pieces, the lower part falls and wraps about a third of the way around the equator while higher pieces may end up in orbit as debris—so a full planetary wrap is not expected.",
+  "domains": [
+   "orbital_mechanics",
+   "materials_structures"
+  ],
+  "date_of_critique": "2022",
+  "source_url": "https://www.wired.com/story/what-happens-if-a-space-elevator-breaks/",
+  "status": "partly",
+  "status_reason": "Qualitative dynamics are right, but a non-tension, piecewise model is crude, and Trantor's parameters differ from Earth's."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Captain Marvel",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "The hidden Mar-Vell space lab is located six years later using a set of orbital 'state vectors' (position and velocity).",
+  "critique": "State vectors fully define a Keplerian orbit, but unmodeled forces like atmospheric drag (as on the ISS at 400 km) would make long-term prediction fail unless the lab reboosts; the numbers shown don't map neatly onto a real orbit.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://www.wired.com/story/how-find-secret-space-lab-captain-marvel/",
+  "status": "valid",
+  "status_reason": "Orbit propagation uncertainty from drag and perturbations is real; state vectors are the standard representation."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Avengers: Endgame (Marvel Cinematic Universe)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Thruster-powered heroes like Star-Lord and War Machine fly at constant velocity with thrust angled backward from their feet.",
+  "critique": "Constant velocity requires zero net force, but a tilted thrust leaves an unbalanced horizontal component; drag is negligible at those speeds, and thrusters at the feet would also create torque that tips the flier over.",
+  "domains": [
+   "propulsion_energy",
+   "other"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.wired.com/story/the-tricky-physics-of-how-the-avengers-manage-to-fly/",
+  "status": "valid",
+  "status_reason": "Newton's first and second laws and rotational equilibrium."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "The Endurance spacecraft rotates to 'generate 1 g of gravity' for its crew.",
+  "critique": "Spinning doesn't generate gravity, it creates apparent weight via centripetal acceleration; the trailer's spin rate (~0.59 rad/s) implies a radius of only ~28 m for 1 g, a small, fast-spinning ring.",
+  "domains": [
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.wired.com/2014/10/physics-spinning-spacecraft-interstellar/",
+  "status": "valid",
+  "status_reason": "a=ω²R; ~5.6 rpm at 28 m is consistent with 1 g, though it is above comfort limits (Coriolis-induced motion sickness)."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars (original trilogy: A New Hope / Return of the Jedi)",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "The Death Stars and Alderaan explode with a flat, expanding ring of debris that accelerates outward.",
+  "critique": "Video analysis shows the ring moving at ~0.1c and then accelerating to ~0.25c—an acceleration (~1.5x10^7 m/s^2) that gravity from leftover debris cannot provide and that should instead decelerate; the planar ring itself has no obvious physical cause.",
+  "domains": [
+   "combat_weapons",
+   "astrophysics_stars_planets",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.wired.com/2014/05/video-analysis-of-an-exploding-death-star/",
+  "status": "valid",
+  "status_reason": "An explosion's ejecta cannot accelerate outward after release; relativistic ejecta speeds would require absurd energies."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Pacific Rim",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "A 250-ft Jaeger mech is airlifted into battle by about eight CH-47 Chinook helicopters.",
+  "critique": "Square-cube scaling gives a mass of ~10^7 kg (40x a human's height → 64,000x volume); at ~15 t per Chinook you'd need ~640 helicopters, more once cable angles are counted, in a ~1.1 km square grid.",
+  "domains": [
+   "materials_structures",
+   "scale_distances"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.wired.com/2013/07/how-would-you-carry-a-jaeger-from-pacific-rim/",
+  "status": "valid",
+  "status_reason": "Square-cube law and helicopter payload figures are correct."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Trek Into Darkness",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "The Enterprise rises out of the ocean and floats after hiding underwater.",
+  "critique": "Buoyancy gives a mass ~5x a Nimitz carrier and an average density ~78 kg/m^3—foam-like but plausible for a spaceship that only needs to hold 1 atm, so floating is physically reasonable.",
+  "domains": [
+   "materials_structures"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.wired.com/2013/04/how-much-does-the-enterprise-weigh/",
+  "status": "valid",
+  "status_reason": "Archimedes' principle; low average density is plausible for a pressure-vessel spacecraft (atmospheric entry is a separate issue)."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Trek",
+  "medium": "film",
+  "year_of_work": 2009,
+  "depiction": "Kirk, Sulu and a redshirt space-jump from a shuttle high above Vulcan down onto the Romulan drilling platform.",
+  "critique": "Modeling a fall from ~300 km with a NASA atmosphere model, the jumpers would reach ~2,200 m/s (vs ~250 m/s for Red Bull Stratos) and slam into denser air below ~39 km with dangerously large decelerations, unlike the gentle skydive shown.",
+  "domains": [
+   "orbital_mechanics",
+   "thermodynamics_heat",
+   "biology_physics"
+  ],
+  "date_of_critique": "2010",
+  "source_url": "https://www.wired.com/2010/05/star-trek-space-jump/",
+  "status": "partly",
+  "status_reason": "Qualitatively right (hypersonic speeds and heating), but Allain's model was admittedly rough; the actual jump altitude in the film is uncertain."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Angry Birds Space",
+  "medium": "game",
+  "year_of_work": 2012,
+  "depiction": "Birds launched near planetoids feel gravity only inside a visible 'atmosphere' bubble and fly straight outside it.",
+  "critique": "Real Newtonian gravity extends indefinitely and falls as 1/r^2; in the game force is zero outside the bubble and, from Tracker analysis of orbits, roughly constant in magnitude inside it, with an unphysical friction-like energy loss (~3 N) during orbits.",
+  "domains": [
+   "orbital_mechanics",
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2012",
+  "source_url": "https://www.wired.com/2012/03/the-gravitational-force-in-angry-birds-space/",
+  "status": "valid",
+  "status_reason": "Gravity has infinite range and no friction acts in vacuum; the game's model is a deliberate simplification."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Angry Birds Space",
+  "medium": "game",
+  "year_of_work": 2012,
+  "depiction": "A bird oscillates stably back and forth in a level between two planetoids.",
+  "critique": "Not a true Lagrange point (the bodies don't orbit); a stable oscillation between two attractors works with constant-magnitude 'gravity' (~10 N/kg) but would not be stable under inverse-square gravity, confirming the game's non-Newtonian force law.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2012",
+  "source_url": "https://www.wired.com/2012/04/superposition-of-gravitational-forces-in-angry-birds-space/",
+  "status": "valid",
+  "status_reason": "With 1/r^2 forces the midpoint between two equal masses is an unstable saddle along the line joining them."
+ },
+ {
+  "physicist": "Jonah Miller",
+  "credentials": "PhD in numerical relativity (Guelph-Waterloo Physics Institute / Perimeter Institute); staff scientist in computational physics, Los Alamos National Laboratory",
+  "work": "Outer Wilds",
+  "medium": "game",
+  "year_of_work": 2019,
+  "depiction": "A miniature solar system with pond-sized planets (e.g., the Hourglass Twins) that orbit each other in minutes and have strong surface gravity.",
+  "critique": "Using Kepler's third law on the Twins' measured orbit and an assumed Mars-like density, the game's gravitational constant comes out ~100,000 times larger than ours; momentum conservation and gravity wells are otherwise self-consistent.",
+  "domains": [
+   "orbital_mechanics",
+   "scale_distances",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2024",
+  "source_url": "https://www.thephysicsmill.com/2024/09/20/an-astrophysicist-attempts-to-measure-the-physics-of-outer-wilds/",
+  "status": "valid",
+  "status_reason": "Kepler-law mass inference is standard; tiny bodies with Earth-like gravity indeed require a vastly larger G."
+ },
+ {
+  "physicist": "Jonah Miller",
+  "credentials": "PhD in numerical relativity (Guelph-Waterloo Physics Institute / Perimeter Institute); staff scientist in computational physics, Los Alamos National Laboratory",
+  "work": "Outer Wilds",
+  "medium": "game",
+  "year_of_work": 2019,
+  "depiction": "Brittle Hollow's interior has been consumed by a central black hole while surface gravity remains normal; the event horizon is tens of meters across.",
+  "critique": "Normal surface gravity is correct (by the shell theorem the same mass in a smaller volume gives the same external pull), but an Earth-mass black hole should have a ~1 cm horizon; the ~53 m horizon implies a speed of light ~3 million times slower than ours (about the speed of sound in water).",
+  "domains": [
+   "black_holes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2024",
+  "source_url": "https://www.thephysicsmill.com/2024/09/20/an-astrophysicist-attempts-to-measure-the-physics-of-outer-wilds/",
+  "status": "valid",
+  "status_reason": "Schwarzschild radius r=2GM/c^2 and the shell theorem are textbook results."
+ },
+ {
+  "physicist": "Jonah Miller",
+  "credentials": "PhD in numerical relativity (Guelph-Waterloo Physics Institute / Perimeter Institute); staff scientist in computational physics, Los Alamos National Laboratory",
+  "work": "Outer Wilds",
+  "medium": "game",
+  "year_of_work": 2019,
+  "depiction": "Planets orbit the sun on short periods (Timber Hearth ~250 s at ~8.6 km).",
+  "critique": "Applying Kepler's law with the derived G yields a sun less massive than Brittle Hollow—internally inconsistent, suggesting the game's gravity doesn't follow inverse-square scaling (players note planets use ~1/r attraction) or orbits are scripted.",
+  "domains": [
+   "orbital_mechanics",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2024",
+  "source_url": "https://www.thephysicsmill.com/2024/09/20/an-astrophysicist-attempts-to-measure-the-physics-of-outer-wilds/",
+  "status": "valid",
+  "status_reason": "A central body less massive than its satellites cannot hold them in Keplerian orbits; the inconsistency is real."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Angry Birds Star Wars",
+  "medium": "game",
+  "year_of_work": 2012,
+  "depiction": "Han Solo (yellow bird) fires blaster bolts mid-flight that travel straight to where he aims, at roughly the same ground speed regardless of his own motion, while game time slows during shots.",
+  "critique": "Tracker analysis gives bolt speeds ~38–50 m/s that barely depend on the shooter's velocity; physically a projectile's ground velocity is its muzzle velocity plus the shooter's (Galilean addition), so aiming directly at a target from a moving bird should miss unless you lead the shot.",
+  "domains": [
+   "combat_weapons",
+   "other"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.wired.com/2013/08/modeling-angry-birds-star-wars-blasters/",
+  "status": "valid",
+  "status_reason": "Relative-velocity addition applies to massive projectiles at these speeds (for true light-speed bolts it would not)."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "What If? 2 space game (xkcd / Randall Munroe browser game)",
+  "medium": "game",
+  "year_of_work": 2022,
+  "depiction": "A cartoon rocket can try to orbit a tiny ~31-m-radius planet featuring a Newton's-cannonball illustration.",
+  "critique": "Video analysis shows a constant 5.6 m/s^2 'gravity' even 13 m above a 31-m planet, where real 1/r^2 gravity would drop by ~2x; with constant-magnitude central force circular orbits exist (≈15 m/s at 11 m altitude) but behave differently from Keplerian ones, explaining why stable orbits were hard to achieve.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://www.wired.com/story/you-can-use-this-silly-game-to-do-some-serious-physics/",
+  "status": "valid",
+  "status_reason": "Inverse-square gravity changes substantially over distances comparable to the radius; the game's force law is non-Newtonian."
+ },
+ {
+  "physicist": "Alan Duffy",
+  "credentials": "PhD astrophysics (University of Manchester); professor and astrophysicist, Swinburne University of Technology",
+  "work": "Prey",
+  "medium": "game",
+  "year_of_work": 2017,
+  "depiction": "A large crewed research station (Talos I) operating in orbit around the Moon.",
+  "critique": "A crewed Moon-region station like Prey's is 'just a question of scale' and totally feasible within our lifetimes given commercial lunar flights; he contrasts this with sci-fi's common failure to let ships flip and fire backwards using small thrusters (momentum conservation).",
+  "domains": [
+   "orbital_mechanics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://www.sciencealert.com/an-astrophysicist-reveals-what-sci-fi-gets-wrong-and-right-about-science",
+  "status": "partly",
+  "status_reason": "Lunar-orbit stations (e.g., Gateway) are being planned but delayed; the Bethesda-sponsored piece offers little detailed analysis of the game itself."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Pacific Rim Uprising",
+  "medium": "film",
+  "year_of_work": 2018,
+  "depiction": "~86-m-tall Jaegers leap, fall and get knocked through the air at human-like speeds.",
+  "critique": "Under the same gravity, a geometrically scaled-up jump takes longer by the square root of the scale factor: a motion lasting 1.17 s for a human would take ~7.6 s for a Jaeger, so the films' fast-moving giants are unphysical (sped up because realistic timing would be boring).",
+  "domains": [
+   "scale_distances",
+   "materials_structures"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.wired.com/story/how-the-jaegers-in-pacific-rim-uprising-violate-physics/",
+  "status": "valid",
+  "status_reason": "Free-fall time scales as sqrt(h/g); dynamic similarity requires slower motion for larger bodies."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Guardians of the Galaxy Vol. 2",
+  "medium": "film",
+  "year_of_work": 2017,
+  "depiction": "The Sovereign homeworld is a strangely shaped, non-spherical planet.",
+  "critique": "Using gravitating-ball simulations, self-gravity pulls large bodies into spheres once gravity overwhelms material strength; a planet-sized Sovereign could keep its shape only if asteroid-sized or made of material with absurdly high structural strength.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "materials_structures"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://www.wired.com/story/in-guardians-of-the-galaxy-vol-2-planet-sovereign-defies-physics/",
+  "status": "valid",
+  "status_reason": "Hydrostatic equilibrium rounds bodies above a few hundred km in size."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Ant-Man and the Wasp",
+  "medium": "film",
+  "year_of_work": 2018,
+  "depiction": "Hank Pym shrinks an entire 10-story building to suitcase size and wheels it away on two small wheels.",
+  "critique": "If mass is conserved (as Scott cracking tiles suggests), a ~1.6x10^7 kg building shrunk to 0.125 m^3 would have density ~512,000 kg/m^3 (25x tungsten) and its wheels would exert ~3 GPa, crushing any road surface.",
+  "domains": [
+   "materials_structures",
+   "quantum",
+   "scale_distances"
+  ],
+  "date_of_critique": "2018",
+  "source_url": "https://www.wired.com/story/the-shrinking-building-in-ant-man-and-the-wasp-would-cause-massive-problems/",
+  "status": "valid",
+  "status_reason": "Density and contact-pressure arithmetic is sound given mass conservation; the films are inconsistent about shrinking mass."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Space Agency (mobile spaceflight game)",
+  "medium": "game",
+  "year_of_work": 2012,
+  "depiction": "Orbital rendezvous missions where thrusting along the orbit makes the craft go faster at the same radius and thrusting sideways changes radius without changing speed.",
+  "critique": "Real orbits don't work this way: a prograde burn raises the opposite side of the orbit into an ellipse (and ultimately slows the craft), so the game's gravity model is non-Newtonian—fitted GM isn't even consistent across radii—making rendezvous artificially easy.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.wired.com/2013/05/how-do-you-model-orbital-motion-in-a-game/",
+  "status": "valid",
+  "status_reason": "Kepler/Newton orbital dynamics: tangential Δv changes orbital shape, not speed at fixed radius."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "In the trailer, the station sits '372 miles above the Earth' and debris and astronauts are swept backward as if pushed by air.",
+  "critique": "At ~600 km the residual atmosphere is far too thin to drag astronauts back; once you grab a structure you'd simply stop, and the common intuition that knocked-off objects 'fall behind' an orbiting craft is a misconception.",
+  "domains": [
+   "orbital_mechanics",
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.wired.com/2013/05/a-quick-look-at-the-physics-in-the-gravity-trailer/",
+  "status": "valid",
+  "status_reason": "Thermospheric drag at 600 km produces micro-newton forces on a person, negligible over seconds."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Elysium",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "The Elysium habitat is a huge rotating torus giving Earth-like gravity.",
+  "critique": "Measuring the spin (~0.017 rad/s) and requiring 1 g implies a radius of ~34 km (±13 km), consistent with the enormous station shown; large radius allows slow, comfortable rotation.",
+  "domains": [
+   "gravity_artificial",
+   "materials_structures"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.wired.com/2013/05/gravity-in-the-elysium-space-station/",
+  "status": "valid",
+  "status_reason": "a=ω²R; the depiction is self-consistent (structural strength aside)."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "2001: A Space Odyssey",
+  "medium": "film",
+  "year_of_work": 1968,
+  "depiction": "Discovery One's crew live in a centrifuge inside the crew sphere producing Earth-like gravity.",
+  "critique": "The centrifuge can be at most ~8 m in radius; at 1 g that requires fast rotation, giving a large head-to-foot gravity gradient and noticeable Coriolis effects, so spinning the whole long ship would be a better design.",
+  "domains": [
+   "gravity_artificial",
+   "biology_physics"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.wired.com/2013/06/artificial-gravity-in-the-spinning-discovery-one/",
+  "status": "valid",
+  "status_reason": "Gravity gradient and Coriolis effects scale inversely with radius; small centrifuges are problematic."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: A New Hope",
+  "medium": "film",
+  "year_of_work": 1977,
+  "depiction": "TIE fighters carry large hexagonal side panels, often interpreted as solar panels powering ion engines.",
+  "critique": "Even with ~40 m^2 of panels at 1 AU feeding an ion drive, a ~10,000 kg fighter would accelerate at only ~0.001 m/s^2, and the wide panels raise the moment of inertia, hurting maneuverability—so the panels can't plausibly power a dogfighter.",
+  "domains": [
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.wired.com/2014/01/tie-fighter-physics/",
+  "status": "valid",
+  "status_reason": "Solar flux (~1.4 kW/m^2) and ion-thruster physics give tiny thrust-to-mass ratios."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: The Force Awakens",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "The Millennium Falcon dives toward the ground and sharply pulls up to level flight in the trailer.",
+  "critique": "Undoing the camera rotation, a ~54° pull-up in 1.58 s at ~200 m/s requires ~115 m/s^2, i.e. ~12.6 g felt by passengers—enough to cause blackout without protection.",
+  "domains": [
+   "biology_physics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.wired.com/2014/12/g-forces-millennium-falcon/",
+  "status": "valid",
+  "status_reason": "Centripetal acceleration estimate and human g-tolerance (~9 g with g-suits) are standard."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: The Force Awakens",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "Starkiller Base drains a star's mass into the planet to power its weapon.",
+  "critique": "With the star's mass absorbed, the planet migrates to the system's center of mass, its surface gravity rises ~300,000-fold (nearly a black hole if compressed to ~3 km), and conservation of angular momentum would spin it up to ~44 rev/s—enough to fling everyone off despite the added gravity.",
+  "domains": [
+   "black_holes",
+   "astrophysics_stars_planets",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2016",
+  "source_url": "https://www.wired.com/2016/01/force-awakens-starkiller-would-actually-fling-everyone-into-space/",
+  "status": "partly",
+  "status_reason": "Momentum/angular-momentum reasoning is sound, but assumes the absorbed stellar matter carries the orbital angular momentum into planetary spin; a planet holding a solar mass would actually collapse."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Wars: The Force Awakens",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "A blaster bolt hits a stormtrooper and knocks him back about a body length.",
+  "critique": "Momentum conservation with ~35 m/s bolts implies a bolt mass of several kg (≥2.2 kg even at double speed), vs ~50 g for a .50-cal bullet; a magazine of 20 shots would weigh as much as a person and the shooter would get equal recoil.",
+  "domains": [
+   "combat_weapons"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://www.wired.com/2015/12/i-calculated-the-mass-of-a-star-wars-blaster-bolt-for-you/",
+  "status": "valid",
+  "status_reason": "Momentum conservation; Newton's third law gives equal recoil to the shooter."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "The Martian",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "The Hermes spacecraft rotates to give its crew 0.4 g (as in the novel).",
+  "critique": "Measured spin from the trailer (~0.109 rad/s) combined with 0.4 g implies a radius of ~329 m—far larger than the ship appears, so the film's rotation rate and the stated gravity don't match.",
+  "domains": [
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://www.wired.com/2015/08/spinning-spacecraft-martian-work/",
+  "status": "partly",
+  "status_reason": "Arithmetic correct, but trailer CGI spin rates may not be meant literally; the inconsistency is real."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Independence Day: Resurgence",
+  "medium": "film",
+  "year_of_work": 2016,
+  "depiction": "An arriving alien mothership's gravity lifts buildings off the ground beneath it.",
+  "critique": "For its gravity to beat Earth's on a building a few km below, the ship needs a mass of order 10^18 kg (like a 70-km asteroid) concentrated nearby—and such a field would pull up the ground, air and everything else too, not just buildings.",
+  "domains": [
+   "gravity_artificial",
+   "materials_structures"
+  ],
+  "date_of_critique": "2016",
+  "source_url": "https://www.wired.com/2016/05/independence-day-resurgence-spaceship-gravity/",
+  "status": "valid",
+  "status_reason": "Newtonian gravity acts on all mass equally; selective lifting is impossible."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Rogue One: A Star Wars Story",
+  "medium": "film",
+  "year_of_work": 2016,
+  "depiction": "The Hammerhead corvette rams and pushes a Star Destroyer, rotating it into another destroyer.",
+  "critique": "A rigid-body model shows an off-center push gives both translation and rotation; reproducing the observed ~0.27 rad/s spin requires ~2x10^11 N of thrust—about 6,000 times a Saturn V—from a small corvette.",
+  "domains": [
+   "propulsion_energy",
+   "materials_structures"
+  ],
+  "date_of_critique": "2017",
+  "source_url": "https://www.wired.com/2017/05/rogue-one-hammerhead-star-destroyer/",
+  "status": "valid",
+  "status_reason": "Torque/moment-of-inertia analysis is standard; the implied thrust is absurd for the ship's size."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Star Trek Beyond",
+  "medium": "film",
+  "year_of_work": 2016,
+  "depiction": "Kirk drops the derelict USS Franklin off a cliff so it can reach 'terminal velocity' and start its engines; the ship falls at a steady speed and the HUD shows percent of terminal velocity.",
+  "critique": "Falling ~900 m, the ship would accelerate rather than descend at the steady speed shown, and with air drag would reach only ~128 m/s—far from terminal velocity; he also flags (as a homework question) that the bridge crew don't behave as if in free fall.",
+  "domains": [
+   "gravity_artificial",
+   "other"
+  ],
+  "date_of_critique": "2016",
+  "source_url": "https://www.wired.com/2016/11/star-trek-beyond/",
+  "status": "valid",
+  "status_reason": "Free-fall and drag dynamics; occupants of a freely falling ship experience weightlessness."
+ },
+ {
+  "physicist": "Rhett Allain",
+  "credentials": "PhD physics (NC State); associate professor of physics, Southeastern Louisiana University; WIRED Dot Physics columnist",
+  "work": "Angry Birds Space",
+  "medium": "game",
+  "year_of_work": 2012,
+  "depiction": "Birds fired toward a planetoid speed up only to ~30 m/s and then coast at constant speed while still inside its gravity field.",
+  "critique": "1-D shots show a constant ~30 m/s^2 pull that switches off once the bird reaches ~30 m/s—an effective speed cap like terminal velocity, which has no basis in airless space where gravity would keep accelerating the bird.",
+  "domains": [
+   "orbital_mechanics",
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2012",
+  "source_url": "https://www.wired.com/2012/04/another-gravitational-experiment-in-angry-birds-space/",
+  "status": "valid",
+  "status_reason": "Without a medium there is no drag-limited terminal speed; gravitational acceleration continues."
+ },
+ {
+  "physicist": "Marcelo Gleiser",
+  "credentials": "PhD theoretical physics (King's College London); Appleton Professor of Natural Philosophy and professor of physics and astronomy, Dartmouth College",
+  "work": "No Man's Sky",
+  "medium": "game",
+  "year_of_work": 2016,
+  "depiction": "A procedurally generated universe of ~18 quintillion planets, many detailed with flora and fauna, with a journey toward a mysterious galactic center.",
+  "critique": "The game draws on real facts (vast numbers of galaxies, stars and planets) but for consistency most worlds should be barren since life is an exceedingly rare property of matter; and real galactic centers host supermassive black holes rather than mysteries—he questioned how consistent its 'dream-like worlds' would be with modern science.",
+  "domains": [
+   "exoplanets_habitability",
+   "astrophysics_stars_planets",
+   "black_holes"
+  ],
+  "date_of_critique": "2015",
+  "source_url": "https://www.npr.org/sections/13.7/2015/12/09/459092106/exploring-the-universe-in-a-video-game",
+  "status": "partly",
+  "status_reason": "Supermassive black holes at galactic centers are established, but the rarity of life remains an open question, not a known fact."
+ }
+]

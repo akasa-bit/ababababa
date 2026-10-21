@@ -1,0 +1,4121 @@
+[
+ {
+  "i": 0,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "The game has no asteroids or impact deflection; its bodies come from the star catalogue and planet models."
+ },
+ {
+  "i": 1,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "The game does not depict small-body shapes; planet icons are stylised (6.9)."
+ },
+ {
+  "i": 2,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No docking or spin-station scenes; stations (8.1) are abstract population caps."
+ },
+ {
+  "i": 3,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No asteroid deflection in the game; its energy bookkeeping concerns ships and swarms instead."
+ },
+ {
+  "i": 4,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "The game never depicts gravity inside ships or on small bodies."
+ },
+ {
+  "i": 5,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.10"
+  ],
+  "edition": "both",
+  "game_note": "Surface gravity is computed as M/R^2 (7.10), so low-mass bodies correctly get feeble gravity."
+ },
+ {
+  "i": 6,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Albedo of small bodies is not depicted."
+ },
+ {
+  "i": 7,
+  "second_opinion": "wrong",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Ocean wave behaviour is not part of the game."
+ },
+ {
+  "i": 8,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_kinetic_energy_weapons",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "5.2"
+  ],
+  "edition": "both",
+  "game_note": "Fragmenting an impactor still delivers its kinetic energy; the game ignores that its own 0.9c fleets carry ~5e4 Chicxulubs each and never strike planets (5.2)."
+ },
+ {
+  "i": 9,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No such scene in the game."
+ },
+ {
+  "i": 10,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_time_dilation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.4",
+   "1.5"
+  ],
+  "edition": "both",
+  "game_note": "Like the film, the game never shows elapsed traveller (proper) time; trips are given only in Earth-frame years, and teams 'arriving at c' (2.8j) would imply zero proper time."
+ },
+ {
+  "i": 11,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No camera exposure is simulated; system views are maps, not photographs."
+ },
+ {
+  "i": 12,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.6",
+   "6.8"
+  ],
+  "edition": "both",
+  "game_note": "Binary systems use a sep/3 stability cut and Kepler periods for companions, so planet orbits in binaries are treated sensibly."
+ },
+ {
+  "i": 13,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_heat_thermo",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.8"
+  ],
+  "edition": "both",
+  "game_note": "Planet temperatures are equilibrium temperatures from stellar radiation, consistent with space having no temperature of its own."
+ },
+ {
+  "i": 14,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No ring or asteroid fields are drawn (ring icons in 6.9 are iconography only)."
+ },
+ {
+  "i": 15,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "5.7",
+   "6.11"
+  ],
+  "edition": "both",
+  "game_note": "The game has no audio and no explosion effects at all."
+ },
+ {
+  "i": 16,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "4.9",
+   "1.2"
+  ],
+  "edition": "both",
+  "game_note": "The game's laser sails reach 0.95c only via an idealised laser (fixed 0.8 beam efficiency, diffraction ignored, 4.9) and in G instantly (1.2)."
+ },
+ {
+  "i": 17,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Ship interiors and falling ships are not depicted."
+ },
+ {
+  "i": 18,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_heat_thermo",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No atmospheric entry is depicted."
+ },
+ {
+  "i": 19,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_biology_body",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No human exposure to vacuum in the game."
+ },
+ {
+  "i": 20,
+  "second_opinion": "wrong",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_heat_thermo",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No liquids in vacuum are depicted."
+ },
+ {
+  "i": 21,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "4.3",
+   "4.4",
+   "4.7",
+   "4.8",
+   "1.2"
+  ],
+  "edition": "both",
+  "game_note": "Stopping needs as much delta-v as starting, yet G brakes instantly, S brakes a magsail at 1g, and redirects and waypoint turns are free."
+ },
+ {
+  "i": 22,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No spin-gravity habitats are modelled."
+ },
+ {
+  "i": 23,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No spin-gravity habitats are modelled."
+ },
+ {
+  "i": 24,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Sky colours of planets are not depicted."
+ },
+ {
+  "i": 25,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Planetary interiors are not modelled."
+ },
+ {
+  "i": 26,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_radiation_shielding",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "8.2",
+   "7.11"
+  ],
+  "edition": "S",
+  "game_note": "The sim computes surface dose including atmospheric shielding, so it would not make an exposed planet instantly deadly."
+ },
+ {
+  "i": 27,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Stellar evolution and supernovae are not in the game (static stars, 7.4)."
+ },
+ {
+  "i": 28,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "5.7",
+   "6.11"
+  ],
+  "edition": "both",
+  "game_note": "No sound anywhere in the game."
+ },
+ {
+  "i": 29,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 30,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 31,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 32,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted; the game uses gravity and magnetism terms correctly (7.10, 4.4)."
+ },
+ {
+  "i": 33,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Planets are never destroyed in the game."
+ },
+ {
+  "i": 34,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_biology_body",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 35,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 36,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game (grep in 3)."
+ },
+ {
+  "i": 37,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No sky views from planets are drawn."
+ },
+ {
+  "i": 38,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Supernovae are not in the game."
+ },
+ {
+  "i": 39,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes or supernovae in the game."
+ },
+ {
+  "i": 40,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 41,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "5.7"
+  ],
+  "edition": "both",
+  "game_note": "Battles are drawn as rings and bars with no blast waves."
+ },
+ {
+  "i": 42,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No near-Earth orbital manoeuvres in the game."
+ },
+ {
+  "i": 43,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 44,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 45,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_biology_body",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 46,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No orbital debris in the game."
+ },
+ {
+  "i": 47,
+  "second_opinion": "wrong",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 48,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Tides are not modelled (tidal locking is a display label only, 7.9)."
+ },
+ {
+  "i": 49,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black-hole-lit planets; habitability is tied to real stars."
+ },
+ {
+  "i": 50,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "5.7",
+   "6.11"
+  ],
+  "edition": "both",
+  "game_note": "No sound in the game."
+ },
+ {
+  "i": 51,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.1",
+   "6.1"
+  ],
+  "edition": "both",
+  "game_note": "Star distances are real CNS5 positions, so travel-time arithmetic is honest."
+ },
+ {
+  "i": 52,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Nothing is rendered from a moving ship's viewpoint (6.3)."
+ },
+ {
+  "i": 53,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No asteroid fields are drawn."
+ },
+ {
+  "i": 54,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 55,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 56,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_kinetic_energy_weapons",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "5.2"
+  ],
+  "edition": "both",
+  "game_note": "Like the film's underestimate, the game ignores that each 0.9c fleet carries ~4e12 Mt of kinetic energy (5.2)."
+ },
+ {
+  "i": 57,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 58,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 59,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 60,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_life_aliens",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "7.12"
+  ],
+  "edition": "both",
+  "game_note": "Drake-style odds imply rare intelligence, yet the game places 11 native civilisations among 73 real nearby systems, including an information-age one at Barnard's Star."
+ },
+ {
+  "i": 61,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_time_dilation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.4",
+   "1.5"
+  ],
+  "edition": "both",
+  "game_note": "Time dilation is real and should matter; the game never displays proper (ship) time, only Earth-frame years."
+ },
+ {
+  "i": 62,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3",
+   "1.1"
+  ],
+  "edition": "both",
+  "game_note": "The game has no wormholes or other FTL travel; all ships are sub-light."
+ },
+ {
+  "i": 63,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Moon interiors are not depicted."
+ },
+ {
+  "i": 64,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No orbital debris in the game."
+ },
+ {
+  "i": 65,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 66,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 67,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 68,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 69,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 70,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "5.7",
+   "6.11"
+  ],
+  "edition": "both",
+  "game_note": "No sound in the game."
+ },
+ {
+  "i": 71,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.1",
+   "2.1"
+  ],
+  "edition": "both",
+  "game_note": "The game uses light-years consistently as distance and derives times from them (1 ly = 1 yr of light delay)."
+ },
+ {
+  "i": 72,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "4.10",
+   "4.11"
+  ],
+  "edition": "both",
+  "game_note": "The game also harvests star output without consequence: Sol's swarm reaches ~99% coverage with no effect on Earth and stores up to 10 years of output with no stated medium."
+ },
+ {
+  "i": 73,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 74,
+  "second_opinion": "outdated",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.1"
+  ],
+  "edition": "both",
+  "game_note": "The game's star catalogue is CNS5 (Gaia-era astrometry), so it would use the corrected ~40 ly distance."
+ },
+ {
+  "i": 75,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2",
+   "4.7"
+  ],
+  "edition": "both",
+  "game_note": "G accelerates crewed ships instantly to 0.95c (1.2) and both editions reverse fleets instantly on redirect (4.7); only S uses a survivable 1g."
+ },
+ {
+  "i": 76,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_time_dilation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.4",
+   "1.5"
+  ],
+  "edition": "both",
+  "game_note": "Like Star Trek, the game never shows crew/colonist proper time; all 'X years' are Earth-frame and travellers do not age in transit."
+ },
+ {
+  "i": 77,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No warp drive in the game."
+ },
+ {
+  "i": 78,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No wormholes in the game."
+ },
+ {
+  "i": 79,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 80,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No teleporters; matter moves only by ship (except the refugee leak 2.8i)."
+ },
+ {
+  "i": 81,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_quantum_multiverse",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 82,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "2.4"
+  ],
+  "edition": "both",
+  "game_note": "The map draws light-speed signals as visible moving dots, though a beam not aimed at the observer is invisible; the legend labels it a display choice."
+ },
+ {
+  "i": 83,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "5.7",
+   "6.11"
+  ],
+  "edition": "both",
+  "game_note": "No sound in the game."
+ },
+ {
+  "i": 84,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_heat_thermo",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted; game temperatures are physically bounded equilibrium values."
+ },
+ {
+  "i": 85,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 86,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No hovering craft in the game."
+ },
+ {
+  "i": 87,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_kinetic_energy_weapons",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "5.2"
+  ],
+  "edition": "both",
+  "game_note": "Like the film's victory party ignoring crash energy, the game ignores the planet-killing kinetic energy of its own fleets (5.2)."
+ },
+ {
+  "i": 88,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2",
+   "4.4"
+  ],
+  "edition": "both",
+  "game_note": "Braking a huge mass quickly needs enormous power; G brakes 0.95c ships instantly and S brakes magsails at an impossible 1g."
+ },
+ {
+  "i": 89,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "4.7",
+   "4.8",
+   "1.2"
+  ],
+  "edition": "both",
+  "game_note": "Fleets reverse course instantly on redirect and cargo turns at 0.95c at waypoints with no delta-v booked, the same impossible-turn flaw."
+ },
+ {
+  "i": 90,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 91,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 92,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Tides are not modelled."
+ },
+ {
+  "i": 93,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes or accretion disks in the game."
+ },
+ {
+  "i": 94,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "The game obeys this: no FTL, warp or wormholes."
+ },
+ {
+  "i": 95,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes; Doppler/beaming are consistently not shown since all views are rest-frame maps (6.3)."
+ },
+ {
+  "i": 96,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 97,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No atmospheric entry in the game."
+ },
+ {
+  "i": 98,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_kinetic_energy_weapons",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "5.2"
+  ],
+  "edition": "both",
+  "game_note": "Kinetic energy is never applied as a weapon or hazard in the game, although its fleets carry relativistic KE (5.2)."
+ },
+ {
+  "i": 99,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Ship interiors and artificial gravity are not depicted."
+ },
+ {
+  "i": 100,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 101,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 102,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 103,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_kinetic_energy_weapons",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "9.4",
+   "5.2"
+  ],
+  "edition": "both",
+  "game_note": "Hypervelocity impacts punch through structures; S folds dust into average dose and ignores discrete grain impacts at 0.95c (9.4), and G has no hazard at all."
+ },
+ {
+  "i": 104,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 105,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 106,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 107,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 108,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 109,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.9"
+  ],
+  "edition": "both",
+  "game_note": "The game flags close-in planets as tidally locked (7.9), though without climate consequences."
+ },
+ {
+  "i": 110,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 111,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_cosmology",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 112,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_quantum_multiverse",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 113,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No warp drive in the game."
+ },
+ {
+  "i": 114,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 115,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No wormholes in the game."
+ },
+ {
+  "i": 116,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 117,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No time travel in the game."
+ },
+ {
+  "i": 118,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No time travel in the game."
+ },
+ {
+  "i": 119,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes or collapsed stars in the game."
+ },
+ {
+  "i": 120,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_quantum_multiverse",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No teleportation in the game."
+ },
+ {
+  "i": 121,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No warp or hyperspace in the game."
+ },
+ {
+  "i": 122,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "4.5"
+  ],
+  "edition": "both",
+  "game_note": "The game's antimatter braking assumes Forward's optimistic 1e-4 production efficiency (today ~1e-9), so antimatter supply is far cheaper than physics now allows."
+ },
+ {
+  "i": 123,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_time_dilation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.4",
+   "1.5",
+   "7.1"
+  ],
+  "edition": "both",
+  "game_note": "The work uses proper time correctly; the game never shows proper time (only Earth-frame years), and Epsilon Eridani is not even on its +/-2 ly map."
+ },
+ {
+  "i": 124,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No exotic stellar physics in the game."
+ },
+ {
+  "i": 125,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Ship attitude and banking are never drawn (ships are map markers)."
+ },
+ {
+  "i": 126,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Ship attitude is never drawn."
+ },
+ {
+  "i": 127,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "8.1"
+  ],
+  "edition": "both",
+  "game_note": "Spin is the only practical artificial gravity, yet the game's stations hold 2 M people with no mention of spin gravity and treats low g as harmless."
+ },
+ {
+  "i": 128,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 129,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes or wormholes in the game."
+ },
+ {
+  "i": 130,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 131,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.1",
+   "2.1"
+  ],
+  "edition": "both",
+  "game_note": "The game uses ly as distance and real star positions; no route-shortening tricks."
+ },
+ {
+  "i": 132,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 133,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Planets are never destroyed in the game."
+ },
+ {
+  "i": 134,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_kinetic_energy_weapons",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "5.2"
+  ],
+  "edition": "both",
+  "game_note": "Kinetic energy is conserved however it is split; the game's 0.9c fleets carry far more yet never threaten planets (5.2)."
+ },
+ {
+  "i": 135,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.3",
+   "7.6"
+  ],
+  "edition": "both",
+  "game_note": "Multiplicity follows Raghavan+2010 and planets in binaries get a stability cut, so star systems are physically plausible."
+ },
+ {
+  "i": 136,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 137,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_life_aliens",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No space-dwelling creatures in the game."
+ },
+ {
+  "i": 138,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_quantum_multiverse",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 139,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No FTL jumps in the game (apart from the instant refugee transfer leak, 2.8i)."
+ },
+ {
+  "i": 140,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_quantum_multiverse",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No parallel universes in the game."
+ },
+ {
+  "i": 141,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "2.9"
+  ],
+  "edition": "both",
+  "game_note": "The game's default 'everything visible, only delayed' matches the lack of stealth in space (waste-heat detection is not modelled)."
+ },
+ {
+  "i": 142,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_quantum_multiverse",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No transporters in the game."
+ },
+ {
+  "i": 143,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No warp drive in the game."
+ },
+ {
+  "i": 144,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_time_dilation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.4",
+   "1.5"
+  ],
+  "edition": "both",
+  "game_note": "The game, too, never shows the traveller's elapsed time; all trip times are Earth-frame."
+ },
+ {
+  "i": 145,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_time_dilation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.4",
+   "1.5"
+  ],
+  "edition": "both",
+  "game_note": "Time dilation is real; the game never displays proper time for its 0.95c travellers."
+ },
+ {
+  "i": 146,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Tidal effects of companion stars are not modelled."
+ },
+ {
+  "i": 147,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_quantum_multiverse",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 148,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No gravity assists in the game."
+ },
+ {
+  "i": 149,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 150,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 151,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 152,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "4.5"
+  ],
+  "edition": "both",
+  "game_note": "The game's antimatter stage uses the correct relativistic rocket equation (momentum conservation)."
+ },
+ {
+  "i": 153,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 154,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No wormholes in the game."
+ },
+ {
+  "i": 155,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2"
+  ],
+  "edition": "G",
+  "game_note": "G accelerates crewed ships from 0 to 0.95c instantly, an infinite g-load; S uses 1g for crew."
+ },
+ {
+  "i": 156,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Stellar surfaces are not depicted (stars are glows, 6.2)."
+ },
+ {
+  "i": 157,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No singularities in the game."
+ },
+ {
+  "i": 158,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3",
+   "1.6"
+  ],
+  "edition": "both",
+  "game_note": "The game has no FTL travel and uses one rest frame for 'now', avoiding causality paradoxes."
+ },
+ {
+  "i": 159,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2",
+   "4.7"
+  ],
+  "edition": "both",
+  "game_note": "The Expanse's realistic thrust and inertia are what the game lacks: G ships accelerate instantly and redirects reverse instantly in both editions."
+ },
+ {
+  "i": 160,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No wormholes in the game."
+ },
+ {
+  "i": 161,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "8.1"
+  ],
+  "edition": "both",
+  "game_note": "Gravity off-planet needs thrust or spin, but the game's 2 M-person stations and 0.1 g worlds are treated as fully habitable with no gravity consideration."
+ },
+ {
+  "i": 162,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No spin habitats are depicted."
+ },
+ {
+  "i": 163,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2",
+   "4.7"
+  ],
+  "edition": "both",
+  "game_note": "Inertia makes sudden manoeuvres dangerous; G ships go 0 to 0.95c instantly and redirects reverse instantly."
+ },
+ {
+  "i": 164,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "8.1"
+  ],
+  "edition": "both",
+  "game_note": "The game treats gravity as no constraint for stations and low-g worlds (8.1)."
+ },
+ {
+  "i": 165,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "8.1"
+  ],
+  "edition": "both",
+  "game_note": "Low-gravity bodies are fully settleable in the game with no spin or health consequences."
+ },
+ {
+  "i": 166,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No spin habitats are depicted."
+ },
+ {
+  "i": 167,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No spin habitats are depicted."
+ },
+ {
+  "i": 168,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No transporters in the game."
+ },
+ {
+  "i": 169,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "2.9"
+  ],
+  "edition": "both",
+  "game_note": "There is no cloaking in the game; everything is visible, only light-delayed."
+ },
+ {
+  "i": 170,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_cosmology",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 171,
+  "second_opinion": "wrong",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No gravitational waves in the game."
+ },
+ {
+  "i": 172,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "6.7"
+  ],
+  "edition": "both",
+  "game_note": "The game shows colourful NASA nebula images behind every star system, though skies from nearby stars look like Earth's."
+ },
+ {
+  "i": 173,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No warp drive in the game."
+ },
+ {
+  "i": 174,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not physics."
+ },
+ {
+  "i": 175,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No hyperspace in the game."
+ },
+ {
+  "i": 176,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.6"
+  ],
+  "edition": "both",
+  "game_note": "The game models planets in binaries with a stability cut (7.6)."
+ },
+ {
+  "i": 177,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No weapons are described in the game (5.1)."
+ },
+ {
+  "i": 178,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 179,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 180,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 181,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_light_delay_ftl_info",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "2.8f",
+   "2.8b",
+   "2.8c"
+  ],
+  "edition": "both",
+  "game_note": "Light-speed news is the game's core (2.1), but war score and exhaustion react instantly to losses anywhere (2.8f) and lists/peace offers bypass light delay, an instant 'disturbance' felt across light-years."
+ },
+ {
+  "i": 182,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No beam weapons in the game."
+ },
+ {
+  "i": 183,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_time_dilation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.4",
+   "1.5"
+  ],
+  "edition": "both",
+  "game_note": "Proper time is what travellers experience; the game never shows it, only Earth-frame years."
+ },
+ {
+  "i": 184,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No wormholes in the game."
+ },
+ {
+  "i": 185,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No wormholes in the game."
+ },
+ {
+  "i": 186,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2",
+   "4.7"
+  ],
+  "edition": "both",
+  "game_note": "Rapid acceleration would crush crews; G accelerates ships instantly to 0.95c and both editions reverse redirected fleets instantly."
+ },
+ {
+  "i": 187,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 188,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 189,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 190,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "2.4"
+  ],
+  "edition": "both",
+  "game_note": "Light-speed signals are drawn moving straight at c with correct retarded-time kinematics (visibility is a labelled display choice)."
+ },
+ {
+  "i": 191,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "4.7",
+   "4.8"
+  ],
+  "edition": "both",
+  "game_note": "Coasting needs no thrust (the game gets this right), but turning does: the game turns 0.95c ships at waypoints and on redirect with no delta-v booked."
+ },
+ {
+  "i": 192,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2"
+  ],
+  "edition": "G",
+  "game_note": "G ships jump from 0 to 0.95c instantly, an infinite g-load with no dampers."
+ },
+ {
+  "i": 193,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_kinetic_energy_weapons",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "5.2"
+  ],
+  "edition": "both",
+  "game_note": "Objects falling from space hit at km/s; the game ignores the far larger KE of its own 0.9c fleets (5.2)."
+ },
+ {
+  "i": 194,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "5.7",
+   "6.11"
+  ],
+  "edition": "both",
+  "game_note": "No sound in the game."
+ },
+ {
+  "i": 195,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No hand weapons in the game."
+ },
+ {
+  "i": 196,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_vacuum_sound_light",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No beam weapons in the game."
+ },
+ {
+  "i": 197,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2"
+  ],
+  "edition": "G",
+  "game_note": "The film's accelerations are survivable, unlike G's instant 0 to 0.95c starts."
+ },
+ {
+  "i": 198,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 199,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 200,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Planets are never destroyed in the game."
+ },
+ {
+  "i": 201,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 202,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Spin habitats are not depicted."
+ },
+ {
+  "i": 203,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 204,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2"
+  ],
+  "edition": "G",
+  "game_note": "High thrust is physically felt as heavy weight; G accelerates crews from 0 to 0.95c instantly with no consequence."
+ },
+ {
+  "i": 205,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2",
+   "1.5"
+  ],
+  "edition": "both",
+  "game_note": "G's instant acceleration makes speeds and times inconsistent with any finite g, and in S the hover and troop messages omit the acceleration time the sim applies (1.5)."
+ },
+ {
+  "i": 206,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 207,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Spin habitats are not depicted."
+ },
+ {
+  "i": 208,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2"
+  ],
+  "edition": "both",
+  "game_note": "Real craft accelerate continuously; G ships are at full speed instantly and S still draws accelerated trips as uniform motion (linear interpolation)."
+ },
+ {
+  "i": 209,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "The Moon and planets have fixed Kepler orbits; no perturbation events."
+ },
+ {
+  "i": 210,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No space elevators in the game."
+ },
+ {
+  "i": 211,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 212,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 213,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Spin habitats are not depicted."
+ },
+ {
+  "i": 214,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No explosions are drawn in the game."
+ },
+ {
+  "i": 215,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 216,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 217,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_heat_thermo",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No atmospheric entry in the game."
+ },
+ {
+  "i": 218,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 219,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 220,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 221,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 222,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "6.8"
+  ],
+  "edition": "both",
+  "game_note": "The system view uses correct Kepler periods sqrt(a^3/M), so orbits are internally consistent."
+ },
+ {
+  "i": 223,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 224,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 225,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No near-term lunar stations are depicted."
+ },
+ {
+  "i": 226,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 227,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Planet shapes are icons (6.9); bodies are implicitly spherical."
+ },
+ {
+  "i": 228,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 229,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No orbital manoeuvres in the game."
+ },
+ {
+  "i": 230,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 231,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Spin habitats are not depicted."
+ },
+ {
+  "i": 232,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Spin habitats are not depicted."
+ },
+ {
+  "i": 233,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Ship power systems are not depicted; propulsion energy is supplied by external lasers."
+ },
+ {
+  "i": 234,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2"
+  ],
+  "edition": "G",
+  "game_note": "G's instant 0 to 0.95c acceleration implies unlimited g, far beyond the film's 12.6 g."
+ },
+ {
+  "i": 235,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 236,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No hand weapons in the game."
+ },
+ {
+  "i": 237,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Spin habitats are not depicted."
+ },
+ {
+  "i": 238,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 239,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No ramming or ship-to-ship pushing in the game."
+ },
+ {
+  "i": 240,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 241,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 242,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_life_aliens",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "7.12"
+  ],
+  "edition": "both",
+  "game_note": "Life should be rare, yet the game seeds 11 native civilisations among 73 nearby systems (7.12)."
+ },
+ {
+  "i": 243,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2"
+  ],
+  "edition": "G",
+  "game_note": "An abrupt stop is what kills; G ships with people aboard stop from 0.95c to rest instantly."
+ },
+ {
+  "i": 244,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.10",
+   "8.1"
+  ],
+  "edition": "both",
+  "game_note": "The game computes surface gravity as M/R^2 and limits settleability to under 2.5 g."
+ },
+ {
+  "i": 245,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.6",
+   "7.10"
+  ],
+  "edition": "both",
+  "game_note": "The game's planet mass-radius relation keeps surface gravity tied to realistic densities."
+ },
+ {
+  "i": 246,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 247,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_quantum_multiverse",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 248,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 249,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 250,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 251,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 252,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 253,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 254,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 255,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2"
+  ],
+  "edition": "G",
+  "game_note": "Realistic rocket flight takes finite acceleration; G ships reach 0.95c instantly (S uses 1g/10g and a correct rocket equation)."
+ },
+ {
+  "i": 256,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No asteroid impacts in the game."
+ },
+ {
+  "i": 257,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_kinetic_energy_weapons",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "5.2"
+  ],
+  "edition": "both",
+  "game_note": "Kinetic bombardment is real; the game's 0.9c fleets would be devastating kinetic weapons, yet the game never models it."
+ },
+ {
+  "i": 258,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "4.10",
+   "11.11"
+  ],
+  "edition": "both",
+  "game_note": "Climate responds to forcing on physical timescales; in the game Earth's climate never responds at all, even when Sol's swarm intercepts ~99% of sunlight."
+ },
+ {
+  "i": 259,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No fusion claims in the game; energy comes from Dyson swarms."
+ },
+ {
+  "i": 260,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_quantum_multiverse",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No transporters in the game."
+ },
+ {
+  "i": 261,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No warp drive in the game."
+ },
+ {
+  "i": 262,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2",
+   "4.7"
+  ],
+  "edition": "both",
+  "game_note": "There are no inertial dampers, yet G accelerates crews instantly to 0.95c and both editions reverse redirected fleets instantly."
+ },
+ {
+  "i": 263,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No wormholes in the game."
+ },
+ {
+  "i": 264,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No gravitational waves in the game."
+ },
+ {
+  "i": 265,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_light_delay_ftl_info",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "2.2",
+   "2.3"
+  ],
+  "edition": "both",
+  "game_note": "The game draws everything with the light that has reached the capital, including retarded ship positions, so delayed sight is central and correct."
+ },
+ {
+  "i": 266,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 267,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_time_dilation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.4",
+   "1.5"
+  ],
+  "edition": "both",
+  "game_note": "Relativity should be central; the game never shows travellers' proper time at 0.95c (a 20 ly trip is 6.6 yr aboard but only 21 yr is shown)."
+ },
+ {
+  "i": 268,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 269,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black holes in the game."
+ },
+ {
+  "i": 270,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_quantum_multiverse",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No transporters in the game."
+ },
+ {
+  "i": 271,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 272,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": false,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 273,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No asteroid deflection in the game."
+ },
+ {
+  "i": 274,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Spin habitats are not depicted."
+ },
+ {
+  "i": 275,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_kinetic_energy_weapons",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "5.2"
+  ],
+  "edition": "both",
+  "game_note": "Falling or crashing massive ships release catastrophic energy; the game ignores the far larger KE of its 0.9c fleets (5.2)."
+ },
+ {
+  "i": 276,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 277,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 278,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 279,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 280,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_heat_thermo",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted; game temperatures are equilibrium values in kelvin."
+ },
+ {
+  "i": 281,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 282,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 283,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_biology_body",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "8.1"
+  ],
+  "edition": "both",
+  "game_note": "Low gravity changes how humans function; the game treats 0.1 g worlds as fully settleable with no effects on people."
+ },
+ {
+  "i": 284,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No black-hole-lit planets in the game."
+ },
+ {
+  "i": 285,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 286,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No wormholes in the game."
+ },
+ {
+  "i": 287,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 288,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 289,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_heat_thermo",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 290,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No comet detection in the game."
+ },
+ {
+  "i": 291,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Weather is not modelled."
+ },
+ {
+  "i": 292,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "5.5"
+  ],
+  "edition": "both",
+  "game_note": "Fleets, cargo and settlers pay for interstellar travel (4.2, 4.10), but pirates appear at colonies with no origin, travel or energy cost (5.5)."
+ },
+ {
+  "i": 293,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_light_delay_ftl_info",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "5.5",
+   "2.8i"
+  ],
+  "edition": "both",
+  "game_note": "Orders and fleets respect light delay and 0.9c travel, but pirates materialise from nowhere (5.5) and accepted refugees are teleported instantly (2.8i)."
+ },
+ {
+  "i": 294,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 295,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 296,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Atmospheric composition is not modelled (only pressure and temperature)."
+ },
+ {
+  "i": 297,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Ship interiors and spin rings are not depicted."
+ },
+ {
+  "i": 298,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 299,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "6.7"
+  ],
+  "edition": "both",
+  "game_note": "The game uses a Tarantula Nebula image (an extragalactic false-colour object) as a backdrop for nearby star systems."
+ },
+ {
+  "i": 300,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.9"
+  ],
+  "edition": "both",
+  "game_note": "The game flags close-in planets as tidally locked (7.9), though without climate effects."
+ },
+ {
+  "i": 301,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "6.7"
+  ],
+  "edition": "both",
+  "game_note": "The LMC is ~160,000 ly away, yet the game shows LMC, Tarantula and Andromeda images as the sky of stars within 50 ly."
+ },
+ {
+  "i": 302,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 303,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_artificial_gravity_rotation",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Space colonies are abstract population caps (8.1)."
+ },
+ {
+  "i": 304,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Planets are never moved in the game."
+ },
+ {
+  "i": 305,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 306,
+  "second_opinion": "wrong",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 307,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "7.7",
+   "7.11"
+  ],
+  "edition": "both",
+  "game_note": "M-dwarf flares and close-in HZs threaten habitability, but the game gives Proxima d a 3.3 atm ocean world with natives, models no atmospheric escape, and G has no flares at all."
+ },
+ {
+  "i": 308,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 309,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 310,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 311,
+  "second_opinion": "wrong",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No double planets in the game."
+ },
+ {
+  "i": 312,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 313,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": false,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No orbital debris in the game."
+ },
+ {
+  "i": 314,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 315,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 316,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 317,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_cosmology",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 318,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "The game's energy comes from Dyson swarms, not fusion fuel."
+ },
+ {
+  "i": 319,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 320,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 321,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "7.7",
+   "7.11"
+  ],
+  "edition": "both",
+  "game_note": "Atmospheric loss to stellar wind and flares is not modelled; close-in M-dwarf planets keep random thick atmospheres (Proxima d with 3.3 atm)."
+ },
+ {
+  "i": 322,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_energy_scale",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 323,
+  "second_opinion": "wrong",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_space_scale_density",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "The game correctly treats interstellar space as empty of collision hazards (only dust dose in S)."
+ },
+ {
+  "i": 324,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.4"
+  ],
+  "edition": "both",
+  "game_note": "Stars are static in the game, which is correct on its 500-year timescale."
+ },
+ {
+  "i": 325,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_light_delay_ftl_info",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.7"
+  ],
+  "edition": "both",
+  "game_note": "Light takes tens of minutes across a planetary system, and up to ~2 months to Proxima within the alpha Cen system, yet the game sets light delay to 0 inside a system (a minor simplification)."
+ },
+ {
+  "i": 326,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "7.11",
+   "8.2"
+  ],
+  "edition": "G",
+  "game_note": "S models TESS-based M-dwarf flares and surface dose correctly, but G has no flares or radiation at all."
+ },
+ {
+  "i": 327,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Planet formation is not simulated (planets are drawn from statistics, 7.6)."
+ },
+ {
+  "i": 328,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No neutron stars in the game."
+ },
+ {
+  "i": 329,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_time_dilation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.4",
+   "1.5"
+  ],
+  "edition": "both",
+  "game_note": "Near-light travel is a one-way trip into the future, but the game never shows travellers' proper time."
+ },
+ {
+  "i": 330,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 331,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_other",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 332,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 333,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "The game has no warp; it plays out the sub-light alternative."
+ },
+ {
+  "i": 334,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_time_dilation",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.4",
+   "1.5"
+  ],
+  "edition": "both",
+  "game_note": "Earth-frame times are shown correctly, but the crew's shorter proper time is never displayed."
+ },
+ {
+  "i": 335,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_light_delay_ftl_info",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "2.1",
+   "2.2"
+  ],
+  "edition": "both",
+  "game_note": "The game embraces this: orders and replies travel at c, so a colony 15 ly away answers in 30 years."
+ },
+ {
+  "i": 336,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_inertia_accel",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "1.2"
+  ],
+  "edition": "G",
+  "game_note": "G ships also need unexplained 'inertial control': they go 0 to 0.95c instantly with crews aboard."
+ },
+ {
+  "i": 337,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "7.10"
+  ],
+  "edition": "both",
+  "game_note": "The game computes surface gravity correctly from mass and radius."
+ },
+ {
+  "i": 338,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_ftl_travel",
+  "game_relevance": "applies_ok",
+  "audit_refs": [
+   "3"
+  ],
+  "edition": "both",
+  "game_note": "No warp in the game."
+ },
+ {
+  "i": 339,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_orbital_mechanics",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No gravity assists in the game."
+ },
+ {
+  "i": 340,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_gravity_general",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 341,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": false,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 342,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": false,
+  "principle": "P_materials_scale_structures",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 343,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 344,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_quantum_multiverse",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 345,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_planet_habitability",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "7.8",
+   "7.9"
+  ],
+  "edition": "both",
+  "game_note": "Rotation sets day/night climate, but the game's tidally locked planets have no day/night contrast (the lock is a display label only)."
+ },
+ {
+  "i": 346,
+  "second_opinion": "partly",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_cosmology",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "Not depicted."
+ },
+ {
+  "i": 347,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_kinetic_energy_weapons",
+  "game_relevance": "applies_flaw",
+  "audit_refs": [
+   "5.2"
+  ],
+  "edition": "both",
+  "game_note": "Large impacts devastate planets via impact winter; the game's 0.9c fleets carry ~5e4 Chicxulubs of KE yet never threaten worlds."
+ },
+ {
+  "i": 348,
+  "second_opinion": "valid",
+  "disagree_reason": "",
+  "credential_ok": true,
+  "principle": "P_stellar_astro",
+  "game_relevance": "not_applicable",
+  "audit_refs": [],
+  "edition": "",
+  "game_note": "No rogue planets in the game."
+ }
+]
