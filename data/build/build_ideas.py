@@ -9,7 +9,12 @@ S は研究費を研究者の賃金で割ったもの。賃金は、論文の本
   - ムーアの法則 (MooresLaw/IntelGraph.m): Ȧ/A = 2 年で 2 倍 (35%/年) で一定、研究費 = 半導体の研究費 (6 つの定義。本文は「広い定義」)。
 台本の数字は zip の中の .m に書き込まれている (公開の統計)。ここでは Matlab を使わず、同じ計算をする。
 
+ゲームに入れる値 (game): beta = 研究の生産性の下がり方 ÷ TFP の伸びの平均 (全体の値。アイデアの生産関数 Ȧ/A = α S A^(−β) の β)、
+  g0 = TFP の伸びの 1930〜2000 年代の平均 (ゲームの本星の始めの伸びを合わせる値)。zip がなくても ideas.json から計算し直せる (--derive)
+
 使い方: python3 data/build/build_ideas.py <置き場>   (置き場は data/fetch/fetch_ideas.py と同じ) → data/derived/ideas.json
+        python3 data/build/build_ideas.py --derive     ideas.json の game (beta・g0) だけを計算し直す
+        python3 data/build/build_ideas.py --game <パネル.csv>   ゲームのパネル (tools/research-panel.js) を同じ式で計算し、R11 の合否を出す
 """
 import json, math, os, re, sys, zipfile
 
@@ -89,10 +94,72 @@ def moore(z, w):
         out[name] = {'factor_researchers': s1 / s0, 'growth_researchers_pct': g, 'growth_research_productivity_pct': -g}
     return {'years': [y0, y1], 'idea_growth_pct': 100 * math.log(2) / 2, 'versions': out, 'baseline': 'Broad'}
 
+def derive(res):
+    """ゲームに入れる値。"""
+    a = res['aggregate']
+    g_mean = sum(a['tfp_growth_pct']) / len(a['tfp_growth_pct'])
+    return {'beta': -a['growth_research_productivity_pct'] / g_mean, 'g0_pct': g_mean,
+            'note': 'beta = 研究の生産性の下がり方 (年 %) ÷ TFP の伸びの 10 年ごとの平均 (年 %)。g0 は本星の始めの技術の伸び'}
+
+def decades(years, g, S):
+    """Bloom ほかと同じ 10 年ごとの比: 10 年ごとの TFP の伸びの平均と研究者の幾何平均から、研究の生産性 (伸び ÷ 研究者) の最初と最後の 10 年の比の対数 ÷ 年数 [年 %]。
+    years は昇順、g は年ごとの伸び (ln の差)、S は年ごとの研究者 (> 0)。10 年の区切りは最初の年から。10 年に満たない最後の区切りは使わない。区切りが 2 つ未満なら nan"""
+    import numpy as np
+    years = np.asarray(years); g = np.asarray(g, float); S = np.asarray(S, float)
+    y0 = years[0]
+    out = []
+    for k in range((years[-1] - y0 + 1) // 10):
+        m = (years >= y0 + 10 * k) & (years < y0 + 10 * (k + 1))
+        if m.sum() < 10 or not (S[m] > 0).all():
+            continue
+        out.append((y0 + 10 * k + 4.5, g[m].mean(), math.exp(np.log(S[m]).mean())))
+    if len(out) < 2:
+        return float('nan')
+    (t0, g0, s0), (t1, g1, s1) = out[0], out[-1]
+    if not (g0 > 0 and g1 > 0):
+        return float('nan')
+    return 100 * math.log((g1 / s1) / (g0 / s0)) / (t1 - t0)
+
+def game(path):
+    import numpy as np
+    import pandas as pd
+    with open(os.path.join(HERE, '..', '..', 'targets', 'targets.json'), encoding='utf-8') as f:
+        tgt = next(r for r in json.load(f)['realism'] if r['id'] == 'R11')
+    p = pd.read_csv(path)
+    p = p[p['start'] == 1]  # 試合の始めから終わりまである国だけ
+    last = p['year'].max()
+    per = {}
+    for (gx, c), d in p.sort_values('year').groupby(['galaxy', 'country']):
+        if d['year'].max() < last:
+            continue
+        v = decades(d['year'].to_numpy(), d['dlnA'].to_numpy(), d['researchers'].to_numpy())
+        if np.isfinite(v):
+            per.setdefault(gx, []).append(v)
+    med = {gx: float(np.median(v)) for gx, v in per.items()}
+    vals = np.array(list(med.values()))
+    res = {'galaxies': len(med), 'countries': int(sum(len(v) for v in per.values())),
+           'median_pct_per_year': float(np.median(vals)) if len(vals) else None,
+           'galaxy_p10_p90': [float(np.quantile(vals, .1)), float(np.quantile(vals, .9))] if len(vals) else None,
+           'band': tgt['band'], 'estimate': tgt['estimate']}
+    res['pass'] = bool(len(vals) and tgt['band'][0] <= res['median_pct_per_year'] <= tgt['band'][1])
+    g = p.groupby('year')['dlnA'].median()
+    res['growth_pct_median_by_50y'] = {str(int(y0)): round(100 * float(g[(g.index >= y0) & (g.index < y0 + 50)].mean()), 3) for y0 in range(int(p['year'].min()), int(last) + 1, 50)}
+    print(json.dumps(res, ensure_ascii=False, indent=1))
+    return 0
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
         return 1
+    if sys.argv[1] == '--derive':
+        res = json.load(open(OUT, encoding='utf-8'))
+        res['game'] = derive(res)
+        with open(OUT, 'w', encoding='utf-8') as f:
+            json.dump(res, f, ensure_ascii=False, indent=1)
+        print(f"game: beta {res['game']['beta']:.3f}、g0 年 {res['game']['g0_pct']:.3f}%")
+        return 0
+    if sys.argv[1] == '--game':
+        return game(sys.argv[2])
     with zipfile.ZipFile(os.path.join(sys.argv[1], 'IdeaPFPrograms.zip')) as z:
         w, wg = wage_college(z), wage_gdp(z)
         res = {'source': 'Bloom, Jones, Van Reenen & Webb 2020, AER 110(4) 1104-44。IdeaPFPrograms.zip の台本と同じ計算',
@@ -100,6 +167,7 @@ def main():
                'robustness_gdp_per_person': {'aggregate': aggregate(z, wg), 'moore': moore(z, wg)},
                'paper': {'aggregate_growth_research_productivity_pct': -5.3, 'aggregate_factor_researchers': 23,
                          'moore_growth_research_productivity_pct': -6.8, 'moore_factor_researchers': 18}}
+    res['game'] = derive(res)
     with open(OUT, 'w', encoding='utf-8') as f:
         json.dump(res, f, ensure_ascii=False, indent=1)
     a, mo = res['aggregate'], res['moore']['versions']['Broad']

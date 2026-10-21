@@ -11,6 +11,7 @@
 //   ltrate      = 国の首都で効いている利子率 [%/年] (国債の利子率と同じ)
 //   rgdpbarro   = gdp (ゲームの値段の水準は動かないので、名目 = 実質とみなす)
 //   war         = その年の終わりに、国がどこかと戦争をしていれば 1
+//   pop         = 国の人口 [100 万人] (JST にはない列。小さな国を除いて見るときに使う。analyze_fiscal.py は使わない)
 // 使い方: node tools/fiscal-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]
 const fs = require('fs');
 const path = require('path');
@@ -51,7 +52,7 @@ function play(seed) {
     for (const key of Object.keys(g.govs)) {
       const id = Number(key);
       if (!g.isColonized(id)) continue;
-      const R = (realms[g.realmOf(id)] ??= { gdp: 0, revenue: 0, flow: 0, debt: 0, tloans: 0 });
+      const R = (realms[g.realmOf(id)] ??= { gdp: 0, revenue: 0, flow: 0, debt: 0, tloans: 0, pop: 0 });
       const a = acc[id] || { va: 0, buy: 0, rev: 0, flow: 0 }, gv = g.govs[key];
       // 民間の付加価値: 市場のある版は、税の土台と同じ所得 (サービスを含む。incomeOf) を年の終わりの値で。ない版は、産出 × 値段の足し上げ
       const va = g.incomeOf ? g.coloniesIn(id).reduce((k, c) => k + g.incomeOf(c), 0) : a.va;
@@ -60,6 +61,7 @@ function play(seed) {
       R.flow += a.flow;
       R.debt += (gv.bond || 0) + Math.max(0, -gv.credits);
       R.tloans += gv.loan || 0;
+      R.pop += g.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
     }
     for (const [key, st] of Object.entries(g.natives)) {
       const id = Number(key.split('|')[0]);
@@ -68,14 +70,14 @@ function play(seed) {
     const war = new Set(Object.keys(g.realmWars).flatMap((k) => k.split('|').map(Number)));
     for (const [realm, R] of Object.entries(realms)) {
       if (!(R.gdp > 0)) continue;
-      rows.push([Math.round(g.year), `${seed}-${realm}`, seed, R.gdp, R.revenue, R.revenue - R.flow, R.debt / R.gdp, R.tloans, 100 * g.rateAt(Number(realm)), R.gdp, war.has(Number(realm)) ? 1 : 0]);
+      rows.push([Math.round(g.year), `${seed}-${realm}`, seed, R.gdp, R.revenue, R.revenue - R.flow, R.debt / R.gdp, R.tloans, 100 * g.rateAt(Number(realm)), R.gdp, war.has(Number(realm)) ? 1 : 0, R.pop]);
     }
   }
   return rows;
 }
 
 const t0 = Date.now();
-const lines = ['year,country,galaxy,gdp,revenue,expenditure,debtgdp,tloans,ltrate,rgdpbarro,war'];
+const lines = ['year,country,galaxy,gdp,revenue,expenditure,debtgdp,tloans,ltrate,rgdpbarro,war,pop'];
 for (let i = 1; i <= Number(nS); i++) {
   for (const r of play(String(i))) lines.push(r.map((v) => (typeof v === 'number' && !Number.isInteger(v) ? v.toPrecision(8) : v)).join(','));
   process.stderr.write(`銀河 ${i}/${nS} (${((Date.now() - t0) / 1000).toFixed(0)} 秒)\n`);
