@@ -61,6 +61,10 @@ const URL = `file://${HTML}?seed=11`;
   const s2 = await sync();
   await H.screenshot({ path: 'shots/net-host-play.png' }); await G.screenshot({ path: 'shots/net-guest-play.png' });
   console.log('all resyncs', await G.evaluate(() => window.__gbad.map((x) => x.k)));
+  // 物理の切り替え (遮蔽・加速の時間) は試合に入っていて、ホストと客で同じ (ずれると便の記帳と到着の年が合わない)
+  const phys = [await H.evaluate(() => JSON.stringify(__app.game.physics)), await G.evaluate(() => JSON.stringify(__app.game.physics))];
+  const ed = await H.evaluate(() => JSON.stringify(ED.physics));
+  console.log('physics', phys[0] === phys[1] && phys[0] === ed, phys[0]);
   console.log('guest', gi, 'sys', gc, '\nsync1', s1, '\nguest chk', chk, '\nhost', hostView, '\nsync2', s2, '\nerrs', H.errs.slice(0, 3), G.errs.slice(0, 3));
   await b.close();
 })();
