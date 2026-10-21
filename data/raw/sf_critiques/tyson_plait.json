@@ -1,0 +1,1248 @@
+[
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Armageddon",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "A Texas-sized iron asteroid is knocked out of the asteroid belt toward Earth by a comet collision.",
+  "critique": "No asteroid that big exists (Ceres is ~900 km, Texas ~1400 km) and a comet could not shove a ~5e24 g iron body out of its orbit: 'you could ram it with comets for years and not move it much.'",
+  "domains": [
+   "astrophysics_stars_planets",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "1998",
+  "source_url": "http://www.badastronomy.com/bad/movies/armpitageddon.html",
+  "status": "valid",
+  "status_reason": "Ceres (~940 km) remains the largest main-belt body; momentum conservation makes a comet impact negligible for such a mass."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Armageddon",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "The 'Texas-sized' asteroid is jagged and spiky.",
+  "critique": "A body that large is pulled into a sphere by its own gravity; a collision big enough to send it to Earth would have melted it round.",
+  "domains": [
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "1998",
+  "source_url": "http://www.badastronomy.com/bad/movies/armpitageddon.html",
+  "status": "valid",
+  "status_reason": "Bodies above a few hundred km (e.g. Ceres, Vesta near the limit) approach hydrostatic shapes; a 1000+ km body would be near-spherical, as Dawn confirmed for Ceres."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Armageddon",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "The cosmonaut spins the Russian space station to create gravity just before the shuttles dock.",
+  "critique": "A spinning station would be very hard to dock with, the small docking tube couldn't hold the shuttle against spin 'gravity', and the movie's 'gravity goes every which way'; at the hub there would be no force at all.",
+  "domains": [
+   "gravity_artificial",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "1998",
+  "source_url": "http://www.badastronomy.com/bad/movies/armpitageddon.html",
+  "status": "valid",
+  "status_reason": "Centripetal pseudo-gravity points outward from the spin axis and vanishes at the hub; docking with a spinning body requires matching rotation."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Armageddon",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "A nuclear bomb splits the 1000-km asteroid four hours before impact so both halves miss Earth.",
+  "critique": "Each half would need ~1600 km/h sideways in 4 hours; for that mass this needs ~1e11 megatons, roughly the Sun's output per second - 'one bomb ain't gonna do it. A billion or so might.'",
+  "domains": [
+   "orbital_mechanics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "1998",
+  "source_url": "http://www.badastronomy.com/bad/movies/armpitageddon.html",
+  "status": "valid",
+  "status_reason": "Simple kinetic-energy arithmetic; modern deflection studies (and NASA's 2022 DART test) emphasize years of lead time, not last-hour splitting."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Armageddon",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "On the asteroid, crew need thrusters to stay on the surface, yet inside the ship they walk normally.",
+  "critique": "'The writers forgot that gravity can penetrate even the impenetrable titanium of the rocket's hull' - the pilot running inside should have launched herself into the walls.",
+  "domains": [
+   "gravity_artificial"
+  ],
+  "date_of_critique": "1998",
+  "source_url": "http://www.badastronomy.com/bad/movies/armpitageddon.html",
+  "status": "valid",
+  "status_reason": "Gravity cannot be shielded; the low surface gravity applies inside the lander too."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Deep Impact",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "Astronauts walk and bounce on the 11-km comet as if in moderate gravity.",
+  "critique": "An 11-km comet has surface gravity ~1/10,000 of Earth's and escape velocity of a few m/s - an 80 kg astronaut would weigh ~12 g and could easily leap off.",
+  "domains": [
+   "gravity_artificial",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "1998",
+  "source_url": "http://www.badastronomy.com/bad/movies/di2.html",
+  "status": "valid",
+  "status_reason": "Rosetta's Philae bounce on 67P (2014, escape speed ~1 m/s) dramatically confirmed how feeble comet gravity is."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Deep Impact",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "The comet surface is shown bright white/gray.",
+  "critique": "Comets are among the darkest objects in the solar system; Giotto found Halley's nucleus 'darker than coal', reflecting ~3-4% of light.",
+  "domains": [
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "1998",
+  "source_url": "http://www.badastronomy.com/bad/movies/di2.html",
+  "status": "valid",
+  "status_reason": "Later missions (Deep Impact/Tempel 1, Rosetta/67P with ~6% albedo) confirmed very dark nuclei."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Deep Impact",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "Before the tsunami hits, the water near the beach recedes dramatically.",
+  "critique": "Because the impact wave travels faster than sound, distant water would have 'no warning' and should not recede before the wave arrives (Plait later added a hedge after reader corrections).",
+  "domains": [
+   "other"
+  ],
+  "date_of_critique": "1998",
+  "source_url": "http://www.badastronomy.com/bad/movies/di2.html",
+  "status": "wrong",
+  "status_reason": "Drawdown happens whenever a wave trough arrives first (as seen in the 2004 Indian Ocean tsunami); impact-generated tsunamis are wave trains, so recession before a crest is plausible."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Deep Impact",
+  "medium": "film",
+  "year_of_work": 1998,
+  "depiction": "Astronauts blow up the second comet fragment minutes before impact, saving Earth.",
+  "critique": "'Blowing up a comet does no good at all' - if the pieces still hit, all the kinetic energy is still dumped into the atmosphere, dwarfing all nuclear arsenals combined.",
+  "domains": [
+   "combat_weapons",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "1998",
+  "source_url": "http://www.badastronomy.com/bad/movies/di2.html",
+  "status": "partly",
+  "status_reason": "Correct for a last-minute disruption, but recent planetary-defense work (e.g. 'pulverize it' fragmentation studies, 2020s) finds that breaking a body into small pieces with adequate lead time can spread energy so it is largely harmless."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Contact",
+  "medium": "film",
+  "year_of_work": 1997,
+  "depiction": "When the Machine activates its strong gravity field, ships in the harbor lean toward it.",
+  "critique": "Buoyancy keeps decks perpendicular to local gravity, so the ships should heel the other way, decks tilting away from the Machine (point credited to a reader, added 2001).",
+  "domains": [
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2001",
+  "source_url": "http://www.badastronomy.com/bad/movies/contact.html",
+  "status": "valid",
+  "status_reason": "A floating hull aligns its deck with the local equipotential surface, i.e. normal to the net gravity vector."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Contact",
+  "medium": "film",
+  "year_of_work": 1997,
+  "depiction": "Ellie experiences ~18 hours in transit while zero time passes on Earth.",
+  "critique": "Even moving at relativistic or superluminal speed, her conversation with her 'father' takes time, so some time must elapse in Earth's frame; a zero-time trip 'won't work' without alien time manipulation.",
+  "domains": [
+   "relativity_time_dilation",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "http://www.badastronomy.com/bad/movies/contact.html",
+  "status": "partly",
+  "status_reason": "Sound in principle (any nonzero proper time maps to nonzero external time along ordinary paths), but wormhole geometries can act as time machines (Morris-Thorne-Yurtsever 1988), so zero elapsed Earth time is exotic rather than strictly impossible."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Wars: Episode I - The Phantom Menace",
+  "medium": "film",
+  "year_of_work": 1999,
+  "depiction": "Ships are silhouetted against sunlit Naboo with a sky full of bright stars.",
+  "critique": "Contrast: a sunlit planet is thousands of times brighter than stars, so any exposure showing the planet properly would show no stars - you never see stars in shuttle footage of Earth.",
+  "domains": [
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "1999",
+  "source_url": "http://www.badastronomy.com/bad/movies/starwars2.html",
+  "status": "valid",
+  "status_reason": "Dynamic-range limits of eyes and cameras; ISS imagery still shows the same effect."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Wars: Episode I - The Phantom Menace",
+  "medium": "film",
+  "year_of_work": 1999,
+  "depiction": "Tatooine orbits two suns of similar apparent size that set together.",
+  "critique": "Analyzes binary-star orbits: figure-8 orbits are unstable, an S-type orbit would make the far star look small, so the likely configuration is a stable circumbinary (P-type) orbit far outside both stars; also notes scenes show single shadows.",
+  "domains": [
+   "exoplanets_habitability",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "1999",
+  "source_url": "http://www.badastronomy.com/bad/movies/starwars2.html",
+  "status": "valid",
+  "status_reason": "Kepler-16b (2011) and later circumbinary planets (Kepler-34b, -35b, TOI-1338b) confirmed exactly the stable P-type 'Tatooine' configuration he favored."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Wars: Episode I - The Phantom Menace",
+  "medium": "film",
+  "year_of_work": 1999,
+  "depiction": "Padme tells Anakin 'space is cold'.",
+  "critique": "Space itself has no temperature; a thermometer in space reads whatever radiation it absorbs - hot near a star, ~3 K far from any star because of the cosmic background.",
+  "domains": [
+   "thermodynamics_heat",
+   "cosmology"
+  ],
+  "date_of_critique": "1999",
+  "source_url": "http://www.badastronomy.com/bad/movies/starwars2.html",
+  "status": "valid",
+  "status_reason": "Equilibrium temperature depends on radiative balance; CMB at 2.725 K sets the floor."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Wars: Episode II - Attack of the Clones",
+  "medium": "film",
+  "year_of_work": 2002,
+  "depiction": "Obi-Wan dogfights through Geonosis's dense ring of huge tumbling boulders.",
+  "critique": "Real ring particles (Saturn's) are at most a few meters; such a dense field of big rocks would grind itself to dust by collisions long ago.",
+  "domains": [
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2002",
+  "source_url": "http://www.badastronomy.com/bad/movies/starwars_aotc_review.html",
+  "status": "valid",
+  "status_reason": "Cassini (2004-2017) confirmed Saturn's ring particles are mostly cm-to-m sized with sparse spacing; collisional grinding limits sizes."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Wars: Episode II - Attack of the Clones",
+  "medium": "film",
+  "year_of_work": 2002,
+  "depiction": "Jango Fett's seismic charges produce a booming shock wave in space.",
+  "critique": "Sound needs a medium; in vacuum there would be no sound and no blast wave.",
+  "domains": [
+   "vacuum_sound_light",
+   "combat_weapons"
+  ],
+  "date_of_critique": "2002",
+  "source_url": "http://www.badastronomy.com/bad/movies/starwars_aotc_review.html",
+  "status": "valid",
+  "status_reason": "No acoustic propagation in vacuum; debris ring gas is far too thin."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Wars: Episode II - Attack of the Clones",
+  "medium": "film",
+  "year_of_work": 2002,
+  "depiction": "Count Dooku flies a solar-sail ship to a distant star system.",
+  "critique": "Light pressure gives tiny accelerations; sails are fine for interplanetary travel but crossing 'halfway across the galaxy' by sail would take thousands to hundreds of thousands of years.",
+  "domains": [
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2002",
+  "source_url": "http://www.badastronomy.com/bad/movies/starwars_aotc_review.html",
+  "status": "valid",
+  "status_reason": "IKAROS (2010) and LightSail 2 (2019) confirmed micro-newton-scale thrust; interstellar sails need laser beaming (e.g. Breakthrough Starshot concept)."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Wars: Episode III - Revenge of the Sith",
+  "medium": "film",
+  "year_of_work": 2005,
+  "depiction": "After the cruiser loses artificial gravity, the corridor tilts and people slide down the floor as it falls toward the planet.",
+  "critique": "Falling under the planet's gravity, everything aboard accelerates equally, so without artificial gravity they should float, not slide - which is why orbiting astronauts float.",
+  "domains": [
+   "gravity_artificial",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2005",
+  "source_url": "http://www.badastronomy.com/bad/movies/starwars_sith_review.html",
+  "status": "valid",
+  "status_reason": "Equivalence principle: free-falling objects share the same acceleration (atmospheric drag later would add some deceleration)."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Wars: Episode III - Revenge of the Sith",
+  "medium": "film",
+  "year_of_work": 2005,
+  "depiction": "The falling cruiser burns as it re-enters the atmosphere.",
+  "critique": "Points out re-entry heating is not mainly friction but compression of the air ahead of the ship (ram/shock heating).",
+  "domains": [
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "2005",
+  "source_url": "http://www.badastronomy.com/bad/movies/starwars_sith_review.html",
+  "status": "valid",
+  "status_reason": "Re-entry heating is dominated by shock-layer compression of gas ahead of the vehicle, with friction a minor contributor."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Mission to Mars",
+  "medium": "film",
+  "year_of_work": 2000,
+  "depiction": "An astronaut takes off his helmet in space and instantly freezes solid, his face distorting.",
+  "critique": "The body holds lots of heat and in vacuum can lose it only by slow radiation, so he would not freeze quickly; nor would he explode.",
+  "domains": [
+   "thermodynamics_heat",
+   "biology_physics"
+  ],
+  "date_of_critique": "2000",
+  "source_url": "http://www.badastronomy.com/bad/movies/m2mreview.html",
+  "status": "valid",
+  "status_reason": "Vacuum-exposure data (e.g. 1966 NASA chamber accident) show unconsciousness in ~15 s but no instant freezing or explosion."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Mission to Mars",
+  "medium": "film",
+  "year_of_work": 2000,
+  "depiction": "Dr Pepper leaking through a meteoroid hole freezes in place almost instantly outside the hull.",
+  "critique": "The liquid wouldn't freeze so quickly: in vacuum heat can only be radiated away, 'a very inefficient and slow process.'",
+  "domains": [
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "2000",
+  "source_url": "http://www.badastronomy.com/bad/movies/m2mreview.html",
+  "status": "wrong",
+  "status_reason": "Liquid exposed to vacuum flash-boils and evaporative cooling freezes the remainder within seconds (as with shuttle/ISS water dumps forming ice crystals), so rapid freezing is realistic."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Mission to Mars",
+  "medium": "film",
+  "year_of_work": 2000,
+  "depiction": "Terri Fisher fires her suit jets for a long time chasing her husband, then gives only a brief burst to stop.",
+  "critique": "No friction in space: Newton's laws mean she must spend as much thrust stopping as she spent accelerating, so a short burst could not stop her.",
+  "domains": [
+   "orbital_mechanics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2000",
+  "source_url": "http://www.badastronomy.com/bad/movies/m2mreview.html",
+  "status": "valid",
+  "status_reason": "Delta-v to stop equals delta-v gained; elementary Newtonian mechanics."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Red Planet",
+  "medium": "film",
+  "year_of_work": 2000,
+  "depiction": "When power returns, the ship's spin wheels restore gravity instantly and everything drops to the floor.",
+  "critique": "Spin gravity can't switch on like a light: the wheels must spin up gradually, and objects floating inside wouldn't immediately 'fall' until the moving floor reaches them.",
+  "domains": [
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2000",
+  "source_url": "http://www.badastronomy.com/bad/movies/redplanet2.html",
+  "status": "valid",
+  "status_reason": "Centripetal pseudo-gravity scales with spin rate and only acts on objects co-rotating with the structure."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Red Planet",
+  "medium": "film",
+  "year_of_work": 2000,
+  "depiction": "The ship uses two counter-rotating gravity wheels; a fire extinguisher's spray pushes Bowman backwards.",
+  "critique": "Praises both: counter-rotating wheels cancel angular momentum so the ship itself doesn't spin, and extinguisher recoil in weightlessness is accurate.",
+  "domains": [
+   "gravity_artificial",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2000",
+  "source_url": "http://www.badastronomy.com/bad/movies/redplanet2.html",
+  "status": "valid",
+  "status_reason": "Angular momentum and momentum conservation, standard design practice for spin habitats."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Red Planet",
+  "medium": "film",
+  "year_of_work": 2000,
+  "depiction": "Astronauts on Mars stand against a pinkish-orange sky.",
+  "critique": "Close: suspended dust makes the Martian daytime sky 'butterscotch' rather than blue, as seen by Viking and Pathfinder.",
+  "domains": [
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2000",
+  "source_url": "http://www.badastronomy.com/bad/movies/redplanet2.html",
+  "status": "valid",
+  "status_reason": "Curiosity and Perseverance imagery confirm a butterscotch daytime sky with blue sunsets from dust forward-scattering."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "The Core",
+  "medium": "film",
+  "year_of_work": 2003,
+  "depiction": "Earth's magnetic field fails because the iron core stopped rotating.",
+  "critique": "Stopping the core would require removing ~1e35 erg of rotational energy, the Sun's output for ~100 s or five trillion one-megaton bombs - 'just plain old silly.'",
+  "domains": [
+   "astrophysics_stars_planets",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2003",
+  "source_url": "http://www.badastronomy.com/bad/movies/thecore_review.html",
+  "status": "valid",
+  "status_reason": "The geodynamo is driven by convection in the liquid outer core; even 2023 seismic hints that the inner core's rotation relative to the mantle paused involve tiny differential motions, not a halt."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "The Core",
+  "medium": "film",
+  "year_of_work": 2003,
+  "depiction": "Without the magnetic field, deadly cosmic rays and microwave beams from space strike Earth (one cuts the Golden Gate Bridge).",
+  "critique": "The magnetic field deflects some charged cosmic rays, but the atmosphere blocks most of them; a weakened field would not be deadly, and there are no natural space microwave beams to slice bridges.",
+  "domains": [
+   "radiation_shielding"
+  ],
+  "date_of_critique": "2003",
+  "source_url": "http://www.badastronomy.com/bad/movies/thecore_review.html",
+  "status": "valid",
+  "status_reason": "Paleomagnetic records show past geomagnetic reversals/excursions (e.g. Laschamp, ~41 ka) caused no mass extinctions; the atmosphere provides ~10 m water-equivalent shielding."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Superman Returns",
+  "medium": "film",
+  "year_of_work": 2006,
+  "depiction": "Krypton's red giant sun collapses and explodes as a supernova, tearing the planet apart.",
+  "critique": "A Sun-like red giant sheds its outer layers and leaves a white dwarf; it does not explode. (Comic canon also has the planet, not the star, exploding.)",
+  "domains": [
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "http://www.badastronomy.com/bad/movies/superman_returns_review.html",
+  "status": "valid",
+  "status_reason": "Only stars above ~8 solar masses (red supergiants) undergo core-collapse supernovae; low-mass red giants end as planetary nebulae and white dwarfs."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Superman Returns",
+  "medium": "film",
+  "year_of_work": 2006,
+  "depiction": "Superman hovers motionless above the atmosphere, cape flapping, hearing a cry for help.",
+  "critique": "No sound in space - and his cape shouldn't flap since he isn't moving and there's no air.",
+  "domains": [
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2006",
+  "source_url": "http://www.badastronomy.com/bad/movies/superman_returns_review.html",
+  "status": "valid",
+  "status_reason": "No medium for sound or air drag above the atmosphere."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Space Cowboys",
+  "medium": "film",
+  "year_of_work": 2000,
+  "depiction": "A NASA engineer says you need only hit a baseball halfway to the Moon and the Moon's gravity takes over.",
+  "critique": "The Moon has ~1/80 Earth's mass, so at the halfway point Earth's pull is still ~80 times stronger; the balance point is about 90% of the way to the Moon.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2000",
+  "source_url": "http://www.badastronomy.com/bad/movies/spacecowboys2.html",
+  "status": "valid",
+  "status_reason": "Gravitational balance point ~346,000 km from Earth (~0.9 of the distance)."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Space Cowboys",
+  "medium": "film",
+  "year_of_work": 2000,
+  "depiction": "The engineer says jumping on a trampoline in space would make you go 'up and up and up'.",
+  "critique": "You can't really bounce on a trampoline in weightlessness: push off once and you just drift away, as from a wall, with nothing to bring you back.",
+  "domains": [
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2000",
+  "source_url": "http://www.badastronomy.com/bad/movies/spacecowboys2.html",
+  "status": "valid",
+  "status_reason": "Without a restoring force (gravity) there is no oscillating bounce."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Transformers",
+  "medium": "film",
+  "year_of_work": 2007,
+  "depiction": "Giant robots that crater the ground transform into ordinary-weight cars; the huge AllSpark cube shrinks to hand size.",
+  "critique": "Shrinking an object doesn't change its mass: a 10-20 ton robot folded into a car would be incredibly dense and heavy - 'Drive over a bridge and see what happens!'",
+  "domains": [
+   "materials_structures"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "http://www.badastronomy.com/bad/movies/transformers.html",
+  "status": "valid",
+  "status_reason": "Conservation of mass; density scales inversely with volume."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Transformers",
+  "medium": "film",
+  "year_of_work": 2007,
+  "depiction": "An official says Earth's gravitational field at the North Pole scrambled Megatron's navigation.",
+  "critique": "The line clearly means the magnetic field; sci-fi constantly confuses gravity with magnetism.",
+  "domains": [
+   "other"
+  ],
+  "date_of_critique": "2007",
+  "source_url": "http://www.badastronomy.com/bad/movies/transformers.html",
+  "status": "valid",
+  "status_reason": "Gravity is nearly uniform with latitude; it is the geomagnetic field that disturbs compasses near the poles."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Men in Black II",
+  "medium": "film",
+  "year_of_work": 2002,
+  "depiction": "Alien beam weapons blow planets into giant pieces in the opening montage.",
+  "critique": "It's really hard to blow up a planet: each piece must be given escape velocity (~11 km/s for Earth), an enormous gravitational binding energy.",
+  "domains": [
+   "combat_weapons",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2002",
+  "source_url": "http://www.badastronomy.com/bad/movies/mib2_review.html",
+  "status": "valid",
+  "status_reason": "Earth's gravitational binding energy is ~2e32 J, about a week of the Sun's total output."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Trek (2009)",
+  "medium": "film",
+  "year_of_work": 2009,
+  "depiction": "A crewman sucked out through a hull breach is implied to suffer boiling blood.",
+  "critique": "'To the immediate point about blood boiling, it wouldn't happen' - the circulatory system keeps blood pressurized above vapor pressure.",
+  "domains": [
+   "biology_physics",
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "2009-05",
+  "source_url": "https://trekmovie.com/2009/05/09/bad-astronomys-review-of-the-science-star-trek/",
+  "status": "valid",
+  "status_reason": "Blood pressure keeps blood liquid in vacuum; only saliva/tears and tissue water (ebullism swelling) vaporize, per decompression-accident data."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Trek (2009)",
+  "medium": "film",
+  "year_of_work": 2009,
+  "depiction": "Nero's mining drill bores a hole to Vulcan's core to drop red matter in.",
+  "critique": "Rock pressure would collapse the borehole and the plastic mantle would flow in: 'the pressure of the overlying rocks tends to collapse the hole.'",
+  "domains": [
+   "materials_structures",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2009-05",
+  "source_url": "https://trekmovie.com/2009/05/09/bad-astronomys-review-of-the-science-star-trek/",
+  "status": "valid",
+  "status_reason": "The deepest real borehole (Kola, 12 km) stalled because of heat and rock plasticity; a hole thousands of km deep is impossible."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Trek (2009)",
+  "medium": "film",
+  "year_of_work": 2009,
+  "depiction": "A drop of red matter turns Vulcan into a black hole that swallows the planet and endangers ships in orbit.",
+  "critique": "Making a black hole takes a lot of mass, infalling matter would blaze in X-rays, and once Vulcan collapsed 'the gravity felt by the orbiting ships didn't change!'",
+  "domains": [
+   "black_holes",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2009-05",
+  "source_url": "https://trekmovie.com/2009/05/09/bad-astronomys-review-of-the-science-star-trek/",
+  "status": "valid",
+  "status_reason": "Outside a spherically symmetric mass, gravity depends only on enclosed mass (Birkhoff's theorem); a planet-mass black hole pulls no harder on orbiting ships."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Trek (2009)",
+  "medium": "film",
+  "year_of_work": 2009,
+  "depiction": "From Delta Vega, Spock watches Vulcan's destruction looming huge in the sky.",
+  "critique": "For Vulcan to look that big, Delta Vega must be only a few hundred thousand km away at most - i.e. effectively a close moon of Vulcan (and he questions why an outpost would be there).",
+  "domains": [
+   "scale_distances"
+  ],
+  "date_of_critique": "2009-05",
+  "source_url": "https://trekmovie.com/2009/05/09/bad-astronomys-review-of-the-science-star-trek/",
+  "status": "valid",
+  "status_reason": "Angular size = diameter/distance; a planet subtending tens of degrees must be within roughly a few planetary radii to a few hundred thousand km."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Trek (2009)",
+  "medium": "film",
+  "year_of_work": 2009,
+  "depiction": "A supernova threatens to destroy the whole galaxy and Romulus.",
+  "critique": "Supernovae can only physically hurt planets within about 50 light-years; threatening the galaxy is absurd. Also 'as far as we know, yellow stars can't blow.'",
+  "domains": [
+   "astrophysics_stars_planets",
+   "scale_distances"
+  ],
+  "date_of_critique": "2009-05",
+  "source_url": "https://trekmovie.com/2009/05/09/bad-astronomys-review-of-the-science-star-trek/",
+  "status": "partly",
+  "status_reason": "The 'kill radius' estimate (~25-50 ly for ozone damage) still stands, and Sun-like single stars do not explode, but white dwarfs in binaries do (Type Ia), so 'yellow' systems are not fully immune."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Trek (2009)",
+  "medium": "film",
+  "year_of_work": 2009,
+  "depiction": "Red-matter black hole is used to 'consume' the supernova and stop it.",
+  "critique": "A black hole wouldn't stop a supernova - core-collapse supernovae can already form black holes at their centers.",
+  "domains": [
+   "black_holes",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2009-05",
+  "source_url": "https://trekmovie.com/2009/05/09/bad-astronomys-review-of-the-science-star-trek/",
+  "status": "valid",
+  "status_reason": "Core collapse itself forms neutron stars/black holes; the expanding ejecta would not be swallowed by a small central black hole."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Trek (2009)",
+  "medium": "film",
+  "year_of_work": 2009,
+  "depiction": "Nero's ship and the Jellyfish are drawn into a black hole and the Enterprise escapes intact.",
+  "critique": "Tidal forces near a small black hole would rip the ship apart (spaghettification): 'The difference in gravity between your feet and head could be millions of times the Earth's gravity!'",
+  "domains": [
+   "black_holes"
+  ],
+  "date_of_critique": "2009-05",
+  "source_url": "https://trekmovie.com/2009/05/09/bad-astronomys-review-of-the-science-star-trek/",
+  "status": "valid",
+  "status_reason": "Tidal acceleration ~2GM L/r^3 is enormous near a low-mass black hole's horizon."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Trek (2009)",
+  "medium": "film",
+  "year_of_work": 2009,
+  "depiction": "The Enterprise ejects its warp core and is pushed away by the explosion's shock wave.",
+  "critique": "In vacuum there is no air to carry a shock wave; momentum transfer from expanding debris/radiation 'would be minimal'.",
+  "domains": [
+   "vacuum_sound_light",
+   "combat_weapons"
+  ],
+  "date_of_critique": "2009-05",
+  "source_url": "https://trekmovie.com/2009/05/09/bad-astronomys-review-of-the-science-star-trek/",
+  "status": "partly",
+  "status_reason": "There is no air blast in space, but a very energetic explosion's debris and plasma could still impart momentum at close range, so the push is not strictly impossible."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Using a jetpack (MMU), Clooney and Bullock travel from Hubble to the ISS.",
+  "critique": "Hubble orbits ~110 m/s slower than the ISS and in an orbit 'tipped at wildly different angles'; the MMU can only deliver ~25 m/s, so the transfer is impossible.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2013-10",
+  "source_url": "https://www.syfy.com/syfy-wire/bad-astronomy-movie-review-gravity",
+  "status": "valid",
+  "status_reason": "Plane changes between 28.5 deg and 51.6 deg inclinations need km/s of delta-v; no crewed jetpack can do it."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Clooney, tethered and stopped relative to the ISS, drifts away and must let go to save Bullock.",
+  "critique": "Once they stopped they were in free fall with no net force; 'literally an ounce of force applied for a few seconds would've been enough' to pull him back.",
+  "domains": [
+   "orbital_mechanics",
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2013-10",
+  "source_url": "https://www.syfy.com/syfy-wire/bad-astronomy-movie-review-gravity",
+  "status": "valid",
+  "status_reason": "Same point as Tyson; with zero relative velocity there is no tension pulling him away (only minor tidal/rotational effects)."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Bullock uses a fire extinguisher as a thruster to reach Tiangong.",
+  "critique": "Probably impossible: thrusting with an extinguisher not aligned through her center of mass would send her tumbling; and Tiangong's orbit is inclined ~10 deg from the ISS so a Soyuz couldn't easily match it either.",
+  "domains": [
+   "orbital_mechanics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2013-10",
+  "source_url": "https://www.syfy.com/syfy-wire/bad-astronomy-movie-review-gravity",
+  "status": "valid",
+  "status_reason": "Off-axis thrust produces torque; plane changes are expensive in delta-v."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Shuttle crew killed by debris are shown frozen almost immediately.",
+  "critique": "Freezing bodies in vacuum would take hours, since heat leaves only by radiation (and slow evaporation).",
+  "domains": [
+   "thermodynamics_heat",
+   "biology_physics"
+  ],
+  "date_of_critique": "2013-10",
+  "source_url": "https://www.syfy.com/syfy-wire/bad-astronomy-movie-review-gravity",
+  "status": "valid",
+  "status_reason": "Radiative cooling of a human-mass body takes many hours; vacuum is an insulator."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Debris from a destroyed satellite returns every ~90 minutes to hit Hubble, the shuttle and the ISS.",
+  "critique": "Debris stays in roughly its parent's orbit, so it could only hit Hubble and ISS if satellite orbits intersected theirs, which operators avoid; debris would not sweep all altitudes and inclinations together.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2013-10",
+  "source_url": "https://www.syfy.com/syfy-wire/bad-astronomy-movie-review-gravity",
+  "status": "valid",
+  "status_reason": "Fragment clouds spread along the parent orbit (seen after the 2007 Fengyun-1C and 2021 Kosmos-1408 ASAT tests) rather than covering all altitudes."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Miller's planet orbits Gargantua so close that one hour there equals seven years on Earth (~60,000x time dilation).",
+  "critique": "Such dilation requires skimming the horizon, but 'the minimum stable orbit around a black hole must be at least three times the size of the black hole itself,' so the planet would fall in.",
+  "domains": [
+   "black_holes",
+   "relativity_time_dilation",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2014-11",
+  "source_url": "https://www.syfy.com/syfy-wire/interstellar-science",
+  "status": "wrong",
+  "status_reason": "Plait retracted it two days later: for a near-maximally spinning Kerr black hole (as Kip Thorne specified) stable orbits exist close enough for that dilation; he wrote the film's time dilation 'was in fact accurate.' (source of retraction: https://www.syfy.com/syfy-wire/follow-interstellar-mea-culpa)"
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Giant mountain-high waves roll across the shallow seas of Miller's planet.",
+  "critique": "Kept after his mea culpa: he still objects to the giant 'tidal waves', arguing such a planet's tides and shallow seas could not produce them.",
+  "domains": [
+   "black_holes",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2014-11",
+  "source_url": "https://www.syfy.com/syfy-wire/follow-interstellar-mea-culpa",
+  "status": "partly",
+  "status_reason": "A perfectly locked planet would have static tides, but Thorne's explanation (a slight rocking libration producing periodic tidal bores) is physically plausible; the critique holds only for an exactly locked orbit."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Planets around Gargantua are lit and warmed although there is no star nearby; the accretion disk looks calm and dim.",
+  "critique": "'Where do the planets get heat and light?' The disk isn't bright enough to light and heat the planets; a real disk would be extremely hot and fast-moving, and planets would be pelted by infalling matter.",
+  "domains": [
+   "black_holes",
+   "exoplanets_habitability",
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "2014-11",
+  "source_url": "https://www.syfy.com/syfy-wire/interstellar-science",
+  "status": "partly",
+  "status_reason": "Thorne deliberately chose an unusually cold, quiescent disk, which is then too dim to warm planets as Plait says; but a brighter disk would irradiate them with X-rays, so the scenario is internally strained rather than simply wrong."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Trek: Enterprise ('Broken Bow' pilot)",
+  "medium": "tv",
+  "year_of_work": 2001,
+  "depiction": "The Enterprise whooshes audibly past the camera in space.",
+  "critique": "'Well, it's Trek. That means we hear sounds in space' - sound needs a medium; even a nebula's gas could not carry sound as we know it, and computer-added-sound retcons don't explain what outside viewers hear.",
+  "domains": [
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2001-09",
+  "source_url": "http://www.badastronomy.com/bad/tv/enterprise.html",
+  "status": "valid",
+  "status_reason": "No acoustic propagation in vacuum; interstellar gas densities (~1 atom/cm^3) cannot carry audible sound."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Trek: Enterprise ('Broken Bow' pilot)",
+  "medium": "tv",
+  "year_of_work": 2001,
+  "depiction": "At warp 4.5 the ship reaches Neptune and back in six minutes, yet the Klingon homeworld is 'four days' away.",
+  "critique": "Six minutes to Neptune and back is ~80c; four days at 80c is under one light-year - closer than the nearest star, Proxima Centauri (~20 days' travel at that speed).",
+  "domains": [
+   "scale_distances",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2001-09",
+  "source_url": "http://www.badastronomy.com/bad/tv/enterprise.html",
+  "status": "valid",
+  "status_reason": "Proxima Centauri at 4.24 ly remains the nearest star; simple distance/speed arithmetic."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Star Trek: Enterprise ('Broken Bow' pilot)",
+  "medium": "tv",
+  "year_of_work": 2001,
+  "depiction": "Stars stream rapidly past the windows during warp.",
+  "critique": "If the nearest star takes ~20 days to reach, roughly one star should flash by every ~20 days on average; the streaks can't be dust because they resolve into stars when the ship drops out of warp.",
+  "domains": [
+   "scale_distances",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2001-09",
+  "source_url": "http://www.badastronomy.com/bad/tv/enterprise.html",
+  "status": "valid",
+  "status_reason": "Mean interstellar spacing (~5 ly locally) means stars pass very rarely even at 80c."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Asteroid (NBC miniseries)",
+  "medium": "tv",
+  "year_of_work": 1997,
+  "depiction": "A comet cruises through an asteroid belt crowded with hundreds of visible rocks and smashes into two of them.",
+  "critique": "Even in the thickest part of the belt, asteroids are typically millions of miles apart; a comet hitting even one is unlikely, two essentially impossible.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "scale_distances"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "http://www.badastronomy.com/bad/tv/asteroid.html",
+  "status": "valid",
+  "status_reason": "Spacecraft (Pioneer, Galileo, Dawn, Lucy) cross the belt without special avoidance; mean separations are ~1e6 km."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Asteroid (NBC miniseries)",
+  "medium": "tv",
+  "year_of_work": 1997,
+  "depiction": "A small fragment hits Montana days before the main asteroids arrive.",
+  "critique": "Fragments knocked onto the new orbit stay on that orbit and travel with the main body; they would not arrive days ahead.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "http://www.badastronomy.com/bad/tv/asteroid.html",
+  "status": "valid",
+  "status_reason": "Small velocity dispersions from a collision spread fragments only slowly along the orbit, as seen in asteroid families and DART/Dimorphos ejecta."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Asteroid (NBC miniseries)",
+  "medium": "tv",
+  "year_of_work": 1997,
+  "depiction": "Two airborne lasers are used to destroy a 10-km asteroid.",
+  "critique": "A 10-km rock is the size of a large mountain, ~a trillion tons; 'picture two lasers on board an aircraft trying to vaporize Mt. Everest.'",
+  "domains": [
+   "combat_weapons",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "http://www.badastronomy.com/bad/tv/asteroid.html",
+  "status": "valid",
+  "status_reason": "Megawatt-class airborne lasers (the cancelled YAL-1 program) deliver far too little energy to vaporize a mountain-sized body."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Doomsday Rock (TV film)",
+  "medium": "tv",
+  "year_of_work": 1997,
+  "depiction": "An iron asteroid ~10x5x3 km at 50,000 mph is said to hit with the force of 30 atomic bombs.",
+  "critique": "An iron body that size at that speed would release vastly more energy than 30 atomic bombs - the line 'made me laugh out loud'.",
+  "domains": [
+   "propulsion_energy",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "http://www.badastronomy.com/bad/tv/doomsday.html",
+  "status": "valid",
+  "status_reason": "KE ~ 0.5 x 1.2e15 kg x (22 km/s)^2 ~ 3e23 J, about 70 million megatons."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Doomsday Rock (TV film)",
+  "medium": "tv",
+  "year_of_work": 1997,
+  "depiction": "Nineteen minutes before impact, the incoming asteroid is shown passing over the Moon.",
+  "critique": "The Moon is ~250,000 miles away, five hours at 50,000 mph; 19 minutes out the rock would be only ~17,000 miles away, closer than geosynchronous satellites.",
+  "domains": [
+   "scale_distances",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "http://www.badastronomy.com/bad/tv/doomsday.html",
+  "status": "valid",
+  "status_reason": "Simple distance/speed arithmetic."
+ },
+ {
+  "physicist": "Phil Plait",
+  "credentials": "PhD astronomy (University of Virginia, 1994); former Hubble Space Telescope (STIS) team astronomer; Bad Astronomy author",
+  "work": "Doomsday Rock (TV film)",
+  "medium": "tv",
+  "year_of_work": 1997,
+  "depiction": "Two nuclear missiles blow up the iron asteroid.",
+  "critique": "The asteroid is roughly the volume of Mt. Everest and solid iron; two atomic bombs 'would not do a whole lot of damage' and certainly wouldn't vaporize it.",
+  "domains": [
+   "combat_weapons"
+  ],
+  "date_of_critique": "1997",
+  "source_url": "http://www.badastronomy.com/bad/tv/doomsday.html",
+  "status": "partly",
+  "status_reason": "Two small fission bombs indeed could not vaporize it, but standoff-burst studies (e.g. the 2024 Sandia Z-machine X-ray ablation experiment in Nature Physics) show nuclear X-ray pulses can usefully deflect km-scale bodies, so nukes are not useless if the goal is deflection."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "The Black Hole",
+  "medium": "film",
+  "year_of_work": 1979,
+  "depiction": "The spaceship plunges into a black hole whose interior looks like a cave with fiery stalactites and stalagmites.",
+  "critique": "Essay 'Hollywood Nights': the film ignores what really happens near a black hole - tidal forces that would stretch the ship apart, time dilation, jets - instead showing a 'dank cave'.",
+  "domains": [
+   "black_holes",
+   "relativity_time_dilation"
+  ],
+  "date_of_critique": "2002-06",
+  "source_url": "https://neildegrassetyson.com/essays/2002-06-hollywood-nights/",
+  "status": "valid",
+  "status_reason": "General relativity predicts spaghettification for stellar-mass holes and extreme time dilation near the horizon; EHT images (2019, 2022) show luminous accretion flows, not caverns."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Contact",
+  "medium": "film",
+  "year_of_work": 1997,
+  "depiction": "Ellie says if one in a million stars has planets, one in a million of those has life, and one in a million of those intelligent life, there would be millions of civilizations.",
+  "critique": "Her own arithmetic gives 400 billion x 1e-18 = '0.0000004 planets with intelligent life on them,' not millions.",
+  "domains": [
+   "exoplanets_habitability",
+   "other"
+  ],
+  "date_of_critique": "2002-06",
+  "source_url": "https://neildegrassetyson.com/essays/2002-06-hollywood-nights/",
+  "status": "valid",
+  "status_reason": "The arithmetic is correct; moreover Kepler/TESS results show most stars host planets, so the movie's 'one in a million have planets' factor is also far too pessimistic."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "Hours on Miller's planet near the black hole Gargantua equal years on Earth.",
+  "critique": "Strong gravity really slows time ('is real, by the way'); an extreme case is plausible because 'they made it clear this is a planet orbiting a black hole.'",
+  "domains": [
+   "relativity_time_dilation",
+   "black_holes"
+  ],
+  "date_of_critique": "2014-11",
+  "source_url": "https://www.mprnews.org/story/2014/11/14/npr-interstellar",
+  "status": "valid",
+  "status_reason": "Gravitational time dilation is measured daily (GPS) and the ~60,000x factor is attainable near a rapidly spinning supermassive black hole (Thorne 2014)."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Interstellar",
+  "medium": "film",
+  "year_of_work": 2014,
+  "depiction": "The crew travels to another galaxy through a wormhole near Saturn.",
+  "critique": "Wormhole math and physics are sound, 'but we don't know how to make one, and even if we did make one, the equations show that they're unstable.'",
+  "domains": [
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2014-11",
+  "source_url": "https://www.mprnews.org/story/2014/11/14/npr-interstellar",
+  "status": "valid",
+  "status_reason": "Traversable wormholes still require exotic negative-energy matter to stay open; no mechanism is known as of 2026."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Moonfall",
+  "medium": "film",
+  "year_of_work": 2022,
+  "depiction": "The Moon is revealed to be a hollow artificial megastructure knocked from its orbit toward Earth.",
+  "critique": "Said Moonfall dethroned Armageddon as the biggest violator of physical laws, mocking the hollow Moon containing a giant built structure.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2023-09",
+  "source_url": "https://www.wionews.com/entertainment/hollywood/news-neil-degrasse-tyson-says-this-film-has-dethroned-armageddon-as-biggest-violator-of-physical-laws-638865/amp",
+  "status": "valid",
+  "status_reason": "Apollo seismometers, the Moon's moment of inertia (0.393) and GRAIL gravity mapping show a solid, differentiated body with a small dense core - not hollow."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Debris from a destroyed satellite sweeps around Earth and strikes the shuttle, Hubble and ISS.",
+  "critique": "Tweet: 'Nearly all satellites orbit Earth west to east yet all satellite debris portrayed orbited east to west' - debris should share the prograde motion of its parent satellites.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2013-10",
+  "source_url": "https://atlantablackstar.com/2013/10/07/neil-degrasse-tyson-rips-gravity-says-the-science-is-all-wrong/",
+  "status": "valid",
+  "status_reason": "Almost all satellites are launched prograde to use Earth's rotation; fragments keep roughly their parent's orbit, so retrograde debris streams are implausible."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Sandra Bullock's hair stays neatly in place during otherwise convincing weightless scenes.",
+  "critique": "Tweet: 'Why Bullock's hair, in otherwise convincing zero-G scenes, did not float freely on her head.'",
+  "domains": [
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2013-10",
+  "source_url": "https://atlantablackstar.com/2013/10/07/neil-degrasse-tyson-rips-gravity-says-the-science-is-all-wrong/",
+  "status": "valid",
+  "status_reason": "In free fall hair has no weight to pull it down and drifts freely, as ISS footage shows."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "After Clooney releases Bullock's tether he drifts away to his death as if pulled.",
+  "critique": "Tweet: 'When Clooney releases Bullock's tether, he drifts away. In zero-G a single tug brings them together.'",
+  "domains": [
+   "orbital_mechanics",
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2013-10",
+  "source_url": "https://atlantablackstar.com/2013/10/07/neil-degrasse-tyson-rips-gravity-says-the-science-is-all-wrong/",
+  "status": "valid",
+  "status_reason": "Once the pair's motion relative to the station has stopped there is no net force pulling Clooney away; a gentle tug would bring him back (residual rotation could add only a small tension)."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "Hubble, the ISS and a Chinese space station are close enough to see and reach from one another.",
+  "critique": "Tweet: 'How Hubble (350mi up) ISS (230mi up) & a Chinese Space Station are all in sight lines of one another.'",
+  "domains": [
+   "orbital_mechanics",
+   "scale_distances"
+  ],
+  "date_of_critique": "2013-10",
+  "source_url": "https://atlantablackstar.com/2013/10/07/neil-degrasse-tyson-rips-gravity-says-the-science-is-all-wrong/",
+  "status": "valid",
+  "status_reason": "Hubble (~540 km, 28.5 deg) and ISS (~420 km, 51.6 deg) are at different altitudes and inclinations and are generally thousands of km apart."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Gravity",
+  "medium": "film",
+  "year_of_work": 2013,
+  "depiction": "A chain reaction of debris collisions destroys satellites across low Earth orbit.",
+  "critique": "Tweet: 'The film #Gravity depicts a scenario of catastrophic satellite destruction that can actually happen.' (Kessler-syndrome endorsement)",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2013-10",
+  "source_url": "https://atlantablackstar.com/2013/10/07/neil-degrasse-tyson-rips-gravity-says-the-science-is-all-wrong/",
+  "status": "partly",
+  "status_reason": "Collisional cascading (Kessler syndrome) is a real risk, highlighted by the 2009 Iridium-Cosmos collision and 2021 Russian ASAT test, but it unfolds over years and decades, not within one orbit as shown."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Star Wars: The Force Awakens",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "BB-8, a rolling spherical droid, travels smoothly across desert sand.",
+  "critique": "Tweet: 'BB-8, a smooth rolling metal spherical ball, would have skidded uncontrollably on sand.'",
+  "domains": [
+   "other",
+   "materials_structures"
+  ],
+  "date_of_critique": "2015-12",
+  "source_url": "https://www.nbcnews.com/tech/tech-news/neil-degrasse-tyson-debunks-star-wars-science-twitter-n483991",
+  "status": "partly",
+  "status_reason": "A smooth ball-drive has poor traction on loose sand, but the real BB-8 prop (and Sphero toy) roll on sand using an internal drive with grippy surface; the problem is traction design, not impossibility."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Star Wars: The Force Awakens",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "TIE fighters scream audibly in space battles.",
+  "critique": "Tweet: 'the TIE fighters made exactly the same sound in the vacuum of space as in planetary atmospheres.'",
+  "domains": [
+   "vacuum_sound_light"
+  ],
+  "date_of_critique": "2015-12",
+  "source_url": "https://www.nbcnews.com/tech/tech-news/neil-degrasse-tyson-debunks-star-wars-science-twitter-n483991",
+  "status": "valid",
+  "status_reason": "Sound requires a medium; there is no propagation through vacuum."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Star Wars: The Force Awakens",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "Han Solo repeats the boast that the Millennium Falcon made the Kessel Run in under 12 parsecs.",
+  "critique": "Tweets: 'repeats the Millennium Falcon boast of completing the Kessel Run in under 12 parsecs' - 'A Parsec is ... a unit of distance ... equal to 3.26 Light Years. Neither has anything to do with time.'",
+  "domains": [
+   "scale_distances"
+  ],
+  "date_of_critique": "2015-12",
+  "source_url": "https://www.nbcnews.com/tech/tech-news/neil-degrasse-tyson-debunks-star-wars-science-twitter-n483991",
+  "status": "partly",
+  "status_reason": "A parsec is indeed a distance (3.26 ly), but the franchise later (Solo, 2018) framed the boast as a shorter route, so a distance claim is not physically absurd."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Star Wars: The Force Awakens",
+  "medium": "film",
+  "year_of_work": 2015,
+  "depiction": "Starkiller Base drains its star's energy into the planet to power a superweapon.",
+  "critique": "Tweet: 'if you were to suck all of a star's energy into your planet, your planet would vaporize.'",
+  "domains": [
+   "thermodynamics_heat",
+   "propulsion_energy",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2015-12",
+  "source_url": "https://www.nbcnews.com/tech/tech-news/neil-degrasse-tyson-debunks-star-wars-science-twitter-n483991",
+  "status": "valid",
+  "status_reason": "A star's output (~1e26 W for a Sun-like star, total ~1e44 J) vastly exceeds the ~1e32 J gravitational binding energy of an Earth-like planet."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Thor / Mjolnir (Marvel)",
+  "medium": "comic",
+  "year_of_work": 1962,
+  "depiction": "Thor's hammer Mjolnir, said in Marvel lore to be forged in the heart of a dying star, is wielded one-handed.",
+  "critique": "Tweet: 'If Thor's hammer is made of neutron-star matter, implied by legend, then it weighs as much as a herd of 300-billion elephants.'",
+  "domains": [
+   "materials_structures",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2013-02",
+  "source_url": "https://news.ncsu.edu/2013/02/wms-mjolnir",
+  "status": "partly",
+  "status_reason": "The density arithmetic (~1e15 kg for a hammer-sized volume of ~4e17 kg/m^3 matter) is right, but canon makes Mjolnir of fictional Uru, and neutron-degenerate matter cannot stay compressed outside a neutron star anyway."
+ },
+ {
+  "physicist": "Neil deGrasse Tyson",
+  "credentials": "PhD astrophysics (Columbia, 1991); Frederick P. Rose Director, Hayden Planetarium, American Museum of Natural History",
+  "work": "Action Comics #14 (Superman: 'Star Light, Star Bright')",
+  "medium": "comic",
+  "year_of_work": 2012,
+  "depiction": "Superman views the location of his home planet Krypton; the comic places Krypton around a real star chosen by Tyson.",
+  "critique": "Tyson selected the red dwarf LHS 2520 in Corvus, stated as 27.1 light-years away, as Krypton's sun - a red star 'cooler and smaller than our sun', consistent with the red-sun Superman lore.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "scale_distances"
+  ],
+  "date_of_critique": "2012-11",
+  "source_url": "https://www.nbcnews.com/news/amp/wbna49697073",
+  "status": "outdated",
+  "status_reason": "Gaia parallax (81.57 mas) puts LHS 2520 at ~40 light-years, not 27.1."
+ }
+]

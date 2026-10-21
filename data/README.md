@@ -154,3 +154,10 @@ node tools/build.mjs
 | 解析 | `data/build/analyze_vassal.py` → `data/derived/vassal_survival.json` | 型と家族ごとの存続 (Kaplan–Meier とブートストラップの区間)・Cox (家族・束・項目)・移り変わり・暴力の割合・QCA・条件と型 |
 
 結果の説明は `docs/vassal-cases.md`。
+
+## 物理学者が SF に付けた文句 (P-6)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 集め | `data/raw/sf_critiques/` | 物理学者・天文学者が、SF の映画・テレビ・ゲーム・アニメ・コミックの描写を物理で論じた 349 件 (6 組に分けて集め、どれも出典のページを開いて確かめた URL つき)。`classified.json` は事例ごとの分類 (今の知見で正しいか・物理の論点・ゲームに当てはまるか) |
+| 加工 | `data/build/build_sf_critiques.py` → `data/derived/sf_critiques.json` | 物理学者の指摘で、今の知見で正しい 266 件を選び、ゲームへの当てはまりを集計する。中身は `docs/sf-critiques.md` |

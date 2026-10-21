@@ -1,0 +1,841 @@
+[
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "Astronomer (radio astronomy, Milky Way), Professor, Faculty of Science, Kagoshima University; science adviser for Yamato 2199",
+  "work": "Space Battleship Yamato 2199 (宇宙戦艦ヤマト2199)",
+  "medium": "anime",
+  "year_of_work": 2012,
+  "depiction": "Ep.19 battle in the Tarantula Nebula (30 Doradus) where nebular gas turbulence buffets/sweeps ships",
+  "critique": "The ionized gas of the Tarantula Nebula is far thinner than Earth's atmosphere, so a ship would not be swept away by gas turbulence (though the ship would disturb the gas).",
+  "domains": [
+   "interstellar_medium",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.ourstarblazers.com/vault/803",
+  "status": "valid",
+  "status_reason": "HII-region densities (~10^2-10^4 cm^-3) are ~15+ orders of magnitude below air; ram pressure on a ship is negligible."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "Astronomer, Professor, Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato 2199 (宇宙戦艦ヤマト2199)",
+  "medium": "anime",
+  "year_of_work": 2012,
+  "depiction": "Garmillas and Iscandar as a close Earth-sized double planet, with Iscandar having an Earth-like ~24 h day",
+  "critique": "At ~280,000-380,000 km separation the pair would raise tides ~80x the Moon's on Earth and should be tidally locked, giving a rotation period ~16 days, inconsistent with the Earth-like day shown.",
+  "domains": [
+   "orbital_mechanics",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.ourstarblazers.com/vault/?p=16910",
+  "status": "valid",
+  "status_reason": "Mutual tidal locking of a close equal-mass binary (as Pluto-Charon) is expected on short timescales; Kepler gives ~2 week period."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "Astronomer, Professor, Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato 2199 (宇宙戦艦ヤマト2199)",
+  "medium": "anime",
+  "year_of_work": 2012,
+  "depiction": "Distance to the Large Magellanic Cloud (Iscandar's location) given as 148,000 light years in the original 1974 series",
+  "critique": "Updated to 163,000 light years in 2199 because the 2013 eclipsing-binary distance determination superseded the older figure.",
+  "domains": [
+   "scale_distances"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.ourstarblazers.com/vault/803",
+  "status": "valid",
+  "status_reason": "Current LMC distance is 49.6 kpc ≈ 162,000 ly (Pietrzyński et al. 2019), confirming the correction."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "Astronomer, Professor, Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato 2199 (宇宙戦艦ヤマト2199)",
+  "medium": "anime",
+  "year_of_work": 2012,
+  "depiction": "Dessler gun fired from the balance point between Garmillas and Iscandar",
+  "critique": "Identifies the firing point as the L1 Lagrange point of the twin-planet system (noting Euler found it before Lagrange), a physically meaningful equilibrium position.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.ourstarblazers.com/vault/?p=16910",
+  "status": "valid",
+  "status_reason": "L1 is a genuine (unstable) equilibrium of the restricted three-body problem; the collinear points were found by Euler."
+ },
+ {
+  "physicist": "Jun Fukue (福江純)",
+  "credentials": "Astrophysicist (accretion disks/black holes), D.Sc. Kyoto University; Professor, Osaka Kyoiku University",
+  "work": "Mobile Suit Gundam (機動戦士ガンダム)",
+  "medium": "anime",
+  "year_of_work": 1979,
+  "depiction": "Side 7 Green Noa open-type (Island 3) space colony: diameter 6.5 km, length 30 km, rotation period 2 minutes",
+  "critique": "Works out that a 6.5 km cylinder rotating every 2 min has rim speed ~170 m/s and centrifugal acceleration ~0.9 g, so the colony's spin does give near-Earth artificial gravity, following O'Neill's Island 3 design.",
+  "domains": [
+   "gravity_artificial",
+   "materials_structures"
+  ],
+  "date_of_critique": "2010",
+  "source_url": "https://quasar.cc.osaka-kyoiku.ac.jp/~fukue/POPULAR/10roppongi_web.pdf",
+  "status": "valid",
+  "status_reason": "ω²r = (2π/120 s)²×3250 m ≈ 8.9 m/s², matching ~0.9 g."
+ },
+ {
+  "physicist": "Zhou Liyong (周礼勇)",
+  "credentials": "Professor, School of Astronomy and Space Science, Nanjing University (celestial mechanics, PhD)",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Planetary engines push the Earth out of the Solar System",
+  "critique": "Escaping the Sun's gravitational binding requires ~2.65×10^33 J; at 2017 world electricity output (~9.2×10^19 J/yr) this would take ~2.9×10^13 years, far longer than the age of the universe.",
+  "domains": [
+   "propulsion_energy",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://wanbao.xyxww.com.cn/statics/10/2019-02/13/07/2019021307_pdf.pdf",
+  "status": "valid",
+  "status_reason": "GM☉M⊕/2a ≈ 2.65×10^33 J is correct; the energy scale is indeed prohibitive."
+ },
+ {
+  "physicist": "Meng Daqiao (蒙大桥)",
+  "credentials": "Research Fellow, China Academy of Engineering Physics (nuclear materials/physics)",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Planetary engines powered by 'heavy-element fusion' (重核聚变) burning rock",
+  "critique": "Fusion joins light nuclei; elements above Z≈90 tend to fission and below Z≈10 to fuse, so fusion of heavy nuclei has no theory or means of realization and exists only in SF.",
+  "domains": [
+   "propulsion_energy",
+   "quantum"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://wanbao.xyxww.com.cn/statics/10/2019-02/13/07/2019021307_pdf.pdf",
+  "status": "partly",
+  "status_reason": "Fusion is exothermic up to iron (stars burn C, O, Si), so 'heavy' fusion of rock elements is not forbidden in principle, though wildly beyond any achievable confinement conditions."
+ },
+ {
+  "physicist": "Zhang Shuangnan (张双南)",
+  "credentials": "Research Professor, Institute of High Energy Physics, CAS (astrophysicist, PhD)",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Igniting Jupiter's hydrogen atmosphere by crashing the space station's fuel into it",
+  "critique": "Suggested a 'better' way: ignite Jupiter with high-power lasers, as laser ignition is used for nuclear fusion.",
+  "domains": [
+   "propulsion_energy",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://wanbao.xyxww.com.cn/statics/10/2019-02/13/07/2019021307_pdf.pdf",
+  "status": "wrong",
+  "status_reason": "Jupiter's atmosphere lacks the density/temperature confinement for self-sustaining fusion; laser ICF works only on compressed mm-scale pellets, so no laser could 'ignite' Jupiter."
+ },
+ {
+  "physicist": "Gou Lijun (苟利军)",
+  "credentials": "Research Professor, National Astronomical Observatories CAS (black holes, gamma-ray bursts; PhD); science adviser to The Wandering Earth 2",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Proxima Centauri chosen as Earth's new 'sun'",
+  "critique": "Proxima is a red dwarf (~1/7 solar mass) chosen only for proximity; its habitable zone is very close and its flares are far more violent (2017 flare 10x strongest solar flare, Proxima b gets ~4000x Earth's radiation), so it is not a good second sun.",
+  "domains": [
+   "exoplanets_habitability",
+   "astrophysics_stars_planets",
+   "radiation_shielding"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://wanbao.xyxww.com.cn/statics/10/2019-02/13/07/2019021307_pdf.pdf",
+  "status": "valid",
+  "status_reason": "Proxima's frequent superflares and close-in HZ remain the main habitability concerns in 2026 literature."
+ },
+ {
+  "physicist": "Liang Wenjie (梁文杰)",
+  "credentials": "Research Professor, Institute of Physics, CAS; science adviser to The Wandering Earth 2",
+  "work": "The Wandering Earth 2 (流浪地球2)",
+  "medium": "film",
+  "year_of_work": 2023,
+  "depiction": "Destroying the Moon with nuclear weapons",
+  "critique": "All human nuclear weapons fall orders of magnitude short of the energy to destroy the Moon (the dinosaur-killing impact alone exceeded the global arsenal); 'planetary-scale events need planetary-scale energy', so the script was changed to a fictional 'phased-array nuclear detonation' using the Moon's own energy.",
+  "domains": [
+   "propulsion_energy",
+   "combat_weapons"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://www.chinanews.com.cn/cul/2023/02-08/9949356.shtml",
+  "status": "valid",
+  "status_reason": "Lunar gravitational binding energy ~1.2×10^29 J vs global arsenal ~10^19 J."
+ },
+ {
+  "physicist": "Wang Teng (王腾)",
+  "credentials": "Associate Research Fellow, Institute of Plasma Physics, Hefei Institutes of Physical Science, CAS",
+  "work": "The Wandering Earth 2 (流浪地球2)",
+  "medium": "film",
+  "year_of_work": 2023,
+  "depiction": "Fusion-powered planetary engines pushing Earth",
+  "critique": "Using fusion energy to push Earth 'makes sense in principle', but the film's heavy-nucleus fusion is far harder than the D-T light-nucleus fusion being researched; fusion propulsion of planets is 'premature'.",
+  "domains": [
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://www.news.cn/tech/2023-01/27/c_1129315298.htm",
+  "status": "valid",
+  "status_reason": "Ignition conditions scale steeply with Coulomb barrier; heavy-element fusion requires stellar-core conditions."
+ },
+ {
+  "physicist": "Liu Weiping (柳卫平)",
+  "credentials": "Research Professor, China Institute of Atomic Energy; chief scientist of JUNA nuclear astrophysics experiment (PhD)",
+  "work": "The Three-Body Problem (三体, Tencent TV series / Liu Cixin novel)",
+  "medium": "tv",
+  "year_of_work": 2023,
+  "depiction": "Ye Wenjie uses the Sun as an amplifier to broadcast a radio signal to Trisolaris",
+  "critique": "Not feasible in the strict sense: the general direction is right, but the Sun's gravity is too small and the novel exaggerates the effect by about 10^8.",
+  "domains": [
+   "light_speed_communication",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://m.gmw.cn/baijia/2023-02/16/1303285156.html",
+  "status": "valid",
+  "status_reason": "No known solar mechanism amplifies radio by the required factors; solar gravitational lensing needs a receiver/transmitter at ≥550 AU."
+ },
+ {
+  "physicist": "Marc Hairston",
+  "credentials": "Space physicist, PhD; Research Scientist, William B. Hanson Center for Space Sciences, University of Texas at Dallas",
+  "work": "Space Battleship Yamato 2199 (宇宙戦艦ヤマト2199)",
+  "medium": "anime",
+  "year_of_work": 2012,
+  "depiction": "Garmillas and Iscandar as a stable pair of roughly equal, Earth-sized twin planets orbiting each other",
+  "critique": "Argued that Earth-size or larger planets of roughly equal mass cannot form a true double planet: over tens of millions of years the orbit would become unstable and they would escape or collide and coalesce.",
+  "domains": [
+   "orbital_mechanics",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2014",
+  "source_url": "https://www.ourstarblazers.com/vault/?p=16910",
+  "status": "wrong",
+  "status_reason": "An isolated, mutually tidally locked binary planet is a stable two-body system (cf. Pluto-Charon); such pairs are rare from formation, not dynamically forbidden."
+ },
+ {
+  "physicist": "Shengchao Li (Westlake University physics instructor)",
+  "credentials": "PhD (Virginia Tech); Assistant Professor/PI, Laboratory for Dark Matter and Neutrino, Westlake University (experimental particle physics); homework hosted on his lab's teaching site for General Physics I",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Earth, captured by Jupiter, approaches Jupiter's Roche limit and risks being torn apart before impact",
+  "critique": "Homework problem: using densities (Earth 5.5, Jupiter 1.3 g/cm^3) a surface rock remains bound until d < R_J, so Earth would not be disintegrated before hitting Jupiter; 'the movie director should take our class in advance to avoid a mistake' (plot not in Liu Cixin's novel).",
+  "domains": [
+   "orbital_mechanics",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2024",
+  "source_url": "https://scli.lab.westlake.edu.cn/Homework5.pdf",
+  "status": "partly",
+  "status_reason": "The rigid-rock estimate gives ~0.8 R_J, but a planet-sized body behaves as a self-gravitating fluid whose Roche limit (~1.5 R_J) lies outside Jupiter, so tidal disruption before impact is plausible."
+ },
+ {
+  "physicist": "Ji Woong-bae (지웅배)",
+  "credentials": "Astronomer, researcher at Yonsei University Galaxy Evolution Research Center (doctoral-level researcher in galaxy evolution; science communicator) — PhD status at time not confirmed",
+  "work": "Planetes (プラネテス)",
+  "medium": "anime",
+  "year_of_work": 2003,
+  "depiction": "Crews manually collect orbital debris by flying out and grabbing it",
+  "critique": "Manual collection is impractical: debris moves at orbital speeds and the collector must match each piece's relative velocity, which is dangerous and uneconomical; systematic approaches (deorbit, active removal) are needed.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "http://bizhankook.com/articles/21506.html",
+  "status": "valid",
+  "status_reason": "Rendezvous with each object costs large delta-v; real ADR missions (e.g., ClearSpace, ADRAS-J) target one large object per mission."
+ },
+ {
+  "physicist": "Yu Fengjun (于凤军)",
+  "credentials": "Professor, College of Physics and Electrical Engineering, Anyang Normal University (theoretical physics, celestial mechanics)",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Step one of the plan: steering engines halt Earth's rotation",
+  "critique": "Peer-reviewed College Physics (大学物理) paper: using angular-momentum conservation, the work-energy theorem and first cosmic velocity, stopping Earth's spin needs at least ~4.1×10^30 J, and discusses its (in)feasibility as an energy budget.",
+  "domains": [
+   "propulsion_energy",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2020",
+  "source_url": "https://dxwl.bnu.edu.cn/CN/Y2020/V39/I04/10",
+  "status": "valid",
+  "status_reason": "Earth's rotational KE alone is ~2.1×10^29 J; including exhaust energy a ~10^30 J budget is plausible and far beyond human energy production."
+ },
+ {
+  "physicist": "Yu Fengjun (于凤军)",
+  "credentials": "Professor, College of Physics and Electrical Engineering, Anyang Normal University (theoretical physics, celestial mechanics)",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Step two: planetary engines drive Earth out of the Solar System while keeping enough mass for life",
+  "critique": "Follow-up College Physics paper: using momentum conservation, escape velocity and an effective exhaust velocity, the minimum work to remove Earth from the Solar System is ~2.72×10^32 J; feasibility discussed from an energy standpoint.",
+  "domains": [
+   "propulsion_energy",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2021",
+  "source_url": "https://dxwl.bnu.edu.cn/CN/Y2021/V40/I01/12",
+  "status": "partly",
+  "status_reason": "Infeasibility conclusion stands, but the figure is ~10x below Earth's orbital binding energy (~2.65×10^33 J) and hinges on exhaust/gravity-assist accounting."
+ },
+ {
+  "physicist": "Toshiro Kaneko (金子俊郎)",
+  "credentials": "Professor, Graduate School of Engineering, Tohoku University (plasma science, PhD)",
+  "work": "Mobile Suit Gundam series (機動戦士ガンダム)",
+  "medium": "anime",
+  "year_of_work": 1979,
+  "depiction": "Beam sabers: plasma/particle blades of different colours for the Federation, Zeon and Titans",
+  "critique": "In 『機動戦士ガンダム 宇宙世紀vs.現代科学』 analyses the beam saber as plasma and suggests blade colour differences reflect the different gases each side could obtain; distinguishes beams, lasers and mega-particle cannons.",
+  "domains": [
+   "combat_weapons",
+   "quantum"
+  ],
+  "date_of_critique": "2022",
+  "source_url": "https://www.famitsu.com/news/202203/28255946.html",
+  "status": "partly",
+  "status_reason": "Plasma colour from gas emission lines is real physics, but a self-confined, fixed-length plasma blade has no known confinement mechanism."
+ },
+ {
+  "physicist": "Tsutomu Fukuda (福田努)",
+  "credentials": "Particle physicist, Nagoya University (Institute for Advanced Research / Graduate School of Science)",
+  "work": "Mobile Suit Gundam series (機動戦士ガンダム)",
+  "medium": "anime",
+  "year_of_work": 1979,
+  "depiction": "Minovsky particles that jam radar and enable mega-particle cannons and Minovsky craft",
+  "critique": "In 『機動戦士ガンダム 宇宙世紀vs.現代科学』 argues that if Minovsky particles are treated as a type of dark matter, some of their properties become consistent.",
+  "domains": [
+   "quantum",
+   "cosmology"
+  ],
+  "date_of_critique": "2022",
+  "source_url": "https://www.famitsu.com/news/202203/28255946.html",
+  "status": "partly",
+  "status_reason": "Dark-matter candidates by definition barely interact electromagnetically, so they could not jam radar; only exotic dark-sector models (e.g., dark photons) offer a partial link."
+ },
+ {
+  "physicist": "Atsushi Ito (伊藤篤史)",
+  "credentials": "Researcher, Helical Research Division, National Institute for Fusion Science (fusion/plasma simulation, PhD)",
+  "work": "Mobile Suit Gundam series (機動戦士ガンダム)",
+  "medium": "anime",
+  "year_of_work": 1979,
+  "depiction": "Jupiter Energy Fleet hauling helium-3 from Jupiter as the energy source of the Universal Century",
+  "critique": "In 『機動戦士ガンダム 宇宙世紀vs.現代科学』 explains helium-3 as an excellent space fusion fuel, why hauling it from Jupiter matters, and notes the Moon holds more helium-3 than Earth.",
+  "domains": [
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2022",
+  "source_url": "https://www.famitsu.com/news/202203/28255946.html",
+  "status": "partly",
+  "status_reason": "He-3 abundance claims are correct and D-He3 is aneutronic-leaning, but it needs ~several times higher temperatures than D-T and no reactor has achieved it."
+ },
+ {
+  "physicist": "Gou Lijun (苟利军)",
+  "credentials": "Research Professor, National Astronomical Observatories CAS; Professor of Astronomy, University of CAS (black-hole astrophysics, PhD)",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Equatorial steering engines (150 trillion tonnes thrust each) stop Earth's rotation",
+  "critique": "Earth's rotational energy is ~2.24×10^29 J (~10^12 Tsar Bombas); a single engine would decelerate the 460 m/s equatorial spin at ~2.5×10^-7 m/s², taking ~60 years; even ~100 continuous, equal engines make it nearly impossible for humans.",
+  "domains": [
+   "propulsion_energy",
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.thepaper.cn/newsDetail_forward_2963077",
+  "status": "valid",
+  "status_reason": "Iω²/2 ≈ 2.1-2.2×10^29 J is the standard value; the energy/thrust scales are far beyond any technology."
+ },
+ {
+  "physicist": "Gou Lijun (苟利军)",
+  "credentials": "Research Professor, NAOC; Professor, University of CAS",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Surface cities and engines survive after Earth's rotation is halted",
+  "critique": "Without rotation the oceans would migrate poleward (submerging most continents, leaving an equatorial supercontinent), and loss of equatorial centrifugal support could collapse plates, causing global earthquakes and tsunamis; surface cities and engines would likely not survive, so the film's underground cities are more plausible.",
+  "domains": [
+   "orbital_mechanics",
+   "materials_structures"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.thepaper.cn/newsDetail_forward_2963077",
+  "status": "valid",
+  "status_reason": "The ~21 km equatorial bulge and ocean geoid are set by rotation; despinning redistributes water and stresses the lithosphere."
+ },
+ {
+  "physicist": "Gou Lijun (苟利军)",
+  "credentials": "Research Professor, NAOC; Professor, University of CAS",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Earth keeps its atmosphere during the journey after rotation stops",
+  "critique": "If rotation between core and mantle stops, the geomagnetic field may vanish and the solar wind could strip the atmosphere as happened on Mars (now ~1% of Earth's).",
+  "domains": [
+   "radiation_shielding",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.thepaper.cn/newsDetail_forward_2963077",
+  "status": "partly",
+  "status_reason": "Dynamo weakening without rotation is plausible, but solar-wind stripping acts over hundreds of Myr, negligible on the film's ~centuries timescale (and Earth moves away from the Sun)."
+ },
+ {
+  "physicist": "Gou Lijun (苟利军)",
+  "credentials": "Research Professor, NAOC; Professor, University of CAS",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Igniting Jupiter's hydrogen with Earth's atmospheric oxygen so the explosion's shock wave pushes Earth out of Jupiter's grip",
+  "critique": "Earth's oxygen would not mix well enough with Jupiter's hydrogen to burn; even if it did, the chemical energy and resulting shock would be weaker than the solar wind, which Earth's magnetosphere deflects, so it could not push Earth away (at most stripping some atmosphere).",
+  "domains": [
+   "propulsion_energy",
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.thepaper.cn/newsDetail_forward_2963077",
+  "status": "valid",
+  "status_reason": "Chemical combustion energy of any feasible mixed volume is negligible versus the momentum change needed for Earth (~10^28 kg·m/s scale)."
+ },
+ {
+  "physicist": "Gou Lijun (苟利军)",
+  "credentials": "Research Professor, NAOC; Professor, University of CAS",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Earth's long voyage to Proxima Centauri",
+  "critique": "Listed crossing the asteroid belt, Kuiper belt and Oort cloud (which extends ~halfway to Proxima) as a major collision-risk challenge for the wandering Earth.",
+  "domains": [
+   "interstellar_medium",
+   "scale_distances"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.thepaper.cn/newsDetail_forward_2963077",
+  "status": "wrong",
+  "status_reason": "These reservoirs are extremely sparse: Earth's swept volume through the Oort cloud gives an expected impact count ~10^-6, so collisions are not a significant risk."
+ },
+ {
+  "physicist": "Gou Lijun (苟利军)",
+  "credentials": "Research Professor, NAOC; Professor, University of CAS",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "The Sun exhausts core hydrogen, undergoes a helium flash and expands, forcing Earth to flee",
+  "critique": "States that helium ignition after core-hydrogen exhaustion releasing more heat and expanding the Sun is 'fully consistent with our scientific understanding' (the film's accurate science).",
+  "domains": [
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.thepaper.cn/newsDetail_forward_2963077",
+  "status": "partly",
+  "status_reason": "The sequence is real, but for the Sun it lies ~5 Gyr ahead (not within centuries), and the core flash itself is invisible at the surface."
+ },
+ {
+  "physicist": "Zhou Liyong (周礼勇)",
+  "credentials": "Professor, School of Astronomy and Space Science, Nanjing University (celestial mechanics, PhD); science adviser to the TV series",
+  "work": "Three-Body (三体, Tencent TV series)",
+  "medium": "tv",
+  "year_of_work": 2023,
+  "depiction": "Signal timing in Ye Wenjie's discovery: radiation from Jupiter reaching Earth directly vs. via the Sun",
+  "critique": "Verified with the cosine rule and 1970s planetary data that the direct Jupiter-Earth light-travel time is ~2099 s and via the Sun ~3101 s (difference ~16 min 42 s), matching the novel; noted that using modern ephemerides for the story's era would be an anachronism.",
+  "domains": [
+   "light_speed_communication",
+   "scale_distances"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://www.chinawriter.com.cn/n1/2023/0221/c404084-32627806.html",
+  "status": "valid",
+  "status_reason": "Simple light-travel geometry; 2099 s ↔ ~4.2 AU Earth-Jupiter distance, consistent with orbital geometry."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "Astronomer, Professor, Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato 2199 (宇宙戦艦ヤマト2199)",
+  "medium": "anime",
+  "year_of_work": 2012,
+  "depiction": "Ep.8: a giant arch-shaped prominence/flare on the red dwarf Gliese 581 threatens the ship",
+  "critique": "An arch-shaped plasma prominence is plausible, and red dwarfs are known to produce huge flares that can exceed the Sun's.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "radiation_shielding"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.ourstarblazers.com/vault/803",
+  "status": "valid",
+  "status_reason": "M-dwarf superflares (TESS/Kepler statistics) routinely exceed the largest solar flares in relative and often absolute energy."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "Astronomer, Professor, Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato 2199 (宇宙戦艦ヤマト2199)",
+  "medium": "anime",
+  "year_of_work": 2012,
+  "depiction": "Ep.13: Yamato hides inside a young star's protoplanetary (accretion) disk where dust coalesces into planetesimals",
+  "critique": "The depiction of dust coalescing into planetesimals in a young star's disk matches the standard planet-formation picture for the early Solar System (~4.6-5 Gyr ago), building on the 1980s Kyoto model.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "interstellar_medium"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.ourstarblazers.com/vault/803",
+  "status": "valid",
+  "status_reason": "ALMA disk images (e.g., HL Tau) and the Kyoto (Hayashi) model remain the basis of planet-formation theory, though pebble accretion now supplements it."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "Astronomer, Professor, Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato 2199 (宇宙戦艦ヤマト2199)",
+  "medium": "anime",
+  "year_of_work": 2012,
+  "depiction": "Ep.15: the fictional neutron star 'Karel 163' whose beams sweep space and disturb the warp",
+  "critique": "The name is fictional but neutron stars are real supernova remnants with intense magnetic fields and fast rotation, whose beams sweep space like a lighthouse, as depicted.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "radiation_shielding"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.ourstarblazers.com/vault/803",
+  "status": "valid",
+  "status_reason": "Pulsar lighthouse model of rotating, magnetized neutron stars is well established."
+ },
+ {
+  "physicist": "Nobuyuki Sakai (坂井伸之)",
+  "credentials": "Professor, Department of Physics and Informatics, Faculty of Science, Yamaguchi University (general relativity/cosmology, PhD)",
+  "work": "Doraemon (ドラえもん)",
+  "medium": "anime",
+  "year_of_work": 1979,
+  "depiction": "Doraemon's time machine (travel to the future and past)",
+  "critique": "In a university lecture titled 「相対性理論でドラえもんの世界が現実に？」: relativity does allow travel to the future like a time machine (moving near light speed slows time), but no method for travelling to the past has been found.",
+  "domains": [
+   "relativity_time_dilation",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "undated",
+  "source_url": "https://telemail.jp/shingaku/academics-research/lecture/g000259",
+  "status": "valid",
+  "status_reason": "Kinematic time dilation is experimentally verified; past-directed travel needs CTCs/exotic matter with no known realization."
+ },
+ {
+  "physicist": "Hideto En'yo (延與秀人)",
+  "credentials": "Nuclear physicist, PhD; Director, RIKEN Nishina Center for Accelerator-Based Science (team that synthesized nihonium)",
+  "work": "Shin Ultraman (シン・ウルトラマン)",
+  "medium": "film",
+  "year_of_work": 2022,
+  "depiction": "'Specium' (スペシウム), the alien element powering Ultraman",
+  "critique": "Offered a 'reading' of Specium as element 133, linking it to the predicted 'island of stability' of long-lived superheavy nuclei.",
+  "domains": [
+   "quantum",
+   "materials_structures"
+  ],
+  "date_of_critique": "2022",
+  "source_url": "https://gendai.media/articles/-/103022",
+  "status": "partly",
+  "status_reason": "The island of stability is predicted near Z≈114-126 (N≈184); Z=133 lies beyond current predictions, so long life is speculative."
+ },
+ {
+  "physicist": "Zhang Shuangnan (张双南)",
+  "credentials": "Research Professor, Institute of High Energy Physics, CAS (astrophysicist, PhD)",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "An astronaut sacrifices himself by ramming the space station into Jupiter's atmosphere to ignite it",
+  "critique": "Called it scientifically unreasonable: mature technology such as intercontinental ballistic missiles could have delivered the ignition instead of sacrificing an astronaut.",
+  "domains": [
+   "propulsion_energy",
+   "combat_weapons"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "http://www.chinanews.com/cul/2019/02-13/8752773.shtml",
+  "status": "partly",
+  "status_reason": "An uncrewed delivery is sensible, but the Earth-Jupiter gap (~70,000 km) exceeds ICBM capability and the underlying ignition mechanism fails regardless."
+ },
+ {
+  "physicist": "Genichiro Hori (堀源一郎)",
+  "credentials": "Astronomer (celestial mechanics), Hatanaka group, Department of Astronomy, University of Tokyo; later professor",
+  "work": "Gorath (妖星ゴラス)",
+  "medium": "film",
+  "year_of_work": 1962,
+  "depiction": "Rocket engines at the South Pole move Earth out of the path of the dense star Gorath, which swallows the Moon instead",
+  "critique": "As consultant he computed the force, momentum and energy needed to move Earth (assuming it feasible) but objected that if the Moon were swallowed by Gorath, Earth would have been swallowed too, asking that publicity note this part was a 'lie'.",
+  "domains": [
+   "orbital_mechanics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "1962",
+  "source_url": "https://ja.wikipedia.org/wiki/%E5%A6%96%E6%98%9F%E3%82%B4%E3%83%A9%E3%82%B9",
+  "status": "valid",
+  "status_reason": "With Gorath ~6000 Earth masses, an encounter close enough to capture the Moon would devastate Earth only ~384,000 km away; differential capture is implausible."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "PhD (science), Director, Amanogawa Galaxy Astronomy Research Center, Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato (宇宙戦艦ヤマト series, incl. 2199/2202)",
+  "medium": "anime",
+  "year_of_work": 1974,
+  "depiction": "Warp navigation lets Yamato cross 168,000 light years",
+  "critique": "No known real-world physics allows warp; a story that uses it must supply its own 'SF logic', and the energy source alone would not suffice—a separate FTL mechanism is needed.",
+  "domains": [
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2020",
+  "source_url": "https://www.ourstarblazers.com/vault/490a/",
+  "status": "valid",
+  "status_reason": "Warp metrics (Alcubierre, Lentz) require negative energy or unphysical energy conditions; no viable mechanism exists in 2026."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "PhD (science), Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato (宇宙戦艦ヤマト series)",
+  "medium": "anime",
+  "year_of_work": 1974,
+  "depiction": "Without warp, the journey to the Large Magellanic Cloud and back",
+  "critique": "Even at near light speed the crew would age less, but people at home experience normal time: a 160,000-light-year round trip would take 320,000 years for Earth.",
+  "domains": [
+   "relativity_time_dilation",
+   "scale_distances"
+  ],
+  "date_of_critique": "2020",
+  "source_url": "https://www.ourstarblazers.com/vault/490a/",
+  "status": "valid",
+  "status_reason": "Special relativity: Earth-frame round-trip time ≥ 2d/c."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "PhD (science), Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato (宇宙戦艦ヤマト series)",
+  "medium": "anime",
+  "year_of_work": 1974,
+  "depiction": "Communication between Yamato and Earth across interstellar distances",
+  "critique": "Radio from 15 light-years away means a 30-year wait for a reply, so FTL communication (and warp) is essential for such stories.",
+  "domains": [
+   "light_speed_communication"
+  ],
+  "date_of_critique": "2020",
+  "source_url": "https://www.ourstarblazers.com/vault/490a/",
+  "status": "valid",
+  "status_reason": "Signal round-trip time = 2d/c; no FTL signalling is allowed by relativity or entanglement."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "PhD (science), Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato 2199 (宇宙戦艦ヤマト2199)",
+  "medium": "anime",
+  "year_of_work": 2012,
+  "depiction": "Yamato launching directly from Earth's surface, and crew moving normally aboard",
+  "critique": "Spaceships cannot launch like this; the story needs to explain artificial gravity / 'inertial control' for it to make sense.",
+  "domains": [
+   "gravity_artificial",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2020",
+  "source_url": "https://www.ourstarblazers.com/vault/490a/",
+  "status": "partly",
+  "status_reason": "A vehicle with thrust/weight >1 can lift off, so launch per se is possible; the unexplained power, ship structure and crew acceleration are the real problems."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "PhD (science), Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato 2199 (宇宙戦艦ヤマト2199)",
+  "medium": "anime",
+  "year_of_work": 2012,
+  "depiction": "Crew running normally on the surface of Enceladus",
+  "critique": "Enceladus's gravity is tiny (quoted as ~0.7% of the Moon's), so running as shown in 2199 is wrong.",
+  "domains": [
+   "astrophysics_stars_planets",
+   "gravity_artificial"
+  ],
+  "date_of_critique": "2020",
+  "source_url": "https://www.ourstarblazers.com/vault/490a/",
+  "status": "partly",
+  "status_reason": "Conclusion correct (g≈0.11 m/s², ~1.2% of Earth's), but that is ~7% of the Moon's, not 0.7% (possibly a translation slip)."
+ },
+ {
+  "physicist": "Hitoshi Yamaoka (山岡均)",
+  "credentials": "Astronomer, PhD; Associate Professor and Public Relations Director, Astronomy Information Center, National Astronomical Observatory of Japan (supernovae/transients)",
+  "work": "Space Battleship Yamato (宇宙戦艦ヤマト series)",
+  "medium": "anime",
+  "year_of_work": 1974,
+  "depiction": "Warp navigation that bends space-time rather than accelerating the ship",
+  "critique": "Warp that 'bends space-time' is a different theory from ship propulsion and is 'the right direction' for FTL travel.",
+  "domains": [
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "2020",
+  "source_url": "https://www.ourstarblazers.com/vault/490a/",
+  "status": "partly",
+  "status_reason": "Spacetime-geometry approaches (Alcubierre-type) are the only GR-consistent FTL concepts, but all require negative energy and remain unrealizable."
+ },
+ {
+  "physicist": "Gou Lijun (苟利军)",
+  "credentials": "Research Professor, NAOC; Professor of Astronomy, University of CAS (PhD)",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Using Jupiter's gravity as a slingshot to accelerate Earth",
+  "critique": "The gravitational-slingshot principle is sound and routinely used by probes (e.g., Voyager 1 at Jupiter and Saturn), explained via a ball bouncing off a moving train.",
+  "domains": [
+   "orbital_mechanics"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.thepaper.cn/newsDetail_forward_2963077",
+  "status": "valid",
+  "status_reason": "Gravity assists exchange momentum with the planet in the heliocentric frame; standard mission design."
+ },
+ {
+  "physicist": "Gou Lijun (苟利军)",
+  "credentials": "Research Professor, NAOC; Professor of Astronomy, University of CAS (PhD)",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Earth drifting inside Jupiter's Roche limit and facing tidal break-up",
+  "critique": "Within the (rigid) Roche limit Jupiter's tides would tear Earth apart, so the film's crossing of the limit is a genuine threat, motivating the evacuation plan.",
+  "domains": [
+   "orbital_mechanics",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.thepaper.cn/newsDetail_forward_2963077",
+  "status": "partly",
+  "status_reason": "Tidal disruption is real for a self-gravitating planet (fluid limit ~1.5 R_J), but the rigid-body Roche limit (~0.8 R_J) lies inside Jupiter, so the 'rigid' framing is inconsistent."
+ },
+ {
+  "physicist": "Guo Yanjun (郭延军)",
+  "credentials": "Senior Engineer (正高级工程师, full-professor rank), National Center for Nanoscience and Technology, China — PhD/physics degree not confirmed",
+  "work": "Three-Body (三体, Tencent TV series)",
+  "medium": "tv",
+  "year_of_work": 2023,
+  "depiction": "The 'Droplet' (水滴) probe whose hull is bound by the strong interaction, perfectly smooth and droplet-shaped",
+  "critique": "Only an extremely dense material could be built with the strong interaction; at macroscopic size its own gravity and other effects could not be ignored, so it would not hold a mirror-perfect droplet shape.",
+  "domains": [
+   "materials_structures",
+   "quantum"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://m.gmw.cn/baijia/2023-02/16/1303285156.html",
+  "status": "valid",
+  "status_reason": "Strong-force-bound matter has nuclear density (~2×10^17 kg/m^3); a metre-scale droplet would weigh ~10^17 kg and collapse/crush under self-gravity."
+ },
+ {
+  "physicist": "Guo Yanjun (郭延军)",
+  "credentials": "Senior Engineer (正高级工程师), National Center for Nanoscience and Technology — PhD/physics degree not confirmed",
+  "work": "Three-Body (三体, Tencent TV series)",
+  "medium": "tv",
+  "year_of_work": 2023,
+  "depiction": "'Flying Blade' (飞刃) nanofilaments slicing the ship Judgment Day in Operation Guzheng",
+  "critique": "The closest real material is carbon nanotubes, the strongest known, but still far from strong enough to cut a ship; a space elevator is more feasible than the nano-blade.",
+  "domains": [
+   "materials_structures"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://m.gmw.cn/baijia/2023-02/16/1303285156.html",
+  "status": "partly",
+  "status_reason": "Macroscopic CNT fibres are far weaker than ideal; but cutting is governed by stress concentration, so an ideal ~100 GPa filament could plausibly slice steel—the main obstacle is manufacturing length."
+ },
+ {
+  "physicist": "Charles Zhang Chaoyang (张朝阳)",
+  "credentials": "PhD in experimental physics, MIT (1993), MIT postdoc; founder/CEO of Sohu; gives regular public physics lectures",
+  "work": "The Wandering Earth 2 (流浪地球2)",
+  "medium": "film",
+  "year_of_work": 2023,
+  "depiction": "After Earth's rotation is halted, ocean water shifts and floods cities such as Beijing",
+  "critique": "In a public discussion with director Frant Gwo he worked through the physics of equatorial water surging toward the poles once rotation stops (explaining the flooding), plus how Earth is propelled after stopping, planetary distances and orbital speeds.",
+  "domains": [
+   "orbital_mechanics",
+   "propulsion_energy"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://www.nbd.com.cn/articles/2023-01-21/2643533.html",
+  "status": "valid",
+  "status_reason": "Removing centrifugal support collapses the ~21 km equatorial bulge of the geoid; oceans redistribute toward the poles, flooding mid/high-latitude land."
+ },
+ {
+  "physicist": "Guo Guoping (郭国平)",
+  "credentials": "Professor, University of Science and Technology of China (quantum information/semiconductor qubits, PhD); secretary-general, CCF Quantum Computing Committee",
+  "work": "The Wandering Earth 2 (流浪地球2)",
+  "medium": "film",
+  "year_of_work": 2023,
+  "depiction": "The 550-series quantum computers (550W/MOSS) with enormous computing power",
+  "critique": "Judged the film's 550 series to be, in effect, already 'an excellent universal (general-purpose) quantum computer', far beyond today's devices, while expecting quantum computing to matter in future production and life.",
+  "domains": [
+   "quantum"
+  ],
+  "date_of_critique": "2023",
+  "source_url": "https://www.news.cn/tech/2023-01/27/c_1129315298.htm",
+  "status": "partly",
+  "status_reason": "Fault-tolerant universal quantum computing remains undemonstrated in 2026 (best systems are ~100-1000 noisy/early logical qubits), and quantum hardware confers no 'self-awareness'."
+ },
+ {
+  "physicist": "Gou Lijun (苟利军)",
+  "credentials": "Research Professor, NAOC; Professor of Astronomy, University of CAS (PhD)",
+  "work": "The Wandering Earth (流浪地球)",
+  "medium": "film",
+  "year_of_work": 2019,
+  "depiction": "Day and night on an Earth whose rotation has been stopped",
+  "critique": "Stated that a non-rotating Earth would keep one face toward the Sun with the other in permanent night (like polar day/night), leaving the dark side too cold for life.",
+  "domains": [
+   "orbital_mechanics",
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "2019",
+  "source_url": "https://www.thepaper.cn/newsDetail_forward_2963077",
+  "status": "partly",
+  "status_reason": "A planet with zero sidereal spin still sees the Sun circle once per orbit (half-year day/night), so it is not tidally locked; extreme hemispheric temperature swings would still result."
+ },
+ {
+  "physicist": "Nobuyuki Sakai (坂井伸之)",
+  "credentials": "Professor, Department of Physics and Informatics, Faculty of Science, Yamaguchi University (general relativity/cosmology, PhD)",
+  "work": "Doraemon (ドラえもん)",
+  "medium": "anime",
+  "year_of_work": 1979,
+  "depiction": "The 4D pocket (四次元ポケット) holding a vast space inside a small pouch",
+  "critique": "Notes that spacetime structures 'like Doraemon's pocket'—reproducing an infinitely large space inside a finite lab region, e.g., creating a small universe by inflating an early-universe state—are being studied theoretically, though realization is far off.",
+  "domains": [
+   "cosmology",
+   "ftl_wormholes"
+  ],
+  "date_of_critique": "undated",
+  "source_url": "https://telemail.jp/shingaku/academics-research/lecture/g000259",
+  "status": "partly",
+  "status_reason": "GR permits 'bag-of-gold'/baby-universe geometries (Farhi-Guth-Guven), but they need energy densities and quantum tunnelling far beyond any lab, and remain purely theoretical."
+ },
+ {
+  "physicist": "Jun Fukue (福江純)",
+  "credentials": "Astrophysicist, D.Sc. Kyoto University; Professor, Osaka Kyoiku University",
+  "work": "Mobile Suit Gundam: Char's Counterattack (機動戦士ガンダム 逆襲のシャア)",
+  "medium": "anime",
+  "year_of_work": 1988,
+  "depiction": "Colony drops and the attempted Axis asteroid drop to plunge Earth into a 'nuclear winter' cooling (地球寒冷化作戦)",
+  "critique": "In a 2010 seminar shared with Tomino and Fukui ('ガンダム天文入門') he framed the colony/Axis drop as a 'dinosaur winter', relating it to the Chicxulub impact and Alvarez hypothesis, arguing large impacts genuinely cause global cooling and mass extinction (and that eventual real impacts motivate space migration).",
+  "domains": [
+   "astrophysics_stars_planets",
+   "thermodynamics_heat"
+  ],
+  "date_of_critique": "2010",
+  "source_url": "https://quasar.cc.osaka-kyoiku.ac.jp/~fukue/POPULAR/10roppongi_web.pdf",
+  "status": "valid",
+  "status_reason": "Chicxulub impact winter (soot/sulfate aerosols) is the accepted cause of the K-Pg extinction; a multi-km Axis impact would produce comparable global cooling."
+ },
+ {
+  "physicist": "Toshihiro Handa (半田利弘)",
+  "credentials": "Astronomer, Professor, Kagoshima University; Yamato 2199 science adviser",
+  "work": "Space Battleship Yamato 2199 (宇宙戦艦ヤマト2199)",
+  "medium": "anime",
+  "year_of_work": 2012,
+  "depiction": "Rogue (free-floating) planets with no host star encountered during the voyage",
+  "critique": "Rogue planets without a parent star are real, having been confirmed through infrared observations and gravitational microlensing.",
+  "domains": [
+   "exoplanets_habitability",
+   "astrophysics_stars_planets"
+  ],
+  "date_of_critique": "2013",
+  "source_url": "https://www.ourstarblazers.com/vault/803",
+  "status": "valid",
+  "status_reason": "Microlensing surveys (OGLE, MOA) and JWST imaging have since confirmed abundant free-floating planets, down to Earth mass."
+ }
+]

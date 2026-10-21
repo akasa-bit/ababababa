@@ -508,9 +508,9 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
         <div><i style="background:radial-gradient(#aadcff,transparent 70%)"></i>地球からの指令</div>
         <div><i style="background:radial-gradient(#a0e678,transparent 70%)"></i>朝貢 (主人の星系への送金)</div>
         <div><i style="background:radial-gradient(#ffd778,transparent 70%)"></i>資金援助 (主人の星系からの送金)</div>
-        <div class="muted" style="max-width:220px">通信の描き方はヘッダーの「通信」ボタンで切り替える (表示しない・光の点)。</div>
+        <div class="muted" style="max-width:220px">通信の描き方はヘッダーの「通信」ボタンで切り替える (表示しない・光の点)。光の点は見やすくするための印で、こちらへ向かっていない通信の光は、実際には見えない。</div>
         <div class="muted" style="max-width:220px">左下の「従属」で従属マップ (家臣 → 主人の矢印。色は従属の深さのグラデーション) に切り替える。</div>
-        <div class="muted" style="max-width:220px">地図は地球に届いている光で描く。遠くの星系は昔の様子で、船は見かけの位置に見える。</div>
+        <div class="muted" style="max-width:220px">地図は首都 (地球の国なら地球) に届いている光で描く。遠くの星系は昔の様子で、船は見かけの位置に見える。</div>
         <div><i style="border:2px solid #ff5a5a;border-radius:50%;width:7px;height:7px"></i>征服戦争 (赤い輪と ⚔ の数字が進捗)</div>
         <div><i style="border:2px dashed #ff5a5a;border-radius:50%;width:7px;height:7px"></i>艦隊戦 (下の棒が両軍の残りの比)</div>
         <div><i style="border:2px solid #ffaa3c;border-radius:50%;width:7px;height:7px"></i>攻囲 (国家間の戦争)</div>
@@ -563,6 +563,7 @@ const EDITIONS = {
 };
 const ED = EDITIONS[EDITION];
 const PHYSICS_OFF = { shield: false, accel: false, flare: false, pv: false }; // 物理なし (物理を入れる前のセーブ)
+const SIM_ONLY = EDITION === 'sim'; // シミュレーション版だけの物理 (途中の星系で止まる・進路変更の慣性・減速のエネルギー・海賊の出どころ・難民・M 型星の惑星の大気・空の背景。docs/sf-critiques.md)
 // シード付き乱数 (mulberry32)。同じシードなら同じ銀河が生成される。
 function hashSeed(str) {
   let h = 2166136261;
@@ -876,6 +877,13 @@ function settleability(b) {
 }
 
 // 共通の派生量を計算して天体を完成させる。
+// M 型星のまわりの岩の惑星が大気を保てるか (物理。シミュレーション版だけ)。「宇宙の海岸線」(Zahnle & Catling 2017): 受ける光 I [地球 = 1] が
+// 脱出速度 v [km/s] の 4 乗に比例する線より強いと、大気は逃げてしまう。M 型星の線は I = 1e-4 v⁴ (TRAPPIST-1 b と c のあいだ。太陽系の線より 0.5 桁低い。
+// M 型星は光のうち X 線と紫外線の割合が大きいため。arXiv:2508.08253)。JWST の熱の観測で、線より上の LHS 3844 b・GJ 1132 b・GJ 3929 b に厚い大気は見つかっていない
+function airlessM(b, star) {
+  const v = 11.186 * Math.sqrt(b.mass / b.radius), I = star.lum / (b.a * b.a);
+  return I > 1e-4 * v ** 4;
+}
 function finalizeBody(body, star) {
   body.period = Math.sqrt(GM.pow(body.a, 3) / star.mass);
   body.tidalLock = body.a < 0.25 * GM.cbrt(star.mass) && body.type !== 'belt';
@@ -889,6 +897,9 @@ function finalizeBody(body, star) {
   body.gravity = body.mass / GM.pow(body.radius, 2);
   body.teq = eqTemp(star.lum, body.a, body.albedo);
   if (body.pressure === undefined) body.pressure = 0;
+  if (SIM_ONLY && star.cls === 'M' && (body.type === 'rocky' || body.type === 'dwarf') && body.pressure > 0 && airlessM(body, star)) {
+    body.pressure = 0; body.water = 0; body.tSurf = undefined; body.stripped = true; // 大気と海は、恒星の X 線・紫外線で逃げた
+  }
   if (body.tSurf === undefined) body.tSurf = body.teq * greenhouse(body.pressure);
   if (body.type === 'rocky' || body.type === 'dwarf') {
     body.surface = classifySurface(body.tSurf, body.pressure, body.water);
@@ -1313,9 +1324,10 @@ const SWARM = {
 };
 const PERSON_KG = 100; // 乗る人 1 人の質量 (体と身の回りの品)。住む場所の質量は船の構造 (工業品) に入る
 const FLEET_KG = 160 * UNIT_KG; // 1 艦隊の質量 (編成に使う金属・燃料・希少元素の合計)
+const FLEET_KE = (1 / Math.sqrt(1 - OFFROUTE_SPEED ** 2) - 1) * FLEET_KG * C2; // 0.9c の 1 艦隊の運動エネルギー [J] (表示だけ)
 const TROOP_KG = 10 * RES_KG.goods; // 歩兵 1 連隊の質量 (訓練に使う工業品)
 const MIGRANT_KG = (100 * RES_KG.goods) / 2e5; // 移民 1 人あたりの船の質量 [kg] (入植船と同じ: 工業品 100 単位 ÷ 20 万人 = 250 t)
-const E_LABEL = { swarm: 'スウォームの発電', settler: '入植船', cargo: '貨物船', build: '資材輸送船', fleet: '艦隊', troop: '歩兵', migrant: '移民船', waste: '蓄えきれず捨てた' };
+const E_LABEL = { swarm: 'スウォームの発電', settler: '入植船', cargo: '貨物船', build: '資材輸送船', fleet: '艦隊', troop: '歩兵', migrant: '移民船', pirate: '海賊の船出 (盗まれた)', waste: '蓄えきれず捨てた' };
 // 帆に光の運ぶエネルギーが移る割合を、止まった状態から速さ beta までの加速で通したもの。
 // その瞬間の割合 2β/(1+β) (完全な反射の帆) を、運動量の式で積分した: 必要な光 = mc² (γβ + γ − 1) / 2
 const sailEff = (beta) => { const g = 1 / Math.sqrt(1 - beta * beta); return (2 * (g - 1)) / (g * beta + g - 1); };
@@ -1324,7 +1336,13 @@ const sailEff = (beta) => { const g = 1 / Math.sqrt(1 - beta * beta); return (2 
 function propulsion(m, beta, mode) {
   const g = 1 / Math.sqrt(1 - beta * beta);
   const chain = PROP.laser * PROP.beam * sailEff(beta);
-  if (mode === 'route') { const e = ((g - 1) * m * C2) / chain; return { acc: e, dec: e, mass: m, anti: 0 }; }
+  if (mode === 'route') {
+    const e = ((g - 1) * m * C2) / chain;
+    // 着く側のレーザーで止めるとき、帆はレーザーへ近づくので、跳ね返る光が青くずれて船の運動エネルギーを持ち去る。要る光は mc² (γβ − γ + 1) / 2 で、
+    // 加速 (γβ + γ − 1) の 0.16 倍 (0.95c)。加速を時間反転したもの (シミュレーション版だけ。ゲーム版は加速と同じ量のまま)
+    const d = SIM_ONLY ? (m * C2 * (g * beta - g + 1)) / 2 / (PROP.laser * PROP.beam) : e;
+    return { acc: e, dec: d, mass: m, anti: 0 };
+  }
   // 反物質ロケット: 速さの変化 (ラピディティ) atanh(βf) = 排気速度 × ln(質量比)。推進剤の半分が反物質
   const R = GM.exp(GM.atanh(PROP.magsailTo) / PROP.amExhaust);
   const anti = (m * (R - 1)) / 2;
@@ -1374,7 +1392,7 @@ const SHIELD = {
   crewSv: 0.6, // 乗る人の 1 便の線量当量の限度 [Sv] (NASA-STD-3001 の宇宙飛行士の生涯の限度 600 mSv)
   frontShare: null, // そのうち前 (星間の気体) に割り当てる分 (残りは横と後ろの宇宙線)。null なら、遮蔽が一番軽くなる割り振りを探す
   cargoGy: 1e4, // 積み荷の吸収線量の限度 [Gy] (食品の照射の上限の目安 10 kGy: Codex の一般規格。耐放射線の電子部品も 1〜10 kGy)。宇宙線は数 Gy なので横の遮蔽は要らない
-  crew: ['settler', 'migrant', 'troop', 'fleet'], // 人が乗る船
+  crew: ['settler', 'migrant', 'troop', 'fleet', 'pirate'], // 人が乗る船
   rho: { crew: 500, cargo: 1000 }, // 船の平均の密度 [kg/m³] (人が乗る船は ISS の与圧部の 約 460、積み荷は水や氷の 1000。仮定)
   aspect: [1, 10], // 船の長さ ÷ 直径 の範囲。この中で、遮蔽が一番軽くなる太さにする (横の遮蔽が要らない荷は細い方の端)
 };
@@ -1439,6 +1457,24 @@ function accelExtra(ly, beta, gs, phys = ED.physics) {
   const total = ly >= 2 * xa ? 2 * T * g * beta + (ly - 2 * xa) / beta : 2 * T * Math.sqrt((1 + ly / 2 / T) ** 2 - 1);
   return total - ly / beta; // 速さ β のまま飛ぶとしたときより遅れる年数
 }
+// 道のり v (Game.voyage の結果) を乗っている人の時計で。区間ごとの速さ (交易路 0.95c・外 0.9c) で 1/γ を掛ける (シミュレーション版は区間ごとの加速と減速も)
+function voyageShipTime(g, v) {
+  let tau = 0;
+  for (let i = 1; i < v.path.length; i++) {
+    const d = g.sysDist(v.path[i - 1], v.path[i]), b = g.routeBetween(v.path[i - 1], v.path[i]) ? SHIP_SPEED : OFFROUTE_SPEED;
+    tau += SIM_ONLY ? shipTime(d, b, g.physics) : (d * Math.sqrt(1 - b * b)) / b; // シミュレーション版は途中の星系ごとに止まる
+  }
+  return tau;
+}
+// 乗っている人の時計で進む年数 (特殊相対論の時間の遅れ)。道のり ly [光年] を速さ beta で飛ぶ。画面の「到着まで X 年」は星々 (と地球) の時計の年数で、
+// 乗る人には 1/γ に縮む (0.95c で 1/3.2)。シミュレーション版は 1g の加速と減速の分も入れる (加速を終える前に折り返す短い航路は中点で折り返す)
+function shipTime(ly, beta, phys = ED.physics) {
+  if (!(ly > 0)) return 0;
+  const g = 1 / Math.sqrt(1 - beta * beta);
+  if (!phys.accel) return ly / (g * beta);
+  const T = C_LIGHT / (ACCEL.crew * 9.80665) / YEAR_S, xa = T * (g - 1), hx = 1 + ly / 2 / T;
+  return ly >= 2 * xa ? 2 * T * GM.atanh(beta) + (ly - 2 * xa) / (g * beta) : 2 * T * GM.log(hx + Math.sqrt(hx * hx - 1));
+}
 // 道のりの各星系に着く年 times に、加速と減速の遅れ extra を足す (加速の分は 2 つ目の点から、減速の分は最後の点に)
 function withAccel(times, extra) {
   if (!extra) return times;
@@ -1463,9 +1499,10 @@ function shieldOf(kind, m, beta, ly, phys = ED.physics) {
   const fluence = ISM.nNuc * ly * LY_CM;
   const V = m / SHIELD.rho[crew ? 'crew' : 'cargo'];
   const g = 1 / Math.sqrt(1 - beta * beta);
-  // 船の時間 [s]。加速と減速のあいだ (1g。physics.accel のとき) は、船の時間が速く進む (T atanh β)
-  const T1 = C_LIGHT / 9.80665 / YEAR_S, xa = T1 * (g - 1);
-  const tau = phys.accel && ly >= 2 * xa ? ((2 * T1 * GM.atanh(beta) + (ly - 2 * xa) / (g * beta)) * YEAR_S) : (ly * LY_CM) / (g * beta * C_LIGHT * 100);
+  // 船の時間 [s] (乗っている人の時計。地球の時計より遅く進む)。1g で加速と減速をするあいだ (physics.accel のとき) は T atanh β、速さ β で飛ぶあいだは道のり ÷ γβc。
+  // 短い航路 (加速を終える前に折り返す) は、中点で減速に変わる: 2 T acosh(1 + 道のり ÷ 2T)
+  const T1 = C_LIGHT / 9.80665 / YEAR_S, xa = T1 * (g - 1), hx = 1 + ly / 2 / T1;
+  const tau = phys.accel ? (ly >= 2 * xa ? 2 * T1 * GM.atanh(beta) + (ly - 2 * xa) / (g * beta) : 2 * T1 * GM.log(hx + Math.sqrt(hx * hx - 1))) * YEAR_S : (ly * LY_CM) / (g * beta * C_LIGHT * 100);
   if (!crew) {
     const tf = depthFor(SHIELD_DOSE[key], 'D', GM.log(SHIELD.cargoGy / fluence)); // 荷は宇宙線が数 Gy なので横は要らない
     return { ...shieldShape(V, tf, 0), depth: tf, side: 0, fluence, tau, share: 1 };
@@ -1491,7 +1528,9 @@ function shieldOf(kind, m, beta, ly, phys = ED.physics) {
 // sources = 買い手が見る売り手の数 (交易路網で近い順)、wait = 注文が届いてから入荷を待つ年数の上限
 const TRADE = { sigma: 5, rate: 0.01, sources: 16, wait: 10 }; // rate は財政の標準 (FISCAL_DEFAULT.rate と同じ)
 const tradeCost = (years, rate = TRADE.rate) => GM.exp(rate * years); // rate = 買い手の国の利子率 (財政で選ぶ。人間でない国は標準の TRADE.rate)
-const E_UNIT = propulsion(UNIT_KG, SHIP_SPEED, 'route').acc; // 交易路で 100 万 t を運ぶときの、片側 (加速か減速) のエネルギー [J]
+const E_UNIT = propulsion(UNIT_KG, SHIP_SPEED, 'route').acc; // 交易路で 100 万 t を運ぶときの、送る側の加速のエネルギー [J]
+const E_UNIT_DEC = propulsion(UNIT_KG, SHIP_SPEED, 'route').dec; // 同じく、受ける側の減速 [J] (シミュレーション版は 0.16 倍。使うのは decUnit())
+const decUnit = () => (SIM_ONLY ? E_UNIT_DEC : E_UNIT); // 受ける側の減速 (読み込みのあとで物理を切っても効くように、使うときに決める)
 const E_UNIT_FREE = ((p) => p.acc + p.dec)(propulsion(UNIT_KG, SHIP_SPEED, 'free')); // 同じく、減速を磁気帆と反物質で行うとき (送る側がすべて払う) [J]
 let TRADE_AUDIT = null; // 試験用: 配列にすると、星系どうしの取引 (送った星系・受けた星系・年・基準価格での額) を書き出す (目標 R01)
 let MASS_AUDIT = null; // 試験用: { flows: {}, energy: {} } にすると、備蓄とエネルギーの出入りを星系・資源・種類ごとに足し上げる
@@ -2066,12 +2105,13 @@ const STORY = {
     start(g, sys) {
       const species = `${pickOf(KANA_A)}${pickOf(KANA_B)}人`;
       g.event('story', sys, `異星の難民船が太陽系に現れ、${species} 5万人が保護を求めている`);
-      g.addDecision({ kind: 'story', type: 'refugees', sys, species, deadline: g.year + 5, def: 'refuse', text: `異星の難民船が${sys === 0 ? '太陽系' : g.system(sys).name}に現れた。${species} 5万人が保護を求めている。受け入れれば、空きのある${g.realmName(g.cap)}の入植地へ送る。`,
+      g.addDecision({ kind: 'story', type: 'refugees', sys, species, deadline: g.year + 5, def: 'refuse', text: `異星の難民船が${sys === 0 ? '太陽系' : g.system(sys).name}に現れた。${species} 5万人が保護を求めている。受け入れれば、${SIM_ONLY ? 'この星系の入植地に住む' : `空きのある${g.realmName(g.cap)}の入植地へ送る`}。`,
         opts: [{ k: 'accept', label: '受け入れる', note: `入植地の人口 +5万人 (${species})・議会の支持 −3 (反対派)` }, { k: 'refuse', label: '断る', note: '議会の支持 +2' }] });
     },
     resolve(g, dec, k) {
       if (k === 'refuse') { g.councilAdd(2, '難民を断った'); return; }
-      const c = g.colonies.filter((x) => g.realmOf(x.sys) === g.cap).sort((a, b) => (g.capOf(b) - b.pop) - (g.capOf(a) - a.pop))[0];
+      // シミュレーション版: 難民船が着いた星系の入植地に住む (遠くの入植地へ一瞬では移れない)。ゲーム版は国じゅうで一番空きのある入植地
+      const c = g.colonies.filter((x) => g.realmOf(x.sys) === g.cap && (!SIM_ONLY || x.sys === dec.sys)).sort((a, b) => (g.capOf(b) - b.pop) - (g.capOf(a) - a.pop))[0];
       if (!c) return;
       g.addPeople(c, 0.05, { [dec.species]: 1 });
       g.councilAdd(-3, '難民を受け入れた');
@@ -2130,7 +2170,7 @@ const STORY = {
   raid: {
     // 海賊が本格的に現れる前の、小さな襲撃
     pick: (g) => (g.year < PIRATE_START + 10 ? pickOf(earthSystems(g).filter((id) => id !== g.cap)) : null),
-    start(g, sys) { g.pirateRaid(g.system(sys), 1); },
+    start(g, sys) { if (SIM_ONLY) g.pirateLaunch(g.system(sys), 1); else g.pirateRaid(g.system(sys), 1); }, // シミュレーション版は、どこかの星系から飛んで来る
     resolve() {},
   },
 };
@@ -4122,9 +4162,9 @@ class Game {
         const amt = Math.min(x.spare, need, this.routeRoom(x.id, sysId, eF, eT) / kg);
         if (amt <= 1e-9) continue;
         plan.push({ from: x.id, r, amt, price: this.tradePrice(x.id, r, x.t, this.rateAt(sysId), amt) }); // 売り手の値段に、航行の年数ぶんの利子を乗せた値段
-        const both = Math.min(eF, eT) >= amt * kg * E_UNIT;
+        const both = eF >= amt * kg * E_UNIT && eT >= amt * kg * decUnit();
         eUsed.set(x.id, (eUsed.get(x.id) || 0) + amt * kg * (both ? E_UNIT : E_UNIT_FREE));
-        if (both) eIn += amt * kg * E_UNIT;
+        if (both) eIn += amt * kg * decUnit();
         need -= amt;
         eta = Math.max(eta, x.d);
         if (need <= 1e-9) break;
@@ -4155,11 +4195,15 @@ class Game {
     const seed = job.type === 'ship' ? SEED_FUNDS[job.kind] || 0 : 0;
     if (cost.credits) { this.cash('build', -cost.credits, { gov: sysId }); this.cash('build', cost.credits - seed, { hh: sysId }); } // 賃金は家計へ
     if (seed) this.cash('build', seed, { way: job, f: 'seed' });
-    if (job.flight) this.bookShip('settler', job.flight.m, job.flight.beta, 'free', sysId, sysId, job.flight.ly ?? 0);
+    if (job.flight && SIM_ONLY && job.flight.path) this.bookPath('settler', job.flight.m, job.flight.path, 'free', { payer: sysId });
+    else if (job.flight) this.bookShip('settler', job.flight.m, job.flight.beta, 'free', sysId, sysId, job.flight.ly ?? 0);
     else if (cost.energy) this.bookE('build', -cost.energy, sysId);
     for (const x of p.plan) {
       if (x.from !== sysId && TRADE_AUDIT) TRADE_AUDIT.push([x.from, sysId, this.year, x.amt * PRICE[x.r], 'b']);
-      if (x.from !== sysId) this.bookShip('build', x.amt * RES_KG[x.r], SHIP_SPEED, this.routeMode(x.from, sysId, (x.amt * RES_KG[x.r]) / UNIT_KG), x.from, sysId);
+      if (x.from !== sysId) {
+        const bMode = this.routeMode(x.from, sysId, (x.amt * RES_KG[x.r]) / UNIT_KG);
+        if (SIM_ONLY) this.bookPath('build', x.amt * RES_KG[x.r], this.voyage(x.from, sysId).path, bMode, { offSpeed: SHIP_SPEED }); else this.bookShip('build', x.amt * RES_KG[x.r], SHIP_SPEED, bMode, x.from, sysId);
+      }
       this.mv(x.from, x.r, -x.amt, job.type === 'ship' && job.supplies?.[x.r] ? 'ship' : 'build'); // 入植船に積む食料と水は運ばれて入植先の備蓄になる。ほかは建設に使う
       if (MARKET.buy) {
         // 資材は売り手の星系の会社から買う。主人の支援なら、主人の政府が代わりに払う
@@ -4258,7 +4302,8 @@ class Game {
     const sup = this.shipSupplies(kind, fromId, toId);
     const cost = { ...SHIP_COST[kind], credits: Math.round(SHIP_COST[kind].credits * f) + SEED_FUNDS[kind], ...sup };
     const fl = this.settlerFlight(kind, fromId, toId, sup);
-    if (fl) {
+    if (fl && SIM_ONLY) cost.energy = this.bookPath('settler', fl.m, fl.path, 'free', { book: false });
+    else if (fl) {
       const sh = shieldOf('settler', fl.m, fl.beta, fl.ly ?? 0, this.physics);
       const p = propulsion(fl.m + sh.kg, fl.beta, 'free');
       cost.energy = p.acc + p.dec;
@@ -4270,7 +4315,8 @@ class Game {
   settlerFlight(kind, fromId, toId, sup = this.shipSupplies(kind, fromId, toId)) {
     if (fromId === toId) return null;
     const m = SHIP_COST[kind].goods * RES_KG.goods + sup.food * RES_KG.food + sup.water * RES_KG.water + SETTLERS[kind] * 1e6 * PERSON_KG;
-    return { m, beta: this.voyage(fromId, toId, OFFROUTE_SPEED).path.length > 2 ? SHIP_SPEED : OFFROUTE_SPEED, ly: this.sysDist(fromId, toId) };
+    const path = this.voyage(fromId, toId, OFFROUTE_SPEED).path;
+    return { m, beta: path.length > 2 ? SHIP_SPEED : OFFROUTE_SPEED, ly: this.sysDist(fromId, toId), ...(SIM_ONLY ? { path } : {}) };
   }
   launch(fromId, toId, bodyId, kind, supplies = {}, job = null) {
     // 出発地の星系に駐留する歩兵から同行させる (奴隷兵は後回し)
@@ -4280,7 +4326,10 @@ class Game {
     for (const c of this.coloniesIn(fromId)) { const k = Math.min(want, c.slaveTroops); c.slaveTroops -= k; escort.slave += k; want -= k; }
     const v = this.voyage(fromId, toId, OFFROUTE_SPEED);
     const years = v.years;
-    if (escort.troops + escort.slave && fromId !== toId) this.bookShip('troop', (escort.troops + escort.slave) * TROOP_KG, v.path.length > 2 ? SHIP_SPEED : OFFROUTE_SPEED, 'free', fromId, fromId, this.sysDist(fromId, toId));
+    if (escort.troops + escort.slave && fromId !== toId) {
+      if (SIM_ONLY) this.bookPath('troop', (escort.troops + escort.slave) * TROOP_KG, v.path, 'free', { payer: fromId });
+      else this.bookShip('troop', (escort.troops + escort.slave) * TROOP_KG, v.path.length > 2 ? SHIP_SPEED : OFFROUTE_SPEED, 'free', fromId, fromId, this.sysDist(fromId, toId));
+    }
     const ship = {
       id: this.nextShipId++, from: fromId, to: toId, body: bodyId, kind,
       path: v.path, times: v.times.map((t) => this.year + t), supplies, escort,
@@ -4431,7 +4480,8 @@ class Game {
         sent.set(k, (sent.get(k) || 0) + amt);
       }
       if (TRADE_AUDIT) TRADE_AUDIT.push([q.to, q.from, this.year, amt * PRICE[q.res], 't']);
-      this.bookShip('cargo', amt * RES_KG[q.res], SHIP_SPEED, this.routeMode(q.to, q.from, (amt * RES_KG[q.res]) / UNIT_KG), q.to, q.from);
+      const cMode = this.routeMode(q.to, q.from, (amt * RES_KG[q.res]) / UNIT_KG);
+      if (SIM_ONLY) this.bookPath('cargo', amt * RES_KG[q.res], [q.to, ...legs.map((l) => l.next)], cMode); else this.bookShip('cargo', amt * RES_KG[q.res], SHIP_SPEED, cMode, q.to, q.from);
       this.shipCargo(q.to, legs, q.res, amt);
       q.amt -= amt;
       q.shipped = (q.shipped || 0) + amt;
@@ -4538,7 +4588,7 @@ class Game {
     for (const l of legs) l.r.transit[l.dir][res] += amt;
     let times = [this.year], cly = 0;
     for (let i = 1; i < path.length; i++) { times.push(times[i - 1] + this.shipYears(path[i - 1], path[i])); cly += this.sysDist(path[i - 1], path[i]); }
-    times = withAccel(times, accelExtra(cly, SHIP_SPEED, ACCEL.cargo, this.physics)); // 荷は 10g
+    times = SIM_ONLY ? this.stopTimes(path, times, () => SHIP_SPEED, ACCEL.cargo) : withAccel(times, accelExtra(cly, SHIP_SPEED, ACCEL.cargo, this.physics)); // 荷は 10g
     const key = path.join('>');
     let p = null;
     for (let i = this.cargo.length - 1; i >= Math.max(0, this.cargo.length - 64) && !p; i--) {
@@ -4637,7 +4687,7 @@ class Game {
   }
   sendRedirect(f, target, route = null) {
     const t0 = this.year;
-    const hi = this.fleetIntercept(f);
+    const hi = this.fleetIntercept(f, this.cap); // 指令は首都から出る (地球の国でなくても)
     const p = this.fleetPosition(f, hi);
     this.requests.push({ id: this.nextShipId++, kind: 'order', from: this.cap, ...(this.cap !== 0 ? { by: this.cap } : {}), to: f.to, act: 'redirect', label: CMD_LABEL.redirect,
       d: { fleet: f.id, sys: target, from: f.to, n: f.n, x: p.x, y: p.y, route: route?.length ? [...route] : undefined }, sent: t0, arrive: hi, state: 'sending' });
@@ -4680,13 +4730,30 @@ class Game {
     if (!f) return this.sendFleet(Number(d.from), to, Number(d.n) || Infinity, '', d.route);
     f.route = d.route?.length ? [...d.route] : undefined;
     if (f.to === to) return { ok: true };
-    const p = this.fleetPosition(f, this.year);
-    (f.prev ??= []).push({ from: f.from, fromXY: f.fromXY, to: f.to, depart: f.depart, arrive: f.arrive, cut: this.year });
-    f.fromXY = { x: p.x, y: p.y, z: p.z || 0 };
-    f.depart = this.year;
-    f.to = to;
-    const dly = Math.max(0.001, distance(this.system(to), p));
-    f.arrive = this.year + dly / OFFROUTE_SPEED + accelExtra(dly, OFFROUTE_SPEED, ACCEL.crew, this.physics);
+    if (SIM_ONLY && f.depart > this.year) { // まだ前の進路変更で止まっている途中: 止まる点から新しい行き先へ
+      f.to = to;
+      const dly = Math.max(0.001, distance(this.system(to), f.fromXY));
+      f.arrive = f.depart + dly / OFFROUTE_SPEED + accelExtra(dly, OFFROUTE_SPEED, ACCEL.crew, this.physics);
+    } else {
+      const p = this.fleetPosition(f, this.year);
+      (f.prev ??= []).push({ from: f.from, fromXY: f.fromXY, to: f.to, depart: f.depart, arrive: f.arrive, cut: this.year });
+      let at = { x: p.x, y: p.y, z: p.z || 0 }, t0 = this.year;
+      if (SIM_ONLY) {
+        // 慣性 (シミュレーション版だけ): 0.9c の船はその場で向きを変えられない。いまの向きのまま 1g で減速して止まってから、新しい行き先へ加速する。
+        // 止まるまでに (c/a)γβ 年かかり、(c²/a)(γ − 1) 光年 進む (0.9c で 2.0 年・1.3 光年)。もとの行き先がそれより近ければ、そこで止まる
+        const gm = 1 / Math.sqrt(1 - OFFROUTE_SPEED ** 2), T = C_LIGHT / (ACCEL.crew * 9.80665) / YEAR_S;
+        const xs = T * (gm - 1), b = this.system(f.to), rem = distance(b, p);
+        const stop = rem <= xs ? { x: b.x, y: b.y, z: b.z || 0, t: Math.max(f.arrive, this.year) }
+          : { x: p.x + ((b.x - p.x) * xs) / rem, y: p.y + ((b.y - p.y) * xs) / rem, z: (p.z || 0) + (((b.z || 0) - (p.z || 0)) * xs) / rem, t: this.year + T * gm * OFFROUTE_SPEED };
+        f.prev.push({ from: f.from, fromXY: at, toXY: { x: stop.x, y: stop.y, z: stop.z }, depart: this.year, arrive: stop.t, cut: stop.t });
+        at = { x: stop.x, y: stop.y, z: stop.z }; t0 = stop.t;
+      }
+      f.fromXY = at;
+      f.depart = t0;
+      f.to = to;
+      const dly = Math.max(0.001, distance(this.system(to), at));
+      f.arrive = t0 + dly / OFFROUTE_SPEED + accelExtra(dly, OFFROUTE_SPEED, ACCEL.crew, this.physics);
+    }
     const owner = f.owner ?? 0;
     // 進路を変えるには、いまの速さを磁気帆と反物質で落として、もう一度加速する (宇宙の途中なので、国の首都の政府が払う)
     this.bookShip('fleet', f.n * FLEET_KG, OFFROUTE_SPEED, 'free', owner, owner, (f.arrive - this.year) * OFFROUTE_SPEED);
@@ -5092,8 +5159,11 @@ class Game {
       if (n < 0.001) continue;
       c.pop -= n;
       c.migOut = (c.migOut || 0) + n;
-      if (c.sys !== d.sys) this.bookShip('migrant', n * 1e6 * MIGRANT_KG, SHIP_SPEED, this.routeMode(c.sys, d.sys, (n * 1e6 * MIGRANT_KG) / UNIT_KG), c.sys, d.sys);
       const v = this.voyage(c.sys, d.sys);
+      if (c.sys !== d.sys) {
+        const mMode = this.routeMode(c.sys, d.sys, (n * 1e6 * MIGRANT_KG) / UNIT_KG);
+        if (SIM_ONLY) this.bookPath('migrant', n * 1e6 * MIGRANT_KG, v.path, mMode, { offSpeed: SHIP_SPEED }); else this.bookShip('migrant', n * 1e6 * MIGRANT_KG, SHIP_SPEED, mMode, c.sys, d.sys);
+      }
       this.migrants.push({ id: this.nextShipId++, from: colKey(c), to: colKey(d), fromSys: c.sys, toSys: d.sys, n, races: { ...(c.races || { [HUMAN]: 1 }) },
         path: v.path, times: v.times.map((x) => this.year + x), depart: this.year, arrive: this.year + t });
       incoming.set(colKey(d), (incoming.get(colKey(d)) || 0) + n);
@@ -5116,12 +5186,34 @@ class Game {
 
   // 宇宙海賊の襲撃。入植地が増えるほど、時代が進むほど増える。地球は本国艦隊が守っている前提で対象外。
   pirates(h) {
-    if (this.year < PIRATE_START) return false;
+    let hit = false;
+    if (this.pirateRaids?.length) { // 着いた海賊 (シミュレーション版)
+      const due = this.pirateRaids.filter((r) => r.arrive <= this.year);
+      if (due.length) { this.pirateRaids = this.pirateRaids.filter((r) => r.arrive > this.year); for (const r of due) if (this.isColonized(r.sys)) this.pirateRaid(this.system(r.sys), r.power); hit = true; }
+    }
+    if (this.year < PIRATE_START) return hit;
     const targets = this.colonizedSystems().filter((s) => !this.isHuman(s.id));
-    if (!targets.length || this.rand() > 0.05 * Math.sqrt(targets.length) * h) return false;
+    if (!targets.length || this.rand() > 0.05 * Math.sqrt(targets.length) * h) return hit;
     const sys = targets[Math.floor(this.rand() * targets.length)];
-    this.pirateRaid(sys, Math.max(1, Math.round(this.pirateBase() * (0.5 + this.rand()))));
+    const power = Math.max(1, Math.round(this.pirateBase() * (0.5 + this.rand())));
+    if (SIM_ONLY) return this.pirateLaunch(sys, power) || hit;
+    this.pirateRaid(sys, power);
     return true;
+  }
+  // 海賊の船出 (物理。シミュレーション版だけ)。海賊も、どこかの星系のエネルギーで加速し、0.9c で飛んで来る (宇宙の途中から湧いては来ない)。
+  // 根城は、襲う星系から一番近い、ほかの国 (か独立した星系) の入植星系。船出のエネルギーはその星系の蓄えから盗む ('pirate' として記帳)。
+  // 着くまでは何も起きない (根城を出た光が届くのは、海賊が着くほんの少し前)
+  pirateLaunch(sys, power) {
+    const realm = this.realmOf(sys.id);
+    const others = this.colonizedSystems().filter((s) => s.id !== sys.id);
+    const pool = others.filter((s) => this.realmOf(s.id) !== realm);
+    const bases = pool.length ? pool : others;
+    if (!bases.length) return false;
+    const base = bases.reduce((a, b) => (this.sysDist(b.id, sys.id) < this.sysDist(a.id, sys.id) ? b : a));
+    const ly = this.sysDist(base.id, sys.id);
+    this.bookShip('pirate', power * FLEET_KG, OFFROUTE_SPEED, 'free', base.id, base.id, ly);
+    (this.pirateRaids ??= []).push({ sys: sys.id, power, from: base.id, depart: this.year, arrive: this.year + ly / OFFROUTE_SPEED + accelExtra(ly, OFFROUTE_SPEED, ACCEL.crew, this.physics) });
+    return false;
   }
   // 海賊の襲撃 (戦力 power)。駐留艦隊が戦力以上なら撃退、足りなければ略奪される
   pirateRaid(sys, power) {
@@ -5423,9 +5515,10 @@ class Game {
     }
     let times = [this.year], tly = 0;
     for (let i = 1; i < route.path.length; i++) { times.push(times[i - 1] + this.shipYears(route.path[i - 1], route.path[i], !route.direct)); tly += this.sysDist(route.path[i - 1], route.path[i]); }
-    times = withAccel(times, accelExtra(tly, route.direct ? OFFROUTE_SPEED : SHIP_SPEED, ACCEL.crew, this.physics));
+    times = SIM_ONLY ? this.stopTimes(route.path, times, () => (route.direct ? OFFROUTE_SPEED : SHIP_SPEED), ACCEL.crew) : withAccel(times, accelExtra(tly, route.direct ? OFFROUTE_SPEED : SHIP_SPEED, ACCEL.crew, this.physics));
     // 交易路なら着く側のレーザーで減速する。直行なら磁気帆と反物質 (どちらも蓄えが負になってもよい)
-    this.bookShip('troop', (troops + slave) * TROOP_KG, route.direct ? OFFROUTE_SPEED : SHIP_SPEED, route.direct ? 'free' : 'route', from.sys, to.sys);
+    if (SIM_ONLY && !route.direct) this.bookPath('troop', (troops + slave) * TROOP_KG, route.path, 'route');
+    else this.bookShip('troop', (troops + slave) * TROOP_KG, route.direct ? OFFROUTE_SPEED : SHIP_SPEED, route.direct ? 'free' : 'route', from.sys, to.sys);
     this.troopMoves.push({ id: this.nextShipId++, from: fromKey, to: toKey, path: route.path, times, arrive: times[times.length - 1], troops, slave });
     this.message(`${from.name} → ${to.name} へ歩兵 ${troops + slave} 連隊が出発 (${route.direct ? '直行 0.9c' : '交易路経由'}、到着まで ${route.years.toFixed(1)} 年)`, from.sys);
     return { ok: true };
@@ -5791,6 +5884,32 @@ class Game {
     if (ENERGY_AUDIT) ENERGY_AUDIT.push({ kind, m, beta, mode, E: p.acc + p.dec, year: this.year, ly, shield: sh.kg, depth: sh.depth, side: sh.side, share: sh.share });
     return p.acc + p.dec;
   }
+  // 交易路の道のり path を行く便の区間 (物理。シミュレーション版だけ)。0.95c の船は途中の星系で向きを変えられない (向きを変えるのにも c に近い速さの変化が要る) ので、
+  // 途中の星系ごとにそこのレーザーで止めて、加速し直す。途中の区間は交易路の両端のレーザー ('route')、最後の区間は mode (交易路の外への直行は 0.9c)
+  shipLegs(path, mode, offSpeed = OFFROUTE_SPEED) {
+    const legs = [];
+    for (let i = 1; i < path.length; i++) {
+      legs.push({ from: path[i - 1], to: path[i], beta: this.routeBetween(path[i - 1], path[i]) ? SHIP_SPEED : offSpeed, mode: i < path.length - 1 ? 'route' : mode });
+    }
+    return legs;
+  }
+  // 区間ごとの推進のエネルギー。遮蔽は道のり全体の線量で決める (同じ船で行く)。payer があれば全部その星系が払う (入植船と同行の歩兵は出発する星系が手配する)。
+  // ないときは、途中の区間は区間の両端のレーザー、最後が 'free' なら送る側 (path[0]) が磁気帆と反物質の分も払う。book = false なら記帳せずに合計だけ返す
+  bookPath(kind, m, path, mode, { payer = null, offSpeed = OFFROUTE_SPEED, book = true } = {}) {
+    let ly = 0, E = 0;
+    for (let i = 1; i < path.length; i++) ly += this.sysDist(path[i - 1], path[i]);
+    for (const l of this.shipLegs(path, mode, offSpeed)) {
+      if (!book) { const p = propulsion(m + shieldOf(kind, m, l.beta, ly, this.physics).kg, l.beta, l.mode); E += p.acc + p.dec; continue; }
+      const a = payer ?? (l.mode === 'free' ? path[0] : l.from);
+      E += this.bookShip(kind, m, l.beta, l.mode, a, payer ?? (l.mode === 'free' ? path[0] : l.to), ly);
+    }
+    return E;
+  }
+  // 道のりの各星系に着く年 times に、加速と減速の遅れを足す。シミュレーション版は途中の星系ごとに止まるので、区間ごとに足す。betaOf(i) = 区間 i の速さ
+  stopTimes(path, times, betaOf, gs) {
+    let extra = 0;
+    return times.map((t, i) => (i === 0 ? t : t + (extra += accelExtra(this.sysDist(path[i - 1], path[i]), betaOf(i), gs, this.physics))));
+  }
   // 艦隊を出す (交易路が直接結ぶ自国の星系への移動なら、着く側のレーザーで減速する。ほかは磁気帆と反物質)。費用は出発する星系 (自国でなければ国の首都) の政府
   pushFleet(f) {
     const owner = f.owner ?? 0;
@@ -5805,9 +5924,9 @@ class Game {
   // 受ける側が払えなければ (入植したばかりの星系など)、送る側が磁気帆と反物質の分も払う
   routeRoom(from, to, eF = this.energyOf(from), eT = this.energyOf(to)) {
     eF = Math.max(0, eF); eT = Math.max(0, eT);
-    return Math.max(Math.min(eF, eT) / E_UNIT, eF / E_UNIT_FREE);
+    return Math.max(Math.min(eF / E_UNIT, eT / decUnit()), eF / E_UNIT_FREE);
   }
-  routeMode(from, to, mt) { const e = mt * E_UNIT; return this.energyOf(from) >= e && this.energyOf(to) >= e ? 'route' : 'free'; }
+  routeMode(from, to, mt) { return this.energyOf(from) >= mt * E_UNIT && this.energyOf(to) >= mt * decUnit() ? 'route' : 'free'; }
 
   // 市場の値段を決め直す (MARKET の説明)。ふだんの消費は、この刻みの需要 (absorb) を smooth 年でならしたもの
   marketStep(h) {
@@ -6298,6 +6417,7 @@ class Game {
     this.handicap = HANDICAP[d.handicap] ? d.handicap : 'normal';
     this.productivity = Number.isFinite(d.productivity) && d.productivity > 0 ? d.productivity : 1;
     this.pvPolicy = PV_DESIGNS[d.pvPolicy] ? d.pvPolicy : null;
+    this.pirateRaids = Array.isArray(d.pirateRaids) ? d.pirateRaids.filter((r) => r && sysOk(r.sys) && Number.isFinite(r.arrive)) : [];
     if (Array.isArray(d.nations) && d.nations.every((n) => n && sysOk(n.cap) && this.target(n.cap, n.body))) {
       this.nations = d.nations.map((n) => ({ ...n, traits: Array.isArray(n.traits) ? n.traits.filter((t) => SPECIES_TRAITS[t]) : speciesTraits(n.species) }));
       this.nmap = null;
@@ -6911,7 +7031,8 @@ class Game {
     // 加速と減速の遅れ (この試合の physics.accel のとき。人の乗る船の 1g。入植船・移民船・同行する歩兵がこの道のりを使う)
     let ly = 0;
     for (let i = 1; i < path.length; i++) ly += this.sysDist(path[i - 1], path[i]);
-    const tt = withAccel(times, accelExtra(ly, path.length > 2 || this.routeBetween(path[0], path[1]) ? SHIP_SPEED : offSpeed, ACCEL.crew, this.physics));
+    const tt = SIM_ONLY ? this.stopTimes(path, times, (i) => (this.routeBetween(path[i - 1], path[i]) ? SHIP_SPEED : offSpeed), ACCEL.crew)
+      : withAccel(times, accelExtra(ly, path.length > 2 || this.routeBetween(path[0], path[1]) ? SHIP_SPEED : offSpeed, ACCEL.crew, this.physics));
     const v = { path, times: tt, years: tt[tt.length - 1] };
     if (cacheable) vc.set(vk, { path: path.slice(), times: tt.slice(), years: v.years });
     return v;
@@ -6932,7 +7053,7 @@ class Game {
   }
   shipPosition(s, at = this.year) {
     const a = s.fromXY || this.system(s.from);
-    const b = this.system(s.to);
+    const b = s.toXY || this.system(s.to);
     const f = clamp((at - s.depart) / Math.max(1e-9, s.arrive - s.depart), 0, 1);
     return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, z: (a.z || 0) + ((b.z || 0) - (a.z || 0)) * f, f };
   }
@@ -7865,7 +7986,8 @@ class GalaxyView {
       ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(hx, hy); ctx.stroke();
       const st = this.hover.stars[0];
       const lines = [this.hover.name, `${st.label}${this.hover.stars.length > 1 ? ` 他${this.hover.stars.length - 1}星` : ''}`,
-        `距離 ${d.toFixed(1)} ly (通信 ${t.toFixed(1)} 年・船 ${game.shipYears(sel.id, this.hover.id).toFixed(1)}〜${game.shipYears(sel.id, this.hover.id, false).toFixed(1)} 年)`];
+        `距離 ${d.toFixed(1)} ly (通信 ${t.toFixed(1)} 年・船 ${(game.shipYears(sel.id, this.hover.id) + accelExtra(d, SHIP_SPEED, ACCEL.crew, game.physics)).toFixed(1)}〜${(game.shipYears(sel.id, this.hover.id, false) + accelExtra(d, OFFROUTE_SPEED, ACCEL.crew, game.physics)).toFixed(1)} 年)`,
+        `乗っている人の時計では ${shipTime(d, SHIP_SPEED, game.physics).toFixed(1)}〜${shipTime(d, OFFROUTE_SPEED, game.physics).toFixed(1)} 年 (相対論の時間の遅れ)`];
       if (this.app.mapMode === 'vassal') lines.push(...vassalHoverLines(game, this.hover.id));
       const [mx, my] = this.mouse || [hx, hy];
       ctx.font = '12px sans-serif';
@@ -8913,7 +9035,7 @@ function militaryBox(app, sys) {
     ${pick}${unhold}
     ${aweLine(g, sys.id)}
     ${supplyLine(g, sys.id, n)}
-    <p class="note">${ico('fleet')}駐留艦隊 <b>${n}</b>${queued ? ` (編成中 ${queued})` : ''}。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1艦隊あたり維持費 ${WARSHIP_UPKEEP} cr/年。艦隊は直行し、交易路が直接結ぶ区間は 0.95c、それ以外は 0.9c</p>
+    <p class="note">${ico('fleet')}駐留艦隊 <b>${n}</b>${queued ? ` (編成中 ${queued})` : ''}。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1艦隊あたり維持費 ${WARSHIP_UPKEEP} cr/年。艦隊は直行し、交易路が直接結ぶ区間は 0.95c、それ以外は 0.9c。0.9c の 1 艦隊の運動エネルギーは ${fmtJ(FLEET_KE)} (恐竜を滅ぼした衝突の約 ${Math.round(FLEET_KE / 4.2e23 / 1e4)} 万倍) で、ぶつかれば惑星の表面を焼き尽くす</p>
     ${build}${send}${defenseToggle(g)}`;
 }
 
@@ -8973,9 +9095,9 @@ function bodyPanel(app) {
     const host = b.host ? sys.stars.find((x) => x.id === b.host) : null;
     info = `<table class="tbl kv">${row('種類', TYPE_LABEL[b.type])}${b.known ? row('観測', `観測済みの惑星 (${esc(b.known)})`) : ''}${host ? row('回る恒星', esc(host.name)) : ''}${row('軌道半径', `${fmt(b.a)} AU${b.inHZ ? ' <span class="hz">(HZ内)</span>' : ''}`)}
       ${row('公転周期', `${fmt(b.period)} 年${b.tidalLock ? ' (潮汐固定)' : ''}`)}${row('質量', `${fmt(b.mass)} M⊕`)}${row('半径', `${fmt(b.radius)} R⊕`)}
-      ${row(solid ? '表面重力' : '重力(1気圧面)', `${fmt(b.gravity)} g`)}${row('平衡温度', `${Math.round(b.teq)} K`)}
+      ${row(solid ? '表面重力' : '重力(1気圧面)', `${fmt(b.gravity)} g${solid && b.gravity < 0.5 ? ' (弱い重力に何十年も暮らすと体がどうなるかは、まだ分かっていない。分かっているのは、無重力で骨と筋肉が弱ること。居住区を回して重力を足す前提)' : ''}`)}${row('平衡温度', `${Math.round(b.teq)} K`)}
       ${solid ? row('表面温度', `${Math.round(b.tSurf)} K (${Math.round(b.tSurf - 273)} ℃)`) : ''}
-      ${solid ? row('大気圧', b.pressure < 0.001 ? 'ほぼ真空' : `${fmt(b.pressure)} atm`) : ''}
+      ${solid ? row('大気圧', `${b.pressure < 0.001 ? 'ほぼ真空' : `${fmt(b.pressure)} atm`}${b.stripped ? ' (M 型星の X 線と紫外線で大気が逃げた: 「宇宙の海岸線」より内側。JWST の観測でも、こうした惑星に厚い大気は見つかっていない)' : ''}`) : ''}
       ${solid ? row('地表', SURFACE_LABEL[b.surface] || '') : ''}
       ${solid ? row('入植適性', `<b class="grade g${b.settle.grade}">${GRADE_LABEL[b.settle.grade]}</b>${b.settle.notes.length ? ` — ${b.settle.notes.join('、')}` : ''}`) : ''}
       ${solid && b.rad ? row('地表の被曝', `${fmtSv(b.rad.surf)}/年 (フレア ${Math.round(100 * b.rad.flareShare)}%・宇宙線 ${Math.round(100 * (1 - b.rad.flareShare))}%)${b.rad.cover ? `。地下に住むなら 土 ${(b.rad.cover / 200).toFixed(1)} m の下 (年 ${fmtSv(RADIATION.limitSv)} まで)` : ''}`) : ''}</table>`;
@@ -9147,7 +9269,7 @@ function dispatchBox(app, sys, b) {
   const sup = (kind) => g.shipSupplies(kind, sel, sys.id);
   return `<h3>入植船を送る</h3>
     <p class="note">入植船は${ME.gov}が${ME.capName}から送り出す (費用は${ME.home}の資金と${ME.capName}の備蓄から。その場で出発の準備に入る)。新しい入植地は${ME.capName}に従属する。ほかの星系の政府は自分の判断で入植する。</p>
-    <p class="note">入植船は交易路をたどって (0.95c) 目的地に最も近い星系まで行き、最後だけ交易路の外を 0.9c で直行する${v.path.length > 2 ? ` (経由: ${v.path.slice(1, -1).map((id) => esc(g.system(id).name)).join(' → ')})` : ''}。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>。</p>
+    <p class="note">入植船は交易路をたどって (0.95c) 目的地に最も近い星系まで行き、最後だけ交易路の外を 0.9c で直行する${v.path.length > 2 ? ` (経由: ${v.path.slice(1, -1).map((id) => esc(g.system(id).name)).join(' → ')})` : ''}。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>${t < 0.01 ? '' : ` (星々の時計。乗っている人の時計では ${voyageShipTime(g, v).toFixed(2)} 年: 相対論の時間の遅れ)`}。</p>
     <p class="note">入植船は食料と水を約 ${Math.round(g.supplyYears(sel, sys.id))} 年分 (交易路を結んで物資が届き始めるまでの見込み、人口の伸びも見込んで2倍) 積んでいき、入植先の備蓄にする。
       惑星入植地: 食料 ${sup('planet').food}・水 ${sup('planet').water} / ステーション: 食料 ${sup('station').food}・水 ${sup('station').water}</p>
     ${(() => {
@@ -9175,7 +9297,7 @@ function shipsHtml(game) {
   };
   const seen = (sys, t) => game.departSeen(sys, t);
   const ships = game.ships.filter((s) => seen(s.from, s.depart)).map((s) => `<div class="ship">${esc(game.system(s.from).name)} → ${esc(game.system(s.to).name)} <span class="muted">${KIND_LABEL[s.kind]}</span>${bar(s)}</div>`);
-  const fleets = game.fleets.filter((f) => seen(f.from, f.depart)).map((f) => `<div class="ship">${esc(game.system(f.from).name)} → ${esc(game.system(f.to).name)} <span class="bad">${f.n} 艦隊</span>${bar(f)}</div>`);
+  const fleets = game.fleets.filter((f) => seen(f.from, f.start ?? f.depart)).map((f) => `<div class="ship">${esc(game.system(f.from).name)} → ${esc(game.system(f.to).name)} <span class="bad">${f.n} 艦隊</span>${bar(f)}</div>`);
   const jobs = game.knownProjects().filter((j) => seen(j.sys, j.start)).map((j) => `<div class="ship">${esc(j.label)} <span class="muted">資材搬入中</span>${bar({ depart: j.start, arrive: j.ready })}</div>`);
   const vm = game.migrants.filter((m) => seen(m.fromSys, m.depart));
   const mig = vm.length
@@ -9460,7 +9582,7 @@ function militarySheet(app) {
   const milRows = milIds.map((id) => {
     const s = g.system(id);
     const n = g.knownGarrison(id);
-    const coming = g.fleets.filter((f) => f.to === id && g.departSeen(f.from, f.depart)).reduce((k, f) => k + f.n, 0);
+    const coming = g.fleets.filter((f) => f.to === id && g.departSeen(f.from, f.start ?? f.depart)).reduce((k, f) => k + f.n, 0);
     const yard = g.knownColonies(id).some((c) => c.lv.shipyard >= 1);
     const build = yard
       ? `<div class="btns batch">${[1, 5, 10].map((k) => costButton(g, `data-act="warship" data-sys="${id}" data-n="${k}"`, k === 1 ? '編成' : `×${k}`, mulCost(WARSHIP_COST, k), id)).join('')}</div>`
@@ -9490,7 +9612,7 @@ function militarySheet(app) {
   }).join('');
   const moves = g.troopMoves.filter((m) => g.departSeen(m.path[0], m.times[0])).map((m) => `<tr><td>${esc(g.colonyByKey(m.from)?.name || '?')} → ${esc(g.colonyByKey(m.to)?.name || '?')}</td>
     <td>${m.troops} + 奴隷兵 ${m.slave}</td><td>${m.path.length - 1} 本の交易路</td><td>あと ${Math.max(0, m.arrive - g.year).toFixed(1)} 年</td></tr>`).join('');
-  const fleets = g.fleets.filter((f) => g.departSeen(f.from, f.depart)).map((f) => `<tr><td>${esc(g.system(f.from).name)} → ${esc(g.system(f.to).name)}</td><td>${f.n} 艦隊</td><td>あと ${Math.max(0, f.arrive - g.year).toFixed(1)} 年</td></tr>`).join('');
+  const fleets = g.fleets.filter((f) => g.departSeen(f.from, f.start ?? f.depart)).map((f) => `<tr><td>${esc(g.system(f.from).name)} → ${esc(g.system(f.to).name)}</td><td>${f.n} 艦隊</td><td>あと ${Math.max(0, f.arrive - g.year).toFixed(1)} 年</td></tr>`).join('');
   return `<div class="kpi">
       <div><span>${ico('fleet')}艦隊 (把握分)</span><b>${milIds.reduce((k, id) => k + g.knownGarrison(id), 0)} 艦隊</b><span>駐留している分</span></div>
       <div><span>${ico('troops')}歩兵 (把握分)</span><b>${systems.flatMap((x) => g.knownColonies(x.id)).reduce((k, c) => k + c.troops + c.slaveTroops, 0)} 連隊</b><span>駐留している分</span></div>
@@ -9805,12 +9927,12 @@ function candidatesHtml(app) {
   return `<h2>候補地 <span class="muted" style="font-size:13px">ハビタブルゾーン内の未入植の天体 ${rows.length} 件${rows.length > 100 ? ' (近い順に100件を表示)' : ''}</span></h2>
     <div class="bulk">
       <label class="check"><input type="checkbox" data-act="candonly" ${app.candOnly ? 'checked' : ''}> 地表に入植できる天体だけ</label>
-      並び順 <select data-act="candsort"><option value="dist" ${sort === 'dist' ? 'selected' : ''}>最寄りの入植地から近い順</option><option value="grade" ${sort === 'grade' ? 'selected' : ''}>入植適性の高い順</option></select>
+      並び順 <select data-act="candsort"><option value="dist" ${sort === 'dist' ? 'selected' : ''}>首都から近い順</option><option value="grade" ${sort === 'grade' ? 'selected' : ''}>入植適性の高い順</option></select>
     </div>
     <div class="scroll"><table class="tbl">
-      <tr><th>天体</th><th>${ico('dist')}最寄りの入植地から</th><th>種類</th><th>${ico('suit')}入植適性</th><th>${ico('temp')}気温</th><th>${ico('gravity')}重力</th><th>${ico('atmo')}大気圧</th><th>${ico('natives')}先住民</th><th>${ico('mine')}資源</th><th>${ico('colony')}入植船を送る</th></tr>
+      <tr><th>天体</th><th>${ico('dist')}首都から</th><th>種類</th><th>${ico('suit')}入植適性</th><th>${ico('temp')}気温</th><th>${ico('gravity')}重力</th><th>${ico('atmo')}大気圧</th><th>${ico('natives')}先住民</th><th>${ico('mine')}資源</th><th>${ico('colony')}入植船を送る</th></tr>
       ${body}</table></div>
-    <p class="note">入植船は最寄りの入植地から出る。地表に入植できない天体には宇宙ステーションを送る。入植船が向かっている天体は色付きで、到着までの年数を表示する。</p>`;
+    <p class="note">入植船は首都から出る。地表に入植できない天体には宇宙ステーション (回って遠心力で重力を作る居住区) を送る。入植船が向かっている天体は色付きで、到着までの年数を表示する。</p>`;
 }
 
 const SHEETS = { empire: empireHtml, events: eventsHtml, cands: candidatesHtml };
@@ -9847,8 +9969,8 @@ function energyBox(g, id, k) {
   const rf = g.physics.pv ? g.pvOf(id, g.pvDesign(id)).rf : 1; // 太陽電池が陽子で傷んだ分と集光の損 (シミュレーション版だけ)
   const cover = lum ? P / (lum * L_SUN_W * PROP.pv * rf * YEAR_S) : 0;
   return `<table class="tbl"><tr><td>蓄え</td><td>${fmtJ(E)} <span class="muted">(上限 ${fmtJ(SWARM.store * P)})</span></td></tr>
-    <tr><td>スウォームの発電</td><td>${fmtJ(P)}/年</td></tr><tr><td>恒星の光を覆う割合</td><td>${cover >= 0.01 ? pct(cover) : cover.toExponential(1)}</td></tr>
-    <tr><td>交易路で 1 単位 (100 万 t) を運ぶ</td><td>${fmtJ(E_UNIT)} ずつ (送る側の加速・受ける側の減速)</td></tr>
+    <tr><td>スウォームの発電</td><td>${fmtJ(P)}/年</td></tr><tr><td>恒星の光を覆う割合</td><td>${cover >= 0.01 ? pct(cover) : cover.toExponential(1)}${id === 0 ? ' <span class="muted">(地球の方向は空けて回る。地球が受ける光は太陽の光の 22 億分の 1 なので、空けても発電はほとんど減らず、地球の気候も変わらない)</span>' : ''}</td></tr>
+    <tr><td>交易路で 1 単位 (100 万 t) を運ぶ</td><td>${decUnit() === E_UNIT ? `${fmtJ(E_UNIT)} ずつ (送る側の加速・受ける側の減速)` : `送る側の加速 ${fmtJ(E_UNIT)}・受ける側の減速 ${fmtJ(decUnit())} (近づく帆を止める光は少なくて済む)`}</td></tr>
     ${g.physics.pv ? pvDesignRows(g, id) : ''}${g.physics.shield ? `<tr><td>星間の気体と宇宙線の遮蔽 (10 光年・0.95c)</td><td>${shieldNote(g.physics)}</td></tr>` : ''}</table>`;
 }
 // スウォームの素子の作り (シミュレーション版だけ)。作りごとの出力の残りと、覆う割合が倍になる年数。自国の星系なら選べる (光速の指令)
@@ -10088,7 +10210,7 @@ function saveMeta(d) {
 function buildSave(game, extra = {}) {
   return {
     v: 2, seed: game.galaxy.seed, ...(game.galaxy.kind === 'real' ? { galaxy: 'real' } : {}), ...(game.galaxy.gen > 1 ? { gen: game.galaxy.gen } : {}), rs: game.rs, players: game.players, pi: game.pi,
-    ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(game.pvPolicy ? { pvPolicy: game.pvPolicy } : {}), physics: game.physics, ...(game.productivity !== 1 ? { productivity: game.productivity } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
+    ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(game.pvPolicy ? { pvPolicy: game.pvPolicy } : {}), physics: game.physics, ...(game.productivity !== 1 ? { productivity: game.productivity } : {}), ...(game.pirateRaids?.length ? { pirateRaids: game.pirateRaids } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, ...(Object.keys(game.intel).length ? { intel: game.intel } : {}), ...(game.aiOrders.length ? { aiOrders: game.aiOrders } : {}), ...(Object.keys(game.shipHist).length ? { shipHist: game.shipHist } : {}), peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, market: game.market, absorb: game.absorb, unmet: game.unmet, util: game.util, tech: game.tech, ...(game.alpha !== undefined ? { alpha: game.alpha } : {}), ...(game.aif ? { aif: game.aif } : {}), routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
@@ -11644,7 +11766,9 @@ const sky = $('sky');
 let lastSkyKey = '';
 // 星系マップの背景: 太陽系は北アメリカ星雲、ほかの星系は assets/systems/ の 17 枚から星系ごとに決まった1枚 (使い回し)
 const SYSTEM_BG_COUNT = 17;
-const systemBg = (id) => (id === 0 ? 'assets/space-system.jpg' : `assets/systems/${String(1 + (hashSeed(`bg${id}`) % SYSTEM_BG_COUNT)).padStart(2, '0')}.jpg`);
+// シミュレーション版 (物理) は、どの星系も天の川の星図 (地球から見た空)。50 光年ほどの近さでは、どの星から見ても空は地球とほとんど同じで、
+// 色の付いた星雲 (多くは赤外線の疑似色や、大マゼラン雲・アンドロメダ銀河のような銀河の外のもの) が空いっぱいに見えることはない (Siegel・半田利弘の指摘)
+const systemBg = (id) => (SIM_ONLY ? 'assets/space-galaxy.jpg' : id === 0 ? 'assets/space-system.jpg' : `assets/systems/${String(1 + (hashSeed(`bg${id}`) % SYSTEM_BG_COUNT)).padStart(2, '0')}.jpg`);
 function updateSky() {
   const v = app.view === 'system' ? 'system' : 'galaxy';
   const c = galaxyView.cam;
