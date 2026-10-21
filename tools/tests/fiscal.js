@@ -39,6 +39,11 @@ const { chromium } = require('playwright');
       res.loyalty = [L0.some((l) => l.startsWith('税 (')), L1.some((t) => t.label === '税 (27.9%)' && Math.abs(t.v + 12) < 1e-6), L1.some((t) => t.label === '福祉の予算' && t.v > 0)]; // 重税 (×1.8) の忠誠度 −15 × 0.8 = −12
       // 幅の中の細かい値 (税率 20%・利子率 −0.75%・赤字の上限 7.5%) も通る。マイナスの利子率も選べる (docs/policy-ranges.md)
       res.fine = [issue('fiscal', { tax: 0.2, rate: -0.0075, deficit: 0.075 }).ok, g.fiscal.tax, g.fiscal.rate, g.fiscal.deficit];
+      // 消費税と関税 (セッション 20 の 2): 幅の外 (30%) と刻みの外 (10.1%) は拒否、幅の中は通る。消費税は首都の家計の買い物から政府に入る (記帳 ctax)。税の重さは所得への税率と合わせて (0.2 + 0.1) ÷ 0.155
+      res.bad2 = [issue('fiscal', { ctax: 0.3 }).ok, issue('fiscal', { tariff: 0.3 }).ok, issue('fiscal', { ctax: 0.101 }).ok];
+      res.ok2 = issue('fiscal', { ctax: 0.1, tariff: 0.05 }).ok;
+      for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25); // 遠い星系に届くまで進める
+      res.ctax = [g.fiscal.ctax, g.fiscal.tariff, g.gov(0).ledger.ctax > 0, +burdenK(g.fiscal).toFixed(3), g.loyaltyTerms(far).some((x) => x.label === '税 (20.0% + 消費税 10.0%)')];
       res.hazard = (g.secessionTerms(far) || []).some((t) => t.label === '治安の予算' && t.f < 1);
       res.fleet = [g.modsOf(0).fleet, +g.fleetMul(0, 0).toFixed(3)];
       const led = g.gov(0).ledger;
