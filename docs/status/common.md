@@ -8,7 +8,8 @@
 - 2026-10-21: 物理をゲーム版にどこまで入れるかを決めた (common-17・common-18。`docs/physics.md` の 10 の P6・P10)。作るのはレーン P のセッション P6。
 - 2026-10-21: 今の作業が終わったら、レーンを「触るコードの場所」で組み直して始め直す手順を `docs/restart.md` に書いた (common-19・common-20)。回 R1〜R4 は 1 本ずつ。
 - 2026-10-21 (回 R1、`docs/requests/2026-10-21-common.md` の common-1): 開いている PR を 0 にした (#154 → #173、#117 → #174)。基準の数を `docs/restart-baseline.md` に書いた (main `3a5b5d9`)。
-- 次: 回 R2 (棚卸しと組み直し)。
+- 2026-10-21 (回 R2、common-2): 残りの作業を `docs/backlog.md` (110 項目)、返事待ちを `docs/decisions.md`、衝突の多い場所を `docs/conflicts.md` にまとめた。1 つの Artifact (https://claude.ai/artifact/FqpDBPSi84wFCYb8C5PozE) で決めてもらった: Q2 = b (フェーズ 0・1 と英語・中国語と面白さの物差しを先に)・レーンは案 C (経済・政治・船と戦争・画面と最初の体験・道具と検証・外向き)・1 波目に src を触るのは画面と最初の体験・政治・船と戦争。返事待ちもすべておすすめ。
+- 次: 回 R3 (ファイル分け)。
 
 ## handoff.md から移したもの (2026-10-20、並行に移るときの後片付け。`docs/parallel.md` の 5)
 
