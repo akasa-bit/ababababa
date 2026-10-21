@@ -180,5 +180,10 @@
   "aggregate_factor_researchers": 23,
   "moore_growth_research_productivity_pct": -6.8,
   "moore_factor_researchers": 18
+ },
+ "game": {
+  "beta": 3.044835352736284,
+  "g0_pct": 1.6704607295547378,
+  "note": "beta = 研究の生産性の下がり方 (年 %) ÷ TFP の伸びの 10 年ごとの平均 (年 %)。g0 は本星の始めの技術の伸び"
  }
 }
