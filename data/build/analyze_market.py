@@ -96,7 +96,8 @@ def game_stats(prices, food=None, goods=None):
     for k, f in [('R25', food), ('R26', goods)]:
         if f:
             d = pd.read_csv(f)
-            out[k] = per_galaxy(d, lambda x: (x['stock'] / x['use']).replace([np.inf, -np.inf], np.nan).median())
+            # 銀河の在庫の合計 ÷ 消費の合計を年ごとに出し、年の中央値 (現実の統計は世界の合計 ÷ 合計。版 12。前は星系ごとの比の中央値)
+            out[k] = per_galaxy(d, lambda x: (x.groupby('year')['stock'].sum() / x.groupby('year')['use'].sum()).replace([np.inf, -np.inf], np.nan).median())
     return out
 
 def main():

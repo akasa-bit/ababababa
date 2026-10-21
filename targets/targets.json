@@ -1,5 +1,5 @@
 {
-  "version": 11,
+  "version": 12,
   "fixedAt": "2026-10-21",
   "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
   "rules": [
@@ -18,7 +18,8 @@
     { "version": 8, "date": "2026-10-20", "what": "F08 を、いまのゲーム版の銀河 (星系 73 個。銀河面 ±2 光年の板) に合わせた。前の「星系 3,000 個」は、銀河を板にして 73 星系に減らす前の想定だった。合格の数 (毎秒 60 コマ・下限 45、最高速で 1 秒に 64 年) と測る機械 (Xiaomi Pad 8 Pro・Steam Deck) は変えていない。測り方を desktop/bench/probe.js の手順に決めた。包装の比べ (レーン S) の測定は GPU のない機械の Xvfb のもので、F08 の判定には使わず、この変更にも使っていない" },
     { "version": 9, "date": "2026-10-20", "what": "R29 (国家間戦争の多さ) を足した。幅は、取得スクリプトで生データ (COW 国家間戦争 4.0 と国家の一覧 2016、1816〜2007 年) から計算した値 (国 100 年あたり 2.338、data/derived/history.json の war_onsets_cow) に、R13 と同じ「実データの ±30% 以内」を当てはめた。値は段 8 (講和と開戦の交渉、#121) を作る前に計算した。ゲームの自動対戦の結果はこの幅を決めるのに使っていない" },
     { "version": 10, "date": "2026-10-20", "what": "R10 (産業構造と所得) と R11 (研究の生産性の低下) の幅を、取得スクリプトで取った生データの計算結果だけから決めた。R10: GGDC 10 部門 × Maddison 2023 (31 か国 1948〜2012 年) の所得 5 分位ごとの就業の割合の四分位範囲と、工業の頂点の所得のブートストラップの 5〜95% 点 (6,200〜10,660 ドル)。ゲームの所得をドルに読み替える物差しは、食料の基準の値段を 2011 年の世界の穀物の値段 (Pink Sheet × USDA PSD、1 t = 356.4 ドル) に合わせるものとし、これも生データだけから決めた。R11: Bloom ほか 2020 の台本と同じ計算の全体の値 (年 −5.09%) の ±50%。どちらも構造転換と研究をゲームに入れる前に決め、ゲームの自動対戦の結果は見ていない" },
-    { "version": 11, "date": "2026-10-21", "what": "従属国の型の目標 R30 (家族ごとの存続の比)・R31 (法と実態の差のハザード比)・R32 (家族ごとの暴力の割合) を足した (レーン H・H2-2)。値は data/build/analyze_vassal.py が事例 131 件から計算したものだけから決めた。主権の束をゲームに入れる (H3-1) 前で、ゲームの自動対戦の結果は見ていない" }
+    { "version": 11, "date": "2026-10-21", "what": "従属国の型の目標 R30 (家族ごとの存続の比)・R31 (法と実態の差のハザード比)・R32 (家族ごとの暴力の割合) を足した (レーン H・H2-2)。値は data/build/analyze_vassal.py が事例 131 件から計算したものだけから決めた。主権の束をゲームに入れる (H3-1) 前で、ゲームの自動対戦の結果は見ていない" },
+    { "version": 12, "date": "2026-10-21", "what": "測り方だけを現実の統計と同じ形に直した (幅は変えない)。R19: ゲームの国の範囲を人口 100 万人以上の国にする (JST・WDI の税収 ÷ GDP は人口の十分ある国だけ。ゲームの人口 100 万人未満の政府は自給だけで市場の所得と税がない前哨地)。R25: ゲームの値を星系ごとの比の中央値から、銀河の在庫の合計 ÷ 消費の合計 (年ごと) にする (現実の統計は世界の小麦・とうもろこし・米の在庫の合計 ÷ 消費の合計)。R26 も同じ (銀河の工業品の在庫の合計 ÷ 月の消費の合計。現実の ISRATIO は米国の企業全体の在庫 ÷ 売上)。国の範囲は財政の目標すべて (R19〜R22・R27・R28) に当てる。変える前の値と変えたあとの値は docs/targets.md (R25 は 0.68 → 0.085 でどちらも不合格、R26 は 0 → 1.09 か月で不合格のまま、R28 は 0.067 → 0.080 で不合格のまま)" }
   ],
   "realism": [
     {
@@ -186,7 +187,7 @@
     {
       "id": "R19", "area": "財政", "name": "税収 ÷ GDP",
       "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
-      "statistic": "revenue ÷ gdp の国ごとの中央値 (GDP はゲームでは付加価値の合計。定義は docs/fiscal.md)。計算は data/build/analyze_fiscal.py",
+      "statistic": "revenue ÷ gdp の国ごとの中央値 (GDP はゲームでは付加価値の合計。定義は docs/fiscal.md)。ゲームの国は人口 100 万人以上のもの (版 12)。計算は data/build/analyze_fiscal.py",
       "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
       "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
       "band": [0.105, 0.2634], "estimate": 0.1545,
@@ -197,7 +198,7 @@
       "id": "R20", "area": "財政", "name": "政府が黒字だった年の割合",
       "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
       "statistic": "revenue > expenditure だった年の割合 (国ごと)。計算は data/build/analyze_fiscal.py",
-      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する ゲームの国は人口 100 万人以上のもの (版 12)。",
       "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
       "band": [0.1252, 0.5609], "estimate": 0.2682,
       "reference": "18 か国 1870〜2020 年 (2538 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
@@ -207,7 +208,7 @@
       "id": "R21", "area": "財政", "name": "政府債務 ÷ GDP",
       "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
       "statistic": "debtgdp の国ごとの中央値 (政府の総債務)。計算は data/build/analyze_fiscal.py",
-      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する ゲームの国は人口 100 万人以上のもの (版 12)。",
       "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
       "band": [0.2017, 0.7295], "estimate": 0.4687,
       "reference": "18 か国 1870〜2020 年 (2489 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
@@ -217,7 +218,7 @@
       "id": "R22", "area": "金融", "name": "民間の信用 ÷ GDP",
       "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
       "statistic": "tloans ÷ gdp の国ごとの中央値 (銀行から民間への貸出)。計算は data/build/analyze_fiscal.py",
-      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する ゲームの国は人口 100 万人以上のもの (版 12)。",
       "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
       "band": [0.2943, 0.7847], "estimate": 0.474,
       "reference": "18 か国 1870〜2020 年 (2445 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
@@ -246,7 +247,7 @@
     {
       "id": "R25", "area": "市場", "name": "穀物の在庫 ÷ 消費",
       "data": { "source": "World Bank Pink Sheet・USDA PSD・FRED ISRATIO", "years": "1960-2025 (ISRATIO は 1992 年〜)", "script": "data/fetch/fetch_market.py" },
-      "statistic": "世界の小麦・とうもろこし・米の期末在庫 ÷ その年の国内消費 (1960〜2024 年の作物・年)。ゲームは星系ごとの食料の在庫 ÷ その年の食料の消費。計算は data/build/analyze_market.py",
+      "statistic": "世界の小麦・とうもろこし・米の期末在庫 ÷ その年の国内消費 (1960〜2024 年の作物・年)。ゲームは銀河の食料の在庫の合計 ÷ その年の食料の消費の合計 (年ごと。版 12。前は星系ごとの比の中央値)。計算は data/build/analyze_market.py",
       "sim": "ゲームの星系ごとの値段と在庫を、同じ列のパネルに書き出し (tools/market-panel.js)、同じコード (data/build/analyze_market.py) で計算する。銀河 (シード) ごとに中央値をとり、30 以上の銀河の中央値で判定する",
       "pass": "ゲームの値が、実データの 10%〜90% 点の中",
       "band": [0.1412, 0.3606], "estimate": 0.2773,
@@ -256,7 +257,7 @@
     {
       "id": "R26", "area": "市場", "name": "工業品の在庫 ÷ 売上",
       "data": { "source": "World Bank Pink Sheet・USDA PSD・FRED ISRATIO", "years": "1960-2025 (ISRATIO は 1992 年〜)", "script": "data/fetch/fetch_market.py" },
-      "statistic": "米国の企業全体の在庫 ÷ 月の売上 (月数。1992 年〜の月)。ゲームは星系ごとの工業品の在庫 ÷ 月あたりの工業品の消費。計算は data/build/analyze_market.py",
+      "statistic": "米国の企業全体の在庫 ÷ 月の売上 (月数。1992 年〜の月)。ゲームは銀河の工業品の在庫の合計 ÷ 月あたりの工業品の消費の合計 (年ごと。版 12。前は星系ごとの比の中央値)。計算は data/build/analyze_market.py",
       "sim": "ゲームの星系ごとの値段と在庫を、同じ列のパネルに書き出し (tools/market-panel.js)、同じコード (data/build/analyze_market.py) で計算する。銀河 (シード) ごとに中央値をとり、30 以上の銀河の中央値で判定する",
       "pass": "ゲームの値が、実データの 10%〜90% 点の中",
       "band": [1.27, 1.47], "estimate": 1.39,
@@ -267,7 +268,7 @@
       "id": "R27", "area": "財政", "name": "政府支出 ÷ GDP",
       "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database", "version": "R6", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py" },
       "statistic": "expenditure ÷ gdp の国ごとの中央値。計算は data/build/analyze_fiscal.py",
-      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "sim": "ゲームの国 (首都とその従属星系の政府をまとめた一般政府) ごと・年ごとの値を、JST と同じ列のパネルに書き出し (tools/fiscal-panel.js)、同じコード (data/build/analyze_fiscal.py) で国ごとの値を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する ゲームの国は人口 100 万人以上のもの (版 12)。",
       "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
       "band": [0.1135, 0.2548], "estimate": 0.185,
       "reference": "18 か国 1870〜2020 年 (2537 国・年)。1870〜1913 年と 1950〜2020 年の値も data/derived/fiscal.json にある",
@@ -277,7 +278,7 @@
       "id": "R28", "area": "財政", "name": "財政の反応 (債務が増えると基礎収支を良くする強さ)",
       "data": { "source": "Jordà–Schularick–Taylor Macrohistory Database R6 と Correlates of War の国家間戦争のデータ v4.0", "version": "R6・v4.0", "years": "1870-2020", "script": "data/fetch/fetch_fiscal.py・data/fetch/fetch_history.py" },
       "statistic": "国ごとの最小二乗 pb = a + ρ·d(前の年) + β·gap + γ·war の ρ の、国のあいだの分布 (Bohn 1998 の形)。pb = (revenue − expenditure) ÷ gdp + ltrate/100 × d(前の年)、d = debtgdp、gap = ln(rgdpbarro) − HP フィルター (λ = 100) の傾向、war = 国家間戦争に参戦していた年。30 年以上ある国だけ。計算は data/build/analyze_fiscal.py",
-      "sim": "R19〜R22・R27 と同じパネル (tools/fiscal-panel.js) に ltrate (国の利子率)・rgdpbarro (ゲームの GDP)・war (その年に戦争をしていた国) の列を足し、同じコードで国ごとの ρ を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する",
+      "sim": "R19〜R22・R27 と同じパネル (tools/fiscal-panel.js) に ltrate (国の利子率)・rgdpbarro (ゲームの GDP)・war (その年に戦争をしていた国) の列を足し、同じコードで国ごとの ρ を出す。銀河 (シード) ごとに国のあいだの中央値をとり、30 以上の銀河の中央値で判定する ゲームの国は人口 100 万人以上のもの (版 12)。",
       "pass": "ゲームの値が、実データの国ごとの値の 10%〜90% 点の中",
       "band": [-0.0203, 0.0624], "estimate": 0.0336,
       "reference": "18 か国 1870〜2020 年 (2718 国・年)。1870〜1913 年 (中央値 0.0394) と 1950〜2020 年 (0.0186) の値も data/derived/fiscal.json にある",

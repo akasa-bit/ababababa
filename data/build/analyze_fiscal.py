@@ -120,6 +120,9 @@ def summary(name, per, rows):
 def stats(df, years=None):
     if years:
         df = df[(df['year'] >= years[0]) & (df['year'] <= years[1])]
+    if 'pop' in df.columns:  # ゲームのパネル: 人口 100 万人以上の国だけ (版 12。JST・WDI は人口の十分ある国だけなので同じ範囲にする)
+        big = df.groupby('country')['pop'].transform('max') >= 1
+        df = df[big]
     out = {}
     for k, (name, f) in STATS.items():
         d = df.assign(v=f(df)).dropna(subset=['v'])
