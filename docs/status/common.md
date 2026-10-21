@@ -7,7 +7,8 @@
 - 2026-10-20〜21: 評論家の目での批評と、Steam で 1 位を取るための改造計画 (`docs/critique/`。common-15・common-16)。コードと段取りの文書は変えていない。
 - 2026-10-21: 物理をゲーム版にどこまで入れるかを決めた (common-17・common-18。`docs/physics.md` の 10 の P6・P10)。作るのはレーン P のセッション P6。
 - 2026-10-21: 今の作業が終わったら、レーンを「触るコードの場所」で組み直して始め直す手順を `docs/restart.md` に書いた (common-19・common-20)。回 R1〜R4 は 1 本ずつ。
-- 次: `docs/critique/04-plan.md` の 6 (決めてもらうこと Q1〜Q11) の返事待ち。段取りを変える返事 (Q2 など) が来たら、`docs/sessions.md` と `docs/parallel.md` を直す PR を出す。
+- 2026-10-21 (回 R1、`docs/requests/2026-10-21-common.md` の common-1): 開いている PR を 0 にした (#154 → #173、#117 → #174)。基準の数を `docs/restart-baseline.md` に書いた (main `3a5b5d9`)。
+- 次: 回 R2 (棚卸しと組み直し)。
 
 ## handoff.md から移したもの (2026-10-20、並行に移るときの後片付け。`docs/parallel.md` の 5)
 
