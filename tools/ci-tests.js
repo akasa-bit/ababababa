@@ -30,7 +30,7 @@ const TESTS = [
   ['regime', [SHOTS], (o) => {
     try {
       const j = JSON.parse(o.slice(o.indexOf('{'), o.lastIndexOf('}') + 1));
-      return Object.values(j).every((v) => v.regimes.join() === 'T14,T01,encomienda' && v.dominionLog === true && v.alias?.[1] === 'T13' && v.bundleCmd === true && v.bundle?.law === 'S' && v.elite === 'resist' && v.factV >= 6 && v.revoke[0] === true && v.saveLoad === true && !v.errs.length) ? '' : '統治体制の結果が違う';
+      return Object.values(j).every((v) => v.regimes.join() === 'T14,T01,encomienda' && v.dominionLog === true && v.alias?.[1] === 'T13' && v.bundleCmd === true && v.bundle?.law === 'S' && v.elite === 'resist' && v.factV >= 6 && v.depose?.join() === 'true,true,coop' && v.arrears > 0 && v.union?.join() === 'true,true' && v.revoke[0] === true && v.saveLoad === true && !v.errs.length) ? '' : '統治体制の結果が違う';
     } catch { return '出力を読めない'; }
   }],
   ['editions', [SHOTS], (o) => (noPageErrors(o) ? '' : 'ページの誤り')],
