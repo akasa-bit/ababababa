@@ -53,7 +53,7 @@ function apply(g, s, sim) {
         if (s.warRatio && ours > s.warRatio * Math.max(1, theirs) && (!s.warRange || this.sysDist(this.cap, root) <= s.warRange) && this.rand() < s.warChance) this.declareWar(root);
         continue;
       }
-      if (this.hasShipyard(this.cap) && this.gov(this.cap).credits >= 2 * sim.tables.WARSHIP_COST.credits) this.buildWarship(this.cap);
+      if (this.hasShipyard(this.cap) && this.funds(this.cap) >= 2 * sim.tables.WARSHIP_COST.credits) this.buildWarship(this.cap);
       if (ours < s.sueRatio * theirs || (this.exhaustion[this.cap] || 0) > s.sueEx) { if (!ordered('peace', root)) this.command('peace', { sys: root }); continue; }
       let best = null;
       for (const t of this.realmSystems(root)) {
