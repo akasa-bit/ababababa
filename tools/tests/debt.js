@@ -12,7 +12,7 @@ const res = {};
 const govs = Object.entries(g.govs).filter(([k]) => g.isColonized(Number(k))).map(([, v]) => v);
 res.someBonds = govs.some((v) => v.bond > 0);
 res.nonNegative = Object.values(g.govs).every((v) => !(v.bond < 0) && !(v.due < 0));
-const over = govs.filter((v) => v.credits > 2 * DEBT.cash * Math.max(0, (v.ledger?.tax || 0) + (v.ledger?.natives || 0)) + 50);
+const over = govs.filter((v) => g.year - (v.founded ?? 0) > 10 && v.credits > 2 * DEBT.cash * Math.max(0, (v.ledger?.tax || 0) + (v.ledger?.natives || 0)) + 50); // できて 10 年までの政府は開拓資金 (200 cr) を持っていてよい
 res.cashSpent = over.length <= 0.1 * govs.length;
 const d = JSON.parse(JSON.stringify(sim.buildSave(g)));
 const g2 = new sim.Game(sim.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
