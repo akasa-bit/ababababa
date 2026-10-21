@@ -143,7 +143,8 @@ HTML=$PWD/simulation.html NAT=1 node tools/tests/det.js 7 120   # 決定性 (シ
 for t in hot treaty edit lib home real net; do node tools/tests/$t.js; done
 node tools/tests/cloud.js shots                                 # アカウントとクラウド (偽の Firebase)
 for t in pick regime editions; do node tools/tests/$t.js shots; done
-node tools/tests/energy.js 5 150                                # 船のエネルギーの記帳 (目標 R07)
+node tools/tests/energy.js 5 150                                # 船のエネルギーの記帳 (目標 R07。遮蔽の質量まで)
+EDITION=game node tools/tests/physics.js 5 150                  # 物理 (遮蔽・加速の時間・フレアの表示・古いセーブ。画面なしの版。EDITION=sim でシミュレーション版の分)
 HTML=$PWD/simulation.html NAT=1 node tools/tests/energy.js 7 150
 node tools/tests/conserve.js 5 150                              # 物質とエネルギーの保存 (目標 R03)
 node tools/tests/money.js 5 150                                 # お金の保存 (画面なしの版。6 か国なら 3 つめに 6)

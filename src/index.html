@@ -553,11 +553,15 @@ const EDITIONS = {
   // hazardBase = 離反のハザードの基準 [/年] (植民地の存続年数の中央値に合わせて自動対戦で決めた)、delayExp = 通信の遅れ ÷ 1 世代のべき指数 (Cox モデル)、
   // regimeDelay = 統治体制ごとの遠さへの敏感さを使うか、garrisonWar = 艦隊が駐留していれば独立がかならず戦争になるか、growthCap = 人口の増え方の上限 [/年]、
   // declareDamp = 最後通牒の期限に独立する確率を、友好度と忠誠度でも下げるか
-  // physics = 星間の気体・宇宙線の遮蔽、加速にかかる時間、M 型星のフレアを入れるか (docs/physics.md。2026-10-20 にシミュレーション版にだけ入れた)
-  game: { generation: 100, hazardBase: 0.6, delayExp: 0.33, regimeDelay: true, garrisonWar: true, growthCap: Infinity, declareDamp: true, physics: false },
-  sim: { generation: 28, hazardBase: 1.3, delayExp: -0.15, regimeDelay: false, garrisonWar: false, growthCap: 0.042, declareDamp: false, physics: true },
+  // physics = 物理の切り替え (docs/physics.md の 10 の P6。2026-10-21 にゲーム版にも入れた): shield = 星間の気体と宇宙線の遮蔽 (船の質量に足す)、
+  //   accel = 加速と減速にかかる時間、flare = M 型星のフレアと惑星の地表の被曝 (true = 入植適性も変える。'show' = 惑星の欄に出すだけで適性は変えない)、
+  //   pv = フレアの陽子でスウォームの太陽電池が傷む (ゲーム版は保留。docs/physics.md の P10)。
+  //   shield・accel・pv は試合ごとにセーブに入る (Game.physics。ないセーブは物理なしのまま続ける = PHYSICS_OFF)。flare は銀河を作るときに効くので版の値を使う
+  game: { generation: 100, hazardBase: 0.6, delayExp: 0.33, regimeDelay: true, garrisonWar: true, growthCap: Infinity, declareDamp: true, physics: { shield: true, accel: true, flare: 'show', pv: false } },
+  sim: { generation: 28, hazardBase: 1.3, delayExp: -0.15, regimeDelay: false, garrisonWar: false, growthCap: 0.042, declareDamp: false, physics: { shield: true, accel: true, flare: true, pv: true } },
 };
 const ED = EDITIONS[EDITION];
+const PHYSICS_OFF = { shield: false, accel: false, flare: false, pv: false }; // 物理なし (物理を入れる前のセーブ)
 // シード付き乱数 (mulberry32)。同じシードなら同じ銀河が生成される。
 function hashSeed(str) {
   let h = 2166136261;
@@ -892,7 +896,7 @@ function finalizeBody(body, star) {
   const rad = radiationOf(body, star);
   if (rad) {
     body.rad = rad;
-    if (rad.surf > RADIATION.limitSv && body.settle.grade === 3) { // 地表で暮らせないので、地下の街 (適性 2) の扱い
+    if (ED.physics.flare === true && rad.surf > RADIATION.limitSv && body.settle.grade === 3) { // 地表で暮らせないので、地下の街 (適性 2) の扱い (ゲーム版は表示だけで、適性は変えない)
       body.settle = { ...body.settle, grade: 2, notes: [...body.settle.notes, `地表の被曝 ${(rad.surf * 1000).toFixed(0)} mSv/年`] };
     }
   }
@@ -1085,7 +1089,7 @@ function generateRealGalaxy(seed, gen = 1) {
     const stars = rows.map(([cls, label, mass, lum, temp, radius, sep, own], k) => ({
       id: `s${k}`, name: own && k ? own : rows.length > 1 ? `${name} ${'ABCDEFG'[k]}` : name, cls, label, mass, lum, radius, temp,
       color: tempToColor(temp), wd: cls === 'WD', sep: k ? Math.max(sep, 1) : 0, phase: rng.range(0, Math.PI * 2),
-      ...(ED.physics && FLARES ? { flare: cls === 'M' ? FLARES.stars[cat]?.[k] ?? 0 : 'FGK'.includes(cls) ? FLARES.sun : 0 } : {}),
+      ...(ED.physics.flare && FLARES ? { flare: cls === 'M' ? FLARES.stars[cat]?.[k] ?? 0 : 'FGK'.includes(cls) ? FLARES.sun : 0 } : {}),
     }));
     const primary = stars[0];
     const maxA = stars.length > 1 ? Math.max(0.1, stars[1].sep / 3) : 100;
@@ -1338,7 +1342,7 @@ const ISM = { nNuc: 0.1142 }; // 航路で前面に当たる核子の平均の�
 // 出力の残り = 1 − C log10(1 + DDD/Dx) (3 接合の電池。Walters ほか 2004)。使う厚さは glass、素子は life 年ごとに取り替える (設定の選択。docs/physics.md の 7)
 const PV_DAMAGE = {"ddd":{"100":0.1243,"300":0.01715,"1000":0.002211,"3000":0.0004067},"glass":100,"C":0.27,"Dx":1700000000.0,"life":15};
 /* PV_DAMAGE:END */
-// スウォームの素子の作り (物理。シミュレーション版だけ。docs/physics.md の 7)。星系ごとに選べる (選ばなければ試合の既定、それもなければ自動)。
+// スウォームの素子の作り (物理。ED.physics.pv のときだけ = シミュレーション版。docs/physics.md の 7)。星系ごとに選べる (選ばなければ試合の既定、それもなければ自動)。
 // glass = カバーガラス [µm]、life = 取り替えの年数、sigma = 光を受ける面 1 cm² あたりの素子の質量 [g/cm²]、pf = 平板の素子に比べた発電 (集光レンズの光の損)。
 // 平板: 3 接合の電池 (Ge 140 µm) 0.0745 g/cm² + ガラス 2.554 g/cm³。集光: SLA の 8.5 倍のレンズと電池・放熱板 0.060 g/cm² + ガラス ÷ 8.5、
 // レンズの光の効率 0.92 (O'Neill ほか、NASA/CP-2007-214494)。陽子はレンズで集まらないので、同じ厚さのガラスなら電池の傷み方は平板と同じ。
@@ -1380,7 +1384,8 @@ function depthFor(tab, key, target) {
   for (let i = 0; i < ln.length - 1; i++) if (ln[i + 1] <= target) return t[i] + ((ln[i] - target) / (ln[i] - ln[i + 1])) * (t[i + 1] - t[i]);
   return t[t.length - 1] + (ln[ln.length - 1] - target) * tab['lam' + key];
 }
-// 惑星の地表の被曝 (物理。シミュレーション版だけ。docs/physics.md の 6)。銀河宇宙線と、恒星のフレアの高エネルギー陽子 (星ごとの TESS の観測から)。
+// 惑星の地表の被曝 (物理。ED.physics.flare。docs/physics.md の 6)。銀河宇宙線と、恒星のフレアの高エネルギー陽子 (星ごとの TESS の観測から)。
+// ゲーム版は 'show' = 惑星の欄に出すだけ (入植適性は変えない)。シミュレーション版は true = 地表で暮らせない地球型を地下の街 (適性 2) にする
 // 地表は大気の柱 (気圧 ÷ 重力) の下。年の限度 (ICRP の職業被曝の年平均 20 mSv) を超えれば、地表では暮らせない (入植適性の「地球型」は地下の街の扱い)。
 // 地下に住むなら、限度に収まるまで覆う厚さ (cover [g/cm²]) を出す
 const RADIATION = { limitSv: 0.02, columnPerBar: 1019.7 }; // 1 bar の大気の柱 [g/cm²] (地球の重力のとき。重力に反比例)
@@ -1398,17 +1403,17 @@ function annualDose(flare, a, column) {
 function flareOf(star) {
   return star.flare ?? (!FLARES ? 0 : star.cls === 'M' ? FLARES.mMedian : 'FGK'.includes(star.cls) ? FLARES.sun : 0);
 }
-// スウォームの太陽電池の、陽子で傷んだあとの平均の出力の残り (物理。シミュレーション版だけ。docs/physics.md の 7)。素子は、地球と同じ明るさになる
+// スウォームの太陽電池の、陽子で傷んだあとの平均の出力の残り (物理。試合の physics.pv のときだけ = シミュレーション版。docs/physics.md の 7)。素子は、地球と同じ明るさになる
 // 距離 √L AU を回るので、届く陽子は 1 AU の値 ÷ L。出力の残り 1 − C log10(1 + DDD/Dx) を、取り替えるまでの life 年で平均する (design = PV_DESIGNS の作り)
-function pvRemaining(star, design = PV_DAMAGE) {
-  if (!ED.physics || !PV_DAMAGE || !(star.lum > 0)) return 1;
+function pvRemaining(star, design = PV_DAMAGE, on = ED.physics.pv) {
+  if (!on || !PV_DAMAGE || !(star.lum > 0)) return 1;
   const rate = (flareOf(star) / star.lum) * PV_DAMAGE.ddd[design.glass]; // 1 年の DDD [MeV/g]
   let sum = 0;
   for (let k = 0; k < 40; k++) sum += Math.max(0, 1 - PV_DAMAGE.C * GM.log10(1 + (rate * design.life * (k + 0.5)) / 40 / PV_DAMAGE.Dx));
   return sum / 40;
 }
 function radiationOf(b, star) {
-  if (!ED.physics || !SURFACE_DOSE || (b.type !== 'rocky' && b.type !== 'dwarf')) return null;
+  if (!ED.physics.flare || !SURFACE_DOSE || (b.type !== 'rocky' && b.type !== 'dwarf')) return null;
   const col = (b.pressure * RADIATION.columnPerBar) / Math.max(0.05, b.gravity || 1);
   // 実在の星は星ごとの値。太陽と、星の値がない恒星 (手続きの銀河) は、F・G・K 型なら太陽の値、M 型なら測れた M 型星の中央値
   const flare = flareOf(star);
@@ -1421,11 +1426,12 @@ function radiationOf(b, star) {
   }
   return { column: col, surf, cover, flareShare: surf > 0 ? 1 - (GM.exp(doseAt(SURFACE_DOSE.gcr, col)) * YEAR_S) / surf : 0 };
 }
-// 加速と減速にかかる時間 (物理。シミュレーション版だけ。docs/physics.md の 5)。一定の (船の中で感じる) 加速度 a で、0 から速さ β まで加速し、
+// 加速と減速にかかる時間 (物理。試合の physics.accel のとき。docs/physics.md の 5)。一定の (船の中で感じる) 加速度 a で、0 から速さ β まで加速し、
 // 着く前に同じように減速する。途中の星系では止まらない。c/a [年] = c²/a [光年] (1g で 0.969)。人の乗る船は 1g (人が長く耐えられる)、荷は 10g
+// phys = その試合の物理の切り替え (Game.physics。古いセーブは物理なし)
 const ACCEL = { crew: 1, cargo: 10 }; // 加速度 [g]
-function accelExtra(ly, beta, gs) {
-  if (!ED.physics || !(ly > 0)) return 0;
+function accelExtra(ly, beta, gs, phys = ED.physics) {
+  if (!phys.accel || !(ly > 0)) return 0;
   const T = C_LIGHT / (gs * 9.80665) / YEAR_S;
   const g = 1 / Math.sqrt(1 - beta * beta), xa = T * (g - 1); // 加速のあいだに進む道のり [光年]
   const total = ly >= 2 * xa ? 2 * T * g * beta + (ly - 2 * xa) / beta : 2 * T * Math.sqrt((1 + ly / 2 / T) ** 2 - 1);
@@ -1446,18 +1452,18 @@ function shieldShape(V, tf, ts) {
   const area = (Math.PI * d * d) / 4; // 前面 [m²]
   return { kg: 10 * (area * (tf + ts) + ((4 * V) / d) * ts), d, area }; // 1 g/cm² = 10 kg/m²
 }
-// 1 便の遮蔽。m = 積み荷と船の質量 [kg]、ly = 航路の長さ [光年]。
+// 1 便の遮蔽。m = 積み荷と船の質量 [kg]、ly = 航路の長さ [光年]、phys = その試合の物理の切り替え (Game.physics。古いセーブは物理なし)。
 // 乗る人の限度は、前 (星間の気体) と横 (宇宙線) に、遮蔽が一番軽くなるように割り振る (黄金分割で探す)
-function shieldOf(kind, m, beta, ly) {
-  if (!ED.physics || !(ly > 0) || !(m > 0) || !SHIELD_DOSE) return { kg: 0, depth: 0, side: 0, fluence: 0, area: 0 };
+function shieldOf(kind, m, beta, ly, phys = ED.physics) {
+  if (!phys.shield || !(ly > 0) || !(m > 0) || !SHIELD_DOSE) return { kg: 0, depth: 0, side: 0, fluence: 0, area: 0 };
   const crew = SHIELD.crew.includes(kind);
   const key = beta >= 0.925 ? '0.95' : '0.9';
   const fluence = ISM.nNuc * ly * LY_CM;
   const V = m / SHIELD.rho[crew ? 'crew' : 'cargo'];
   const g = 1 / Math.sqrt(1 - beta * beta);
-  // 船の時間 [s]。加速と減速のあいだ (1g) は、船の時間が速く進む (T atanh β)
+  // 船の時間 [s]。加速と減速のあいだ (1g。physics.accel のとき) は、船の時間が速く進む (T atanh β)
   const T1 = C_LIGHT / 9.80665 / YEAR_S, xa = T1 * (g - 1);
-  const tau = ED.physics && ly >= 2 * xa ? ((2 * T1 * GM.atanh(beta) + (ly - 2 * xa) / (g * beta)) * YEAR_S) : (ly * LY_CM) / (g * beta * C_LIGHT * 100);
+  const tau = phys.accel && ly >= 2 * xa ? ((2 * T1 * GM.atanh(beta) + (ly - 2 * xa) / (g * beta)) * YEAR_S) : (ly * LY_CM) / (g * beta * C_LIGHT * 100);
   if (!crew) {
     const tf = depthFor(SHIELD_DOSE[key], 'D', GM.log(SHIELD.cargoGy / fluence)); // 荷は宇宙線が数 Gy なので横は要らない
     return { ...shieldShape(V, tf, 0), depth: tf, side: 0, fluence, tau, share: 1 };
@@ -2108,6 +2114,7 @@ class Game {
     this.handicap = 'normal';
     this.productivity = 1; // 開始時に選ぶ生産性の倍率 (PRODUCTIVITY)
     this.pvPolicy = null; // スウォームの素子の作りの試合の既定 (シミュレーション版だけ。PV_DESIGNS の名前。null なら星系ごとに自動)
+    this.physics = { ...ED.physics }; // この試合の物理の切り替え (EDITIONS の physics。セーブに入り、物理を入れる前のセーブは PHYSICS_OFF のまま続く)
     this.year = START_YEAR;
     this.colonies = [];
     this.ships = [];
@@ -4093,7 +4100,12 @@ class Game {
     const sup = this.shipSupplies(kind, fromId, toId);
     const cost = { ...SHIP_COST[kind], credits: Math.round(SHIP_COST[kind].credits * f) + SEED_FUNDS[kind], ...sup };
     const fl = this.settlerFlight(kind, fromId, toId, sup);
-    if (fl) { const p = propulsion(fl.m + shieldOf('settler', fl.m, fl.beta, fl.ly ?? 0).kg, fl.beta, 'free'); cost.energy = p.acc + p.dec; }
+    if (fl) {
+      const sh = shieldOf('settler', fl.m, fl.beta, fl.ly ?? 0, this.physics);
+      const p = propulsion(fl.m + sh.kg, fl.beta, 'free');
+      cost.energy = p.acc + p.dec;
+      if (sh.kg > 0) cost.shield = sh.kg / fl.m; // 遮蔽 ÷ 船の質量 (費用の内訳に 1 行で出す。資材ではないので procure は見ない)
+    }
     return cost;
   }
   // 入植船の質量 [kg] と速さ [c]。交易路を通るなら 0.95c まで出す
@@ -4366,7 +4378,7 @@ class Game {
     for (const l of legs) l.r.transit[l.dir][res] += amt;
     let times = [this.year], cly = 0;
     for (let i = 1; i < path.length; i++) { times.push(times[i - 1] + this.shipYears(path[i - 1], path[i])); cly += this.sysDist(path[i - 1], path[i]); }
-    times = withAccel(times, accelExtra(cly, SHIP_SPEED, ACCEL.cargo)); // 荷は 10g
+    times = withAccel(times, accelExtra(cly, SHIP_SPEED, ACCEL.cargo, this.physics)); // 荷は 10g
     const key = path.join('>');
     let p = null;
     for (let i = this.cargo.length - 1; i >= Math.max(0, this.cargo.length - 64) && !p; i--) {
@@ -4422,7 +4434,7 @@ class Game {
   // 艦隊は直行する。交易路が直接結ぶ区間なら 0.95c、それ以外は 0.9c
   fleetYears(from, to) {
     const onRoute = !!this.routeBetween(from, to);
-    return this.shipYears(from, to, onRoute) + accelExtra(this.travelYears(from, to), onRoute ? SHIP_SPEED : OFFROUTE_SPEED, ACCEL.crew);
+    return this.shipYears(from, to, onRoute) + accelExtra(this.travelYears(from, to), onRoute ? SHIP_SPEED : OFFROUTE_SPEED, ACCEL.crew, this.physics);
   }
   // route = 着いたあとに順に回る経由地 (星系の id の列)。艦隊戦・攻囲をまたいでも保たれる
   // chain = 経由地を回っている艦隊の最初の id (取り消しの指令が後を追うのに使う)
@@ -4514,7 +4526,7 @@ class Game {
     f.depart = this.year;
     f.to = to;
     const dly = Math.max(0.001, distance(this.system(to), p));
-    f.arrive = this.year + dly / OFFROUTE_SPEED + accelExtra(dly, OFFROUTE_SPEED, ACCEL.crew);
+    f.arrive = this.year + dly / OFFROUTE_SPEED + accelExtra(dly, OFFROUTE_SPEED, ACCEL.crew, this.physics);
     const owner = f.owner ?? 0;
     // 進路を変えるには、いまの速さを磁気帆と反物質で落として、もう一度加速する (宇宙の途中なので、国の首都の政府が払う)
     this.bookShip('fleet', f.n * FLEET_KG, OFFROUTE_SPEED, 'free', owner, owner, (f.arrive - this.year) * OFFROUTE_SPEED);
@@ -5241,7 +5253,7 @@ class Game {
     }
     let times = [this.year], tly = 0;
     for (let i = 1; i < route.path.length; i++) { times.push(times[i - 1] + this.shipYears(route.path[i - 1], route.path[i], !route.direct)); tly += this.sysDist(route.path[i - 1], route.path[i]); }
-    times = withAccel(times, accelExtra(tly, route.direct ? OFFROUTE_SPEED : SHIP_SPEED, ACCEL.crew));
+    times = withAccel(times, accelExtra(tly, route.direct ? OFFROUTE_SPEED : SHIP_SPEED, ACCEL.crew, this.physics));
     // 交易路なら着く側のレーザーで減速する。直行なら磁気帆と反物質 (どちらも蓄えが負になってもよい)
     this.bookShip('troop', (troops + slave) * TROOP_KG, route.direct ? OFFROUTE_SPEED : SHIP_SPEED, route.direct ? 'free' : 'route', from.sys, to.sys);
     this.troopMoves.push({ id: this.nextShipId++, from: fromKey, to: toKey, path: route.path, times, arrive: times[times.length - 1], troops, slave });
@@ -5546,7 +5558,7 @@ class Game {
     const gv = this.govs[id];
     if (!gv || !this.isColonized(id)) return 0;
     const [f0, t0] = (gv.sw ??= this.isHome(id) ? [SWARM.home, START_YEAR] : [SWARM.seed, gv.founded ?? this.year]);
-    const rate = ED.physics ? this.pvOf(id, this.pvDesign(id)).rate : Math.LN2 / SWARM.doubling;
+    const rate = this.physics.pv ? this.pvOf(id, this.pvDesign(id)).rate : Math.LN2 / SWARM.doubling;
     return 1 / (1 + (1 / f0 - 1) * GM.exp(-rate * Math.max(0, this.year - t0)));
   }
   // スウォームの素子の作り (シミュレーション版だけ)。星系の政府が選んだ作り、なければ試合の既定、それもなければ自動 ('auto' も選べる)
@@ -5560,7 +5572,7 @@ class Game {
     if (c[k]) return c[k];
     const d = PV_DESIGNS[k];
     s.lumSum ??= s.stars.reduce((a, x) => a + (x.lum || 0), 0);
-    const rf = d.pf * (s.lumSum > 0 ? s.stars.reduce((a, x) => a + (x.lum || 0) * pvRemaining(x, d), 0) / s.lumSum : 1);
+    const rf = d.pf * (s.lumSum > 0 ? s.stars.reduce((a, x) => a + (x.lum || 0) * pvRemaining(x, d, this.physics.pv), 0) / s.lumSum : 1);
     return (c[k] = { rf, rate: ((Math.LN2 / SWARM.doubling) * PV_DESIGNS[PV_PICK.ref].sigma * rf) / d.sigma });
   }
   // 自動の作り: 持ちこんでから PV_PICK.horizon 年あとの発電が一番大きい作り
@@ -5577,7 +5589,7 @@ class Game {
   // 素子の作りを変える (星系に届いた指令)。いまの覆う割合から、新しい作りの速さで広がり直す (素子は一度に取り替える。簡単のため)
   setPvDesign(id, k) {
     const gv = this.govs[id];
-    if (!ED.physics || !gv || (k !== 'auto' && !PV_DESIGNS[k])) return fail('素子の作りを選べない');
+    if (!this.physics.pv || !gv || (k !== 'auto' && !PV_DESIGNS[k])) return fail('素子の作りを選べない');
     if (this.isColonized(id)) gv.sw = [Math.max(SWARM.seed, this.swarmCover(id)), this.year];
     gv.pvd = k;
     return { ok: true };
@@ -5588,8 +5600,8 @@ class Game {
     if (!cover) return 0;
     const s = this.system(id);
     s.lumSum ??= s.stars.reduce((k, x) => k + (x.lum || 0), 0);
-    // 太陽電池が陽子で傷んだ分と集光の損 (シミュレーション版だけ。ゲーム版は 1 で、星系に何も書かない)
-    const rf = ED.physics ? this.pvOf(id, this.pvDesign(id)).rf : 1;
+    // 太陽電池が陽子で傷んだ分と集光の損 (physics.pv のとき = シミュレーション版だけ。ゲーム版は 1 で、星系に何も書かない)
+    const rf = this.physics.pv ? this.pvOf(id, this.pvDesign(id)).rf : 1;
     return s.lumSum * L_SUN_W * cover * PROP.pv * rf * YEAR_S;
   }
   energyOf(id) { return this.govs[id]?.E || 0; }
@@ -5603,7 +5615,7 @@ class Game {
   // 1 便の推進のエネルギーを記帳する。from = 加速する (と反物質を作る) 星系の政府、to = 交易路で減速する星系の政府
   // ly = 航路の長さ [光年] (遮蔽の厚さを決める)。from と to が航路の両端でない便 (入植船・艦隊など) は、呼ぶ側が渡す
   bookShip(kind, m, beta, mode, from, to = from, ly = from === to ? 0 : this.sysDist(from, to)) {
-    const sh = shieldOf(kind, m, beta, ly);
+    const sh = shieldOf(kind, m, beta, ly, this.physics);
     const p = propulsion(m + sh.kg, beta, mode);
     if (mode === 'route') { this.bookE(kind, -p.acc, from); this.bookE(kind, -p.dec, to); } else this.bookE(kind, -(p.acc + p.dec), from);
     if (ENERGY_AUDIT) ENERGY_AUDIT.push({ kind, m, beta, mode, E: p.acc + p.dec, year: this.year, ly, shield: sh.kg, depth: sh.depth, side: sh.side, share: sh.share });
@@ -6011,6 +6023,8 @@ class Game {
     if (!Array.isArray(d.colonies) || !Array.isArray(d.ships) || !Number.isFinite(d.year)) return false;
     if (!d.colonies.every((c) => ok(c.sys, c.body)) || !d.ships.every((s) => ok(s.to, s.body) && this.galaxy.systems[s.from])) return false;
     this.year = d.year;
+    // 物理の切り替え (2026-10-21 から)。ないセーブ (物理を入れる前) は物理なしのまま続ける。flare は銀河を作るときに効くので版の値のまま
+    this.physics = obj(d.physics) ? { ...PHYSICS_OFF, ...d.physics, flare: ED.physics.flare } : { ...PHYSICS_OFF, flare: ED.physics.flare };
     this.colonies = d.colonies;
     this.ships = d.ships;
     this.log = Array.isArray(d.log) ? d.log : [];
@@ -6710,10 +6724,10 @@ class Game {
       const onRoute = !!this.routeBetween(path[i - 1], path[i]);
       times.push(times[i - 1] + this.shipYears(path[i - 1], path[i]) * (onRoute ? 1 : SHIP_SPEED / offSpeed));
     }
-    // 加速と減速の遅れ (シミュレーション版だけ。人の乗る船の 1g。入植船・移民船・同行する歩兵がこの道のりを使う)
+    // 加速と減速の遅れ (この試合の physics.accel のとき。人の乗る船の 1g。入植船・移民船・同行する歩兵がこの道のりを使う)
     let ly = 0;
     for (let i = 1; i < path.length; i++) ly += this.sysDist(path[i - 1], path[i]);
-    const tt = withAccel(times, accelExtra(ly, path.length > 2 || this.routeBetween(path[0], path[1]) ? SHIP_SPEED : offSpeed, ACCEL.crew));
+    const tt = withAccel(times, accelExtra(ly, path.length > 2 || this.routeBetween(path[0], path[1]) ? SHIP_SPEED : offSpeed, ACCEL.crew, this.physics));
     const v = { path, times: tt, years: tt[tt.length - 1] };
     if (cacheable) vc.set(vk, { path: path.slice(), times: tt.slice(), years: v.years });
     return v;
@@ -8144,10 +8158,11 @@ const shareText = (c, short = false) => {
 };
 // 開始の画面で選んだ生産性の倍率 (自分で決めた値は決まった幅に収める)
 const productivityOf = (key, k) => (key === 'custom' ? clamp(Number.isFinite(k) && k > 0 ? k : 1, ...PRODUCTIVITY_RANGE) : (PRODUCTIVITY[key] || PRODUCTIVITY.now).k);
-const costText = (cost) => Object.entries(cost).map(([k, v]) => (k === 'credits' ? `${fmtAmt(v)} cr` : k === 'energy' ? `エネルギー ${fmtJ(v)}` : `${RES_LABEL[k]} ${fmtAmt(v)}`)).join('・');
+// shield = 遮蔽 ÷ 船の質量 (星間の気体と宇宙線の遮蔽。物理のある試合の入植船。docs/physics.md の 5)。エネルギーには入れてある
+const costText = (cost) => Object.entries(cost).map(([k, v]) => (k === 'credits' ? `${fmtAmt(v)} cr` : k === 'energy' ? `エネルギー ${fmtJ(v)}` : k === 'shield' ? `遮蔽 ${Math.round(100 * v)}%` : `${RES_LABEL[k]} ${fmtAmt(v)}`)).join('・');
 // 資源の名前にアイコンを添える (HTML)。費用は資金も含めてアイコンつきで並べる
 const resText = (r) => `${ico(r)}${RES_LABEL[r]}`;
-const costHtml = (cost) => Object.entries(cost).map(([k, v]) => (k === 'credits' ? `${ico('credits')}${fmtAmt(v)} cr` : k === 'energy' ? `エネルギー ${fmtJ(v)}` : `${resText(k)} ${fmtAmt(v)}`)).join('・');
+const costHtml = (cost) => Object.entries(cost).map(([k, v]) => (k === 'credits' ? `${ico('credits')}${fmtAmt(v)} cr` : k === 'energy' ? `エネルギー ${fmtJ(v)}` : k === 'shield' ? `遮蔽 ${Math.round(100 * v)}%` : `${resText(k)} ${fmtAmt(v)}`)).join('・');
 // 出来事の種類のアイコン (種類の札・知らせの帯)
 const KIND_ICON = { battle: 'war', war: 'war', famine: 'food', shortage: 'goods', colony: 'colony', pirate: 'pirate', natives: 'natives', politics: 'loyalty', demand: 'council', migration: 'migration', trade: 'route', goal: 'goal' };
 const tagIco = (kind) => ico(KIND_ICON[kind]);
@@ -9593,8 +9608,8 @@ function ledgerHtml(g) {
 
 const fmtSv = (v) => (v >= 1 ? `${v.toPrecision(3)} Sv` : v >= 1e-3 ? `${(v * 1e3).toPrecision(3)} mSv` : `${(v * 1e6).toPrecision(3)} µSv`);
 // 遮蔽の目安: 10 光年を 0.95c で行く 1 単位の荷と、移民 1 万人の船
-function shieldNote() {
-  const c = shieldOf('cargo', UNIT_KG, SHIP_SPEED, 10), m = shieldOf('migrant', 1e4 * MIGRANT_KG, SHIP_SPEED, 10);
+function shieldNote(phys) {
+  const c = shieldOf('cargo', UNIT_KG, SHIP_SPEED, 10, phys), m = shieldOf('migrant', 1e4 * MIGRANT_KG, SHIP_SPEED, 10, phys);
   const f = (x, kg) => `前 水 ${(x.depth / 100).toFixed(0)} m${x.side ? `・横 ${(x.side / 100).toFixed(1)} m` : ''} (質量の +${((100 * x.kg) / kg).toFixed(1)}%)`;
   return `荷 1 単位: ${f(c, UNIT_KG)}・移民 1 万人: ${f(m, 1e4 * MIGRANT_KG)}`;
 }
@@ -9603,12 +9618,12 @@ function energyBox(g, id, k) {
   const now = id === g.cap;
   const E = now ? g.energyOf(id) : k?.energy || 0, P = now ? g.power(id) : k?.power || 0;
   const sys = g.system(id), lum = sys.stars.reduce((a, x) => a + (x.lum || 0), 0);
-  const rf = ED.physics ? g.pvOf(id, g.pvDesign(id)).rf : 1; // 太陽電池が陽子で傷んだ分と集光の損 (シミュレーション版だけ)
+  const rf = g.physics.pv ? g.pvOf(id, g.pvDesign(id)).rf : 1; // 太陽電池が陽子で傷んだ分と集光の損 (シミュレーション版だけ)
   const cover = lum ? P / (lum * L_SUN_W * PROP.pv * rf * YEAR_S) : 0;
   return `<table class="tbl"><tr><td>蓄え</td><td>${fmtJ(E)} <span class="muted">(上限 ${fmtJ(SWARM.store * P)})</span></td></tr>
     <tr><td>スウォームの発電</td><td>${fmtJ(P)}/年</td></tr><tr><td>恒星の光を覆う割合</td><td>${cover >= 0.01 ? pct(cover) : cover.toExponential(1)}</td></tr>
     <tr><td>交易路で 1 単位 (100 万 t) を運ぶ</td><td>${fmtJ(E_UNIT)} ずつ (送る側の加速・受ける側の減速)</td></tr>
-    ${ED.physics ? `${pvDesignRows(g, id)}<tr><td>星間の気体と宇宙線の遮蔽 (10 光年・0.95c)</td><td>${shieldNote()}</td></tr>` : ''}</table>`;
+    ${g.physics.pv ? pvDesignRows(g, id) : ''}${g.physics.shield ? `<tr><td>星間の気体と宇宙線の遮蔽 (10 光年・0.95c)</td><td>${shieldNote(g.physics)}</td></tr>` : ''}</table>`;
 }
 // スウォームの素子の作り (シミュレーション版だけ)。作りごとの出力の残りと、覆う割合が倍になる年数。自国の星系なら選べる (光速の指令)
 function pvDesignRows(g, id) {
@@ -9847,7 +9862,7 @@ function saveMeta(d) {
 function buildSave(game, extra = {}) {
   return {
     v: 2, seed: game.galaxy.seed, ...(game.galaxy.kind === 'real' ? { galaxy: 'real' } : {}), ...(game.galaxy.gen > 1 ? { gen: game.galaxy.gen } : {}), rs: game.rs, players: game.players, pi: game.pi,
-    ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(game.pvPolicy ? { pvPolicy: game.pvPolicy } : {}), ...(game.productivity !== 1 ? { productivity: game.productivity } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
+    ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(game.pvPolicy ? { pvPolicy: game.pvPolicy } : {}), physics: game.physics, ...(game.productivity !== 1 ? { productivity: game.productivity } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
     log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, ...(Object.keys(game.intel).length ? { intel: game.intel } : {}), ...(game.aiOrders.length ? { aiOrders: game.aiOrders } : {}), ...(Object.keys(game.shipHist).length ? { shipHist: game.shipHist } : {}), peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, market: game.market, absorb: game.absorb, unmet: game.unmet, util: game.util, tech: game.tech, ...(game.alpha !== undefined ? { alpha: game.alpha } : {}), ...(game.aif ? { aif: game.aif } : {}), routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
@@ -10187,7 +10202,7 @@ function homeHtml() {
         <label>倍率 <input id="home-prodk" type="number" inputmode="decimal" min="${PRODUCTIVITY_RANGE[0]}" max="${PRODUCTIVITY_RANGE[1]}" step="any" value="${esc(String(app.homeProdK ?? 1))}" ${(app.homeProd ?? 'now') === 'custom' ? '' : 'disabled'}></label></div>
       <p class="note">生産性: 1 人あたりの産出 (農業・鉱業・工業・採掘基地) の倍率。「現代のまま」は 2023 年の最前線の国の生産性。「2300 年の予測」は、1890〜2023 年の米国の労働生産性の伸び (年 2.0%) とコンドラチェフの波から延ばした値で、最近の伸び (年 1.3%) が続くなら ×33。「自分で決める」は ${PRODUCTIVITY_RANGE[0]}〜${PRODUCTIVITY_RANGE[1]} 倍。</p>
       ${NationLib.list.length ? `<div class="row"><span class="muted">自作の国を出す</span>${NationLib.list.map((n) => `<label><input type="checkbox" class="home-lib" value="${n.id}" ${(app.homeLib || []).includes(n.id) ? 'checked' : ''}> ${esc(n.name)}</label>`).join('')}</div>` : ''}
-      ${ED.physics ? `<div class="row"><label>スウォームの素子の作り (全部の星系の既定) <select id="home-pv">${['auto', ...Object.keys(PV_DESIGNS)].map((k) => `<option value="${k}" ${k === (app.homePv ?? 'auto') ? 'selected' : ''}>${k === 'auto' ? '星系ごとに自動' : `${k}. ${PV_DESIGNS[k].label} — ${PV_DESIGNS[k].note}`}</option>`).join('')}</select></label></div>` : ''}
+      ${ED.physics.pv ? `<div class="row"><label>スウォームの素子の作り (全部の星系の既定) <select id="home-pv">${['auto', ...Object.keys(PV_DESIGNS)].map((k) => `<option value="${k}" ${k === (app.homePv ?? 'auto') ? 'selected' : ''}>${k === 'auto' ? '星系ごとに自動' : `${k}. ${PV_DESIGNS[k].label} — ${PV_DESIGNS[k].note}`}</option>`).join('')}</select></label></div>` : ''}
       <div class="row"><label>終わりの年 <select id="home-end">${END_CHOICES.map(([y, l]) => `<option value="${y}" ${y === (app.homeEnd ?? 500) ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
       <div class="row"><span class="muted">挑戦 (選ばなくてもよい)</span>${Object.entries(CHALLENGES).map(([k, c]) => `<label title="${esc(c.desc)}"><input type="checkbox" class="home-ch" value="${k}" ${(app.homeCh || []).includes(k) ? 'checked' : ''}> ${c.label}</label>`).join('')}
         <button data-home="new">${armed('new') ? '本当に? いまのゲームは消える' : 'はじめる'}</button></div>
@@ -10534,7 +10549,7 @@ $('home').onclick = (e) => {
     app.game.challenges = (app.homeCh || []).filter((k) => CHALLENGES[k]).map((id) => ({ id, status: 'active' }));
     app.game.handicap = HANDICAP[app.homeHc] ? app.homeHc : 'normal';
     app.game.productivity = productivityOf(app.homeProd, app.homeProdK);
-    if (ED.physics) app.game.pvPolicy = PV_DESIGNS[app.homePv] ? app.homePv : null;
+    if (ED.physics.pv) app.game.pvPolicy = PV_DESIGNS[app.homePv] ? app.homePv : null;
     const customs = (app.homeLib || []).map((id) => NationLib.get(id)).filter(Boolean);
     if ((app.homeNat ?? 1) > 1 || customs.length) {
       app.game.foundNations(Math.max(app.homeNat ?? 1, customs.length + 1), app.homeHc, customs);
