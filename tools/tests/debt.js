@@ -12,8 +12,10 @@ const res = {};
 const govs = Object.entries(g.govs).filter(([k]) => g.isColonized(Number(k))).map(([, v]) => v);
 res.someBonds = govs.some((v) => v.bond > 0);
 res.nonNegative = Object.values(g.govs).every((v) => !(v.bond < 0) && !(v.due < 0));
-const over = govs.filter((v) => g.year - (v.founded ?? 0) > 10 && v.credits > 2 * DEBT.cash * Math.max(0, (v.ledger?.tax || 0) + (v.ledger?.natives || 0)) + 50); // できて 10 年までの政府は開拓資金 (200 cr) を持っていてよい
-res.cashSpent = over.length <= 0.1 * govs.length;
+// できて 10 年までの政府は開拓資金 (200 cr) を持っていてよい。人口 100 万人未満の政府 (自給だけで市場の所得と税がなく、国債の式が働かない) は見ない
+const govs2 = Object.entries(g.govs).filter(([k]) => g.isColonized(Number(k)) && g.coloniesIn(Number(k)).reduce((a, c) => a + c.pop, 0) >= 1).map(([, v]) => v);
+const over = govs2.filter((v) => g.year - (v.founded ?? 0) > 10 && v.credits > 2 * DEBT.cash * Math.max(0, (v.ledger?.tax || 0) + (v.ledger?.natives || 0)) + 50);
+res.cashSpent = over.length <= Math.max(1, 0.1 * govs2.length); // 1 つまでは、ならしている途中 (超えた分は 1 年ほどで使う) として許す
 const d = JSON.parse(JSON.stringify(sim.buildSave(g)));
 const g2 = new sim.Game(sim.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
 g2.restore(d);
