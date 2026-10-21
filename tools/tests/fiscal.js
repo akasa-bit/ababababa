@@ -23,19 +23,22 @@ const { chromium } = require('playwright');
       const far = vs[0];
       res.far = Math.round(g.sysDist(0, far));
       g.pc = 50;
-      res.bad = [issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.3, security: 0.2, military: 0.2 }).ok, issue('fiscal', { tax: 'nope' }).ok];
-      res.ok = issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.1, military: 0.1 }).ok;
+      // 選べない値: 予算の合計が 10 割を超える・税率が幅の外 (40%)・利子率が刻みの外・前の段階の名前でないもの
+      res.bad = [issue('fiscal', { tax: 0.279, rate: 0.05, welfare: 0.6, security: 0.3, military: 0.2 }).ok, issue('fiscal', { tax: 0.4 }).ok, issue('fiscal', { rate: 0.051 }).ok, issue('fiscal', { tax: 'nope' }).ok];
+      res.ok = issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.1, military: 0.1 }).ok; // 前の段階の名前 (重税 = 15.5% × 1.8) も通る
       res.pc = 50 - g.pc; // 税と利子率を変えたので 5
-      res.now = [g.taxK(0), g.taxK(far), g.rateAt(far)]; // 首都はすぐ、遠い星系はまだ前のまま (1・0.01)
+      res.now = [+g.taxK(0).toFixed(3), +g.taxK(far).toFixed(3), g.rateAt(far)]; // 首都はすぐ、遠い星系はまだ前のまま (1・0.01)
       const L0 = g.loyaltyTerms(far).map((t) => t.label);
       for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25);
       const pc0 = g.pc;
       res.budgetOnly = [issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.2, military: 0.1 }).ok, pc0 - g.pc]; // 予算だけなら政治力は要らない (0)
       const cr0 = g.council;
       for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25);
-      res.later = [g.taxK(far), g.rateAt(far)];
+      res.later = [+g.taxK(far).toFixed(3), g.rateAt(far)];
       const L1 = g.loyaltyTerms(far);
-      res.loyalty = [L0.includes('税 (重税)'), L1.some((t) => t.label === '税 (重税)' && t.v === -12), L1.some((t) => t.label === '福祉の予算' && t.v > 0)];
+      res.loyalty = [L0.some((l) => l.startsWith('税 (')), L1.some((t) => t.label === '税 (27.9%)' && Math.abs(t.v + 12) < 1e-6), L1.some((t) => t.label === '福祉の予算' && t.v > 0)]; // 重税 (×1.8) の忠誠度 −15 × 0.8 = −12
+      // 幅の中の細かい値 (税率 20%・利子率 −0.75%・赤字の上限 7.5%) も通る。マイナスの利子率も選べる (docs/policy-ranges.md)
+      res.fine = [issue('fiscal', { tax: 0.2, rate: -0.0075, deficit: 0.075 }).ok, g.fiscal.tax, g.fiscal.rate, g.fiscal.deficit];
       res.hazard = (g.secessionTerms(far) || []).some((t) => t.label === '治安の予算' && t.f < 1);
       res.fleet = [g.modsOf(0).fleet, +g.fleetMul(0, 0).toFixed(3)];
       const led = g.gov(0).ledger;
@@ -52,9 +55,9 @@ const { chromium } = require('playwright');
     await p.evaluate(() => { const h = [...document.querySelectorAll('#empire h3')].find((x) => /財政/.test(x.textContent)); if (h) h.scrollIntoView(); });
     await p.waitForTimeout(300);
     await p.screenshot({ path: `${SHOTS}/fiscal-${tag}.png` });
-    // 画面の選択肢から変える (税を「低い」に)
+    // 画面のスライダーから変える (税率を 9.5% に)
     await p.evaluate(() => { __app.game.pc = 50; });
-    await p.selectOption('select[data-act="fiscal"][data-k="tax"]', 'low');
+    await p.evaluate(() => { const el = document.querySelector('input[type="range"][data-act="fiscal"][data-k="tax"]'); el.value = '0.095'; el.dispatchEvent(new Event('change', { bubbles: true })); });
     r.ui = await p.evaluate(() => __app.game.fiscal.tax);
     r.wide = await p.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
     out[tag] = { ...r, errs };
