@@ -155,3 +155,13 @@ class Rng {
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
+// セーブの項目を、仕組みごとに、その仕組みのファイルで登録する (回 R3。前は buildSave の 1 行にみんなが書き足して、いちばんぶつかっていた)。
+// key = セーブの項目の名前 (core/save.js の SAVE_LEGACY と同じ名前は使えない)。write(game) = 書く値 (undefined なら書かない)。
+// init(game) = Game を作った終わりに呼ぶ (その項目の初期値)。read(game, d) = restore の終わりに呼ぶ (d[key] がない前の版のセーブでも、既定に戻す)。
+// 書く順は、前からの項目 (SAVE_LEGACY) の後ろに、登録した順。番号の予約と同じく、足す項目の名前は docs/registry.md に書く
+const SAVE_FIELDS = [];
+function saveField(key, write, { init = null, read = null } = {}) {
+  if (SAVE_FIELDS.some((f) => f.key === key)) throw new Error(`セーブの項目 ${key} が 2 回登録された`);
+  SAVE_FIELDS.push({ key, write, init, read });
+}
+

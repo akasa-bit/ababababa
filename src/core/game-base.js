@@ -90,6 +90,7 @@ class Game {
     this.colonies[0].troops = 3;
     Object.assign(this.stock[0], { food: 5000, water: 1000, metal: 3000, fuel: 2000, rare: 300, goods: 2000 });
     this.message('ゲーム開始。地球から恒星間入植を進めよう。');
+    for (const f of SAVE_FIELDS) if (f.init) f.init(this); // 仕組みごとに登録したセーブの項目の初期値 (core/base.js の saveField)
   }
 
   system(id) { return this.galaxy.systems[id]; }

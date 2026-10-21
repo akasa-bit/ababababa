@@ -162,6 +162,7 @@
     if (!(d.v >= 2)) for (const gv of Object.values(this.govs)) gv.attended ??= this.year;
     this.surveyed = Array.isArray(d.surveyed) ? d.surveyed.filter(sysOk) : [];
     for (const c of this.colonies) if (!this.contacted(c.sys)) this.surveyed.push(c.sys);
+    for (const f of SAVE_FIELDS) if (f.read) f.read(this, d); // 仕組みごとに登録したセーブの項目 (core/base.js の saveField)
     return true;
   }
 
