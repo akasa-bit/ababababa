@@ -61,6 +61,21 @@ const { chromium } = require('playwright');
       res.hz = REGIME_ORDER.map((r) => [r, +t(r).toFixed(4)]);
       // 古い名前 (間接統治・封建制…) は型の別名として受ける
       res.alias = [issue('set', { key: 'regime', value: 'feudal' }).ok, g.regime];
+      // 約定の交渉 (束の 1 項目): 幕藩制の藩 (課税と朝貢は「分」) の課税を「宗」にする → 届いたら法が変わり、狭めた分だけ忠誠度が下がる
+      // (ここまでに独立した家臣もあるので、いまの直属の家臣 (直轄でない) を選び直す)
+      const w = Object.keys(g.govs).map(Number).find((id) => g.govs[id].lord === 0 && g.known(id)?.lord === 0 && g.isColonized(id) && g.realmOf(id) === 0 && !g.govs[id].direct && !g.known(id)?.direct);
+      res.bundleSys = w ?? null;
+      g.pc = 100; delete g.govs[w].unrest; g.govs[w].loyalty = 90; delete g.govs[w].autonomy;
+      g.setRegime(w, 'T14');
+      res.bundleCmd = issue('bundle', { sys: w, item: 'tax', value: 'S' }).ok;
+      for (let i = 0; i < Math.ceil(g.lightDelay(w) * 4) + 4; i++) { g.govs[w].loyalty = 90; g.advance(0.25); }
+      const B = g.bundleOf(g.govs[w]);
+      res.bundle = { law: B.law[2], gap: bundleGap(B.law, B.fact) };
+      // 現地のエリートの抵抗: 忠誠度が低いままなら、実態が「従」へ寄っていく
+      for (let i = 0; i < 150; i++) { g.govs[w].loyalty = 10; g.bundleYearly(); }
+      res.elite = g.govs[w].elite;
+      res.factV = [...g.bundleOf(g.govs[w]).fact].filter((c) => c === 'V').length;
+      g.govs[w].loyalty = 90;
       // 保存 → 読み込み
       const s1 = JSON.stringify((() => { const x = buildSave(g); delete x.savedAt; return x; })());
       loadSave(JSON.parse(s1));

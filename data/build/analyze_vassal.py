@@ -13,6 +13,7 @@
 書き出し: data/derived/vassal_survival.json
 
 使い方: python3 data/build/analyze_vassal.py   (numpy が要る。先に build_vassal.py を回す)
+      python3 data/build/analyze_vassal.py --game <tools/secession.js の書き出しのフォルダ>…   (ゲームを同じ関数で測り、目標 R30〜R32 と比べる)
 """
 import csv, datetime, itertools, json, math, os, re, sys
 from collections import Counter, defaultdict
@@ -229,5 +230,45 @@ def main():
         if 'terms' in m:
             print(k, [(x['name'], x['hr'], x['p']) for x in m['terms']])
 
+def game(dirs):
+    """ゲームの自動対戦の記録 (tools/secession.js の書き出し) を、実データと同じ関数で測り、目標 R30〜R32 と比べる"""
+    import glob
+    T = [t for d in dirs for f in sorted(glob.glob(os.path.join(d, '*.json'))) for t in json.load(open(f, encoding='utf-8'))['ties']]
+    tid = lambda r: 'T20' if r in ('direct', 'encomienda') else r if re.match(r'^T\d\d$', str(r or '')) else None
+    T = [t for t in T if tid(t.get('regime0') or t.get('regime'))]
+    for t in T:
+        t['type_id'] = tid(t.get('regime0') or t.get('regime')); t['family'] = FAMILY[t['type_id']]
+        t['event'] = 0 if t['how'] == 'censored' else 1
+    tg = {r['id']: r for r in json.load(open(os.path.join(ROOT, '..', 'targets', 'targets.json'), encoding='utf-8'))['realism']}
+    out = {'ties': len(T), 'by_family': {}}
+    _, qa = km_curve([t['dur'] for t in T], [t['event'] for t in T])
+    out['all_median'] = qa.get(0.5)
+    ok30 = n30 = 0
+    for f in FAMILY_NAMES:
+        ts = [t for t in T if t['family'] == f]
+        r = {'n': len(ts)}
+        if len(ts) >= 5:
+            _, qf = km_curve([t['dur'] for t in ts], [t['event'] for t in ts])
+            if qf.get(0.5) is not None and qa.get(0.5):
+                r['ratio'] = round(qf[0.5] / qa[0.5], 3); band = tg['R30']['bands'][f]
+                r['R30_band'] = band; r['R30_in'] = band[0] <= r['ratio'] <= band[1]; n30 += 1; ok30 += int(r['R30_in'])
+        ind = [t for t in ts if t['how'] == 'independence' and t.get('warP') is not None]
+        if len(ind) >= 5:
+            r['violent'] = round(sum(t['warP'] for t in ind) / len(ind), 3); band = tg['R32']['bands'][f]
+            r['R32_band'] = band; r['R32_in'] = (band[0] <= r['violent'] <= band[1]) or (band[1] == 0 and r['violent'] <= 0.05)
+        out['by_family'][f] = r
+    out['R30'] = {'judged': n30, 'in_band': ok30, 'pass': n30 > 0 and ok30 >= 2 * n30 / 3}
+    j32 = [r for r in out['by_family'].values() if 'R32_in' in r]
+    out['R32'] = {'judged': len(j32), 'in_band': sum(r['R32_in'] for r in j32), 'pass': bool(j32) and sum(r['R32_in'] for r in j32) >= 2 * len(j32) / 3}
+    G = [t for t in T if t.get('gap') is not None]
+    if len(G) >= 30:
+        b, se = cox([t['dur'] for t in G], [t['event'] for t in G], [[t['gap'], math.log(max(t['dCap'], 0.5))] for t in G])
+        c = coef(b, se, 0, 'gap', exp=True); band = tg['R31']['band']
+        out['R31'] = {'hr': c['hr'], 'hr_ci95': c['hr_ci95'], 'n': len(G), 'band': band, 'pass': band[0] <= c['hr'] <= band[1]}
+    print(json.dumps(out, ensure_ascii=False, indent=1))
+    return 0
+
 if __name__ == '__main__':
+    if len(sys.argv) > 2 and sys.argv[1] == '--game':
+        sys.exit(game(sys.argv[2:]))
     sys.exit(main())
