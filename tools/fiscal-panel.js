@@ -4,7 +4,7 @@
 // ゲームの中身は変えない (出入りの関数を道具の側で包んで数えるだけ)。定義は docs/fiscal.md の 3。
 //   gdp         = 民間の付加価値 + 政府が民間から買った分 (建設・維持費・予算。費用で測る)。民間の付加価値は、市場のある版は税の土台と同じ所得
 //                 (物の産出 × 市場の値段 − 工業の投入 + サービス。incomeOf)、ない版は採掘・収穫と工業の産出 − 工業の投入 (基準価格)
-//   revenue     = 税 + 先住民からの収入 + 預金の利子
+//   revenue     = 税 (所得への税・消費税・関税) + 先住民からの収入 + 預金の利子
 //   expenditure = revenue − 政府の純貸出 (国の政府の資金の増加。国の中の朝貢・資金援助・交易は差し引きで消える)
 //   debtgdp     = 政府の総債務 (国債の残高の合計。資金がマイナスの政府があれば、そのマイナス分も) ÷ gdp
 //   tloans      = 国の星系の会社 (在庫の分) と家計と先住民の、銀行からの借り
@@ -20,7 +20,7 @@ const H = require('./headless');
 const [out = 'fiscal-panel.csv', nS = '30', yS = '150', natS = '6', paramFile] = process.argv.slice(2);
 const params = paramFile ? JSON.parse(fs.readFileSync(paramFile, 'utf8')) : null;
 const GOV_BUY = new Set(['build', 'upkeep', 'welfare', 'security', 'military', 'public']);
-const REVENUE = new Set(['tax', 'natives', 'interest']);
+const REVENUE = new Set(['tax', 'ctax', 'tariff', 'natives', 'interest']);
 const VALUE = new Set(['extract', 'make', 'use', 'burn']);
 const sim = H.load({ params, ...(process.env.HTML ? { src: process.env.HTML } : {}) }); // HTML=… で別の版 (main など) を測れる // 1 回だけ読み込む (回している途中で src が書き換わっても、同じ版で回す)
 const { PRICE } = sim.tables;
