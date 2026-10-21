@@ -106,7 +106,23 @@ const { chromium } = require('playwright');
     await p.waitForTimeout(300);
     await p.screenshot({ path: `${process.argv[2]}/hazard-${tag}.png` });
     const wide = await p.evaluate(() => [...document.querySelectorAll('table.regimes')].map((t) => [t.scrollWidth, t.parentElement.clientWidth]));
-    out[tag] = { ...r, wide, errs: errs.slice(0, 3) };
+    // 史料の欄 (H4-1): 統治の欄の中にあり、型を選ぶと中身が替わる
+    const hist = await p.evaluate(async () => {
+      const g = __app.game;
+      const v = Object.keys(g.govs).map(Number).find((id) => g.known(id)?.lord === g.cap && (g.known(id)?.realm ?? g.cap) === g.cap && !g.known(id)?.direct && g.isColonized(id));
+      if (v === undefined) return null;
+      __app.selectSystem(v); __app.dirty = true;
+      await new Promise((ok) => setTimeout(ok, 400));
+      const d = document.querySelector('details.hist');
+      if (!d) return null;
+      const before = d.querySelector('summary').textContent;
+      app.histType = 'T01'; __app.dirty = true;
+      await new Promise((ok) => setTimeout(ok, 400));
+      const after = document.querySelector('details.hist summary')?.textContent || '';
+      app.histType = null;
+      return [before.startsWith('史料'), /冊封朝貢国/.test(after), /一次史料の出典/.test(document.querySelector('details.hist').textContent)];
+    });
+    out[tag] = { ...r, wide, hist, errs: errs.slice(0, 3) };
   }
   console.log(JSON.stringify(out, null, 1));
   await b.close();

@@ -89,6 +89,29 @@ def main():
         ai[cls][c['type_id']] += 1
     share = {cls: round(sum(v.values()) / len(cases), 3) for cls, v in ai.items()}
     skip = {'T10', 'T11', 'T17', 'T20'}
+    # 史料の欄 (H4-1): H1 の型ごとの記述 (docs/vassal-typology.md の 3) と、H2-1 の事例の一覧
+    FIELDS = {'当時の言葉': 'terms', '法と実態の差': 'gap', '一次史料の出典': 'sources', '研究者の論争': 'debates', 'ゲームで省くこと': 'omit'}
+    typo = open(os.path.join(ROOT, '..', 'docs', 'vassal-typology.md'), encoding='utf-8').read()
+    sec3 = typo[typo.index('## 3. 型ごとの中身'):typo.index('## 4.')]
+    for blk in re.split(r'\n### ', sec3)[1:]:
+        tid = blk[:3]
+        if tid not in types:
+            continue
+        doc = {}
+        for line in blk.split('\n'):
+            m = re.match(r'- \*\*(.+?)\*\*: (.*)', line)
+            if m and m.group(1) in FIELDS:
+                doc[FIELDS[m.group(1)]] = m.group(2)
+        types[tid]['doc'] = doc
+    types['T20']['doc'] = {
+        'terms': 'colony・Crown colony (英の直轄植民地)・colonie・département (仏のアルジェリアは 1848 年から本国の県)。直接統治 (direct rule) と間接統治 (indirect rule) の区分は Lugard 1922・Crowder 1964 の言葉',
+        'gap': '法でも実態でも、外交・軍事・課税・任免・交易・継承を宗主が握る (8 項目のうち 6 つが宗、法と裁判と宗教が分)。法と実態の差はいちばん小さい (0)。現地の首長や慣習法廷を残す地域 (ゴールドコーストの内陸) は、植民地の中の間接統治として藩王国の側に近い',
+        'sources': '各植民地の勅許状 (Letters Patent) と統治規則 (蘭印の Regeringsreglement 1854)・仏の 1834 年の勅令 (アルジェリア)・米のフィリピン組織法 (1902)・日本の六三法 (1896)。文書館: TNA CO、ANOM、ハーグ国立文書館、NARA RG 350',
+        'debates': 'Lange 2009『Lineages of Despotism and Development』(直接統治の植民地ほど独立後の国家が強い)、Crowder 1964「Indirect Rule: French and British Style」(仏の直接統治と英の間接統治の差は誇張)、Mamdani 1996『Citizen and Subject』(二重の国家)。論点: 直接統治と間接統治は型か程度か',
+        'omit': '植民地の中の地域の差 (沿岸の直轄と内陸の保護領)、入植者と先住の住民の法の違い',
+    }
+    for tid in types:
+        types[tid]['caseList'] = [{'name': c['name'], 'years': f"{c['start']}〜{c['end'] if c['end'] else '続く'}", 'end': c['end_kind'], 'violent': c['violent_end']} for c in cases if c['type_id'] == tid]
     out = {'model': model, 'base': BASE, 'types': types,
            'ai': {'share': share, 'types': {cls: {t: n for t, n in sorted(v.items()) if t not in skip} for cls, v in ai.items()}}}
     block = ('/* VASSAL:BEGIN (data/build/build_vassal_game.py が書く。手で直さない。docs/vassal-game.md) */\n'
