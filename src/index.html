@@ -1968,11 +1968,12 @@ const taxRateOf = (t) => (typeof t === 'number' ? t : MARKET.tax * (TAX_LEVELS[t
 const TAX_LOYALTY = -15, TAX_COUNCIL = -0.5;
 // 税の重さ k = (所得への税率 + 消費税) ÷ 標準。消費税は家計の買い物の値段に乗るので、家計にとっては所得への税と同じ重さと見る (関税は買い手の会社が払うので入れない)
 const burdenK = (f) => (taxRateOf(f.tax) + (f.ctax || 0)) / MARKET.tax;
-// 人間でない国の財政 (docs/fiscal.md の 1)。vary = 1 なら、税率を現実の国の分布から国ごとに 1 つ引く: WDI の税収 ÷ GDP の国ごとの中央値の 10・50・90% 点 (8.0・15.7・24.2%) を
-// ゲームの標準 (15.5%) に合わせて 0.51・1・1.54 倍にしたもの (docs/policy-ranges.md)。vary = 0 (既定) なら標準の 15.5%。
-// 1 にすると R19 (税収 ÷ GDP) と R28 (財政の反応) が幅の外に出て、入植地 −20%・戦争 −37% になったので (docs/fiscal.md の 1.1)、選んでもらうまで 0 (docs/status/C.md)。
+// 人間でない国の財政 (docs/fiscal.md の 1)。vary = 1 (既定。C-21「すべて現実に近いかたちで」) なら、国ごとに現実の国の分布から引く (docs/policy-ranges.md):
+//   taxK = 税の合計 ÷ 所得 を、WDI の税収 ÷ GDP の国ごとの中央値の 10・50・90% 点 (8.0・15.7・24.2%) をゲームの標準 (15.5%) に合わせて 0.51・1・1.54 倍にしたもの
+//   ctaxShare = そのうち消費税の割合 (WDI の 財・サービスへの税 ÷ 税収 GC.TAX.GSRV.RV.ZS の国ごとの中央値の 10・50・90% 点)、tariff = 関税率 (WDI TM.TAX.MRCH.WM.AR.ZS の同じ点)
+//   3 つはシードと首都から別々に引く (試合の乱数は使わない)。vary = 0 なら標準 (所得への税 15.5%・消費税 0・関税 0)
 // 利子率は、まだ物価がない (名目 = 実質) ので標準の 1% のまま (BIS の政策金利は名目。セッション 21 で)
-const AI_FISCAL = { vary: 0, taxK: [0.51, 1, 1.54] };
+const AI_FISCAL = { vary: 1, taxK: [0.51, 1, 1.54], ctaxShare: [0.096, 0.313, 0.442], tariff: [0.02, 0.0526, 0.1367] };
 // 予算: 首都の税収のうち、毎年その政策に使う割合。効き目 = 最大 × 割合 ÷ (割合 + BUDGET_HALF) (使うほど伸びが鈍る)
 const BUDGET = {
   welfare: { label: '福祉', good: '家臣の忠誠度の目標 +最大 12・人口の増え方 ×最大 1.15', loyalty: 12, growth: 0.15 },
@@ -3292,11 +3293,15 @@ class Game {
     const c = (this.aif ??= {});
     if (c[root]) return c[root];
     if (!AI_FISCAL.vary) return (c[root] = FISCAL_DEFAULT);
-    const u = (hashSeed(`${this.galaxy.seed}/fiscal/${root}`) % 10000) / 10000;
-    const [a, b, d] = AI_FISCAL.taxK;
-    const k = u < 0.1 ? a : u < 0.5 ? a + ((u - 0.1) / 0.4) * (b - a) : u < 0.9 ? b + ((u - 0.5) / 0.4) * (d - b) : d;
-    const tax = clamp(Math.round((MARKET.tax * k) / TAX_STEP) * TAX_STEP, TAX_RANGE[0], TAX_RANGE[1]);
-    return (c[root] = { ...FISCAL_DEFAULT, tax });
+    // 10・50・90% 点を折れ線でつなぎ、一様な u から引く (端は 10% 点・90% 点で止める)
+    const draw = (tag, [a, b, d]) => { const u = (hashSeed(`${this.galaxy.seed}/fiscal/${root}${tag}`) % 10000) / 10000; return u < 0.1 ? a : u < 0.5 ? a + ((u - 0.1) / 0.4) * (b - a) : u < 0.9 ? b + ((u - 0.5) / 0.4) * (d - b) : d; };
+    const step = (v, st, [lo, hi]) => clamp(Math.round(v / st) * st, lo, hi);
+    const total = MARKET.tax * draw('', AI_FISCAL.taxK); // 税の合計 ÷ 所得
+    const share = draw('/c', AI_FISCAL.ctaxShare); // 消費税が税収に占める割合
+    const tax = step(total * (1 - share), TAX_STEP, TAX_RANGE); // 所得への税率
+    const ctax = step((total * share) / (1 - total * (1 - share)), CTAX_STEP, CTAX_RANGE); // 消費税率: 買い物 ≈ 所得 − 所得への税 とみて、税収の割合が share になる率
+    const tariff = step(draw('/t', AI_FISCAL.tariff), TARIFF_STEP, TARIFF_RANGE);
+    return (c[root] = { ...FISCAL_DEFAULT, tax, ctax, tariff });
   }
   rateAt(id) { return this.fiscalAt(id).rate ?? FISCAL_DEFAULT.rate; }
   ctaxAt(id) { return this.fiscalAt(id).ctax || 0; } // 消費税 (その星系で効いている国の)

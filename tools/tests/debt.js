@@ -16,6 +16,9 @@ res.nonNegative = Object.values(g.govs).every((v) => !(v.bond < 0) && !(v.due < 
 const govs2 = Object.entries(g.govs).filter(([k]) => g.isColonized(Number(k)) && g.coloniesIn(Number(k)).reduce((a, c) => a + c.pop, 0) >= 1).map(([, v]) => v);
 const over = govs2.filter((v) => g.year - (v.founded ?? 0) > 10 && v.credits > 2 * DEBT.cash * Math.max(0, (v.ledger?.tax || 0) + (v.ledger?.natives || 0)) + 50);
 res.cashSpent = over.length <= Math.max(1, 0.1 * govs2.length); // 1 つまでは、ならしている途中 (超えた分は 1 年ほどで使う) として許す
+// 人間でない国の財政は、国ごとに現実の分布から引かれ、幅の中にある (AI_FISCAL.vary = 1。C-21)。独立した国は元の国のものを引き継ぐので、同じ値が並んでもよい
+const ai = Object.values(g.aif || {});
+res.aiFiscal = ai.length > 1 && new Set(ai.map((f) => f.tax)).size > 1 && ai.every((f) => f.tax >= 0.02 && f.tax <= 0.34 && f.ctax >= 0 && f.ctax <= 0.27 && f.tariff >= 0 && f.tariff <= 0.29);
 const d = JSON.parse(JSON.stringify(sim.buildSave(g)));
 const g2 = new sim.Game(sim.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
 g2.restore(d);
