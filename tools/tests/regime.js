@@ -76,6 +76,17 @@ const { chromium } = require('playwright');
       res.elite = g.govs[w].elite;
       res.factV = [...g.bundleOf(g.govs[w]).fact].filter((c) => c === 'V').length;
       g.govs[w].loyalty = 90;
+      // H3-3: 統治者の任免 (実態で任免が「分」の幕藩制の藩) → 実態が約定どおりに戻り、エリートは協力
+      g.setRegime(w, 'T14'); g.govs[w].fact = 'VVVVMVMV'; // 任免 (5 番目) は「分」
+      const dep = g.depose(w);
+      res.depose = [dep.ok, g.bundleOf(g.govs[w]).fact === g.bundleOf(g.govs[w]).law, g.govs[w].elite];
+      // 関税受領官 (プラット型): 払えない朝貢は滞納として持ち越す
+      g.setRegime(w, 'T19'); delete g.govs[w].taxFree; g.govs[w].credits = 0; g.govs[w].inc = 100; g.tributeYearly();
+      res.arrears = +(g.govs[w].arrears || 0).toFixed(1);
+      // 同君連合: 継承を実態で従属国が握っていれば、継承の危機で戦争なしに解ける
+      g.setRegime(w, 'T15'); g.govs[w].fact = 'MMVVVVVV'; g.govs[w].loyalty = 90;
+      for (let i = 0; i < 2000 && g.govs[w].lord !== null; i++) g.vassalTypesYearly();
+      res.union = [g.govs[w].lord === null, g.events.slice(0, 60).some((e) => /同君連合が解けた/.test(e.text))];
       // 保存 → 読み込み
       const s1 = JSON.stringify((() => { const x = buildSave(g); delete x.savedAt; return x; })());
       loadSave(JSON.parse(s1));
