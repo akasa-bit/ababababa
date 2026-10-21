@@ -3,7 +3,7 @@
 
 - cases.csv (131 件、20 型) と、2 回別々に行った符号化 (coding_A.tsv: 型の順・型の説明つき、coding_B.tsv: 年代順・型を伏せて)
   の一致の度合い (Krippendorff の α、名義尺度) を、項目ごと・層ごとに出す
-- 食い違った所の一覧 (disagreements) を出す。最終の符号 coding_final.csv があればそれを事例ごとの符号にする
+- 食い違った所の一覧 (disagreements) を出す。食い違いは 3 人目の裁定 (resolutions.tsv) で決め、一致した符号と合わせて事例ごとの最終の符号にする
 - 始まり・終わりの年と終わり方を、ISD 2.2 (1816 年以降の国家) と ICOW (独立の年と暴力) に突き合わせる
 - Lake 2009 の上下関係の指標 (1950〜2000 年) を、重なる事例ごとに平均する
 - Seshat Equinox-2020 の政体の一覧から、1816 年より前の事例に当たる政体の年代を添える
@@ -120,9 +120,29 @@ def main():
     out['agreement'] = agreement
     out['disagreements'] = disagreements
 
-    # ---- 最終の符号 (あれば) ----
-    pf = os.path.join(RAW, 'coding_final.csv')
-    final = {r['case_id']: r for r in read_csv(pf)} if os.path.exists(pf) else None
+    # ---- 最終の符号: 2 人の一致した符号 + 食い違いの裁定 (resolutions.tsv) ----
+    final = None
+    pr = os.path.join(RAW, 'resolutions.tsv')
+    if len(codings) == 2 and os.path.exists(pr):
+        res = {(r['case_id'], r['code']): r for r in read_csv(pr, '\t')}
+        final, missing = {}, []
+        for cid in by_id:
+            row = {}
+            for layer in LAYERS:
+                for it in ITEMS:
+                    col = f'{layer}_{it}'
+                    a, b = codings['A'][cid][col].strip().upper(), codings['B'][cid][col].strip().upper()
+                    if a == b:
+                        row[col] = a
+                    elif (cid, col) in res and res[(cid, col)]['final'].strip().upper() in CODES:
+                        row[col] = res[(cid, col)]['final'].strip().upper()
+                    else:
+                        missing.append((cid, col)); row[col] = a
+            final[cid] = row
+        rv = list(res.values())
+        agreement['resolution'] = {'n': len(rv), 'took_A': sum(1 for r in rv if r['final'] == r['A']), 'took_B': sum(1 for r in rv if r['final'] == r['B']),
+                                   'third_value': sum(1 for r in rv if r['final'] not in (r['A'], r['B'])), 'uncertain': sum(1 for r in rv if '不確か' in r['reason']),
+                                   'missing': missing}
     out['final_coding_available'] = final is not None
 
     # ---- 事例ごとの出力 ----

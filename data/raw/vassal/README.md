@@ -18,7 +18,7 @@
 | `codebook.md` | 符号化のコードブック (主権の束 8 項目 × 法と実態の 2 層、符号 S/M/V、出力の形、決まり) |
 | `cases.csv` | 事例の一覧 (131 件、20 型)。型・名前・政体・宗主・始まりと終わりの年・終わり方 (end_kind)・終わりが暴力を伴ったか (violent_end: 終わりの前 5 年に、従属国の側の組織的な武装闘争があったか。ICOW の IndViol の定義に近づけた)・注・主な出典。型は `docs/vassal-typology.md` の T01〜T19 と、いまの「直接統治」にあたる T20 植民地 (直轄) |
 | `coding_A.tsv`・`coding_B.tsv` | 2 回別々に行った符号化。A は型の順に、型の説明 (`docs/vassal-typology.md` の 3) を手がかりにして符号化した。B は始まりの年の順に、**型を伏せて** (事例の名前・宗主・期間・注・出典だけで) 符号化した。それぞれ根拠 (basis)・出典 (sources)・一次史料の本文を読んだか (verified) つき |
-| `coding_final.csv` | 2 回の符号が食い違った所を史料に戻って決めた最終の符号 (決め方と出典は `resolution` の列) |
+| `resolutions.tsv` | 2 回の符号が食い違った所 (335 か所) を、3 人目が 2 人の根拠と出典を並べて裁定した記録 (A の値・B の値・最終の値・理由)。一致した符号と合わせたものが最終の符号 (`data/derived/vassal.json` の各事例の `bundle`) |
 
 - 事例の始まり・終わりの年と終わり方は、1816 年以降は ISD と ICOW (`data/raw/history/icow_colhist.csv`) に突き合わせ、食い違いは `data/derived/vassal.json` の `checks` に残す。
 - 2 回の符号の一致の度合いは Krippendorff の α (名義尺度) で、項目ごと・層ごとに `data/derived/vassal.json` の `agreement` に出す。
