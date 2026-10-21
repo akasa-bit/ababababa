@@ -18,7 +18,7 @@ import json, math, os, re, statistics
 HERE = os.path.dirname(__file__)
 RAW = os.path.join(HERE, '..', 'raw', 'ism', 'linsky2019_tab2.tex')
 OUT = os.path.join(HERE, '..', 'derived', 'ism.json')
-SRC = os.path.join(HERE, '..', '..', 'src', 'index.html')
+SRC = os.path.join(HERE, '..', '..', 'src', 'ship', 'physics.js')  # src/index.html を分けたあとの、区切りのあるファイル (回 R3)
 PC_CM = 3.0857e18
 N_HI = 0.20      # 雲の中の中性水素 [/cm³] (Slavin & Frisch 2008)
 N_HII = 0.07     # 雲の中の電離した水素 [/cm³] (同)
@@ -87,7 +87,7 @@ def main():
     if '/* ISM:BEGIN' in src:
         src = re.sub(r'/\* ISM:BEGIN.*?/\* ISM:END \*/', lambda m: block, src, flags=re.S)
         open(SRC, 'w', encoding='utf-8').write(src)
-        print('src/index.html に書いた')
+        print('src/ship/physics.js に書いた')
     print(f"視線 {len(near)} 本 (≤{MAP_PC} pc)・雲の中を通る割合 平均 {f_mean:.3f} (中央値 {f_med:.3f}、幅 {out['f_cloud_range'][0]:.3f}〜{out['f_cloud_range'][1]:.3f})")
     print(f"平均の n(H I) = {f_mean*N_HI:.4f} /cm³ (視線ごとの散らばり σ(log) = {out['log_nHI_sd']:.2f})")
     print(f"核子の数密度 = {best['total']:.4f} /cm³ (雲 {best['cloud']:.3f}・雲の外 {best['intercloud']:.4f}・塵 {best['dust']:.5f})  幅 {lo['total']:.4f}〜{hi['total']:.4f}")

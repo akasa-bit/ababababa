@@ -1,0 +1,60 @@
+function dispatchBox(app, sys, b) {
+  const g = app.game;
+  // プレイヤー (地球政府) の入植船は、いつも太陽系から自分で送り出す (ほかの星系への指令にはしない)
+  const sel = 0;
+  const v = g.voyage(sel, sys.id, OFFROUTE_SPEED);
+  const t = v.years;
+  const btn = (kind) => {
+    const c = g.check(sys.id, b.id, kind);
+    return costButton(g, `data-act="send" data-kind="${kind}"`, `${ico(kind === 'planet' ? 'planetcol' : 'station')}${KIND_LABEL[kind]}を建設`, g.shipCost(kind, sel, sys.id), sel, c.ok ? '' : c.reason);
+  };
+  const sup = (kind) => g.shipSupplies(kind, sel, sys.id);
+  return `<h3>入植船を送る</h3>
+    <p class="note">入植船は${ME.gov}が${ME.capName}から送り出す (費用は${ME.home}の資金と${ME.capName}の備蓄から。その場で出発の準備に入る)。新しい入植地は${ME.capName}に従属する。ほかの星系の政府は自分の判断で入植する。</p>
+    <p class="note">入植船は交易路をたどって (0.95c) 目的地に最も近い星系まで行き、最後だけ交易路の外を 0.9c で直行する${v.path.length > 2 ? ` (経由: ${v.path.slice(1, -1).map((id) => esc(g.system(id).name)).join(' → ')})` : ''}。到着まで <b>${t < 0.01 ? 'ほぼ即時' : `${t.toFixed(2)} 年`}</b>${t < 0.01 ? '' : ` (星々の時計。乗っている人の時計では ${voyageShipTime(g, v).toFixed(2)} 年: 相対論の時間の遅れ)`}。</p>
+    <p class="note">入植船は食料と水を約 ${Math.round(g.supplyYears(sel, sys.id))} 年分 (交易路を結んで物資が届き始めるまでの見込み、人口の伸びも見込んで2倍) 積んでいき、入植先の備蓄にする。
+      惑星入植地: 食料 ${sup('planet').food}・水 ${sup('planet').water} / ステーション: 食料 ${sup('station').food}・水 ${sup('station').water}</p>
+    ${(() => {
+      const need = g.escortNeed(sys.id, b.id, 'planet');
+      const have = g.coloniesIn(sel).reduce((k, c) => k + c.troops + c.slaveTroops, 0);
+      const n = g.isSurveyed(sys.id) ? g.nativeOf(sys.id, b.id) : null;
+      const warn = n && g.hostileNatives(sys.id, b.id) ? `<b class="bad">到着すると${esc(n.def.species)}との征服戦争になる (抵抗力 ${need})。</b>` : '';
+      return `<p class="note">惑星入植地の入植船には${ME.capName}の歩兵が同行する: ${Math.min(need, have)} / ${need} 連隊 (${ME.capName}の駐留 ${have})。${warn}</p>`;
+    })()}
+    <div class="btns">${btn('station')}${btn('planet')}</div>`;
+}
+
+// 建設中ならボタンに添える文言 (例: 建設中 あと 3.2 年)
+// 地球から見た星系の歩兵の戦力 (光が届いている記録の入植地から)
+function knownTroopPower(g, sysId) { return g.knownColonies(sysId).reduce((k, c) => k + c.troops + SLAVE_TROOP_POWER * c.slaveTroops, 0); }
+function busyText(g, pred) {
+  const j = g.knownProjects().find(pred); // 地球から見えている建設中の事業
+  return j ? `建設中 あと ${(j.ready - g.year).toFixed(1)} 年` : '';
+}
+
+function shipsHtml(game) {
+  const bar = (s) => {
+    const f = (game.year - s.depart) / (s.arrive - s.depart);
+    return `<span class="bar"><i style="width:${(f * 100).toFixed(0)}%"></i></span> あと ${(s.arrive - game.year).toFixed(1)} 年`;
+  };
+  const seen = (sys, t) => game.departSeen(sys, t);
+  const ships = game.ships.filter((s) => seen(s.from, s.depart)).map((s) => `<div class="ship">${esc(game.system(s.from).name)} → ${esc(game.system(s.to).name)} <span class="muted">${KIND_LABEL[s.kind]}</span>${bar(s)}</div>`);
+  const fleets = game.fleets.filter((f) => seen(f.from, f.start ?? f.depart)).map((f) => `<div class="ship">${esc(game.system(f.from).name)} → ${esc(game.system(f.to).name)} <span class="bad">${f.n} 艦隊</span>${bar(f)}</div>`);
+  const jobs = game.knownProjects().filter((j) => seen(j.sys, j.start)).map((j) => `<div class="ship">${esc(j.label)} <span class="muted">資材搬入中</span>${bar({ depart: j.start, arrive: j.ready })}</div>`);
+  const vm = game.migrants.filter((m) => seen(m.fromSys, m.depart));
+  const mig = vm.length
+    ? [`<div class="ship"><span style="color:#8fd3ff">移民船 ${vm.length} 隻</span> <span class="muted">計 ${fmtPop(vm.reduce((k, m) => k + m.n, 0))} (帝国タブ → 移民)</span></div>`]
+    : [];
+  const troops = game.troopMoves.filter((m) => seen(m.path[0], m.times[0])).map((m) => `<div class="ship">${esc(game.colonyByKey(m.from)?.name || '?')} → ${esc(game.colonyByKey(m.to)?.name || '?')} <span style="color:#ff9f8f">歩兵 ${m.troops + m.slave}連隊</span>${bar({ depart: m.times[0], arrive: m.arrive })}</div>`);
+  const vq = game.requests.filter((q) => seen(q.from, q.sent));
+  const orders = vq.filter((q) => q.kind === 'order');
+  const req = vq.length
+    ? [`<div class="ship"><span style="color:#c9a2ff">通信 ${vq.length} 件</span> <span class="muted">うち${ME.home}からの指令 ${orders.length} (帝国タブ → 交易路)</span></div>`]
+    : [];
+  const all = [...jobs, ...ships, ...fleets, ...troops, ...mig, ...req];
+  return (all.length ? all.join('') : '<span class="muted">見えている航行中の船なし</span>') + `<p class="note">遠くの船は、出発の光が${ME.home}に届いてから表示される。</p>`;
+}
+
+// 帝国タブ: 全星系の人口・資源・経済・軍事を一覧で管理する
+const EMPIRE_TABS = { overview: '概要', goals: '目標', routes: '交易路', migration: '移民', military: '軍事', politics: '政治' };
+

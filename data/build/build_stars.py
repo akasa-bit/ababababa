@@ -9,7 +9,7 @@
      (同じ色の主系列星より 3.5 等以上暗ければ白色矮星、2.5 等以上明るければ巨星、L/T/Y 型は褐色矮星)
   4. 銀河面から ±SLAB 光年の板の中で、太陽に近い (銀河面に沿った距離が短い) 順に COUNT 系を選ぶ
   5. NASA Exoplanet Archive の既知の惑星を、Gaia DR3 番号か HIP 番号で恒星系に結びつける
-結果は data/derived/stars.json と、src/index.html の STARS の区切りのあいだに書く。
+結果は data/derived/stars.json と、src/core/galaxy.js の STARS の区切りのあいだに書く。
 
 使い方: python3 data/build/build_stars.py
 """
@@ -18,7 +18,7 @@ import csv, json, math, os, re
 HERE = os.path.dirname(__file__)
 RAW = os.path.join(HERE, '..', 'raw')
 OUT = os.path.join(HERE, '..', 'derived')
-SRC = os.path.join(HERE, '..', '..', 'src', 'index.html')
+SRC = os.path.join(HERE, '..', '..', 'src', 'core', 'galaxy.js')  # src/index.html を分けたあとの、区切りのあるファイル (回 R3)
 SLAB = 17.0      # 銀河面からの厚さの半分 [光年]
 COUNT = 600      # 選ぶ恒星系の数 (太陽系を除く)
 MERGE_LY = 0.25  # この距離より近い天体は同じ恒星系
@@ -291,14 +291,14 @@ def main():
             'manifest': json.load(open(os.path.join(RAW, 'MANIFEST.json'), encoding='utf-8'))}
     with open(os.path.join(OUT, 'stars.json'), 'w', encoding='utf-8') as f:
         json.dump({'meta': meta, 'systems': systems}, f, ensure_ascii=False)
-    # src/index.html へ書き込む (STARS の区切りのあいだ)
+    # src/core/galaxy.js へ書き込む (STARS の区切りのあいだ)
     compact = {'slab': SLAB, 'radius': meta['radius'], 's': [[s['x'], s['y'], s['z'], s['name'], s['cat'], s['stars'], s['planets']] for s in systems]}
     block = '/* STARS:BEGIN (data/build/build_stars.py が書く。手で直さない) */\nconst REAL_STARS = ' + json.dumps(compact, ensure_ascii=False, separators=(',', ':')) + ';\n/* STARS:END */'
     src = open(SRC, encoding='utf-8').read()
     if '/* STARS:BEGIN' in src:
         src = re.sub(r'/\* STARS:BEGIN.*?/\* STARS:END \*/', lambda m: block, src, flags=re.S)
         open(SRC, 'w', encoding='utf-8').write(src)
-        print('src/index.html に書いた')
+        print('src/core/galaxy.js に書いた')
     cls = {}
     for s in systems:
         cls[s['stars'][0][0]] = cls.get(s['stars'][0][0], 0) + 1

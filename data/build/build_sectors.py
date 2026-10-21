@@ -115,7 +115,7 @@ def anchor(year=2011):
 RESEARCH = os.path.join(HERE, '..', 'raw', 'research', 'wdi_research.csv.gz')
 GOODS = ['Mining', 'Manufacturing', 'Utilities']  # ゲームの「工業品」にあたる部門 (建設は政府が建てるので除く)
 US_REF = ('USA', 2010)                           # 工業品の需要の水準を合わせる国・年
-GOODS_PER_FOOD = 4.0                             # 基準の値段の比 PRICE.goods ÷ PRICE.food (src/index.html の PRICE)
+GOODS_PER_FOOD = 4.0                             # 基準の値段の比 PRICE.goods ÷ PRICE.food (src/core/world.js の PRICE)
 
 def logit_fit(x, share):
     s = np.clip(share, 0.02, 0.98)

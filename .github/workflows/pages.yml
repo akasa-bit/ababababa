@@ -22,6 +22,15 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      # ゲーム版 (index.html) は、リポジトリに入れずに、ここで src から組み立てる (回 R3。docs/restart.md の 5)。
+      # シミュレーション版 (simulation.html) は凍結中なので、リポジトリに入っているものをそのまま載せる
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: ゲーム版を組み立てる
+        run: |
+          cd tools && npm ci && cd ..
+          node tools/build.mjs
       - uses: actions/configure-pages@v5
         with:
           enablement: true

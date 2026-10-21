@@ -53,6 +53,8 @@ const TESTS = [
   ['market', ['3', '80'], (o) => (o.includes('市場 合格') ? '' : '市場の結果が違う')],
   ['debt', ['3', '100'], (o) => (o.includes('国債 合格') ? '' : '国債の結果が違う')],
   ['rotate', [SHOTS, path.join(ROOT, 'index.html')], (o) => ((o.match(/rotated == fresh redraw: true \[\]/g) || []).length === 2 ? '' : '回したあとの絵が描き直しと違う')],
+  // セーブ: 分ける前のゲームのセーブを読んで同じ筋で続く・仕組みごとのセーブの項目 (saveField) の初期値と既定 (回 R3)
+  ['save', [], (o, code) => (code === 0 && o.includes('セーブ 合格') ? '' : 'セーブ 不合格')],
   ['headless', ['100', '1,4,9'], (o, code) => (code === 0 && o.includes('画面なしの版: 一致') ? '' : '画面なしの版がブラウザと違う')],
 ];
 
@@ -66,7 +68,13 @@ catch (e) { rows.push(['build', '**不合格**', String(e.stderr || e).slice(0, 
 // シミュレーション版は、試験の作業場所にだけ作る (リポジトリの simulation.html は変えない。落ちても CI は止めない)
 try { execFileSync('node', [path.join(ROOT, 'tools/build.mjs'), '--sim-to', path.join(SHOTS, 'simulation.html')], { stdio: 'pipe' }); }
 catch (e) { rows.push(['build (シミュレーション版・参考)', '不合格 (参考。無視してよい)', String(e.stderr || e).slice(0, 200)]); }
-// 0'. 合わせる目標のファイルが固定したときから変わっていない
+// 0'. src/ の下のファイルが、どれも 1 回ずつ組み込まれている (tools/src.js。足したファイルの //#include の忘れ)
+{
+  const r = spawnSync('node', [path.join(ROOT, 'tools/src.js'), '--check'], { encoding: 'utf8' });
+  rows.push(['src', r.status === 0 ? '合格' : '**不合格**', r.status === 0 ? '' : (r.stdout + r.stderr).trim().slice(0, 200)]);
+  if (r.status !== 0) failed++;
+}
+// 0''. 合わせる目標のファイルが固定したときから変わっていない
 {
   const r = spawnSync('node', [path.join(ROOT, 'tools/check-targets.js')], { encoding: 'utf8' });
   rows.push(['targets', r.status === 0 ? '合格' : '**不合格**', r.status === 0 ? '' : (r.stdout + r.stderr).trim().slice(0, 200)]);

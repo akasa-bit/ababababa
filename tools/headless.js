@@ -1,4 +1,4 @@
-// 画面なしで回せる版: src/index.html の <script> を Node の vm で動かし、試合の中身 (Game) だけを使う。
+// 画面なしで回せる版: src/index.html (分けたファイルを tools/src.js で組み立てたもの) の <script> を Node の vm で動かし、試合の中身 (Game) だけを使う。
 // 画面の部分 (canvas・ボタン・保存) は、何をしても何も起きない代わりの物 (stub) で受け流す。ブラウザと同じ式・同じ乱数なので、
 // 同じシード・同じ手順なら、公開用の index.html と同じ状態になる (tools/tests/headless.js で確かめる)。
 // 使い方 (ほかの道具から): const H = require('./headless'); const sim = H.load({ params }); const g = sim.newGame('1', { nations: 6 });
@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { assemble } = require('./src');
 
 const SRC = path.join(__dirname, '..', 'src', 'index.html');
 
@@ -50,7 +51,7 @@ function overlay(dst, src, where) {
 
 // edition = 'sim' なら、シミュレーション版として読む (src の EDITION の行を書き換える。build.mjs と同じ)
 function load({ src = SRC, params = null, edition = null } = {}) {
-  let html = fs.readFileSync(src, 'utf8');
+  let html = assemble({ file: src }); // 「//#include」のない 1 枚のファイル (組み立てたもの・分ける前のもの) は、そのまま読む
   if (edition) html = html.replace("const EDITION = 'game'; /* EDITION */", `const EDITION = '${edition}';`);
   const js = html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>'));
   const names = [...js.matchAll(/^const ([A-Z][A-Z0-9_]*) = [{[]/gm)].map((m) => m[1]).concat(['ED']); // ED = この版の EDITIONS の値

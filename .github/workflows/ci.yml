@@ -36,11 +36,13 @@ jobs:
       - name: 自動対戦 (main と比べる)
         if: always()
         run: |
-          git show origin/${{ github.base_ref || 'main' }}:src/index.html > base-src.html
-          node tools/ci-report.js base-src.html src/index.html 8 150 6 > ci-report.md
+          # src は場所ごとのファイルに分けてある (回 R3) ので、main と PR のそれぞれを 1 枚に組み立ててから比べる
+          node tools/src.js --ref origin/${{ github.base_ref || 'main' }} --out base-src.html
+          node tools/src.js --out head-src.html
+          node tools/ci-report.js base-src.html head-src.html 8 150 6 > ci-report.md
       - name: 面白さの代わりの数と必勝法を探す AI (main と比べる)
         if: always()
-        run: node tools/fun-report.js base-src.html src/index.html 8 150 6 12 4 > fun-report.md
+        run: node tools/fun-report.js base-src.html head-src.html 8 150 6 12 4 > fun-report.md
       - name: 表を出す
         if: always()
         run: |
