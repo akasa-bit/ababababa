@@ -35,8 +35,8 @@ node tools/build.mjs                # 公開用の index.html を作る
 
 | 段 | 場所 | 中身 |
 |---|---|---|
-| 取得 | `data/fetch/fetch_history.py` → `data/raw/history/` | COLDAT (Becker 2019、植民地の期間)・ICOW Colonial History 1.1 (独立と暴力)・国の位置 (Google DSPL)・Correlates of War 国家間戦争 4.0・UCDP Conflict Termination 4-2024・CDB90 (陸上の戦闘)。取得日・URL・SHA-256・行数を `data/raw/history/MANIFEST.json` に記録する |
-| 加工 | `data/build/analyze_history.py` → `data/derived/history.json` | 植民地の存続年数の中央値・Cox 比例ハザードモデル (遅れ ÷ 1 世代・本国・植民の始まりの年)・独立が暴力を伴った割合・戦争の長さの平均 ÷ 中央値・戦死者数のべき指数・紛争の終わり方の割合・戦闘の勝敗と兵力比 |
+| 取得 | `data/fetch/fetch_history.py` → `data/raw/history/` | COLDAT (Becker 2019、植民地の期間)・ICOW Colonial History 1.1 (独立と暴力)・国の位置 (Google DSPL)・Correlates of War 国家間戦争 4.0・Correlates of War 国家の一覧 2016 (その年の国の数)・UCDP Conflict Termination 4-2024・CDB90 (陸上の戦闘)。取得日・URL・SHA-256・行数を `data/raw/history/MANIFEST.json` に記録する |
+| 加工 | `data/build/analyze_history.py` → `data/derived/history.json` | 植民地の存続年数の中央値・Cox 比例ハザードモデル (遅れ ÷ 1 世代・本国・植民の始まりの年)・独立が暴力を伴った割合・戦争の長さの平均 ÷ 中央値・国家間戦争の多さ (国 100 年あたりの参加の始まり)・戦死者数のべき指数・紛争の終わり方の割合・戦闘の勝敗と兵力比 |
 
 ```sh
 python3 data/fetch/fetch_history.py    # 生データを取り直す
@@ -72,7 +72,7 @@ python3 data/build/analyze_trade.py     # 推定する (numpy が要る。約 1 
 | 段 | 場所 | 中身 |
 |---|---|---|
 | 取得 | `data/fetch/fetch_fiscal.py` → `data/raw/fiscal/` | Jordà–Schularick–Taylor Macrohistory Database R6 (18 か国 1870〜2020 年。税収・政府支出・政府債務・利子率・民間の信用・名目 GDP) と文書、Schmelzing (2020) の 1311〜2018 年の世界の実質利子率。取得日・URL・SHA-256・大きさを `data/raw/fiscal/MANIFEST.json` に記録する |
-| 加工 | `data/build/analyze_fiscal.py` → `data/derived/fiscal.json` | 国ごとの税収 ÷ GDP・政府が黒字だった年の割合・政府債務 ÷ GDP・民間の信用 ÷ GDP・政府支出 ÷ GDP (R27) と、国のあいだの 10%〜90% 点 (全期間・1870〜1913 年・1950〜2020 年) |
+| 加工 | `data/build/analyze_fiscal.py` → `data/derived/fiscal.json` | 国ごとの税収 ÷ GDP・政府が黒字だった年の割合・政府債務 ÷ GDP・民間の信用 ÷ GDP・政府支出 ÷ GDP (R27)・財政の反応 (R28。Bohn 1998 の形の国ごとの傾き。戦争の年は `data/raw/history/` の Correlates of War から) と、国のあいだの 10%〜90% 点 (全期間・1870〜1913 年・1950〜2020 年) |
 
 - **同じ台本でゲームも測る**: `python3 data/build/analyze_fiscal.py <ゲームのパネル.csv>` で、ゲームが書き出した同じ列のパネル (`tools/fiscal-panel.js`) を同じ式で計算する
 - **国ごとの値をとる理由**: 長く載っている国の重みが偏らないように、まず国ごとの中央値 (黒字の割合は平均) を出し、国のあいだの分布を見る
@@ -125,6 +125,17 @@ node tools/build.mjs
 
 出典: Ricker ほか (2015) TESS・Stassun ほか (2019) / Paegert ほか (2021) TIC・Günther ほか (2020) AJ 159, 60・Galletta ほか (2025) A&A 698, A180・Papaioannou ほか (2023) A&A 671, A66・Cliver ほか (2020) ApJ 903, 41・NOAA NCEI GOES XRS flare reports・Davenport (2014) ApJ 797, 122
 
+## 生産性のデータ (開始時に選ぶ「生産性」の「2300 年の予測」)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_productivity.py` → `data/raw/productivity/` | Long-Term Productivity Database v2.7 (Bergeaud, Cette & Lecat。25 か国 1890 年〜の労働生産性・TFP・1 人あたり GDP)、Maddison Project Database 2023 の「Full data」(国ごと・年ごとの 1 人あたり GDP と人口。元の xlsx から CSV にしたもの)。取得日・URL・SHA-256 を `data/raw/productivity/MANIFEST.json` に記録する |
+| 加工 | `data/build/forecast_productivity.py` → `data/derived/productivity.json` | 米国の労働生産性の伸び (1890・1950・1973・2005 年から 2023 年)、コンドラチェフの波 (周期 40〜70 年の正弦波の当てはめ。Maddison でも確かめる)、2300 年の倍率 |
+
+- **最前線は米国**: 各年にいちばん高い国をとると、2005 年以後はアイルランドやノルウェーになり、GDP の測り方の事情で高く出るので使わない
+- **限界**: 長い波の当てはまりは弱い (R² 0.1〜0.2)。2300 年の倍率は、延ばす伸びの選び方で ×33〜×253 と大きく変わる (`docs/productivity.md`)
+
+出典: Bergeaud, A., Cette, G. & Lecat, R. (2016) Productivity Trends in Advanced Countries between 1890 and 2012, Review of Income and Wealth 62(3), 420–444・Bolt, J. & van Zanden, J. L. (2024) Maddison style estimates of the evolution of the world economy: A new 2023 update, Journal of Economic Surveys
 ## スウォームの太陽電池の劣化のデータ
 
 | 段 | 場所 | 中身 |

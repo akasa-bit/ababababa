@@ -15,9 +15,11 @@ const { chromium } = require('playwright');
     await p.goto(`file://${HTML}?seed=11&home=0`); await p.waitForFunction(() => window.__app && __app.game);
     const r = await p.evaluate(() => {
       const g = __app.game; __app.speed = 0;
-      g.setSpectate(true); for (let i = 0; i < 240; i++) g.advance(0.25); g.setSpectate(false);
+      const vassals = () => Object.keys(g.govs).map(Number).filter((id) => id !== 0 && g.isColonized(id) && g.realmOf(id) === 0 && g.govs[id].lord !== null);
+      // 地球の国に従属星系ができるまで (60 年から、最長 200 年) 進める
+      g.setSpectate(true); for (let i = 0; i < 240 || (!vassals().length && i < 800); i++) g.advance(0.25); g.setSpectate(false);
       const res = {};
-      const vs = Object.keys(g.govs).map(Number).filter((id) => id !== 0 && g.isColonized(id) && g.realmOf(id) === 0 && g.govs[id].lord !== null).sort((a, c) => g.sysDist(0, c) - g.sysDist(0, a));
+      const vs = vassals().sort((a, c) => g.sysDist(0, c) - g.sysDist(0, a));
       const far = vs[0];
       res.far = Math.round(g.sysDist(0, far));
       g.pc = 50;
@@ -37,7 +39,7 @@ const { chromium } = require('playwright');
       res.hazard = (g.secessionTerms(far) || []).some((t) => t.label === '治安の予算' && t.f < 1);
       res.fleet = [g.modsOf(0).fleet, +g.fleetMul(0, 0).toFixed(3)];
       const led = g.gov(0).ledger;
-      res.ledger = { welfare: led.welfare < 0, security: led.security < 0, military: led.military < 0, interest: led.interest > 0 };
+      res.ledger = { welfare: led.welfare < 0, security: led.security < 0, military: led.military < 0, interest: !!led.interest }; // 利子は純額 (貯えの利子 − 国債の利子) なので、0 でなく記帳されていればよい
       res.council = +(g.council - cr0).toFixed(2);
       // 保存と読み込み
       const d = JSON.parse(JSON.stringify(buildSave(g)));
