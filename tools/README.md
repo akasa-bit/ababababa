@@ -20,7 +20,31 @@ PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメ
 - `node tools/sector-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json or -] [開始時の生産性]`: 画面なしの版で回し、星系ごと・年ごとの 1 人あたりの実質の所得 (2011 年の国際ドル) と農業・工業・サービスの就業の割合を書き出す。`python3 data/build/build_sectors.py --game <出力.csv>` で、実データと同じ関数で R10 の合否を出す (`docs/structure.md` の 5)
 - `node tools/research-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]`: 国ごと・年ごとの技術の伸びと研究者の数を書き出す。`python3 data/build/build_ideas.py --game <出力.csv>` で、Bloom ほか 2020 と同じ式で R11 の合否を出す
 
+- `node tools/fun-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数] [探索の予算] [探索の銀河の数]`: 面白さの代わりの数 (判断を求められる回数・待つだけの年・1 つの戦略が強すぎないか・逆転・選ぶ意味の大きさ) を main と並べ、PR の版で必勝法を探す AI の小さな探索を回す。合否は付けない。数の中身は `docs/fun.md`
+
 手元で同じものを回すときは `CHROMIUM=/opt/pw-browsers/chromium node tools/ci-tests.js` (3 分ほど)。
+
+## 戦略と必勝法を探す AI (tools/strategy.js・tools/search.js)
+
+画面なしの版の国家選択のある試合で、プレイヤーの国 (観戦の AI が動かす) の判断だけを、道具の側で「戦略の値」に差し替える。ゲーム本体には手を入れない。試合は CPU の数だけ並べて回す (`THREADS=2` で数を絞れる)。
+
+```sh
+node tools/search.js --budget 40 --seeds 1,2,3,4,5,6,7,8 --years 150   # 候補 40 個を試し、放任より点数が上がる戦略を探す → JSON
+```
+
+| 値 | 中身 | 候補 |
+|---|---|---|
+| `policy` | 国家方針 (`auto` = 観戦の AI のまま) | auto・expand・consolidate・military |
+| `warRatio`・`warChance`・`warRange` | 自分の艦隊が相手の何倍を超えたら、1 年にどの確率で宣戦するか (0 = 宣戦しない)。首都から何光年までの国にだけ宣戦するか (0 = 遠さを問わない) | 0〜10・0.02〜0.3・10〜40 |
+| `sueRatio`・`sueEx` | 戦争中、艦隊の比がこれを下回るか、戦争疲弊がこれを超えたら講和を求める | 0.3〜1.5・30〜95 |
+| `acceptEx`・`acceptWs` | 講和の申し入れに応じる戦争疲弊・戦勝点 | 10〜90・−10〜60 |
+| `mandate` | 直属の家臣に送る委任方針 (`none` = 送らない) | none・balanced・expand・develop・arm |
+| `grantBelow` | 忠誠がこれより低い直属の家臣に資金援助 (0 = 送らない) | 0〜70 |
+| `peaceArm` | 平時でも、資金がこれを超えたら軍艦を作る (0 = 作らない) | 0〜10000 |
+
+観戦の AI と同じ値 (`BASE`) は、放任と同じ筋 (状態の要約が一致) になる。CI の表にその一致の数を出すので、観戦の AI の判断 (`earthWarYearly`) が変わったら、`strategy.js` を合わせ直す。
+
+決めた 6 つの戦略 (`PRESETS`): 放任・拡張 (拡張期 + 委任「拡張」)・内政 (整備期 + 委任「内政」+ 忠誠 50 未満へ援助)・軍備 (軍備期 + 委任「軍備」+ 平時の軍艦)・平和 (宣戦しない・すぐ講和)・好戦 (1.5 倍で宣戦・講和しない)。
 
 ## 画面なしで回せる版 (tools/headless.js)
 

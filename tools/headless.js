@@ -75,7 +75,7 @@ function load({ src = SRC, params = null, edition = null } = {}) {
   });
   base.window = ctx; base.globalThis = ctx; base.self = ctx;
   vm.createContext(ctx);
-  vm.runInContext(`${js}\n;globalThis.__nlu = { Game, generateGalaxy, buildSave, GALAXY_GEN, EDITION, tables: { ${names.join(', ')} } };`, ctx, { filename: 'index.html.js' });
+  vm.runInContext(`${js}\n;globalThis.__nlu = { Game, generateGalaxy, buildSave, GALAXY_GEN, EDITION, distance, tables: { ${names.join(', ')} } };`, ctx, { filename: 'index.html.js' });
   const N = base.__nlu;
   if (params) overlay(N.tables, params, '値');
   return {

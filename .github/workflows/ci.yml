@@ -1,6 +1,6 @@
 name: 試験と自動対戦
 
-# PR ごとに: 組み立てたゲーム版が元のファイルと合っているか・試験・合わせる目標の固定・画面なしの版での自動対戦 (main との比べ)。
+# PR ごとに: 組み立てたゲーム版が元のファイルと合っているか・試験・合わせる目標の固定・画面なしの版での自動対戦 (main との比べ)・面白さの代わりの数と必勝法を探す AI。
 # 結果の表は、ジョブの要約と PR のコメント (1 つを書き直す) に出す
 on:
   pull_request:
@@ -38,10 +38,13 @@ jobs:
         run: |
           git show origin/${{ github.base_ref || 'main' }}:src/index.html > base-src.html
           node tools/ci-report.js base-src.html src/index.html 8 150 6 > ci-report.md
+      - name: 面白さの代わりの数と必勝法を探す AI (main と比べる)
+        if: always()
+        run: node tools/fun-report.js base-src.html src/index.html 8 150 6 12 4 > fun-report.md
       - name: 表を出す
         if: always()
         run: |
-          { cat ci-tests.md 2>/dev/null; echo; cat ci-report.md 2>/dev/null; } > ci-summary.md
+          { cat ci-tests.md 2>/dev/null; echo; cat ci-report.md 2>/dev/null; echo; cat fun-report.md 2>/dev/null; } > ci-summary.md
           cat ci-summary.md >> "$GITHUB_STEP_SUMMARY"
       - name: PR に書く
         if: always() && github.event_name == 'pull_request'
