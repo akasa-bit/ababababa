@@ -125,9 +125,15 @@
 | `docs/targets.md` + `targets/targets.json` | 合わせる目標 (事前登録)。幅の決め方と合否の決まり |
 | `docs/P0-audit.md` | 書き直しの前の監査 (数値と式の一覧と、現実との差) |
 | `docs/session-start.md` | セッションをつないで続ける手順と、いつもの約束 (どの回も最初に読む) |
-| `docs/sessions.md` | セッションの分け方 (18 回) と、それぞれの最初のメッセージ |
-| `docs/parallel.md` | 並行で進める決まり (レーン A〜E・文書の分け方・マージの前の取り込み) |
-| `docs/status/<レーン>.md` | レーンごとのいまの状態と次にやること (`common.md` は全体のもの・返事待ち・分かっている問題) |
+| `docs/restart.md` | 2026-10-21 の再出発の手順 (回 R1〜R4)。基準の数は `docs/restart-baseline.md` |
+| `docs/sessions.md` | 回の分け方 (1 波目・2 波目) と、それぞれの最初のメッセージ。前の一覧は `docs/archive/sessions-2026-10.md` |
+| `docs/parallel.md` | 並行で進める決まり (6 つのレーン KE・SE・FU・GA・DO・SO・コードの場所の持ち主・番号と返事待ちの置き場・マージの前の取り込み) |
+| `docs/src-files.md` | `src/` のファイルの地図 (74 のファイルと持ち主・`//#include` の組み立て・セーブの項目の登録・組み立てた `index.html` をコミットしない理由) |
+| `docs/registry.md` | 番号の予約 (目標 R・F、補正 C、返事待ち QD、残りの作業 B のレーンごとの範囲、セーブの項目と `EDITIONS.game` の値の名前) |
+| `docs/backlog.md` | 残りの作業の 1 つの表 (B- の番号。レーンごと) |
+| `docs/decisions.md` | ユーザーの返事待ちの 1 つの表 (QD- の番号) と、決まったもの |
+| `docs/conflicts.md` | これまでの衝突と取り込み直しの数え上げ (回 R2) |
+| `docs/status/<レーン>.md` | レーンごとのいまの状態と次にやること (`common.md` は全体のもの)。前のレーン (A〜U) のものは `docs/archive/status/` |
 | `docs/requests/<日付>-<レーン>.md` | 並行に移ってからのユーザーの依頼 (そのまま)。前のものは `docs/requests-log.md` |
 | `docs/negotiation.md` | 段 8: 講和と開戦の交渉の模型 (選んだ型・式・値の決め方・測った結果) |
 | `docs/ai-knowledge.md` | 段 3: AI の国も光の遅れのぶん古い情報で判断する仕組み・測る途中で直したこと・戦争の表・C11 の測定 |
@@ -137,7 +143,6 @@
 | `docs/reality-check.md` | 現実の値とのすり合わせ、版ごとの違い、選んでほしいこと |
 | `docs/energy.md` | エネルギーの記帳と船の推進 (式・値の範囲と出典・だれが払うか・測った結果) |
 | `docs/conservation.md` | 物質とエネルギーの保存 (出入りの種類・直したこと・測った結果・お金への影響) |
-| `docs/wip/C-fiscal.patch` | 止めている財政の作業の差分 (中身は `docs/status/C.md`。マージしていない) |
 | `docs/online.md` | アカウントとオンライン (Firebase の準備・Firestore の場所・部屋のつなぎ方) |
 | `docs/trade.md` | 交易と距離 (利子と CES の仕組み・測り方・結果・何が遠い交易を減らしているか・選んでほしいこと) |
 | `tools/README.md` | 自動対戦・測る道具・試験の使い方 |
@@ -182,7 +187,7 @@
 
 ## 13. 分かっている問題
 
-`docs/status/common.md` へ移した。戦争の多さ・終わり方は `docs/status/A.md` も見る。
+`docs/status/common.md` へ移した。戦争の多さ・終わり方は `docs/status/FU.md` (前のものは `docs/archive/status/A.md`) も見る。
 
 ## 14. 試験の「合格」の見え方と、古い版との比べ方
 
