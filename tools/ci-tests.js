@@ -21,7 +21,7 @@ const TESTS = [
   ['real', [], (o) => (/^(land|port) \[ 'real', \d+/m.test(o) && noPageErrors(o) ? '' : '実在の銀河が開かない')],
   ['net', [], (o) => {
     const m = o.match(/sync2 \[ \[ \d+, '(\w+)', '[\d.]+' \], \[ \d+, '(\w+)', '[\d.]+', (\d+) \] \]/);
-    return m && m[1] === m[2] && m[3] === '1' && /errs \[\] \[\]/.test(o) ? '' : 'ネット対戦の要約が合わない';
+    return m && m[1] === m[2] && m[3] === '1' && /errs \[\] \[\]/.test(o) && /^physics true/m.test(o) ? '' : 'ネット対戦の要約が合わない';
   }],
   ['cloud', [SHOTS], (o) => {
     try { const j = JSON.parse(o.slice(o.indexOf('{'), o.lastIndexOf('}') + 1)); return j.sync[0][1] === j.sync[1][1] && j.roomClosed === true && !j.errs.length ? '' : 'クラウドの結果が違う'; } catch { return '出力を読めない'; }
@@ -36,7 +36,9 @@ const TESTS = [
   ['editions', [SHOTS], (o) => (noPageErrors(o) ? '' : 'ページの誤り')],
   ['energy', ['5', '150'], (o) => (o.trim().split('\n')[0].includes('R07 合格') ? '' : 'R07 不合格')],
   ['conserve', ['5', '150'], (o) => (o.trim().split('\n')[0].includes('R03 合格') && o.includes('決まっていない出入り: なし') ? '' : 'R03 不合格')],
-  ['physics', ['5', '150'], (o, code) => (code === 0 && o.trim().split('\n')[0].includes('物理 合格') ? '' : '物理 不合格'), { optional: true }],
+  // 物理: ゲーム版の分 (遮蔽・加速の時間・フレアの表示。2026-10-21 の P6) は落ちたら止める。シミュレーション版の分 (太陽電池の劣化も) は参考
+  ['physics', ['5', '150'], (o, code) => (code === 0 && o.trim().split('\n')[0].includes('物理 合格') ? '' : '物理 不合格 (ゲーム版)'), { env: { EDITION: 'game' } }],
+  ['physics', ['5', '150'], (o, code) => (code === 0 && o.trim().split('\n')[0].includes('物理 合格') ? '' : '物理 不合格 (シミュレーション版)'), { optional: true, env: { EDITION: 'sim' } }],
   ['energy', ['5', '150'], (o) => (o.trim().split('\n')[0].includes('R07 合格') ? '' : 'R07 不合格 (シミュレーション版)'), { optional: true, env: { HTML: path.join(SHOTS, 'simulation.html') } }],
   ['money', ['5', '150'], (o) => (o.trim().split('\n')[0].includes('お金の保存 合格') && o.includes('決まっていない出入り: なし') ? '' : 'お金の保存 不合格')],
   ['money', ['7', '150', '6'], (o) => (o.trim().split('\n')[0].includes('お金の保存 合格') && o.includes('決まっていない出入り: なし') ? '' : 'お金の保存 不合格 (6 か国)')],

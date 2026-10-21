@@ -2,14 +2,14 @@
 // 人が判断を入れずに、同じ手順で何度でも同じデータが取れる (シードと値のファイルで決まる)。値のファイルで ISM・SHIELD・PROP を変えて比べられる
 //   (例: { "SHIELD": { "crewSv": 1e30, "cargoGy": 1e30 } } で遮蔽なし (元と同じ試合になる)、{ "SHIELD": { "frontShare": 0.5 } } で限度を半分ずつ、
 //    { "ISM": { "nNuc": 0.38 } } で一番濃い視線の値、{ "SHIELD": { "crewSv": 0.05 } } で厳しい限度)。
-// 使い方: node tools/physics.js <シード> <年数> [国の数] [値のファイル.json] [出力の CSV]
+// 使い方: node tools/physics.js <シード> <年数> [国の数] [値のファイル.json] [出力の CSV]   (EDITION=game でゲーム版として回す。既定はシミュレーション版)
 //   --compare を付けると、遮蔽なし (限度を無限に) の試合も回して、入植した星系・入植地・交易路を比べる
 const fs = require('fs');
 const H = require('./headless');
 
-// 物理はシミュレーション版だけに入っているので、シミュレーション版として回す
-function voyages(seed, years, nations, params) {
-  const sim = H.load({ params, edition: 'sim' });
+// edition = 回す版 ('sim' か 'game'。2026-10-21 からゲーム版にも遮蔽と加速の時間が入っている。docs/physics.md の 10 の P6)
+function voyages(seed, years, nations, params, edition = 'sim') {
+  const sim = H.load({ params, edition });
   sim.evaluate('ENERGY_AUDIT = []');
   const g = sim.run(sim.newGame(seed, { nations }), years);
   return { rows: sim.evaluate('ENERGY_AUDIT'), g, sim };
@@ -44,14 +44,15 @@ if (require.main === module) {
   const [seed = '5', years = '150', nations = '0', paramFile, csv] = args;
   const params = paramFile && paramFile !== '-' ? JSON.parse(fs.readFileSync(paramFile, 'utf8')) : null;
   const t0 = Date.now();
-  const { rows, g } = voyages(seed, Number(years), Number(nations), params);
+  const edition = process.env.EDITION || 'sim';
+  const { rows, g } = voyages(seed, Number(years), Number(nations), params, edition);
   if (csv) {
     const cols = ['year', 'kind', 'mode', 'beta', 'ly', 'm', 'shield', 'depth', 'side', 'share', 'E'];
     fs.writeFileSync(csv, [cols.join(','), ...rows.map((x) => cols.map((c) => x[c] ?? '').join(','))].join('\n') + '\n');
   }
-  const res = { seed, years: Number(years), nations: Number(nations), voyages: rows.length, byKind: summarize(rows), game: shape(g), ms: Date.now() - t0 };
+  const res = { seed, edition, years: Number(years), nations: Number(nations), voyages: rows.length, byKind: summarize(rows), game: shape(g), ms: Date.now() - t0 };
   if (compare) {
-    const base = voyages(seed, Number(years), Number(nations), { ...(params || {}), SHIELD: { ...(params?.SHIELD || {}), crewSv: 1e30, cargoGy: 1e30 } });
+    const base = voyages(seed, Number(years), Number(nations), { ...(params || {}), SHIELD: { ...(params?.SHIELD || {}), crewSv: 1e30, cargoGy: 1e30 } }, edition);
     res.noShield = { game: shape(base.g), voyages: base.rows.length };
   }
   console.log(JSON.stringify(res, null, 1));
