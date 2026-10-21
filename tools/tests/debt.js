@@ -12,8 +12,15 @@ const res = {};
 const govs = Object.entries(g.govs).filter(([k]) => g.isColonized(Number(k))).map(([, v]) => v);
 res.someBonds = govs.some((v) => v.bond > 0);
 res.nonNegative = Object.values(g.govs).every((v) => !(v.bond < 0) && !(v.due < 0));
-const over = govs.filter((v) => v.credits > 2 * DEBT.cash * Math.max(0, (v.ledger?.tax || 0) + (v.ledger?.natives || 0)) + 50);
-res.cashSpent = over.length <= 0.1 * govs.length;
+// できて 10 年までの政府は開拓資金 (200 cr) を持っていてよい。人口 100 万人未満の政府 (自給だけで市場の所得と税がなく、国債の式が働かない) は見ない
+const govs2 = Object.entries(g.govs).filter(([k]) => g.isColonized(Number(k)) && g.coloniesIn(Number(k)).reduce((a, c) => a + c.pop, 0) >= 1).map(([, v]) => v);
+const over = govs2.filter((v) => g.year - (v.founded ?? 0) > 10 && v.credits > 2 * DEBT.cash * Math.max(0, (v.ledger?.tax || 0) + (v.ledger?.natives || 0)) + 50);
+res.cashSpent = over.length <= Math.max(1, 0.1 * govs2.length); // 1 つまでは、ならしている途中 (超えた分は 1 年ほどで使う) として許す
+// 人間でない国の財政: AI_FISCAL.vary = 0 (既定。C-22) なら標準のまま、1 なら国ごとに現実の分布から引かれ幅の中にある
+const { AI_FISCAL, FISCAL_DEFAULT } = sim.tables;
+const ai = Object.values(g.aif || {});
+res.aiFiscal = AI_FISCAL.vary ? ai.length > 1 && new Set(ai.map((f) => f.tax)).size > 1 && ai.every((f) => f.tax >= 0.02 && f.tax <= 0.34 && f.ctax >= 0 && f.ctax <= 0.27 && f.tariff >= 0 && f.tariff <= 0.29)
+  : ai.every((f) => f.tax === FISCAL_DEFAULT.tax && !f.ctax && !f.tariff);
 const d = JSON.parse(JSON.stringify(sim.buildSave(g)));
 const g2 = new sim.Game(sim.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
 g2.restore(d);
@@ -23,7 +30,7 @@ const h = sim.run(sim.newGame(seed, { nations: 6, spectate: false }), 30);
 const cap = h.gov(h.cap);
 res.humanExempt = !(cap.bond > 0) && !(cap.ledger?.public) && h.funds(h.cap) === cap.credits;
 const set = h.setFiscal({ deficit: 0.03 }).ok, room = h.funds(h.cap) - cap.credits;
-res.deficitRoom = set && Math.abs(room - Math.min(0.03 * cap.fr.y, DEBT.limit * cap.fr.y)) < 1e-6 && room > 0 && h.setFiscal({ deficit: 0.02 }).ok === false;
+res.deficitRoom = set && Math.abs(room - Math.min(0.03 * cap.fr.y, DEBT.limit * cap.fr.y)) < 1e-6 && room > 0 && h.setFiscal({ deficit: 0.0225 }).ok === false && h.setFiscal({ deficit: 0.2 }).ok === false; // 刻み (0.5%) と幅 (15%) の外は選べない
 const ok = Object.values(res).every(Boolean);
 console.log(`国債 ${ok ? '合格' : '不合格'}`, JSON.stringify(res), `国債のある政府 ${govs.filter((v) => v.bond > 0).length}/${govs.length}・資金が多すぎる政府 ${over.length}`);
 process.exitCode = ok ? 0 : 1;

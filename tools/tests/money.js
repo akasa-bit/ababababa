@@ -1,22 +1,28 @@
 // お金の保存の試験 (段 4)。conserve.js と同じく、1 年ごとに次を確かめる。
-//   - 全体: (お金の総額の増加) ÷ 取扱量 (出入りの絶対値の合計) が 1e-9 以下。総額 = 政府の資金 + 星系の民間 + 先住民 + 運ぶ途中 − 銀行の貸出
+//   - 全体: (お金の総額の増加) ÷ 取扱量 (出入りの絶対値の合計) が 1e-9 以下。総額 = 政府の資金 + 星系の家計 + 星系の会社 + 先住民 + 運ぶ途中 − 銀行の貸出
 //     (政府は国債の分を銀行から借りる。政府の額は 資金 − 国債)
-//     (民間と先住民は払えない分を銀行から借りる。銀行は貸すと同時に預金を作るので、お金の量は貸出の分だけ増え、純額は変わらない)
+//     (家計・会社・先住民は払えない分を銀行から借りる。銀行は貸すと同時に預金を作るので、お金の量は貸出の分だけ増え、純額は変わらない)
+//     (会社は売上をすべて賃金と配当として家計に渡すので、手持ちは 0。借りは輸入の先払いの分だけ。段 5 の 3)
 //     (運ぶ途中 = 物資移送要求の先払い・朝貢と資金援助・返事に添えた額・入植船と準備中の入植船の開拓資金)
-//   - 帳簿ごと: 政府・民間・先住民・運ぶ途中のそれぞれで、記帳した出入りの合計 = 額の増加 (記帳しないで書き換える所がない)
+//   - 帳簿ごと: 政府・家計・会社・先住民・運ぶ途中のそれぞれで、記帳した出入りの合計 = 額の増加 (記帳しないで書き換える所がない)
 //   - 種類ごと: 出入りの種類ごとに、すべての帳簿の合計が 0 (どこかから出た分は、どこかへ入る)。交易は輸入 (import) と輸出 (trade) を合わせて見る
 //   - 出入りの種類が決まったものだけであること
 // 使い方: node tools/tests/money.js [シード] [年数] [国の数]   (画面なしの版で回す。HTML=… で版を選ぶ)
 const path = require('path');
 const H = require(path.resolve(__dirname, '..', 'headless'));
 const [seed = '5', years = '150', nations = '0'] = process.argv.slice(2);
-const KINDS = ['tax', 'natives', 'upkeep', 'build', 'trade', 'import', 'tribute', 'grant', 'treaty', 'interest', 'welfare', 'security', 'military', 'public'];
+const KINDS = ['tax', 'natives', 'upkeep', 'build', 'trade', 'import', 'tribute', 'grant', 'treaty', 'interest', 'welfare', 'security', 'military', 'public', 'wages', 'spend', 'ctax', 'tariff'];
 const sim = H.load(process.env.HTML ? { src: process.env.HTML } : {});
 const g = sim.newGame(seed, { nations: Number(nations) });
 const holdings = () => {
-  const h = { gov: 0, pv: 0, nat: 0, way: 0 };
+  const h = { gov: 0, hh: 0, fm: 0, nat: 0, way: 0 };
   let loan = 0;
-  for (const v of Object.values(g.govs)) { h.gov += (v.credits || 0) - (v.bond || 0); loan += v.bond || 0; if (v.bond < 0) h.bad = true; h.pv += (v.pv || 0) - (v.loan || 0); loan += v.loan || 0; if (v.pv < 0 || v.loan < 0) h.bad = true; }
+  for (const v of Object.values(g.govs)) {
+    h.gov += (v.credits || 0) - (v.bond || 0); loan += v.bond || 0; if (v.bond < 0) h.bad = true;
+    h.hh += (v.hh || 0) - (v.hloan || 0); loan += v.hloan || 0; if (v.hh < 0 || v.hloan < 0) h.bad = true;
+    h.fm += (v.fm || 0) - (v.loan || 0); loan += v.loan || 0; if (v.fm < 0 || v.loan < 0) h.bad = true;
+    if (v.pv !== undefined) h.bad = true; // 前の版の帳簿が残っていない
+  }
   for (const st of Object.values(g.natives)) { h.nat += (st.cr || 0) - (st.loan || 0); loan += st.loan || 0; if (st.cr < 0 || st.loan < 0) h.bad = true; }
   h.loan = loan;
   for (const q of g.requests) h.way += (q.kind === 'trade' ? q.pre : q.kind === 'tribute' || q.kind === 'grant' ? q.amt : 0) || 0;
@@ -34,14 +40,14 @@ for (let y = 0; y < Number(years); y++) {
   const h1 = holdings(), A = sim.evaluate('MONEY_AUDIT');
   sim.evaluate('MONEY_AUDIT = null');
   let abs = 0;
-  const byAcct = { gov: 0, pv: 0, nat: 0, way: 0 };
+  const byAcct = { gov: 0, hh: 0, fm: 0, nat: 0, way: 0 };
   for (const [k, f] of Object.entries(A)) {
     if (!KINDS.includes(k)) bad.add(k);
     for (const [t, v] of Object.entries(f)) { abs += Math.abs(v); byAcct[t] += v; totals[k] = (totals[k] || 0) + Math.abs(v) / 2; }
   }
   through += abs;
   const at = `${g.year.toFixed(0)} 年`;
-  const sum = (h) => h.gov + h.pv + h.nat + h.way;
+  const sum = (h) => h.gov + h.hh + h.fm + h.nat + h.way;
   if (h1.bad) bad.add('手持ちか借りがマイナス');
   const q = abs ? Math.abs(sum(h1) - sum(h0)) / abs : Math.abs(sum(h1) - sum(h0));
   if (q > worst) { worst = q; worstAt = at; }
@@ -60,5 +66,5 @@ console.log(`${years} 年・入植地 ${g.colonies.length} ・ お金の保存 $
 console.log(`  総額の誤差 ÷ 取扱量の最大 ${e(worst)} (${worstAt})`);
 console.log(`  帳簿ごとの誤差 ${e(worstAcct)} (${worstAcctAt}) ・ 種類ごとの誤差 ${e(worstKind)} (${worstKindAt})`);
 console.log(`  決まっていない出入り: ${bad.size ? [...bad].join(', ') : 'なし'}`);
-console.log(`  終わりの額 [cr]: 政府 ${Math.round(h.gov)} / 民間 (手持ち − 借り) ${Math.round(h.pv)} / 先住民 ${Math.round(h.nat)} / 運ぶ途中 ${Math.round(h.way)} / 銀行の貸出 ${Math.round(h.loan)}`);
+console.log(`  終わりの額 [cr]: 政府 ${Math.round(h.gov)} / 家計 (預金 − 借り) ${Math.round(h.hh)} / 会社 (手持ち − 借り) ${Math.round(h.fm)} / 先住民 ${Math.round(h.nat)} / 運ぶ途中 ${Math.round(h.way)} / 銀行の貸出 ${Math.round(h.loan)}`);
 console.log('  種類ごとの取扱量 [cr]:', Object.entries(totals).map(([k, v]) => `${k} ${Math.round(v)}`).join(' / '));

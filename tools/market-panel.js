@@ -9,7 +9,7 @@ const H = require('./headless');
 
 const [dir = 'market-panel', nS = '30', yS = '150', natS = '6', paramFile] = process.argv.slice(2);
 const params = paramFile ? JSON.parse(fs.readFileSync(paramFile, 'utf8')) : null;
-const sim = H.load({ params });
+const sim = H.load({ params, ...(process.env.HTML ? { src: process.env.HTML } : {}) }); // HTML=… で別の版 (main など) を測れる
 const PRICED = ['food', 'metal', 'fuel', 'rare'];
 fs.mkdirSync(dir, { recursive: true });
 const P = ['series,group,galaxy,year,price'], FOOD = ['series,galaxy,year,stock,use'], GOODS = ['series,galaxy,year,stock,use'];

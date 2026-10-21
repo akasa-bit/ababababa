@@ -27,7 +27,7 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
     for (let i = 0; i < Y * 4; i++) g.advance(0.25);
     const govs = Object.entries(g.govs).filter(([id]) => g.isColonized(Number(id)));
     return {
-      audit: ENERGY_AUDIT, prop: PROP, c: C_LIGHT, ism: ISM, sh: SHIELD, dose: SHIELD_DOSE, gcr: SHIELD_GCR, physics: ED.physics,
+      audit: ENERGY_AUDIT, prop: PROP, c: C_LIGHT, ism: ISM, sh: SHIELD, dose: SHIELD_DOSE, gcr: SHIELD_GCR, physics: g.physics,
       govs: govs.length, negative: govs.filter(([, v]) => (v.E || 0) < 0).length,
       earth: { E: g.govs[0].E, power: g.power(0), cover: g.swarmCover(0), ledger: g.govs[0].eledger },
       colonies: g.colonies.length, routes: g.routes.length,
@@ -48,13 +48,13 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
     return 10 * ((Math.PI * d * d) / 4 * (tf + ts) + ((4 * V) / d) * ts);
   };
   const shieldKg = (x) => {
-    if (!(x.ly > 0) || !r.physics) return 0; // 遮蔽はシミュレーション版だけ
+    if (!(x.ly > 0) || !r.physics.shield) return 0; // 遮蔽は、この試合の物理の切り替え (physics.shield) のとき (2026-10-21 からゲーム版も)
     const crew = r.sh.crew.includes(x.kind), k = x.beta > 0.925 ? '0.95' : '0.9';
     const L = x.ly * 9.4607e17, V = x.m / r.sh.rho[crew ? 'crew' : 'cargo'];
     if (!crew) return shape(V, depth(r.dose[k], 'D', Math.log(r.sh.cargoGy / (r.ism.nNuc * L))), 0);
-    // 船の時間 [s]: 1g の加速と減速のあいだは (c/a) atanh β、そのほかは道のり ÷ γβc。加速を終える前に折り返す短い航路は 2 (c/a) acosh(1 + 道のり ÷ 2(c²/a))
+    // 船の時間 [s]: 1g の加速と減速のあいだは (c/a) atanh β (physics.accel のとき)、そのほかは道のり ÷ γβc。加速を終える前に折り返す短い航路は 2 (c/a) acosh(1 + 道のり ÷ 2(c²/a))
     const ga = 1 / Math.sqrt(1 - x.beta ** 2), T1 = c / 9.80665 / 31557600, xa = T1 * (ga - 1);
-    const tau = x.ly >= 2 * xa ? (2 * T1 * Math.atanh(x.beta) + (x.ly - 2 * xa) / (ga * x.beta)) * 31557600 : 2 * T1 * Math.acosh(1 + x.ly / 2 / T1) * 31557600; // 短い航路は中点で折り返す
+    const tau = !r.physics.accel ? L / (ga * x.beta * c * 100) : x.ly >= 2 * xa ? (2 * T1 * Math.atanh(x.beta) + (x.ly - 2 * xa) / (ga * x.beta)) * 31557600 : 2 * T1 * Math.acosh(1 + x.ly / 2 / T1) * 31557600; // 短い航路は中点で折り返す
     const kg = (f) => shape(V, depth(r.dose[k], 'H', Math.log((r.sh.crewSv * f) / (r.ism.nNuc * L))), depth(r.gcr[k], 'H', Math.log((r.sh.crewSv * (1 - f)) / tau)));
     if (r.sh.frontShare) return kg(r.sh.frontShare);
     // 一番軽い割り振り: 0.01〜0.99 を 2,000 に刻んで探し、ゲームの値がそれより重くないことを見る (ゲームは黄金分割)
@@ -88,7 +88,7 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
   }
   const e = (v) => (v === undefined ? '-' : Number(v).toExponential(2));
   const ok = audit.length && worst <= 1e-6 && !shieldBad;
-  console.log(`便の数 ${audit.length} ・ |比 − 1| の最大 ${worst.toExponential(2)} (遮蔽の質量 |比 − 1| の最大 ${worstShield.toExponential(2)}・外れ ${shieldBad} 便) ・ R07 ${ok ? '合格' : '不合格'}`);
+  console.log(`便の数 ${audit.length} ・ |比 − 1| の最大 ${worst.toExponential(2)} (遮蔽の質量 |比 − 1| の最大 ${worstShield.toExponential(2)}・外れ ${shieldBad} 便) ・ R07 ${ok ? '合格' : '不合格'} ・ 物理 ${JSON.stringify(r.physics)}`);
   for (const [k, v] of Object.entries(by)) console.log(`  ${k}: ${v.n} 便、合計 ${e(v.J)} J、遮蔽は質量の ${((100 * v.sh) / v.m).toFixed(2)}%`);
   console.log(`政府 ${r.govs} (蓄えが負 ${r.negative})・入植地 ${r.colonies}・交易路 ${r.routes}`);
   console.log(`太陽系: 覆う割合 ${r.earth.cover.toFixed(3)}・発電 ${e(r.earth.power)} J/年・蓄え ${e(r.earth.E)} J`);

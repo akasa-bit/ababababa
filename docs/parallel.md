@@ -14,7 +14,7 @@
 | **D 人口と船** | 10 → 11 → 12 → 13 → 14 | 人口・集団・船の設計・艦隊戦 | A と、C のセッション 9 が終わってから (C の 19〜25 は待たない。ぶつかる所は `docs/econ-policy.md` の 9) |
 | **S Steam** | S1 (= 17) → S2 | 新しいフォルダだけ: `desktop/` (包装)・`store/` (ストアの文と画像の案)。`src/`・`tools/build.mjs`・CI には触らない | いつでも (2026-10-20 のユーザーの決定。`docs/requests/2026-10-20-common.md` の common-5・common-6)。目標 F08 の直しは「目標の変更」の PR を 1 本で出す |
 | **U 画面** | U1 → U2 → U3 | `src/index.html` の画面の所だけ (CSS・`<nav>` とタブ・描画の関数・`ICONS`)。`Game` の計算・`snapshot`・`known` には触らない | いつでも (2026-10-20 のユーザーの決定。`docs/requests/2026-10-20-common.md` の common-7・common-8)。ほかのレーンが作っている画面は避ける |
-| **H 従属国の歴史** | H1 → H2 → H3 → H4 | `REGIMES`・離反のハザードの式・統治体制の画面・AI の国の統治体制の決め方。H1 は `docs/` だけ、H2 は `data/`・`targets/` だけ (中身と持ち分けは `docs/vassal-history.md` の 7・8) | H1・H2 はいつでも。**H3 と D のセッション 11 は同時に動かさない** (どちらも離反の式に触る) (2026-10-20 のユーザーの決定。`docs/requests/2026-10-20-common.md` の common-13・common-14) |
+| **H 従属国の歴史** | H1 → H2-1 → H2-2 → H3-1 → H3-2 → H3-3 → H4-1 → H4-2 | `REGIMES`・離反のハザードの式・統治体制の画面・AI の国の統治体制の決め方。H1 は `docs/` だけ、H2-1 は `data/` だけ、H2-2 は `data/`・`targets/` だけ (中身と持ち分けは `docs/vassal-history.md` の 7・8。2026-10-21 に分け直した) | H1・H2 はいつでも。**H3 (H3-1〜H3-3) と D のセッション 11 は同時に動かさない** (どちらも離反の式に触る) (2026-10-20 のユーザーの決定。`docs/requests/2026-10-20-common.md` の common-13・common-14) |
 | **Q 下準備** | Q1 → Q2 | 新しいファイルだけ: `docs/proposals/`・`data/fetch/`・`data/raw/<新しいフォルダ>/`・`data/build/` (`src/`・`tools/`・`targets/` には触らない) | いつでも (2026-10-20 のユーザーの決定。`docs/requests/2026-10-20-common.md` の common-3・common-4) |
 | **E 仕上げ** | 15 → 16 → 18 | つり合い・試遊・文字列 | D と、C のセッション 25 が終わってから (経済が大きく変わる前につり合いを取っても、やり直しになるため)。**18 (文字列を集める) は全部のファイルに触るので、ほかのレーンが止まっているときに 1 本だけで回す** |
 | **P 物理** | (セッション 14 の一部を先に) | 星間の気体と遮蔽 (`shieldOf`・`bookShip`)・`data/` の物理の生データと Geant4・`tools/physics.js` | いつでも (2026-10-20 に足した。`docs/requests/2026-10-20-P.md`)。`bookShip` を呼ぶ所 (交易・艦隊・入植) に 1 行ずつ触るので、マージの前に A・C と突き合わせる |
@@ -89,9 +89,10 @@ GitHub の設定 (branch protection の *Require branches to be up to date befor
 
 ## 6. シミュレーション版は一旦無視する (2026-10-20)
 
-ユーザーの指示 (`docs/requests/2026-10-20-P.md` の P-2)。物理 (星間の気体と宇宙線の遮蔽・加速の時間・M 型星のフレア。`docs/physics.md`) を、**シミュレーション版にだけ**入れてマージした。ゲーム版の試合は前と同じ。
+ユーザーの指示 (`docs/requests/2026-10-20-P.md` の P-2)。物理 (星間の気体と宇宙線の遮蔽・加速の時間・M 型星のフレア。`docs/physics.md`) を、**シミュレーション版にだけ**入れてマージした。
+**2026-10-21 に、遮蔽と加速の時間はゲーム版にも入れた** (セッション P6。`docs/physics.md` の 11)。シミュレーション版だけに残っているのは、フレアで入植適性を変えること・太陽電池の劣化。シミュレーション版を無視する決まりは変わらない。
 
 - **レーン P 以外は、シミュレーション版を無視する。** `simulation.html` を作り直さない・直さない (`node tools/build.mjs` はゲーム版だけを作る。シミュレーション版は `--sim` を付けたときだけ)。
 - CI の表の「シミュレーション版・参考」の行 (`physics`・シミュレーション版の `energy`・シミュレーション版の `build`) は、落ちても CI を止めない。ほかのレーンは気にしなくてよい。
-- `src/index.html` の物理の所 (`ED.physics` を見ている所、`shieldOf`・`accelExtra`・`withAccel`・`radiationOf`、`ISM`・`SHIELD*`・`SURFACE_DOSE`・`FLARES` の表) と `EDITIONS.sim` は、レーン P だけが触る。ほかのレーンは、`bookShip` などを直すときに、その行 (航路の長さ `ly` を渡す所・`withAccel` を掛ける所) を消さずに残す。ぶつかったら両方残す。
-- ゲーム版に物理を入れるかは、あとでユーザーが決める (`EDITIONS.game.physics` を true にするだけで入る)。
+- `src/index.html` の物理の所 (`ED.physics`・`this.physics` を見ている所、`shieldOf`・`accelExtra`・`withAccel`・`radiationOf`、`ISM`・`SHIELD*`・`SURFACE_DOSE`・`FLARES` の表) と `EDITIONS.<版>.physics` は、レーン P だけが触る。ほかのレーンは、`bookShip` などを直すときに、その行 (航路の長さ `ly` を渡す所・`withAccel` を掛ける所・`this.physics` を渡す所) を消さずに残す。ぶつかったら両方残す。
+- ゲーム版の物理は 2026-10-21 に入れた (遮蔽と加速の時間。`docs/physics.md` の 11)。試合ごとの切り替え `Game.physics` はセーブに入り、ないセーブは物理なしで読む。セーブの行 (`buildSave`) の `physics` を消さない。
