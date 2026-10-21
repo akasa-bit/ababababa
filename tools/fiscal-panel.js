@@ -22,7 +22,7 @@ const params = paramFile ? JSON.parse(fs.readFileSync(paramFile, 'utf8')) : null
 const GOV_BUY = new Set(['build', 'upkeep', 'welfare', 'security', 'military', 'public']);
 const REVENUE = new Set(['tax', 'natives', 'interest']);
 const VALUE = new Set(['extract', 'make', 'use', 'burn']);
-const sim = H.load({ params }); // 1 回だけ読み込む (回している途中で src が書き換わっても、同じ版で回す)
+const sim = H.load({ params, ...(process.env.HTML ? { src: process.env.HTML } : {}) }); // HTML=… で別の版 (main など) を測れる // 1 回だけ読み込む (回している途中で src が書き換わっても、同じ版で回す)
 const { PRICE } = sim.tables;
 
 function play(seed) {

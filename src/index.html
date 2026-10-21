@@ -28,6 +28,10 @@ canvas { position:absolute; inset:0; width:100%; height:100%; display:block; tou
 #empire .tbl td.wrap { white-space:normal; min-width:12em; }
 #empire .tbl tr.total td { border-top:1px solid var(--line); font-weight:bold; }
 #empire .tbl select { width:auto; margin:0; padding:2px 4px; }
+#empire .slider { display:inline-flex; align-items:center; gap:8px; }
+#empire .slider input[type=range] { width:140px; margin:0; accent-color:var(--accent); height:44px; }
+#empire .slider output { min-width:7.5em; font-variant-numeric:tabular-nums; }
+@media (max-width:900px) { #empire .slider input[type=range] { width:110px; } }
 #empire .tbl button { padding:2px 8px; min-height:0; }
 #empire .tbl button small { display:inline; margin-left:4px; }
 #empire .bulk { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; font-size:12px; }
@@ -1162,6 +1166,7 @@ const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番
 // 忠誠度の目標の内訳。距離は直接には小さく効き、主人の関与 (指令・援助・艦隊・視察) が途絶えた年数が大きく効く
 // (遠い星系ほど関与が届くのに時間と政治力がかかるので、距離は間接的に効く)
 function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = 'indirect', concession = false, policy = null, exhaustion = 0, tax = 'normal', welfare = 0 }) {
+  const taxK = taxRateOf(tax) / MARKET.tax;
   return [
     { label: '基準', v: 85 },
     { label: '主人との距離', v: -(0.6 * dLord), note: `${dLord.toFixed(1)} ly` },
@@ -1175,7 +1180,7 @@ function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, negle
     { label: '減税・自治', v: concession ? 15 : 0 },
     { label: `国家方針${policy ? ` (${POLICIES[policy].label})` : ''}`, v: POLICY_LOYALTY[policy] || 0 },
     ...(exhaustion ? [{ label: '国の戦争疲弊', v: -EXHAUST.loyalty * exhaustion, note: `${Math.round(exhaustion)}` }] : []),
-    ...(tax !== 'normal' && TAX_LEVELS[tax] ? [{ label: `税 (${TAX_LEVELS[tax].label})`, v: TAX_LEVELS[tax].loyalty }] : []),
+    ...(Math.abs(taxK - 1) > 1e-9 ? [{ label: `税 (${(taxRateOf(tax) * 100).toFixed(1)}%)`, v: TAX_LOYALTY * (taxK - 1) }] : []),
     ...(welfare ? [{ label: '福祉の予算', v: BUDGET.welfare.loyalty * welfare }] : []),
   ];
 }
@@ -1905,24 +1910,38 @@ const POLICIES = {
 const POLICY_LOYALTY = { expand: -5, consolidate: 8, military: -3 };
 // 財政 (プレイヤーが選ぶ。国家方針と同じく、変えた知らせが光速で届いた星系から効く)。効き目の大きさは仮の値 (docs/fiscal.md)
 // 税: k = 人口あたりの税の倍率、loyalty = 家臣の忠誠度の目標、council = 議会の支持の年あたりの変化
+// 財政の手段の幅 (セッション 20。docs/policy-ranges.md)。生データ (BIS の政策金利・WDI) の国・年の 1〜99% 点で、作る前に固定した。
+//   税率 (所得への税) 2〜34% (刻み 0.5%。標準は MARKET.tax = 15.5%)、利子率 −1〜50% (0.25%)、予算は機能ごとに 0〜60% で合わせて 100% まで (1%)、赤字の上限 0〜15% (0.5%)
+const TAX_RANGE = [0.02, 0.34], TAX_STEP = 0.005;
+const RATE_RANGE = [-0.01, 0.5], RATE_STEP = 0.0025;
+const BUDGET_RANGE = [0, 0.6], BUDGET_STEP = 0.01, BUDGET_TOTAL = 1;
+const DEFICIT_RANGE = [0, 0.15], DEFICIT_STEP = 0.005;
+const onStep = (v, [lo, hi], step) => Number.isFinite(v) && v >= lo - 1e-9 && v <= hi + 1e-9 && Math.abs(v / step - Math.round(v / step)) < 1e-6;
+// 前の版の税の 4 段階。古いセーブと命令の別名として残す (税率 = 標準 × k)
 const TAX_LEVELS = {
-  low: { label: '低い', k: 0.6, loyalty: 6, council: 0.2 },
-  normal: { label: '標準', k: 1, loyalty: 0, council: 0 },
-  high: { label: '高い', k: 1.4, loyalty: -6, council: -0.2 },
-  heavy: { label: '重税', k: 1.8, loyalty: -12, council: -0.5 },
+  low: { label: '低い', k: 0.6 },
+  normal: { label: '標準', k: 1 },
+  high: { label: '高い', k: 1.4 },
+  heavy: { label: '重税', k: 1.8 },
 };
-// 利子率 [/年]: 交易の値段 (運ぶ年数ぶんの利子。買い手の国の利子率) と、政府の貯えにつく利子
-const RATES = [0, 0.01, 0.03, 0.05, 0.08];
+const taxRateOf = (t) => (typeof t === 'number' ? t : MARKET.tax * (TAX_LEVELS[t] || TAX_LEVELS.normal).k);
+// 税の重さ k = 税率 ÷ 標準。家臣の忠誠度の目標 TAX_LOYALTY × (k − 1)、首都の議会の支持 年 TAX_COUNCIL × (k − 1)
+// (前の 4 段階の値 (+6・0・−6・−12、+0.2・0・−0.2・−0.5) を直線にしたもの。重税の議会の −0.5 は −0.4 になった)
+const TAX_LOYALTY = -15, TAX_COUNCIL = -0.5;
+// 人間でない国の財政 (docs/fiscal.md の 1)。vary = 1 なら、税率を現実の国の分布から国ごとに 1 つ引く: WDI の税収 ÷ GDP の国ごとの中央値の 10・50・90% 点 (8.0・15.7・24.2%) を
+// ゲームの標準 (15.5%) に合わせて 0.51・1・1.54 倍にしたもの (docs/policy-ranges.md)。vary = 0 (既定) なら標準の 15.5%。
+// 1 にすると R19 (税収 ÷ GDP) と R28 (財政の反応) が幅の外に出て、入植地 −20%・戦争 −37% になったので (docs/fiscal.md の 1.1)、選んでもらうまで 0 (docs/status/C.md)。
+// 利子率は、まだ物価がない (名目 = 実質) ので標準の 1% のまま (BIS の政策金利は名目。セッション 21 で)
+const AI_FISCAL = { vary: 0, taxK: [0.51, 1, 1.54] };
 // 予算: 首都の税収のうち、毎年その政策に使う割合。効き目 = 最大 × 割合 ÷ (割合 + BUDGET_HALF) (使うほど伸びが鈍る)
 const BUDGET = {
   welfare: { label: '福祉', good: '家臣の忠誠度の目標 +最大 12・人口の増え方 ×最大 1.15', loyalty: 12, growth: 0.15 },
   security: { label: '治安', good: '離反の起きやすさ ×最大 0.6', hazard: 0.4 },
   military: { label: '軍事', good: '艦隊の戦力 ×最大 1.25', fleet: 0.25 },
 };
-const BUDGET_SHARES = [0, 0.05, 0.1, 0.2, 0.3];
 const BUDGET_HALF = 0.1;
 const budgetEffect = (share) => (share > 0 ? share / (share + BUDGET_HALF) : 0);
-const FISCAL_DEFAULT = { tax: 'normal', rate: 0.01, deficit: 0, budget: { welfare: 0, security: 0, military: 0 } };
+const FISCAL_DEFAULT = { tax: MARKET.tax, rate: 0.01, deficit: 0, budget: { welfare: 0, security: 0, military: 0 } };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)
@@ -1932,8 +1951,7 @@ const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算�
 // spend = それを超えた資金を行政サービスに使いきる年数、limit = 買い物のために借りられる国債 ÷ GDP の上限 (JST の国ごとの中央値の中央値。90% 点の 0.914 では債務 R21 が 1.13 と幅を超えた)。
 // 係数と cash・limit は data/build/analyze_fiscal.py が data/derived/fiscal.json の params に書き出す値
 const DEBT = { a: -0.0023, rho: 0.0336, beta: 0.056, war: -0.0171, sd: 0.0269, ar: 0.6971, trend: 10, gap: [-0.1756, 0.1451], cash: 0.1613, spend: 1, limit: 0.4687 };
-// 人間が動かす首都の赤字の上限 (1 年に出せる国債 ÷ GDP。財政の画面で選ぶ)。0 は国債を出さない
-const DEFICITS = [0, 0.01, 0.03, 0.05, 0.1];
+// 人間が動かす首都の赤字の上限 (1 年に出せる国債 ÷ GDP。財政の画面で選ぶ。DEFICIT_RANGE)。0 は国債を出さない
 const POLICY_COST = 20;
 const POLICY_YEARS = 30; // 国家方針を変えられる間隔
 // 不満の段階: 1 不満 (離反の起きやすさ HAZARD に従って起きる) → UNREST_YEARS 年続くと 2 要求 (減税・自治を主人へ求める)
@@ -2897,6 +2915,7 @@ class Game {
     gv.friend = 0;
     gv.unrest = { stage: 0 };
     if (this.tech[formerRealm] && !this.tech[id]) this.tech[id] = { A: { ...this.tech[formerRealm].A } }; // 技術は元の国のものを持っていく
+    if (!this.isHuman(id)) (this.aif ??= {})[id] = { ...this.fiscalFor(formerRealm, id) }; // 財政 (税率など) も元の国のものを引き継ぐ (制度は続く)
     const reg = REGIMES[regimeKey(gv)];
     const peaceful = !!reg.peaceful;
     delete gv.direct;
@@ -2968,7 +2987,7 @@ class Game {
     if (d.auto || d.awe || d.aweBack || PC_FREE_ACTS.has(act)) return 0;
     if (act === 'declarewar' || act === 'peace') return PC_DIPLOMACY;
     if (act === 'policy') return POLICY_COST;
-    if (act === 'fiscal') { const c = this.fiscal || FISCAL_DEFAULT; return (d.tax ?? c.tax) !== c.tax || Number(d.rate ?? c.rate) !== c.rate || Number(d.deficit ?? c.deficit ?? 0) !== (c.deficit || 0) ? FISCAL_COST : 0; }
+    if (act === 'fiscal') { const c = this.fiscal || FISCAL_DEFAULT; return taxRateOf(d.tax ?? c.tax) !== taxRateOf(c.tax) || Number(d.rate ?? c.rate) !== c.rate || Number(d.deficit ?? c.deficit ?? 0) !== (c.deficit || 0) ? FISCAL_COST : 0; }
     const extra = act === 'decide' ? this.decisionOpt(d)?.pc || 0 : 0;
     const target = act === 'grant' || act === 'decide' ? Number(d.sys) : this.cmdTarget(act, d);
     if (target === undefined || target === null || target === this.cap || Number.isNaN(target)) return extra;
@@ -3097,7 +3116,7 @@ class Game {
       if (st.loan > 0) { const x = st.loan * this.rateAt(sys) * h; debtors.push([{ nat: key }, x]); paid += x; }
       if (st.cr > 0) { deposits.push([{ nat: key }, st.cr]); held += st.cr; }
     }
-    if (!(paid > 0) || !(held > 0)) return;
+    if (!paid || !(held > 0)) return; // マイナスの利子率なら向きが逆になる (預金が払い、借り手が受け取る。スイス 2014〜2022 年の形)
     for (const [acct, x] of debtors) if (acct.gov !== undefined) this.earn('interest', -x, acct.gov); else this.cash('interest', -x, acct);
     for (const [acct, v, gov] of deposits) {
       const x = paid * (v / held);
@@ -3107,11 +3126,23 @@ class Game {
   // 財政。fiscalFor(国, 星系) = その星系で効いている、その国の財政 (変えた知らせが光速で届くまでは前の財政)。人間でない国は標準
   fiscalFor(root, id) {
     const f = this.players[this.playerOf(root)]?.fiscal;
-    if (!f) return FISCAL_DEFAULT;
+    if (!f) return this.isHuman(root) ? FISCAL_DEFAULT : this.aiFiscal(root);
     return this.year >= f.since + this.sysDist(root, id) ? f : f.prev ?? FISCAL_DEFAULT;
   }
   fiscalAt(id) { return this.fiscalFor(this.realmOf(id), id); }
-  taxK(id) { return (TAX_LEVELS[this.fiscalAt(id).tax] || TAX_LEVELS.normal).k; }
+  taxK(id) { return taxRateOf(this.fiscalAt(id).tax) / MARKET.tax; }
+  // 人間でない国の財政 (AI_FISCAL)。シードと首都から決まる (試合の乱数は使わない)。税率は現実の国の分布の 10・50・90% 点を折れ線でつなぎ、幅の刻みに丸める。
+  // 独立した国は元の国の財政を引き継ぐ (declareIndependence)。読み込みのあとは、独立した国の引き継ぎが残らないので、セーブに入れる (aif)
+  aiFiscal(root) {
+    const c = (this.aif ??= {});
+    if (c[root]) return c[root];
+    if (!AI_FISCAL.vary) return (c[root] = FISCAL_DEFAULT);
+    const u = (hashSeed(`${this.galaxy.seed}/fiscal/${root}`) % 10000) / 10000;
+    const [a, b, d] = AI_FISCAL.taxK;
+    const k = u < 0.1 ? a : u < 0.5 ? a + ((u - 0.1) / 0.4) * (b - a) : u < 0.9 ? b + ((u - 0.5) / 0.4) * (d - b) : d;
+    const tax = clamp(Math.round((MARKET.tax * k) / TAX_STEP) * TAX_STEP, TAX_RANGE[0], TAX_RANGE[1]);
+    return (c[root] = { ...FISCAL_DEFAULT, tax });
+  }
   rateAt(id) { return this.fiscalAt(id).rate ?? FISCAL_DEFAULT.rate; }
   // 予算の効き目 (0〜1)。首都が予算を払いきれていなければ、払えた割合だけ効く
   budgetAt(root, id, k) { return budgetEffect((this.fiscalFor(root, id).budget?.[k] || 0) * (this.govs[root]?.bpaid ?? 1)); }
@@ -3119,15 +3150,21 @@ class Game {
   fleetMul(x, at) { const root = this.realmOf(x); return this.modsOf(x).fleet * (1 + BUDGET.military.fleet * this.budgetAt(root, at, 'military')); }
   setFiscal(d) {
     const cur = this.fiscal || FISCAL_DEFAULT;
-    const tax = d.tax ?? cur.tax, rate = Number(d.rate ?? cur.rate), deficit = Number(d.deficit ?? cur.deficit ?? 0);
+    const rawTax = d.tax ?? cur.tax;
+    if (!(typeof rawTax === 'number' || TAX_LEVELS[rawTax])) return fail('選べない値');
+    const tax = taxRateOf(rawTax), rate = Number(d.rate ?? cur.rate), deficit = Number(d.deficit ?? cur.deficit ?? 0);
     const budget = {};
     for (const k of Object.keys(BUDGET)) budget[k] = Number(d[k] ?? cur.budget?.[k] ?? 0);
-    if (!TAX_LEVELS[tax] || !RATES.includes(rate) || !DEFICITS.includes(deficit) || Object.values(budget).some((v) => !BUDGET_SHARES.includes(v))) return fail('選べない値');
+    // 幅と刻みは docs/policy-ranges.md (前の段階の名前 (重税など) は刻みに乗らなくてもよい)
+    if ((typeof rawTax === 'number' && !onStep(tax, TAX_RANGE, TAX_STEP)) || tax < TAX_RANGE[0] - 1e-9 || tax > TAX_RANGE[1] + 1e-9) return fail(`税率は ${TAX_RANGE[0] * 100}〜${TAX_RANGE[1] * 100}% (刻み ${TAX_STEP * 100}%)`);
+    if (!onStep(rate, RATE_RANGE, RATE_STEP)) return fail(`利子率は年 ${RATE_RANGE[0] * 100}〜${RATE_RANGE[1] * 100}% (刻み ${RATE_STEP * 100}%)`);
+    if (!onStep(deficit, DEFICIT_RANGE, DEFICIT_STEP)) return fail(`赤字の上限は GDP の 0〜${DEFICIT_RANGE[1] * 100}% (刻み ${DEFICIT_STEP * 100}%)`);
+    if (Object.values(budget).some((v) => !onStep(v, BUDGET_RANGE, BUDGET_STEP))) return fail(`予算は機能ごとに 0〜${BUDGET_RANGE[1] * 100}% (刻み ${BUDGET_STEP * 100}%)`);
     const total = Object.values(budget).reduce((a, v) => a + v, 0);
-    if (total > 0.6 + 1e-9) return fail('予算は税収の 6 割まで');
-    if (tax === cur.tax && rate === cur.rate && deficit === (cur.deficit || 0) && Object.keys(BUDGET).every((k) => budget[k] === (cur.budget?.[k] || 0))) return fail('いまと同じ');
-    this.fiscal = { tax, rate, deficit, budget, since: this.year, prev: { tax: cur.tax, rate: cur.rate, deficit: cur.deficit || 0, budget: { ...(cur.budget || FISCAL_DEFAULT.budget) } } };
-    const parts = [`税は「${TAX_LEVELS[tax].label}」`, `利子率は年 ${(rate * 100).toFixed(0)}%`, `赤字の上限は ${deficit ? `GDP の ${Math.round(deficit * 100)}%` : 'なし (国債を出さない)'}`, `予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
+    if (total > BUDGET_TOTAL + 1e-9) return fail(`予算は合わせて税収の ${BUDGET_TOTAL * 100}% まで`);
+    if (Math.abs(tax - taxRateOf(cur.tax)) < 1e-9 && rate === cur.rate && deficit === (cur.deficit || 0) && Object.keys(BUDGET).every((k) => budget[k] === (cur.budget?.[k] || 0))) return fail('いまと同じ');
+    this.fiscal = { tax, rate, deficit, budget, since: this.year, prev: { tax: taxRateOf(cur.tax), rate: cur.rate, deficit: cur.deficit || 0, budget: { ...(cur.budget || FISCAL_DEFAULT.budget) } } };
+    const parts = [`税率は ${(tax * 100).toFixed(1)}%`, `利子率は年 ${(rate * 100).toFixed(2)}%`, `赤字の上限は ${deficit ? `GDP の ${(deficit * 100).toFixed(1)}%` : 'なし (国債を出さない)'}`, `予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
     this.event('goal', this.cap, `財政を変えた (${parts.join('、')})。遠い星系には知らせが光速で届いてから効く`, true);
     return { ok: true };
   }
@@ -3248,7 +3285,7 @@ class Game {
     if (why) this.message(`議会の支持 ${v > 0 ? '+' : ''}${v} (${why})`);
   }
   councilYearly() {
-    this.council = clamp(this.council - 0.25 - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20) + (TAX_LEVELS[this.fiscal?.tax] || TAX_LEVELS.normal).council, 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる。重い税も落とす
+    this.council = clamp(this.council - 0.25 - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20) + TAX_COUNCIL * (taxRateOf(this.fiscal?.tax ?? FISCAL_DEFAULT.tax) / MARKET.tax - 1), 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる。重い税も落とす
     if (this.council < 15) {
       this.event('goal', this.cap, `議会の支持が ${Math.round(this.council)} まで落ち、政権が交代した。国家方針は白紙に戻り、貯めていた政治力を失った`);
       this.policy = null;
@@ -6003,6 +6040,7 @@ class Game {
     if (obj(d.realmWars)) this.realmWars = d.realmWars;
     if (obj(d.exhaustion)) this.exhaustion = d.exhaustion;
     if (obj(d.tech)) this.tech = d.tech;
+    if (obj(d.aif)) this.aif = d.aif;
     if (Number.isFinite(d.alpha) && d.alpha > 0) this.alpha = d.alpha;
     if (obj(d.warStats)) this.warStats = d.warStats;
     if (Array.isArray(d.peaceOffers)) this.peaceOffers = d.peaceOffers.filter((o) => o && typeof o.key === 'string');
@@ -6204,8 +6242,8 @@ class Game {
       credits: gv ? gv.credits : 0, bond: gv?.bond || 0, hh: gv?.hh || 0, loan: gv?.loan || 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null, energy: gv?.E || 0, power: this.power(id),
       ...(() => { // その星系で効いている財政 (標準でないものだけ)
         if (!this.isColonized(id)) return {};
-        const root = this.realmOf(id), t = this.fiscalAt(id).tax, w = this.budgetAt(root, id, 'welfare'), sc = this.budgetAt(root, id, 'security');
-        return { ...(t !== 'normal' ? { tax: t } : {}), ...(w ? { welfare: w } : {}), ...(sc ? { security: sc } : {}) };
+        const root = this.realmOf(id), t = taxRateOf(this.fiscalAt(id).tax), w = this.budgetAt(root, id, 'welfare'), sc = this.budgetAt(root, id, 'security');
+        return { ...(Math.abs(t - MARKET.tax) > 1e-9 ? { tax: t } : {}), ...(w ? { welfare: w } : {}), ...(sc ? { security: sc } : {}) };
       })(),
       outposts: this.outposts.filter((o) => o.sys === id).map((o) => ({ body: o.body, lv: o.lv })),
       natives: Object.fromEntries(this.system(id).bodies.filter((b) => this.natives[`${id}|${b.id}`]).map((b) => [b.id, { ...this.natives[`${id}|${b.id}`] }])),
@@ -9383,27 +9421,37 @@ function councilChart(v) {
 }
 
 // 帝国 → 目標の「財政」: 税・利子率・予算。変えると光速で広がる (国家方針と同じ)
+// 財政のスライダーの値の見せ方 (data-fmt)
+function fiscalFmt(fmt, v) {
+  v = Number(v);
+  if (fmt === 'pct0') return `${Math.round(v * 100)}%`;
+  if (fmt === 'pct1') return `${(v * 100).toFixed(1)}%`;
+  if (fmt === 'pct2') return `年 ${(v * 100).toFixed(2)}%`;
+  if (fmt === 'pct1gdp') return v ? `GDP の ${(v * 100).toFixed(1)}%/年` : 'なし';
+  return String(v);
+}
 function fiscalHtml(g) {
   const f = g.fiscal || FISCAL_DEFAULT;
   const cg = g.gov(g.cap);
   const tax = Math.max(0, g.gov(g.cap).ledger?.tax || 0);
   const pend = g.fiscal ? g.realmSystems(g.cap).filter((s) => g.year < f.since + g.sysDist(g.cap, s.id)).length : 0;
-  const opt = (v, cur, l) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${l}</option>`;
-  const sel = (k, list, cur) => `<select data-act="fiscal" data-k="${k}">${list.map(([v, l]) => opt(v, cur, l)).join('')}</select>`;
+  // 値はスライダーで細かく選ぶ (幅と刻みは docs/policy-ranges.md)。離すと命令になる。動かしているあいだは値だけ変わる (onPanelInput)
+  const slider = (k, [lo, hi], step, cur, fmt, label) => `<label class="slider"><input type="range" data-act="fiscal" data-k="${k}" data-fmt="${fmt}" min="${lo}" max="${hi}" step="${step}" value="${cur}" aria-label="${label}"><output>${fiscalFmt(fmt, cur)}</output></label>`;
   const used = Object.keys(BUDGET).reduce((a, k) => a + (f.budget?.[k] || 0), 0);
   const paid = g.gov(g.cap).bpaid ?? 1;
+  const taxRate = taxRateOf(f.tax), taxK = taxRate / MARKET.tax;
   const rows = Object.entries(BUDGET).map(([k, b]) => {
     const sh = f.budget?.[k] || 0;
-    return `<tr><td>${b.label}</td><td>${sel(k, BUDGET_SHARES.map((x) => [x, `${Math.round(x * 100)}%`]), sh)}</td><td>${sh ? `${fmtAmt(sh * tax)} cr/年・効き目 ${pct(budgetEffect(sh * paid))}` : '<span class="muted">使わない</span>'}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
+    return `<tr><td>${b.label}</td><td>${slider(k, BUDGET_RANGE, BUDGET_STEP, sh, 'pct0', b.label)}</td><td>${sh ? `${fmtAmt(sh * tax)} cr/年・効き目 ${pct(budgetEffect(sh * paid))}` : '<span class="muted">使わない</span>'}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
   }).join('');
   return `<h3>${ico('credits')}財政</h3>
-    <p class="note">税・利子率・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く${pend ? ` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
+    <p class="note">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・利子率・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く${pend ? ` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
     <table class="tbl">
-      <tr><td>税</td><td>${sel('tax', Object.entries(TAX_LEVELS).map(([v, t]) => [v, t.label]), f.tax)}</td><td colspan="2" class="muted wrap">人口あたりの税 ×${TAX_LEVELS[f.tax].k}${TAX_LEVELS[f.tax].loyalty ? `・家臣の忠誠度の目標 ${TAX_LEVELS[f.tax].loyalty > 0 ? '+' : ''}${TAX_LEVELS[f.tax].loyalty}` : ''}${TAX_LEVELS[f.tax].council ? `・議会の支持 年 ${TAX_LEVELS[f.tax].council > 0 ? '+' : ''}${TAX_LEVELS[f.tax].council}` : ''}</td></tr>
-      <tr><td>利子率</td><td>${sel('rate', RATES.map((x) => [x, `年 ${Math.round(x * 100)}%`]), f.rate)}</td><td colspan="2" class="muted wrap">政府の貯えにつく利子と、国債・民間の借りに払う利子。高いほど、運ぶ年数ぶん輸入の値段が上がる (e^(利子率 × 年数) 倍)</td></tr>
-      <tr><td>赤字の上限</td><td>${sel('deficit', DEFICITS.map((x) => [x, x ? `GDP の ${Math.round(x * 100)}%/年` : 'なし']), f.deficit || 0)}</td><td colspan="2" class="muted wrap">資金が足りない分を、1 年にこの額まで国債で借りる (${ME.capName}の GDP ${fmtAmt(cg.fr?.y || 0)} cr/年)。国債 ${fmtAmt(cg.bond || 0)} cr・いま借りられる額 ${fmtAmt(Math.max(0, g.funds(g.cap) - cg.credits))} cr。手元の資金が税収の ${Math.round(DEBT.cash * 12)} か月分を超えると、超えた分で国債を返す。国債 ÷ GDP は ${Math.round(DEBT.limit * 100)}% まで</td></tr>
+      <tr><td>税率</td><td>${slider('tax', TAX_RANGE, TAX_STEP, taxRate, 'pct1', '税率')}</td><td colspan="2" class="muted wrap">所得への税 (標準 ${(MARKET.tax * 100).toFixed(1)}% の ×${taxK.toFixed(2)})${Math.abs(taxK - 1) > 1e-9 ? `・家臣の忠誠度の目標 ${TAX_LOYALTY * (taxK - 1) > 0 ? '+' : ''}${(TAX_LOYALTY * (taxK - 1)).toFixed(1)}・議会の支持 年 ${TAX_COUNCIL * (taxK - 1) > 0 ? '+' : ''}${(TAX_COUNCIL * (taxK - 1)).toFixed(2)}` : ''}。自給の所得には掛からない</td></tr>
+      <tr><td>利子率</td><td>${slider('rate', RATE_RANGE, RATE_STEP, f.rate, 'pct2', '利子率')}</td><td colspan="2" class="muted wrap">政府の貯えにつく利子と、国債・会社と家計の借りに払う利子。高いほど、運ぶ年数ぶん輸入の値段が上がる (e^(利子率 × 年数) 倍)。マイナスなら預金が利子を払う</td></tr>
+      <tr><td>赤字の上限</td><td>${slider('deficit', DEFICIT_RANGE, DEFICIT_STEP, f.deficit || 0, 'pct1gdp', '赤字の上限')}</td><td colspan="2" class="muted wrap">資金が足りない分を、1 年にこの額まで国債で借りる (${ME.capName}の GDP ${fmtAmt(cg.fr?.y || 0)} cr/年)。国債 ${fmtAmt(cg.bond || 0)} cr・いま借りられる額 ${fmtAmt(Math.max(0, g.funds(g.cap) - cg.credits))} cr。手元の資金が税収の ${Math.round(DEBT.cash * 12)} か月分を超えると、超えた分で国債を返す。国債 ÷ GDP は ${Math.round(DEBT.limit * 100)}% まで</td></tr>
     </table>
-    <h3>予算 (${ME.capName}の税収 ${fmtAmt(tax)} cr/年 のうち ${Math.round(used * 100)}% を使う。6 割まで)</h3>
+    <h3>予算 (${ME.capName}の税収 ${fmtAmt(tax)} cr/年 のうち ${Math.round(used * 100)}% を使う。合わせて ${BUDGET_TOTAL * 100}% まで)</h3>
     <table class="tbl">${rows}</table>
     ${paid < 0.99 && used ? `<p class="note bad">資金が足りず、予算を ${pct(paid)} しか払えていない (効き目もそのぶん下がる)</p>` : ''}`;
 }
@@ -9800,7 +9848,7 @@ function buildSave(game, extra = {}) {
   return {
     v: 2, seed: game.galaxy.seed, ...(game.galaxy.kind === 'real' ? { galaxy: 'real' } : {}), ...(game.galaxy.gen > 1 ? { gen: game.galaxy.gen } : {}), rs: game.rs, players: game.players, pi: game.pi,
     ...(game.nations ? { nations: game.nations.map(({ mods, ...n }) => n) } : {}), ...(game.handicap !== 'normal' ? { handicap: game.handicap } : {}), ...(game.pvPolicy ? { pvPolicy: game.pvPolicy } : {}), ...(game.productivity !== 1 ? { productivity: game.productivity } : {}), ...(Object.keys(game.stackOwner).length ? { stackOwner: game.stackOwner } : {}), ...(game.ghosts.fleets.length ? { ghostFleets: game.ghosts.fleets } : {}), year: game.year, colonies: game.colonies, ships: game.ships,
-    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, ...(Object.keys(game.intel).length ? { intel: game.intel } : {}), ...(game.aiOrders.length ? { aiOrders: game.aiOrders } : {}), ...(Object.keys(game.shipHist).length ? { shipHist: game.shipHist } : {}), peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, market: game.market, absorb: game.absorb, unmet: game.unmet, util: game.util, tech: game.tech, ...(game.alpha !== undefined ? { alpha: game.alpha } : {}), routes: game.routes,
+    log: game.log, nextShipId: game.nextShipId, credits: game.credits, govs: game.govs, snaps: game.snaps, realmWars: game.realmWars, exhaustion: game.exhaustion, warStats: game.warStats, peaceOffers: game.peaceOffers, conferences: game.conferences, warBy: game.warBy, warNews: game.warNews, ...(Object.keys(game.intel).length ? { intel: game.intel } : {}), ...(game.aiOrders.length ? { aiOrders: game.aiOrders } : {}), ...(Object.keys(game.shipHist).length ? { shipHist: game.shipHist } : {}), peaces: game.peaces, held: game.held, sieges: game.sieges, battles: game.battles, stock: game.stock, market: game.market, absorb: game.absorb, unmet: game.unmet, util: game.util, tech: game.tech, ...(game.alpha !== undefined ? { alpha: game.alpha } : {}), ...(game.aif ? { aif: game.aif } : {}), routes: game.routes,
     cargo: game.cargo, projects: game.projects, requests: game.requests, events: game.events,
     outposts: game.outposts, auto: game.auto, autoTimer: game.autoTimer, spectate: game.spectate, autoDefense: game.autoDefense, autoAwe: game.autoAwe, awe: game.awe, autoGrant: game.autoGrant, autoBuild: game.autoBuild, migration: game.migration, autoRoutes: game.autoRoutes, troopMoves: game.troopMoves, wars: game.wars, warThreshold: game.warThreshold, autoHabitat: game.autoHabitat, migrants: game.migrants, migLog: game.migLog, garrison: game.garrison, fleets: game.fleets, natives: game.natives, infamy: game.infamy,
     surveyed: game.surveyed, pc: game.pc, council: game.council, policy: game.policy, decisions: game.decisions, story: game.story, era: game.era, challenges: game.challenges,
@@ -11231,6 +11279,11 @@ function onPanelClick(e) {
   app.dirty = true;
   save();
 }
+// スライダーを動かしているあいだは、横の値だけ書き換える (命令は離したとき = change)
+function onPanelInput(e) {
+  const t = e.target;
+  if (t.type === 'range' && t.dataset.act === 'fiscal') { const o = t.parentElement?.querySelector('output'); if (o) o.textContent = fiscalFmt(t.dataset.fmt, t.value); }
+}
 function onPanelChange(e) {
   const { act, col } = e.target.dataset;
   const v = e.target.value;
@@ -11255,7 +11308,7 @@ function onPanelChange(e) {
     const c = app.game.fiscal || FISCAL_DEFAULT;
     const d = { tax: c.tax, rate: c.rate, deficit: c.deficit || 0, ...c.budget };
     const k = e.target.dataset.k;
-    d[k] = k === 'tax' ? v : Number(v);
+    d[k] = Number(v);
     issue('fiscal', d);
     save();
   }
@@ -11288,6 +11341,7 @@ for (const el of [panel, empire]) {
   el.addEventListener('toggle', onToggle, true);
   el.addEventListener('click', onPanelClick);
   el.addEventListener('change', onPanelChange);
+  el.addEventListener('input', onPanelInput);
   el.addEventListener('pointerdown', () => { panelHeld = true; });
   el.addEventListener('touchstart', () => { touching = true; }, { passive: true });
   // 表の横スクロール (.scroll) の scroll イベントは泡立たないので capture で拾う

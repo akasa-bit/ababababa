@@ -43,8 +43,8 @@ const TESTS = [
   ['fiscal', [SHOTS], (o) => {
     try {
       const j = JSON.parse(o.slice(o.indexOf('{'), o.lastIndexOf('}') + 1));
-      const good = (v) => v.ok && !v.bad[0] && !v.bad[1] && v.pc === 5 && v.now.join() === '1.8,1,0.01' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
-        && v.loyalty.join() === 'false,true,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.saveLoad && v.ui === 'low' && v.wide[0] === v.wide[1] && !v.errs.length;
+      const good = (v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1.8,1,0.01' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
+        && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length;
       return Object.values(j).every(good) ? '' : '財政の結果が違う';
     } catch { return '出力を読めない'; }
   }],

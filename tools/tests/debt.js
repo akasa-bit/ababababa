@@ -25,7 +25,7 @@ const h = sim.run(sim.newGame(seed, { nations: 6, spectate: false }), 30);
 const cap = h.gov(h.cap);
 res.humanExempt = !(cap.bond > 0) && !(cap.ledger?.public) && h.funds(h.cap) === cap.credits;
 const set = h.setFiscal({ deficit: 0.03 }).ok, room = h.funds(h.cap) - cap.credits;
-res.deficitRoom = set && Math.abs(room - Math.min(0.03 * cap.fr.y, DEBT.limit * cap.fr.y)) < 1e-6 && room > 0 && h.setFiscal({ deficit: 0.02 }).ok === false;
+res.deficitRoom = set && Math.abs(room - Math.min(0.03 * cap.fr.y, DEBT.limit * cap.fr.y)) < 1e-6 && room > 0 && h.setFiscal({ deficit: 0.0225 }).ok === false && h.setFiscal({ deficit: 0.2 }).ok === false; // 刻み (0.5%) と幅 (15%) の外は選べない
 const ok = Object.values(res).every(Boolean);
 console.log(`国債 ${ok ? '合格' : '不合格'}`, JSON.stringify(res), `国債のある政府 ${govs.filter((v) => v.bond > 0).length}/${govs.length}・資金が多すぎる政府 ${over.length}`);
 process.exitCode = ok ? 0 : 1;
