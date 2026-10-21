@@ -10,7 +10,8 @@
 - 2026-10-21 (回 R1、`docs/requests/2026-10-21-common.md` の common-1): 開いている PR を 0 にした (#154 → #173、#117 → #174)。基準の数を `docs/restart-baseline.md` に書いた (main `3a5b5d9`)。
 - 2026-10-21 (回 R2、common-2): 残りの作業を `docs/backlog.md` (110 項目)、返事待ちを `docs/decisions.md`、衝突の多い場所を `docs/conflicts.md` にまとめた。1 つの Artifact (https://claude.ai/artifact/FqpDBPSi84wFCYb8C5PozE) で決めてもらった: Q2 = b (フェーズ 0・1 と英語・中国語と面白さの物差しを先に)・レーンは案 C (経済・政治・船と戦争・画面と最初の体験・道具と検証・外向き)・1 波目に src を触るのは画面と最初の体験・政治・船と戦争。返事待ちもすべておすすめ。
 - 2026-10-21 (回 R3): `src/index.html` を新しいレーンの場所ごとの 74 のファイルに分けた (中身は 1 行も変えない。`docs/src-files.md`)。セーブの行を仕組みごとの登録 (`saveField`) にした。組み立てた `index.html` はコミットせず、公開のときに組み立てる。番号の予約は `docs/registry.md`。
-- 次: 回 R4 (文書の作り直し)。
+- 2026-10-21 (回 R4): 古い `docs/sessions.md`・`docs/parallel.md` と前のレーンの状態のファイルを `docs/archive/` に移し (中身はそのまま)、新しいレーン (KE・SE・FU・GA・DO・SO) で `docs/sessions.md`・`docs/parallel.md`・`docs/status/<レーン>.md` を作り直した。`docs/game-plan.md` の段取りを Q2 = b の順にした。
+- 次: 1 波目 (`docs/sessions.md` の 3。`src/` に触るのは GA・SE・FU。DO・SO も一緒に)。1 波目が終わったら回 W1 (見直し)。
 
 ## handoff.md から移したもの (2026-10-20、並行に移るときの後片付け。`docs/parallel.md` の 5)
 
