@@ -20,7 +20,7 @@ PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメ
 - `node tools/sector-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json or -] [開始時の生産性]`: 画面なしの版で回し、星系ごと・年ごとの 1 人あたりの実質の所得 (2011 年の国際ドル) と農業・工業・サービスの就業の割合を書き出す。`python3 data/build/build_sectors.py --game <出力.csv>` で、実データと同じ関数で R10 の合否を出す (`docs/structure.md` の 5)
 - `node tools/research-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]`: 国ごと・年ごとの技術の伸びと研究者の数を書き出す。`python3 data/build/build_ideas.py --game <出力.csv>` で、Bloom ほか 2020 と同じ式で R11 の合否を出す
 
-- `node tools/fun-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数] [探索の予算] [探索の銀河の数]`: 面白さの代わりの数 (判断を求められる回数・待つだけの年・1 つの戦略が強すぎないか・逆転・選ぶ意味の大きさ) を main と並べ、PR の版で必勝法を探す AI の小さな探索を回す。合否は付けない。数の中身は `docs/fun.md`
+- `node tools/fun-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数] [探索の予算] [探索の銀河の数]`: 面白さの代わりの数 (判断を求められる回数・待つだけの年・1 つの戦略が強すぎないか・逆転・選ぶ意味の大きさ) を main と並べ、PR の版で必勝法を探す AI の小さな探索を回す。合否は付けないが、main より大きく悪くなったら「止める線」に出す (`FUN_GATE_OUT` のファイルに書き、CI のジョブ「面白さの数の止める線」が見る。線は `docs/parallel.md` の 4 の 3)。数の中身は `docs/fun.md`
 
 手元で同じものを回すときは `CHROMIUM=/opt/pw-browsers/chromium node tools/ci-tests.js` (3 分ほど)。
 
@@ -60,6 +60,12 @@ node tools/search.js --budget 40 --seeds 1,2,3,4,5,6,7,8 --years 150   # 候補 
 node tools/delay-report.js --seeds 16 --years 150 --budget 24   # 7 つの戦略 × 遅れなし・遅れつき × 2 つの試合の形 → 拡張の一強が出るかの表 (Markdown)
 node tools/search.js --delay --budget 40                          # 必勝法を探す AI を遅れつきで (放任も遅れつき)
 ```
+
+```sh
+node tools/fun-targets.js --seeds 30 --years 500 --nations 6   # 楽しさの目標のうち自動対戦の分 (F06・F16〜F19) の合否と、挑戦の達成・お金の推移 (B-069) → Markdown
+```
+
+`EXTRA.idle` (何もしない): 観戦モードも首都の自動も切る (`bots.js` の none)。`play` の戻り値に、最初の 20 年の出来事と判断 (`early10`)・語り手の出来事の回数 (`stories`)・星系の数の最大と首都からいちばん遠い星系 (`maxSystems`・`maxDist`)・挑戦 (`challenges`)・50 年ごとの資金 (`creditsAt`) を足した。
 
 試験: `node tools/tests/strategy.js` (CI の `strategy`)。`BASE` が放任と同じ筋になること、新しい値と遅れつきのボットが筋を変えることを見る。
 
