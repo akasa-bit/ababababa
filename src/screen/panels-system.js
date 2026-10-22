@@ -233,7 +233,8 @@ function railHtml(g) {
   const guide = guideHtml(g);
   const surprise = surpriseWarnings(g);
   if (surprise.some((w) => !(app.surpriseSeen ||= new Set()).has(w.f.id))) { for (const w of surprise) app.surpriseSeen.add(w.f.id); Sound.play('warn'); }
-  const n = decs.length + majors.length + diplo.length + (guide ? 1 : 0) + (hungry ? 1 : 0) + surprise.length;
+  const consent = consentRailHtml(); // プレイ記録の同意 (まだ答えていないとき)
+  const n = decs.length + majors.length + diplo.length + (guide ? 1 : 0) + (hungry ? 1 : 0) + surprise.length + (consent ? 1 : 0);
   // 地図が狭いときは、帯を畳んだ形 (件数だけのボタン) から始める。帯が地図を覆ってタップを邪魔しないように
   if (railHidden()) return `<div class="railbar"><button data-act="railtoggle"${decs.length ? ' class="due"' : ''}>${n ? `知らせ ${n} 件を出す` : '知らせを出す'}</button></div>`;
   const report = govReportRail(g);
@@ -260,7 +261,7 @@ function railHtml(g) {
     }).join('')}</div></div>`;
   const shownMajors = majors.slice(0, 3);
   const moreN = majors.slice(3).reduce((k, x) => k + x.ids.length, 0) + news.over;
-  return `${surprise.slice(0, 2).map((w) => surpriseHtml(g, w)).join('')}${guide}${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
+  return `${consent}${surprise.slice(0, 2).map((w) => surpriseHtml(g, w)).join('')}${guide}${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
     ${hungry ? `<button class="state" data-act="view" data-v="events">${tagIco('famine')}飢餓・水不足の星系 ${hungry} — 地図の赤い「!」</button>` : ''}
     ${shownMajors.map((x) => item(x.e, true, x.ids)).join('')}${moreN ? `<button class="more" data-act="view" data-v="events">ほかに重大な知らせ ${moreN} 件 (イベントのタブ)</button>` : ''}
     ${report}${recent.map((e) => item(e, false)).join('')}
