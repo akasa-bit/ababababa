@@ -68,6 +68,7 @@
       else this.refuseDemand(dec.sys, gv, k === 'awe' ? `${this.homeName()}は要求を拒み、威圧の艦隊を差し向けた` : `${this.homeName()}に要求を拒まれた`, k === 'awe' ? 'awe' : 'refuse');
       return { ok: true };
     }
+    if (dec.kind === 'pact') { this.resolvePact(dec, k); return { ok: true }; } // 遅れて届く外交 (politics/diplomacy.js)
     const s = STORY[dec.type];
     if (s) s.resolve(this, dec, k, local);
     if (dec.cr) this.release('grant', dec, 'cr', dec.payer ?? 0, dec.payer ?? 0); // 使われなかった額は返す

@@ -67,6 +67,7 @@
   // 政治力・議会・時代の課題・挑戦・語り手・決めること・終わりの年 (年1回)
   politicsYearly() {
     this.lordsAttendYearly();
+    this.diplomacyYearly(); // 遅れて届く外交 (政治。politics/diplomacy.js)
     this.eachPlayer(() => {
       this.pcYearly();
       this.councilYearly();
