@@ -113,6 +113,14 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #home .row .info { flex:1; min-width:200px; font-size:13px; }
 #home .row button.ghost { margin-top:0; }
 #home .big { font-size:16px; padding:10px 22px; border-color:var(--accent); color:var(--accent); }
+/* ホームの表紙: 天の川の写真の上に名前と「はじめる」1 つ (B-045)。細かい設定は下の「詳しい設定」に畳む */
+#home .cover { margin:-22px -24px 16px; padding:56px 24px 20px; border-radius:10px 10px 0 0; border-bottom:1px solid var(--line); background:linear-gradient(rgba(11,12,13,.2), rgba(11,12,13,.88) 75%), url("assets/space-galaxy.jpg") center 40% / cover; display:flex; flex-direction:column; gap:8px; }
+#home .cover h1 { margin:0; } #home .cover p { margin:0; }
+#home .cover .go { display:flex; gap:8px; flex-wrap:wrap; align-items:stretch; margin-top:16px; }
+#home .cover .go .big { font-size:var(--fs4); padding:12px 48px; min-height:56px; }
+#home .cover .go button small { max-width:24em; }
+#home .cover .hint { color:var(--muted); font-size:var(--fs1); }
+#home details.sec { margin-top:8px; } #home details.sec > summary { font-size:var(--fs2); min-height:44px; }
 #home .htabs { display:flex; gap:6px; margin:10px 0 4px; } #home .htabs button { flex:1; min-height:44px; font-size:15px; } #home .htabs button.on { outline:2px solid var(--accent); }
 #home .natc { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px 0; border-bottom:1px solid var(--line); }
 #home .natc .info { flex:1; min-width:220px; font-size:14px; } #home .natc .nm { font-size:17px; } #home .natc .btns { display:flex; gap:6px; } #home .natc .btns button { white-space:nowrap; min-width:64px; margin:0; }

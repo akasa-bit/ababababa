@@ -89,8 +89,9 @@ $('home').onclick = (e) => {
   if (act.startsWith('nat')) return natAction(act, b.dataset.id);
   if (act === 'nethost') { closeHome(0); setSpeed(0); return Net.openHost(); }
   if (act === 'netjoin') { closeHome(0); setSpeed(0); Net.role = null; return Net.render(); }
-  if (act === 'new') {
-    if (!confirm2('new')) return;
+  // 「はじめる」は、いまのゲームが進んでいるときだけ 2 回押して確定する (開いたばかりなら 1 回で始まる)。「この設定ではじめる」はいつも 2 回
+  if (act === 'new' || act === 'start') {
+    if (act === 'new' ? !confirm2('new') : homeGoing() && !confirm2('start')) return;
     newGame(app.homeSeed || String(Math.floor(Math.random() * 1e6)));
     if (app.homeSpectate) app.game.setSpectate(true);
     app.game.endYear = app.homeEnd === 0 ? null : START_YEAR + (app.homeEnd ?? 500);
@@ -134,6 +135,12 @@ $('home').onclick = (e) => {
   app.homeArmed = null;
   renderHome();
 };
+// 畳んだ欄 (詳しい設定・セーブ) を開いたか閉じたかを覚えておく (ホーム画面は描き直すたびに作り直すので)
+$('home').addEventListener('toggle', (e) => {
+  const k = e.target.dataset?.homeMore;
+  if (k === 'settings') app.homeMore = e.target.open;
+  else if (k === 'saves') app.homeSaves = e.target.open;
+}, true);
 // 通信の表示 (表示しない / 光の点)。見る人ごとの好みなのでブラウザに覚えておく
 const SIGNAL_MODES = { off: '表示しない', dots: '光の点' };
 try { const m = localStorage.getItem(`${STORE}-signals`); if (SIGNAL_MODES[m]) app.signalMode = m; } catch { /* 保存できない環境では既定値 */ }
