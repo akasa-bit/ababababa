@@ -257,6 +257,7 @@ function checkSkip() {
   if (!news && g.year - app.skip.from < 100) return;
   const from = app.skip.from;
   setSpeed(0);
+  Sound.play('stop');
   uiNote(news ? `知らせが届いたので止めた (${(g.year - from).toFixed(1)} 年進めた)` : '100年進めたので止めた');
   app.dirty = true;
 }

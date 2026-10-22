@@ -80,7 +80,7 @@
     const dec = this.visibleDecisions()[0];
     const went = this.ships.find((s) => s.body !== undefined && this.realmOf(s.from) === cap) || this.knownProjects().find((j) => j.type === 'ship');
     const steps = [
-      { done: sent, label: pick ? `${distance(this.system(cap), this.system(pick.sys)).toFixed(1)} 光年の${pick.name}に入植船を送る` : went ? `${this.target(went.to, went.body).name}へ入植船を送った` : '候補地のタブから、入植船を送る', pick },
+      { done: sent, label: pick ? `${distance(this.system(cap), this.system(pick.sys)).toFixed(1)} 光年の${pick.name}に入植船を送る` : went ? `${this.target(went.to, went.body).name}へ入植船を送った` : own.length ? `${own[0].name}に入植した` : '候補地のタブから、入植船を送る', pick },
       { done: routed, label: col ? `${col.name}と${this.system(cap).name}を交易路で結ぶ (星系の欄の「交易路」から)` : `入植船が着いたら、${this.system(cap).name}と交易路で結ぶ`, sys: col?.id },
       { done: answered, label: dec ? `届いた要求に返事をする (${this.system(dec.sys).name}。知らせの帯で答えを選ぶ)` : '星系から要求が届いたら、返事をする', sys: dec?.sys },
     ];
