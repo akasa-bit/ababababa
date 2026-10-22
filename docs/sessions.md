@@ -17,7 +17,7 @@
 3. **補正なしで作って測る → 困ったら補正**: 遊びが崩れたら、`docs/game-plan.md` の補正の台帳に 1 行足して `EDITIONS.game` で補正する。「現実的」と「面白い」がぶつかる所は表にして `docs/decisions.md` に足す。
 4. **CI で両方を見る**: 現実の目標と、面白さの代わりの数の両方が大きく崩れていないかを見てからマージする。
 5. **PR は小さく**: 社会・物理の PR と補正の PR を分ける。ブランチを積み重ねない。
-6. **終わったら**: `docs/backlog.md` のその行に「済み (#PR)」、`docs/status/<レーン>.md` を更新する。終わらなかったら残りを `docs/wip/` と状態のファイルに残し、次の回の文の頭に「前のセッションの残りを先に片付けてから」と足す。
+6. **終わったら**: `docs/backlog.md` のその行に「済み (#PR)」、`docs/status/<レーン>.md` を更新し、「## 済んだ回」に回の名前を 1 行足す (例: `- GA1 (#180)`)。終わらなかったら残りを `docs/wip/` と状態のファイルに残し、次の回の文の頭に「前のセッションの残りを先に片付けてから」と足す。
 7. **ユーザーに決めてもらうこと**は、その場で聞かずに `docs/decisions.md` に足す。作業が止まるときだけ、1 つの Artifact でまとめて聞く。
 
 ## 3. 回の一覧
@@ -46,6 +46,7 @@
 | W1 | common | 1 波目の見直し (衝突・取り込み直し・返事待ちで止まった時間を数える) | — | 1 波目が終わったら |
 
 - 同じレーンの回は上から順に 1 本ずつ。GA・SE・FU は同時に動かしてよい (`src/` のフォルダが分かれている)。
+- **始めてよいかは道具が確かめる**: どの文も最初に `node tools/session-check.js <回>` を回し、前に済んでいる必要がある回 (`tools/sessions.json`。同じレーンの前の回と、GA3 ← FU1・DO3 ← GA5 など) がまだなら、「回 GA3 を始めるには、FU1 が済んでいる必要がありますが、まだ済んでいません」と出して止まる。いま始められる回は `node tools/session-check.js --next`。順番を変えるときは `tools/sessions.json` と、この文書の表を一緒に直す。
 - GA4 の委任の報告書 (B-057) は、委任 (`mandate`) の中身が政治のファイル (`politics/`) にあるので、報告の値を作る所は SE と突き合わせる。
 
 ### 2 波目 (1 波目の見直しのあと。W1 で組み直してから決める)
@@ -66,6 +67,7 @@
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 GA1 (画面と最初の体験。評論家のフェーズ 0 の 1)。
+最初に node tools/session-check.js GA1 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-042〜B-045・B-051 をする: 止まった状態で始めて最初の判断 (入植船を 1 隻送る) までは時間を進めない、時代の課題を作戦の手引きにする (別のチュートリアルの画面は作らない。QD-07 = b)、候補地をおすすめ順にする、ホーム画面を「はじめる」1 つにして細かい設定を畳む、文字の最小を 12px にして文字のぶれの既定を「切」にする (QD-08 = a)。
 直すのは src/screen/ の中だけ (時代の課題は screen/eras-score.js)。core を触るときは PR の本文に書く。画面は Xiaomi Pad 8 Pro の横と縦で前と後を撮り、1 つずつ小さな PR にする。CI の面白さの代わりの数 (判断の回数・待つだけの年) がどう動いたかを PR に書く。
 ```
@@ -74,6 +76,7 @@ docs/backlog.md の B-042〜B-045・B-051 をする: 止まった状態で始め
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 GA2 (画面と最初の体験。評論家のフェーズ 0 の 2)。
+最初に node tools/session-check.js GA2 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-048 (知らせの予算: 重大な知らせの数の上限・飢餓と不足を地図の「!」にまとめる・続報を束ねる) と B-046 (入植・交易路の開通・独立・講和で、地図に光の輪を広げる) をする。
 音 (B-047) は QD-09 = b (使用許諾つきの素材を買う)。曲 2〜3 と効果音 10 の候補を、値段・ライセンス・聞ける URL つきの表にして docs/decisions.md に足す (買うのはユーザー)。買ってもらうまでは、音を鳴らす所だけ作り、音は空にしておく。
 直すのは src/screen/ の中だけ。前と後の画面を撮り、1 つずつ小さな PR にする。
@@ -83,6 +86,7 @@ docs/backlog.md の B-048 (知らせの予算: 重大な知らせの数の上限
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 GA3 (画面と最初の体験。評論家のフェーズ 1 の 1)。
+最初に node tools/session-check.js GA3 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-052 (指令・知らせ・艦隊の出発の光が星図の上を球で広がり、「届くまで あと 12 年」が縁で見える)、B-053 (艦隊を最後に見えた位置に置き、今いるかもしれない範囲を淡い雲で描く)、B-056 (指令を送るときに届く年と見込みを出し、届いたら「予想 → 実際」を 1 行で) をする。
 描くのは地図 (src/screen/galaxy-view.js) の中で、値は光の遅れの記録 (known) から作る。known に値を足すときは core を触る小さな変更にして PR に書く。船と戦争の FU1 (光より速く分かる情報をなくす) が動いていたら、その状態のファイルを見て、同じ値を使う。
 ```
@@ -91,6 +95,7 @@ docs/backlog.md の B-052 (指令・知らせ・艦隊の出発の光が星図�
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 GA4 (画面と最初の体験。評論家のフェーズ 1 の 2)。
+最初に node tools/session-check.js GA4 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-054 (100 年ごとに、地球が見ていた歴史と本当の歴史を並べて早回し)、B-055 (0.9c の艦隊の出発が見えたら到着までの秒読みを決めることとして出す)、B-057 (委任した星系が 10 年ごとに何をしたかを光の遅れで報告する)、B-058 (結末の型と原因の内訳) をする。
 委任の報告の値を作る所は政治 (src/politics/) にあるので、docs/status/SE.md に知らせを書いて突き合わせる。画面は src/screen/ の中で。前と後の画面を撮り、1 つずつ小さな PR にする。
 ```
@@ -99,6 +104,7 @@ docs/backlog.md の B-054 (100 年ごとに、地球が見ていた歴史と本�
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 GA5 (画面と最初の体験。同意つきのプレイ記録)。
+最初に node tools/session-check.js GA5 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-060 をする: 同意の画面・記録の中身・消し方。最初に、同意の画面の文と、記録する中身の一覧を表にして docs/decisions.md に足し、1 つの Artifact で見せて決めてもらう。決まったら src/screen/playlog.js に作る。
 記録の形は、道具と検証の DO3 (F01〜F05 を測る道具) が読むので、docs/status/DO.md に形を書いておく。
 ```
@@ -107,6 +113,7 @@ docs/backlog.md の B-060 をする: 同意の画面・記録の中身・消し�
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 SE1 (政治)。
+最初に node tools/session-check.js SE1 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-049 (語り手の出来事の選択肢に、どちらにも代わりの損と得を付けて、明らかな最善をなくす)、B-024 (傀儡国が宗主の敗戦で消える道筋)、B-023 (共同統治の 2 国目の宗主どうしの外交) をする。
 直すのは src/politics/ の中だけ。戦争の終わり (講和) を見る所は船と戦争 (src/ship/war-peace.js) にあるので、呼び出しが要るなら docs/status/FU.md に知らせを書いて突き合わせる。CI の面白さの代わりの数がどう動いたかを PR に書く。
 ```
@@ -115,6 +122,7 @@ docs/backlog.md の B-049 (語り手の出来事の選択肢に、どちらに�
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 SE2 (政治)。
+最初に node tools/session-check.js SE2 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-026 をする: 遅れて届く外交 (同盟・不可侵・交易の協定を足し、どれも届いた所から効く)。交渉の模型 (docs/negotiation.md) の「相手の本当の強さが分からない」を外交にも使う。
 作る前に、協定の種類と効き目の案を表にして docs/decisions.md に足す (止まりそうなら 1 つの Artifact で聞く)。直すのは src/politics/ の中だけ。宣戦と講和の判断に効かせる所は船と戦争と突き合わせる。
 ```
@@ -123,6 +131,7 @@ docs/backlog.md の B-026 をする: 遅れて届く外交 (同盟・不可侵�
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 SE3 (政治)。
+最初に node tools/session-check.js SE3 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-050 をする: 語り手を連作にする (3 段の続き物、続きは光の遅れで届く。種類を 7 から 20 以上へ)。src/politics/story.js の中で。
 連作の種類の案は、作る前に表にして docs/decisions.md に足す。CI の面白さの代わりの数 (判断の回数・待つだけの年) がどう動いたかを PR に書く。
 ```
@@ -131,6 +140,7 @@ docs/backlog.md の B-050 をする: 語り手を連作にする (3 段の続き
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 FU1 (船と戦争)。
+最初に node tools/session-check.js FU1 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-030 (戦争の点数・講和の申し出・船の一覧・集結の命令を、光より速く分からないように、光の遅れに通す。QD-02 = b) と B-027 (AI の国が見積もっている地球の艦隊を見せる) をする。
 直すのは src/ship/ の中 (戦争の画面は ship/military-ui.js・ship/ships-ui.js)。光の遅れの記録 (known) に値を足すときは core を触る小さな変更にして PR に書く。画面と最初の体験の GA3 (光の球・ありうる今) が同じ記録を使うので、足した値を docs/status/GA.md に知らせる。観戦の AI (earthWarYearly) を変えたら tools/strategy.js を合わせ直す。
 ```
@@ -139,6 +149,7 @@ docs/backlog.md の B-030 (戦争の点数・講和の申し出・船の一覧�
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 FU2 (船と戦争)。
+最初に node tools/session-check.js FU2 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 最初に、戦争の多さ (R29) と終わり方 (R14) をいまの main で 30 以上の銀河で測り直す (B-031。node tools/wars-headless.js)。
 そのあと B-034 の艦隊戦 (二乗則と一乗則の間の指数 0.5・偶然を半分・勝つ見込みと損害の内訳を報告書に。docs/proposals/13-battle.md の決まった案) をする。始める前に、QD-04 (光速に近い艦隊を武器にするか) を、釣り合いの案と一緒に表にして 1 つの Artifact で見せて決めてもらう。目標 R16 は作る前に固定する。補正は台帳に載せる。
 ```
@@ -147,6 +158,7 @@ docs/session-start.md の 3 に従って。docs/sessions.md の回 FU2 (船と�
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 DO1 (道具と検証)。
+最初に node tools/session-check.js DO1 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-068 (人間に近い遅れつきのボット。いまのボットは光の遅れなしで判断している) と B-067 (探索で変えられる値に、入植・交易・統治体制の選び方を足す) をする。QD-12 = c (拡張の一強は、このボットで測り直してから構造で直す)。
 直すのは tools/ だけ (ゲーム本体には触らない)。結果は docs/fun.md に足し、拡張の一強がこのボットでも出るかを表にする。
 ```
@@ -155,6 +167,7 @@ docs/backlog.md の B-068 (人間に近い遅れつきのボット。いまの�
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 DO2 (道具と検証)。
+最初に node tools/session-check.js DO2 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-069 (自動対戦で見つかった壊れ: 挑戦「60 星系」「遠征」が届かない・拡張の一強・何もしないとお金が山になる) を、DO1 のボットでいまの main で測り直し、直す所を持ち主のレーンごとの表にする (直すのは持ち主。QD-11 = c・QD-12 = c)。
 そのあと B-071: 面白さの物差しを F 系の目標にする (番号は docs/registry.md の道具と検証の範囲から。目標の変更の PR で固定)。CI の表で大きく悪くなる PR を止める線を決めて、docs/parallel.md の 4 の 3 に書く。
 ```
@@ -163,6 +176,7 @@ docs/backlog.md の B-069 (自動対戦で見つかった壊れ: 挑戦「60 星
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 DO3 (道具と検証)。GA5 (同意つきのプレイ記録) のあとで。
+最初に node tools/session-check.js DO3 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-065 をする: プレイ記録から F01〜F05 と、待つだけの時間・判断の数を、人の遊びで測る道具。記録の形は docs/status/DO.md と src/screen/playlog.js。直すのは tools/ だけ。
 ```
 
@@ -170,6 +184,7 @@ docs/backlog.md の B-065 をする: プレイ記録から F01〜F05 と、待�
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 SO1 (外向き)。
+最初に node tools/session-check.js SO1 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-078 (store/ の下書きを今のゲームと突き合わせる: 物理・第三次産業と研究・従属国の型が入った)、B-079 (スクリーンショットを撮るためのセーブと、カプセルの案。QD-18 = CSS 1280×720 の 1.5 倍・QD-19 = 星図に文字だけ)、B-074 (固有名詞の一覧と用語集)、B-088 (字体を包装の側で同梱。QD-20) をする。
 直すのは desktop/ と store/ と docs/ だけ (src/ には触らない)。用語集は翻訳の本番 (T1) が使う形にする。
 ```
@@ -178,6 +193,7 @@ docs/backlog.md の B-078 (store/ の下書きを今のゲームと突き合わ�
 
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 SO2 (外向き)。
+最初に node tools/session-check.js SO2 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 docs/backlog.md の B-086 (Windows 版を Windows の上で動かして確かめる。CI に Windows の機械を足す) と B-085 (Steam Input の既定の設定のファイル。desktop/controller.md の案 A) をする。
 CI に足すときは道具と検証の決まり (docs/parallel.md の 7) に従い、落ちたら止めるか参考にするかを PR に書く。
 ```
@@ -186,6 +202,7 @@ CI に足すときは道具と検証の決まり (docs/parallel.md の 7) に従
 
 ```text
 docs/session-start.md の 3 に従って。docs/restart.md の 7 の 2 (1 波目の見直し) をする。ほかのセッションは動いていない。
+最初に node tools/session-check.js W1 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
 1 波目の PR で、取り込み直しと衝突の回数 (どのファイル・どのレーンどうし)、core を触った回数、返事待ちで止まった時間を数え、docs/conflicts.md の前の数と並べて docs/status/common.md に書く。
 組み方 (レーン・フォルダの持ち主・src に触る 3 レーン) を直す案と、2 波目の 3 レーンの案を作り、docs/decisions.md の返事待ちと一緒に 1 つの Artifact で見せて決めてもらう。返事を docs/requests/ に残し、docs/sessions.md の 2 波目を書いて PR にする。
 ```

@@ -96,6 +96,11 @@ function play(sim, { seed, years = 150, nations = 6, strategy = null, rankYear =
   g.addDecision = (dec) => { asks++; return origAdd(dec); };
   const origConf = g.startConference.bind(g);
   g.startConference = (loser, winners, from) => { const n = g.conferences.length; const r = origConf(loser, winners, from); if (g.conferences.length > n && g.conferences[g.conferences.length - 1].bids.some((b) => b.realm === cap && !b.picks)) asks++; return r; };
+  // 会議の知らせが光速で首都に届いてから開く会議 (B-030。届く途中は confSent。前の版にはない)
+  if (g.conferencesArrive) {
+    const origArrive = g.conferencesArrive.bind(g);
+    g.conferencesArrive = () => { const n = g.conferences.length; const r = origArrive(); for (const c of g.conferences.slice(n)) if (c.bids.some((b) => b.realm === cap && !b.picks)) asks++; return r; };
+  }
   const offersSeen = new Set();
   // 2. 待つだけの年: プレイヤーの国の星系での出来事も、判断を求められることもなかった年
   let lastEv = Math.max(0, ...g.events.map((e) => e.id));
