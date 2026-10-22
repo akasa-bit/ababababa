@@ -30,7 +30,7 @@ const BATTLE_RATE = 0.6; // 艦隊戦で1艦隊が1年に壊滅させる敵艦�
 const REALM_COLORS = ['#ff9f43', '#ee5aa8', '#a3e635', '#f5d142', '#60a5fa', '#c084fc', '#f87171', '#34d399'];
 const CMD_LABEL = {
   peace: '講和の申し入れ', send: '入植船を送る', candsend: '入植船を送る', upgrade: '施設の拡張', route: '交易路の開設', route2: '交易路の開設', uproute: '交易路の拡張',
-  warship: '艦隊の編成', fleet: '艦隊の派遣', redirect: '艦隊の進路変更', fleetclear: '艦隊への指令の取り消し', gift: '先住民への贈り物', integrate: '先住民を市民に', conquer: '先住民の制圧', enslave: '奴隷化',
+  warship: '艦隊の編成', fleet: '艦隊の派遣', strike: '光速の一撃', redirect: '艦隊の進路変更', fleetclear: '艦隊への指令の取り消し', gift: '先住民への贈り物', integrate: '先住民を市民に', conquer: '先住民の制圧', enslave: '奴隷化',
   slavetype: '奴隷の扱いの変更', liberate: '先住民の解放', train: '歩兵の訓練', troopsend: '歩兵の派遣', outpost: '採掘基地の建設', focus: '方針の変更',
   rule: '統治体制の変更', bundle: '約定の交渉', jointcut: '共同統治の分け前', depose: '統治者の任免', fiscal: '財政の変更', mandate: '委任方針の変更', governor: '総督の方針の変更', inspect: '視察団', decide: '返事', policy: '国家方針の変更',
 };

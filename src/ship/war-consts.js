@@ -25,8 +25,9 @@ const TREATY = { vassal: 70, cash: 1000, cashPts: 5, cashMax: 10, white: 5, year
 // 受け入れる線 L = 見込みの結果 − 費用 + 力の移り変わり。L(r) + L(e) ≤ 0 なら、その真ん中 x = (L(r) − L(e)) ÷ 2 で講和する。
 // |x| < TREATY.white で白紙、capitulate 以上で全面降伏、そのあいだは x を持ち点にした講和会議。
 // 宣戦: 平時の国は、warDist 光年以内の独立国ごとに、開戦したときの L (戦勝点 0) が declare を超えれば、年 declareChance の確率で宣戦する
-// 値は、国家間戦争の多さ (COW から計算した、国 100 年あたり 2.34 回。目標にする) に合わせて選んだ (docs/negotiation.md の 3)。R14 (確認用) には合わせていない
-const BARGAIN = { on: true, sigma0: 0.8, sigmaAge: 0.01, learn: 30, swing: 60, cost: 0.2, costEx: 0.02, horizon: 5, shift: 1, shiftYears: 10, capitulate: 90, declare: 20, declareChance: 0.08, warDist: 25 };
+// 値は、国家間戦争の多さ (COW から計算した、国 100 年あたり 2.34 回。目標にする) に合わせて選んだ (docs/negotiation.md の 3)。R14 (確認用) には合わせていない。
+// declareChance は回 FU2 で 0.08 → 0.05 (光の遅れ・艦隊戦・光速の一撃のあと、32 の銀河 × 300 年で R29 が 3.07 → 2.45)
+const BARGAIN = { on: true, sigma0: 0.8, sigmaAge: 0.01, learn: 30, swing: 60, cost: 0.2, costEx: 0.02, horizon: 5, shift: 1, shiftYears: 10, capitulate: 90, declare: 20, declareChance: 0.05, warDist: 25 };
 const PEACE = { minYears: 3, sueEx: 60, sueWs: -50, stalemate: 0.35, stalemateHalf: 4, offerEvery: 5, offerYears: 10, base: 0.15, loseWs: 80, exLose: 120, winBase: 0.05, exWin: 100, winWs: 400, min: 0.03, max: 0.95 };
 // 艦隊戦 (B-034。HOI4 の海戦を元にした形。docs/proposals/13-battle.md・docs/requests/2026-10-22-FU.md の FU-2)。
 // 1 艦隊 = 耐久 (hp) と組織力 (org) を持つ 1 つの単位。1 年を rounds 回の撃ち合いに分け、戦っている艦は毎回 1 発撃つ:
@@ -38,6 +39,13 @@ const PEACE = { minYears: 3, sueEx: 60, sueWs: -50, stalemate: 0.35, stalemateHa
 // 攻囲の住民は年 siegeDead ずつ亡くなる (補給を断たれた星系の飢えと病)。
 // pos と luck は補正 (台帳の C27・C28)。版の値 ED.battle で上書きする
 const BATTLE = { rounds: 24, hit: 0.2, dmg: 0.45, org: 0.55, orgRet: 0.5, retRounds: 2, pos: 0.3, luck: 1, morale: 1.15, crew: 1e5, siegeDead: 0.01, reports: 20, ...(ED.battle || {}) };
+// 光速に近い艦隊の一撃 (B-035。QD-04 = b): 減速せずに星系へ突っ込む艦隊。0.9c の 1 艦隊の運動エネルギー (FLEET_KE) は惑星の表面を焼くので、
+// 1 艦隊で 1 つの天体の入植地を焼く (人口の survive だけが地下に残り、施設・備蓄・歩兵はなくなる)。艦隊は使い切る。光の遅れで、守る側には着く直前まで見えず、止められない。
+// 釣り合い: 使った国の悪名 (atrocity) が増え、知らせが光速で届いた国は、使った国へ宣戦する (撃たれた国は retaliateHit、reach 光年以内の国は retaliate の確率)。
+// 使った国の家臣は、知らせが届くと忠誠度が loyalty 下がる。人間の国の悪名 (先住民の友好度) は infamy 増える。
+// AI の国は、戦争で大きく負けていて (首都に届いた戦勝点が desperate 以下)、首都に 2 艦隊以上いれば、年 aiChance の確率で、相手の首都 (首都に届いた記録で、まだ相手の国のもの) へ 1 艦隊を撃つ。
+// 人間の国の星系は、ほかの攻め方と同じく狙わない。ここまで負ける前に講和することが多いので、AI の一撃はまれ (6 か国の 12 の銀河 × 300 年で 31 回。1 つの銀河の 300 年で 2〜3 回)
+const STRIKE = { survive: 0.001, retaliate: 0.6, retaliateHit: 1, reach: 40, loyalty: 20, infamy: 50, desperate: -20, aiChance: 0.5, keep: 200 };
 // 戦死者の数の書き方 (人)
 function fmtDead(n) { return n >= 1e8 ? `${(n / 1e8).toFixed(1)} 億人` : n >= 1e4 ? `${Math.round(n / 1e4)} 万人` : `${Math.round(n)} 人`; } // 出来事の文にも入るので、端末ごとに違う toLocaleString は使わない
 // 艦隊戦の報告の 1 行 (battleReports の 1 つから)
@@ -57,4 +65,9 @@ saveField('confSent', (game) => (game.confSent.length ? game.confSent : undefine
 saveField('battleReports', (game) => (game.battleReports.length ? game.battleReports : undefined), {
   init: (game) => { game.battleReports = []; },
   read: (game, d) => { game.battleReports = Array.isArray(d.battleReports) ? d.battleReports.filter((r) => r && Number.isFinite(r.sys)).slice(0, BATTLE.reports) : []; },
+});
+// 光速の一撃の記録 (B-035): { id, year, sys (撃たれた星系), by (撃った国), hit (撃たれた国), dead, told: [知らせが届いて応じた国・星系] }。STRIKE.keep 年で捨てる
+saveField('strikes', (game) => (game.strikes.length ? game.strikes : undefined), {
+  init: (game) => { game.strikes = []; },
+  read: (game, d) => { game.strikes = Array.isArray(d.strikes) ? d.strikes.filter((x) => x && Number.isFinite(x.sys) && Number.isFinite(x.year)) : []; },
 });

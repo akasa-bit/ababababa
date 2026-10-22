@@ -120,6 +120,7 @@
   }
   // 年 1 回: 戦っている国は疲れ、平和な国は回復する
   exhaustionYearly() {
+    this.strikesYearly(); // 光速の一撃の知らせ (ship/strike.js)
     const roots = new Set([...this.colonizedSystems().map((x) => this.realmOf(x.id)), ...Object.keys(this.exhaustion).map(Number)]);
     for (const r of roots) {
       if (!this.isColonized(r) || this.realmOf(r) !== r) { delete this.exhaustion[r]; continue; }
@@ -163,6 +164,7 @@
   // 人間の国は 3 年のうちに条件を選ぶ (選ばなければ自動で選ぶ)。戦争は会議が開いた時点で終わる
   startConference(loser, winners, from = loser) {
     for (const w of winners) this.endWar(w.realm, loser, from);
+    if (winners.length) { const top = winners.reduce((a, b) => (b.pts > a.pts ? b : a)); this.realmDefeated(loser, top.realm); } // 負けた国の傀儡国は勝った国の家臣へ (政治。B-024)
     const bids = winners.filter((w) => w.pts >= 1).map((w) => ({ realm: w.realm, pts: Math.min(100, Math.round(w.pts)), picks: null }));
     if (!bids.length) return;
     const c = { id: this.nextShipId++, loser, year: this.year, until: this.year + TREATY.years, from, bids };

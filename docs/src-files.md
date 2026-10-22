@@ -66,6 +66,7 @@
 | `screen/eras-score.js` | 画面と最初の体験 | 109 | Game: 時代の課題・挑戦・点数・終わり (手引きにする所。QD-07) |
 | `politics/earth-politics.js` | 政治 | 32 | Game: 主人の関与・地球の政治の自動 |
 | `ship/war-ai.js` | 船と戦争 | 385 | Game: 宣戦・講和の申し入れ・艦隊の到着・艦隊戦・包囲・海賊の防衛・AI の軍備と交渉・AI の国の年ごとの判断 |
+| `ship/strike.js` | 船と戦争 | 95 | Game: 光速に近い艦隊の一撃 (突入・焼く・知らせと報復・AI の一撃)。回 FU2 で足した |
 | `economy/colonize.js` | 経済 | 271 | Game: 調査と先住民・入植の向き不向き・資材の手配・建設の注文 |
 | `ship/settler.js` | 船と戦争 | 46 | Game: 入植船の費用と便・入植の打ち上げ |
 | `economy/colonies-routes.js` | 経済 | 90 | Game: 入植地を足す・施設の強化・交易路 |
