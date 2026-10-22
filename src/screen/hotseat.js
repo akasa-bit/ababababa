@@ -221,7 +221,12 @@ const setSpeed = (v, keepSkip = false) => {
 // 新しいゲームは止まった状態で始め、最初の判断 (入植船を 1 隻送る) が済んだら時間を動かす (B-042)。
 // 観戦とネット対戦では待たない。速さのボタンで自分で動かしてもよい
 function pauseForFirstMove() {
-  if (app.game.spectate || Net.on) return;
+  const g = app.game;
+  if (g.spectate || Net.on) return;
+  // 始めた瞬間 (1 月 1 日) はスウォームの蓄えが 0 J で、恒星間の入植船が「エネルギー不足」で送れない。
+  // 手引きの行き先に送れるようになるまで、1 日ずつ進めてから止める (長くて 30 日。ふつうは 1 日)
+  const p = g.guidePick();
+  for (let i = 0; i < 30 && p && g.procure(g.shipCost(p.kind, g.cap, p.sys), g.cap).why; i++) g.advance(1 / 365);
   app.awaitFirst = true;
   setSpeed(0);
   firstMoveNote('時間は止まっている。最初の入植船を送ると動きはじめる (候補地のタブから送れる)');
