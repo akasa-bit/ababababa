@@ -407,9 +407,26 @@
     const shift = BARGAIN.shift * Math.max(0, this.seenGrowth(r, e) - this.seenGrowth(r, r)) * 100;
     return expect - cost + shift;
   }
-  // AI の国どうしの講和の交渉: 受け入れる線が重なれば、その真ん中で講和する (from = 結ばれる星系)
-  bargain(r, e, from = r) {
-    const lr = this.reservation(r, e), le = this.reservation(e, r);
+  // AI の国どうしの講和の交渉 (B-167): r が自分の受け入れる線を添えて申し入れを送り、光速で e の首都に届いてから e が答える。
+  // 届く途中の申し入れは、同じ戦争・同じ送り手で 1 つまで
+  sendBargain(r, e, key) {
+    if (this.bargainSent.some((o) => o.key === key && o.from === r)) return;
+    this.bargainSent.push({ key, from: r, to: e, l: this.reservation(r, e), at: this.year + this.sysDist(r, e) });
+  }
+  // 届いた申し入れに答える (年 1 回。realmsYearly の始め)。答えは届いた首都で決まり、講和はそこで結ばれる
+  bargainArrive() {
+    if (!this.bargainSent.length) return;
+    const due = this.bargainSent.filter((o) => o.at <= this.year + 1e-9);
+    this.bargainSent = this.bargainSent.filter((o) => o.at > this.year + 1e-9);
+    for (const o of due) {
+      const alive = (x) => this.isColonized(x) && this.realmOf(x) === x;
+      if (this.realmWars[o.key] === undefined || !alive(o.from) || !alive(o.to)) continue;
+      this.bargain(o.from, o.to, o.to, o.l);
+    }
+  }
+  // 講和の交渉: 受け入れる線が重なれば、その真ん中で講和する (from = 結ばれる星系、lr = 申し入れた国の線。申し入れに添えた古い値)
+  bargain(r, e, from = r, lr = this.reservation(r, e)) {
+    const le = this.reservation(e, r);
     // 大きく勝っている国が降伏を求め (WAREND)、相手に勝てる見込みがなければ、全面降伏 (持ち点 100) の講和会議
     if ((lr >= 100 && le <= WAREND.yieldAt) || (le >= 100 && lr <= WAREND.yieldAt)) {
       const [w, l] = lr >= 100 ? [r, e] : [e, r];
@@ -434,6 +451,7 @@
     for (const k of Object.keys(this.shipHist)) if (!this.isColonized(Number(k)) || this.realmOf(Number(k)) !== Number(k)) delete this.shipHist[k];
   }
   realmsYearly() {
+    this.bargainArrive(); // 届いた AI どうしの講和の申し入れ (B-167)
     this.cleanWars();
     const roots = this.colonizedSystems().map((x) => x.id).filter((r) => !this.isHuman(r) && this.realmOf(r) === r && this.gov(r).independent);
     for (const root of roots) {
@@ -464,7 +482,7 @@
               this.postPeaceOffer(key, root, e); // 光速で相手の首都に届いてから見える
               this.event('politics', root, `${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScoreAt(root, e, root)}・相手の戦争疲弊 ${Math.round(this.exhaustion[root] || 0)})`, true);
             }
-          } else if (this.aiKnowsWar(e, key) && this.bargain(root, e, root)) break; // 相手も開戦を知っていれば交渉できる
+          } else if (this.aiKnowsWar(e, key)) this.sendBargain(root, e, key); // 相手も開戦を知っていれば、申し入れを送る (届いてから相手が答える)
           continue;
         }
         const ours = this.realmShips(root), theirs = this.seenShips(root, e), years = this.year - this.aiWarSince(root, key); // 知ってからの年数

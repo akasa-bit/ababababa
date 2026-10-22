@@ -41,7 +41,7 @@
       this.garrison[f.to] = 0;
     }
     this.warDead(hit, owner, dead);
-    this.exhaust(hit, EXHAUST.system);
+    this.exhaustAt(hit, EXHAUST.system, f.to);
     if (this.isHuman(owner)) this.infamy += STRIKE.infamy;
     this.strikes.push({ id: this.nextShipId++, year: this.year, sys: f.to, by: owner, hit, dead, told: [] });
     this.event('battle', f.to, `${this.realmName(owner)}の ${f.n} 艦隊が光速に近い速さのまま ${this.system(f.to).name} に突入し、${bodies.length} つの天体の地表を焼いた (死者 ${fmtDead(dead)})`, false);

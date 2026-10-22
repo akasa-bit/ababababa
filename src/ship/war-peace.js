@@ -73,19 +73,26 @@
     }
   }
   // --- 戦争疲弊・戦勝点 ---
+  // 損失による戦争疲弊は、損失の知らせが国の首都に光速で届いてから増える (B-167)。sys = 損失の起きた星系 (なければすぐ)
+  exhaustAt(root, v, sys) {
+    if (root === undefined || root === null) return;
+    const at = sys === undefined || sys === null ? this.year : this.year + this.sysDist(sys, root);
+    if (at <= this.year + 1e-9) this.exhaust(root, v);
+    else this.exhaustSent.push({ r: root, v, at });
+  }
   exhaust(root, v) { if (root !== undefined && root !== null) this.exhaustion[root] = clamp((this.exhaustion[root] || 0) + v, 0, 100); }
   // 艦隊戦で沈んだ艦隊を数える (by = 沈めた国、lost = 沈められた国、sys = 戦った星系)
   warLoss(by, lost, n, sys) {
     if (n <= 0) return;
     const st = this.warStats[this.warKey(by, lost)];
     if (st) { st.k[by] = (st.k[by] || 0) + n; st.lastEv = this.year; this.warNote(st, sys, by, 'k', n); }
-    this.exhaust(lost, EXHAUST.ship * n);
+    this.exhaustAt(lost, EXHAUST.ship * n, sys);
   }
   // 星系を攻め落とした
   warTake(by, lost, sys) {
     const st = this.warStats[this.warKey(by, lost)];
     if (st) { st.t[by] = (st.t[by] || 0) + 1; st.lastEv = this.year; this.warNote(st, sys, by, 't', 1); }
-    this.exhaust(lost, EXHAUST.system);
+    this.exhaustAt(lost, EXHAUST.system, sys);
   }
   // 戦果の知らせ [年, 星系, 国, 'k' | 't', 数]。知らせは戦った星系から光速で広がる (B-030)。
   // どこからも見えるほど古くなった知らせは捨てる (合計の k・t には入っている)
@@ -120,6 +127,11 @@
   }
   // 年 1 回: 戦っている国は疲れ、平和な国は回復する
   exhaustionYearly() {
+    if (this.exhaustSent.length) { // 届いた損失の知らせ (B-167)
+      const due = this.exhaustSent.filter((x) => x.at <= this.year + 1e-9);
+      this.exhaustSent = this.exhaustSent.filter((x) => x.at > this.year + 1e-9);
+      for (const x of due) if (this.isColonized(x.r) && this.realmOf(x.r) === x.r) this.exhaust(x.r, x.v);
+    }
     this.strikesYearly(); // 光速の一撃の知らせ (ship/strike.js)
     this.lapseYearly();
     const roots = new Set([...this.colonizedSystems().map((x) => this.realmOf(x.id)), ...Object.keys(this.exhaustion).map(Number)]);
@@ -140,13 +152,14 @@
     this.peaceOffers = this.peaceOffers.filter((o) => o.until > this.year && this.realmWars[o.key] !== undefined);
     this.peaceSent = this.peaceSent.filter((o) => this.realmWars[o.key] !== undefined);
   }
-  // 立ち消え (WAREND.lapse): 両方の首都が開戦を知ってから、戦果が lapse 年動かない戦争は、講和会議を開かずに終わる。知らせは開戦の知らせと同じ星系から広がる
+  // 立ち消え (WAREND.lapse): 両方の首都が開戦を知って講和の申し入れが行き来できたあと、戦果が lapse 年動かない戦争は、講和会議を開かずに終わる。知らせは開戦の知らせと同じ星系から広がる
   lapseYearly() {
     for (const key of Object.keys(this.realmWars)) {
       const st = this.warStats[key];
       const [a, b] = key.split('|').map(Number);
       const news = this.warNews[key];
-      const known = news ? news.year + Math.max(this.sysDist(news.from, a), this.sysDist(news.from, b)) : this.realmWars[key];
+      // 両方が開戦を知り、講和の申し入れが首都どうしを行って戻るだけの時間 (距離の 2 倍) がたってから数える (B-167)
+      const known = (news ? news.year + Math.max(this.sysDist(news.from, a), this.sysDist(news.from, b)) : this.realmWars[key]) + 2 * this.sysDist(a, b);
       if (this.year - Math.max(known, st?.lastEv ?? -Infinity) < WAREND.lapse) continue;
       const from = this.warNews[key]?.from ?? a;
       this.endWar(a, b, from);
@@ -183,6 +196,9 @@
     const bids = winners.filter((w) => w.pts >= 1).map((w) => ({ realm: w.realm, pts: Math.min(100, Math.round(w.pts)), picks: null }));
     if (!bids.length) return;
     const c = { id: this.nextShipId++, loser, year: this.year, until: this.year + TREATY.years, from, bids };
+    // 条件のもとにする負けた国の様子は、会議を開いた星系に届いている記録で決める (B-167): 星系は届いている記録で負けた国のもの、賠償金は開いた時点の資金
+    c.sys = this.galaxy.systems.filter((x) => x.id !== loser && this.seenBy(from, x.id)?.[1] === loser).map((x) => x.id);
+    c.cash = Math.min(TREATY.cashMax, Math.floor(Math.max(0, this.gov(loser).credits) / TREATY.cash));
     for (const b of c.bids) if (!this.isHuman(b.realm)) b.picks = this.aiTreatyPicks(c, b);
     this.event('politics', from, `${this.realmName(loser)}との講和会議が開かれた (${c.bids.map((b) => `${this.realmName(b.realm)} 持ち点 ${b.pts}`).join('・')})`, c.bids.some((b) => this.isHuman(b.realm)) || this.isHuman(loser));
     if (c.bids.every((b) => b.picks)) return this.resolveConference(c);
@@ -204,12 +220,12 @@
     const l = c.loser;
     const out = [];
     if (c.bids.length === 1) out.push({ id: 'v', label: `${this.realmName(l)}を従属させる (配下の星系ごと)`, cost: TREATY.vassal });
-    for (const x of this.realmSystems(l)) {
-      if (x.id === l) continue;
+    const systems = c.sys ? c.sys.map((id) => this.system(id)) : this.realmSystems(l).filter((x) => x.id !== l); // 前の版の会議は、いまの様子で
+    for (const x of systems) {
       const pop = this.coloniesIn(x.id).reduce((k, col) => k + col.pop, 0);
       out.push({ id: `s${x.id}`, sys: x.id, label: `${x.name} を割譲させる`, cost: 5 + Math.min(25, Math.round(Math.sqrt(pop) / 4)) });
     }
-    const cash = Math.min(TREATY.cashMax, Math.floor(Math.max(0, this.gov(l).credits) / TREATY.cash));
+    const cash = c.cash ?? Math.min(TREATY.cashMax, Math.floor(Math.max(0, this.gov(l).credits) / TREATY.cash));
     for (let i = 1; i <= cash; i++) out.push({ id: `c${i}`, label: `賠償金 ${fmtAmt(TREATY.cash)} cr (${i} 口目)`, cost: TREATY.cashPts });
     return out;
   }
