@@ -15,9 +15,10 @@ const EDITIONS = {
   // physics = 物理の切り替え (docs/physics.md の 10 の P6。2026-10-21 にゲーム版にも入れた): shield = 星間の気体と宇宙線の遮蔽 (船の質量に足す)、
   //   accel = 加速と減速にかかる時間、flare = M 型星のフレアと惑星の地表の被曝 (true = 入植適性も変える。'show' = 惑星の欄に出すだけで適性は変えない)、
   //   pv = フレアの陽子でスウォームの太陽電池が傷む (ゲーム版は保留。docs/physics.md の P10)。
-  //   shield・accel・pv は試合ごとにセーブに入る (Game.physics。ないセーブは物理なしのまま続ける = PHYSICS_OFF)。flare は銀河を作るときに効くので版の値を使う
-  game: { generation: 100, hazardBase: 0.6, delayExp: 0.33, regimeDelay: true, garrisonWar: true, growthCap: Infinity, declareDamp: true, physics: { shield: true, accel: true, flare: 'show', pv: false } },
-  sim: { generation: 28, hazardBase: 1.3, delayExp: -0.15, regimeDelay: false, garrisonWar: false, growthCap: 0.042, declareDamp: false, physics: { shield: true, accel: true, flare: true, pv: true } },
+  //   battle = 艦隊戦の補正 (BATTLE の pos・luck。ゲーム版は 2 倍の兵力で 75% 勝ち・損害の指数 0.5、シミュレーション版は CDB90 の値。台帳の C27・C28)
+//   shield・accel・pv は試合ごとにセーブに入る (Game.physics。ないセーブは物理なしのまま続ける = PHYSICS_OFF)。flare は銀河を作るときに効くので版の値を使う
+  game: { generation: 100, hazardBase: 0.6, delayExp: 0.33, regimeDelay: true, garrisonWar: true, growthCap: Infinity, declareDamp: true, physics: { shield: true, accel: true, flare: 'show', pv: false }, battle: { pos: 0.3, luck: 1 } },
+  sim: { generation: 28, hazardBase: 1.3, delayExp: -0.15, regimeDelay: false, garrisonWar: false, growthCap: 0.042, declareDamp: false, physics: { shield: true, accel: true, flare: true, pv: true }, battle: { pos: 1.6, luck: 1.6 } },
 };
 const ED = EDITIONS[EDITION];
 const PHYSICS_OFF = { shield: false, accel: false, flare: false, pv: false }; // 物理なし (物理を入れる前のセーブ)

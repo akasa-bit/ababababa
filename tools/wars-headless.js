@@ -15,7 +15,7 @@ function measure(file) {
     let mode = null, inIndep = false;
     wrap('declareIndependence', (orig, ...a) => { inIndep = true; try { return orig(...a); } finally { inIndep = false; } });
     wrap('recordSnapshots', (orig) => { realmYears += new Set(g.colonizedSystems().map((x) => g.realmOf(x.id))).size; return orig(); });
-    const finish = (key, how) => { const w = wars.get(key); if (!w) return; wars.delete(key); done.push({ dur: g.year - w.start, how }); };
+    const finish = (key, how) => { const w = wars.get(key); if (!w) return; wars.delete(key); done.push({ dur: g.year - w.start, how, dead: g.warStats[key]?.dead || 0 }); };
     wrap('beginWar', (orig, by, target, from) => { const r = orig(by, target, from); wars.set(g.warKey(by, target), { start: g.year }); if (!inIndep) interstate++; return r; });
     wrap('makePeace', (orig, a, c, from) => { mode = Math.abs(g.warScore(a, c)) < 5 ? 'white' : 'treaty'; const r = orig(a, c, from); mode = null; return r; });
     wrap('startConference', (orig, loser, winners, from) => { const m = mode || (winners.length && winners[0].pts >= 100 ? 'capitulation' : 'treaty'); for (const w of winners) finish(g.warKey(w.realm, loser), m); return orig(loser, winners, from); });
@@ -30,8 +30,23 @@ function measure(file) {
   const durs = ended.map((d) => d.dur).sort((a, b) => a - b);
   const med = durs[Math.floor(durs.length / 2)] || 0, mean = durs.reduce((k, x) => k + x, 0) / (durs.length || 1);
   const share = (h) => ended.filter((d) => d.how === h).length / (ended.length || 1);
-  return { r19: (2 * interstate / (realmYears || 1)) * 100, per100y: (done.length / gamesYears) * 100, ended: ended.length, ongoing: done.length - ended.length, meanYears: mean, medianYears: med, meanOverMedian: med ? mean / med : null,
+  const r15 = powerTail(done.map((d) => d.dead).filter((x) => x > 0));
+  return { r15, deadWars: done.filter((d) => d.dead > 0).length, r19: (2 * interstate / (realmYears || 1)) * 100, per100y: (done.length / gamesYears) * 100, ended: ended.length, ongoing: done.length - ended.length, meanYears: mean, medianYears: med, meanOverMedian: med ? mean / med : null,
     white: share('white'), treaty: share('treaty'), capitulation: share('capitulation'), conquest: share('conquest') };
+}
+// 戦死者数の裾のべき指数 (R15。Clauset–Shalizi–Newman の方法の連続版: xmin ごとに最尤の α を出し、KS 距離が一番小さい xmin を選ぶ。p 値のブートストラップはしない)
+function powerTail(xs) {
+  xs = xs.slice().sort((a, b) => a - b);
+  let best = null;
+  for (const xmin of [...new Set(xs)]) {
+    const tail = xs.filter((x) => x >= xmin);
+    if (tail.length < 10) break;
+    const a = 1 + tail.length / tail.reduce((k, x) => k + Math.log(x / xmin), 0);
+    let D = 0;
+    tail.forEach((x, i) => { D = Math.max(D, Math.abs((i + 1) / tail.length - (1 - (x / xmin) ** (1 - a)))); });
+    if (!best || D < best.D) best = { alpha: a, xmin, n: tail.length, D };
+  }
+  return best;
 }
 const rows = [['この版', measure(src)], ...(baseSrc && baseSrc !== '-' ? [['比べる元', measure(baseSrc)]] : [])];
 const pc = (x) => `${(x * 100).toFixed(0)}%`;
@@ -39,3 +54,6 @@ const f = (x) => (typeof x === 'number' ? (Math.abs(x) < 1 && x !== 0 ? `${(x * 
 console.log('| | 国 100 年あたりの国家間戦争 (R29: COW 2.34、±30% は 1.64〜3.04) | 100 年あたりの戦争 | 終わった / 続いている | 長さの平均 / 中央値 (年) | 平均 ÷ 中央値 (R13: 1.80〜3.33) | 白紙講和 | 条約 | 降伏 | 滅亡 |');
 console.log('|---|---|---|---|---|---|---|---|---|---|');
 for (const [n, r] of rows) console.log(`| ${n} | ${r.r19.toFixed(2)} | ${f(r.per100y)} | ${r.ended} / ${r.ongoing} | ${f(r.meanYears)} / ${f(r.medianYears)} | ${r.meanOverMedian ? r.meanOverMedian.toFixed(2) : '—'} | ${pc(r.white)} | ${pc(r.treaty)} | ${pc(r.capitulation)} | ${pc(r.conquest)} |`);
+console.log('\n| | R15 戦死者数の裾のべき指数 α (COW 1.55、合格 1.25〜1.85) | 裾の始まり xmin (人) | 裾の戦争の数 | KS 距離 | 死者の出た戦争 |');
+console.log('|---|---|---|---|---|---|');
+for (const [n, r] of rows) console.log(`| ${n} | ${r.r15 ? r.r15.alpha.toFixed(2) : '—'} | ${r.r15 ? Math.round(r.r15.xmin) : '—'} | ${r.r15 ? r.r15.n : '—'} | ${r.r15 ? r.r15.D.toFixed(3) : '—'} | ${r.deadWars} |`);

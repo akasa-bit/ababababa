@@ -28,6 +28,22 @@ const TREATY = { vassal: 70, cash: 1000, cashPts: 5, cashMax: 10, white: 5, year
 // 値は、国家間戦争の多さ (COW から計算した、国 100 年あたり 2.34 回。目標にする) に合わせて選んだ (docs/negotiation.md の 3)。R14 (確認用) には合わせていない
 const BARGAIN = { on: true, sigma0: 0.8, sigmaAge: 0.01, learn: 30, swing: 60, cost: 0.2, costEx: 0.02, horizon: 5, shift: 1, shiftYears: 10, capitulate: 90, declare: 20, declareChance: 0.08, warDist: 25 };
 const PEACE = { minYears: 3, sueEx: 60, sueWs: -50, stalemate: 0.35, stalemateHalf: 4, offerEvery: 5, offerYears: 10, base: 0.15, loseWs: 80, exLose: 120, winBase: 0.05, exWin: 100, winWs: 400, min: 0.03, max: 0.95 };
+// 艦隊戦 (B-034。HOI4 の海戦を元にした形。docs/proposals/13-battle.md・docs/requests/2026-10-22-FU.md の FU-2)。
+// 1 艦隊 = 耐久 (hp) と組織力 (org) を持つ 1 つの単位。1 年を rounds 回の撃ち合いに分け、戦っている艦は毎回 1 発撃つ:
+// 当たる確率 = hit × 位置取り × 戦機 × 兵站と国の補正 × (0.5 + 0.5 × 自分の組織力) (最大 0.95)。当たった艦は耐久を dmg、組織力を org (÷ 士気) ずつ (それぞれ 0.5〜1.5 倍の幅で) 失う。
+// 耐久が 0 で沈む。組織力が orgRet を切った艦は退き始め、retRounds 回のあいだ撃たれながら離れる (撃ち返さない)。
+// 位置取り = 1 ÷ (1 + pos × max(0, 自分の戦っている艦 ÷ 相手の − 1)): 大きすぎる艦隊はまとまって動けない (HOI4 の positioning)。数の効きを二乗則より弱める。
+// 戦機 = exp(luck × 正規乱数)・士気 = exp(morale × 正規乱数): 戦いごとに両軍に引く (索敵・先に撃つ側・指揮)。勝ち負けの偶然。
+// どちらかの戦っている艦がいなくなれば終わり。沈んだ艦の乗員 (crew 人) を戦死者に数える (仮の値。B-033 の船の設計で差し替える)。
+// 攻囲の住民は年 siegeDead ずつ亡くなる (補給を断たれた星系の飢えと病)。
+// pos と luck は補正 (台帳の C27・C28)。版の値 ED.battle で上書きする
+const BATTLE = { rounds: 24, hit: 0.2, dmg: 0.45, org: 0.55, orgRet: 0.5, retRounds: 2, pos: 0.3, luck: 1, morale: 1.15, crew: 1e5, siegeDead: 0.01, reports: 20, ...(ED.battle || {}) };
+// 戦死者の数の書き方 (人)
+function fmtDead(n) { return n >= 1e8 ? `${(n / 1e8).toFixed(1)} 億人` : n >= 1e4 ? `${Math.round(n / 1e4)} 万人` : `${Math.round(n)} 人`; } // 出来事の文にも入るので、端末ごとに違う toLocaleString は使わない
+// 艦隊戦の報告の 1 行 (battleReports の 1 つから)
+function battleText(r) {
+  return `${(r.end - r.start).toFixed(1)} 年、攻撃 ${r.a0} 艦隊 (沈没 ${r.sunk[0]}・退却 ${r.esc[0]}) 対 防衛 ${r.d0} 艦隊 (沈没 ${r.sunk[1]}・退却 ${r.esc[1]})、戦死 ${fmtDead(r.dead)}${r.odds !== null && r.odds !== undefined ? `。始まる前の攻撃側の見込み ${Math.round(r.odds * 100)}%` : ''}`;
+}
 // 光速で届く途中の講和の申し入れ・講和会議の知らせ (B-030。届いたら peaceOffers・conferences へ移す)。なければ書かない
 saveField('peaceSent', (game) => (game.peaceSent.length ? game.peaceSent : undefined), {
   init: (game) => { game.peaceSent = []; },
@@ -36,4 +52,9 @@ saveField('peaceSent', (game) => (game.peaceSent.length ? game.peaceSent : undef
 saveField('confSent', (game) => (game.confSent.length ? game.confSent : undefined), {
   init: (game) => { game.confSent = []; },
   read: (game, d) => { game.confSent = Array.isArray(d.confSent) ? d.confSent.filter((c) => c && Array.isArray(c.bids) && Number.isFinite(c.at)) : []; },
+});
+// 艦隊戦の報告 (新しい順に BATTLE.reports 件)。勝つ見込みと損害の内訳 (B-034 の 13-5)
+saveField('battleReports', (game) => (game.battleReports.length ? game.battleReports : undefined), {
+  init: (game) => { game.battleReports = []; },
+  read: (game, d) => { game.battleReports = Array.isArray(d.battleReports) ? d.battleReports.filter((r) => r && Number.isFinite(r.sys)).slice(0, BATTLE.reports) : []; },
 });
