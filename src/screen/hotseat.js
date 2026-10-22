@@ -89,8 +89,9 @@ $('home').onclick = (e) => {
   if (act.startsWith('nat')) return natAction(act, b.dataset.id);
   if (act === 'nethost') { closeHome(0); setSpeed(0); return Net.openHost(); }
   if (act === 'netjoin') { closeHome(0); setSpeed(0); Net.role = null; return Net.render(); }
-  if (act === 'new') {
-    if (!confirm2('new')) return;
+  // 「はじめる」は、いまのゲームが進んでいるときだけ 2 回押して確定する (開いたばかりなら 1 回で始まる)。「この設定ではじめる」はいつも 2 回
+  if (act === 'new' || act === 'start') {
+    if (act === 'new' ? !confirm2('new') : homeGoing() && !confirm2('start')) return;
     newGame(app.homeSeed || String(Math.floor(Math.random() * 1e6)));
     if (app.homeSpectate) app.game.setSpectate(true);
     app.game.endYear = app.homeEnd === 0 ? null : START_YEAR + (app.homeEnd ?? 500);
@@ -106,7 +107,8 @@ $('home').onclick = (e) => {
       return openPick(first ? first.cap : 0);
     }
     save();
-    return closeHome(1);
+    closeHome(1);
+    return pauseForFirstMove();
   }
   const k = SLOT_KEYS[i];
   if (act === 'slotsave') {
@@ -134,6 +136,12 @@ $('home').onclick = (e) => {
   app.homeArmed = null;
   renderHome();
 };
+// 畳んだ欄 (詳しい設定・セーブ) を開いたか閉じたかを覚えておく (ホーム画面は描き直すたびに作り直すので)
+$('home').addEventListener('toggle', (e) => {
+  const k = e.target.dataset?.homeMore;
+  if (k === 'settings') app.homeMore = e.target.open;
+  else if (k === 'saves') app.homeSaves = e.target.open;
+}, true);
 // 通信の表示 (表示しない / 光の点)。見る人ごとの好みなのでブラウザに覚えておく
 const SIGNAL_MODES = { off: '表示しない', dots: '光の点' };
 try { const m = localStorage.getItem(`${STORE}-signals`); if (SIGNAL_MODES[m]) app.signalMode = m; } catch { /* 保存できない環境では既定値 */ }
@@ -203,12 +211,28 @@ $('memosave').onclick = saveMemo;
 document.querySelectorAll('#memobox [data-tag]').forEach((b) => { b.onclick = () => { const on = !b.classList.contains('on'); document.querySelectorAll('#memobox [data-tag]').forEach((x) => x.classList.remove('on')); b.classList.toggle('on', on); }; });
 const setSpeed = (v, keepSkip = false) => {
   if (Net.on && Net.role === 'guest') { if (v !== app.speed) Net.send(Net.peers[0], { t: 'speed', v }); return; } // 速さはホストが決める
+  if (v) app.awaitFirst = false; // 自分で時間を動かしたら、最初の入植船を待たない
   if (app.speed) app.lastSpeed = app.speed;
   if (v !== app.speed) PlayLog.add('speed', { v });
   if (!keepSkip) app.skip = null;
   app.speed = v;
   updateSpeedButtons();
 };
+// 新しいゲームは止まった状態で始め、最初の判断 (入植船を 1 隻送る) が済んだら時間を動かす (B-042)。
+// 観戦とネット対戦では待たない。速さのボタンで自分で動かしてもよい
+function pauseForFirstMove() {
+  if (app.game.spectate || Net.on) return;
+  app.awaitFirst = true;
+  setSpeed(0);
+  firstMoveNote('時間は止まっている。最初の入植船を送ると動きはじめる (候補地のタブから送れる)');
+}
+function firstMoveDone() {
+  if (!app.awaitFirst) return;
+  setSpeed(1);
+  firstMoveNote('入植船を送った。時間が動きはじめた (速さは上のボタンで変えられる。スペースで止まる)');
+}
+// ログに残し、画面の下にも 4 秒出す
+function firstMoveNote(text) { uiNote(text); Net.toast(text); }
 // 次の知らせまで進む: いちばん速く進め、重大・普通の出来事 (表示している種類) か決めることが新しく見えたら止める (最長100年)
 function newsMark(g) {
   let ev = 0;
