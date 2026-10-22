@@ -16,6 +16,26 @@
 | QD-16 | 値段 (Q10) | (a) 24.99 ドル帯。(b) 29.99 ドル帯。(c) 39.99 ドル帯 | 試遊の継続率を見てから。円の値段を入れ忘れない | Steamworks の手順の 3 | `docs/critique/04-plan.md` の 6・`store/steamworks.md` の 5・9 |
 | QD-17 | 中国語の訳し方 (Q11) | (b) 専門の訳者。(c) 販売元に任せる (回 R2 で a は外した) | 見積もりを比べてから | 翻訳の本番 (B-076) | `docs/critique/04-plan.md` の 6 |
 | QD-71 | 作った星系・種族の名前を簡体中国語でどう書くか | (a) 英字のまま (Celis)。(b) 漢字で音訳する (訳者が音訳の表を作る)。おすすめは、訳者 (QD-17) に任せ、決まるまでは (a) | QD-17 が決まったとき | 翻訳の本番 (B-076) の名前の作り方 | `docs/glossary/README.md` の 4、`docs/glossary/terms.json` の `rules` |
+| QD-53 | 音の素材をどれにするか (B-047。QD-09 = b のあと) | 曲は (M1)〜(M4)、効果音は (S1)〜(S4) から選ぶ (下の「QD-53 の候補」)。おすすめは **M1 + S1 + S4** (約 6,000 円。S4 は無料)。あわせて、買った音のファイルをどこに置くか: (a) 公開のリポジトリの `assets/sound/` に、ゲームで使う形 (OGG) だけを置く。(b) リポジトリには置かず、Steam の包装 (`desktop/`) のときだけ足す (ウェブ版は音なし)。おすすめは、買う前に使用許諾の本文を読んで (a) が許されるか確かめ、だめなら (b) | GA2 のあと、買う前 | 音 (B-047) の中身。鳴らす所は #192 でできていて、表にファイルの名前を書くだけで鳴る | `docs/critique/04-plan.md` の 0-6、`src/screen/sound.js` |
+
+### QD-53 の候補 (2026-10-22 に調べた。値段は税の前。使用許諾は売り場のページの言葉で、買う前に本文を確かめる)
+
+要るもの: 環境音の曲 2〜3 (落ち着いた宇宙の音。長く流しても邪魔にならないもの) と、効果音 10 (指令を送った・入植・交易路の開通・独立・講和・重大な知らせ・決めることが届いた・新しい時代・「次の知らせまで進む」が止まった・ボタン。`src/screen/sound.js` の表)。
+
+| 記号 | 種類 | 品 (売り手) | 中身 | 値段 | 使用許諾 (ページの言葉) | 聞ける所・売り場 |
+|---|---|---|---|---|---|---|
+| **M1** (おすすめ) | 曲 | Game Ambient Music Pack Vol. II (Daniel N. Martin、itch.io) | 5 曲 (曲ごとに通しとループ。WAV 20 本・22 分あまり) | 27 米ドル以上 | Unlimited Royalty-Free。クレジット不要。ゲーム用と明記 (Steam・再配布の決まりはページになし) | https://danielnmartin.itch.io/game-ambient-music-pack-vol-ii (SoundCloud の試聴へのリンクあり) |
+| M2 | 曲 | Space Ambience (Gravity Sound、itch.io) | 10 曲・23 分 (WAV) | 9.99 米ドル以上 | 「royalty free」とだけ。商用・クレジットの決まりはページになし (同梱の文書で確かめる) | https://gravity-sound.itch.io/space-ambience (SoundCloud の試聴あり) |
+| M3 | 曲 | Space Ambience Pack (Unity Asset Store) | 10 曲 + つないだ 1 曲 (344 MB) | 15 米ドル (Single Entity) | Unity Asset Store の標準の EULA。このゲームは Unity でないので、Unity の外で使えるかを EULA で確かめる要あり | https://marketplace.unity.com/packages/audio/ambient/sci-fi/space-ambience-pack-154851 |
+| M4 | 曲 | Ambient Music Pack Vol. 1 (Ovani Sound) | 10 曲 × 強さ 3 段 (48 kHz/24 bit) | 調べた範囲で値段を確かめられなかった | 商用の許諾つき・ロイヤリティなし (売り手の説明) | https://store.godotengine.org/publisher/ovani-sound/ |
+| **S1** (おすすめ) | 効果音 | Sci-Fi User Interface Sounds (Daydream Sound、itch.io) | 112 音 (処理中・確定と誤りのクリック・メニュー・ポップアップ・通知) WAV | 10 英ポンド以上 | どの作品にも、いつまでも、追加の料金なしで使える | https://daydream-sound.itch.io/sci-fi-user-interface-sounds-pack (SoundCloud の試聴あり) |
+| S2 | 効果音 | Sci-Fi Game UI (Loopmasters) | 50 音 (電子音・走査・起動と停止・警告・機械の声) 24 bit/192 kHz | 19.95 米ドル | 「100% original & royalty-free」、ゲームに使える。本文は買う前に確かめる | https://www.loopmasters.com/genres/154-Sci-Fi/products/10550-Sci-Fi-Game-UI |
+| S3 | 効果音 | Futuristic User Interface Sound Effects (Bluezone Corporation) | 156 音 | 19.95 ユーロ | ロイヤリティなし・クレジット不要 (同じ売り手の別の品の説明) | https://rekkerd.org/futuristic-user-interface-sound-effects-by-bluezone-corporation/ (紹介の記事。売り場は Bluezone) |
+| **S4** (おすすめ。無料) | 効果音 | Sonniss GDC 2026 Game Audio Bundle | 17 の売り手の見本 7.47 GB (節目の音に使える、うなり・衝撃・広がる音など) | 無料 | クレジット不要・作品の数に制限なし・一生使える (紹介の記事。AI の学習に使えるかは本文で確かめる) | https://gdc.sonniss.com/ |
+
+- おすすめの理由: M1 は「ゲーム用・クレジット不要・ロイヤリティなし」がページで一番はっきりしていて、通しとループの両方がある。S1 は UI の音 (確定・通知・処理中) がそろっていて、使用許諾が「どの作品にも、いつまでも」。節目 (入植・講和など) の大きな音は S4 から選ぶ。合わせて約 27 米ドル + 10 英ポンド ≒ 6,000 円 (1 ドル 150 円・1 ポンド 195 円で)。
+- 気をつけること: このリポジトリは公開なので、買った音のファイルを `assets/` に入れると、誰でも元のファイルを取り出せる。多くの使用許諾は「素材そのものを配る」ことを禁じているので、上の (a)・(b) を決める。どちらでも、鳴らす所 (`Sound.play`) は同じ。
+- 当たったら (売れたら)、作曲を頼む (QD-09 の「当たったら c」)。
 
 ## 2. 決まったもの (2026-10-21、回 R2)
 
@@ -63,6 +83,7 @@
 | QD-22 | Steam Direct の手数料 100 米ドルを払う (ここから 30 日) | ストアのページとビルドの審査 | `store/steamworks.md` の 9 の 2 |
 | QD-23 | Firebase のプロジェクトを作り、設定 (`firebaseConfig`) を渡す。ログインの 3 方式 (Google・メール・匿名) をオンにし、承認済みドメインに `akasa-bit.github.io` を足し、Firestore にルールを貼る | アカウント機能 (クラウドのセーブ・自作の国・部屋のコードでのネット対戦)。いまは `FIREBASE_CONFIG = null` で隠れている。もらったら `src/index.html` に入れて組み立て直す | `docs/online.md` の 1、`docs/status/common.md` の 4 |
 | QD-24 | Steam Deck の実機で `desktop/bench/run.mjs` と同じ手順を回す | 目標 F08 の判定、Deck の Verified | `docs/status/S.md`、`desktop/README.md` の 4 |
+| QD-54 | 音の素材を買う (QD-53 で選んだもの。おすすめなら M1 と S1 の 2 つ、約 6,000 円。S4 は無料で取れる)。買ったら、ファイルを Claude に渡す (置き場は QD-53 の a か b) | 音 (B-047)。渡されたら `src/screen/sound.js` の表に名前を書いて鳴らす | 上の QD-53 の候補 |
 | QD-25 | (任意) HMD・HFD の利用登録 (人間の生命表と出生のデータ) | 年齢つきの人口 (D の 10) を生データで確かめる分。いまは WPP 2024 で代わりにしている | `docs/status/Q.md` |
 
 ほかに、Windows 版を Windows の上で動かす確かめが残っている (`docs/status/S.md`)。これは実機か、CI に Windows を足せば Claude でもできる。

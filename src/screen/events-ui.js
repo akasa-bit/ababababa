@@ -10,6 +10,76 @@ function saveEvPrefs() { try { localStorage.setItem(`${STORE}-evprefs`, JSON.str
 const evTier = (kind) => EVENT_TIER[kind] ?? 2;
 function evShown(kind) { const v = EvPrefs.kinds[kind]; return v === undefined ? evTier(kind) >= 2 : !!v; }
 
+// 節目 (B-046): 入植・交易路の開通・独立・講和の知らせが届いたら、地図に光の輪を広げ、自国の節目なら音を鳴らす (新しい時代は音だけ)
+const RING_MS = 2400;
+const RING_COLOR = { colony: '#7cc790', route: '#8fb1e6', independence: '#f89a2b', peace: '#ffffff' };
+// 新しく届いた節目を返す (1 つの節目は 1 回だけ)。ゲームを開いた・ロードした時点で届いていたものは数えない。
+// own = 自国の節目: 自国の星系の入植・自国の交易路・自国の家臣の独立・自国が結んだ講和
+function milestonesNew(g, now) {
+  if (app.ringGame !== g) { app.ringGame = g; app.ringSeen = new Set(); app.ringSince = g.year; }
+  const out = [];
+  const mine = (sys) => sys === g.cap || g.known(sys)?.realm === g.cap;
+  const add = (key, kind, sys, own) => { if (!app.ringSeen.has(key)) { app.ringSeen.add(key); out.push({ kind, sys, own, t: now }); } };
+  for (const e of g.knownEvents()) { // 届いた順の新しいものから
+    if ((e.seen ?? e.year) <= app.ringSince) break;
+    if (e.kind === 'colony' && e.good && /設立/.test(e.text)) {
+      // 知らせと星系の記録は届く時が少しずれる。記録がまだ入植の前なら、届くまで (長くて 2 年) 待ってから決める
+      if (g.known(e.sys)?.realm == null && g.year - (e.seen ?? e.year) < 2) continue;
+      add(`e${e.id}`, 'colony', e.sys, mine(e.sys));
+    }
+    else if (e.kind === 'politics' && /独立を宣言/.test(e.text)) {
+      const lord = g.galaxy.systems.find((s) => s.name === e.text.match(/ が (.+?) への従属をやめ/)?.[1]); // 元の主人の星系 (知らせの文から)
+      add(`e${e.id}`, 'independence', e.sys, !!lord && mine(lord.id));
+    } else if (e.kind === 'politics' && /白紙講和を結んだ|講和条約が結ばれた/.test(e.text)) add(`e${e.id}`, 'peace', e.sys ?? g.cap, !!e.good); // 人間の国が結んだ講和は good
+    else if (e.kind === 'goal' && /新しい時代が始まった/.test(e.text)) add(`e${e.id}`, 'era', g.cap, true);
+  }
+  for (const r of g.routes) { // 交易路の開設は知らせの記録に残らないので、開いた年 + 光の遅れで見る
+    const seen = r.built + g.lightDelay(r.a);
+    if (seen <= app.ringSince || seen > g.year) continue;
+    const own = mine(r.a) || mine(r.b);
+    add(`r${r.id}`, 'route', r.a, own);
+    if (!app.ringSeen.has(`r${r.id}b`)) { app.ringSeen.add(`r${r.id}b`); out.push({ kind: 'route', sys: r.b, own, t: now, quiet: true }); }
+  }
+  return out;
+}
+
+// 知らせの予算 (B-048): 知らせの帯で「重大」として目立たせるのは、40 年 (遊んで約 1 時間。500 年を 10〜15 時間で遊ぶ) に 12 件まで。
+// 超えた分は帯の「ほかに重大な知らせ」に数えるだけにする (イベントのタブには全部残る)
+const NEWS_BUDGET = { years: 40, max: 12 };
+// 自分の国に関わる知らせか: 場所のない知らせ・自国 (家臣を含む) の星系・交戦中の相手の星系。よその国どうしの出来事は帯に出さない。
+// foes = 自国の交戦相手 (地球が知っている限り。呼ぶ側で 1 回だけ作って渡す)
+function evConcerns(g, e, foes) {
+  if (e.sys === undefined || e.sys === null || e.sys === g.cap) return true;
+  const realm = g.known(e.sys)?.realm;
+  if (realm === undefined || realm === null) return false;
+  return realm === g.cap || foes.has(realm);
+}
+const evFoes = (g) => new Set(g.knownEnemiesOf(g.cap));
+// 飢餓・水不足と資源不足は、出来事の流れではなく「状態」(地図の星の「!」・イベントのタブの「いま起きている問題」) で見せる
+const STATE_KINDS = new Set(['famine', 'shortage']);
+// 帯に出す重大な知らせ: 自国に関わるものだけを、同じ星系・同じ種類の続報を束ねてから、予算の中で目立たせる。
+// skip(e) = 別の形で出すもの (返事待ちの要求)。戻り値の majors は新しい順、over は予算を超えて数えるだけにした件数
+function railNews(g, evs, acked, skip) {
+  const foes = evFoes(g);
+  const seen = (e) => e.seen ?? e.year;
+  const groups = new Map();
+  for (const e of evs) { // evs は届いた順の新しいものから
+    if (evTier(e.kind) < 3 || e.good || STATE_KINDS.has(e.kind) || !evShown(e.kind) || acked.has(e.id) || g.year - seen(e) >= 60 || skip(e) || !evConcerns(g, e, foes)) continue;
+    const k = `${e.kind}|${e.sys}`;
+    if (groups.has(k)) groups.get(k).ids.push(e.id); else groups.set(k, { e, ids: [e.id] });
+  }
+  const majors = [], times = [];
+  let over = 0;
+  for (const x of [...groups.values()].sort((a, b) => seen(a.e) - seen(b.e))) {
+    const t = seen(x.e);
+    while (times.length && times[0] <= t - NEWS_BUDGET.years) times.shift();
+    if (times.length < NEWS_BUDGET.max) { times.push(t); majors.push(x); } else over += x.ids.length;
+  }
+  return { majors: majors.reverse(), over, foes };
+}
+// 地球が知っている、飢餓・水不足の入植地がある自国の星系の数 (地図では赤い「!」)
+function famineSystems(g) { return g.knownOwnSystems().filter((x) => g.knownColonies(x.id).some((c) => c.alerts?.food || c.alerts?.water)).length; }
+
 // イベントタブ: 決めること、いま起きている問題、重要なイベントの履歴
 function eventsHtml(app) {
   const g = app.game;

@@ -16,7 +16,7 @@ const human = { ...S.HUMAN, every: Number(arg('every', S.HUMAN.every)) };
 const budget = Number(arg('budget', 0));
 const searchSeeds = Array.from({ length: Number(arg('search-seeds', 4)) }, (_, i) => String(i + 1));
 
-const STRATS = { ...S.PRESETS, ...S.EXTRA };
+const STRATS = { ...S.PRESETS, rush: S.EXTRA.rush }; // 何もしない (idle) は入れない
 const names = Object.keys(STRATS);
 const EXPAND = new Set(['expand', 'rush']); // 拡張に寄せた戦略
 const MODES = [['遅れなし', (s) => s], ['遅れつき', (s) => S.humanize(s, human)]];
