@@ -359,7 +359,7 @@ class GalaxyView {
     const [cx, cy] = this.toScreen(sel.x, sel.y, sel.z);
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 6]);
-    ctx.font = '11px sans-serif';
+    ctx.font = '12px sans-serif';
     ctx.fillStyle = 'rgba(120,160,230,0.55)';
     ctx.strokeStyle = 'rgba(90,130,210,0.25)';
     const flat = this.cam.pitch < 0.01;
@@ -522,7 +522,7 @@ class GalaxyView {
     }
 
     // 送信中の艦隊への指令 (地球が出した指令なので、出したときから分かっている)
-    ctx.font = '10px sans-serif';
+    ctx.font = '12px sans-serif';
     for (const q of game.requests) {
       if (q.kind !== 'order' || (q.act !== 'fleet' && q.act !== 'redirect')) continue;
       const tgt = game.system(Number(q.d.sys));
@@ -678,7 +678,7 @@ class GalaxyView {
           if (ships - own > 0) parts.push(['vassal', ships - own]);
           if (own > 0) parts.push(['own', own]);
         }
-        ctx.font = '10px sans-serif';
+        ctx.font = '12px sans-serif';
         let lx = x - r - 8;
         for (const [kind, n] of parts) {
           const t = `▲${kind === 'own' || kind === 'vassal' ? n : shipsSeen(game, s.id, n)}`;
@@ -696,7 +696,7 @@ class GalaxyView {
         ctx.strokeStyle = '#ffaa3c';
         ctx.beginPath(); ctx.arc(x, y, rr, -Math.PI / 2, -Math.PI / 2 + Math.max(0.05, k.siege.progress) * Math.PI * 2); ctx.stroke();
         ctx.lineWidth = 1;
-        ctx.font = 'bold 11px sans-serif';
+        ctx.font = 'bold 12px sans-serif';
         ctx.fillStyle = '#ffaa3c';
         ctx.fillText(`攻囲 ${Math.round(k.siege.progress * 100)}%`, x + rr + 4, y + rr);
       }
@@ -716,13 +716,13 @@ class GalaxyView {
         ctx.fillRect(x + rr + 4, y + rr + 4, w * frac, 4);
         ctx.fillStyle = realmColor(k.realm);
         ctx.fillRect(x + rr + 4 + w * frac, y + rr + 4, w * (1 - frac), 4);
-        ctx.font = 'bold 11px sans-serif';
+        ctx.font = 'bold 12px sans-serif';
         ctx.fillStyle = '#ff6b6b';
         ctx.fillText(`艦隊戦 ${Math.ceil(bt.a)}対${Math.ceil(bt.d)}`, x + rr + 4, y + rr);
       }
       if (k && k.cols.length && k.realm !== null && k.realm !== undefined && this.app.game.knownEnemiesOf(k.realm).length && (k.realm !== game.cap || s.id === game.cap)) {
         ctx.fillStyle = '#ff6b6b';
-        ctx.font = 'bold 10px sans-serif';
+        ctx.font = 'bold 12px sans-serif';
         ctx.fillText('交戦中', x - r - 34, y - r - 4);
       }
       const wars = k ? k.wars : [];
@@ -738,7 +738,7 @@ class GalaxyView {
         ctx.strokeStyle = `rgba(255,90,90,${pulse})`;
         ctx.beginPath(); ctx.arc(x, y, rr, -Math.PI / 2, -Math.PI / 2 + Math.max(0.05, prog) * Math.PI * 2); ctx.stroke();
         ctx.lineWidth = 1;
-        ctx.font = 'bold 11px sans-serif';
+        ctx.font = 'bold 12px sans-serif';
         const label = `⚔ ${Math.round(prog * 100)}%${wars.length > 1 ? ` ×${wars.length}` : ''}`;
         ctx.fillStyle = 'rgba(10,14,24,0.85)';
         ctx.fillRect(x + rr + 2, y - rr - 6, ctx.measureText(label).width + 8, 15);
@@ -750,14 +750,14 @@ class GalaxyView {
         let worst = 0;
         for (const c of k.cols) { const a = c.alerts || {}; if (a.food || a.water) worst = 2; else if ((a.goods || a.industry) && worst < 1) worst = 1; }
         if (worst) {
-          ctx.font = 'bold 11px sans-serif';
+          ctx.font = 'bold 12px sans-serif';
           ctx.fillStyle = worst === 2 ? '#ff6b6b' : '#ffb347';
           ctx.fillText('!', x + r + 3, y - r - 1);
         }
         // 不満の段階 (地球の国の星系): 不満・要求・最後通牒
         const st = k.unrest?.stage || 0;
         if (st && (k.realm ?? game.cap) === game.cap) {
-          ctx.font = 'bold 10px sans-serif';
+          ctx.font = 'bold 12px sans-serif';
           ctx.fillStyle = st >= 3 ? '#ff6b6b' : st === 2 ? '#ff9f43' : '#f5d142';
           ctx.fillText(UNREST_LABEL[st], x + r + 9, y - r - 1);
         }
@@ -769,7 +769,7 @@ class GalaxyView {
       const labeled = z >= 10 || (k && k.cols.length) || s.id === this.app.sel.sys || s === this.hover;
       if (labeled) {
         ctx.fillStyle = s === this.hover ? '#fff' : 'rgba(200,215,240,0.8)';
-        ctx.font = '11px sans-serif';
+        ctx.font = '12px sans-serif';
         ctx.fillText(s.name, x + r + 7, y + 4);
       }
       ctx.globalAlpha = 1;
@@ -814,7 +814,7 @@ class GalaxyView {
         if (p) eta = Math.max(eta, distance(p, game.system(game.cap)) + distance(target, p) / OFFROUTE_SPEED);
       }
       ctx.setLineDash([]);
-      ctx.font = 'bold 11px sans-serif';
+      ctx.font = 'bold 12px sans-serif';
       ctx.fillStyle = surprise ? '#ff8a80' : OWN.hex;
       ctx.fillText(`${surprise ? '奇襲攻撃 ' : '移動 '}到着まで ${eta.toFixed(1)} 年`, tx + 12, ty - 12);
     }
@@ -937,7 +937,7 @@ class GalaxyView {
       ctx.fill();
     }
     ctx.lineWidth = 1;
-    ctx.font = '11px sans-serif';
+    ctx.font = '12px sans-serif';
     for (const n of nodes) {
       const [x, y] = n.p;
       const color = n.color;

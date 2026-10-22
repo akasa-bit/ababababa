@@ -100,14 +100,14 @@
     }
     // 集結は、それぞれの出発地への指令に分ける
     if (act === 'rally') {
-      const from = Object.keys(this.garrison).map(Number).filter((id) => id !== d.sys && this.garrison[id] > 0 && this.stackRealm(id) === this.cap);
+      const from = this.rallySources(Number(d.sys)); // 首都に届いている記録で (B-030。src/ship/fleets.js)
       if (!from.length) return fail('集められる艦隊がない');
       for (const id of from) this.command('fleet', { from: id, sys: d.sys, n: 'all' });
       return { ok: true };
     }
     if (act === 'troopsrally') {
       const to = this.colonyByKey(d.to);
-      const src = this.colonies.filter((c) => c !== to && c.troops + c.slaveTroops >= 1 && to && this.routePath(c.sys, to.sys));
+      const src = this.troopRallySources(to); // 首都に届いている記録で (B-030。src/ship/fleets.js)
       if (!src.length) return fail('集められる歩兵がいない');
       for (const c of src) this.command('troopsend', { from: colKey(c), to: d.to, n: 'all' });
       return { ok: true };

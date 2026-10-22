@@ -32,27 +32,36 @@ function busyText(g, pred) {
   return j ? `建設中 あと ${(j.ready - g.year).toFixed(1)} 年` : '';
 }
 
+// 到着までの年数。着いているはずでも、到着の光が首都に届くまでは「着いたころ」と書く
+function arriveText(game, t) { return t > game.year ? `あと ${(t - game.year).toFixed(1)} 年` : '<span class="muted">着いたころ (知らせ待ち)</span>'; }
+// 見えている艦隊の区間 (seenFleets の 1 つ)。他国の艦隊は出発地だけ
+function fleetLegText(game, x) {
+  const from = x.leg.from !== undefined && !x.leg.fromXY ? esc(game.system(x.leg.from).name) : '宇宙の途中';
+  if (!x.mine) return `${from} から (${esc(game.realmName(x.f.owner ?? 0))})`;
+  return `${from} → ${x.leg.to !== undefined ? esc(game.system(x.leg.to).name) : '宇宙の途中'}`;
+}
 function shipsHtml(game) {
   const bar = (s) => {
-    const f = (game.year - s.depart) / (s.arrive - s.depart);
-    return `<span class="bar"><i style="width:${(f * 100).toFixed(0)}%"></i></span> あと ${(s.arrive - game.year).toFixed(1)} 年`;
+    const f = clamp((game.year - s.depart) / Math.max(1e-9, s.arrive - s.depart), 0, 1);
+    return `<span class="bar"><i style="width:${(f * 100).toFixed(0)}%"></i></span> ${arriveText(game, s.arrive)}`;
   };
   const seen = (sys, t) => game.departSeen(sys, t);
-  const ships = game.ships.filter((s) => seen(s.from, s.depart)).map((s) => `<div class="ship">${esc(game.system(s.from).name)} → ${esc(game.system(s.to).name)} <span class="muted">${KIND_LABEL[s.kind]}</span>${bar(s)}</div>`);
-  const fleets = game.fleets.filter((f) => seen(f.from, f.start ?? f.depart)).map((f) => `<div class="ship">${esc(game.system(f.from).name)} → ${esc(game.system(f.to).name)} <span class="bad">${f.n} 艦隊</span>${bar(f)}</div>`);
+  // 船と艦隊は、出発の光が届いてから、到着の光が届くまで (着いたあとも、知らせが届くまでは移動中に見える。B-030)
+  const ships = game.seenMoving('ships').map((s) => `<div class="ship">${esc(game.system(s.from).name)} → ${esc(game.system(s.to).name)} <span class="muted">${KIND_LABEL[s.kind]}</span>${bar(s)}</div>`);
+  const fleets = game.seenFleets().map((x) => `<div class="ship">${fleetLegText(game, x)} <span class="bad">${x.f.n} 艦隊</span>${x.mine ? bar(x.leg) : ' <span class="muted">行き先は分からない</span>'}</div>`);
   const jobs = game.knownProjects().filter((j) => seen(j.sys, j.start)).map((j) => `<div class="ship">${esc(j.label)} <span class="muted">資材搬入中</span>${bar({ depart: j.start, arrive: j.ready })}</div>`);
   const vm = game.migrants.filter((m) => seen(m.fromSys, m.depart));
   const mig = vm.length
     ? [`<div class="ship"><span style="color:#8fd3ff">移民船 ${vm.length} 隻</span> <span class="muted">計 ${fmtPop(vm.reduce((k, m) => k + m.n, 0))} (帝国タブ → 移民)</span></div>`]
     : [];
-  const troops = game.troopMoves.filter((m) => seen(m.path[0], m.times[0])).map((m) => `<div class="ship">${esc(game.colonyByKey(m.from)?.name || '?')} → ${esc(game.colonyByKey(m.to)?.name || '?')} <span style="color:#ff9f8f">歩兵 ${m.troops + m.slave}連隊</span>${bar({ depart: m.times[0], arrive: m.arrive })}</div>`);
+  const troops = game.seenMoving('troopMoves').map((m) => `<div class="ship">${esc(game.colonyByKey(m.from)?.name || '?')} → ${esc(game.colonyByKey(m.to)?.name || '?')} <span style="color:#ff9f8f">歩兵 ${m.troops + m.slave}連隊</span>${bar({ depart: m.times[0], arrive: m.arrive })}</div>`);
   const vq = game.requests.filter((q) => seen(q.from, q.sent));
   const orders = vq.filter((q) => q.kind === 'order');
   const req = vq.length
     ? [`<div class="ship"><span style="color:#c9a2ff">通信 ${vq.length} 件</span> <span class="muted">うち${ME.home}からの指令 ${orders.length} (帝国タブ → 交易路)</span></div>`]
     : [];
   const all = [...jobs, ...ships, ...fleets, ...troops, ...mig, ...req];
-  return (all.length ? all.join('') : '<span class="muted">見えている航行中の船なし</span>') + `<p class="note">遠くの船は、出発の光が${ME.home}に届いてから表示される。</p>`;
+  return (all.length ? all.join('') : '<span class="muted">見えている航行中の船なし</span>') + `<p class="note">遠くの船は、出発の光が${ME.capName}に届いてから表示され、到着の光が届くまで残る。進路変更も、変えた所からの光が届いてから見える。他国の艦隊の行き先は分からない。</p>`;
 }
 
 // 帝国タブ: 全星系の人口・資源・経済・軍事を一覧で管理する
