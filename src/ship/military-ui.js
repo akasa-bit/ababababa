@@ -63,10 +63,10 @@ function militarySheet(app) {
     <h3>移動中の歩兵</h3>${moves ? `<div class="scroll"><table class="tbl">${moves}</table></div>` : '<p class="note">なし</p>'}
     <h3>移動中の艦隊</h3>${fleets ? `<div class="scroll"><table class="tbl">${fleets}</table></div>` : '<p class="note">なし</p>'}
     <h3>艦隊への指令 (光速で送信中)</h3>${(() => {
-      const rows = g.requests.filter((q) => q.kind === 'order' && ['fleet', 'redirect', 'fleetclear'].includes(q.act)).map((q) => {
-        const who = q.act === 'fleet' ? `${esc(g.system(Number(q.d.from)).name)} の艦隊 (${q.d.n === 'all' ? '全艦' : `${q.d.n} 艦隊`})`
+      const rows = g.requests.filter((q) => q.kind === 'order' && ['fleet', 'strike', 'redirect', 'fleetclear'].includes(q.act)).map((q) => {
+        const who = q.act === 'fleet' || q.act === 'strike' ? `${esc(g.system(Number(q.d.from)).name)} の艦隊 (${q.d.n === 'all' ? '全艦' : `${q.d.n} 艦隊`})`
           : q.act === 'redirect' ? `移動中の ${q.d.n} 艦隊 (進路変更)` : q.d.fleet !== undefined ? `${esc(g.system(Number(q.d.sys)).name)} へ移動中の艦隊` : `${esc(g.system(Number(q.d.sys)).name)} の艦隊`;
-        return `<tr><td>${who}</td><td>${q.act === 'fleetclear' ? '指令の取り消し' : `→ ${esc(g.system(Number(q.d.sys)).name)}`}</td><td>指令が届くまで あと ${Math.max(0, q.arrive - g.year).toFixed(1)} 年</td></tr>`;
+        return `<tr><td>${who}</td><td>${q.act === 'fleetclear' ? '指令の取り消し' : `${q.act === 'strike' ? '<b class="bad">光速の一撃</b> ' : ''}→ ${esc(g.system(Number(q.d.sys)).name)}`}</td><td>指令が届くまで あと ${Math.max(0, q.arrive - g.year).toFixed(1)} 年</td></tr>`;
       }).join('');
       return rows ? `<div class="scroll"><table class="tbl">${rows}</table></div>` : '<p class="note">なし</p>';
     })()}`;

@@ -47,6 +47,7 @@
   }
   // 艦隊の到着。自国なら駐留 (戦闘中なら防衛に加わる)、交戦中の国の星系なら艦隊戦か攻囲になる
   fleetArrives(f) {
+    if (f.strike) return this.strikeArrives(f); // 光速の一撃 (ship/strike.js)
     const owner = f.owner ?? 0;
     const name = this.system(f.to).name;
     // 入植していない星系に他国の艦隊がいる: 交戦中なら艦隊戦 (一度に解く)、そうでなければ引き返す
@@ -393,7 +394,7 @@
   // 国 r が戦争 (相手 e) で受け入れる線 (r の取り分の戦勝点、−100〜100)。z を渡せば、その読み違いで (宣戦の見込み)
   reservation(r, e, z = this.warStats[this.warKey(r, e)]?.z?.[r] ?? 0, ws = this.warScore(r, e)) {
     const ours = this.realmShips(r);
-    const theirs = this.seenShips(r, e) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(r, e)));
+    const theirs = (this.seenShips(r, e) + this.pactAllyShips(r, e)) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(r, e))); // 相手の同盟国の艦隊も (政治。B-026)
     let p = (ours + 0.5) / (ours + theirs + 1);
     const st = this.warSeen(r, this.warKey(r, e)); // 首都に届いた戦果で
     if (st && this.atWar(r, e)) {
@@ -431,6 +432,7 @@
     for (const root of roots) {
       if (this.realmOf(root) !== root) continue; // この年のうちに降伏した
       const enemies = this.aiEnemiesOf(root); // 開戦の知らせが首都に届いた戦争だけ
+      if (enemies.length) this.aiStrike(root, enemies); // 大きく負けていれば光速の一撃 (ship/strike.js)
       const mine = this.realmSystems(root);
       const strong = mine.filter((x) => (this.garrison[x.id] || 0) >= 3).sort((a, b) => (this.garrison[b.id] || 0) - (this.garrison[a.id] || 0))[0];
       if (strong && enemies.length) {
@@ -475,6 +477,7 @@
         let best = null;
         for (const r of roots) {
           if (r === root || this.seenBy(root, r)?.[1] !== r || this.realmOf(r) !== r || this.sysDist(r, root) > BARGAIN.warDist) continue;
+          if (this.pactBars(root, r)) continue; // 不可侵と同盟の相手には宣戦しない (政治。B-026。協定の知らせが届いてから)
           const v = this.reservation(root, r, this.misread(), 0);
           if (v > BARGAIN.declare && (!best || v > best.v)) best = { r, v };
         }
@@ -486,7 +489,7 @@
       }
       if (!enemies.length && this.rand() < 0.03) {
         const ours = this.realmShips(root);
-        const prey = roots.filter((r) => r !== root && this.seenBy(root, r)?.[1] === r && this.sysDist(r, root) <= 25 && ours >= 1.5 * Math.max(1, this.seenShips(root, r)))
+        const prey = roots.filter((r) => r !== root && !this.pactBars(root, r) && this.seenBy(root, r)?.[1] === r && this.sysDist(r, root) <= 25 && ours >= 1.5 * Math.max(1, this.seenShips(root, r)))
           .sort((a, b) => this.sysDist(a, root) - this.sysDist(b, root))[0];
         if (prey !== undefined) {
           this.beginWar(root, prey, root);

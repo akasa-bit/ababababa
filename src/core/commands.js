@@ -2,7 +2,7 @@
   cmdTarget(act, d) {
     const colSys = (key) => this.colonyByKey(key)?.sys;
     switch (act) {
-      case 'send': case 'candsend': case 'fleet': return Number(d.from);
+      case 'send': case 'candsend': case 'fleet': case 'strike': return Number(d.from);
       case 'redirect': return null; // 移動中の艦隊への指令は sendRedirect で送る
       case 'troopsend': return colSys(d.from);
       case 'route2': return Number(d.a);
@@ -59,7 +59,7 @@
     if (act === 'treaty') return this.submitTreaty(d);
     if (act === 'acceptpeace') return this.acceptPeace(d);
     if (act === 'drop') { this.players[this.pi].human = false; return { ok: true }; } // ネット対戦で接続が切れた国は AI に任せる
-    if (act === 'fleet' && !this.ownStackKnown(Number(d.from))) return fail('他国の艦隊には命令できない');
+    if ((act === 'fleet' || act === 'strike') && !this.ownStackKnown(Number(d.from))) return fail('他国の艦隊には命令できない');
     // 移動中の艦隊への進路変更・指令の取り消し (光速の指令が追いついた地点で効く)
     if (act === 'sendredirect' || act === 'sendclear') {
       const f = this.fleets.find((x) => x.id === Number(d.fleet));
@@ -150,6 +150,7 @@
         if (r.ok && d.awe) this.fleets[this.fleets.length - 1].awe = true;
         return r;
       }
+      case 'strike': return this.stackRealm(Number(d.from)) === this.cap ? this.launchStrike(Number(d.from), sys, n) : fail('他国の艦隊には命令できない'); // 光速の一撃 (B-035。ship/strike.js)
       case 'redirect': return this.redirectFleet(Number(d.fleet), sys, d);
       case 'fleetclear': return this.clearFleetOrders(d);
       case 'gift': return this.gift(sys, body);

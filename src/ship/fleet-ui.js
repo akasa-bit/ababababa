@@ -118,7 +118,8 @@ function militaryBox(app, sys) {
   const send = origins.length
     ? `${surprise ? `<p class="note bad">⚠ ${esc(g.realmName(destRealm))}の星系。ここへ艦隊を送ると奇襲攻撃になり、到着した時点で${esc(g.realmName(destRealm))}との戦争状態に突入し、そのまま艦隊戦になります。</p>` : ''}<label class="field">艦隊の出発地
         <select data-act="forigin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === from ? 'selected' : ''}>${esc(o.s.name)} (${o.k}艦隊・${g.fleetYears(o.s.id, sys.id).toFixed(1)} 年)</option>`).join('')}</select></label>
-       <div class="btns"><button data-act="fleet" data-from="${from}" data-n="1">${surprise ? '奇襲攻撃 (1艦隊)' : '1艦隊をここへ'}</button><button data-act="fleet" data-from="${from}" data-n="all">${surprise ? '奇襲攻撃 (全艦隊)' : '全艦隊をここへ'}</button></div>`
+       <div class="btns"><button data-act="fleet" data-from="${from}" data-n="1">${surprise ? '奇襲攻撃 (1艦隊)' : '1艦隊をここへ'}</button><button data-act="fleet" data-from="${from}" data-n="all">${surprise ? '奇襲攻撃 (全艦隊)' : '全艦隊をここへ'}</button></div>
+       ${strikeBox(g, sys, destRealm, from)}`
     : '';
   const queued = queuedWarships(g.knownProjects(), sys.id);
   const pick = isOwnStack(g, sys.id) ? `<button data-act="fleetsel" data-sys="${sys.id}">この艦隊を選ぶ (星間マップで移動先を右クリック/タップ)</button>` : '';
@@ -156,3 +157,15 @@ function aweLine(g, id) {
   return `<p class="note">恐怖度 <b>${Math.round(k.fear || 0)}</b>。反乱したときの推定艦隊 <b>${rebel}</b> (人口と経済の規模から)。駐留する${ME.home}の艦隊 <b>${earth}</b> (うち威圧 ${g.knownAwe(id)}${why})。</p>`;
 }
 
+
+// 光速の一撃 (B-035): 他国の入植星系へ、減速せずに艦隊を突っ込ませる。取り消せないので、開いてから押す
+function strikeBox(g, sys, realm, from) {
+  if (realm === null || realm === undefined || realm === g.cap) return '';
+  const bodies = new Set(g.knownColonies(sys.id).map((c) => c.body)).size;
+  if (!bodies) return '';
+  const ly = g.travelYears(from, sys.id);
+  return `<details class="strike"><summary class="bad">光速の一撃 (取り消せない)</summary>
+    <p class="note">艦隊を減速させずに ${esc(sys.name)} へ突っ込ませる。1 艦隊で 1 つの天体の入植地を焼き (人口の ${STRIKE.survive * 100}% だけが地下に残り、施設・備蓄・歩兵はなくなる)、艦隊は残らない。光の遅れで、${esc(g.realmName(realm))}には着く直前 (約 ${(ly / OFFROUTE_SPEED - ly).toFixed(1)} 年前) まで見えず、止められない。
+      知らせが光速で届いた国は宣戦する (撃たれた国はかならず、${STRIKE.reach} 光年以内の国は ${Math.round(STRIKE.retaliate * 100)}%)。自国の家臣は忠誠度が ${STRIKE.loyalty} 下がり、悪名が ${STRIKE.infamy} 増える。いま知っている天体は ${bodies} つ。</p>
+    <div class="btns"><button data-act="strike" data-from="${from}" data-n="1" class="bad">1 艦隊で突入</button>${bodies > 1 ? `<button data-act="strike" data-from="${from}" data-n="${bodies}" class="bad">${bodies} 艦隊で突入 (全部の天体)</button>` : ''}</div></details>`;
+}

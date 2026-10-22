@@ -83,6 +83,7 @@
 - saveField: peaceSent (船と戦争。src/ship/war-consts.js。光速で届く途中の講和の申し入れ。回 FU1)
 - saveField: confSent (船と戦争。src/ship/war-consts.js。知らせが届く途中の講和会議。回 FU1)
 - saveField: battleReports (船と戦争。src/ship/war-consts.js。艦隊戦の報告。回 FU2)
+- saveField: strikes (船と戦争。src/ship/war-consts.js。光速の一撃の記録。回 FU2)
 - EDITIONS.game.battle (pos・luck。艦隊戦の補正。台帳の C27・C28。回 FU2)。EDITIONS.sim.battle も同じ名前で CDB90 の値
 
 ### 画面と最初の体験
