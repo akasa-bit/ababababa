@@ -3,7 +3,10 @@
 // ネット対戦ではホストへ送り、全員の端末が同じ時点で runCmd を実行する (Net.issue)
 function issue(act, d) {
   if (Net.on) return Net.issue(act, d);
-  return runCmd(app.game, app.game.pi, act, d);
+  const g = app.game, after = g.nextShipId - 1;
+  const r = runCmd(g, g.pi, act, d);
+  if (r?.ok) forecastSent(g, after); // 光速の指令になったものは、届く年と見込みを出す (B-056)
+  return r;
 }
 function runCmd(g, pi, act, d) {
   return g.asPlayer(pi, () => {
