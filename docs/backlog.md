@@ -52,6 +52,8 @@
 | B-027 | 相手が見ている自分: AI の国が見積もっている地球の艦隊 (古い記録と読み違い) を見せ、見せたい艦隊を動かす読み合いを作る | `intel`・`known`・`militarySheet` | Q2 | M | 船と戦争 | `critique/04-plan.md` の 2-3。**済み (回 FU1)**: 軍事の表に「相手が見ている自国の艦隊」(`seenByRival`) |
 | B-030 | 光より速く分かる情報 (戦争の点数・講和の申し出・船の一覧・集結の命令) を、光の遅れに通す | `WARSCORE`・`known`・`shipsHtml`・`warHtml`・`orderFleets` | D3 | L | 船と戦争 | `sf-critiques.md` の 4 と 5 の D3。**済み (回 FU1)**: 戦勝点・講和の申し入れ・講和会議・船の一覧・集結。残りは `status/FU.md` |
 | B-031 | 戦争の多さ (R29) を今の main (C-22 と P6 のあと) で 30 以上の銀河で測り直す。R14 (確認用。条約 7 割) を直すか決める | `BARGAIN.declareChance`・`warsYearly`・`tools/wars-headless.js` | — | S | 船と戦争 | `status/A.md` の次にやること 1・`game-plan.md` の 5 (R14) |
+| B-167 | 光の遅れの残り: 戦争疲弊は損失の知らせが首都に届いてから増える・講和会議の条件は会議を開いた星系に届いた記録で・AI どうしの講和の交渉は申し入れと答えが光速で行き来してから | `exhaust`・`treatyTerms`・`bargain`・`realmsYearly` | B-030 | M | 船と戦争 | 回 FU2 の残り (`status/FU.md`)・`research/game-physics-audit.md` の 2.8 の c・f |
+| B-168 | 試合の中で艦隊戦が起きるようにする: 守りのある星系も勝つ見込みが十分なら攻める・攻められた国が艦隊を差し向ける・艦隊をまとめてから攻める。試合の中の艦隊戦で R16 を測る | `realmsYearly`・`aiOrder`・`battleOdds`・`tools/wars-headless.js` | B-034 | M | 船と戦争 | 回 FU2 の残り (`status/FU.md`。4 銀河 × 150 年で入植星系の艦隊戦が 0) |
 | B-032 | 試遊で「AI が弱い・強い」と言われたら、難易度の値を見直す | `HANDICAP` | B-063 | S | 船と戦争 | `status/A.md` の次にやること 3・`game-plan.md` の 4 の C11 |
 
 ## 画面と最初の体験
