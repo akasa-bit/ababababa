@@ -6,6 +6,7 @@ function issue(act, d) {
   const g = app.game, after = g.nextShipId - 1;
   const r = runCmd(g, g.pi, act, d);
   if (r?.ok) forecastSent(g, after); // 光速の指令になったものは、届く年と見込みを出す (B-056)
+  if (r?.ok) PlayLog.firstAct(act); // 最初の判断の印 (B-060)
   return r;
 }
 function runCmd(g, pi, act, d) {

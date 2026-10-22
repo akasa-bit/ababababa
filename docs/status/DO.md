@@ -24,6 +24,7 @@
 ## 知らせ
 
 (ほかのレーンからの知らせは、ここに 1 行ずつ)
+- 2026-10-22 画面と最初の体験 (回 GA5・B-060) から: プレイ記録の形 (DO3 の道具が読むもの)。ホームの「記録を書き出す」のファイル = `{ app: 'nolongerubiquitous', edition, kind: 'playlog', exportedAt, sessions: [...] }`。セッションは `{ id, startedAt, seed, y0, y1, visibleMs, runningMs, pausedMs, idleMs, views: { 画面: ms }, vw, vh, ed, firsts: { colony, route, regime } (開いてからの秒), entries: [{ t: 開いてからの秒, y: ゲームの年, k, ... }], summary }`。`k` は act・set・fleet・fleetclear (命令)・speed・view・ui・home・idle (30 秒以上の操作なし。s = 秒)・memo (tag・text・snap・at・view)・first (what)。F04 は `firsts` の最小、F05 は止めていない間の命令の間隔、F03 は memo の confused と idle、F01・F02 は startedAt と visibleMs。同意 (QD-55 = a) した人だけが記録される。古い記録 (GA5 より前) には vw・vh・ed・firsts がない。
 - 2026-10-22 画面と最初の体験 (回 GA4・B-058) から: 評論家の 2-6 の「結末の型の分布 (自動対戦)」を測るときは、`g.ending()` (`src/screen/eras-score.js`。状態を読むだけ) が `{ type: 'empire' | 'federation' | 'balance' | 'decline', label, causes, share, indep, loose }` を返す。手元の 10 試合 (300 年): 地球だけの銀河 4 つはどれも帝国の維持、6 か国の銀河 6 つは均衡 5・衰え 1、連邦への移行は 0 (AI の家臣の既定の型が自治の家族でないため)。
 
 - 2026-10-22 政治 (回 SE2・B-026) から: 試験 `tools/tests/pacts.js` (遅れて届く外交) を足し、`tools/ci-tests.js` に落ちたら止める行として入れた。core は `commands.js` の `commandRaw` に 1 行 (命令 `pact`)、`game-loop.js` の `politicsYearly` に 1 行 (`diplomacyYearly`)。観戦の地球も協定を申し入れ・受けるので、判断を求められる回数 (面白さの代わりの数 1) に協定の申し入れが入る。

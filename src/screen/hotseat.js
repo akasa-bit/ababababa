@@ -63,13 +63,14 @@ $('home').onclick = (e) => {
   // 取り返しのつかない操作は2回押して確定する (confirm() は使えない環境がある)
   const confirm2 = (k) => { if (app.homeArmed === k) { app.homeArmed = null; return true; } app.homeArmed = k; renderHome(); return false; };
   PlayLog.add('home', { act });
-  if (act === 'logtoggle') { PlayLog.on = !PlayLog.on; PlayLog.persist(); return renderHome(); }
+  // 記録の切り替え: はじめるときは同意したことにする。止めるときは、これまでの記録を消すかを聞く (QD-57)
+  if (act === 'logtoggle') { if (PlayLog.on) { app.homeArmed = 'logstop'; return renderHome(); } PlayLog.setConsent('yes'); return renderHome(); }
+  if (act === 'logstoperase' || act === 'logstopkeep') { PlayLog.setConsent('no', act === 'logstoperase'); app.homeArmed = null; return renderHome(); }
+  if (act === 'logcancel') { app.homeArmed = null; return renderHome(); }
   if (act === 'logexport') return exportPlayLog();
   if (act === 'logclear') {
     if (!confirm2('logclear')) return;
-    for (const m of PlayLog.memos()) if (m.snap) Store.del(m.snap);
-    PlayLog.sessions = [];
-    PlayLog.start();
+    PlayLog.eraseAll();
     PlayLog.persist();
     return renderHome();
   }
@@ -108,7 +109,9 @@ $('home').onclick = (e) => {
     }
     save();
     closeHome(1);
-    return pauseForFirstMove();
+    pauseForFirstMove();
+    if (act === 'start') showConsent(); // はじめて遊ぶ人に、1 回だけ同意の画面 (B-060)
+    return;
   }
   const k = SLOT_KEYS[i];
   if (act === 'slotsave') {

@@ -1,16 +1,55 @@
 // --- プレイ記録: 自分がどう遊んだかを、感想ではなく行動として残す (このブラウザの中だけに保存し、外には送らない) ---
-// 操作・速さの切り替え・見ていた画面・操作のない時間・メモを記録する。メモにはその時点のゲームの状態も残す
+// 操作・速さの切り替え・見ていた画面・操作のない時間・メモを記録する。メモにはその時点のゲームの状態も残す。
+// 同意 (B-060。QD-55〜QD-58 = おすすめ): 記録は「切」で始め、はじめて遊ぶときに 1 回だけ同意の画面で選んでもらう。
+// 記録はこの端末の中だけに置き、開発者に届くのは本人が「記録を書き出す」で作ったファイルを送ったときだけ
 const MEMO_TAGS = { bored: '退屈', confused: '分からない', torn: '迷う', fun: '面白い' };
 const PLAYLOG_KEY = `${STORE}-playlog`;
+const CONSENT_KEY = `${STORE}-playlog-consent`; // 'yes' = 記録してよい、'no' = 記録しない、なし = まだ聞いていない
+const CONSENT_TEXT = {
+  title: '遊び方の記録にご協力ください',
+  lead: 'このゲームをよくするため、あなたがどう遊んだかを記録させてください。',
+  items: [
+    '記録するもの: 押したボタンの種類と時刻、ゲームの中の年、見ていた画面とその時間、ゲームの速さ、操作のなかった時間、あなたが書いたメモ (書いたときのゲームの状態を含む)、画面の大きさ。',
+    '記録しないもの: 名前・メールアドレス・アカウント・IP アドレス・住んでいる場所・ほかのアプリの様子。',
+    '記録はこの端末のブラウザの中だけに置かれます。開発者に届くのは、あなたがホーム画面の「記録を書き出す」で作ったファイルを、自分で送ったときだけです。',
+    'いつでもホーム画面の「プレイ記録」から止められ、消せます。記録してもしなくても、遊び方は何も変わりません。',
+  ],
+};
+const readConsent = () => { try { return localStorage.getItem(CONSENT_KEY); } catch { return null; } };
+// F04 (最初の意味のある判断までの時間) のための印: 1 回の遊びの中で、それぞれ最初の 1 回だけ記録する
+const FIRST_ACTS = { send: 'colony', candsend: 'colony', route: 'route', route2: 'route', rule: 'regime' };
 const PlayLog = {
-  on: true,
+  consent: readConsent(),
+  on: readConsent() === 'yes',
   sessions: [], // 過去のセッション (新しいものが後ろ)
   cur: null,
   t0: performance.now(),
   lastInput: performance.now(),
   start() {
     this.t0 = performance.now();
-    this.cur = { id: Date.now(), startedAt: Date.now(), seed: String(app.game.galaxy.seed), y0: app.game.year, y1: app.game.year, entries: [], visibleMs: 0, runningMs: 0, pausedMs: 0, idleMs: 0, views: {} };
+    this.cur = { id: Date.now(), startedAt: Date.now(), seed: String(app.game.galaxy.seed), y0: app.game.year, y1: app.game.year, entries: [], visibleMs: 0, runningMs: 0, pausedMs: 0, idleMs: 0, views: {},
+      vw: window.innerWidth, vh: window.innerHeight, ed: EDITION, firsts: {} }; // 画面の大きさ (CSS) と版 (QD-57)
+  },
+  // 最初の判断の印 (QD-57): その回で初めての入植船・交易路・統治体制の判断の時刻 (開いてからの秒)
+  firstAct(act) {
+    const what = FIRST_ACTS[act];
+    if (!what || !this.on || !this.cur || this.cur.firsts?.[what] !== undefined) return;
+    (this.cur.firsts ||= {})[what] = Math.round((performance.now() - this.t0) / 100) / 10;
+    this.add('first', { what });
+  },
+  // 同意の答え (v = 'yes' | 'no')。erase なら、それまでの記録とメモの状態もすべて消す
+  setConsent(v, erase = false) {
+    this.consent = v;
+    try { localStorage.setItem(CONSENT_KEY, v); } catch { /* 保存できない環境では、この回だけ */ }
+    this.on = v === 'yes';
+    if (erase) this.eraseAll();
+    if (this.on && !this.cur) this.start();
+    this.persist();
+  },
+  eraseAll() {
+    for (const m of this.memos()) if (m.snap) Store.del(m.snap);
+    this.sessions = [];
+    this.start();
   },
   add(k, data = {}) {
     if (!this.on || !this.cur || this.cur.entries.length >= 5000) return;
@@ -44,14 +83,14 @@ const PlayLog = {
   },
   all() { return this.cur ? [...this.sessions, this.cur] : [...this.sessions]; },
   persist() {
-    if (!Store.ready) return;
+    if (!Store.ready || (!this.on && !this.sessions.length && this.consent !== 'yes')) return; // 同意の前は、何も保存しない
     const sessions = this.all().filter((c) => c.visibleMs > 5000 || c.entries.length).slice(-30);
     Store.put(PLAYLOG_KEY, JSON.stringify({ on: this.on, sessions }));
   },
   async init() {
     try {
       const d = JSON.parse((await Store.get(PLAYLOG_KEY)) || 'null');
-      if (d && Array.isArray(d.sessions)) { this.sessions = d.sessions.filter((c) => c && Array.isArray(c.entries)); this.on = d.on !== false; }
+      if (d && Array.isArray(d.sessions)) { this.sessions = d.sessions.filter((c) => c && Array.isArray(c.entries)); this.on = this.consent === 'yes' && d.on !== false; } // 同意のない記録はとらない
     } catch { /* 壊れた記録は捨てる */ }
   },
   memos() { return this.all().flatMap((c) => c.entries.filter((e) => e.k === 'memo').map((e) => ({ ...e, session: c.id }))); },
@@ -113,9 +152,12 @@ function playLogHtml() {
   }).join('');
   const memos = PlayLog.memos().slice(-10).reverse().map((e) => `<div class="row"><div class="info">${e.tag ? `<b>${MEMO_TAGS[e.tag]}</b> ` : ''}${esc(e.text || '')}<br><span class="muted">西暦 ${Math.floor(e.at ?? e.y)}年</span></div>
     ${e.snap ? `<button data-home="memoload" data-k="${esc(e.snap)}">この時点をロード</button>` : '<span class="muted">状態は残っていない</span>'}</div>`).join('');
+  const ask = app.homeArmed === 'logstop'; // 記録を止めるとき: すべて消すかを聞く
   return `<section><h3>プレイ記録</h3>
-    <p class="muted">自分がどう遊んだかを記録する (このブラウザの中だけ)。ヘッダーの「メモ」で、退屈・分からない・迷う・面白いと感じた瞬間を、その時点の状態と一緒に残せる。</p>
-    <div class="row"><button data-home="logtoggle">${PlayLog.on ? '記録: オン' : '記録: オフ'}</button><button data-home="logexport">記録を書き出す</button><button class="ghost" data-home="logclear">${app.homeArmed === 'logclear' ? '本当に消す?' : '記録を消す'}</button></div>
+    <p class="muted">自分がどう遊んだかを記録する (このブラウザの中だけ。開発者に届くのは「記録を書き出す」で作ったファイルを自分で送ったときだけ)。${PlayLog.consent === 'yes' ? '記録してよいと答えている。' : PlayLog.consent === 'no' ? '記録しないと答えている。' : 'まだ答えていない。'}ヘッダーの「メモ」で、退屈・分からない・迷う・面白いと感じた瞬間を、その時点の状態と一緒に残せる。</p>
+    <div class="row">${ask ? '<span>記録を止める。これまでの記録は:</span><button data-home="logstoperase">すべて消す</button><button data-home="logstopkeep">残す</button><button class="ghost" data-home="logcancel">やめる</button>'
+      : `<button data-home="logtoggle">${PlayLog.on ? '記録を止める' : '記録をはじめる'}</button><button data-home="logexport">記録を書き出す</button><button class="ghost" data-home="logclear">${app.homeArmed === 'logclear' ? '本当に消す?' : '記録をすべて消す'}</button>`}</div>
+    <details class="help"><summary>同意の文</summary><p><b>${esc(CONSENT_TEXT.title)}</b><br>${esc(CONSENT_TEXT.lead)}</p><ul>${CONSENT_TEXT.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>
     ${rows ? `<div class="scroll"><table class="log"><tr><th>開始</th><th>遊んだ時間</th><th>進めた</th><th>止めていた</th><th>操作/分</th><th>操作なし</th><th>よく見た画面</th><th>メモ</th></tr>${rows}</table></div>` : ''}
     ${memos ? `<h4 style="margin:8px 0 2px">最近のメモ</h4>${memos}` : ''}
   </section>`;
@@ -157,3 +199,29 @@ $('importfile').onchange = async (e) => {
   else { app.homeNote = 'セーブデータを読み込めなかった。'; renderHome(); }
 };
 
+// 同意の画面 (B-060・QD-58): 「はじめる」から始めたときは画面の真ん中に出す。答えるまで記録はしない
+function consentCardHtml(cls = '') {
+  return `<div class="card consent ${cls}"><h2>${esc(CONSENT_TEXT.title)}</h2><p>${esc(CONSENT_TEXT.lead)}</p>
+    <ul>${CONSENT_TEXT.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
+    <div class="btns"><button data-consent="yes">記録してよい</button><button class="ghost" data-consent="no">記録しない</button></div></div>`;
+}
+function showConsent() {
+  if (PlayLog.consent || Net.on) return;
+  $('endbox').innerHTML = consentCardHtml();
+  $('endbox').hidden = false;
+}
+// 帯の一番上 (まだ答えていないとき。国家選択などほかの始め方の人にも出す)
+function consentRailHtml() {
+  if (PlayLog.consent || Net.on || app.homeOpen) return '';
+  return `<div class="dec consent"><div class="m">${esc(CONSENT_TEXT.title)}</div><div class="t">${esc(CONSENT_TEXT.lead)} 記録はこの端末の中だけ。いつでも止めて消せる。</div>
+    <div class="opts"><button data-consent="yes">記録してよい</button><button class="ghost" data-consent="no">記録しない</button><button class="ghost" data-consent="more">くわしく</button></div></div>`;
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest?.('button[data-consent]');
+  if (!b) return;
+  if (b.dataset.consent === 'more') { $('endbox').innerHTML = consentCardHtml(); $('endbox').hidden = false; return; }
+  PlayLog.setConsent(b.dataset.consent);
+  if (b.closest('#endbox')) $('endbox').hidden = true;
+  setHtml($('rail'), railHtml(app.game));
+  uiNote(b.dataset.consent === 'yes' ? '遊び方の記録をはじめた (ホーム画面の「プレイ記録」から止められる)' : '遊び方は記録しない (ホーム画面の「プレイ記録」から変えられる)');
+});
