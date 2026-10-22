@@ -67,6 +67,7 @@
       return act === 'sendclear' ? this.sendFleetClear(f) : this.sendRedirect(f, Number(d.sys), d.route || []);
     }
     if (act === 'declarewar') return this.declareWar(Number(d.sys));
+    if (act === 'pact') return this.proposePact(d); // 遅れて届く外交 (政治。politics/diplomacy.js)
     if (act === 'policy') return this.setPolicy(d.value);
     if (act === 'fiscal') return this.setFiscal(d);
     if (act === 'grant') {
