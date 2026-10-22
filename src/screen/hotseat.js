@@ -243,7 +243,7 @@ function newsMark(g) {
   let ev = 0;
   const foes = evFoes(g); // よその国どうしの出来事と、飢餓・不足の状態では止めない (知らせの予算。B-048)
   for (const e of g.knownEvents()) if (e.id > ev && evShown(e.kind) && evTier(e.kind) >= 2 && !STATE_KINDS.has(e.kind) && evConcerns(g, e, foes)) ev = e.id;
-  return { ev, dec: g.visibleDecisions().map((d) => d.id).join(',') };
+  return { ev, dec: [...g.visibleDecisions().map((d) => d.id), ...surpriseWarnings(g).map((w) => `f${w.f.id}`)].join(',') }; // 奇襲の警告も決めることとして止める
 }
 function startSkip() {
   app.skip = { from: app.game.year, ...newsMark(app.game) };
