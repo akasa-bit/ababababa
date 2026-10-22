@@ -201,6 +201,7 @@ function railHtml(g) {
   const now = performance.now();
   // 新しいゲーム・ロードのときは数え直す (それまでの出来事は「新しい知らせ」として流さない)
   if (app.railGame !== g) { app.railGame = g; app.railFirst = new Map(); app.railSince = g.year; }
+  eraReviewTick(g); // 時代の終わりの答え合わせ (B-054)
   const acked = new Set(g.acked || []);
   const evs = g.knownEvents();
   let fresh = false;
