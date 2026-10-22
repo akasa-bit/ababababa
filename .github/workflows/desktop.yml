@@ -1,0 +1,89 @@
+name: 包装 (Windows と Linux)
+
+# デスクトップ版の包装 (desktop/) を、Linux と Windows の機械で組み立てて開き、ゲームが動くか・字体が同梱で読めるかを見る (B-086・B-088)。
+# Steam Input の既定の設定 (desktop/steam-input/) が表と同じで、ゲームが受けるキーだけかも見る (B-085)。
+# 外向き (レーン SO) が持つ。決まり: 包装・ストア・字体に関わる所を変えた PR だけで回り、落ちたらその PR を止める。
+# ほかのレーンの PR では回らない (止めない)。ゲームの変更で包装が壊れていないかは、毎週の回で見る (落ちたら外向きが直す)。
+on:
+  pull_request:
+    paths:
+      - 'desktop/**'
+      - 'src/index.html'
+      - '.github/workflows/desktop.yml'
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ゲームを組み立てる (圧縮に python3 を使うので Linux で)。できた index.html を Windows にも渡す
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 組み立て
+        run: |
+          cd tools && npm ci && cd ..
+          node tools/build.mjs
+      - name: Steam Input の設定
+        run: node desktop/steam-input/make.mjs --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: game
+          path: index.html
+          retention-days: 3
+
+  package:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+            exe: desktop/electron/out/NoLongerUbiquitous-linux-x64/NoLongerUbiquitous
+          - os: windows-latest
+            target: win
+            exe: desktop/electron/out/NoLongerUbiquitous-win32-x64/NoLongerUbiquitous.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: game
+      - name: 包装する
+        shell: bash
+        run: |
+          cd desktop/electron && npm ci && cd ../..
+          node desktop/prepare.mjs
+          cd desktop/electron && npm run package:${{ matrix.target }}
+      - name: 開いて確かめる (Linux)
+        if: matrix.target == 'linux'
+        shell: bash
+        run: |
+          sudo apt-get install -y xvfb >/dev/null
+          xvfb-run -a node desktop/check.mjs ${{ matrix.exe }} | tee check.txt
+      - name: 開いて確かめる (Windows)
+        if: matrix.target == 'win'
+        shell: bash
+        run: node desktop/check.mjs ${{ matrix.exe }} | tee check.txt
+      - name: 表を出す
+        if: always()
+        shell: bash
+        run: |
+          { echo "### 包装 (${{ matrix.target }})"; echo; echo '```'; tail -1 check.txt 2>/dev/null || echo "(確かめの前に止まった)"; echo '```';
+            echo "大きさ: $(du -sh desktop/electron/out/*/ 2>/dev/null | cut -f1)"; } >> "$GITHUB_STEP_SUMMARY"

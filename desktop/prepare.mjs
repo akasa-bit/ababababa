@@ -43,4 +43,6 @@ for (const [pkg, family, weights] of FONTS) {
   }
 }
 writeFileSync(join(fontDir, 'fonts.css'), css.join('\n'));
+// Steam Input の既定の設定 (B-085。desktop/steam-input/README.md)。包装のフォルダの resources/game/steam-input/ に入る
+cpSync(join(here, 'steam-input'), join(dest, 'steam-input'), { recursive: true, filter: (f) => !f.endsWith('.mjs') && !f.endsWith('.md') });
 console.log(`写した: ${dest} (字体 ${FONTS.length} 種類・${files} ファイル)`);

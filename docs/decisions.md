@@ -83,10 +83,11 @@
 | QD-22 | Steam Direct の手数料 100 米ドルを払う (ここから 30 日) | ストアのページとビルドの審査 | `store/steamworks.md` の 9 の 2 |
 | QD-23 | Firebase のプロジェクトを作り、設定 (`firebaseConfig`) を渡す。ログインの 3 方式 (Google・メール・匿名) をオンにし、承認済みドメインに `akasa-bit.github.io` を足し、Firestore にルールを貼る | アカウント機能 (クラウドのセーブ・自作の国・部屋のコードでのネット対戦)。いまは `FIREBASE_CONFIG = null` で隠れている。もらったら `src/index.html` に入れて組み立て直す | `docs/online.md` の 1、`docs/status/common.md` の 4 |
 | QD-24 | Steam Deck の実機で `desktop/bench/run.mjs` と同じ手順を回す | 目標 F08 の判定、Deck の Verified | `docs/status/S.md`、`desktop/README.md` の 4 |
+| QD-72 | Steam Input の既定の設定 (`desktop/steam-input/`) を Steam Deck の実機の設定画面で読み込み、割り当てが表のとおりか見て、書き出し直す。Steamworks の「Steam Input」で既定にする | Steam Deck の Verified・コントローラーで遊べること。QD-21 (アカウント) と QD-24 (実機) のあと | `desktop/steam-input/README.md` の 2・3 |
 | QD-54 | 音の素材を買う (QD-53 で選んだもの。おすすめなら M1 と S1 の 2 つ、約 6,000 円。S4 は無料で取れる)。買ったら、ファイルを Claude に渡す (置き場は QD-53 の a か b) | 音 (B-047)。渡されたら `src/screen/sound.js` の表に名前を書いて鳴らす | 上の QD-53 の候補 |
 | QD-25 | (任意) HMD・HFD の利用登録 (人間の生命表と出生のデータ) | 年齢つきの人口 (D の 10) を生データで確かめる分。いまは WPP 2024 で代わりにしている | `docs/status/Q.md` |
 
-ほかに、Windows 版を Windows の上で動かす確かめが残っている (`docs/status/S.md`)。これは実機か、CI に Windows を足せば Claude でもできる。
+Windows 版を Windows の上で動かす確かめは、回 SO2 で CI (「包装 (Windows と Linux)」) に足した。
 
 ## 4. いまは聞かないと決まっているもの (保留)
 
