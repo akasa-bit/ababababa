@@ -19,6 +19,8 @@
 
 (ほかのレーンからの知らせは、ここに 1 行ずつ)
 
+- 2026-10-22 FU (回 FU1・B-030/B-027): `known` には値を足していない (core は `commands.js` の集結の 2 行だけ)。光の遅れを通した値は `Game` のメソッドで使える: `warScore(g.cap, root)` は首都に届いた戦果での戦勝点 (本当の値は `warScoreAt(null, …)`)・`peaceOffers` と `conferences` は届いたものだけ (届く途中は `peaceSent`・`confSent`。`at` が届く年)・`seenFleets()` = 見えている移動中の艦隊 `[{ f, leg, mine }]` (leg は見えている区間。進路変更は光が届いてから)・`seenLeg(f)`・`seenMoving('ships' | 'troopMoves')`・`seenByRival(root)` = 相手の首都に見えている自国の艦隊 `{ n, age, lo, hi }`。GA3 の光の球・ありうる今で使ってほしい。気づいた所: 星間マップの自国の艦隊の矢印 (`galaxy-view.js` の 500 行あたり) は `f.to` (本当の行き先) なので、進路変更が光より速く見える。`game.seenLeg(f).to` にすると揃う。
+
 ## 気をつけること
 
 - 画面の決まりは `docs/parallel.md` の 7 と `docs/handoff.md` の 15。

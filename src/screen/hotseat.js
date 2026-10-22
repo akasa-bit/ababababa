@@ -154,14 +154,16 @@ updateSigBtn();
   const own = cs.getPropertyValue('--own').trim();
   if (/^#[0-9a-f]{6}$/i.test(own)) { OWN.hex = own; OWN.rgb = [1, 3, 5].map((i) => parseInt(own.slice(i, i + 2), 16)).join(','); }
 }
-// 画面の動き (信号の模様と文字のぶれ)。見る人ごとの好みなのでブラウザに覚えておく
-try { app.fx = localStorage.getItem(`${STORE}-fx`) !== 'off'; } catch { app.fx = true; }
+// 画面の動き (信号の模様と文字のぶれ)。見る人ごとの好みなのでブラウザに覚えておく。
+// 既定は「切」(QD-08 = a。読みやすさと Steam Deck の文字の基準のため)。前に「入」を選んだ人は「入」のまま
+try { app.fx = localStorage.getItem(`${STORE}-fx`) === 'on'; } catch { app.fx = false; }
 function updateFxBtn() { document.body.classList.toggle('fx', app.fx); $('fxbtn').textContent = `画面の動き: ${app.fx ? '入' : '切'}`; $('fxbtn').classList.toggle('on', app.fx); }
 $('fxbtn').onclick = () => {
   app.fx = !app.fx;
   PlayLog.add('ui', { act: 'fx', v: app.fx });
   try { localStorage.setItem(`${STORE}-fx`, app.fx ? 'on' : 'off'); } catch { /* 保存できない環境では無視 */ }
   updateFxBtn();
+};
 // 文字のぶれ: 0.26秒ごとに、見えている文字のどれか1つ (ときどき2〜3つ) を短くぶらす
 const FX_JIT = 'button, th, .stats b, .kpi b, #treasury .v, #date, #rail .t, .syshead h2';
 const fxReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -180,7 +182,6 @@ setInterval(() => {
     setTimeout(() => el.classList.remove('jit'), 620);
   }
 }, 260);
-};
 updateFxBtn();
 function updateSpectateBtn() { $('spectatebtn').classList.toggle('on', !!app.game.spectate); }
 $('spectatebtn').onclick = () => {

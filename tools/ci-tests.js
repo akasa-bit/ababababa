@@ -55,6 +55,8 @@ const TESTS = [
   ['rotate', [SHOTS, path.join(ROOT, 'index.html')], (o) => ((o.match(/rotated == fresh redraw: true \[\]/g) || []).length === 2 ? '' : '回したあとの絵が描き直しと違う')],
   // セーブ: 分ける前のゲームのセーブを読んで同じ筋で続く・仕組みごとのセーブの項目 (saveField) の初期値と既定 (回 R3)
   ['save', [], (o, code) => (code === 0 && o.includes('セーブ 合格') ? '' : 'セーブ 不合格')],
+  // 光より速く分かる情報をなくす (B-030) と、相手が見ている自分 (B-027)。落ちたら止める
+  ['lightwar', [], (o, code) => (code === 0 && o.includes('光の遅れ 合格') ? '' : '光の遅れ 不合格')],
   ['headless', ['100', '1,4,9'], (o, code) => (code === 0 && o.includes('画面なしの版: 一致') ? '' : '画面なしの版がブラウザと違う')],
 ];
 
