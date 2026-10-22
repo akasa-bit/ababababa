@@ -203,6 +203,7 @@ function railHtml(g) {
   if (app.railGame !== g) { app.railGame = g; app.railFirst = new Map(); app.railSince = g.year; Forecast.list = []; }
   forecastTick(g);
   govReportsTick(g); // 委任の報告書 (B-057)
+  eraReviewTick(g); // 時代の終わりの答え合わせ (B-054)
   const acked = new Set(g.acked || []);
   const evs = g.knownEvents();
   let fresh = false;
