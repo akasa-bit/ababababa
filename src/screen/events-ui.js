@@ -80,6 +80,37 @@ function railNews(g, evs, acked, skip) {
 // 地球が知っている、飢餓・水不足の入植地がある自国の星系の数 (地図では赤い「!」)
 function famineSystems(g) { return g.knownOwnSystems().filter((x) => g.knownColonies(x.id).some((c) => c.alerts?.food || c.alerts?.water)).length; }
 
+// 相対論の奇襲の警告 (B-055): 0.95c の艦隊は、出発の光のすぐあとに着く (光より 5% 遅れるだけ)。敵の艦隊の出発が見えたら、
+// いちばん早く着ける自国の星系に向かっているとして「到着まで あと n 年」を、決めることと同じ形で帯に出す。
+// 行き先は見ているだけでは分からないので、いちばん悪い場合 (いちばん近い自国の星系・いちばん速い船) で数える
+const SURPRISE_YEARS = 15; // これより先に着く見込みのものだけ出す
+function surpriseWarnings(g) {
+  if (g.spectate) return [];
+  const foes = new Set(g.knownEnemiesOf(g.cap));
+  if (!foes.size) return [];
+  const own = [g.system(g.cap), ...g.knownOwnSystems().filter((x) => x.id !== g.cap)];
+  const v = Math.max(SHIP_SPEED, OFFROUTE_SPEED);
+  const out = [];
+  for (const { f, leg, mine } of g.seenFleets()) {
+    if (mine || !foes.has(f.owner ?? 0) || (app.surpriseAck || new Set()).has(f.id)) continue;
+    const from = g.system(leg.from ?? f.from), t0 = leg.depart ?? f.depart;
+    let best = null;
+    for (const s of own) {
+      if (s.id === from.id) continue;
+      const at = t0 + distance(from, s) / v;
+      if (at > g.year && (!best || at < best.at)) best = { sys: s.id, at };
+    }
+    if (best && best.at - g.year <= SURPRISE_YEARS) out.push({ f, from, ...best, seenLag: g.lightDelay(from.id) });
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+function surpriseHtml(g, w) {
+  const name = g.system(w.sys).name;
+  return `<div class="dec warn"><div class="m">${tagIco('war')}奇襲のおそれ・${esc(g.realmName(w.f.owner ?? 0))}の艦隊 ${Math.round(w.f.n || 0)}</div>
+    <div class="t">${esc(w.from.name)}を出た艦隊が見えた (出発の光は ${w.seenLag.toFixed(1)} 年かかって届いた)。${esc(name)}に向かっているなら、着くのは ${w.at.toFixed(1)} 年 — <b>あと ${Math.max(0, w.at - g.year).toFixed(1)} 年</b></div>
+    <div class="opts"><button data-act="fly" data-sys="${w.sys}">${esc(name)}の守りを見る</button>${g.knownGarrison(g.cap) >= 1 && w.sys !== g.cap ? `<button data-act="fleetsel" data-sys="${g.cap}">首都の艦隊を選ぶ</button>` : ''}<button class="ghost" data-act="surpriseack" data-id="${w.f.id}">確かめた</button></div></div>`;
+}
+
 // イベントタブ: 決めること、いま起きている問題、重要なイベントの履歴
 function eventsHtml(app) {
   const g = app.game;
@@ -160,6 +191,7 @@ function eventsHtml(app) {
     <p class="note">遠い星系の出来事は、光が${ME.home}に届いてから表示される (年は起きた年)。</p>
     ${decisionsHtml(g)}
     <h3>いま起きている問題 (把握分 ${now.length + kwars.length + risks.length})</h3>${nowHtml}
+    <h3>${ico('inspect')}総督の手紙 (委任した星系の 10 年ごとの報告)</h3>${govReportsHtml(g)}
     <h3>履歴</h3>
     <div class="chips"><span class="muted">表示する段</span>${tiers}<span class="muted">表示</span><button data-act="evmode" data-m="list" class="${EvPrefs.mode === 'list' ? 'on' : ''}">一覧</button><button data-act="evmode" data-m="year" class="${EvPrefs.mode === 'year' ? 'on' : ''}">年ごと</button></div>
     <details class="evkinds"><summary class="muted">種類ごとに選ぶ</summary><div class="bulk">${kindBoxes}</div></details>
