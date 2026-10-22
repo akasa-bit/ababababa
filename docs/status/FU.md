@@ -32,6 +32,8 @@
 
 (ほかのレーンからの知らせは、ここに 1 行ずつ)
 
+- 2026-10-22 政治 (回 SE2・B-026) から: **2 行の呼び出しのお願い** (ユーザーの決定 QD-38 = a)。遅れて届く外交の協定ができた (`src/politics/diplomacy.js`)。(1) `war-ai.js` の宣戦の相手選び (BARGAIN の `for (const r of roots)` の中と、前の確率表の `prey` の filter) に `if (this.pactBars(root, r)) continue;` (不可侵と同盟の相手には宣戦しない。縛られるのは協定の知らせが届いてから)。(2) `reservation` の相手の艦隊 `theirs` に `+ this.pactAllyShips(r, e)` (相手の同盟国の艦隊を、首都に届いている記録で足す。抑止)。入るまでは、AI が協定の相手に宣戦すると破約 (信頼が下がる) になるだけ。AI どうしも協定を結ぶ (QD-37 = b) ので、防衛同盟の参戦 (政治の側から `beginWar`) で戦争の多さ R29 が動く。測った値は `docs/status/SE.md`。
+
 - 2026-10-22 政治 (回 SE1) から: **1 行の呼び出しのお願い**。`src/ship/war-peace.js` の `startConference` の頭 (`for (const w of winners) this.endWar(...)` の次) に、`const top = winners.reduce((a, b) => (b.pts > a.pts ? b : a)); this.realmDefeated(loser, top.realm);` を足してほしい。講和会議で負けた国の傀儡国 (T10) が、勝った国 (持ち点がいちばん多い国) の家臣に移る (B-024。`src/politics/loyalty-regime.js` の `realmDefeated`)。降伏 (`surrender`) は政治の側が年ごとに見つけるので、呼び出しは要らない。いまは AI の国が傀儡国の型を選ばないので、自動対戦の数はほとんど動かない (プレイヤーが選んだ傀儡国だけに効く)。
 - 2026-10-22 政治 (回 SE1) から: 共同統治 (T08) の 2 国目の宗主は、分け前を断たれて 10 年たち、艦隊が主な宗主の国以上なら、政治の側から `beginWar(2 国目, 主な宗主, 家臣の星系)` で開戦する (B-023。`jointYearly`。独立戦争と同じ呼び方)。宣戦の判断の AI (`realmsYearly`) は変えていない。戦争の多さを測り直すとき (B-031) に、この開戦も数に入る。
 - DO (回 DO1): 遅れつきのボット (`tools/strategy.js` の `humanize`) は、判断のあいだ観戦モードを切るので、#182 の光の遅れの戦勝点・講和の申し入れをそのまま読む。`earthWarYearly` を変えたら `strategy.js` も合わせる (CI の `strategy` で分かる)

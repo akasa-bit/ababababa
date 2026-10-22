@@ -57,6 +57,7 @@
 | `economy/fiscal-consts.js` | 経済 | 49 | 税・利子率・予算・関税・AI の財政・国債 (DEBT) |
 | `politics/policy-consts.js` | 政治 | 29 | 国家方針の費用・不満と要求・放置・議会・時代・終わりの年・挑戦 |
 | `politics/story.js` | 政治 | 115 | 語り手の出来事 (STORY) |
+| `politics/diplomacy-consts.js` | 政治 | 25 | 遅れて届く外交の協定 (PACT・PACT_KINDS・セーブの項目 diplo。回 SE2) |
 | `core/game-base.js` | 共通 (世話役: 道具と検証) | 333 | Game: 作り方 (constructor)・国の割り当て・星系と入植地の引き方・家臣の連なり |
 | `ship/war-peace.js` | 船と戦争 | 236 | Game: 戦争の状態・戦争疲弊・戦勝点・講和・講和会議 |
 | `politics/loyalty-regime.js` | 政治 | 468 | Game: 忠誠・統治体制・主権の束・共同統治・任免・不満と要求・独立・直轄・政治力 |
@@ -72,6 +73,7 @@
 | `ship/fleets.js` | 船と戦争 | 141 | Game: 造船・艦隊の補給・艦隊を出す・進路変更 |
 | `economy/development.js` | 経済 | 206 | Game: 前哨・自動の開発・政府の年ごとの処理・入植の目標・奴隷・ステーション |
 | `politics/grants.js` | 政治 | 50 | Game: 資金援助・朝貢 |
+| `politics/diplomacy.js` | 政治 | 200 | Game: 遅れて届く外交 (協定の申し入れ・受けるか・破約・同盟の参戦。回 SE2) |
 | `ship/defense.js` | 船と戦争 | 94 | Game: 海賊・防衛・威圧の艦隊 |
 | `economy/migration.js` | 経済 | 71 | Game: 居住区・恒星間移民・集結・方針の一括 |
 | `ship/war-troops.js` | 船と戦争 | 350 | Game: 海賊の襲撃・贈り物・統合・征服・奴隷化・解放・先住民との戦争・歩兵 |

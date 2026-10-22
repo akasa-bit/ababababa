@@ -491,7 +491,7 @@
   // 指令に要る政治力。艦隊への指令・自動の指令・太陽系の中の行動は0。直轄の星系は半分
   pcCost(act, d) {
     if (d.auto || d.awe || d.aweBack || PC_FREE_ACTS.has(act)) return 0;
-    if (act === 'declarewar' || act === 'peace') return PC_DIPLOMACY;
+    if (act === 'declarewar' || act === 'peace' || act === 'pact') return PC_DIPLOMACY;
     if (act === 'policy') return POLICY_COST;
     if (act === 'fiscal') { const c = this.fiscal || FISCAL_DEFAULT; return taxRateOf(d.tax ?? c.tax) !== taxRateOf(c.tax) || Number(d.ctax ?? c.ctax ?? 0) !== (c.ctax || 0) || Number(d.tariff ?? c.tariff ?? 0) !== (c.tariff || 0) || Number(d.rate ?? c.rate) !== c.rate || Number(d.deficit ?? c.deficit ?? 0) !== (c.deficit || 0) ? FISCAL_COST : 0; }
     const extra = act === 'decide' ? this.decisionOpt(d)?.pc || 0 : 0;

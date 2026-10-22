@@ -63,6 +63,7 @@ function politicsSheet(app) {
     <h3>独立国</h3>
     <div class="kpi"><div><span>${ico('war')}${esc(ME.realm)}の戦争疲弊</span><b class="${myEx >= 40 ? 'bad' : ''}">${myEx}</b><span>税収 −${Math.round(EXHAUST.tax * myEx * 100)}%・家臣の忠誠度 −${Math.round(EXHAUST.loyalty * myEx)}${myEx > 20 ? `・議会の支持 −${(EXHAUST.council * (myEx - 20)).toFixed(1)}/年` : ''}</span></div></div>
     ${realms ? `<div class="scroll"><table class="tbl"><tr><th>首都</th><th>規模 (把握分)</th><th>状態</th><th>戦況</th><th></th></tr>${realms}</table></div>` : '<p class="note">いまのところ独立国はない。</p>'}
+    ${diplomacyHtml(g, roots)}
     <p class="note"><b>戦争疲弊</b> (0〜100) は、艦隊を失うと 1 艦隊あたり ${EXHAUST.ship}、星系を攻め落とされると ${EXHAUST.system}、戦っている戦争 1 つにつき年 ${EXHAUST.warYear} (攻囲されている星系 1 つにつき年 ${EXHAUST.siegeYear}) 増え、平和なあいだは年 ${EXHAUST.peaceYear} ずつ減る。<b>戦勝点</b> (−100〜100) は、沈めた艦隊の差 (1 艦隊 ${WARSCORE.ship}) と、攻め落とした星系の差 (1 つ ${WARSCORE.system}) で決まる。
       講和は、勝っている側が<b>講和会議</b>で戦勝点 (100 まで) を条件に使う: 従属させる (${TREATY.vassal})・星系の割譲 (人口しだいで 5〜30)・賠償金 (${fmtAmt(TREATY.cash)} cr ごとに ${TREATY.cashPts})。戦勝点の差が 5 未満なら白紙講和。AI の国は、負けているほど・疲れているほど講和に応じ、戦争疲弊が 60 を超えるか戦勝点が −50 を下回ると自分から申し入れてくる。戦闘のないにらみ合いの戦争も、始まってすぐは年 35% ほど、長引くほど低い確率で申し入れてくる (20 年たつと年 6%)。</p>
     <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。終わらせ方は上の「戦争疲弊」「講和会議」のとおり (仕掛けた側が大差で負ければ、相手に全面的に任せる持ち点 100 の講和会議になる)。独立国どうしも戦争をする (近くの弱い独立国に宣戦する)。交戦中でない国の星系へ艦隊を送ると奇襲攻撃になり、着いた時点で戦争が始まる。交戦中の国どうしでは物資をやり取りしない (各星系は開戦の知らせが光速で届いてから取引をやめる)。講和・降伏で戦争が終わっても、終戦の知らせが主星 (首都) を経て光速で届くまで、各地の艦隊は戦い続け攻囲も続く。</p>
@@ -84,3 +85,34 @@ function politicsSheet(app) {
     ${rows ? `<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>統治</th><th>放っておかれた</th><th>不満</th><th>${ico('loyalty')}忠誠度</th><th>${ico('fear')}恐怖度</th><th>${ico('friend')}主人との友好度</th><th>主人からの支援</th><th>見通し</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : `<p class="note">まだ${ME.home}以外の政府はない。</p>`}`;
 }
 
+
+// 外交 (回 SE2・B-026): 結んでいる協定・届く途中の申し入れ・国ごとの申し入れのボタンと見込み (「何なら受けるか」)
+function diplomacyHtml(g, roots) {
+  const mine = g.diplo.pacts.filter((p) => p.a === g.cap || p.b === g.cap).map((p) => {
+    const other = p.a === g.cap ? p.b : p.a;
+    const meOn = p.a === g.cap ? p.onA : p.onB, themOn = p.a === g.cap ? p.onB : p.onA;
+    return `<tr><td><span class="dot" style="background:${realmColor(other)}"></span>${esc(g.realmName(other))}</td><td>${PACT_KINDS[p.kind].label}</td><td>${Math.round(p.until)}年まで</td>
+      <td>${meOn > g.year ? `<span class="muted">${ME.realm}は ${meOn.toFixed(0)} 年から (返事が届いてから)</span>` : `${ME.realm}も縛られている`}<br><span class="muted">相手は ${themOn.toFixed(0)} 年から</span></td></tr>`;
+  }).join('');
+  const sent = g.diplo.sent.filter((o) => o.from === g.cap).map((o) => `<tr><td>${esc(g.realmName(o.to))}</td><td>${PACT_KINDS[o.kind].label}</td><td>${o.at > g.year ? `光速で送信中 あと ${(o.at - g.year).toFixed(1)} 年` : '相手が考えている'}${o.gift ? ` (贈り物 ${fmtAmt(o.gift)} cr)` : ''}</td></tr>`).join('');
+  const kinds = Object.keys(PACT_KINDS);
+  const rows = roots.filter((r) => !g.knownAtWar(g.cap, r) && g.realmAlive(r)).flatMap((r) => kinds.map((kind, i) => {
+    const head = i === 0 ? `<td rowspan="${kinds.length}"><span class="dot" style="background:${realmColor(r)}"></span>${esc(g.realmName(r))}<br><span class="muted">${g.sysDist(g.cap, r).toFixed(1)} 光年</span></td>` : '';
+    let cell, act = '';
+    if (g.pactBetween(g.cap, r, kind)) cell = '<span class="muted">結んでいる</span>';
+    else if (g.diplo.sent.some((o) => o.from === g.cap && o.to === r && o.kind === kind)) cell = '<span class="muted">申し入れ中</span>';
+    else {
+      const o = g.pactOutlook(r, kind);
+      cell = `<span class="${o.s >= 0.15 ? 'hz' : o.s >= 0 ? '' : 'bad'}">${o.label}</span><br><span class="muted">${esc(o.why)}${o.s < 0 ? `。${o.need.ships ? `こちらの艦隊があと ${o.need.ships} 見えるか、` : ''}贈り物 ${fmtAmt(o.need.gift)} cr なら受けそう` : ''}</span>`;
+      act = `<button data-act="pact" data-sys="${r}" data-pact="${kind}" data-gift="0">申し入れる<small>政治力 ${PC_DIPLOMACY}</small></button>${o.s < 0 ? `<button data-act="pact" data-sys="${r}" data-pact="${kind}" data-gift="${o.need.gift}">贈り物つき<small>${fmtAmt(o.need.gift)} cr (受けたら払う)</small></button>` : ''}`;
+    }
+    return `<tr>${head}<td>${PACT_KINDS[kind].label}</td><td class="wrap">${cell}${act ? `<div class="btns">${act}</div>` : ''}</td></tr>`;
+  })).join('');
+  const breaches = g.pactBreaches(g.cap);
+  return `<h3>外交</h3>
+    <p class="note">協定は 3 種類 (${Object.values(PACT_KINDS).map((k) => `<b>${k.label}</b>: ${k.note}`).join('・')})。どれも ${PACT.years} 年。申し入れは光速で相手の首都に届き、相手はそこで決める。受けた時点から相手が縛られ、返事が光速で戻った時点から${ME.realm}が縛られる。
+      相手は、首都に届いている古い光で見た${ME.realm}の艦隊 (読み違いつき) と、近くの国の艦隊から決める。下の見込みは、地球に届いている記録での見立て。協定の相手に宣戦するか、同盟の参戦を断ると<b>破約</b>になり、議会の支持 −${PACT.breachCouncil}、${PACT.distrustYears} 年のあいだ、どの国も協定を受けにくくなる${breaches ? ` (いま破約 <b class="bad">${breaches}</b> 回)` : ''}。</p>
+    ${mine ? `<div class="scroll"><table class="tbl"><tr><th>相手</th><th>協定</th><th>期限</th><th>縛られる時期</th></tr>${mine}</table></div>` : '<p class="note">結んでいる協定はない。</p>'}
+    ${sent ? `<div class="scroll"><table class="tbl"><tr><th>相手</th><th>申し入れ</th><th>状況</th></tr>${sent}</table></div>` : ''}
+    ${rows ? `<div class="scroll"><table class="tbl"><tr><th>国</th><th>協定</th><th>見込み (地球に届いた記録で)</th></tr>${rows}</table></div>` : ''}`;
+}

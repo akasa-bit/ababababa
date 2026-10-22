@@ -16,6 +16,7 @@
     for (const dec of this.visibleDecisions()) {
       let k = dec.def;
       if (dec.kind === 'demand') k = (this.garrison[this.cap] || 0) >= 2 * this.knownRebelFleet(dec.sys) + 1 && this.rand() < 0.5 ? 'awe' : 'accept';
+      else if (dec.kind === 'pact') k = this.pactAiReply(dec);
       else {
         // 払える選択肢のうち、いまの国の様子でいちばん選びたいもの (語り手の weigh。少しの揺らぎを足す)
         const ok = dec.opts.filter((o) => (o.cr || 0) <= 0.2 * this.gov(this.cap).credits && this.pcCost('decide', { sys: dec.sys, id: dec.id, opt: o.k }) <= this.pc - 10);

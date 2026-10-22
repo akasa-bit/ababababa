@@ -133,7 +133,7 @@
   rateAt(id) { return this.fiscalAt(id).rate ?? FISCAL_DEFAULT.rate; }
   ctaxAt(id) { return this.fiscalAt(id).ctax || 0; } // 消費税 (その星系で効いている国の)
   // 関税: 買い手の星系で効いている国の関税率。同じ国の中の取引には掛からない
-  tariffFor(buyer, seller) { return this.realmOf(buyer) === this.realmOf(seller) ? 0 : this.fiscalAt(buyer).tariff || 0; }
+  tariffFor(buyer, seller) { return this.realmOf(buyer) === this.realmOf(seller) || this.pactFreeTrade(this.realmOf(buyer), this.realmOf(seller)) ? 0 : this.fiscalAt(buyer).tariff || 0; } // 交易協定の相手には掛けない (政治の pactFreeTrade。回 SE2)
   // 予算の効き目 (0〜1)。首都が予算を払いきれていなければ、払えた割合だけ効く
   budgetAt(root, id, k) { return budgetEffect((this.fiscalFor(root, id).budget?.[k] || 0) * (this.govs[root]?.bpaid ?? 1)); }
   // 艦隊の戦力の倍率 (種族の特性 × 軍事の予算)。x は国か星系、at は戦う星系
