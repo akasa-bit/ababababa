@@ -1,7 +1,8 @@
 // 必勝法を探す AI: 戦略の値 (tools/strategy.js の SPACE) を変えて、プレイヤーの国の点数 (score) を上げる戦略を探す (段 12 の最小版)
 // 探し方: 無作為に候補を出し (予算の半分)、いちばん良いものから 1 つずつ値を変えて山登りする (残りの半分)。同じ銀河の組で比べる。
 // 「放任」(いまの観戦の AI) に比べて点数がどれだけ上がったかを出す。大きいほど、必勝法の気配がある (F06 の判定はセッション 15)。
-// 使い方 (コマンド): node tools/search.js [--src src/index.html] [--seeds 1,2,3,4] [--years 150] [--nations 6] [--budget 40] [--rng 1] [--out 結果.json]
+// 使い方 (コマンド): node tools/search.js [--src src/index.html] [--seeds 1,2,3,4] [--years 150] [--nations 6] [--budget 40] [--rng 1] [--delay] [--every 1] [--out 結果.json]
+//   --delay = 人間に近い遅れつきのボットで回す (tools/strategy.js の humanize。放任も遅れつき)
 //   → 進み具合を標準エラーへ、結果 (最良の戦略・放任との差・4 つの成績) を JSON で標準出力へ
 // 使い方 (ほかの道具から): const r = await require('./search').search({ src, seeds, years, nations, budget });
 const fs = require('fs');
@@ -14,8 +15,9 @@ const key = (s) => JSON.stringify(s);
 const mean = (xs) => xs.reduce((k, x) => k + x, 0) / xs.length;
 
 // 戦略を銀河の組で回して、成績をまとめる
-async function evaluate(list, { src, seeds, years, nations }) {
-  const jobs = list.flatMap((s) => seeds.map((seed) => ({ src, seed, years, nations, strategy: s })));
+// human を渡すと、どの戦略も (放任 = null も) 遅れつきのボットにする
+async function evaluate(list, { src, seeds, years, nations, human = null }) {
+  const jobs = list.flatMap((s) => seeds.map((seed) => ({ src, seed, years, nations, strategy: human ? S.humanize(s, human) : s })));
   const rs = await S.runAll(jobs);
   return list.map((s, i) => {
     const r = rs.slice(i * seeds.length, (i + 1) * seeds.length);
@@ -23,8 +25,8 @@ async function evaluate(list, { src, seeds, years, nations }) {
   });
 }
 
-async function search({ src, seeds = ['1', '2', '3', '4'], years = 150, nations = 6, budget = 40, rng = 1, log = () => {} } = {}) {
-  const opt = { src, seeds: seeds.map(String), years, nations };
+async function search({ src, seeds = ['1', '2', '3', '4'], years = 150, nations = 6, budget = 40, rng = 1, human = null, log = () => {} } = {}) {
+  const opt = { src, seeds: seeds.map(String), years, nations, human };
   const rnd = mulberry(rng);
   const seen = new Map();
   const tried = [];
@@ -80,7 +82,7 @@ if (require.main === module) {
   const arg = (name, d) => { const i = a.indexOf(`--${name}`); return i >= 0 ? a[i + 1] : d; };
   search({
     src: arg('src'), seeds: arg('seeds', '1,2,3,4').split(','), years: Number(arg('years', 150)), nations: Number(arg('nations', 6)),
-    budget: Number(arg('budget', 40)), rng: Number(arg('rng', 1)), log: (m) => process.stderr.write(`${m}\n`),
+    budget: Number(arg('budget', 40)), rng: Number(arg('rng', 1)), human: a.includes('--delay') ? { ...S.HUMAN, every: Number(arg('every', 1)) } : null, log: (m) => process.stderr.write(`${m}\n`),
   }).then((r) => {
     const t = JSON.stringify(r, null, 1);
     if (arg('out')) fs.writeFileSync(arg('out'), t);
