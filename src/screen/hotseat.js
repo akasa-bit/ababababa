@@ -268,12 +268,23 @@ function setMenu(open) { $('menu').hidden = !open; $('menubtn').setAttribute('ar
 $('menubtn').onclick = (e) => { e.stopPropagation(); setMenu($('menu').hidden); };
 $('menu').addEventListener('click', (e) => { if (e.target.closest('button')) setTimeout(() => setMenu(false), 0); });
 window.addEventListener('pointerdown', (e) => { if (!$('menu').hidden && !e.target.closest('#menu, #menubtn')) setMenu(false); });
+// 結末の型の名前と一言 (B-058。評論家の 2-6)
+const ENDINGS = {
+  empire: { label: '帝国の維持', line: 'あなたの国は、光の遅れを越えて、ほかのどの国よりずっと大きいまま、この時代を終えた' },
+  federation: { label: '連邦への移行', line: 'あなたの国は遠い星系を縛るのをやめ、自治を認めた星系のゆるい連なりとして残った' },
+  balance: { label: '多くの国の均衡', line: 'どの国も銀河を一つにはできず、いくつもの国が光の遅れをはさんで並び立った' },
+  decline: { label: '地球の衰え', line: 'あなたの国は小さくなり、銀河の歴史の中心は、かつての家臣やほかの国へ移った' },
+};
 // 終わりの年: 点数を見せる (続けて遊べる)
 function showEnd() {
   const g = app.game;
   const sc = g.finalScore || g.score();
   const ch = g.challenges.map((c) => `<li>${CHALLENGES[c.id].label}: ${c.status === 'done' ? '<span class="hz">果たした</span>' : '<span class="bad">果たせなかった</span>'}</li>`).join('');
+  const en = g.ending(); // 結末の型と原因の内訳 (B-058)。終わったので、光の遅れのない本当の銀河で決める
   $('endbox').innerHTML = `<div class="card"><h2>${Math.round(g.endYear)}年 — このゲームの終わり</h2>
+    <p class="ending"><span class="muted">結末</span><b>${esc(en.label)}</b></p>
+    <p>${esc(en.line)}。</p>
+    <table class="tbl">${en.causes.map(([l, v]) => `<tr><td>${esc(l)}</td><td>${esc(v)}</td></tr>`).join('')}</table>
     <p class="muted">${Math.round(g.endYear - START_YEAR)}年の歩みの点数</p>
     <table class="tbl">${sc.parts.map(([l, v]) => `<tr><td>${esc(l)}</td><td class="${v < 0 ? 'bad' : ''}">${v}</td></tr>`).join('')}<tr class="total"><td><b>合計</b></td><td><b>${sc.total}</b></td></tr></table>
     ${ch ? `<h3>挑戦</h3><ul>${ch}</ul>` : ''}
