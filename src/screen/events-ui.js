@@ -43,6 +43,43 @@ function milestonesNew(g, now) {
   return out;
 }
 
+// 知らせの予算 (B-048): 知らせの帯で「重大」として目立たせるのは、40 年 (遊んで約 1 時間。500 年を 10〜15 時間で遊ぶ) に 12 件まで。
+// 超えた分は帯の「ほかに重大な知らせ」に数えるだけにする (イベントのタブには全部残る)
+const NEWS_BUDGET = { years: 40, max: 12 };
+// 自分の国に関わる知らせか: 場所のない知らせ・自国 (家臣を含む) の星系・交戦中の相手の星系。よその国どうしの出来事は帯に出さない。
+// foes = 自国の交戦相手 (地球が知っている限り。呼ぶ側で 1 回だけ作って渡す)
+function evConcerns(g, e, foes) {
+  if (e.sys === undefined || e.sys === null || e.sys === g.cap) return true;
+  const realm = g.known(e.sys)?.realm;
+  if (realm === undefined || realm === null) return false;
+  return realm === g.cap || foes.has(realm);
+}
+const evFoes = (g) => new Set(g.knownEnemiesOf(g.cap));
+// 飢餓・水不足と資源不足は、出来事の流れではなく「状態」(地図の星の「!」・イベントのタブの「いま起きている問題」) で見せる
+const STATE_KINDS = new Set(['famine', 'shortage']);
+// 帯に出す重大な知らせ: 自国に関わるものだけを、同じ星系・同じ種類の続報を束ねてから、予算の中で目立たせる。
+// skip(e) = 別の形で出すもの (返事待ちの要求)。戻り値の majors は新しい順、over は予算を超えて数えるだけにした件数
+function railNews(g, evs, acked, skip) {
+  const foes = evFoes(g);
+  const seen = (e) => e.seen ?? e.year;
+  const groups = new Map();
+  for (const e of evs) { // evs は届いた順の新しいものから
+    if (evTier(e.kind) < 3 || e.good || STATE_KINDS.has(e.kind) || !evShown(e.kind) || acked.has(e.id) || g.year - seen(e) >= 60 || skip(e) || !evConcerns(g, e, foes)) continue;
+    const k = `${e.kind}|${e.sys}`;
+    if (groups.has(k)) groups.get(k).ids.push(e.id); else groups.set(k, { e, ids: [e.id] });
+  }
+  const majors = [], times = [];
+  let over = 0;
+  for (const x of [...groups.values()].sort((a, b) => seen(a.e) - seen(b.e))) {
+    const t = seen(x.e);
+    while (times.length && times[0] <= t - NEWS_BUDGET.years) times.shift();
+    if (times.length < NEWS_BUDGET.max) { times.push(t); majors.push(x); } else over += x.ids.length;
+  }
+  return { majors: majors.reverse(), over, foes };
+}
+// 地球が知っている、飢餓・水不足の入植地がある自国の星系の数 (地図では赤い「!」)
+function famineSystems(g) { return g.knownOwnSystems().filter((x) => g.knownColonies(x.id).some((c) => c.alerts?.food || c.alerts?.water)).length; }
+
 // イベントタブ: 決めること、いま起きている問題、重要なイベントの履歴
 function eventsHtml(app) {
   const g = app.game;
