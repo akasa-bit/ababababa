@@ -11,7 +11,8 @@ function goalsSheet(app) {
   }).join('');
   const sc = g.ended && g.finalScore ? g.finalScore : g.score();
   const era = g.era;
-  const taskRows = (era?.tasks || []).map((tk) => {
+  // 最初の年の終わりより前は、最初の時代の課題 (決まっている) をそのまま見せる
+  const taskRows = (era?.tasks || g.eraTasks(0).map((tk) => ({ ...tk, status: 'active' }))).map((tk) => {
     const v = g.taskValue(tk);
     const prog = tk.id === 'pop' ? `${fmtPop(v)} / ${fmtPop(tk.target)}` : tk.id === 'calm' ? `いま ${v}` : `${v} / ${tk.target}`;
     const st = tk.status === 'done' ? '<span class="hz">果たした</span>' : tk.status === 'failed' ? '<span class="bad">果たせなかった</span>' : `あと ${Math.max(0, Math.ceil(tk.deadline - g.year))} 年`;
@@ -39,6 +40,7 @@ function goalsSheet(app) {
     <h3>${ico('goal')}時代の課題 ${era ? `(${START_YEAR + ERA_YEARS * era.n}〜${START_YEAR + ERA_YEARS * (era.n + 1)}年)` : ''}</h3>
     <p class="note">${ERA_YEARS}年ごとに課題が2つ出る。果たすと議会の支持 +15、次の時代は果たした数 × 2 だけ政治力が年に多く増える。</p>
     ${taskRows ? `<div class="scroll"><table class="tbl"><tr><th>課題</th><th>いま</th><th>状況</th></tr>${taskRows}</table></div>` : '<p class="note">最初の年の終わりに出る。</p>'}
+    ${guideSheetHtml(g)}
     <h3>挑戦</h3>
     ${chRows ? `<div class="scroll"><table class="tbl">${chRows}</table></div>` : '<p class="note">このゲームでは挑戦を選んでいない (ホーム画面の「新しいゲーム」で選べる)。</p>'}
     <h3>点数${g.ended ? ' (確定)' : ` (${g.endYear ? `${Math.round(g.endYear)}年に確定` : 'いまの値'})`}</h3>
@@ -50,6 +52,13 @@ function goalsSheet(app) {
     <h3>直轄の星系 (${g.directCount()} / ${g.directMax()})</h3>
     <p class="note">${ME.home}の直属の従属星系を、星系の詳細欄の「統治」から直接統治 (直轄) にできる。直轄の星系は自分では動かないので、施設や交易路は${ME.home}が指令で決める。</p>
     ${direct ? `<div class="bulk">${direct}</div>` : '<p class="note">なし</p>'}`;
+}
+// 作戦の手引き (最初の時代だけ): 手の進み具合と、隠した手引きを出し直すボタン
+function guideSheetHtml(g) {
+  const gd = g.guideSteps();
+  if (!gd) return '';
+  return `<p class="note">作戦の手引き: ${gd.steps.map((x, i) => `${'①②③'[i]} ${x.done ? '済み' : esc(x.label)}`).join('　')}</p>
+    ${app.guideHidden ? '<div class="btns"><button data-act="guideshow">手引きを知らせの帯に出す</button></div>' : ''}`;
 }
 // 自分の国の家臣の星系を、統治体制ごとに数える (地球の知る限り)
 function regimeCounts(g) {
