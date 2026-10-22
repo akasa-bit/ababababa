@@ -123,7 +123,7 @@ class SystemView {
       ctx.arc(cx, cy, R(hz.inner), 0, Math.PI * 2, true);
       ctx.fill();
       ctx.fillStyle = 'rgba(110,220,150,0.7)';
-      ctx.font = '10px sans-serif';
+      ctx.font = '12px sans-serif';
       ctx.fillText('ハビタブルゾーン', cx + R(hz.outer) * 0.7 + 4, cy - R(hz.outer) * 0.7);
     }
     const fl = frostLine(primary);
@@ -133,7 +133,7 @@ class SystemView {
       ctx.beginPath(); ctx.arc(cx, cy, R(fl), 0, Math.PI * 2); ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = 'rgba(140,200,255,0.55)';
-      ctx.font = '10px sans-serif';
+      ctx.font = '12px sans-serif';
       ctx.fillText('雪線', cx - R(fl) * 0.7 - 24, cy - R(fl) * 0.7);
     }
 
@@ -157,7 +157,7 @@ class SystemView {
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
       this.hit.push({ x, y, r, body: star });
       ctx.fillStyle = 'rgba(210,225,250,0.85)';
-      ctx.font = '11px sans-serif';
+      ctx.font = '12px sans-serif';
       ctx.fillText(`${star.name} (${star.label})`, x + r + 6, y - r - 2);
       this.mark(star, x, y, r);
     };
@@ -205,7 +205,7 @@ class SystemView {
   label(b, x, y, r) {
     const { ctx } = this;
     ctx.fillStyle = b === this.hover || b.id === this.app.sel.body ? '#fff' : 'rgba(190,205,230,0.7)';
-    ctx.font = '11px sans-serif';
+    ctx.font = '12px sans-serif';
     ctx.fillText(b.name.replace(/^.* (?=[a-z]$)/, ''), x + r + 4, y + 4);
   }
 
@@ -234,7 +234,7 @@ class SystemView {
       ctx.beginPath(); ctx.arc(x, y, r + 7, -Math.PI / 2, -Math.PI / 2 + Math.max(0.05, war.progress) * Math.PI * 2); ctx.stroke();
       ctx.lineWidth = 1;
       ctx.fillStyle = '#ff6b6b';
-      ctx.font = 'bold 11px sans-serif';
+      ctx.font = 'bold 12px sans-serif';
       const wi = iconImg('war', '#ff6b6b');
       if (wi) ctx.drawImage(wi, x + r + 9, y - r - 15, 12, 12);
       ctx.fillText(`${wi ? '' : '⚔ '}${Math.round(war.progress * 100)}%`, x + r + (wi ? 23 : 10), y - r - 4);
@@ -242,7 +242,7 @@ class SystemView {
     if (game.knownOutposts(sys).some((o) => o.body === b.id)) {
       const oi = iconImg('outpost', '#ffb347');
       if (oi) ctx.drawImage(oi, x - r - 15, y - r - 11, 12, 12);
-      else { ctx.fillStyle = '#ffb347'; ctx.font = '10px sans-serif'; ctx.fillText('⛏', x - r - 12, y - r); }
+      else { ctx.fillStyle = '#ffb347'; ctx.font = '12px sans-serif'; ctx.fillText('⛏', x - r - 12, y - r); }
     }
     if (game.knownColonyAt(sys, b.id, 'planet')) {
       const ci = iconImg('planetcol', OWN.hex);

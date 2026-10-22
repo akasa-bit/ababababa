@@ -31,7 +31,7 @@ canvas { position:absolute; inset:0; width:100%; height:100%; display:block; tou
 .chips button.on { border-color:var(--accent); color:var(--accent); }
 .ev { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--line); font-size:13px; align-items:baseline; }
 .ev .yr { color:var(--muted); font-variant-numeric:tabular-nums; min-width:4.5em; }
-.ev .tag { font-size:11px; border-radius:3px; padding:0 5px; white-space:nowrap; }
+.ev .tag { font-size:var(--fs1); border-radius:3px; padding:0 5px; white-space:nowrap; }
 .tag.famine { background:#5a2020; } .tag.shortage { background:#5a4320; } .tag.pirate { background:#4a2050; }
 .tag.natives { background:#3a2f60; } .tag.politics { background:#5a4a10; } .tag.battle { background:#7a1f1f; } .tag.war { background:#6a2030; } tr.enroute td { background:color-mix(in srgb, var(--own) 6%, transparent); } .tag.migration { background:#1d3f5a; } .tag.colony { background:#1d4a45; }
 .ev.good .txt { color:#9fe0b4; }
@@ -52,8 +52,8 @@ button.hot { padding:1px 8px; min-height:0; border-color:#ffb347; color:#ffb347;
 label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:12px; color:var(--accent); margin:6px 0 0; }
 #empire label.check { font-size:12px; color:var(--muted); display:inline-flex; gap:4px; align-items:center; }
 .kpi { display:flex; gap:10px; flex-wrap:wrap; } .kpi div { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:8px 12px; }
-.kpi b { display:block; font-size:18px; color:var(--fg); } .kpi span { font-size:11px; color:var(--muted); }
-.age { font-size:11px; color:var(--muted); border:1px solid var(--line); border-radius:3px; padding:0 4px; margin-left:4px; white-space:nowrap; }
+.kpi b { display:block; font-size:18px; color:var(--fg); } .kpi span { font-size:var(--fs1); color:var(--muted); }
+.age { font-size:var(--fs1); color:var(--muted); border:1px solid var(--line); border-radius:3px; padding:0 4px; margin-left:4px; white-space:nowrap; }
 .age.now { color:var(--accent); }
 #home { position:fixed; inset:0; z-index:20; background:rgba(5,7,13,.94); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
 #home[hidden] { display:none; }
@@ -67,7 +67,7 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #pick .ed label { display:block; margin:4px 0; }
 #pick .ed input[type=text], #pick .ed input:not([type]) { width:100%; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:4px 6px; }
 #pick .ed .trs { display:flex; flex-wrap:wrap; gap:2px 10px; } #pick .ed .trs label { display:inline-flex; gap:4px; align-items:center; margin:2px 0; }
-#pick .ed .btns { display:flex; flex-wrap:wrap; gap:4px; } #pick .ed .btns button small { display:block; font-size:11px; opacity:.8; }
+#pick .ed .btns { display:flex; flex-wrap:wrap; gap:4px; } #pick .ed .btns button small { display:block; font-size:var(--fs1); opacity:.8; }
 #curtain { position:fixed; inset:0; z-index:40; background:#05070d; display:flex; align-items:center; justify-content:center; padding:16px; }
 #curtain[hidden] { display:none; }
 #netbox { position:fixed; inset:0; z-index:35; background:rgba(5,7,13,.94); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
@@ -79,7 +79,7 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #treatybox .terms button { text-align:left; min-height:40px; } #treatybox .terms button.on { outline:2px solid var(--accent); }
 #treatybox .terms small { float:right; opacity:.8; } #treatybox .row { display:flex; gap:8px; flex-wrap:wrap; }
 #netbox .card { width:min(620px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 22px; }
-#netbox textarea { width:100%; font:11px monospace; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; margin:6px 0; padding:6px; word-break:break-all; }
+#netbox textarea { width:100%; font:var(--fs1) monospace; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; margin:6px 0; padding:6px; word-break:break-all; }
 #netbox section { border-top:1px solid var(--line); margin-top:10px; padding-top:6px; }
 #netbox .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
 #netbox .roomcode { font:22px var(--font-num); letter-spacing:.2em; color:var(--accent); margin-left:8px; }
@@ -89,7 +89,7 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #curtain .card { width:min(460px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:22px 24px; text-align:center; }
 #curtain h2 { font-size:24px; margin-bottom:8px; }
 #curtain .big { width:100%; min-height:48px; margin-top:14px; font-size:17px; }
-#turnbtn small { font-size:11px; opacity:.8; margin-left:4px; }
+#turnbtn small { font-size:var(--fs1); opacity:.8; margin-left:4px; }
 #pick h2 { font-size:18px; margin:0 0 4px; }
 #pick .nat { border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-top:8px; cursor:pointer; font-size:13px; }
 #pick .nat.on { border-color:var(--accent); background:rgba(120,170,255,.08); }
@@ -121,10 +121,10 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #home .nated label { display:block; margin:8px 0; font-size:14px; }
 #home .nated input:not([type]), #home .nated select { width:100%; font-size:15px; padding:6px 8px; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; margin-top:4px; }
 #home .nated .trs { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:4px 12px; }
-#home .nated .trs label { display:flex; gap:6px; align-items:flex-start; margin:2px 0; } #home .nated .trs b { font-weight:normal; white-space:nowrap; } #home .nated .trs small { display:block; color:var(--muted); font-size:11px; }
+#home .nated .trs label { display:flex; gap:6px; align-items:flex-start; margin:2px 0; } #home .nated .trs b { font-weight:normal; white-space:nowrap; } #home .nated .trs small { display:block; color:var(--muted); font-size:var(--fs1); }
 #home input[type=text] { background:#0a0f1a; color:var(--fg); border:1px solid var(--line); border-radius:5px; padding:5px 8px; font:inherit; width:10em; }
 #home input[type=email], #home input[type=password], #home #acct-name { background:#0a0f1a; color:var(--fg); border:1px solid var(--line); border-radius:5px; padding:8px; font:inherit; min-height:44px; width:min(18em, 100%); }
-#home textarea { width:100%; font:11px monospace; background:#0a0f1a; color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:6px; }
+#home textarea { width:100%; font:var(--fs1) monospace; background:#0a0f1a; color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:6px; }
 #home label { display:inline-flex; gap:6px; align-items:center; font-size:13px; }
 #legend { position:absolute; right:10px; bottom:10px; background:rgba(13,18,29,.85); border:1px solid var(--line); border-radius:6px; padding:4px 10px; font-size:12px; }
 #legend summary { cursor:pointer; color:var(--muted); }
@@ -134,7 +134,7 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #fleetbar[hidden] { display:none; }
 #fleetbar button { padding:3px 9px; min-height:0; }
 #fleetbar .warn { flex-basis:100%; color:#ff8a80; text-align:center; }
-@media (max-width: 700px) { #fleetbar { left:6px; right:6px; top:6px; transform:none; max-width:none; font-size:11px; padding:4px 6px; gap:4px; flex-wrap:nowrap; } #fleetbar .hint, #fleetbar .lbl, #fleetbar button small { display:none; } #fleetbar button, #fleetbar > span { white-space:nowrap; } #fleetbar button { padding:2px 6px; } #fleetbar.confirm { flex-wrap:wrap; } #fleetbar .warn { flex-basis:100%; } }
+@media (max-width: 700px) { #fleetbar { left:6px; right:6px; top:6px; transform:none; max-width:none; font-size:var(--fs1); padding:4px 6px; gap:4px; flex-wrap:nowrap; } #fleetbar .hint, #fleetbar .lbl, #fleetbar button small { display:none; } #fleetbar button, #fleetbar > span { white-space:nowrap; } #fleetbar button { padding:2px 6px; } #fleetbar.confirm { flex-wrap:wrap; } #fleetbar .warn { flex-basis:100%; } }
 #zoom { position:absolute; left:12px; bottom:12px; display:flex; flex-direction:column; gap:6px; }
 #zoom button { min-width:46px; min-height:46px; font-size:18px; background:rgba(13,18,29,.85); }
 #zoom #vassalbtn { font-size:13px; }
@@ -146,7 +146,7 @@ button:hover:not(:disabled) { background:#1f2d4f; }
 button:disabled { opacity:.45; cursor:not-allowed; }
 button.on { background:#1f3a4a; border-color:var(--accent); color:var(--accent); }
 button.ghost { background:transparent; margin-top:10px; }
-button small { display:block; font-size:11px; color:var(--muted); }
+button small { display:block; font-size:var(--fs1); color:var(--muted); }
 #ctrl { display:flex; gap:8px 16px; flex-wrap:wrap; align-items:center; }
 #speed, #tools { display:flex; gap:4px; flex-wrap:wrap; }
 /* 狭い画面: ヘッダーを詰め、速さと操作のボタンを横にスクロールする1行にまとめる (地図を広く) */
@@ -189,7 +189,7 @@ td .btns.batch { flex-wrap:nowrap; } td .btns.batch button { flex:0 0 auto; widt
 .bar { display:block; height:3px; background:#1d2840; margin:2px 0; } .bar i { display:block; height:100%; background:#ffb347; }
 #log { font-size:12px; }
 #treasury { font-variant-numeric:tabular-nums; font-size:13px; }
-.bad { color:#ff7a6b; } .nat { font-size:11px; color:#c9a2ff; border:1px solid #6a4fa0; border-radius:3px; padding:0 4px; }
+.bad { color:#ff7a6b; } .nat { font-size:var(--fs1); color:#c9a2ff; border:1px solid #6a4fa0; border-radius:3px; padding:0 4px; }
 .route { font-size:12px; margin:6px 0; padding:6px 8px; background:#111a2e; border-radius:5px; }
 /* 拡張ボタンは文章の下に欄いっぱいの幅で置く。数字の桁が変わって文章の折り返しが変わっても横には動かない (縦のずれは keepAnchor が戻す) */
 .route button { display:block; width:100%; margin-top:4px; }
@@ -226,7 +226,7 @@ html, body { background:var(--bg); color:var(--fg); font-size:var(--fs2); }
 h1 { font-size:var(--fs3); letter-spacing:.08em; }
 h2 { font-size:var(--fs4); margin:0; }
 h3 { font-size:var(--fs1); letter-spacing:.04em; margin:16px 0 8px; padding-bottom:0; }
-.note, .sub, .tbl, .ship, #log, .age, button small, .kpi span, #legend, .field, label.check.auto, #empire label.check, #empire .bulk, .ev .tag, .ev .yr, details.evkinds summary, .yearrep .yh, .yearrep details summary, .chips .muted, #fleetbar, .route, .fac, .nat { font-size:var(--fs1); }
+.note, .sub, .tbl, .ship, #log, .age, button small, .kpi span, #legend, .field, label.check.auto, #empire label.check, #empire .bulk, .ev .tag, .ev .yr, details.evkinds summary, .yearrep .yh, .yearrep details summary, .chips .muted, #fleetbar, .route, .fac, .nat, small { font-size:var(--fs1); }
 .ev, #empire .tbl, #treasury, #date, #home .row .info, #home label, .decide p { font-size:var(--fs2); }
 .kpi b { font-size:var(--fs4); }
 #home h1 { font-size:var(--fs4); }
@@ -408,7 +408,7 @@ small .ico { width:1em; height:1em; margin-right:0.15em; }
 body { background:var(--bg); }
 header { border-bottom:3px double var(--line); }
 h1 { text-transform:uppercase; letter-spacing:.3em; color:var(--fg); }
-header h1, #home h1 { text-transform:none; letter-spacing:.06em; } h1 .ed { font-size:.6em; letter-spacing:.05em; margin-left:.5em; color:var(--warn); }
+header h1, #home h1 { text-transform:none; letter-spacing:.06em; } h1 .ed { font-size:max(.6em, var(--fs1)); letter-spacing:.05em; margin-left:.5em; color:var(--warn); }
 h3 { text-transform:uppercase; letter-spacing:.16em; border-top:2px solid var(--fg); padding-top:6px; color:var(--fg); }
 .stats div, .kpi div { border-top:2px solid var(--line); }
 .stats { gap:4px; } .stats div { padding:8px 6px; } .stats b { white-space:nowrap; }
@@ -527,6 +527,6 @@ h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url
     <div class="tags"><button data-tag="bored">退屈</button><button data-tag="confused">分からない</button><button data-tag="torn">迷う</button><button data-tag="fun">面白い</button></div>
     <textarea id="memotext" rows="3" placeholder="いま感じたこと・したかったこと (書かなくてもよい)"></textarea>
     <div class="row"><button id="memosave">記録する</button><button id="memoclose" class="ghost">やめる</button></div>
-    <p class="muted" style="font-size:11px;margin:6px 0 0">開いた時点のゲームの状態も一緒に残る (ホーム →「プレイ記録」からその時点をロードできる)。開いているあいだは時間を止める。</p>
+    <p class="muted" style="font-size:var(--fs1);margin:6px 0 0">開いた時点のゲームの状態も一緒に残る (ホーム →「プレイ記録」からその時点をロードできる)。開いているあいだは時間を止める。</p>
   </div>
   
