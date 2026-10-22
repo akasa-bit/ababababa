@@ -19,13 +19,19 @@ function homeHtml() {
   const tabs = `<div class="htabs"><button data-home="tab" data-t="game" class="${!['nations', 'account'].includes(app.homeTab) ? 'on' : ''}">ゲーム</button><button data-home="tab" data-t="nations" class="${app.homeTab === 'nations' ? 'on' : ''}">国家づくり (${NationLib.list.length})</button><button data-home="tab" data-t="account" class="${app.homeTab === 'account' ? 'on' : ''}">アカウント${Cloud.user ? ' ✓' : ''}</button></div>`;
   if (app.homeTab === 'nations') return `<div class="card"><h1>${brandHtml()}</h1>${tabs}${nationsTabHtml()}</div>`;
   if (app.homeTab === 'account') return `<div class="card"><h1>${brandHtml()}</h1>${tabs}${accountTabHtml()}</div>`;
+  // はじめて開いた人には「はじめる」1 つだけを見せ、細かい設定は「詳しい設定」に畳む (B-045)。
+  // 銀河の番号つきの URL で開いたときは、その番号が見えるように開いておく
+  const more = app.homeMore ?? params.get('seed') !== null;
+  const going = homeGoing();
   return `<div class="card">
-    <h1>${brandHtml()}</h1><p class="muted">光速の壁の向こうへ広がる恒星間植民 — ${EDITION_LABEL[EDITION]} (<a href="${EDITION_FILE[EDITION === 'sim' ? 'game' : 'sim']}">${EDITION_LABEL[EDITION === 'sim' ? 'game' : 'sim']}を開く</a>)</p>${tabs}
+    <div class="cover"><h1>${brandHtml()}</h1><p>光速の壁の向こうへ広がる恒星間植民</p>
+      <div class="go"><button class="big" data-home="start">${armed('start') ? '本当に? いまのゲームは消える' : 'はじめる'}</button>
+        ${going ? `<button data-home="resume">${app.started ? 'ゲームに戻る' : '続きから'}<small>${saveInfo(saveMeta(buildSave(app.game)))}</small></button>` : ''}</div>
+      <p class="hint">地球から最初の入植船を送るところから。時間は、最初の入植船を送るまで止まっている。</p></div>
     ${app.homeNote ? `<p class="note bad">${esc(app.homeNote)}</p>` : ''}
-    <section><h3>いまのゲーム</h3>
-      <div class="row"><div class="info">${saveInfo(saveMeta(buildSave(app.game)))}</div><button class="big" data-home="resume">${app.started ? 'ゲームに戻る' : '続きから'}</button></div>
-    </section>
-    <section><h3>新しいゲーム</h3>
+    ${tabs}
+    <p class="muted">${EDITION_LABEL[EDITION]} (<a href="${EDITION_FILE[EDITION === 'sim' ? 'game' : 'sim']}">${EDITION_LABEL[EDITION === 'sim' ? 'game' : 'sim']}を開く</a>)</p>
+    <details class="sec" data-home-more="settings" ${more ? 'open' : ''}><summary>詳しい設定<span class="syn">${homeSettingsSyn()}</span></summary>
       <div class="row"><label>銀河の番号 <input id="home-seed" type="text" inputmode="numeric" placeholder="空欄ならランダム" value="${esc(app.homeSeed || '')}"></label>
         <label><input id="home-spectate" type="checkbox" ${app.homeSpectate ? 'checked' : ''}> 観戦モード</label></div>
       <div class="row"><label>国の数 <select id="home-nat">${NATION_COUNTS.map((n) => `<option value="${n}" ${n === (app.homeNat ?? 1) ? 'selected' : ''}>${n === 1 ? '地球だけ (国家選択なし)' : `${n} か国から選ぶ`}</option>`).join('')}</select></label>
@@ -37,19 +43,34 @@ function homeHtml() {
       ${ED.physics.pv ? `<div class="row"><label>スウォームの素子の作り (全部の星系の既定) <select id="home-pv">${['auto', ...Object.keys(PV_DESIGNS)].map((k) => `<option value="${k}" ${k === (app.homePv ?? 'auto') ? 'selected' : ''}>${k === 'auto' ? '星系ごとに自動' : `${k}. ${PV_DESIGNS[k].label} — ${PV_DESIGNS[k].note}`}</option>`).join('')}</select></label></div>` : ''}
       <div class="row"><label>終わりの年 <select id="home-end">${END_CHOICES.map(([y, l]) => `<option value="${y}" ${y === (app.homeEnd ?? 500) ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
       <div class="row"><span class="muted">挑戦 (選ばなくてもよい)</span>${Object.entries(CHALLENGES).map(([k, c]) => `<label title="${esc(c.desc)}"><input type="checkbox" class="home-ch" value="${k}" ${(app.homeCh || []).includes(k) ? 'checked' : ''}> ${c.label}</label>`).join('')}
-        <button data-home="new">${armed('new') ? '本当に? いまのゲームは消える' : 'はじめる'}</button></div>
+        <button data-home="new">${armed('new') ? '本当に? いまのゲームは消える' : 'この設定ではじめる'}</button></div>
       <p class="note">挑戦: ${Object.values(CHALLENGES).map((c) => `<b>${c.label}</b> = ${esc(c.desc)}`).join('。')}。「60星系」と「独立を許さない」は引っ張り合う (広げるほど遠い家臣が増える)。終わりの年に点数が確定する (そのあとも続けて遊べる)。</p>
       <p class="note">国の数を2つ以上にすると、銀河地図の上でどの国を動かすか選ぶ。選ばなかった国は AI が動かす。国ごとに種族と特性 (人口の増え方・得意な産業など) が違う。<br>難易度 (ハンディキャップ表): ${Object.values(HANDICAP).map((h) => `<b>${h.label}</b> = AI の国の収入 ×${h.aiIncome}・建設費 ×${h.aiCost}・他国の艦隊${INFO_LABEL[h.info]}`).join('。')}。AI の考え方は変わらない。</p>
       <p class="note">いまのゲームは、スロットにセーブしておかないと新しいゲームで上書きされる (自動セーブは1つだけ)。</p>
       <p class="note">観戦モード: 光の遅れなしに実際の様子 (船の実際の位置・各星系のいまの状態) を見られ、${ME.gov}も自動で入植・開発・防衛・戦争をする。ゲーム中でも上の「観戦」ボタンで切り替えられる。</p>
-    </section>
-    <section><h3>ネット対戦</h3>
-      <div class="row"><div class="info">別の端末の人と、サーバーなしでつないで遊ぶ。ホストは国家選択で「＋人間」を 2 つ以上にして「ネット対戦」を選ぶ (いまのゲームに人間が 2 人以上いれば、ここからもホストになれる)。参加する人は、ホストの招待コードを貼る。</div>
-        ${app.game.humans().length > 1 ? '<button data-home="nethost">ホストになる</button>' : ''}<button data-home="netjoin">参加する</button></div></section>
+    </details>
+    <details class="sec" data-home-more="saves" ${app.homeSaves ? 'open' : ''}><summary>セーブ・ファイル・プレイ記録</summary>
     <section><h3>セーブスロット</h3>${slots}</section>
     <section><h3>ファイル</h3><div class="row"><button data-home="export">ファイルに書き出し</button><button data-home="import">ファイルから読み込み</button></div></section>
     ${playLogHtml()}
+    </details>
+    <section><h3>ネット対戦</h3>
+      <div class="row"><div class="info">別の端末の人と、サーバーなしでつないで遊ぶ。ホストは国家選択で「＋人間」を 2 つ以上にして「ネット対戦」を選ぶ (いまのゲームに人間が 2 人以上いれば、ここからもホストになれる)。参加する人は、ホストの招待コードを貼る。</div>
+        ${app.game.humans().length > 1 ? '<button data-home="nethost">ホストになる</button>' : ''}<button data-home="netjoin">参加する</button></div></section>
   </div>`;
+}
+// いまのゲームを続ける意味があるか (始めたあと・セーブを読んだあと。開いたばかりの仮のゲームは数えない)
+function homeGoing() { return !!app.started || app.game.year > START_YEAR + 0.01; }
+// 「詳しい設定」を閉じていても、いまの設定が分かるように 1 行で
+function homeSettingsSyn() {
+  const parts = [];
+  if (app.homeSeed) parts.push(`銀河 #${esc(app.homeSeed)}`);
+  if ((app.homeNat ?? 1) > 1) parts.push(`${app.homeNat} か国`);
+  if ((app.homeHc ?? 'normal') !== 'normal') parts.push(HANDICAP[app.homeHc]?.label);
+  if ((app.homeProd ?? 'now') !== 'now') parts.push(`生産性 ${PRODUCTIVITY[app.homeProd]?.label}`);
+  if ((app.homeCh || []).length) parts.push(`挑戦 ${app.homeCh.length}`);
+  if (app.homeSpectate) parts.push('観戦');
+  return parts.length ? parts.join('・') : '標準 (地球だけ・ふつう・500 年)';
 }
 // ホーム画面の「アカウント」タブ: ログイン・名前・クラウドのセーブ・国家の保管庫・Firebase の設定
 function accountTabHtml() {

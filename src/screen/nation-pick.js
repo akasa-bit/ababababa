@@ -159,6 +159,7 @@ $('pick').onclick = (e) => {
     save();
     if (el.dataset.pick === 'net') { closeHome(1); setSpeed(0); return Net.openHost(); }
     closeHome(1);
+    pauseForFirstMove();
     if (caps.length > 1) showCurtain(g.pi, false);
     return;
   }

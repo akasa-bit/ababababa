@@ -1,13 +1,57 @@
 // Electron の包装: desktop/game/ (組み立てた index.html と assets/) を 1 枚の窓で開くだけ。
 // NLU_BENCH があれば desktop/bench/probe.js を差し込み、結果の 1 行を標準出力に書いて閉じる。
 // NLU_FULLSCREEN があれば全画面で開く (Steam Deck の Game Mode を想定)。
-const { app, BrowserWindow, shell } = require('electron');
+// 字体: ゲームが Google Fonts に読みに行くのを横取りし、desktop/prepare.mjs が同梱した字体 (game/fonts/) を返す (B-088・QD-20)。
+// NLU_FONTCHECK があれば、ほかのネットへの読み込みも止めて (オフラインと同じ)、字体が読めたかを 1 行書いて閉じる (desktop/fonts-check.mjs)。
+const { app, BrowserWindow, shell, protocol, net } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 
 const BENCH = !!process.env.NLU_BENCH;
+const FONTCHECK = !!process.env.NLU_FONTCHECK;
 const gameDir = app.isPackaged ? path.join(process.resourcesPath, 'game') : path.join(__dirname, '..', 'game');
 const probePath = app.isPackaged ? path.join(process.resourcesPath, 'probe.js') : path.join(__dirname, '..', 'bench', 'probe.js');
+
+// Google Fonts の CSS (fonts.googleapis.com/css2) には同梱の fonts.css を、字体のファイル (fonts.gstatic.com/nlu/…) には同梱のファイルを返す。
+// fonts.css の中の相対の url は fonts.gstatic.com/nlu/ に置き換える (CSS と字体を同じ所から返すと、ページが file: でも読める)。
+// ほかの https はそのままネットへ (Firebase の SDK など。ネットがなければ、ゲームの側で使えないと出る)
+const FONT_HOST = 'https://fonts.gstatic.com/nlu/';
+const fontsDir = path.join(gameDir, 'fonts');
+const served = { css: 0, font: 0, blocked: [] };
+function handleHttps() {
+  const fontsCss = fs.readFileSync(path.join(fontsDir, 'fonts.css'), 'utf8').replace(/url\(([\w-]+\/[\w.-]+\.woff2)\)/g, `url(${FONT_HOST}$1)`);
+  const cors = { 'access-control-allow-origin': '*' };
+  protocol.handle('https', (req) => {
+    const u = new URL(req.url);
+    if (u.host === 'fonts.googleapis.com' && u.pathname === '/css2') {
+      served.css++;
+      return new Response(fontsCss, { headers: { 'content-type': 'text/css', ...cors } });
+    }
+    if (req.url.startsWith(FONT_HOST)) {
+      const rel = u.pathname.slice('/nlu/'.length);
+      if (!/^[\w-]+\/[\w.-]+\.woff2$/.test(rel)) return new Response('', { status: 404 });
+      served.font++;
+      return new Response(fs.readFileSync(path.join(fontsDir, rel)), { headers: { 'content-type': 'font/woff2', ...cors } });
+    }
+    if (FONTCHECK) { served.blocked.push(u.host); return new Response('', { status: 503 }); }
+    return net.fetch(req, { bypassCustomProtocolHandlers: true });
+  });
+}
+
+// 字体を確かめる: ゲームの使う 4 つの字体で、日本語と英数字が同梱の字体で描けるか
+async function fontCheck(win) {
+  const r = await win.webContents.executeJavaScript(`(async () => {
+    await document.fonts.ready;
+    const fams = ['Courier Prime', 'Special Elite', 'Zen Antique', 'Zen Old Mincho'];
+    const jp = '光速の壁の向こうへ広がる恒星間植民';
+    await Promise.all(fams.flatMap((f) => [document.fonts.load('16px "' + f + '"', 'NoLongerUbiquitous 0123'), document.fonts.load('16px "' + f + '"', jp)]));
+    await Promise.all(['700 16px "Courier Prime"', '700 16px "Zen Old Mincho"'].map((f) => document.fonts.load(f, jp + 'AZ')));
+    const loaded = [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/"/g, '') + ' ' + f.weight);
+    return { check: Object.fromEntries(fams.map((f) => [f, document.fonts.check('16px "' + f + '"', f.startsWith('Zen') ? jp : 'NoLongerUbiquitous')])), loaded: [...new Set(loaded)].sort() };
+  })()`);
+  process.stdout.write(`NLU_FONTCHECK ${JSON.stringify({ ...r, served })}\n`);
+  app.quit();
+}
 
 function open() {
   const win = new BrowserWindow({
@@ -35,8 +79,9 @@ function open() {
       if (typeof msg === 'string' && msg.startsWith('NLU_BENCH ')) { process.stdout.write(msg + '\n'); app.quit(); }
     });
   }
+  if (FONTCHECK) win.webContents.on('did-finish-load', () => setTimeout(() => fontCheck(win), 1500));
   win.loadFile(path.join(gameDir, 'index.html'));
 }
 
-app.whenReady().then(open);
+app.whenReady().then(() => { handleHttps(); open(); });
 app.on('window-all-closed', () => app.quit());

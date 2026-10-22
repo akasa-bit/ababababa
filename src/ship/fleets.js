@@ -139,3 +139,43 @@
     this.message(`${f.n} 艦隊が進路を ${this.system(to).name} へ変えた (到着まで ${(f.arrive - this.year).toFixed(1)} 年)`, to);
     return { ok: true };
   }
+
+  // --- 首都に届いている光で見た、動いている艦隊と船 (B-030) ---
+  // 進路変更は、変えた地点からの光が首都に届いてから見える。それまでは前の区間 (prev) のまま
+  seenLeg(f) {
+    if (this.spectate || !f.prev?.length) return f;
+    const E = this.system(this.cap);
+    for (const leg of f.prev) if (leg.cut + distance(this.fleetPosition(f, leg.cut), E) > this.year + 1e-9) return leg;
+    return f;
+  }
+  // 見えている移動中の艦隊: 出発が見えて、到着がまだ見えていないもの (着いたあと、到着の光が届くまでの幽霊を含む)。
+  // [{ f, leg, mine }]。leg = 見えている区間 (from・to・depart・arrive。to がなければ宇宙の途中で止まる区間)。
+  // 他国の艦隊 (mine = false) の行き先は、見ているだけでは分からない
+  seenFleets() {
+    const all = this.spectate ? this.fleets : [...this.fleets, ...this.ghosts.fleets];
+    return all.filter((f) => this.departSeen(f.from, f.start ?? f.depart)).map((f) => ({ f, leg: this.seenLeg(f), mine: (f.owner ?? 0) === this.cap }));
+  }
+  // 見えている移動中の船 (list = 'ships'・'troopMoves')。着いたあとの幽霊を含む
+  seenMoving(list) {
+    const from = (o) => (list === 'troopMoves' ? o.path[0] : o.from), t0 = (o) => (list === 'troopMoves' ? o.times[0] : o.depart);
+    const all = this.spectate ? this[list] : [...this[list], ...this.ghosts[list]];
+    return all.filter((o) => this.departSeen(from(o), t0(o)));
+  }
+  // 集結の命令の出発地: 首都に届いている記録で、自国の艦隊が駐留している星系 (B-030。本当の駐留ではなく)
+  rallySources(to) {
+    const ids = new Set([this.cap, ...this.knownSystems().map((x) => x.id), ...Object.keys(this.snaps).map(Number)]);
+    return [...ids].filter((id) => id !== to && this.knownGarrison(id) > 0 && this.ownStackKnown(id));
+  }
+  // 歩兵の集結の出発地: 首都に届いている記録で、歩兵のいる自国の入植地 (交易路でつながっているもの)
+  troopRallySources(to) {
+    if (!to) return [];
+    return this.knownOwnSystems().flatMap((x) => this.knownColonies(x.id))
+      .filter((c) => colKey(c) !== colKey(to) && c.troops + c.slaveTroops >= 1 && this.routePath(c.sys, to.sys));
+  }
+  // 相手の国 root の首都に届いている光で見える、こちらの国の艦隊の数 (B-027。相手が見積もりのもとにする数)。
+  // 読み違いの幅は交渉の型 (BARGAIN) の幅。読み違いそのものは相手だけが知っているので、幅だけを出す
+  seenByRival(root) {
+    const n = this.seenShips(root, this.cap), age = this.sysDist(root, this.cap);
+    const w = BARGAIN.sigma0 + BARGAIN.sigmaAge * age;
+    return { n, age, lo: Math.round(n * GM.exp(-w)), hi: Math.round(n * GM.exp(w)) };
+  }
