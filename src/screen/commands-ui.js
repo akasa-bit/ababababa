@@ -82,6 +82,7 @@ function onPanelClick(e) {
     r = issue(act, d);
   }
   if (!r) return;
+  if (r.ok && (act === 'send' || act === 'candsend')) firstMoveDone();
   app.dirty = true;
   save();
 }

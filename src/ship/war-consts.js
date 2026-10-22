@@ -28,3 +28,12 @@ const TREATY = { vassal: 70, cash: 1000, cashPts: 5, cashMax: 10, white: 5, year
 // 値は、国家間戦争の多さ (COW から計算した、国 100 年あたり 2.34 回。目標にする) に合わせて選んだ (docs/negotiation.md の 3)。R14 (確認用) には合わせていない
 const BARGAIN = { on: true, sigma0: 0.8, sigmaAge: 0.01, learn: 30, swing: 60, cost: 0.2, costEx: 0.02, horizon: 5, shift: 1, shiftYears: 10, capitulate: 90, declare: 20, declareChance: 0.08, warDist: 25 };
 const PEACE = { minYears: 3, sueEx: 60, sueWs: -50, stalemate: 0.35, stalemateHalf: 4, offerEvery: 5, offerYears: 10, base: 0.15, loseWs: 80, exLose: 120, winBase: 0.05, exWin: 100, winWs: 400, min: 0.03, max: 0.95 };
+// 光速で届く途中の講和の申し入れ・講和会議の知らせ (B-030。届いたら peaceOffers・conferences へ移す)。なければ書かない
+saveField('peaceSent', (game) => (game.peaceSent.length ? game.peaceSent : undefined), {
+  init: (game) => { game.peaceSent = []; },
+  read: (game, d) => { game.peaceSent = Array.isArray(d.peaceSent) ? d.peaceSent.filter((o) => o && typeof o.key === 'string' && Number.isFinite(o.at)) : []; },
+});
+saveField('confSent', (game) => (game.confSent.length ? game.confSent : undefined), {
+  init: (game) => { game.confSent = []; },
+  read: (game, d) => { game.confSent = Array.isArray(d.confSent) ? d.confSent.filter((c) => c && Array.isArray(c.bids) && Number.isFinite(c.at)) : []; },
+});
