@@ -228,7 +228,9 @@ function railHtml(g) {
       <div class="opts"><button data-act="acceptpeace" data-key="${o.key}">${ico('peace')}講和に応じる</button></div></div>`),
   ];
   const guide = guideHtml(g);
-  const n = decs.length + majors.length + diplo.length + (guide ? 1 : 0) + (hungry ? 1 : 0);
+  const surprise = surpriseWarnings(g);
+  if (surprise.some((w) => !(app.surpriseSeen ||= new Set()).has(w.f.id))) { for (const w of surprise) app.surpriseSeen.add(w.f.id); Sound.play('warn'); }
+  const n = decs.length + majors.length + diplo.length + (guide ? 1 : 0) + (hungry ? 1 : 0) + surprise.length;
   // 地図が狭いときは、帯を畳んだ形 (件数だけのボタン) から始める。帯が地図を覆ってタップを邪魔しないように
   if (railHidden()) return `<div class="railbar"><button data-act="railtoggle"${decs.length ? ' class="due"' : ''}>${n ? `知らせ ${n} 件を出す` : '知らせを出す'}</button></div>`;
   if (!n && !recent.length && !news.over) return '';
@@ -254,7 +256,7 @@ function railHtml(g) {
     }).join('')}</div></div>`;
   const shownMajors = majors.slice(0, 3);
   const moreN = majors.slice(3).reduce((k, x) => k + x.ids.length, 0) + news.over;
-  return `${guide}${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
+  return `${surprise.slice(0, 2).map((w) => surpriseHtml(g, w)).join('')}${guide}${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
     ${hungry ? `<button class="state" data-act="view" data-v="events">${tagIco('famine')}飢餓・水不足の星系 ${hungry} — 地図の赤い「!」</button>` : ''}
     ${shownMajors.map((x) => item(x.e, true, x.ids)).join('')}${moreN ? `<button class="more" data-act="view" data-v="events">ほかに重大な知らせ ${moreN} 件 (イベントのタブ)</button>` : ''}
     ${recent.map((e) => item(e, false)).join('')}
