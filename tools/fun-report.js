@@ -1,6 +1,8 @@
 // CI の報告 (面白さの代わりの数): main (比べる元) と PR の版で、決めた 6 つの戦略を同じ銀河で回し、面白さの代わりの数を表 (Markdown) にする。
 // 必勝法を探す AI の小さな探索は、PR の版だけで回す。合否は付けない (F06 の判定はセッション 15)。数の選び方は docs/fun.md
 // 使い方: node tools/fun-report.js <比べる元の src/index.html> <PR の src/index.html> [銀河の数] [年数] [国の数] [探索の予算] [探索の銀河の数]  → Markdown を標準出力へ
+// 止める線 (STOP。docs/parallel.md の 4 の 3): main より大きく悪くなった数があれば、表に出し、FUN_GATE_OUT のファイルに 1 行ずつ書く (CI はそれを見て、
+// PR の本文に「面白さの数が悪くなった理由:」がなければ失敗にする)
 const S = require('./strategy');
 const { search } = require('./search');
 
@@ -10,6 +12,17 @@ const years = Number(yS), nations = Number(natS);
 const names = Object.keys(S.PRESETS);
 const mean = (xs) => (xs.length ? xs.reduce((k, x) => k + x, 0) / xs.length : NaN);
 const variance = (xs) => { const m = mean(xs); return mean(xs.map((x) => (x - m) ** 2)); };
+const fs = require('fs');
+// 止める線: [名前, (main, この PR, 探索) → 越えたか, 線の説明]。main と同じ銀河・同じ戦略で比べる (ゲームを変えない PR は差が 0 になる)。
+// 探索の上積みは PR の版だけで回していて main と比べられないので、線にしない (表には出す)
+const STOP = [
+  ['判断を求められる回数', (a, b) => b.asks < 0.75 * a.asks, 'main より 25% 以上減る'],
+  ['待つだけの年の割合', (a, b) => b.quiet - a.quiet >= 0.1, 'main より 10 点以上増える'],
+  ['いちばん多く勝った戦略の割合', (a, b) => b.topShare >= 0.75 && b.topShare > a.topShare, '75% 以上になり、main より増える'],
+  ['10% 以上の銀河で勝った戦略の数', (a, b) => b.over10 < 2 && b.over10 < a.over10, '2 より少なくなり、main より減る'],
+  ['4 つの成績すべてで他を上回った戦略がいた銀河', (a, b) => b.dominant >= 2 && b.dominant > a.dominant, '2 以上になり、main より増える'],
+  ['観戦の AI と同じ値の戦略が放任と同じ筋', (a, b, sr) => sr.baseSame < sr.seeds.length, 'すべての銀河で同じでない (tools/strategy.js を合わせ直す)'],
+];
 
 // 6 つの戦略 × 銀河の結果から、数をまとめる
 function measure(rs) {
@@ -80,6 +93,15 @@ function measure(rs) {
   out.push(`- 放任からの上積み: **${sr.gain === null ? '—' : `${sr.gain >= 0 ? '+' : '−'}${Math.abs(Math.round(sr.gain * 1000) / 10)}%`}** (放任を上回った銀河 ${sr.wins} / ${sr.seeds.length}。4 つの成績のすべてで放任を下回らない: ${sr.dominates ? 'はい' : 'いいえ'})`);
   out.push(`- 最良の戦略の値: \`${JSON.stringify(sr.best.s)}\``);
   out.push(`- 観戦の AI と同じ値の戦略が放任と同じ筋になった銀河: ${sr.baseSame} / ${sr.seeds.length}${sr.baseSame < sr.seeds.length ? ' (**観戦の AI が変わった。tools/strategy.js の earthWarYearly を合わせ直す**)' : ''}`);
+  out.push('');
+  const crossed = STOP.filter(([, f]) => f(a, b, sr));
+  out.push(`#### 止める線 (docs/parallel.md の 4 の 3): ${crossed.length ? `**${crossed.length} 件を越えた**` : '越えていない'}`);
+  out.push('');
+  out.push('| 数 | 止める線 | 結果 |');
+  out.push('|---|---|---|');
+  for (const [label, f, line] of STOP) out.push(`| ${label} | ${line} | ${f(a, b, sr) ? '**越えた**' : '—'} |`);
+  if (crossed.length) { out.push(''); out.push('越えたときは、PR の本文に「面白さの数が悪くなった理由:」の行を書き、CI のジョブを回し直すか次にプッシュする (本文はそのときに読み直す)。'); }
+  if (process.env.FUN_GATE_OUT) fs.writeFileSync(process.env.FUN_GATE_OUT, crossed.map(([label, , line]) => `${label}: ${line}`).join('\n'));
   out.push('');
   out.push(`(1 試合の平均 ${(b.ms / 1000).toFixed(1)} 秒・全体 ${((Date.now() - t0) / 60000).toFixed(1)} 分)`);
   console.log(out.join('\n'));
