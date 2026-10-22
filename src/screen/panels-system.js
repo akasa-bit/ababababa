@@ -203,11 +203,21 @@ function railHtml(g) {
   if (app.railGame !== g) { app.railGame = g; app.railFirst = new Map(); app.railSince = g.year; }
   const acked = new Set(g.acked || []);
   const evs = g.knownEvents();
-  for (const e of evs) if ((e.seen ?? e.year) > app.railSince && !app.railFirst.has(e.id)) { app.railFirst.set(e.id, now); app.railNewest = now; }
+  let fresh = false;
+  for (const e of evs) if ((e.seen ?? e.year) > app.railSince && !app.railFirst.has(e.id)) { app.railFirst.set(e.id, now); app.railNewest = now; fresh = true; }
   const decs = g.visibleDecisions().sort((a, b) => (a.deadline ?? 0) - (b.deadline ?? 0));
   const decSys = new Set(decs.filter((d) => d.kind === 'demand').map((d) => d.sys)); // 返事待ちの要求は、知らせではなく「決めること」として出す
-  const majors = evs.filter((e) => evTier(e.kind) >= 3 && !e.good && evShown(e.kind) && !acked.has(e.id) && g.year - (e.seen ?? e.year) < 60 && !(e.kind === 'demand' && decSys.has(e.sys)));
-  const recent = evs.filter((e) => !majors.includes(e) && !(e.kind === 'demand' && decSys.has(e.sys)) && evShown(e.kind) && evTier(e.kind) >= 2 && now - (app.railFirst.get(e.id) ?? -1e9) < 10000).slice(0, 3);
+  const news = railNews(g, evs, acked, (e) => e.kind === 'demand' && decSys.has(e.sys));
+  const majors = news.majors;
+  // 音: 帯で目立たせる重大な知らせ・決めることが新しく届いたとき (B-047。音の素材が入るまでは鳴らない)
+  if (fresh && majors.some((x) => app.railFirst.get(x.e.id) === now)) Sound.play('warn');
+  const decIds = decs.map((d) => String(d.id));
+  if (app.railDecs && decIds.some((id) => !app.railDecs.includes(id))) Sound.play('decide');
+  app.railDecs = decIds;
+  const inMajor = new Set(majors.flatMap((x) => x.ids));
+  // 届いたばかりの普通の知らせ (10 秒で薄れて消える) も、自国に関わるものだけ。飢餓と不足は「状態」の行に任せる
+  const recent = evs.filter((e) => !inMajor.has(e.id) && !(e.kind === 'demand' && decSys.has(e.sys)) && !STATE_KINDS.has(e.kind) && evShown(e.kind) && evTier(e.kind) >= 2 && now - (app.railFirst.get(e.id) ?? -1e9) < 10000 && evConcerns(g, e, news.foes)).slice(0, 3);
+  const hungry = evShown('famine') ? famineSystems(g) : 0;
   // 講和会議 (自分が条件を選ぶもの) と、自分への講和の申し入れ
   const diplo = [
     ...g.conferences.filter((c) => c.bids.some((b) => b.realm === g.cap && !b.picks)).map((c) => `<div class="dec"><div class="m">講和会議・${Math.floor(c.until)}年までに選ぶ (選ばなければ自動)</div>
@@ -218,20 +228,22 @@ function railHtml(g) {
       <div class="opts"><button data-act="acceptpeace" data-key="${o.key}">${ico('peace')}講和に応じる</button></div></div>`),
   ];
   const guide = guideHtml(g);
-  const n = decs.length + majors.length + diplo.length + (guide ? 1 : 0);
+  const n = decs.length + majors.length + diplo.length + (guide ? 1 : 0) + (hungry ? 1 : 0);
   // 地図が狭いときは、帯を畳んだ形 (件数だけのボタン) から始める。帯が地図を覆ってタップを邪魔しないように
   if (railHidden()) return `<div class="railbar"><button data-act="railtoggle"${decs.length ? ' class="due"' : ''}>${n ? `知らせ ${n} 件を出す` : '知らせを出す'}</button></div>`;
-  if (!n && !recent.length) return '';
+  if (!n && !recent.length && !news.over) return '';
   const place = (sys) => (sys !== undefined && g.system(sys) ? g.system(sys).name : '');
   const when = (e) => {
     const ago = g.year - e.year, late = (e.seen ?? e.year) - e.year;
     return `${place(e.sys)}・${ago < 0.5 ? 'いま' : `${Math.round(ago)}年前`}${late >= 0.5 ? ` (${Math.round(late)}年遅れで届いた)` : ''}`;
   };
-  const item = (e, major) => {
+  // ids = 束ねた続報 (重大な知らせだけ)。✓ で束ごと確かめる
+  const item = (e, major, ids = [e.id]) => {
     const fade = major ? 1 : clamp((10000 - (now - (app.railFirst.get(e.id) ?? now))) / 3000, 0.35, 1);
+    const more = ids.length > 1 ? ` (同じ星系の続報 ほか ${ids.length - 1} 件)` : '';
     return `<div class="ri ${e.good ? 'good' : EVENT_TONE[e.kind] || ''}" style="opacity:${fade.toFixed(2)}">
-      <button data-act="fly" data-sys="${e.sys ?? 0}"><span class="t">${tagIco(e.kind)}${esc(e.text)}</span><span class="m">${esc(when(e))}</span></button>
-      ${major ? `<button class="ack" data-act="ack" data-id="${e.id}" aria-label="確かめた">✓</button>` : '<span></span>'}</div>`;
+      <button data-act="fly" data-sys="${e.sys ?? 0}"><span class="t">${tagIco(e.kind)}${esc(e.text)}</span><span class="m">${esc(when(e) + more)}</span></button>
+      ${major ? `<button class="ack" data-act="ack" data-id="${ids.join(',')}" aria-label="確かめた">✓</button>` : '<span></span>'}</div>`;
   };
   const dec = (d) => `<div class="dec"><div class="m">${d.kind === 'demand' ? '要求' : '出来事'}・${esc(place(d.sys))}${d.kind === 'demand' ? '' : `・${Math.round(d.deadline)}年までに返事`}${d.sys === g.cap ? '' : `・返事は ${g.lightDelay(d.sys).toFixed(0)} 年で届く`}</div>
     <div class="t clamp3">${esc(d.text)}</div>
@@ -241,8 +253,10 @@ function railHtml(g) {
       return `<button data-act="decide" data-sys="${d.sys}" data-id="${d.id}" data-opt="${o.k}" ${why ? 'disabled' : ''} title="${esc(o.note || '')}">${esc(o.label)}<small>${esc(why || [o.cr ? `${o.cr} cr` : '', pc ? `政治力 ${pc}` : ''].filter(Boolean).join('・') || '費用なし')}</small><small class="clamp2">${esc(o.note || '')}</small></button>`;
     }).join('')}</div></div>`;
   const shownMajors = majors.slice(0, 3);
+  const moreN = majors.slice(3).reduce((k, x) => k + x.ids.length, 0) + news.over;
   return `${guide}${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
-    ${shownMajors.map((e) => item(e, true)).join('')}${majors.length > shownMajors.length ? `<div class="more">ほかに重大な知らせ ${majors.length - shownMajors.length} 件</div>` : ''}
+    ${hungry ? `<button class="state" data-act="view" data-v="events">${tagIco('famine')}飢餓・水不足の星系 ${hungry} — 地図の赤い「!」</button>` : ''}
+    ${shownMajors.map((x) => item(x.e, true, x.ids)).join('')}${moreN ? `<button class="more" data-act="view" data-v="events">ほかに重大な知らせ ${moreN} 件 (イベントのタブ)</button>` : ''}
     ${recent.map((e) => item(e, false)).join('')}
     <div class="railbar">${majors.length > 1 ? '<button data-act="ackall">重大な知らせをすべて確かめた</button>' : ''}<button data-act="railtoggle">隠す</button></div>`;
 }

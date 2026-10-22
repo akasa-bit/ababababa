@@ -241,7 +241,8 @@ function firstMoveNote(text) { uiNote(text); Net.toast(text); }
 // 次の知らせまで進む: いちばん速く進め、重大・普通の出来事 (表示している種類) か決めることが新しく見えたら止める (最長100年)
 function newsMark(g) {
   let ev = 0;
-  for (const e of g.knownEvents()) if (evShown(e.kind) && evTier(e.kind) >= 2 && e.id > ev) ev = e.id;
+  const foes = evFoes(g); // よその国どうしの出来事と、飢餓・不足の状態では止めない (知らせの予算。B-048)
+  for (const e of g.knownEvents()) if (e.id > ev && evShown(e.kind) && evTier(e.kind) >= 2 && !STATE_KINDS.has(e.kind) && evConcerns(g, e, foes)) ev = e.id;
   return { ev, dec: g.visibleDecisions().map((d) => d.id).join(',') };
 }
 function startSkip() {
@@ -257,6 +258,7 @@ function checkSkip() {
   if (!news && g.year - app.skip.from < 100) return;
   const from = app.skip.from;
   setSpeed(0);
+  Sound.play('stop');
   uiNote(news ? `知らせが届いたので止めた (${(g.year - from).toFixed(1)} 年進めた)` : '100年進めたので止めた');
   app.dirty = true;
 }
