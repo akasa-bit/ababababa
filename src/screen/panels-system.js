@@ -179,6 +179,24 @@ function helpify(html) {
 // 地図の左上の知らせの帯: 決めること (返事のボタンつき)、まだ確かめていない重大な知らせ (✓ で消す)、新しい普通の知らせ (10秒ほどで流れて消える)。
 // 押すと地図がその星系へ飛ぶ。古い知らせほど薄い
 const railHidden = () => app.railHidden ?? $('stage').clientWidth < 480;
+// 作戦の手引き (B-043): 最初の時代のあいだ、知らせの帯の一番上に、次の一手と時代の課題を出す
+function guideHtml(g) {
+  const gd = app.guideHidden ? null : g.guideSteps();
+  if (!gd) return '';
+  const st = gd.steps[gd.now];
+  let go = '';
+  if (gd.now === 0 && st.pick) {
+    const p = st.pick;
+    go = costButton(g, `data-act="candsend" data-sys="${p.sys}" data-body="${esc(p.body)}" data-kind="${p.kind}" data-from="${g.cap}"`, `${ico(p.kind === 'planet' ? 'planetcol' : 'station')}入植船を送る`, g.shipCost(p.kind, g.cap, p.sys), g.cap, '')
+      + `<button data-act="gobody" data-sys="${p.sys}" data-body="${esc(p.body)}">天体を見る</button>`;
+  } else if (gd.now === 0) go = '<button data-act="view" data-v="cands">候補地を開く</button>';
+  else if (st.sys !== undefined) go = `<button data-act="fly" data-sys="${st.sys}">${esc(g.system(st.sys).name)}へ</button>`;
+  return `<div class="dec guide"><div class="m">${ico('goal')}作戦の手引き・最初の時代 (${START_YEAR}〜${START_YEAR + ERA_YEARS}年)</div>
+    <ol>${gd.steps.map((x, i) => `<li class="${x.done ? 'done' : i === gd.now ? 'now' : ''}">${x.done ? '✓ ' : ''}${esc(x.label)}</li>`).join('')}</ol>
+    ${app.awaitFirst ? '<div class="m">時間は止まっている。入植船を送ると動きはじめる</div>' : ''}
+    <div class="opts">${go}<button class="ghost" data-act="guidehide">手引きを隠す</button></div>
+    <div class="m">時代の課題: ${gd.tasks.map((tk) => esc(tk.label)).join(' / ')}</div></div>`;
+}
 function railHtml(g) {
   const now = performance.now();
   // 新しいゲーム・ロードのときは数え直す (それまでの出来事は「新しい知らせ」として流さない)
@@ -199,7 +217,8 @@ function railHtml(g) {
       <div class="t">${esc(g.realmName(o.from))}が講和を申し入れている (戦勝点 ${g.warScore(g.cap, o.from)}。勝っている側が講和会議で条件を選ぶ)</div>
       <div class="opts"><button data-act="acceptpeace" data-key="${o.key}">${ico('peace')}講和に応じる</button></div></div>`),
   ];
-  const n = decs.length + majors.length + diplo.length;
+  const guide = guideHtml(g);
+  const n = decs.length + majors.length + diplo.length + (guide ? 1 : 0);
   // 地図が狭いときは、帯を畳んだ形 (件数だけのボタン) から始める。帯が地図を覆ってタップを邪魔しないように
   if (railHidden()) return `<div class="railbar"><button data-act="railtoggle"${decs.length ? ' class="due"' : ''}>${n ? `知らせ ${n} 件を出す` : '知らせを出す'}</button></div>`;
   if (!n && !recent.length) return '';
@@ -222,7 +241,7 @@ function railHtml(g) {
       return `<button data-act="decide" data-sys="${d.sys}" data-id="${d.id}" data-opt="${o.k}" ${why ? 'disabled' : ''} title="${esc(o.note || '')}">${esc(o.label)}<small>${esc(why || [o.cr ? `${o.cr} cr` : '', pc ? `政治力 ${pc}` : ''].filter(Boolean).join('・') || '費用なし')}</small><small class="clamp2">${esc(o.note || '')}</small></button>`;
     }).join('')}</div></div>`;
   const shownMajors = majors.slice(0, 3);
-  return `${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
+  return `${guide}${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
     ${shownMajors.map((e) => item(e, true)).join('')}${majors.length > shownMajors.length ? `<div class="more">ほかに重大な知らせ ${majors.length - shownMajors.length} 件</div>` : ''}
     ${recent.map((e) => item(e, false)).join('')}
     <div class="railbar">${majors.length > 1 ? '<button data-act="ackall">重大な知らせをすべて確かめた</button>' : ''}<button data-act="railtoggle">隠す</button></div>`;

@@ -61,16 +61,16 @@
 | B-039 | 画面の点検: 「AI っぽい」所・タブの見え方・アイコンのない項目を、撮った画面つきで一覧にし、直す所を選んでもらう (コードは変えない) | `EMPIRE_TABS`・`ICONS`・`homeHtml` | — | M | 画面と最初の体験 | `sessions.md` の U1・`status/U.md` |
 | B-040 | タブの表示と「AI っぽさ」の直しを、画面 1 つずつ小さな PR で。地図の札の重なりもここで | `EMPIRE_TABS`・`empireHtml`・`GalaxyView` | B-039 | L | 画面と最初の体験 | `sessions.md` の U2・`critique/04-plan.md` の 2.3 の 8 |
 | B-041 | アイコンのない項目にアイコンをつける (候補を並べて番号で選んでもらう) | `ICONS`・`iconImg`・`KIND_ICON` | B-039 | M | 画面と最初の体験 | `sessions.md` の U3 |
-| B-042 | 止まった状態で始める。最初の判断 (入植船を 1 隻送る) が済むまで時間を進めない | `setSpeed`・`SPEEDS`・`newGame` | Q2 | S | 画面と最初の体験 | `critique/04-plan.md` の 0-1・2.3 の 2・3 |
-| B-043 | 時代の課題を「作戦の手引き」にして、手を 1 つずつ導く (別のチュートリアルの画面は作らない) | `CHALLENGES`・`challengesYearly`・`goalsSheet`・`erasYearly` | Q2・Q3 | M | 画面と最初の体験 | `critique/04-plan.md` の 0-2・2.3 の 1 |
-| B-044 | 候補地の並びを「おすすめ順」にし、同じ太陽系の天体は「課題に数えない」の印を付けて下げる | `candidatesHtml` | Q2 | S | 画面と最初の体験 | `critique/04-plan.md` の 0-3・2.3 の 4 |
-| B-045 | ホーム画面を「はじめる」1 つにし、生産性の倍率・銀河の番号・難易度を「詳しい設定」に畳む。表紙の絵を置く | `homeHtml`・`renderHome`・`openHome` | Q2 | S | 画面と最初の体験 | `critique/04-plan.md` の 0-4・2.3 の 19 |
+| B-042 | **済み (#184)** 止まった状態で始める。最初の判断 (入植船を 1 隻送る) が済むまで時間を進めない | `setSpeed`・`SPEEDS`・`newGame` | Q2 | S | 画面と最初の体験 | `critique/04-plan.md` の 0-1・2.3 の 2・3 |
+| B-043 | **済み (#188)** 時代の課題を「作戦の手引き」にして、手を 1 つずつ導く (別のチュートリアルの画面は作らない) | `CHALLENGES`・`challengesYearly`・`goalsSheet`・`erasYearly` | Q2・Q3 | M | 画面と最初の体験 | `critique/04-plan.md` の 0-2・2.3 の 1 |
+| B-044 | **済み (#186)** 候補地の並びを「おすすめ順」にし、同じ太陽系の天体は「課題に数えない」の印を付けて下げる | `candidatesHtml` | Q2 | S | 画面と最初の体験 | `critique/04-plan.md` の 0-3・2.3 の 4 |
+| B-045 | **済み (#181)** ホーム画面を「はじめる」1 つにし、生産性の倍率・銀河の番号・難易度を「詳しい設定」に畳む。表紙の絵を置く | `homeHtml`・`renderHome`・`openHome` | Q2 | S | 画面と最初の体験 | `critique/04-plan.md` の 0-4・2.3 の 19 |
 | B-046 | 節目の演出: 入植・交易路の開通・独立・講和で、地図に光の輪を広げ、短い音を鳴らす | `GalaxyView`・`news` | Q2・B-047 | M | 画面と最初の体験 | `critique/04-plan.md` の 0-5・2.3 の 5 |
 | B-047 | 音: 環境音の曲 2〜3 と効果音 10 (送信・到着・警告・決めること) | 新しい | Q6 | M | 画面と最初の体験 | `critique/04-plan.md` の 0-6・2.3 の 18 |
 | B-048 | 知らせの予算: 重大な知らせは 1 時間に決めた数まで、飢餓と不足は地図の「!」の状態にまとめ、同じ星系・同じ種類の続報を束ねる | `EVENT_TIER`・`news`・`alertHtml`・`EvPrefs`・`evShown` | B-019 | M | 画面と最初の体験 | `critique/04-plan.md` の 0-7・2.3 の 7 |
 | B-049 | 語り手の出来事の選択肢に、どちらにも代わりの損と得を付ける (明らかな最善をなくす) | `STORY`・`storyYearly` | — | S | 画面と最初の体験 | `critique/04-plan.md` の 0-9・2.3 の 13。**済み (#185)** |
 | B-050 | 語り手を連作にする (3 段の続き物、続きは光の遅れで届く。種類を 7 から 20 以上へ) | `STORY`・`storyYearly` | B-049 | L | 画面と最初の体験 | `critique/04-plan.md` の 2-5・2.3 の 14 |
-| B-051 | 文字の大きさ: 1280×800 で最小 12px。文字のぶれの既定を「切」に | `FX_JIT`・`updateFxBtn`・`fxReduced` | Q9 | S | 画面と最初の体験 | `critique/04-plan.md` の 0-10・2.3 の 20・`desktop/controller.md` の 3 |
+| B-051 | **済み (#180)** 文字の大きさ: 1280×800 で最小 12px。文字のぶれの既定を「切」に | `FX_JIT`・`updateFxBtn`・`fxReduced` | Q9 | S | 画面と最初の体験 | `critique/04-plan.md` の 0-10・2.3 の 20・`desktop/controller.md` の 3 |
 | B-052 | 光の球を見せる: 指令・知らせ・艦隊の出発の光が星図の上を球で広がり、「届くまで あと 12 年」が縁で見える | `GalaxyView`・`known` | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 1-1・2.3 の 6 |
 | B-053 | 「見えている過去」と「ありうる今」を重ねる: 艦隊を最後に見えた位置に置き、今いるかもしれない範囲を淡い雲で描く | `GalaxyView`・`fleetOf`・`intel` | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 1-2 |
 | B-054 | 時代の終わりの答え合わせ: 100 年ごとに、地球が見ていた歴史と本当の歴史を並べて早回しで見せる | `erasYearly`・`ERA_YEARS`・新しい | Q2 | L | 画面と最初の体験 | `critique/04-plan.md` の 1-3 |
