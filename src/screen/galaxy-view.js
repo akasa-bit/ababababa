@@ -855,6 +855,8 @@ class GalaxyView {
       ctx.strokeRect(Math.min(b.x0, b.x1), Math.min(b.y0, b.y1), Math.abs(b.x1 - b.x0), Math.abs(b.y1 - b.y0));
     }
 
+    this.drawRings(game);
+
     // ホバー中の星: 選択星からの距離と、通信 (光速) と船 (0.95c / 交易路の外 0.9c) の所要年数
     if (this.hover && this.hover.id !== sel.id) {
       const d = distance(sel, this.hover);
@@ -881,6 +883,36 @@ class GalaxyView {
       ctx.fillStyle = '#dfe8f7';
       lines.forEach((l, i) => ctx.fillText(l, bx + 7, byy + 16 + i * 15));
     }
+  }
+
+  // 節目の光の輪 (B-046): 入植・交易路の開通・独立・講和の知らせが届いた星系から、輪が広がって消える (2.4 秒)。
+  // 自国の節目は太く大きく (音も鳴らす)、よその国の節目は細く小さく。ゲームを開いたときやロードしたときに届いていたものは出さない
+  drawRings(game) {
+    const now = performance.now();
+    const fresh = milestonesNew(game, now);
+    for (const m of fresh) if (m.own && !m.quiet) Sound.play(m.kind);
+    const rings = (this.rings || []).concat(fresh.filter((m) => RING_COLOR[m.kind])).filter((r) => now - r.t < RING_MS);
+    this.rings = rings;
+    if (!rings.length) return;
+    const { ctx } = this;
+    ctx.save();
+    for (const r of rings) {
+      const s = game.system(r.sys);
+      if (!s) continue;
+      const [x, y] = this.toScreen(s.x, s.y, s.z);
+      const k = (now - r.t) / RING_MS; // 0 → 1
+      const ease = 1 - (1 - k) * (1 - k);
+      ctx.strokeStyle = RING_COLOR[r.kind];
+      for (const lag of r.own ? [0, 0.18] : [0]) { // 自国の節目は 2 重の輪
+        const kk = Math.max(0, ease - lag);
+        if (kk <= 0) continue;
+        ctx.globalAlpha = (1 - k) * (r.own ? 0.9 : 0.45);
+        ctx.lineWidth = r.own ? 2.5 : 1;
+        ctx.beginPath(); ctx.arc(x, y, 6 + kk * (r.own ? 110 : 36), 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+    ctx.restore();
+    this.animating = true; // 輪が広がっているあいだは毎コマ描く
   }
 
   // 従属マップ: 地球に届いている情報で、入植星系を点で描き、家臣から主人へ矢印を引く。

@@ -203,11 +203,17 @@ function railHtml(g) {
   if (app.railGame !== g) { app.railGame = g; app.railFirst = new Map(); app.railSince = g.year; }
   const acked = new Set(g.acked || []);
   const evs = g.knownEvents();
-  for (const e of evs) if ((e.seen ?? e.year) > app.railSince && !app.railFirst.has(e.id)) { app.railFirst.set(e.id, now); app.railNewest = now; }
+  let fresh = false;
+  for (const e of evs) if ((e.seen ?? e.year) > app.railSince && !app.railFirst.has(e.id)) { app.railFirst.set(e.id, now); app.railNewest = now; fresh = true; }
   const decs = g.visibleDecisions().sort((a, b) => (a.deadline ?? 0) - (b.deadline ?? 0));
   const decSys = new Set(decs.filter((d) => d.kind === 'demand').map((d) => d.sys)); // 返事待ちの要求は、知らせではなく「決めること」として出す
   const news = railNews(g, evs, acked, (e) => e.kind === 'demand' && decSys.has(e.sys));
   const majors = news.majors;
+  // 音: 帯で目立たせる重大な知らせ・決めることが新しく届いたとき (B-047。音の素材が入るまでは鳴らない)
+  if (fresh && majors.some((x) => app.railFirst.get(x.e.id) === now)) Sound.play('warn');
+  const decIds = decs.map((d) => String(d.id));
+  if (app.railDecs && decIds.some((id) => !app.railDecs.includes(id))) Sound.play('decide');
+  app.railDecs = decIds;
   const inMajor = new Set(majors.flatMap((x) => x.ids));
   // 届いたばかりの普通の知らせ (10 秒で薄れて消える) も、自国に関わるものだけ。飢餓と不足は「状態」の行に任せる
   const recent = evs.filter((e) => !inMajor.has(e.id) && !(e.kind === 'demand' && decSys.has(e.sys)) && !STATE_KINDS.has(e.kind) && evShown(e.kind) && evTier(e.kind) >= 2 && now - (app.railFirst.get(e.id) ?? -1e9) < 10000 && evConcerns(g, e, news.foes)).slice(0, 3);

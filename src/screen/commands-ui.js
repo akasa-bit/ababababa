@@ -83,6 +83,7 @@ function onPanelClick(e) {
   }
   if (!r) return;
   if (r.ok && (act === 'send' || act === 'candsend')) firstMoveDone();
+  if (r.ok) Sound.play('send');
   app.dirty = true;
   save();
 }
