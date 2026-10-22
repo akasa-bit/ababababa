@@ -7,8 +7,10 @@
 ## 1. 組み立てと起動
 
 ```sh
-node desktop/prepare.mjs                       # index.html と assets/ を desktop/game/ に写す
-cd desktop/electron && npm ci
+node tools/build.mjs                           # 組み立てた index.html を作る (回 R3 からリポジトリに入らない)
+(cd desktop/electron && npm ci)                # Electron と、同梱する字体 (@fontsource)
+node desktop/prepare.mjs                       # index.html・assets/・字体を desktop/game/ に写す
+cd desktop/electron
 npm run package:win     # → desktop/electron/out/NoLongerUbiquitous-win32-x64/ (Windows。Linux の上でも組み立てられる)
 npm run package:linux   # → desktop/electron/out/NoLongerUbiquitous-linux-x64/ (Linux・Steam Deck)
 ```
@@ -23,6 +25,20 @@ npm run package:linux   # → desktop/electron/out/NoLongerUbiquitous-linux-x64/
   Linux で `--no-sandbox` を付けるのは、Steam から起動すると Chromium の sandbox の準備 (ユーザーの名前空間) が失敗して画面が出ないことがあるため (Choice of Games は Steam の全作品でこうしている。下の 3-2)。sandbox の準備は `main.js` が動く前に始まるので、`main.js` の中からは切れない (試した)。開くのは手元の `desktop/game/` だけで、外のページへは移らない (外へのリンクはいつものブラウザで開く) ので、切っても読み込むものは変わらない。
 - 環境変数 `NLU_FULLSCREEN=1` で全画面 (Steam Deck の Game Mode を想定)。
 - Windows 版は、組み立てられることまでは確かめた。Windows の上で動かして確かめるのは、まだ (実機か CI の Windows が要る)。
+
+## 1-2. 字体の同梱 (B-088・QD-20。回 SO1)
+
+ゲームは字体を Google Fonts からネットで読む (`src/index.html` の頭の `<link>`)。オフラインの Steam Deck では別の字体になるので、**包装の側で同じ字体を同梱し、読み込みを差し替える** (ゲームの中身は変えない)。
+
+- `desktop/prepare.mjs` が、npm の `@fontsource` (Google Fonts と同じ字体を、同じ文字の範囲ごとに分けたもの。版は `electron/package.json` で固定) から、ゲームの使う 4 つの字体と太さ (Courier Prime 400・700、Special Elite 400、Zen Antique 400、Zen Old Mincho 400・700) の woff2 を `desktop/game/fonts/` に写し、`fonts.css` を作る。約 9 MB・372 ファイル。ライセンス (Courier Prime・Zen Antique・Zen Old Mincho は SIL OFL 1.1、Special Elite は Apache 2.0) の文を各フォルダの `LICENSE` に写す。
+- 組み立てた `index.html` は圧縮してあり、中の `<link>` を書き換えられない。そこで `electron/main.js` が `https` の読み込みを横取りし、`fonts.googleapis.com/css2` には同梱の `fonts.css` を、字体のファイルには同梱のファイルを返す。ほかの `https` はそのままネットへ出す。
+- 確かめ方: `xvfb-run -a node desktop/fonts-check.mjs [包装した実行ファイル]`。ネットへの読み込みを全部止めた状態で開き、4 つの字体で日本語と英数字が描けること、6 つの字体と太さが読めたこと、Google Fonts の CSS を横取りしたことを見る。2026-10-22 に、`electron .` と包装した Linux 版の両方で合格 (CSS 1 回・字体のファイル 82 個。ほかのネットへの読み込みなし)。包装の大きさは 292 → 302 MB。
+- 字体の版を上げるとき: `electron/package.json` の `@fontsource/*` を同じ版の組で上げ、`fonts-check.mjs` を回す。ゲームが字体や太さを変えたら (`src/index.html` の `<link>`)、`prepare.mjs` の `FONTS` も合わせる。
+- **Firebase の SDK** (アカウント機能。`src/outward/cloud.js` の `FB_SDK`) は同梱しない。クラウドのセーブと部屋のコードはネットがないと使えないので、オフラインで SDK だけあっても意味がない。いまは設定がなく隠れている (QD-23)。設定を入れたあとは、起動のときに SDK を読みにいく (`Cloud.init`)。ネットがなければアカウントの画面に「Firebase につなげなかった」と出るだけで、ゲームのほかの所は動く (読めなかったときは、そこで止まる作り)。
+
+## 1-3. ストアの画像を撮る (B-079。回 SO1)
+
+`node desktop/shots/shoot.mjs`。撮るためのセーブを作り、スクリーンショット (1920×1080) とカプセルの案を `desktop/shots/out/` に書く。中身と決まりは `store/images.md` の 2・5。
 
 ## 2. 測り方
 
@@ -83,8 +99,7 @@ xvfb-run -a -s "-screen 0 1280x800x24" node desktop/bench/run.mjs 3   # Electron
 
 - Steam Deck の上での描画の速さ (F08)・Game Mode での全画面・一覧 (`<select>`) の出方。
 - Steam のオーバーレイと Steamworks (選んだ方だけ、S2 のあとでつなぐ)。
-- 文字: いまは Google Fonts をネットから読む。オフラインの Deck では別の字体になるので、包装の側で字体を同梱して差し替えるか決める。
-- アカウント機能の Firebase の SDK もネットから読む (ネットがないと使えない。いまは設定がないので隠れている)。
+- 文字: 包装の側で同梱した (上の 1-2)。Deck の実機で、オフラインのまま同じ字体になるかを見る。
 - セーブの書き出し (`<a download>`) と読み込み (ファイルの窓) が、包装の中で動くか。
 
 コントローラーで足りない操作は `desktop/controller.md`。
