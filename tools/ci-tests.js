@@ -76,6 +76,12 @@ catch (e) { rows.push(['build (シミュレーション版・参考)', '不合�
   rows.push(['src', r.status === 0 ? '合格' : '**不合格**', r.status === 0 ? '' : (r.stdout + r.stderr).trim().slice(0, 200)]);
   if (r.status !== 0) failed++;
 }
+// 0'''. 回の順番の表 (tools/sessions.json) と docs/sessions.md の回が合っている (tools/session-check.js)
+{
+  const r = spawnSync('node', [path.join(ROOT, 'tools/session-check.js'), '--check'], { encoding: 'utf8' });
+  rows.push(['sessions', r.status === 0 ? '合格' : '**不合格**', r.status === 0 ? '' : (r.stdout + r.stderr).trim().slice(0, 200)]);
+  if (r.status !== 0) failed++;
+}
 // 0''. 合わせる目標のファイルが固定したときから変わっていない
 {
   const r = spawnSync('node', [path.join(ROOT, 'tools/check-targets.js')], { encoding: 'utf8' });

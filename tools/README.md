@@ -197,3 +197,13 @@ HTML=$PWD/simulation.html NAT=1 node tools/tests/conserve.js 7 150
 | `energy.js` | 船 1 便ごとに記帳した推進のエネルギーが、試験の中で計算し直した式と 1 ± 1e-6 で一致する (目標 R07)。太陽系の発電と収支も出す |
 
 各試験は結果を表示します。`[]` で終わる行は、ページの誤りがなかったことを表します。
+
+## 回を始める前の確かめ (tools/session-check.js)
+
+```sh
+node tools/session-check.js GA3     # 回 GA3 を始めてよいか。だめなら「回 GA3 を始めるには、FU1 が済んでいる必要がありますが、まだ済んでいません」と出して終了コード 1
+node tools/session-check.js --next  # いま始められる回の一覧
+node tools/session-check.js --check # tools/sessions.json と docs/sessions.md の回が合っているか (CI の行 sessions)
+```
+
+回の順番 (どの回の前にどの回が済んでいる必要があるか) は `tools/sessions.json`。済んだかは、main の `docs/status/<レーン>.md` の「## 済んだ回」の行 (`- GA1 (#180)`) で決まる (`git fetch origin main` してから読む。`SESSION_CHECK_LOCAL=1` で手元のファイル)。
