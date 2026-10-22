@@ -106,7 +106,8 @@ $('home').onclick = (e) => {
       return openPick(first ? first.cap : 0);
     }
     save();
-    return closeHome(1);
+    closeHome(1);
+    return pauseForFirstMove();
   }
   const k = SLOT_KEYS[i];
   if (act === 'slotsave') {
@@ -202,12 +203,28 @@ $('memosave').onclick = saveMemo;
 document.querySelectorAll('#memobox [data-tag]').forEach((b) => { b.onclick = () => { const on = !b.classList.contains('on'); document.querySelectorAll('#memobox [data-tag]').forEach((x) => x.classList.remove('on')); b.classList.toggle('on', on); }; });
 const setSpeed = (v, keepSkip = false) => {
   if (Net.on && Net.role === 'guest') { if (v !== app.speed) Net.send(Net.peers[0], { t: 'speed', v }); return; } // 速さはホストが決める
+  if (v) app.awaitFirst = false; // 自分で時間を動かしたら、最初の入植船を待たない
   if (app.speed) app.lastSpeed = app.speed;
   if (v !== app.speed) PlayLog.add('speed', { v });
   if (!keepSkip) app.skip = null;
   app.speed = v;
   updateSpeedButtons();
 };
+// 新しいゲームは止まった状態で始め、最初の判断 (入植船を 1 隻送る) が済んだら時間を動かす (B-042)。
+// 観戦とネット対戦では待たない。速さのボタンで自分で動かしてもよい
+function pauseForFirstMove() {
+  if (app.game.spectate || Net.on) return;
+  app.awaitFirst = true;
+  setSpeed(0);
+  firstMoveNote('時間は止まっている。最初の入植船を送ると動きはじめる (候補地のタブから送れる)');
+}
+function firstMoveDone() {
+  if (!app.awaitFirst) return;
+  setSpeed(1);
+  firstMoveNote('入植船を送った。時間が動きはじめた (速さは上のボタンで変えられる。スペースで止まる)');
+}
+// ログに残し、画面の下にも 4 秒出す
+function firstMoveNote(text) { uiNote(text); Net.toast(text); }
 // 次の知らせまで進む: いちばん速く進め、重大・普通の出来事 (表示している種類) か決めることが新しく見えたら止める (最長100年)
 function newsMark(g) {
   let ev = 0;
