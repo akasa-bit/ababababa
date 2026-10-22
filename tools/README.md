@@ -41,10 +41,27 @@ node tools/search.js --budget 40 --seeds 1,2,3,4,5,6,7,8 --years 150   # 候補 
 | `mandate` | 直属の家臣に送る委任方針 (`none` = 送らない) | none・balanced・expand・develop・arm |
 | `grantBelow` | 忠誠がこれより低い直属の家臣に資金援助 (0 = 送らない) | 0〜70 |
 | `peaceArm` | 平時でも、資金がこれを超えたら軍艦を作る (0 = 作らない) | 0〜10000 |
+| `colWait` | 首都の入植の間隔 (年)。`auto` = ゲームのまま (5 年 + 国家方針)・0 = 間隔なし・`never` = 入植しない (B-067) | auto・0・3・10・never |
+| `colRange`・`colPick` | 首都の入植先を探す光年 (ゲームの `nearSystems` は 25 光年まで)・選び方 (`grade` = 適性 ×10 − 距離 = ゲームのまま・`near` = 近さ優先・`best` = 適性優先) | 10〜25・grade・near・best |
+| `routes`・`routeRange` | 首都が引く交易路の本数の上限 (3 = ゲームのまま)・2 本目からの相手を探す光年 (12 = ゲームのまま) | 0〜6・6〜25 |
+| `regime` | 新しい家臣の統治体制 (`auto` = 藩王国 T04 のまま) | auto・T01・T03・T05・T10・T12・T13・T14・T19・encomienda |
+| `direct` | 1 = 近い家臣から直轄の上限まで直轄にする | 0・1 |
 
 観戦の AI と同じ値 (`BASE`) は、放任と同じ筋 (状態の要約が一致) になる。CI の表にその一致の数を出すので、観戦の AI の判断 (`earthWarYearly`) が変わったら、`strategy.js` を合わせ直す。
 
 決めた 6 つの戦略 (`PRESETS`): 放任・拡張 (拡張期 + 委任「拡張」)・内政 (整備期 + 委任「内政」+ 忠誠 50 未満へ援助)・軍備 (軍備期 + 委任「軍備」+ 平時の軍艦)・平和 (宣戦しない・すぐ講和)・好戦 (1.5 倍で宣戦・講和しない)。
+拡張の一強を測るときに足す戦略 (`EXTRA`): 入植の間隔なし (拡張期 + 委任「拡張」+ `colWait` 0 + `colRange` 25。地球だけの試合で 1 位だった `bots.js` の「拡張に振る」を値で書いたもの)。
+
+### 人間に近い遅れつきのボット (B-068)
+
+`S.humanize(戦略, { delay: 1, every: 1 })` で、どの戦略も (放任 = `null` も) 遅れつきにする。`delay` のときは、自分の判断 (宣戦・講和・艦隊の行き先・講和の申し入れ・国家方針・決めること・委任・資金援助・直轄・交易路) のあいだだけ観戦モードを切り、首都に光が届いた知らせ (`known`・`seenBy`・`seenShips`・`knownAtWar`・`visibleDecisions`) だけで決める。観戦の AI は光の遅れなしの実際の様子で決めている。`every` 年に 1 回しか判断しない (間の年は、人がほかを見ている)。首都の星系の開発・入植・交易路はゲームの自動のまま (首都のことなので遅れはない)。
+
+```sh
+node tools/delay-report.js --seeds 16 --years 150 --budget 24   # 7 つの戦略 × 遅れなし・遅れつき × 2 つの試合の形 → 拡張の一強が出るかの表 (Markdown)
+node tools/search.js --delay --budget 40                          # 必勝法を探す AI を遅れつきで (放任も遅れつき)
+```
+
+試験: `node tools/tests/strategy.js` (CI の `strategy`)。`BASE` が放任と同じ筋になること、新しい値と遅れつきのボットが筋を変えることを見る。
 
 ## 画面なしで回せる版 (tools/headless.js)
 
