@@ -135,6 +135,36 @@
     ];
     return { parts, total: parts.reduce((k, [, v]) => k + v, 0) };
   }
+  // 結末の型 (B-058): 終わりの年の銀河の形から、4 つの型のどれかと、その原因の内訳を出す (状態を読むだけ。自動対戦の道具からも呼べる)。
+  // 衰え = ほかの国が自国の 1.5 倍以上 (または自国が銀河の 1 割未満)。連邦への移行 = 家臣 3 つ以上の半分以上が自治の型
+  // (入植者の自治・法と交易だけ)。帝国の維持 = 自国がほかのどの国の 1.5 倍以上で、独立は 3 回まで。どれでもなければ、多くの国の均衡
+  ending() {
+    const cap = this.cap;
+    const sizes = new Map();
+    for (const x of this.colonizedSystems()) { const r = this.realmOf(x.id); sizes.set(r, (sizes.get(r) || 0) + 1); }
+    const total = [...sizes.values()].reduce((a, b) => a + b, 0) || 1;
+    const own = sizes.get(cap) || 0, share = own / total;
+    const [rival, rivalN] = [...sizes.entries()].filter(([r]) => r !== cap).sort((a, b) => b[1] - a[1])[0] || [null, 0];
+    const vass = this.realmSystems(cap).filter((x) => x.id !== cap && this.gov(x.id).lord !== null && this.gov(x.id).lord !== undefined);
+    const fam = {};
+    for (const x of vass) { const f = this.gov(x.id).direct ? 'colony' : REGIMES[regimeKey(this.gov(x.id))]?.family || 'colony'; fam[f] = (fam[f] || 0) + 1; }
+    const loose = vass.length ? ((fam.settler || 0) + (fam.legal || 0)) / vass.length : 0;
+    const indep = this.stats.indepFromEarth;
+    const loyal = vass.length ? vass.reduce((a, x) => a + (this.gov(x.id).loyalty ?? LOYALTY_START), 0) / vass.length : null;
+    const far = vass.length ? vass.reduce((a, x) => a + this.sysDist(cap, x.id), 0) / vass.length : 0;
+    const big = [...sizes.values()].filter((n) => n / total >= 0.1).length;
+    const type = rivalN >= 1.5 * own || share < 0.1 ? 'decline' : vass.length >= 3 && loose >= 0.5 ? 'federation' : own >= 1.5 * rivalN && indep <= 3 ? 'empire' : 'balance';
+    const causes = [
+      [`${this.realmName(cap)}の星系`, `${own} / ${total} (${Math.round(share * 100)}%)`],
+      ['いちばん大きいほかの国', rival === null ? 'なし' : `${this.realmName(rival)} ${rivalN} 星系`],
+      ['銀河の 1 割以上を持つ国', `${big} か国`],
+      ['独立を許した回数', `${indep} 回`],
+      ['家臣の平均の忠誠度', loyal === null ? '家臣なし' : `${Math.round(loyal)}`],
+      ['家臣までの平均の距離 (通信の遅れ)', vass.length ? `${far.toFixed(1)} 光年 (指令の往復 ${(2 * far).toFixed(0)} 年)` : '—'],
+      ['家臣の統治の型', Object.entries(fam).map(([f, n]) => `${VASSAL_FAMILIES[f] || f} ${n}`).join('・') || '—'],
+    ];
+    return { type, ...ENDINGS[type], share, own, total, indep, loose, causes };
+  }
   endYearly() {
     if (!this.endYear || this.ended || this.year < this.endYear) return;
     this.ended = true;
