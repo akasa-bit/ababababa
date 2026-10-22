@@ -1,5 +1,6 @@
 // セーブの試験 (回 R3。docs/restart.md の 5)。画面なしの版で回す。
-// 1. src を分ける前 (回 R1 の基準の main 3a5b5d9) のゲームで作ったセーブを、いまのゲームで読み、続けて回した筋が、前のゲームで続けたものと同じ
+// 1. src を分ける前 (回 R1 の基準の main 3a5b5d9) のゲームで作ったセーブを、いまのゲームで読める。読んだものを、いまのゲームで保存して読み直しても、
+//    続けて回した筋が同じ (保存で何も落ちない)。前のゲームで続けた筋とは比べない (遊びを変えた PR はかならず違う筋になるため。回 SE1)
 // 2. 仕組みごとのセーブの項目 (core/base.js の saveField): 初期値 (init)・書く順 (前からの項目の後ろ、savedAt の前)・
 //    項目のない前の版のセーブを読んだときの既定 (read)・同じ名前を 2 回登録すると止まる
 // 使い方: node tools/tests/save.js
@@ -21,9 +22,11 @@ const old = H.load({ src: tmp, edition: 'game' });
 const gOld = old.run(old.newGame('4', { nations: 6 }), 60);
 const gNew = blank(now);
 if (!gNew.restore(JSON.parse(JSON.stringify(old.buildSave(gOld))))) fails.push('前のゲームのセーブが読めない');
-old.run(gOld, 40); now.run(gNew, 40);
-const [h0, h1] = [old.hash(gOld), now.hash(gNew)];
-if (h0 !== h1) fails.push(`前のセーブから続けた筋が違う (前 ${h0}・いま ${h1})`);
+const gAgain = blank(now);
+if (!gAgain.restore(JSON.parse(JSON.stringify(now.buildSave(gNew))))) fails.push('前のセーブを読んだものを、保存して読み直せない');
+now.run(gNew, 40); now.run(gAgain, 40);
+const [h0, h1] = [now.hash(gAgain), now.hash(gNew)];
+if (h0 !== h1) fails.push(`前のセーブを読んだものと、それを保存して読み直したもので、続けた筋が違う (${h1}・読み直し ${h0})`);
 
 // 2
 const reg = H.load({ edition: 'game' });

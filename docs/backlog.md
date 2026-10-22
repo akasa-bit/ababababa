@@ -34,8 +34,8 @@
 | B-020 | 星系の中の集団: 階層 5 × 民族 (種族と、本国生まれ / 入植地生まれ) × 価値観 2 軸。集団ごとの忠誠度の平均を忠誠度に、政治から締め出された集団の割合をハザードに (EPR)、R08 を較正し直す。不満の大きい 1〜2 集団を 1 行で出す | `loyaltyYearly`・`unrestYearly`・`HAZARD`・`hazardOf`・`races`・`regimeBox` | 11-1〜11-4 (決まった)・B-010 のあと | L | 政治 | `sessions.md` の 11・`game-plan.md` の段 7・`proposals/11-groups.md`・`status/Q.md`・`econ-policy.md` の 9 |
 | B-021 | 現地のエリート (いまは 1 つの行為者) を、集団に合わせる | `elite`・`ELITE_LABEL`・`bundleStep` | B-020 | S | 政治 | `status/H.md` の残り・`vassal-game.md` の 9・`vassal-history.md` の 8 |
 | B-022 | 政策を利益集団の支持で通す形 (Victoria 3 の形) | `POLICY_COST`・`councilYearly`・`politicsYearly` | B-012・B-020・C の 10 | M | 政治 | `econ-policy-list.md` の 5 と 7 の 3・`econ-policy.md` の 9 |
-| B-023 | 共同統治の 2 国目の宗主どうしの外交 (分け前を断ったときの関係の悪化) | `lord2`・`H33`・`BARGAIN` | — | S | 政治 | `status/H.md` の残り・`vassal-game.md` の 9 |
-| B-024 | 傀儡国が、宗主の敗戦で消える道筋を入れる | `REGIMES`・`warsYearly`・`TREATY` | — | S | 政治 | `status/H.md` の残り |
+| B-023 | 共同統治の 2 国目の宗主どうしの外交 (分け前を断ったときの関係の悪化) | `lord2`・`H33`・`BARGAIN` | — | S | 政治 | `status/H.md` の残り・`vassal-game.md` の 9。**済み (#185)** |
+| B-024 | 傀儡国が、宗主の敗戦で消える道筋を入れる | `REGIMES`・`warsYearly`・`TREATY` | — | S | 政治 | `status/H.md` の残り。**済み (#185)** |
 | B-025 | 史料の原文確認: 裁定者が自分の知識で決めた 3 か所と、本文に当たれなかった条約 (Aitchison・理藩院則例・実録・COFA の条番号・中世の文書) | `data/raw/vassal/`・`data/build/build_vassal_game.py` → `VASSAL_DATA` | — | S | 政治 | `status/H.md` の注意・`vassal-game.md` の 7・`vassal-cases.md` の 2 |
 | B-026 | 遅れて届く外交: 同盟・不可侵・交易の協定を足し、どれも届いた所から効く。交渉の模型の「相手が受け入れる線」を「何なら受けるか」の形で見せる | `TREATY`・`BARGAIN`・`PC_DIPLOMACY`・`openTreaty`・`renderTreaty` | Q2 | L | 政治 | `critique/04-plan.md` の 2-2・2.3 の 16・3 の 5 |
 | B-028 | AI の国が入植を急ぎ、銀河を取り合う。構造転換 (#152) のあとで入植が増えたので、先に測り直す | `aiOrdersYearly`・`colonize` | Q2・B-068 | M | 政治 | `critique/04-plan.md` の 2-1・2.3 の 9・2.1 の注意 |
@@ -68,7 +68,7 @@
 | B-046 | 節目の演出: 入植・交易路の開通・独立・講和で、地図に光の輪を広げ、短い音を鳴らす | `GalaxyView`・`news` | Q2・B-047 | M | 画面と最初の体験 | `critique/04-plan.md` の 0-5・2.3 の 5 |
 | B-047 | 音: 環境音の曲 2〜3 と効果音 10 (送信・到着・警告・決めること) | 新しい | Q6 | M | 画面と最初の体験 | `critique/04-plan.md` の 0-6・2.3 の 18 |
 | B-048 | 知らせの予算: 重大な知らせは 1 時間に決めた数まで、飢餓と不足は地図の「!」の状態にまとめ、同じ星系・同じ種類の続報を束ねる | `EVENT_TIER`・`news`・`alertHtml`・`EvPrefs`・`evShown` | B-019 | M | 画面と最初の体験 | `critique/04-plan.md` の 0-7・2.3 の 7 |
-| B-049 | 語り手の出来事の選択肢に、どちらにも代わりの損と得を付ける (明らかな最善をなくす) | `STORY`・`storyYearly` | — | S | 画面と最初の体験 | `critique/04-plan.md` の 0-9・2.3 の 13 |
+| B-049 | 語り手の出来事の選択肢に、どちらにも代わりの損と得を付ける (明らかな最善をなくす) | `STORY`・`storyYearly` | — | S | 画面と最初の体験 | `critique/04-plan.md` の 0-9・2.3 の 13。**済み (#185)** |
 | B-050 | 語り手を連作にする (3 段の続き物、続きは光の遅れで届く。種類を 7 から 20 以上へ) | `STORY`・`storyYearly` | B-049 | L | 画面と最初の体験 | `critique/04-plan.md` の 2-5・2.3 の 14 |
 | B-051 | **済み (#180)** 文字の大きさ: 1280×800 で最小 12px。文字のぶれの既定を「切」に | `FX_JIT`・`updateFxBtn`・`fxReduced` | Q9 | S | 画面と最初の体験 | `critique/04-plan.md` の 0-10・2.3 の 20・`desktop/controller.md` の 3 |
 | B-052 | 光の球を見せる: 指令・知らせ・艦隊の出発の光が星図の上を球で広がり、「届くまで あと 12 年」が縁で見える | `GalaxyView`・`known` | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 1-1・2.3 の 6 |
