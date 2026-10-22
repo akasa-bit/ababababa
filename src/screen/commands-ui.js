@@ -73,6 +73,7 @@ function onPanelClick(e) {
   // 作戦の手引き: 隠す・出す (見るだけ。帝国 → 目標からも出せる)・タブを開く
   if (act === 'guidehide' || act === 'guideshow') { app.guideHidden = act === 'guidehide'; setHtml($('rail'), railHtml(g)); app.dirty = true; return; }
   if (act === 'view') return app.setView(btn.dataset.v);
+  if (act === 'surpriseack') { (app.surpriseAck ||= new Set()).add(Number(btn.dataset.id)); setHtml($('rail'), railHtml(g)); return; } // 奇襲の警告を確かめた (画面だけ)
   if (act === 'treatyopen') return openTreaty(Number(btn.dataset.id));
   // 行動はすべて command を通す。太陽系以外が対象なら光速の指令になり、届いた先の政府が実行する
   const d = { ...btn.dataset, sys, body, kind };
