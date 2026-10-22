@@ -73,11 +73,11 @@
 | B-051 | **済み (#180)** 文字の大きさ: 1280×800 で最小 12px。文字のぶれの既定を「切」に | `FX_JIT`・`updateFxBtn`・`fxReduced` | Q9 | S | 画面と最初の体験 | `critique/04-plan.md` の 0-10・2.3 の 20・`desktop/controller.md` の 3 |
 | B-052 | **済み (#198)** 光の球を見せる: 指令・知らせ・艦隊の出発の光が星図の上を球で広がり、「届くまで あと 12 年」が縁で見える | `GalaxyView`・`known` | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 1-1・2.3 の 6 |
 | B-053 | **済み (#198)** 「見えている過去」と「ありうる今」を重ねる: 艦隊を最後に見えた位置に置き、今いるかもしれない範囲を淡い雲で描く | `GalaxyView`・`fleetOf`・`intel` | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 1-2 |
-| B-054 | 時代の終わりの答え合わせ: 100 年ごとに、地球が見ていた歴史と本当の歴史を並べて早回しで見せる | `erasYearly`・`ERA_YEARS`・新しい | Q2 | L | 画面と最初の体験 | `critique/04-plan.md` の 1-3 |
-| B-055 | 相対論の奇襲の警告: 0.9c の艦隊の出発が見えたら「到着まで あと 2.1 年」の秒読みを、決めることとして出す | `isSurpriseTarget` の近く・`decisionsYearly`・新しい | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 1-4 |
+| B-054 | **済み (#202)** 時代の終わりの答え合わせ: 100 年ごとに、地球が見ていた歴史と本当の歴史を並べて早回しで見せる | `erasYearly`・`ERA_YEARS`・新しい | Q2 | L | 画面と最初の体験 | `critique/04-plan.md` の 1-3 |
+| B-055 | **済み (#199)** 相対論の奇襲の警告: 0.9c の艦隊の出発が見えたら「到着まで あと 2.1 年」の秒読みを、決めることとして出す | `isSurpriseTarget` の近く・`decisionsYearly`・新しい | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 1-4 |
 | B-056 | **済み (#198)** 送った瞬間に予想、届いたときにずれ: 指令を送るときに届く年と見込みを出し、届いたら「予想 → 実際」を 1 行で | `orderFleets`・`dispatchBox`・`news` | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 1-5・`design-pillars.md` |
-| B-057 | 委任の報告書: 委任した星系が 10 年ごとに「何をしたか・なぜ」を報告する (光の遅れで届く) | `MANDATES`・`GOVERNOR`・`govsYearly`・新しい | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 1-6・3 の 1 |
-| B-058 | 終わり方を物語にする: 結末の型 (帝国の維持・連邦への移行・均衡・地球の衰え) と、その原因の内訳を出す。勝負が決まったことを告げる | `endYearly`・`showEnd`・`score`・`END_CHOICES` | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 2-6・3 の 8 |
+| B-057 | **済み (#200)** 委任の報告書: 委任した星系が 10 年ごとに「何をしたか・なぜ」を報告する (光の遅れで届く) | `MANDATES`・`GOVERNOR`・`govsYearly`・新しい | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 1-6・3 の 1 |
+| B-058 | **済み (#201)** 終わり方を物語にする: 結末の型 (帝国の維持・連邦への移行・均衡・地球の衰え) と、その原因の内訳を出す。勝負が決まったことを告げる | `endYearly`・`showEnd`・`score`・`END_CHOICES` | Q2 | M | 画面と最初の体験 | `critique/04-plan.md` の 2-6・3 の 8 |
 | B-059 | 経済のグラフ: 画面ごとに「何を判断するか」を先に決め、生産・物価・失業、金利と利回りの曲線、政府の収支と債務、部門ごとの貸借、交易の流れ、政策を変えた時点の印を、首都に届いた記録から描く | `fiscalHtml`・`treasuryHtml`・`ledgerHtml`・`councilChart`・`known` | B-001・B-006 | L | 画面と最初の体験 | `sessions.md` の 23・`econ-policy.md` の 7 の 5・`econ-policy-list.md` の 6 |
 | B-060 | 同意つきのプレイ記録の画面: 同意の画面・記録の中身・消し方 (文は作る前に見せて決めてもらう) | `PlayLog`・`playLogHtml`・`exportPlayLog`・`PLAYLOG_KEY` | — | M | 画面と最初の体験 | `sessions.md` の 5・`game-plan.md` の段 11・`status/common.md` の 12 の 6・`econ-policy.md` の 7 の 7 |
 | B-061 | ゲームの中でゲームパッドに対応: スティックで地図、十字キーでボタンを順に選ぶ枠、範囲選択の代わり (星系の艦隊を全部選ぶ・タッチの範囲選択)、ホバーの説明を選んだときに出す | `GalaxyView`・新しい (Gamepad API) | — | L | 画面と最初の体験 | `desktop/controller.md` の 2 の案 B・`status/S.md` |
