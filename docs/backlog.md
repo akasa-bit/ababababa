@@ -103,12 +103,12 @@
 | 番号 | 中身 | 触るコードの場所 | 依存 | 大きさ | 新しいレーン案 | 出どころ |
 |---|---|---|---|---|---|---|
 | B-073 | 画面の文字列を 1 か所に集めて、訳せる形にする (ほかが止まっている時期に 1 本だけで) | `src/index.html` の全体・新しい (文字列の表) | Q2 | XL | 外向き | `sessions.md` の 18・`game-plan.md` の段 13・`critique/04-plan.md` の 3-4・7 の G6・`restart.md` の 4 |
-| B-074 | 固有名詞の一覧と用語集を先に作る (訳の質で叩かれないように) | 新しい (`docs/`) | — | S | 外向き | `critique/04-plan.md` の 3 の 12 |
+| B-074 | **済み (#183。回 SO1。`docs/glossary/`)** 固有名詞の一覧と用語集を先に作る (訳の質で叩かれないように) | 新しい (`docs/`) | — | S | 外向き | `critique/04-plan.md` の 3 の 12 |
 | B-075 | 英語を入れる | 新しい (文字列の表) | B-073・B-074 | M | 外向き | `sessions.md` の 18・`critique/04-plan.md` の 4-4 |
 | B-076 | 簡体中国語を入れる | 新しい (文字列の表) | B-073・B-074・Q11 | M | 外向き | `sessions.md` の 18・`critique/04-plan.md` の 4-4・6 の Q11 |
 | B-077 | ストアの文を英語と中国語に | `store/` | B-075・B-076 | S | 外向き | `status/S.md`・`store/steamworks.md` の 10 |
-| B-078 | ストアの下書きを今のゲームと突き合わせる (物理はゲーム版にも入った・第三次産業と研究が入った・従属国の型が入った) | `store/page-ja.md` | — | S | 外向き | `store/README.md`・`store/page-ja.md` の 7 |
-| B-079 | スクリーンショットを撮るためのセーブと、カプセルの案を作る | `store/images.md`・`desktop/` | S の返事 (大きさ・カプセルの絵) | S | 外向き | `status/S.md`・`store/images.md` の 4 |
+| B-078 | **済み (#183。回 SO1。`store/page-ja.md` の 8)** ストアの下書きを今のゲームと突き合わせる (物理はゲーム版にも入った・第三次産業と研究が入った・従属国の型が入った) | `store/page-ja.md` | — | S | 外向き | `store/README.md`・`store/page-ja.md` の 7 |
+| B-079 | **済み (#183。回 SO1。`desktop/shots/shoot.mjs`・`store/images.md` の 2・5)** スクリーンショットを撮るためのセーブと、カプセルの案を作る | `store/images.md`・`desktop/` | S の返事 (大きさ・カプセルの絵) | S | 外向き | `status/S.md`・`store/images.md` の 4 |
 | B-080 | 予告編 (30〜60 秒。光の球 → 20 年後に届く → 講和のあとも戦う艦隊 → 答え合わせ) | `store/images.md`・新しい | B-052・B-054 | M | 外向き | `store/images.md` の 3・`critique/04-plan.md` の 4-1 |
 | B-081 | ストアのページを公開 (近日公開) し、名前と副題の案を 2〜3 作って反応を比べる | `store/` | Steamworks のアカウント (ユーザー)・B-079・Q7・Q10 | S | 外向き | `critique/04-plan.md` の 4-1・4-8・4-9・`store/steamworks.md` の 9 |
 | B-082 | 体験版 = 最初の時代 (2300〜2400 年) を作り、Next Fest に出る。配信者に鍵を配る | `END_CHOICES`・`ERA_YEARS`・`desktop/` | B-054・B-081 | M | 外向き | `critique/04-plan.md` の 4-2・4-5・4-6・`store/steamworks.md` の 3 |
@@ -117,7 +117,7 @@
 | B-085 | Steam Input の既定の設定のファイル (案 A。Action Manifest の VDF) | `desktop/` | — | S | 外向き | `desktop/controller.md` の 2 の案 A・`store/steamworks.md` の 7 |
 | B-086 | Windows 版を Windows の上で動かして確かめる (実機か、CI に Windows を足す) | `desktop/`・`.github/workflows/` | — | S | 外向き | `status/S.md` の残り |
 | B-087 | Steam Deck の実機で確かめる: F08 の描画の速さ・Game Mode の全画面・`<select>` の出方・Gamepad API・セーブの書き出しと読み込み・小さな文字 | `desktop/bench/run.mjs` | ユーザーの実機 | S | 外向き | `status/S.md` の残り・`desktop/README.md` の 4・`desktop/controller.md` の 3 |
-| B-088 | 字体を同梱する (いまは Google Fonts をネットから読む)。Firebase の SDK もネットなしでどうするか決める | `src/index.html` の頭の `<link>`・`FB_SDK`・`desktop/` | — | S | 外向き | `status/S.md` の残り・`desktop/README.md` の 4 |
+| B-088 | **済み (#183。回 SO1。字体は包装で同梱。Firebase の SDK は同梱しない。`desktop/README.md` の 1-2)** 字体を同梱する (いまは Google Fonts をネットから読む)。Firebase の SDK もネットなしでどうするか決める | `src/index.html` の頭の `<link>`・`FB_SDK`・`desktop/` | — | S | 外向き | `status/S.md` の残り・`desktop/README.md` の 4 |
 | B-089 | Firebase の設定を入れて公開する (アカウント・クラウドのセーブ・部屋のコード) | `FIREBASE_CONFIG`・`firestore.rules` | Firebase の設定 (ユーザー) | S | 外向き | `online.md` の 1・`status/common.md` の 4 |
 | B-090 | 公開の開発日記 (`docs/` の決めたことを、遊ぶ人向けに言い直す) | 新しい | B-081 | M | 外向き | `critique/04-plan.md` の 5-3 |
 | B-091 | 発売後の 30 日に何度も直し、直す順番を公開して約束する | — | 発売 | L | 外向き | `critique/04-plan.md` の 5-1・5-2 |
