@@ -27,7 +27,7 @@ function homeHtml() {
     <div class="cover"><h1>${brandHtml()}</h1><p>光速の壁の向こうへ広がる恒星間植民</p>
       <div class="go"><button class="big" data-home="start">${armed('start') ? '本当に? いまのゲームは消える' : 'はじめる'}</button>
         ${going ? `<button data-home="resume">${app.started ? 'ゲームに戻る' : '続きから'}<small>${saveInfo(saveMeta(buildSave(app.game)))}</small></button>` : ''}</div>
-      <p class="hint">地球から最初の入植船を送るところから。</p></div>
+      <p class="hint">地球から最初の入植船を送るところから。時間は、最初の入植船を送るまで止まっている。</p></div>
     ${app.homeNote ? `<p class="note bad">${esc(app.homeNote)}</p>` : ''}
     ${tabs}
     <p class="muted">${EDITION_LABEL[EDITION]} (<a href="${EDITION_FILE[EDITION === 'sim' ? 'game' : 'sim']}">${EDITION_LABEL[EDITION === 'sim' ? 'game' : 'sim']}を開く</a>)</p>
