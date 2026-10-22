@@ -401,6 +401,7 @@
       const a = st.k[r] || 0, b = st.k[e] || 0, n = a + b;
       p = (BARGAIN.learn * p + n * (a + 1) / (n + 2)) / (BARGAIN.learn + n); // 戦いながら分かっていく
     }
+    if (this.atWar(r, e) && p >= WAREND.decisiveP) return 100; // 大きく勝っている: 降伏まで戦う (WAREND)
     const expect = clamp(ws + (2 * p - 1) * BARGAIN.swing, -100, 100);
     const cost = (BARGAIN.cost + BARGAIN.costEx * (this.exhaustion[r] || 0)) * BARGAIN.horizon;
     const shift = BARGAIN.shift * Math.max(0, this.seenGrowth(r, e) - this.seenGrowth(r, r)) * 100;
@@ -409,6 +410,12 @@
   // AI の国どうしの講和の交渉: 受け入れる線が重なれば、その真ん中で講和する (from = 結ばれる星系)
   bargain(r, e, from = r) {
     const lr = this.reservation(r, e), le = this.reservation(e, r);
+    // 大きく勝っている国が降伏を求め (WAREND)、相手に勝てる見込みがなければ、全面降伏 (持ち点 100) の講和会議
+    if ((lr >= 100 && le <= WAREND.yieldAt) || (le >= 100 && lr <= WAREND.yieldAt)) {
+      const [w, l] = lr >= 100 ? [r, e] : [e, r];
+      this.startConference(l, [{ realm: w, pts: 100 }], from);
+      return true;
+    }
     if (lr + le > 0) return false;
     const x = Math.round((lr - le) / 2); // r の取り分
     const [w, l] = x >= 0 ? [r, e] : [e, r];
@@ -448,8 +455,12 @@
         if (this.realmWars[key] === undefined) continue;
         if (BARGAIN.on) {
           if (this.isHuman(e)) {
-            // 人間の国へは、いまの戦勝点で講和してよいときに申し入れる (offerEvery 年に 1 回まで)
-            if (this.warScore(root, e) >= this.reservation(root, e) && !this.peaceOfferedRecently(key)) {
+            // 人間の国へは、いまの戦勝点で講和してよいときに申し入れる (offerEvery 年に 1 回まで)。大きく勝っていれば降伏を求める (WAREND)
+            const res = this.reservation(root, e);
+            if (res >= 100 && !this.peaceOfferedRecently(key)) {
+              this.postPeaceOffer(key, root, e, undefined, true);
+              this.event('politics', root, `${this.realmName(root)}が降伏を求めてきた (応じると、${this.realmName(root)}が持ち点 100 で条件を選ぶ講和会議になる)`, true);
+            } else if (this.warScore(root, e) >= res && !this.peaceOfferedRecently(key)) {
               this.postPeaceOffer(key, root, e); // 光速で相手の首都に届いてから見える
               this.event('politics', root, `${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScoreAt(root, e, root)}・相手の戦争疲弊 ${Math.round(this.exhaustion[root] || 0)})`, true);
             }

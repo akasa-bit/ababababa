@@ -42,8 +42,9 @@ check(Array.isArray(saved.peaceSent) && saved.peaceSent.length === 1, '届く途
 const g2 = new sim.Game(sim.generateGalaxy({ seed: '7', starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
 check(g2.restore(saved) && g2.peaceSent.length === 1, '届く途中の申し入れがセーブから戻らない');
 // 届くまで進める (そのあいだに相手が新しく申し入れれば、前のものと置き換わる)
-for (let i = 0; i < Math.ceil(3 * d + 4) * 4 && g.atWar(g.cap, e) && !g.peaceOffers.some((x) => x.key === key); i++) g.advance(0.25);
+for (let i = 0; i < Math.ceil(3 * d + 4) * 4 && g.atWar(g.cap, e) && !g.peaceOffers.some((x) => x.key === key); i++) { if (g.warStats[key]) g.warStats[key].lastEv = g.year; g.advance(0.25); } // 戦い続けている戦争にする (立ち消えにしない)
 const o = g.peaceOffers.find((x) => x.key === key);
+check(g.atWar(g.cap, e), '試験の戦争が終わってしまった');
 if (g.atWar(g.cap, e)) {
   check(o && o.at <= g.year + 1e-9 && o.until > g.year, '講和の申し入れが届かない');
   check(g.acceptPeace({ key }).ok && !g.atWar(g.cap, e), '届いた講和の申し入れに応じられない');
