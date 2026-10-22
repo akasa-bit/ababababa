@@ -20,7 +20,8 @@ const { chromium } = require('playwright');
     // 10 年前に開戦を知った戦争にする (AI の国は、開戦の知らせが首都に届いてから講和を考える)
     g.realmWars[key] = g.warNews[key].year = g.year - 10 - Math.ceil(g.sysDist(0, e));
     // 講和の申し入れは、相手の首都から光速で届いてから見える (B-030)
-    for (let i = 0; i < 8 || (i < 4 * (Math.ceil(g.sysDist(0, e)) + 12) && !g.peaceOffers.length); i++) g.advance(0.25);
+    // 戦い続けている戦争にする (戦果が動かない戦争は立ち消えになる。WAREND.lapse)
+    for (let i = 0; i < 8 || (i < 4 * (Math.ceil(g.sysDist(0, e)) + 12) && !g.peaceOffers.length); i++) { g.warStats[key].lastEv = g.year; g.advance(0.25); }
     return [g.warScore(0, e), g.peaceOffers.length, g.realmSystems(e).length, Math.round(g.gov(e).credits)];
   });
 

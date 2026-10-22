@@ -78,13 +78,13 @@
   warLoss(by, lost, n, sys) {
     if (n <= 0) return;
     const st = this.warStats[this.warKey(by, lost)];
-    if (st) { st.k[by] = (st.k[by] || 0) + n; this.warNote(st, sys, by, 'k', n); }
+    if (st) { st.k[by] = (st.k[by] || 0) + n; st.lastEv = this.year; this.warNote(st, sys, by, 'k', n); }
     this.exhaust(lost, EXHAUST.ship * n);
   }
   // 星系を攻め落とした
   warTake(by, lost, sys) {
     const st = this.warStats[this.warKey(by, lost)];
-    if (st) { st.t[by] = (st.t[by] || 0) + 1; this.warNote(st, sys, by, 't', 1); }
+    if (st) { st.t[by] = (st.t[by] || 0) + 1; st.lastEv = this.year; this.warNote(st, sys, by, 't', 1); }
     this.exhaust(lost, EXHAUST.system);
   }
   // 戦果の知らせ [年, 星系, 国, 'k' | 't', 数]。知らせは戦った星系から光速で広がる (B-030)。
@@ -121,6 +121,7 @@
   // 年 1 回: 戦っている国は疲れ、平和な国は回復する
   exhaustionYearly() {
     this.strikesYearly(); // 光速の一撃の知らせ (ship/strike.js)
+    this.lapseYearly();
     const roots = new Set([...this.colonizedSystems().map((x) => this.realmOf(x.id)), ...Object.keys(this.exhaustion).map(Number)]);
     for (const r of roots) {
       if (!this.isColonized(r) || this.realmOf(r) !== r) { delete this.exhaustion[r]; continue; }
@@ -139,10 +140,24 @@
     this.peaceOffers = this.peaceOffers.filter((o) => o.until > this.year && this.realmWars[o.key] !== undefined);
     this.peaceSent = this.peaceSent.filter((o) => this.realmWars[o.key] !== undefined);
   }
+  // 立ち消え (WAREND.lapse): 両方の首都が開戦を知ってから、戦果が lapse 年動かない戦争は、講和会議を開かずに終わる。知らせは開戦の知らせと同じ星系から広がる
+  lapseYearly() {
+    for (const key of Object.keys(this.realmWars)) {
+      const st = this.warStats[key];
+      const [a, b] = key.split('|').map(Number);
+      const news = this.warNews[key];
+      const known = news ? news.year + Math.max(this.sysDist(news.from, a), this.sysDist(news.from, b)) : this.realmWars[key];
+      if (this.year - Math.max(known, st?.lastEv ?? -Infinity) < WAREND.lapse) continue;
+      const from = this.warNews[key]?.from ?? a;
+      this.endWar(a, b, from);
+      this.event('politics', from, `${this.realmName(a)}と${this.realmName(b)}の戦争は、${WAREND.lapse} 年のあいだ戦いがなく、立ち消えになった`, this.isHuman(a) || this.isHuman(b));
+    }
+  }
   // 講和の申し入れを送る。人間の国へは、送った首都 from から相手の首都 to へ光速で届いてから見える (at = 届く年)。
   // 届いたら、同じ戦争の前の申し入れと置き換わる (届く途中の前のものは、そのまま先に届く)
-  postPeaceOffer(key, from, to, at = this.year + this.sysDist(from, to)) {
-    const o = { key, from, to, year: this.year, at, until: at + PEACE.offerYears };
+  // surrender = 降伏を求める申し入れ (応じると、申し入れた国が持ち点 100 で条件を選ぶ講和会議。WAREND)
+  postPeaceOffer(key, from, to, at = this.year + this.sysDist(from, to), surrender = false) {
+    const o = { key, from, to, year: this.year, at, until: at + PEACE.offerYears, ...(surrender ? { surrender: true } : {}) };
     if (at <= this.year + 1e-9) { this.peaceOffers = this.peaceOffers.filter((x) => x.key !== key); this.peaceOffers.push(o); } else this.peaceSent.push(o);
   }
   // offerEvery 年のうちに、同じ戦争で講和を申し入れたか (届く途中のものも)
@@ -278,7 +293,8 @@
     const o = this.peaceOffers.find((x) => x.key === d.key && x.to === this.cap);
     if (!o || this.realmWars[o.key] === undefined) return fail('講和の申し入れがない');
     this.peaceOffers = this.peaceOffers.filter((x) => x !== o);
-    this.makePeace(o.from, o.to, this.cap);
+    if (o.surrender) this.startConference(o.to, [{ realm: o.from, pts: 100 }], this.cap); // 降伏する
+    else this.makePeace(o.from, o.to, this.cap);
     return { ok: true };
   }
   realmShips(root) {

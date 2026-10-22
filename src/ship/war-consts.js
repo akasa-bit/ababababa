@@ -12,7 +12,15 @@ const EXHAUST = { ship: 1.5, system: 8, warYear: 1, siegeYear: 1, peaceYear: 5, 
 // 戦勝点 (−100〜100): 沈めた艦隊の差 (1 艦隊 2 点) と、攻め落とした星系の差 (1 つ 20 点)
 const WARSCORE = { ship: 2, system: 20 };
 // 講和会議の条件の値段 (勝った側は戦勝点を、100 を上限に条件に使う)
-const TREATY = { vassal: 70, cash: 1000, cashPts: 5, cashMax: 10, white: 5, years: 3 };
+// white: 戦勝点の差がこれより小さければ白紙講和 (回 FU2 の R14 の直し e で 5 → 20。はっきり勝ったときだけ講和会議を開く)
+const TREATY = { vassal: 70, cash: 1000, cashPts: 5, cashMax: 10, white: 20, years: 3 };
+// 戦争の終わり方 (回 FU2 の R14 の直し e。ユーザーの決定。docs/requests/2026-10-22-FU.md の FU-3):
+// lapse = 戦果 (沈めた艦隊・攻め落とした星系) がこの年数動かない戦争は、講和会議を開かずに立ち消えで終わる (活動低下)。
+// decisiveP = 勝つ見込み (艦隊の比と戦果から。読み違いの前) がこれ以上の国は、講和を受けず全面降伏 (持ち点 100) を求める。
+//   交渉は両方の首都が開戦を知った直後に始まり、戦果の知らせはまだ届いていないことが多いので、戦勝点ではなく見込みで決める
+// yieldAt = 降伏を求められた国は、自分の受け入れる線がこれ以下 (勝てる見込みがない) なら降伏する。そうでなければ戦い続ける
+// decisiveP と yieldAt は、R14 (終わり方) を見て選んだ (0.95 で勝利 57%、0.97・−60 で白紙がいちばん多い、0.98・−40 で R14 に合う。docs/negotiation.md の 4.3)
+const WAREND = { lapse: 10, decisiveP: 0.98, yieldAt: -40 };
 // AI の講和の判断: 開戦から minYears 年たち、戦争疲弊が sueEx 以上か戦勝点が sueWs 以下なら申し入れる (人間の国へは offerEvery 年に 1 回、offerYears 年有効)。
 // 申し入れに応じる確率 (peaceChance): 負けている側は base + |戦勝点|/loseWs + 疲弊/exLose、勝っている側は winBase + 疲弊/exWin − 戦勝点/winWs
 // にらみ合い: 戦闘も攻め落としもない戦争は、年 stalemate ÷ (1 + 年数 ÷ stalemateHalf) の確率で講和を求める。
