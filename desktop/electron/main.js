@@ -2,13 +2,13 @@
 // NLU_BENCH があれば desktop/bench/probe.js を差し込み、結果の 1 行を標準出力に書いて閉じる。
 // NLU_FULLSCREEN があれば全画面で開く (Steam Deck の Game Mode を想定)。
 // 字体: ゲームが Google Fonts に読みに行くのを横取りし、desktop/prepare.mjs が同梱した字体 (game/fonts/) を返す (B-088・QD-20)。
-// NLU_FONTCHECK があれば、ほかのネットへの読み込みも止めて (オフラインと同じ)、字体が読めたかを 1 行書いて閉じる (desktop/fonts-check.mjs)。
+// NLU_CHECK があれば、ほかのネットへの読み込みも止めて (オフラインと同じ)、ゲームが動くか・字体が読めたかを 1 行書いて閉じる (desktop/check.mjs)。
 const { app, BrowserWindow, shell, protocol, net } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 
 const BENCH = !!process.env.NLU_BENCH;
-const FONTCHECK = !!process.env.NLU_FONTCHECK;
+const CHECK = !!process.env.NLU_CHECK;
 const gameDir = app.isPackaged ? path.join(process.resourcesPath, 'game') : path.join(__dirname, '..', 'game');
 const probePath = app.isPackaged ? path.join(process.resourcesPath, 'probe.js') : path.join(__dirname, '..', 'bench', 'probe.js');
 
@@ -33,13 +33,27 @@ function handleHttps() {
       served.font++;
       return new Response(fs.readFileSync(path.join(fontsDir, rel)), { headers: { 'content-type': 'font/woff2', ...cors } });
     }
-    if (FONTCHECK) { served.blocked.push(u.host); return new Response('', { status: 503 }); }
+    if (CHECK) { served.blocked.push(u.host); return new Response('', { status: 503 }); }
     return net.fetch(req, { bypassCustomProtocolHandlers: true });
   });
 }
 
-// 字体を確かめる: ゲームの使う 4 つの字体で、日本語と英数字が同梱の字体で描けるか
-async function fontCheck(win) {
+// 包装を確かめる: ゲームが始まって年が進むか・ページの誤りがないか・セーブの書き出しと読み込みが動くか・
+// ゲームの使う 4 つの字体で、日本語と英数字が同梱の字体で描けるか
+const pageErrors = [];
+async function packageCheck(win) {
+  const game = await win.webContents.executeJavaScript(`(async () => {
+    const g0 = window.__app && __app.game;
+    if (!g0) return { ok: false };
+    newGame('20261020'); setSpeed(SPEEDS[SPEEDS.length - 1]);
+    const y0 = __app.game.year;
+    await new Promise((r) => setTimeout(r, 3000));
+    setSpeed(0);
+    const y1 = __app.game.year;
+    // セーブの書き出しの中身を読み直して、同じ年に戻るか (ファイルの窓は開かない)
+    const ok = loadSave(parseSave(saveJSON(__app.game, { speed: 0 })));
+    return { ok: true, edition: EDITION, years: +(y1 - y0).toFixed(2), reload: ok && Math.abs(__app.game.year - y1) < 1e-9 };
+  })()`);
   const r = await win.webContents.executeJavaScript(`(async () => {
     await document.fonts.ready;
     const fams = ['Courier Prime', 'Special Elite', 'Zen Antique', 'Zen Old Mincho'];
@@ -49,7 +63,13 @@ async function fontCheck(win) {
     const loaded = [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/"/g, '') + ' ' + f.weight);
     return { check: Object.fromEntries(fams.map((f) => [f, document.fonts.check('16px "' + f + '"', f.startsWith('Zen') ? jp : 'NoLongerUbiquitous')])), loaded: [...new Set(loaded)].sort() };
   })()`);
-  process.stdout.write(`NLU_FONTCHECK ${JSON.stringify({ ...r, served })}\n`);
+  checkDone({ platform: process.platform, game, errors: pageErrors, ...r, served });
+}
+// 結果の 1 行を標準出力と、NLU_CHECK_OUT のファイルに書いて閉じる (Windows の GUI のアプリは、標準出力を拾えないことがあるので)
+function checkDone(res) {
+  const line = `NLU_CHECK ${JSON.stringify(res)}\n`;
+  process.stdout.write(line);
+  if (process.env.NLU_CHECK_OUT) fs.writeFileSync(process.env.NLU_CHECK_OUT, line);
   app.quit();
 }
 
@@ -79,7 +99,14 @@ function open() {
       if (typeof msg === 'string' && msg.startsWith('NLU_BENCH ')) { process.stdout.write(msg + '\n'); app.quit(); }
     });
   }
-  if (FONTCHECK) win.webContents.on('did-finish-load', () => setTimeout(() => fontCheck(win), 1500));
+  if (CHECK) {
+    win.webContents.on('console-message', (...a) => {
+      const d = typeof a[0] === 'object' && a[0].message !== undefined ? a[0] : { level: a[1], message: a[2] };
+      if (d.level === 'error' || d.level === 3) pageErrors.push(String(d.message).slice(0, 200));
+    });
+    win.webContents.on('render-process-gone', (e, d) => { pageErrors.push(`描画のプロセスが落ちた: ${d.reason}`); });
+    win.webContents.on('did-finish-load', () => setTimeout(() => packageCheck(win).catch((e) => checkDone({ fatal: String(e) })), 1500));
+  }
   win.loadFile(path.join(gameDir, 'index.html'));
 }
 

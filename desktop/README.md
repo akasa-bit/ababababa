@@ -32,13 +32,27 @@ npm run package:linux   # → desktop/electron/out/NoLongerUbiquitous-linux-x64/
 
 - `desktop/prepare.mjs` が、npm の `@fontsource` (Google Fonts と同じ字体を、同じ文字の範囲ごとに分けたもの。版は `electron/package.json` で固定) から、ゲームの使う 4 つの字体と太さ (Courier Prime 400・700、Special Elite 400、Zen Antique 400、Zen Old Mincho 400・700) の woff2 を `desktop/game/fonts/` に写し、`fonts.css` を作る。約 9 MB・372 ファイル。ライセンス (Courier Prime・Zen Antique・Zen Old Mincho は SIL OFL 1.1、Special Elite は Apache 2.0) の文を各フォルダの `LICENSE` に写す。
 - 組み立てた `index.html` は圧縮してあり、中の `<link>` を書き換えられない。そこで `electron/main.js` が `https` の読み込みを横取りし、`fonts.googleapis.com/css2` には同梱の `fonts.css` を、字体のファイルには同梱のファイルを返す。ほかの `https` はそのままネットへ出す。
-- 確かめ方: `xvfb-run -a node desktop/fonts-check.mjs [包装した実行ファイル]`。ネットへの読み込みを全部止めた状態で開き、4 つの字体で日本語と英数字が描けること、6 つの字体と太さが読めたこと、Google Fonts の CSS を横取りしたことを見る。2026-10-22 に、`electron .` と包装した Linux 版の両方で合格 (CSS 1 回・字体のファイル 82 個。ほかのネットへの読み込みなし)。包装の大きさは 292 → 302 MB。
-- 字体の版を上げるとき: `electron/package.json` の `@fontsource/*` を同じ版の組で上げ、`fonts-check.mjs` を回す。ゲームが字体や太さを変えたら (`src/index.html` の `<link>`)、`prepare.mjs` の `FONTS` も合わせる。
+- 確かめ方: `xvfb-run -a node desktop/check.mjs [包装した実行ファイル]` (下の 1-4。回 SO2 で、字体だけでなくゲームが動くかも見る形にした)。ネットへの読み込みを全部止めた状態で開き、4 つの字体で日本語と英数字が描けること、6 つの字体と太さが読めたこと、Google Fonts の CSS を横取りしたことを見る。2026-10-22 に、`electron .` と包装した Linux 版の両方で合格 (CSS 1 回・字体のファイル 82 個。ほかのネットへの読み込みなし)。包装の大きさは 292 → 302 MB。
+- 字体の版を上げるとき: `electron/package.json` の `@fontsource/*` を同じ版の組で上げ、`check.mjs` を回す。ゲームが字体や太さを変えたら (`src/index.html` の `<link>`)、`prepare.mjs` の `FONTS` も合わせる。
 - **Firebase の SDK** (アカウント機能。`src/outward/cloud.js` の `FB_SDK`) は同梱しない。クラウドのセーブと部屋のコードはネットがないと使えないので、オフラインで SDK だけあっても意味がない。いまは設定がなく隠れている (QD-23)。設定を入れたあとは、起動のときに SDK を読みにいく (`Cloud.init`)。ネットがなければアカウントの画面に「Firebase につなげなかった」と出るだけで、ゲームのほかの所は動く (読めなかったときは、そこで止まる作り)。
 
 ## 1-3. ストアの画像を撮る (B-079。回 SO1)
 
 `node desktop/shots/shoot.mjs`。撮るためのセーブを作り、スクリーンショット (1920×1080) とカプセルの案を `desktop/shots/out/` に書く。中身と決まりは `store/images.md` の 2・5。
+
+## 1-4. CI で Linux と Windows の包装を確かめる (B-086。回 SO2)
+
+`.github/workflows/desktop.yml` (「包装 (Windows と Linux)」)。
+
+- ゲームを Linux で組み立て (圧縮に python3 を使うので)、できた `index.html` を Linux と Windows の機械に渡す。それぞれで `npm ci`・`prepare.mjs`・`package:linux` か `package:win` で包装し、包装した実行ファイルを `desktop/check.mjs` で開く (Linux は xvfb の中、Windows はそのまま)。
+- `check.mjs` が見ること: ネットへの読み込みを全部止めた状態で、ゲームが始まり、最高速で 3 秒に 1 年より多く進む・ページの誤りがない・セーブの書き出しの中身を読み直して同じ年に戻る・4 つの字体が同梱のファイルで描ける。結果の 1 行は標準出力と、`NLU_CHECK_OUT` のファイルの両方に書く (Windows の GUI のアプリは、標準出力を拾えないことがあるので)。
+- Steam Input の設定が表と同じで、ゲームが受けるキーだけかも見る (`desktop/steam-input/make.mjs --check`)。
+- **いつ回るか・落ちたら**: `desktop/`・`src/index.html` (字体の `<link>`)・このワークフローを変えた PR だけで回り、落ちたらその PR を止める。ほかのレーンの PR では回らない。ゲームの変更で包装が壊れていないかは、毎週月曜の回 (と手で回す `workflow_dispatch`) で見て、落ちたら外向きが直す。いつもの CI (「試験と自動対戦」) とは別のワークフローなので、そちらの表には出ない (ジョブの要約に出る)。
+- Windows の上で動くのを確かめたのは、この CI が最初 (それまでは組み立てられることまで)。実機 (Steam Deck の Proton・Windows の手元) の確かめは、まだ (QD-24)。
+
+## 1-5. Steam Input の既定の設定 (B-085。回 SO2)
+
+`desktop/steam-input/`。Steam Deck のボタンをキーとマウスに置き換える設定の VDF と、Steamworks の「Custom Configuration (Bundled with Game)」が指す `action_manifest.vdf`。`prepare.mjs` が `desktop/game/steam-input/` に写すので、包装のフォルダでは `resources/game/steam-input/action_manifest.vdf` にある。割り当ての表と、まだ確かめていないこと (Steam のクライアントで読み込めるか) は `desktop/steam-input/README.md`。
 
 ## 2. 測り方
 
