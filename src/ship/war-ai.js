@@ -12,8 +12,7 @@
     if (!this.atWar(this.cap, root) || this.realmOf(root) !== root) return fail('交戦中ではない');
     const key = this.warKey(this.cap, root);
     if (this.isHuman(root)) {
-      this.peaceOffers = this.peaceOffers.filter((o) => o.key !== key);
-      this.peaceOffers.push({ key, from: this.cap, to: root, year: this.year, until: this.year + PEACE.offerYears });
+      this.postPeaceOffer(key, this.cap, root, this.year); // 指令として相手の首都に届いてから申し入れるので、もう届いている
       this.event('politics', root, `${this.realmName(this.cap)}が${this.realmName(root)}に講和を申し入れた (戦勝点 ${this.warScore(this.cap, root)})`, true);
       return { ok: true };
     }
@@ -61,8 +60,8 @@
       const a = f.n * this.fleetMul(owner, f.to), d = (this.garrison[f.to] || 0) * this.fleetMul(other, f.to);
       const win = a > d;
       const left = Math.floor(Math.sqrt(Math.abs(a * a - d * d)) / this.fleetMul(win ? owner : other, f.to));
-      this.warLoss(other, owner, win ? f.n - left : f.n);
-      this.warLoss(owner, other, win ? (this.garrison[f.to] || 0) : (this.garrison[f.to] || 0) - left);
+      this.warLoss(other, owner, win ? f.n - left : f.n, f.to);
+      this.warLoss(owner, other, win ? (this.garrison[f.to] || 0) : (this.garrison[f.to] || 0) - left, f.to);
       this.garrison[f.to] = left;
       if (win) this.setStackOwner(f.to, owner);
       this.event('battle', f.to, `${name} で${this.realmName(owner)}の ${f.n} 艦隊と${this.realmName(other)}の艦隊が戦い、${this.realmName(win ? owner : other)}が勝った (残り ${left} 艦隊)`, this.isHuman(owner) || this.isHuman(other));
@@ -141,8 +140,8 @@
       if (b.a >= 0.5 && b.d >= 0.5) continue;
       this.battles = this.battles.filter((x) => x !== b);
       const defender = this.realmOf(b.sys);
-      this.warLoss(defender, b.realm, Math.round(b.a0 - (b.a >= 0.5 ? Math.max(1, Math.floor(b.a)) : 0)));
-      this.warLoss(b.realm, defender, Math.round(b.d0 - (b.a >= 0.5 ? 0 : Math.floor(b.d))));
+      this.warLoss(defender, b.realm, Math.round(b.a0 - (b.a >= 0.5 ? Math.max(1, Math.floor(b.a)) : 0)), b.sys);
+      this.warLoss(b.realm, defender, Math.round(b.d0 - (b.a >= 0.5 ? 0 : Math.floor(b.d))), b.sys);
       const name = this.system(b.sys).name;
       const span = `${(this.year - b.start).toFixed(1)} 年、攻撃 ${Math.round(b.a0)} 艦隊 対 防衛 ${Math.round(b.d0)} 艦隊`;
       const mine = this.isHuman(b.realm) || this.isHuman(this.realmOf(b.sys));
@@ -184,7 +183,7 @@
       if (this.troopPower(g.sys) >= 1) this.loseTroops(g.sys, 1);
       if (g.progress < 1) continue;
       const oldRealm = this.realmOf(g.sys);
-      this.warTake(g.realm, oldRealm);
+      this.warTake(g.realm, oldRealm, g.sys);
       const gv = this.gov(g.sys);
       gv.lord = g.realm;
       gv.independent = false;
@@ -280,7 +279,7 @@
     const ours = this.realmShips(r);
     const theirs = this.seenShips(r, e) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(r, e)));
     let p = (ours + 0.5) / (ours + theirs + 1);
-    const st = this.warStats[this.warKey(r, e)];
+    const st = this.warSeen(r, this.warKey(r, e)); // 首都に届いた戦果で
     if (st && this.atWar(r, e)) {
       const a = st.k[r] || 0, b = st.k[e] || 0, n = a + b;
       p = (BARGAIN.learn * p + n * (a + 1) / (n + 2)) / (BARGAIN.learn + n); // 戦いながら分かっていく
@@ -332,10 +331,9 @@
         if (BARGAIN.on) {
           if (this.isHuman(e)) {
             // 人間の国へは、いまの戦勝点で講和してよいときに申し入れる (offerEvery 年に 1 回まで)
-            if (this.warScore(root, e) >= this.reservation(root, e) && !this.peaceOffers.some((o) => o.key === key && this.year - o.year < PEACE.offerEvery)) {
-              this.peaceOffers = this.peaceOffers.filter((o) => o.key !== key);
-              this.peaceOffers.push({ key, from: root, to: e, year: this.year, until: this.year + PEACE.offerYears });
-              this.event('politics', root, `${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScore(e, root)}・相手の戦争疲弊 ${Math.round(this.exhaustion[root] || 0)})`, true);
+            if (this.warScore(root, e) >= this.reservation(root, e) && !this.peaceOfferedRecently(key)) {
+              this.postPeaceOffer(key, root, e); // 光速で相手の首都に届いてから見える
+              this.event('politics', root, `${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScoreAt(root, e, root)}・相手の戦争疲弊 ${Math.round(this.exhaustion[root] || 0)})`, true);
             }
           } else if (this.aiKnowsWar(e, key) && this.bargain(root, e, root)) break; // 相手も開戦を知っていれば交渉できる
           continue;
@@ -349,10 +347,9 @@
         const quiet = st && !Object.keys(st.k).length && !Object.keys(st.t).length && this.rand() < PEACE.stalemate / (1 + years / PEACE.stalemateHalf);
         if (!quiet && (years < PEACE.minYears || (ex < PEACE.sueEx && ws > PEACE.sueWs))) continue;
         if (this.isHuman(e)) {
-          if (!this.peaceOffers.some((o) => o.key === key && this.year - o.year < PEACE.offerEvery)) {
-            this.peaceOffers = this.peaceOffers.filter((o) => o.key !== key);
-            this.peaceOffers.push({ key, from: root, to: e, year: this.year, until: this.year + PEACE.offerYears });
-            this.event('politics', root, `${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScore(e, root)}・相手の戦争疲弊 ${Math.round(ex)})`, true);
+          if (!this.peaceOfferedRecently(key)) {
+            this.postPeaceOffer(key, root, e);
+            this.event('politics', root, `${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScoreAt(root, e, root)}・相手の戦争疲弊 ${Math.round(ex)})`, true);
           }
         } else if (this.rand() < this.peaceChance(e, root)) this.makePeace(root, e, root);
       }

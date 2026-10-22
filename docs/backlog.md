@@ -49,8 +49,8 @@
 | B-034 | 艦隊戦: 二乗則と一乗則の間 (指数 0.5)・偶然を半分・自動で解決、勝つ見込みと損害の内訳を報告書で出す、戦死者と攻囲の住民を数える (R15)、R16 は補正として台帳に 2 行 | `BATTLE_RATE`・`battlesStep`・`fleetEff`・`fleetMul`・`siegesYearly`・`WARSCORE` | 13-1〜13-5 (決まった)・B-033 | L | 船と戦争 | `sessions.md` の 13・`game-plan.md` の段 9 と 5 (R15・R16)・`proposals/13-battle.md`・`critique/04-plan.md` の 2-7・`reality-check.md` の 4 の 5 |
 | B-035 | 光速に近い艦隊を武器にする (止められない一撃で星系を焼く。悪名と報復で釣り合わせる) | `battlesStep`・`orderFleets`・新しい | D1・B-034 | M | 船と戦争 | `sf-critiques.md` の 5 の D1 |
 | B-036 | ゲーム版の太陽電池の劣化: b (素子は自動) か c (星系ごとに選ぶ) を測って決め、入れる | `SWARM`・`PV_DAMAGE`・`PV_DESIGNS`・`EDITIONS` (`game.physics.pv`)・`this.physics` | P10・B-001 (経済が落ち着く) | M | 船と戦争 | `physics.md` の 10 の P10・`status/P.md` の次にやること 2・`sessions.md` の 14・`game-plan.md` の 4 の C09 |
-| B-027 | 相手が見ている自分: AI の国が見積もっている地球の艦隊 (古い記録と読み違い) を見せ、見せたい艦隊を動かす読み合いを作る | `intel`・`known`・`militarySheet` | Q2 | M | 船と戦争 | `critique/04-plan.md` の 2-3 |
-| B-030 | 光より速く分かる情報 (戦争の点数・講和の申し出・船の一覧・集結の命令) を、光の遅れに通す | `WARSCORE`・`known`・`shipsHtml`・`warHtml`・`orderFleets` | D3 | L | 船と戦争 | `sf-critiques.md` の 4 と 5 の D3 |
+| B-027 | 相手が見ている自分: AI の国が見積もっている地球の艦隊 (古い記録と読み違い) を見せ、見せたい艦隊を動かす読み合いを作る | `intel`・`known`・`militarySheet` | Q2 | M | 船と戦争 | `critique/04-plan.md` の 2-3。**済み (回 FU1)**: 軍事の表に「相手が見ている自国の艦隊」(`seenByRival`) |
+| B-030 | 光より速く分かる情報 (戦争の点数・講和の申し出・船の一覧・集結の命令) を、光の遅れに通す | `WARSCORE`・`known`・`shipsHtml`・`warHtml`・`orderFleets` | D3 | L | 船と戦争 | `sf-critiques.md` の 4 と 5 の D3。**済み (回 FU1)**: 戦勝点・講和の申し入れ・講和会議・船の一覧・集結。残りは `status/FU.md` |
 | B-031 | 戦争の多さ (R29) を今の main (C-22 と P6 のあと) で 30 以上の銀河で測り直す。R14 (確認用。条約 7 割) を直すか決める | `BARGAIN.declareChance`・`warsYearly`・`tools/wars-headless.js` | — | S | 船と戦争 | `status/A.md` の次にやること 1・`game-plan.md` の 5 (R14) |
 | B-032 | 試遊で「AI が弱い・強い」と言われたら、難易度の値を見直す | `HANDICAP` | B-063 | S | 船と戦争 | `status/A.md` の次にやること 3・`game-plan.md` の 4 の C11 |
 

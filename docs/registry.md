@@ -64,6 +64,9 @@
 
 ### 船と戦争
 
+- saveField: peaceSent (船と戦争。src/ship/war-consts.js。光速で届く途中の講和の申し入れ。回 FU1)
+- saveField: confSent (船と戦争。src/ship/war-consts.js。知らせが届く途中の講和会議。回 FU1)
+
 ### 画面と最初の体験
 
 ### 道具と検証

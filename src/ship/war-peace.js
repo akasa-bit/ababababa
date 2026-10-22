@@ -74,22 +74,47 @@
   }
   // --- 戦争疲弊・戦勝点 ---
   exhaust(root, v) { if (root !== undefined && root !== null) this.exhaustion[root] = clamp((this.exhaustion[root] || 0) + v, 0, 100); }
-  // 艦隊戦で沈んだ艦隊を数える (by = 沈めた国、lost = 沈められた国)
-  warLoss(by, lost, n) {
+  // 艦隊戦で沈んだ艦隊を数える (by = 沈めた国、lost = 沈められた国、sys = 戦った星系)
+  warLoss(by, lost, n, sys) {
     if (n <= 0) return;
     const st = this.warStats[this.warKey(by, lost)];
-    if (st) st.k[by] = (st.k[by] || 0) + n;
+    if (st) { st.k[by] = (st.k[by] || 0) + n; this.warNote(st, sys, by, 'k', n); }
     this.exhaust(lost, EXHAUST.ship * n);
   }
   // 星系を攻め落とした
-  warTake(by, lost) {
+  warTake(by, lost, sys) {
     const st = this.warStats[this.warKey(by, lost)];
-    if (st) st.t[by] = (st.t[by] || 0) + 1;
+    if (st) { st.t[by] = (st.t[by] || 0) + 1; this.warNote(st, sys, by, 't', 1); }
     this.exhaust(lost, EXHAUST.system);
   }
-  // a から見た b との戦争の戦勝点
-  warScore(a, b) {
-    const st = this.warStats[this.warKey(a, b)];
+  // 戦果の知らせ [年, 星系, 国, 'k' | 't', 数]。知らせは戦った星系から光速で広がる (B-030)。
+  // どこからも見えるほど古くなった知らせは捨てる (合計の k・t には入っている)
+  warNote(st, sys, by, kind, n) {
+    if (sys === undefined || sys === null) return;
+    const ev = (st.ev ??= []);
+    ev.push([this.year, sys, by, kind, n]);
+    const span = (this.intelSpan || 0) + 1;
+    while (ev.length && ev[0][0] <= this.year - span) ev.shift();
+  }
+  // 星系 viewer に知らせが届いている戦果 { k, t }。viewer が null なら本当の戦果 (観戦・古いセーブ)
+  warSeen(viewer, key) {
+    const st = this.warStats[key];
+    if (!st) return null;
+    if (viewer === null || viewer === undefined || !st.ev?.length) return st;
+    const k = { ...st.k }, t = { ...st.t };
+    for (const [y, sys, by, kind, n] of st.ev) {
+      if (y + this.sysDist(sys, viewer) <= this.year + 1e-9) continue;
+      const o = kind === 'k' ? k : t;
+      o[by] = (o[by] || 0) - n;
+    }
+    return { k, t };
+  }
+  // a から見た b との戦争の戦勝点。a の首都に知らせが届いた戦果で数える (光の遅れ。B-030)。
+  // 観戦モードの地球は本当の戦果 (観戦は実際の様子を見る)
+  warScore(a, b) { return this.warScoreAt(this.spectate && a === this.cap ? null : a, a, b); }
+  // 星系 viewer に届いている戦果での、a から見た b との戦勝点 (viewer = null なら本当の戦果)
+  warScoreAt(viewer, a, b) {
+    const st = this.warSeen(viewer, this.warKey(a, b));
     if (!st) return 0;
     return Math.round(clamp(WARSCORE.ship * ((st.k[a] || 0) - (st.k[b] || 0)) + WARSCORE.system * ((st.t[a] || 0) - (st.t[b] || 0)), -100, 100));
   }
@@ -104,12 +129,27 @@
       if (!this.exhaustion[r]) delete this.exhaustion[r];
     }
     for (const k of Object.keys(this.warStats)) if (this.realmWars[k] === undefined) delete this.warStats[k];
+    // 光速で届いた講和の申し入れ・講和会議の知らせを、相手の首都に渡す (B-030。届くまでは peaceSent・confSent にある)
+    const due = this.peaceSent.filter((o) => o.at <= this.year + 1e-9);
+    if (due.length) {
+      this.peaceSent = this.peaceSent.filter((o) => !due.includes(o));
+      for (const o of due) { this.peaceOffers = this.peaceOffers.filter((x) => x.key !== o.key); this.peaceOffers.push(o); } // 新しく届いたものに置き換える
+    }
     this.peaceOffers = this.peaceOffers.filter((o) => o.until > this.year && this.realmWars[o.key] !== undefined);
+    this.peaceSent = this.peaceSent.filter((o) => this.realmWars[o.key] !== undefined);
   }
+  // 講和の申し入れを送る。人間の国へは、送った首都 from から相手の首都 to へ光速で届いてから見える (at = 届く年)。
+  // 届いたら、同じ戦争の前の申し入れと置き換わる (届く途中の前のものは、そのまま先に届く)
+  postPeaceOffer(key, from, to, at = this.year + this.sysDist(from, to)) {
+    const o = { key, from, to, year: this.year, at, until: at + PEACE.offerYears };
+    if (at <= this.year + 1e-9) { this.peaceOffers = this.peaceOffers.filter((x) => x.key !== key); this.peaceOffers.push(o); } else this.peaceSent.push(o);
+  }
+  // offerEvery 年のうちに、同じ戦争で講和を申し入れたか (届く途中のものも)
+  peaceOfferedRecently(key) { return [...this.peaceOffers, ...this.peaceSent].some((o) => o.key === key && this.year - o.year < PEACE.offerEvery); }
   // --- 講和 ---
   // 講和が決まった: 戦勝点が勝っている側が講和会議で条件を選ぶ (差が小さければ白紙講和)
   makePeace(a, b, from) {
-    const ws = this.warScore(a, b);
+    const ws = this.warScoreAt(from, a, b); // 講和の結ばれた星系に届いている戦果で
     if (Math.abs(ws) < TREATY.white) {
       this.endWar(a, b, from);
       this.event('politics', from, `${this.realmName(a)}と${this.realmName(b)}が白紙講和を結んだ (戦勝点 ${ws})`, this.isHuman(a) || this.isHuman(b));
@@ -129,7 +169,18 @@
     for (const b of c.bids) if (!this.isHuman(b.realm)) b.picks = this.aiTreatyPicks(c, b);
     this.event('politics', from, `${this.realmName(loser)}との講和会議が開かれた (${c.bids.map((b) => `${this.realmName(b.realm)} 持ち点 ${b.pts}`).join('・')})`, c.bids.some((b) => this.isHuman(b.realm)) || this.isHuman(loser));
     if (c.bids.every((b) => b.picks)) return this.resolveConference(c);
-    this.conferences.push(c);
+    // 人間の国が条件を選べるのは、会議の知らせが光速でその首都に届いてから (B-030)。期限はそこから数える
+    const at = this.year + Math.max(0, ...c.bids.filter((b) => !b.picks).map((b) => this.sysDist(from, b.realm)));
+    c.until = at + TREATY.years;
+    if (at <= this.year + 1e-9) this.conferences.push(c);
+    else this.confSent.push({ ...c, at });
+  }
+  // 知らせが届いた講和会議を開く (年 1 回。conferencesYearly の始め)
+  conferencesArrive() {
+    const due = this.confSent.filter((c) => c.at <= this.year + 1e-9);
+    if (!due.length) return;
+    this.confSent = this.confSent.filter((c) => !due.includes(c));
+    for (const c of due) { delete c.at; this.conferences.push(c); }
   }
   // 会議で選べる条件
   treatyTerms(c) {
@@ -165,6 +216,7 @@
     return { ok: true, msg: '講和会議に条件を出した' };
   }
   conferencesYearly() {
+    this.conferencesArrive();
     for (const c of [...this.conferences]) {
       if (c.until > this.year) continue;
       for (const b of c.bids) if (!b.picks) b.picks = this.aiTreatyPicks(c, b); // 期限までに選ばなかった
