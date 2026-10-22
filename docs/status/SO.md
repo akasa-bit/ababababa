@@ -12,6 +12,8 @@
 
 回が済んだら (その回の最後の PR で)、ここに 1 行足す (例: `- GA1 (#180)`)。`node tools/session-check.js` が、次の回を始めてよいかをこれで決める。
 
+- SO1 (#183)
+
 ## 次にやること
 
 1. 回 SO2: Windows を CI で・Steam Input (B-086・B-085)。
