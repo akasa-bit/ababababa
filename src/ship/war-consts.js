@@ -79,3 +79,12 @@ saveField('strikes', (game) => (game.strikes.length ? game.strikes : undefined),
   init: (game) => { game.strikes = []; },
   read: (game, d) => { game.strikes = Array.isArray(d.strikes) ? d.strikes.filter((x) => x && Number.isFinite(x.sys) && Number.isFinite(x.year)) : []; },
 });
+// 光の遅れの残り (B-167): 届く途中の損失の知らせ (戦争疲弊) と、AI の国どうしの講和の申し入れ。なければ書かない
+saveField('exhaustSent', (game) => (game.exhaustSent.length ? game.exhaustSent : undefined), {
+  init: (game) => { game.exhaustSent = []; },
+  read: (game, d) => { game.exhaustSent = Array.isArray(d.exhaustSent) ? d.exhaustSent.filter((x) => x && Number.isFinite(x.at) && Number.isFinite(x.v)) : []; },
+});
+saveField('bargainSent', (game) => (game.bargainSent.length ? game.bargainSent : undefined), {
+  init: (game) => { game.bargainSent = []; },
+  read: (game, d) => { game.bargainSent = Array.isArray(d.bargainSent) ? d.bargainSent.filter((o) => o && typeof o.key === 'string' && Number.isFinite(o.at)) : []; },
+});

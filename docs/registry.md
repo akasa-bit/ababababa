@@ -50,6 +50,7 @@
 
 - B-167: 光の遅れの残り (回 FU4)
 - B-168: 試合の中で艦隊戦が起きるようにする (回 FU5)
+- B-169〜B-171: 光より速い残り (船・経済・政治と画面。回 FU4 で分けた)
 - C27: 艦隊戦の数の効き (回 FU2)
 - C28: 艦隊戦の勝ち負けの偶然 (回 FU2)
 - QD-44: 負けた側はどこまで失ったら退くか → HOI4 の海戦を元にした艦隊戦を作る (回 FU2)
@@ -87,6 +88,7 @@
 - saveField: confSent (船と戦争。src/ship/war-consts.js。知らせが届く途中の講和会議。回 FU1)
 - saveField: battleReports (船と戦争。src/ship/war-consts.js。艦隊戦の報告。回 FU2)
 - saveField: strikes (船と戦争。src/ship/war-consts.js。光速の一撃の記録。回 FU2)
+- saveField: exhaustSent・bargainSent (船と戦争。src/ship/war-consts.js。届く途中の損失の知らせと AI どうしの講和の申し入れ。回 FU4)
 - EDITIONS.game.battle (pos・luck。艦隊戦の補正。台帳の C27・C28。回 FU2)。EDITIONS.sim.battle も同じ名前で CDB90 の値
 
 ### 画面と最初の体験

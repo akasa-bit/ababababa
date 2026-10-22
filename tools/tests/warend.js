@@ -19,7 +19,7 @@ const [a, b] = ai;
 // 1
 g.beginWar(a, b, a);
 const key = g.warKey(a, b);
-const known = g.year + Math.max(g.sysDist(a, a), g.sysDist(a, b));
+const known = g.year + Math.max(g.sysDist(a, a), g.sysDist(a, b)) + 2 * g.sysDist(a, b); // 両方が知り、申し入れが行き来できたあと (B-167)
 g.year = known + W.lapse - 1;
 g.lapseYearly();
 check(g.atWar(a, b), '立ち消えが早すぎる');

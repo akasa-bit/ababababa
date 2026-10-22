@@ -92,5 +92,36 @@ check(src.every((id) => g.knownGarrison(id) > 0 && g.ownStackKnown(id)) && !src.
 const v = g.seenByRival(e);
 check(Number.isFinite(v.n) && v.lo <= v.n && v.n <= v.hi && Math.abs(v.age - d) < 1e-9, `相手が見ている数が違う (${JSON.stringify(v)})`);
 
+// 7 (B-167). 戦争疲弊: 損失の知らせが首都に届いてから増える
+const [x1, x2] = g.nations.map((n) => n.cap).filter((c) => c !== g.cap && g.isColonized(c) && g.realmOf(c) === c).sort((a, b) => g.sysDist(a, b) - g.sysDist(b, a)).slice(0, 2);
+if (x1 !== undefined && x2 !== undefined) {
+  if (!g.atWar(x1, x2)) g.beginWar(x1, x2, x1);
+  const dx = g.sysDist(x1, x2);
+  const ex0 = g.exhaustion[x2] || 0;
+  g.warLoss(x1, x2, 4, x1); // x2 の艦隊が x1 の星系で沈んだ
+  check((g.exhaustion[x2] || 0) === ex0 && g.exhaustSent.some((o) => o.r === x2), '損失の知らせより先に戦争疲弊が増えた');
+  const y1 = g.year;
+  g.year = y1 + dx + 0.01;
+  g.exhaustionYearly();
+  check(!g.exhaustSent.some((o) => o.r === x2 && o.at <= g.year), '届いた損失の知らせが残っている');
+  g.year = y1;
+  // 8. AI どうしの講和の申し入れ: 光速で相手の首都に届いてから答える
+  const k2 = g.warKey(x1, x2);
+  g.bargainSent = [];
+  g.sendBargain(x1, x2, k2);
+  g.sendBargain(x1, x2, k2);
+  const bo = g.bargainSent.filter((o) => o.key === k2);
+  check(bo.length === 1 && Math.abs(bo[0].at - (g.year + dx)) < 1e-9, '講和の申し入れが光より速いか、二重に送られた');
+  g.bargainArrive();
+  check(g.bargainSent.length === 1, '講和の申し入れが届く前に答えた');
+  // 9. 講和会議の条件は、会議を開いた星系に届いている記録で
+  g.year = y1;
+  const nc = g.confSent.length + g.conferences.length;
+  g.startConference(x2, [{ realm: g.cap, pts: 50 }], x2);
+  const cc = [...g.confSent, ...g.conferences].filter((c) => c.loser === x2).sort((a, b) => b.id - a.id)[0];
+  check(cc && Array.isArray(cc.sys) && Number.isFinite(cc.cash) && cc.sys.every((id) => g.seenBy(x2, id)?.[1] === x2), '講和会議の条件が、会議を開いた星系に届いた記録で決まっていない');
+  check(nc < g.confSent.length + g.conferences.length, '講和会議が開かない');
+}
+
 console.log(fails.length ? `光の遅れ 不合格\n${fails.join('\n')}` : `光の遅れ 合格 (相手の首都まで ${d.toFixed(1)} 光年・相手に見えている ${v.n} 艦隊 ${v.lo}〜${v.hi})`);
 process.exit(fails.length ? 1 : 0);
