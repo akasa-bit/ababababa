@@ -202,6 +202,7 @@ function railHtml(g) {
   // 新しいゲーム・ロードのときは数え直す (それまでの出来事は「新しい知らせ」として流さない)
   if (app.railGame !== g) { app.railGame = g; app.railFirst = new Map(); app.railSince = g.year; Forecast.list = []; }
   forecastTick(g);
+  govReportsTick(g); // 委任の報告書 (B-057)
   eraReviewTick(g); // 時代の終わりの答え合わせ (B-054)
   const acked = new Set(g.acked || []);
   const evs = g.knownEvents();
@@ -235,7 +236,8 @@ function railHtml(g) {
   const n = decs.length + majors.length + diplo.length + (guide ? 1 : 0) + (hungry ? 1 : 0) + surprise.length;
   // 地図が狭いときは、帯を畳んだ形 (件数だけのボタン) から始める。帯が地図を覆ってタップを邪魔しないように
   if (railHidden()) return `<div class="railbar"><button data-act="railtoggle"${decs.length ? ' class="due"' : ''}>${n ? `知らせ ${n} 件を出す` : '知らせを出す'}</button></div>`;
-  if (!n && !recent.length && !news.over) return '';
+  const report = govReportRail(g);
+  if (!n && !recent.length && !news.over && !report) return '';
   const place = (sys) => (sys !== undefined && g.system(sys) ? g.system(sys).name : '');
   const when = (e) => {
     const ago = g.year - e.year, late = (e.seen ?? e.year) - e.year;
@@ -261,7 +263,7 @@ function railHtml(g) {
   return `${surprise.slice(0, 2).map((w) => surpriseHtml(g, w)).join('')}${guide}${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
     ${hungry ? `<button class="state" data-act="view" data-v="events">${tagIco('famine')}飢餓・水不足の星系 ${hungry} — 地図の赤い「!」</button>` : ''}
     ${shownMajors.map((x) => item(x.e, true, x.ids)).join('')}${moreN ? `<button class="more" data-act="view" data-v="events">ほかに重大な知らせ ${moreN} 件 (イベントのタブ)</button>` : ''}
-    ${recent.map((e) => item(e, false)).join('')}
+    ${report}${recent.map((e) => item(e, false)).join('')}
     <div class="railbar">${majors.length > 1 ? '<button data-act="ackall">重大な知らせをすべて確かめた</button>' : ''}<button data-act="railtoggle">隠す</button></div>`;
 }
 
