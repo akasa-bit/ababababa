@@ -74,7 +74,7 @@
     const own = this.knownOwnSystems().filter((s) => s.id !== cap);
     const sent = own.length > 0 || this.ships.some((s) => s.body !== undefined && this.realmOf(s.from) === cap) || this.knownProjects().some((j) => j.type === 'ship');
     const routed = this.routes.some((r) => r.a === cap || r.b === cap) || this.requests.some((q) => q.state === 'sending' && /^route/.test(q.act));
-    const answered = this.decisions.some((d) => d.state === 'sent' || (d.state === 'done' && !d.void));
+    const answered = this.decisions.some((d) => d.sentAt !== undefined); // 自分で返事を送ったもの (期限切れで現地が決めたものは数えない)
     const pick = sent ? null : this.guidePick();
     const col = own[0];
     const dec = this.visibleDecisions()[0];
