@@ -68,7 +68,7 @@
       })),
       stock: { ...this.stockOf(id) },
       prod: fl ? { ...fl.prod } : zeroRes(), cons: fl ? { ...fl.cons } : zeroRes(),
-      garrison: this.garrison[id] || 0, held: this.held[id] || 0, awe: this.awe[id] || 0, supply: this.supplied[id]?.k,
+      garrison: this.garrison[id] || 0, fort: this.forts?.[id] || 0, held: this.held[id] || 0, awe: this.awe[id] || 0, supply: this.supplied[id]?.k,
       projects: this.projects.filter((j) => j.sys === id).map((j) => ({ type: j.type, n: j.n, col: j.col, fac: j.fac, body: j.body, to: j.to, kind: j.kind, start: j.start, ready: j.ready, label: j.label })),
       credits: gv ? gv.credits : 0, bond: gv?.bond || 0, hh: gv?.hh || 0, loan: gv?.loan || 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null, energy: gv?.E || 0, power: this.power(id),
       ...(() => { // その星系で効いている財政 (標準でないものだけ)

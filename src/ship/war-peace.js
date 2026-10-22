@@ -133,6 +133,7 @@
       for (const x of due) if (this.isColonized(x.r) && this.realmOf(x.r) === x.r) this.exhaust(x.r, x.v);
     }
     this.strikesYearly(); // 光速の一撃の知らせ (ship/strike.js)
+    this.fortsYearly(); // 入植した星系に宇宙要塞 Lv1 (ship/fort.js)
     this.lapseYearly();
     const roots = new Set([...this.colonizedSystems().map((x) => this.realmOf(x.id)), ...Object.keys(this.exhaustion).map(Number)]);
     for (const r of roots) {

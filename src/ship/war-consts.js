@@ -54,6 +54,11 @@ const BATTLE = { rounds: 24, hit: 0.2, dmg: 0.45, org: 0.55, orgRet: 0.5, retRou
 // AI の国は、戦争で大きく負けていて (首都に届いた戦勝点が desperate 以下)、首都に 2 艦隊以上いれば、年 aiChance の確率で、相手の首都 (首都に届いた記録で、まだ相手の国のもの) へ 1 艦隊を撃つ。
 // 人間の国の星系は、ほかの攻め方と同じく狙わない。ここまで負ける前に講和することが多いので、AI の一撃はまれ (6 か国の 12 の銀河 × 300 年で 31 回。1 つの銀河の 300 年で 2〜3 回)
 const STRIKE = { survive: 0.001, retaliate: 0.6, retaliateHit: 1, reach: 40, loyalty: 20, infamy: 50, desperate: -20, aiChance: 0.5, keep: 200 };
+// 宇宙要塞 (2026-10-22 のユーザーの依頼。docs/requests/2026-10-22-FU.md の FU-5): 星系ごとに Lv 0〜max。入植した星系には自動で Lv auto (無償) が建ち、そのあとは手動で 1 段ずつ上げる。
+// 段を上げる費用 = cost × growth^(いまの段 − 1) (建設の注文と同じく資材を集めてから完成)。
+// 艦隊戦では、段の数だけ「要塞の区画」が防衛側に加わる: 耐久 hp (艦の hp 倍)、撃ち合いは艦と同じ、退かない、組織力は減らない。
+// 沈んだ区画の数だけ段が下がる (攻め落とされれば 0。建て直しは手動)。艦隊がいなくても要塞があれば、攻める艦隊は先に艦隊戦をする
+const FORT = { max: 10, auto: 1, hp: 3, cost: { credits: 200, metal: 100 }, growth: 1.35, aiGoal: 3 };
 // 戦死者の数の書き方 (人)
 function fmtDead(n) { return n >= 1e8 ? `${(n / 1e8).toFixed(1)} 億人` : n >= 1e4 ? `${Math.round(n / 1e4)} 万人` : `${Math.round(n)} 人`; } // 出来事の文にも入るので、端末ごとに違う toLocaleString は使わない
 // 艦隊戦の報告の 1 行 (battleReports の 1 つから)
@@ -87,4 +92,9 @@ saveField('exhaustSent', (game) => (game.exhaustSent.length ? game.exhaustSent :
 saveField('bargainSent', (game) => (game.bargainSent.length ? game.bargainSent : undefined), {
   init: (game) => { game.bargainSent = []; },
   read: (game, d) => { game.bargainSent = Array.isArray(d.bargainSent) ? d.bargainSent.filter((o) => o && typeof o.key === 'string' && Number.isFinite(o.at)) : []; },
+});
+// 宇宙要塞の段 { [星系]: Lv }。前の版のセーブ (項目がない) は、入植した星系に Lv FORT.auto を建てて読む
+saveField('forts', (game) => game.forts, {
+  init: (game) => { game.forts = {}; game.fortsYearly(); },
+  read: (game, d) => { game.forts = d.forts && typeof d.forts === 'object' ? Object.fromEntries(Object.entries(d.forts).filter(([, v]) => Number.isFinite(v))) : {}; game.fortsYearly(); },
 });

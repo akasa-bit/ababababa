@@ -67,6 +67,7 @@
 | `politics/earth-politics.js` | 政治 | 32 | Game: 主人の関与・地球の政治の自動 |
 | `ship/war-ai.js` | 船と戦争 | 385 | Game: 宣戦・講和の申し入れ・艦隊の到着・艦隊戦・包囲・海賊の防衛・AI の軍備と交渉・AI の国の年ごとの判断 |
 | `ship/strike.js` | 船と戦争 | 95 | Game: 光速に近い艦隊の一撃 (突入・焼く・知らせと報復・AI の一撃)。回 FU2 で足した |
+| `ship/fort.js` | 船と戦争 | 35 | Game: 宇宙要塞 (星系ごとの段・自動の Lv1・手動の強化・地球に届いている段)。2026-10-22 の依頼で足した |
 | `economy/colonize.js` | 経済 | 271 | Game: 調査と先住民・入植の向き不向き・資材の手配・建設の注文 |
 | `ship/settler.js` | 船と戦争 | 46 | Game: 入植船の費用と便・入植の打ち上げ |
 | `economy/colonies-routes.js` | 経済 | 90 | Game: 入植地を足す・施設の強化・交易路 |

@@ -64,6 +64,7 @@ const pairs = others.flatMap((x) => others.filter((y) => y > x).map((y) => [x, y
 const [h, al] = pairs[0];
 const f2 = others.filter((x) => x !== h && x !== al).sort((x, y) => g.sysDist(h, x) - g.sysDist(h, y))[0];
 for (const x of [h, al, f2]) for (const y of [g.cap, h, al, f2]) if (x !== y && g.atWar(x, y)) g.endWar(x, y);
+g.fleets = g.fleets.filter((f) => !(f.strike && [h, al, f2, g.cap].includes(g.realmOf(f.to)))); // 飛んでいる光速の一撃 (止められず、着くと戦争をまた始める) も片づける
 g.diplo.pacts = g.diplo.pacts.filter((x) => ![x.a, x.b].some((r) => [h, al, f2].includes(r)) || x.kind !== 'ally');
 g.diplo.pacts.push({ id: 9001, kind: 'ally', a: g.cap, b: h, since: g.year, until: g.year + 300, onA: g.year, onB: g.year, called: [] }); // 遠い同盟国にも開戦の知らせが届くまで切れないように
 g.diplo.pacts.push({ id: 9002, kind: 'ally', a: al, b: h, since: g.year, until: g.year + 300, onA: g.year, onB: g.year, called: [] });
