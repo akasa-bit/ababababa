@@ -46,6 +46,10 @@
 
 ### 船と戦争
 
+- C27: 艦隊戦の数の効き (回 FU2)
+- C28: 艦隊戦の勝ち負けの偶然 (回 FU2)
+- QD-44: 負けた側はどこまで失ったら退くか → HOI4 の海戦を元にした艦隊戦を作る (回 FU2)
+
 ### 画面と最初の体験
 
 ### 道具と検証
@@ -68,6 +72,8 @@
 
 - saveField: peaceSent (船と戦争。src/ship/war-consts.js。光速で届く途中の講和の申し入れ。回 FU1)
 - saveField: confSent (船と戦争。src/ship/war-consts.js。知らせが届く途中の講和会議。回 FU1)
+- saveField: battleReports (船と戦争。src/ship/war-consts.js。艦隊戦の報告。回 FU2)
+- EDITIONS.game.battle (pos・luck。艦隊戦の補正。台帳の C27・C28。回 FU2)。EDITIONS.sim.battle も同じ名前で CDB90 の値
 
 ### 画面と最初の体験
 

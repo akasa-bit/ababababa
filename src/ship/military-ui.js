@@ -55,6 +55,7 @@ function militarySheet(app) {
     </div>
     ${milTable}
     ${rivalViewTable(g)}
+    ${battleReportTable(g)}
     <h3>歩兵</h3>
     <p class="note">歩兵は入植地ごとに駐留し、交易路を通って移動する。軍事教練所 (惑星・ステーションの施設) で訓練するか、軍事奴隷から徴集する。先住民の制圧、奴隷の反乱の抑止、海賊からの地上防衛に使う。</p>
     <div class="scroll"><table class="tbl"><tr><th>入植地</th><th>教練所</th><th>歩兵</th><th>奴隷兵</th><th>向かっている</th><th>訓練</th><th></th></tr>${troopRows}</table></div>
@@ -87,4 +88,21 @@ function rivalViewTable(g) {
   return `<h3>相手が見ている${esc(g.realmName(g.cap))}の艦隊</h3>
     <p class="note">ほかの国の首都には、こちらの艦隊が光の遅れのぶん古い姿で見えている (こちらが把握している数は ${ours} 艦隊)。AI の国は、その数に読み違いを掛けて勝つ見込みを出し、宣戦や講和を決める。読み違いは相手だけが知っているので、3 回に 2 回はこの幅に入る、という幅で出す。戦争が始まると、戦って沈めた・沈められた数でも見積もりを直す。相手の首都に近い星系へ艦隊を集めると、早く見える。</p>
     <div class="scroll"><table class="tbl"><tr><th>国</th><th>首都までの距離</th><th>相手に見えている数</th><th>相手の見積もりの幅</th></tr>${rows}</table></div>`;
+}
+
+// 艦隊戦の報告 (B-034): 終わりの知らせが首都に届いた戦いだけ。勝つ見込みと損害の内訳
+function battleReportTable(g) {
+  const reps = g.battleReports.filter((r) => g.spectate || r.end + g.lightDelay(r.sys) <= g.year).slice(0, 10);
+  if (!reps.length) return '';
+  const tag = (x) => (x >= 1.3 ? '<span class="hz">良い</span>' : x <= 0.77 ? '<span class="bad">悪い</span>' : 'ふつう');
+  const rows = reps.map((r) => {
+    const atk = esc(g.realmName(r.a)), def = esc(g.realmName(r.d));
+    return `<tr><td><button data-act="goto" data-sys="${r.sys}">${esc(g.system(r.sys).name)}</button><br><span class="muted">${Math.floor(r.end)} 年</span></td>
+      <td>${atk} ${r.a0}<br><span class="muted">対</span> ${def} ${r.d0}</td><td><b>${r.win ? atk : def}</b>${r.odds !== null && r.odds !== undefined ? `<br><span class="muted">攻撃側の見込み ${Math.round(r.odds * 100)}%</span>` : ''}</td>
+      <td>沈没 ${r.sunk[0]}・退却 ${r.esc[0]}<br>沈没 ${r.sunk[1]}・退却 ${r.esc[1]}</td><td>${fmtDead(r.dead)}</td>
+      <td>兵站 ${r.eff[0]} / ${r.eff[1]}<br>戦機 ${tag(r.luck[0])} / ${tag(r.luck[1])}<br>士気 ${tag(r.mor[0])} / ${tag(r.mor[1])}</td></tr>`;
+  }).join('');
+  return `<h3>艦隊戦の報告</h3>
+    <p class="note">艦隊戦は自動で進む。1 艦隊は耐久と組織力を持ち、1 年に ${BATTLE.rounds} 回撃ち合う。組織力が尽きた艦は撃たれながら退き、近くの自国の星系へ戻る (退ける先がなければ最後まで戦う)。大きすぎる艦隊はまとまって動けず、数の差は二乗則ほどには効かない (2 倍の兵力で勝つのは 4 回に 3 回ほど)。戦機 (索敵・先に撃つ側) と士気は戦いごとに引く。沈んだ艦の乗員 ${fmtDead(BATTLE.crew)} が戦死者になる (仮の値)。交戦は光速近くで一瞬に近づいて行われるが、ここでは時間をかけた撃ち合いとして解く。見込みは、同じ形の戦いを 64 回解いた割合。終わりの知らせが首都に届いた戦いだけを載せる。</p>
+    <div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻撃 対 防衛 (艦隊)</th><th>勝った国</th><th>損害 (攻撃 / 防衛)</th><th>戦死</th><th>効いたもの (攻撃 / 防衛)</th></tr>${rows}</table></div>`;
 }

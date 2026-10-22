@@ -57,14 +57,24 @@
         this.message(`${f.n} 艦隊は ${name} に${this.realmName(other)}の艦隊がいるので引き返した`, f.to);
         return;
       }
-      const a = f.n * this.fleetMul(owner, f.to), d = (this.garrison[f.to] || 0) * this.fleetMul(other, f.to);
-      const win = a > d;
-      const left = Math.floor(Math.sqrt(Math.abs(a * a - d * d)) / this.fleetMul(win ? owner : other, f.to));
-      this.warLoss(other, owner, win ? f.n - left : f.n, f.to);
-      this.warLoss(owner, other, win ? (this.garrison[f.to] || 0) : (this.garrison[f.to] || 0) - left, f.to);
+      // 入植していない星系での艦隊戦は、着いた時点で一度に解く (同じ撃ち合い。退く先は、それぞれの国のいちばん近い入植星系)
+      const b = { sys: f.to, realm: owner, a: f.n, d: this.garrison[f.to] || 0, a0: f.n, d0: this.garrison[f.to] || 0, start: this.year, ua: [], ud: [], luck: [this.battleLuck(BATTLE.luck), this.battleLuck(BATTLE.luck)], mor: [this.battleLuck(BATTLE.morale), this.battleLuck(BATTLE.morale)], sunk: [0, 0], esc: [0, 0] };
+      b.odds = this.battleOdds(b.a, b.d, this.battleEff(b, 0), this.battleEff(b, 1));
+      this.battleSync(b);
+      const home = this.retreatHome(other, f.to);
+      const eff = [this.battleEff(b, 0) * b.luck[0], this.battleEff(b, 1) * b.luck[1]], out = { sunk: [0, 0], esc: [0, 0] }, u = [b.ua, b.ud];
+      for (let r = 0; r < BATTLE.rounds * 20 && this.battleRound(u, eff, b.mor, () => this.rand(), [true, home !== undefined], out); r++);
+      [b.ua, b.ud] = u;
+      this.battleCount(b, out, other, home);
+      const win = b.ua.some((x) => x[2] < 0);
+      const fin = { sunk: [0, 0], esc: [0, 0] };
+      if (win) { fin[home !== undefined ? 'esc' : 'sunk'][1] = b.ud.length; b.ud = []; } else { fin.esc[0] = b.ua.length; b.ua = []; }
+      this.battleCount(b, fin, other, home);
+      const left = win ? b.ua.length : b.ud.length;
+      const rep = this.battleReport(b, win, other);
       this.garrison[f.to] = left;
       if (win) this.setStackOwner(f.to, owner);
-      this.event('battle', f.to, `${name} で${this.realmName(owner)}の ${f.n} 艦隊と${this.realmName(other)}の艦隊が戦い、${this.realmName(win ? owner : other)}が勝った (残り ${left} 艦隊)`, this.isHuman(owner) || this.isHuman(other));
+      this.event('battle', f.to, `${name} で${this.realmName(owner)}の ${f.n} 艦隊と${this.realmName(other)}の艦隊が戦い、${this.realmName(win ? owner : other)}が勝った (${rep.text}、残り ${left} 艦隊)`, this.isHuman(owner) || this.isHuman(other));
       if (!win || left < 1) return;
       this.held[f.to] = left;
       this.continueRoute(f.to, left, f.route, f.chain ?? f.id);
@@ -109,14 +119,79 @@
       this.event('battle', f.to, `${name} に守りの艦隊はなく、${this.realmName(owner)}の ${f.n} 艦隊が攻囲を始めた`, this.isHuman(owner) || this.isHuman(destRealm));
     }
   }
-  // 艦隊戦はランチェスターの二次則を時間をかけて解く: 両軍とも1艦隊が1年に BATTLE_RATE 艦隊ずつ敵を壊滅させ、0.5艦隊を切った側が負け。
-  // 同じくらいの戦力だと何年も続く。戦闘中に着いた艦隊や星系で造られた艦隊はその場で加わる
+  // 艦隊戦 (B-034。BATTLE の説明は ship/war-consts.js): 両軍の艦を 1 つずつ動かす撃ち合いを、時間をかけて解く。
+  // 戦闘中に着いた艦隊や星系で造られた艦隊は、その場で新しい艦として加わる。b.a・b.d は、戦場に残っている艦 (退いている途中を含む) の数
   battleAt(sys) { return this.battles.find((b) => b.sys === sys); }
   startBattle(sys, realm, ships, progress, route) {
     const d = this.garrison[sys] || 0;
     this.garrison[sys] = 0;
-    this.battles.push({ sys, realm, a: ships, d, a0: ships, d0: d, start: this.year, progress: progress || 0, route });
-    this.event('battle', sys, `${this.system(sys).name} で艦隊戦が始まった (攻撃 ${this.realmName(realm)} ${ships} 艦隊 対 防衛 ${d} 艦隊)`, this.isHuman(realm) || this.isHuman(this.realmOf(sys)));
+    const b = { sys, realm, a: ships, d, a0: ships, d0: d, start: this.year, progress: progress || 0, route, ua: [], ud: [], luck: [this.battleLuck(BATTLE.luck), this.battleLuck(BATTLE.luck)], mor: [this.battleLuck(BATTLE.morale), this.battleLuck(BATTLE.morale)], sunk: [0, 0], esc: [0, 0], rounds: 0 };
+    this.battles.push(b);
+    const p = this.battleOdds(ships, d, this.battleEff(b, 0), this.battleEff(b, 1));
+    b.odds = p;
+    this.event('battle', sys, `${this.system(sys).name} で艦隊戦が始まった (攻撃 ${this.realmName(realm)} ${ships} 艦隊 対 防衛 ${d} 艦隊。攻撃側の勝つ見込み ${Math.round(p * 100)}%)`, this.isHuman(realm) || this.isHuman(this.realmOf(sys)));
+  }
+  battleLuck(w) { return GM.exp(w * this.randNormal()); }
+  // 側 s (0 = 攻撃・1 = 防衛) の兵站と国の補正 (攻撃側は補給線の長さと補給の充足率、防衛側は補給の充足率)
+  battleEff(b, s) {
+    const def = this.isColonized(b.sys) ? this.realmOf(b.sys) : this.stackRealm(b.sys);
+    return s === 0 ? this.fleetEff(b.sup, b.line) * this.fleetMul(b.realm, b.sys) : this.fleetEff(b.dsup, 0) * this.fleetMul(def, b.sys);
+  }
+  // 撃ち合いを 1 回。u = [攻撃側の艦, 防衛側の艦] (艦 = [耐久, 組織力, 退くまでの回数 (−1 = 戦っている)])、
+  // eff = 両軍の補正 (兵站 × 国 × 戦機)、mor = 両軍の士気、rnd = 乱数 (0〜1)、canRet = 退ける側。沈んだ数・離れた数を out に足す
+  battleRound(u, eff, mor, rnd, canRet, out) {
+    const F = [u[0].filter((x) => x[2] < 0), u[1].filter((x) => x[2] < 0)];
+    if (!F[0].length || !F[1].length) return false;
+    const hits = [[], []];
+    for (const s of [0, 1]) {
+      const pos = 1 / (1 + BATTLE.pos * Math.max(0, F[s].length / F[1 - s].length - 1));
+      const tgt = u[1 - s];
+      for (const x of F[s]) if (rnd() < Math.min(0.95, BATTLE.hit * pos * eff[s] * (0.5 + 0.5 * Math.max(0, x[1])))) hits[1 - s].push(tgt[Math.floor(rnd() * tgt.length)]);
+    }
+    for (const s of [0, 1]) {
+      for (const t of hits[s]) { t[0] -= BATTLE.dmg * (0.5 + rnd()); t[1] -= (BATTLE.org * (0.5 + rnd())) / mor[s]; }
+      const keep = [];
+      for (const x of u[s]) {
+        if (x[0] <= 0) { out.sunk[s]++; continue; }
+        if (x[2] === 0) { out.esc[s]++; continue; }
+        if (x[2] > 0) x[2]--;
+        else if (canRet[s] && x[1] < BATTLE.orgRet) x[2] = BATTLE.retRounds;
+        keep.push(x);
+      }
+      u[s] = keep;
+    }
+    return true;
+  }
+  // 攻撃 na 艦隊が防衛 nd 艦隊に勝つ見込み (補正 ea・ed)。同じ形の戦いを、試合の乱数とは別の乱数で 64 回解いて数える (画面に出すだけ。試合の筋は変えない)
+  battleOdds(na, nd, ea = 1, ed = 1) {
+    na = Math.round(na); nd = Math.round(nd);
+    if (nd < 1) return 1;
+    if (na < 1) return 0;
+    let st = hashSeed(`${na}/${nd}/${ea.toFixed(3)}/${ed.toFixed(3)}`);
+    const rnd = () => { st = (st + 0x6d2b79f5) >>> 0; let t = st; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const nrm = () => Math.sqrt(-2 * GM.log(1 - rnd())) * GM.cos(2 * Math.PI * rnd());
+    let win = 0;
+    const N = 64;
+    for (let k = 0; k < N; k++) {
+      const u = [Array.from({ length: Math.min(na, 300) }, () => [1, 1, -1]), Array.from({ length: Math.min(nd, 300) }, () => [1, 1, -1])];
+      const eff = [ea * GM.exp(BATTLE.luck * nrm()), ed * GM.exp(BATTLE.luck * nrm())], mor = [GM.exp(BATTLE.morale * nrm()), GM.exp(BATTLE.morale * nrm())];
+      const out = { sunk: [0, 0], esc: [0, 0] };
+      for (let r = 0; r < BATTLE.rounds * 20 && this.battleRound(u, eff, mor, rnd, [true, true], out); r++);
+      if (u[0].some((x) => x[2] < 0) && !u[1].some((x) => x[2] < 0)) win++;
+    }
+    return win / N;
+  }
+  // 戦っている艦の数を b.a・b.d に合わせる (増えた分は、着いた艦隊・造られた艦隊。古いセーブの艦隊戦は、ここで艦を作る)
+  battleSync(b) {
+    b.ua ??= []; b.ud ??= []; b.sunk ??= [0, 0]; b.esc ??= [0, 0];
+    b.luck ??= [1, 1]; b.mor ??= [1, 1];
+    for (const [k, u] of [['a', b.ua], ['d', b.ud]]) while (u.length < Math.round(b[k])) u.push([1, 1, -1]);
+  }
+  // 防衛側の艦が退く先: 守る国の、この星系のほかでいちばん近い入植星系 (なければ退けない)
+  retreatHome(realm, sys) {
+    let best = null;
+    for (const x of this.realmSystems(realm)) { if (x.id === sys) continue; const d = this.sysDist(x.id, sys); if (!best || d < best.d) best = { id: x.id, d }; }
+    return best?.id;
   }
   battlesStep(dt) {
     for (const b of [...this.battles]) {
@@ -130,30 +205,67 @@
       b.d += this.garrison[b.sys] || 0;
       b.d0 += this.garrison[b.sys] || 0;
       this.garrison[b.sys] = 0;
-      // 兵站: 攻撃側は補給線の長さと補給の充足率、防衛側は補給の充足率で戦力が変わる
-      const ea = this.fleetEff(b.sup, b.line) * this.fleetMul(b.realm, b.sys), ed = this.fleetEff(b.dsup, 0) * this.fleetMul(b.sys, b.sys);
-      for (let i = 0; i < 5; i++) {
-        const a = b.a, d = b.d, h = dt / 5;
-        b.a = Math.max(0, a - BATTLE_RATE * d * ed * h);
-        b.d = Math.max(0, d - BATTLE_RATE * a * ea * h);
-      }
-      if (b.a >= 0.5 && b.d >= 0.5) continue;
-      this.battles = this.battles.filter((x) => x !== b);
+      this.battleSync(b);
       const defender = this.realmOf(b.sys);
-      this.warLoss(defender, b.realm, Math.round(b.a0 - (b.a >= 0.5 ? Math.max(1, Math.floor(b.a)) : 0)), b.sys);
-      this.warLoss(b.realm, defender, Math.round(b.d0 - (b.a >= 0.5 ? 0 : Math.floor(b.d))), b.sys);
-      const name = this.system(b.sys).name;
-      const span = `${(this.year - b.start).toFixed(1)} 年、攻撃 ${Math.round(b.a0)} 艦隊 対 防衛 ${Math.round(b.d0)} 艦隊`;
-      const mine = this.isHuman(b.realm) || this.isHuman(this.realmOf(b.sys));
-      if (b.a >= 0.5) {
-        const left = Math.max(1, Math.floor(b.a));
-        this.sieges.push({ sys: b.sys, realm: b.realm, ships: left, progress: b.progress || 0, start: this.year, route: b.route });
-        this.event('battle', b.sys, `${name} の艦隊戦で攻撃側 (${this.realmName(b.realm)}) が勝った (${span}、${left} 艦隊が残る)。攻囲が始まる`, mine);
-      } else {
-        this.garrison[b.sys] = Math.floor(b.d);
-        this.event('battle', b.sys, `${name} の艦隊戦で攻撃側 (${this.realmName(b.realm)}) が全滅した (${span}、防衛側は ${Math.floor(b.d)} 艦隊が残る)`, mine);
-      }
+      const home = this.retreatHome(defender, b.sys);
+      const eff = [this.battleEff(b, 0) * b.luck[0], this.battleEff(b, 1) * b.luck[1]];
+      const out = { sunk: [0, 0], esc: [0, 0] };
+      const u = [b.ua, b.ud];
+      const n = Math.max(1, Math.round(dt * BATTLE.rounds));
+      let going = true;
+      for (let i = 0; i < n && going; i++) { going = this.battleRound(u, eff, b.mor, () => this.rand(), [true, home !== undefined], out); b.rounds = (b.rounds || 0) + 1; }
+      [b.ua, b.ud] = u;
+      this.battleCount(b, out, defender, home);
+      if (going) continue;
+      this.battleEnd(b, defender, home);
     }
+  }
+  // 撃ち合いで沈んだ艦・離れた艦を数える: 沈んだ艦は戦勝点と戦死者に、離れた艦は近くの自国の星系へ戻る
+  battleCount(b, out, defender, home) {
+    for (const s of [0, 1]) { b.sunk[s] += out.sunk[s]; b.esc[s] += out.esc[s]; }
+    if (out.sunk[0]) { this.warLoss(defender, b.realm, out.sunk[0], b.sys); this.warDead(b.realm, defender, out.sunk[0] * BATTLE.crew); }
+    if (out.sunk[1]) { this.warLoss(b.realm, defender, out.sunk[1], b.sys); this.warDead(defender, b.realm, out.sunk[1] * BATTLE.crew); }
+    if (out.esc[0]) this.withdraw({ sys: b.sys, realm: b.realm, ships: out.esc[0] });
+    if (out.esc[1] && home !== undefined) this.pushFleet({ id: this.nextShipId++, from: b.sys, to: home, n: out.esc[1], owner: defender, auto: true, depart: this.year, arrive: this.year + this.fleetYears(b.sys, home) });
+    b.a = b.ua.length; b.d = b.ud.length;
+  }
+  // 艦隊戦の終わり: 戦っている艦が残った側の勝ち。負けた側の、退いている途中の艦は離れきる
+  battleEnd(b, defender, home) {
+    this.battles = this.battles.filter((x) => x !== b);
+    const win = b.ua.some((x) => x[2] < 0);
+    const out = { sunk: [0, 0], esc: [0, 0] };
+    if (win) { out.esc[1] = home !== undefined ? b.ud.length : 0; out.sunk[1] = home !== undefined ? 0 : b.ud.length; b.ud = []; }
+    else { out.esc[0] = b.ua.length; b.ua = []; }
+    this.battleCount(b, out, defender, home);
+    const name = this.system(b.sys).name;
+    const left = win ? b.ua.length : b.ud.length;
+    const rep = this.battleReport(b, win, defender);
+    const mine = this.isHuman(b.realm) || this.isHuman(defender);
+    if (win) {
+      this.sieges.push({ sys: b.sys, realm: b.realm, ships: left, progress: b.progress || 0, start: this.year, route: b.route });
+      this.event('battle', b.sys, `${name} の艦隊戦で攻撃側 (${this.realmName(b.realm)}) が勝った (${rep.text}、${left} 艦隊が残る)。攻囲が始まる`, mine);
+    } else {
+      this.garrison[b.sys] = (this.garrison[b.sys] || 0) + left;
+      this.event('battle', b.sys, `${name} の艦隊戦で攻撃側 (${this.realmName(b.realm)}) が退いた (${rep.text}、防衛側は ${left} 艦隊が残る)`, mine);
+    }
+  }
+  // 戦いの報告 (勝つ見込みと損害の内訳)。新しい順に残す
+  battleReport(b, win, defender) {
+    const r = {
+      sys: b.sys, a: b.realm, d: defender, start: b.start, end: this.year, a0: Math.round(b.a0), d0: Math.round(b.d0), win: win ? 1 : 0, odds: b.odds ?? null,
+      sunk: [...b.sunk], esc: [...b.esc], dead: (b.sunk[0] + b.sunk[1]) * BATTLE.crew, eff: [+this.battleEff(b, 0).toFixed(2), +this.battleEff(b, 1).toFixed(2)], luck: b.luck.map((x) => +x.toFixed(2)), mor: b.mor.map((x) => +x.toFixed(2)),
+    };
+    this.battleReports.unshift(r);
+    this.battleReports.length = Math.min(this.battleReports.length, BATTLE.reports);
+    this.battleDone(r);
+    return { ...r, text: battleText(r) };
+  }
+  battleDone() {} // 道具 (tools/battles-headless.js) が戦いの記録を集めるところ
+  // 戦死者を数える (by = 死者の出た国、e = 相手)
+  warDead(by, e, n) {
+    if (n <= 0) return;
+    const st = this.warStats[this.warKey(by, e)];
+    if (st) st.dead = (st.dead || 0) + n;
   }
   // 攻囲: 年に、攻囲艦隊 ÷ (艦隊 + 地上の抵抗) × 0.12 ずつ進み、100% で降伏。地上の抵抗 = 歩兵 + 4×log10(1+人口)
   // 降伏した星系は、攻めた国の首都に直接従属する (その星系に従属していた星系も一緒に移る)
@@ -179,6 +291,10 @@
           continue;
         }
       }
+      // 攻囲された星系の住民は、年 BATTLE.siegeDead ずつ亡くなる (補給を断たれた飢えと病。戦死者に数える)
+      let dead = 0;
+      for (const c of this.coloniesIn(g.sys)) { const k = c.pop * BATTLE.siegeDead; c.pop -= k; dead += k * 1e6; }
+      this.warDead(this.realmOf(g.sys), g.realm, dead);
       g.progress = Math.min(1, g.progress + 0.12 * eff * g.ships / (g.ships + ground));
       if (this.troopPower(g.sys) >= 1) this.loseTroops(g.sys, 1);
       if (g.progress < 1) continue;
