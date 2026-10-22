@@ -1,0 +1,29 @@
+{
+  "note": "回の順番 (docs/sessions.md の 3)。after = 始める前に済んでいる必要がある回。済んだかは docs/status/<レーン>.md の「## 済んだ回」で見る (tools/session-check.js)。回を足すときは、ここと docs/sessions.md の両方に足す",
+  "lanes": { "GA": "画面と最初の体験", "SE": "政治", "FU": "船と戦争", "DO": "道具と検証", "SO": "外向き", "KE": "経済", "W": "common", "T": "外向き" },
+  "status": { "GA": "GA", "SE": "SE", "FU": "FU", "DO": "DO", "SO": "SO", "KE": "KE", "W": "common", "T": "SO" },
+  "sessions": {
+    "GA1": [],
+    "GA2": ["GA1"],
+    "GA3": ["GA2", "FU1"],
+    "GA4": ["GA3"],
+    "GA5": ["GA4"],
+    "SE1": [],
+    "SE2": ["SE1"],
+    "SE3": ["SE2"],
+    "FU1": [],
+    "FU2": ["FU1"],
+    "DO1": [],
+    "DO2": ["DO1"],
+    "DO3": ["DO2", "GA5"],
+    "SO1": [],
+    "SO2": ["SO1"],
+    "W1": ["GA5", "SE3", "FU2", "DO3", "SO2"],
+    "KE1": ["W1"],
+    "KE2": ["KE1"],
+    "SE4": ["SE3", "KE2"],
+    "FU3": ["FU2", "KE2"],
+    "GA6": ["GA5", "W1"],
+    "T1": ["SO2", "W1"]
+  }
+}
