@@ -200,7 +200,8 @@ function guideHtml(g) {
 function railHtml(g) {
   const now = performance.now();
   // 新しいゲーム・ロードのときは数え直す (それまでの出来事は「新しい知らせ」として流さない)
-  if (app.railGame !== g) { app.railGame = g; app.railFirst = new Map(); app.railSince = g.year; }
+  if (app.railGame !== g) { app.railGame = g; app.railFirst = new Map(); app.railSince = g.year; Forecast.list = []; }
+  forecastTick(g);
   const acked = new Set(g.acked || []);
   const evs = g.knownEvents();
   let fresh = false;

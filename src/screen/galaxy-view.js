@@ -488,6 +488,8 @@ class GalaxyView {
       if (!p) continue;
       const [px, py] = this.toScreen(p.x, p.y, p.z);
       const fcolor = FLEET_COLOR[realmFleetKind(game, f.owner ?? 0)];
+      // 「ありうる今」(B-053): よその国の艦隊は、見えているのは光が出たときの姿。いまはそこから (いちばん速い船の速さ × 光が来るのにかかった年) の内のどこかにいる
+      if ((f.owner ?? 0) !== game.cap) this.drawMaybeNow(p, px, py, distance(p, game.system(game.cap)), fcolor);
       if ((f.owner ?? 0) === game.cap) {
         this.fleetDots.push({ id: f.id, x: px, y: py });
         if (this.app.fleetMove.has(f.id)) {
@@ -499,9 +501,10 @@ class GalaxyView {
       }
       ctx.fillStyle = fcolor;
       ctx.beginPath(); ctx.moveTo(px, py - 5); ctx.lineTo(px + 4, py + 3); ctx.lineTo(px - 4, py + 3); ctx.fill();
-      // 地球の艦隊は行き先への矢印も描く
-      if ((f.owner ?? 0) === game.cap) {
-        const d = game.system(f.to);
+      // 地球の艦隊は行き先への矢印も描く。行き先は見えている区間のもの (進路を変えた知らせが届くまでは前の行き先。FU1 の seenLeg)
+      const legTo = (f.owner ?? 0) === game.cap ? game.seenLeg(f).to : undefined;
+      if (legTo !== undefined && legTo !== null) {
+        const d = game.system(legTo);
         const [tx, ty] = this.toScreen(d.x, d.y, d.z);
         const ang = Math.atan2(ty - py, tx - px);
         ctx.strokeStyle = f.surprise ? 'rgba(255,90,90,0.6)' : 'rgba(90,169,255,0.5)';
@@ -543,9 +546,8 @@ class GalaxyView {
         ctx.stroke();
         ctx.setLineDash([]);
       }
-      ctx.fillStyle = '#aadcff';
-      ctx.fillText(`指令 あと ${Math.max(0, q.arrive - game.year).toFixed(1)} 年`, ox + 7, oy - 7);
     }
+    this.drawLightSpheres(game);
 
     // 建設資材の輸送船
     ctx.fillStyle = '#ffd24d';
@@ -883,6 +885,70 @@ class GalaxyView {
       ctx.fillStyle = '#dfe8f7';
       lines.forEach((l, i) => ctx.fillText(l, bx + 7, byy + 16 + i * 15));
     }
+  }
+
+  // 光の球 (B-052): 自国が出した指令と返事の光は、出した星系から光の速さで球になって広がる (正射影なので球の輪郭は円)。
+  // 縁の、行き先の向きの所に「届くまで あと n 年」。光が行き先を越えたら消える
+  drawLightSpheres(game) {
+    const { ctx } = this;
+    const z = this.cam.zoom;
+    const list = [];
+    for (const q of game.requests) {
+      if (q.kind !== 'order' || (q.by ?? 0) !== game.cap || q.arrive <= game.year) continue;
+      list.push({ from: q.from, to: q.to, sent: q.sent, arrive: q.arrive, label: `指令「${q.label}」→ ${game.system(q.to).name}`, pred: forecastOf(q.id) });
+    }
+    for (const d of game.decisions) {
+      if (d.state !== 'sent' || d.sentAt === undefined || d.sys === game.cap) continue;
+      const arrive = d.sentAt + game.lightDelay(d.sys);
+      if (arrive > game.year) list.push({ from: game.cap, to: d.sys, sent: d.sentAt, arrive, label: `返事 → ${game.system(d.sys).name}` });
+    }
+    if (!list.length) return;
+    ctx.save();
+    ctx.font = '12px sans-serif';
+    // 自分で出した指令 (予想のあるもの) の文字を先に、あとは早く届く順。文字が重なるものは書かない (球は描く)
+    list.sort((a, b) => !!b.pred - !!a.pred || a.arrive - b.arrive);
+    const boxes = [];
+    list.forEach((o, i) => {
+      const a = game.system(o.from), b = game.system(o.to);
+      const r = Math.max(0, game.year - o.sent); // 光年 (光は 1 年に 1 光年)
+      const [ax, ay] = this.toScreen(a.x, a.y, a.z);
+      const glow = ctx.createRadialGradient(ax, ay, Math.max(0, r * z - 14), ax, ay, r * z);
+      glow.addColorStop(0, 'rgba(170,220,255,0)');
+      glow.addColorStop(1, 'rgba(170,220,255,0.10)');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(ax, ay, r * z, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(170,220,255,0.55)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(ax, ay, r * z, 0, Math.PI * 2); ctx.stroke();
+      const k = clamp(r / Math.max(1e-6, distance(a, b)), 0, 1);
+      const [ex, ey] = this.toScreen(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, (a.z || 0) + ((b.z || 0) - (a.z || 0)) * k);
+      ctx.fillStyle = '#aadcff';
+      ctx.beginPath(); ctx.arc(ex, ey, 2.5, 0, Math.PI * 2); ctx.fill();
+      if (i >= 4) return; // 文字は 4 つまで
+      const text = `${o.label} 届くまで あと ${Math.max(0, o.arrive - game.year).toFixed(1)} 年${o.pred?.short ? `・${o.pred.short}` : ''}`;
+      const box = { x: ex + 6, y: ey - 18, w: ctx.measureText(text).width, h: 16 };
+      if (boxes.some((q) => box.x < q.x + q.w && q.x < box.x + box.w && box.y < q.y + q.h && q.y < box.y + box.h)) return;
+      boxes.push(box);
+      ctx.fillText(text, ex + 6, ey - 6);
+    });
+    ctx.restore();
+  }
+  // 「ありうる今」の雲: (px, py) は最後に見えた位置、age は光が来るのにかかった年。半径 = いちばん速い船の速さ × age
+  drawMaybeNow(p, px, py, age, color) {
+    if (age < 0.5) return;
+    const { ctx } = this;
+    const R = Math.max(SHIP_SPEED, OFFROUTE_SPEED) * age * this.cam.zoom;
+    if (R < 6) return;
+    ctx.save();
+    const g = ctx.createRadialGradient(px, py, 0, px, py, R);
+    g.addColorStop(0, `${color}33`);
+    g.addColorStop(1, `${color}00`);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(px, py, R, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `${color}40`;
+    ctx.setLineDash([2, 6]);
+    ctx.beginPath(); ctx.arc(px, py, R, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
   }
 
   // 節目の光の輪 (B-046): 入植・交易路の開通・独立・講和の知らせが届いた星系から、輪が広がって消える (2.4 秒)。
