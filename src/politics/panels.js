@@ -95,8 +95,9 @@ function typeExtras(g, id, k, cur, B) {
   const pend = (act) => g.requests.some((q) => q.kind === 'order' && q.act === act && Number(q.d.sys) === id);
   const btn = (act, value, label) => { const c = g.pcCost(act, { sys: id }); const why = pend(act) ? '送信中' : c > g.pc ? '政治力不足' : ''; return `<button data-act="${act}" data-sys="${id}" data-value="${value}" ${why ? 'disabled' : ''}>${label}<small>${why || `政治力 ${c}・届くまで ${g.lightDelay(id).toFixed(1)} 年`}</small></button>`; };
   const out = [];
-  if (cur === 'T08') out.push(k.lord2 === undefined ? '共同統治: 2 国目の宗主になる国がまだない。' : `共同統治: 2 国目の宗主は <b>${esc(g.realmName(k.lord2))}</b>。朝貢の ${Math.round(H33.joint * 100)}% を${k.jointCut ? '<b class="bad">断っている</b>' : '送っている'}。${btn('jointcut', k.jointCut ? '' : '1', k.jointCut ? '分け前を戻す' : `分け前を断つ (忠誠度 −${H33.jointCut})`)}`);
+  if (cur === 'T08') out.push(k.lord2 === undefined ? '共同統治: 2 国目の宗主になる国がまだない。' : `共同統治: 2 国目の宗主は <b>${esc(g.realmName(k.lord2))}</b>。朝貢の ${Math.round(H33.joint * 100)}% を${k.jointCut ? '<b class="bad">断っている</b>' : '送っている'}。${k.jointCut ? `断っているあいだ、2 国目は恨みをため、家臣の反主流派を支える (忠誠度 年 −${JOINT.incite})。${JOINT.war} 年で、2 国目の艦隊がこちら以上なら開戦、弱ければ ${JOINT.drop} 年で手を引く。` : ''}${btn('jointcut', k.jointCut ? '' : '1', k.jointCut ? '分け前を戻す' : `分け前を断つ (忠誠度 −${H33.jointCut})`)}`);
   if (cur === 'T09') out.push(`特許会社領: 朝貢の ${Math.round(H33.companyCut * 100)}% は会社が取り、${ME.home}には届かない (直接統治にすれば特許を取り上げられる)。`);
+  if (cur === 'T10') out.push(`傀儡国: ${ME.home}が講和会議で負けるか降伏すると、傀儡政権は倒れ、勝った国の家臣になる (歴史の傀儡国は 7 件とも、独立ではなく宗主の敗戦で終わった)。`);
   if (cur === 'T19') out.push(`関税受領官: 払えなかった朝貢は滞納として持ち越し、次の年に先に取る。${(k.arrears || 0) > 0.01 ? `<b class="bad">滞納 ${fmtAmt(k.arrears)} cr</b> (忠誠度の目標 −${H33.arrears})` : '滞納なし'}。`);
   if (cur === 'T15') out.push(`同君連合: 1 世代に 1 度ほど継承の危機が起きる。継承 (実態) が「従」なら、連合は戦争なしに解ける。いまは「${BUNDLE_CODES[B.fact[BUNDLE_ITEMS.indexOf('succ')]]}」。`);
   if (B.fact[BUNDLE_ITEMS.indexOf('appt')] !== 'V') out.push(`統治者の任免: 実態で任免が「${BUNDLE_CODES[B.fact[BUNDLE_ITEMS.indexOf('appt')]]}」なので、現地の統治者を替えられる (実態は約定どおりに戻り、エリートは協力から。忠誠度 −${H33.depose})。${btn('depose', '1', '統治者を替える (改易・廃位)')}`);

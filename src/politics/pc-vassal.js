@@ -64,6 +64,14 @@ const ELITE_LABEL = { coop: '協力', bargain: '取引', resist: '抵抗' };
 //   union = 同君連合 (T15) の継承の危機が年に起きる確率 (1 世代に 1 度)。継承を実態で従属国が握っていれば、連合は戦争なしに解ける (ハノーファー 1837・スウェーデン=ノルウェー 1905)
 //   arrears = プラット型 (T19) の関税受領官: 払えなかった朝貢を滞納として持ち越し、次の年に先に取る。滞納のあいだは忠誠度の目標 −arrears
 const H33 = { joint: 1 / 3, jointCut: 6, companyCut: 0.3, depose: 15, arrears: 6 };
+// 共同統治の 2 国目の宗主どうしの外交 (B-023。値は仮の値、向きは事例から):
+//   分け前を断たれた 2 国目は、年に grudge ずつ恨みをためる (戻すと年に decay ずつ減る)。断たれているあいだ、2 国目は家臣の中の反主流派を支え、家臣の忠誠度が年 −incite
+//   恨みが war に届き、2 国目の艦隊が主な宗主の国の odds 倍以上なら、2 国目が開戦する (日清戦争の前の琉球の両属をめぐる争い)。弱ければ drop で手を引き、2 国目の宗主ではなくなる (1924 年にスーダンから退いたエジプト)
+//   AI の主な宗主は、艦隊が 2 国目の aiCutOdds 倍以上なら年 aiCut の確率で分け前を断ち、2 国目のほうが aiBackOdds 倍以上強くなれば年 aiBack の確率で戻す
+const JOINT = { grudge: 1, decay: 2, incite: 1, war: 10, odds: 1, drop: 20, aiCut: 0.05, aiCutOdds: 2, aiBack: 0.2, aiBackOdds: 1.5 };
+// 傀儡国の宗主の敗戦 (B-024): 宗主の国が講和会議で負けるか降伏すると、傀儡政権は倒れ、勝った国の家臣になる (歴史の傀儡国 7 件は、独立で終わったものが 0 件。満洲国 1945・スロヴァキア 1945・ライン同盟 1813)。
+//   移ったあとの忠誠度は loyalty (割譲と同じ)
+const PUPPET = { loyalty: 30 };
 const BUNDLE_PTS = { S: 0, M: 0.5, V: 1 };
 const bundleGap = (law, fact) => [...law].reduce((k, c, i) => k + (c !== fact[i] ? 1 : 0), 0);
 const bundleStep = (c, to) => (c === to ? c : c === 'M' ? to : 'M'); // 半段ずつ寄る (宗 ↔ 分 ↔ 従)

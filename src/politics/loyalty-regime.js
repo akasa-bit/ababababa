@@ -148,11 +148,19 @@
       if (gv.lord === null || gv.lord === undefined || !this.isColonized(id)) continue;
       const key = regimeKey(gv);
       if (key === 'T08') {
-        if (gv.lord2 === undefined || !this.isColonized(gv.lord2) || this.realmOf(gv.lord2) !== gv.lord2 || gv.lord2 === this.realmOf(id)) {
+        if (!gv.jointSolo && (gv.lord2 === undefined || !this.isColonized(gv.lord2) || this.realmOf(gv.lord2) !== gv.lord2 || gv.lord2 === this.realmOf(id))) {
           const r = this.jointSecond(id);
           if (r === null) delete gv.lord2; else gv.lord2 = r;
+          delete gv.grudge; // 2 国目が替わった (恨みは前の国のもの)
         }
-      } else if (gv.lord2 !== undefined || gv.jointCut) { delete gv.lord2; delete gv.jointCut; }
+        this.jointYearly(id, gv);
+      } else if (gv.lord2 !== undefined || gv.jointCut || gv.grudge || gv.jointSolo) { delete gv.lord2; delete gv.jointCut; delete gv.grudge; delete gv.jointSolo; }
+      // 傀儡国: 宗主の国が降伏して国でなくなったら、傀儡政権は倒れる (講和会議で負けたときは realmDefeated から)
+      if (key === 'T10') {
+        const root = this.realmOf(id);
+        if (gv.patron !== undefined && gv.patron !== root && this.isColonized(gv.patron) && this.realmOf(gv.patron) !== gv.patron && root === this.realmOf(gv.patron)) this.puppetFalls(id, root);
+        else gv.patron = root;
+      } else if (gv.patron !== undefined) delete gv.patron;
       if (key !== 'T19' && gv.arrears) delete gv.arrears;
       if (key === 'T15' && this.rand() < 1 / GENERATION_YEARS) {
         const succ = this.bundleOf(gv).fact[BUNDLE_ITEMS.indexOf('succ')];
@@ -160,6 +168,53 @@
         else this.event('politics', id, `${this.system(id).name} で君主の代替わりがあった。継承は${succ === 'S' ? '宗主' : '両国の取り決め'}のもとで行われ、同君連合は続く`, this.realmOf(id) === this.cap);
       }
     }
+  }
+  // 共同統治の 2 国目の宗主どうしの外交 (年1回。JOINT): 分け前を断たれた 2 国目は恨みをため、家臣の反主流派を支える。
+  // 恨みがたまると、強ければ開戦し、弱ければ手を引く。AI の主な宗主は、力の差を見て分け前を断ったり戻したりする
+  jointYearly(id, gv) {
+    const main = this.realmOf(id), second = gv.lord2;
+    if (second === undefined) return;
+    const ships = (r) => this.realmShips(r);
+    if (!this.isHuman(main)) {
+      if (!gv.jointCut && ships(main) >= JOINT.aiCutOdds * Math.max(1, ships(second)) && this.rand() < JOINT.aiCut) this.setJointCut(id, true);
+      else if (gv.jointCut && ships(second) >= JOINT.aiBackOdds * Math.max(1, ships(main)) && this.rand() < JOINT.aiBack) this.setJointCut(id, false);
+    }
+    if (!gv.jointCut) {
+      if (gv.grudge) { gv.grudge = Math.max(0, gv.grudge - JOINT.decay); if (!gv.grudge) delete gv.grudge; }
+      return;
+    }
+    gv.grudge = (gv.grudge || 0) + JOINT.grudge;
+    gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - JOINT.incite); // 2 国目が反主流派を支える
+    if (gv.grudge < JOINT.war || this.atWar(main, second)) return;
+    if (!this.isHuman(second) && ships(second) >= JOINT.odds * Math.max(1, ships(main))) {
+      this.beginWar(second, main, id);
+      delete gv.grudge; // 恨みは開戦で晴らした (断ち続ければ、またたまる)
+      this.event('war', id, `${this.realmName(second)}が、${this.system(id).name} の朝貢の分け前をめぐって${this.realmName(main)}に宣戦した`);
+    } else if (gv.grudge >= JOINT.drop) {
+      this.event('politics', id, `${this.realmName(second)}は ${this.system(id).name} から手を引いた。${this.realmName(main)}が、ただ 1 国の宗主になった`, this.isHuman(main));
+      delete gv.lord2; delete gv.jointCut; delete gv.grudge;
+      gv.jointSolo = true; // もう 2 国目を探さない
+    }
+  }
+  // 国 loser が戦争に負けた (講和会議で負けた側。船と戦争の startConference から呼ぶ)。winner = 勝った国 (いちばん持ち点の多い国)。
+  // loser の国の傀儡国は、傀儡政権が倒れて winner の家臣になる (B-024)
+  realmDefeated(loser, winner) {
+    if (!this.isColonized(winner) || this.realmOf(winner) !== winner) return;
+    for (const [k, gv] of Object.entries(this.govs)) {
+      const id = Number(k);
+      if (regimeKey(gv) === 'T10' && gv.lord !== null && gv.lord !== undefined && this.isColonized(id) && this.realmOf(id) === loser) this.puppetFalls(id, winner);
+    }
+  }
+  // 傀儡政権が倒れる: 傀儡国は winner の家臣になり、統治体制は winner の新しい家臣の型になる。家臣の家臣はそのままついて行く
+  puppetFalls(id, winner) {
+    const gv = this.govs[id];
+    const old = this.realmOf(id);
+    for (const f of ['direct', 'regime', 'law', 'fact', 'elite', 'lord2', 'jointCut', 'grudge', 'jointSolo', 'arrears', 'patron']) delete gv[f];
+    Object.assign(gv, { lord: winner, independent: false, loyalty: PUPPET.loyalty, friend: 0, fear: 0, orders: 0, attended: this.year, unrest: { stage: 0 } });
+    const reg = this.defaultRegime(winner, id);
+    if (reg === 'direct') gv.direct = true; else if (reg !== BASE_REGIME) gv.regime = reg;
+    for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
+    this.event('politics', id, `${this.realmName(old)}の敗戦で、${this.system(id).name} の傀儡政権が倒れた。${this.realmName(winner)}の家臣になり、統治体制は${REGIMES[regimeKey(gv)].label}になった`, this.isHuman(winner));
   }
   // 共同統治の 2 国目への分け前を断つ・戻す (指令が届いたとき)。断つと家臣の忠誠度が下がる
   setJointCut(id, cut) {

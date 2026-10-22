@@ -17,8 +17,11 @@
       let k = dec.def;
       if (dec.kind === 'demand') k = (this.garrison[this.cap] || 0) >= 2 * this.knownRebelFleet(dec.sys) + 1 && this.rand() < 0.5 ? 'awe' : 'accept';
       else {
+        // 払える選択肢のうち、いまの国の様子でいちばん選びたいもの (語り手の weigh。少しの揺らぎを足す)
         const ok = dec.opts.filter((o) => (o.cr || 0) <= 0.2 * this.gov(this.cap).credits && this.pcCost('decide', { sys: dec.sys, id: dec.id, opt: o.k }) <= this.pc - 10);
-        if (ok.length) k = ok[0].k;
+        const w = STORY[dec.type]?.weigh;
+        let best = -Infinity;
+        for (const o of ok) { const v = (w ? w(this, dec, o.k) : 0) + 0.4 * this.rand(); if (v > best) { best = v; k = o.k; } }
       }
       if (k) this.command('decide', { sys: dec.sys, id: dec.id, opt: k });
     }
