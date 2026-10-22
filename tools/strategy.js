@@ -47,6 +47,7 @@ const PRESETS = {
 // 決めた 6 つのほかに、拡張の一強を測り直すときに足す戦略 (tools/delay-report.js)。地球だけの試合で 1 位だった bots.js の「拡張に振る」(入植の間隔なし) を、値で書いたもの
 const EXTRA = {
   rush: { label: '入植の間隔なし', s: { ...BASE, policy: 'expand', mandate: 'expand', colWait: 0, colRange: 25 } },
+  idle: { label: '何もしない', s: { idle: 1 } }, // 観戦モードも首都の自動も切る (bots.js の none。お金が山になるかを見る。B-069)
 };
 // 戦略を、人間に近い遅れつきのボットにする (null = 放任は、観戦の AI と同じ値 BASE に遅れを足したもの)
 const humanize = (s, h = HUMAN) => ({ ...(s || BASE), ...h });
@@ -57,6 +58,8 @@ const humanize = (s, h = HUMAN) => ({ ...(s || BASE), ...h });
 // 首都のことなので遅れなしのまま (ゲームの govsYearly などの自動)。s.every 年に 1 回しか判断しない (間の年は何もしない)
 function apply(g, s, sim) {
   if (!s) return;
+  // 何もしない (bots.js の none): 観戦モードを切り、首都の自動 (開発・防衛・造船・威圧・資金援助・居住区) もすべて切る。判断もしない
+  if (s.idle) { g.spectate = false; g.live = null; g.autoDefense = false; g.autoBuild = false; g.autoAwe = false; g.autoGrant = false; g.autoHabitat = false; g.auto[g.cap] = false; return; }
   const D = !!s.delay, every = Math.max(1, s.every || 1), y0 = g.year;
   if (s.policy !== 'auto') g.aiPolicy = s.policy;
   if (s.regime && s.regime !== 'auto') g.command('set', { key: 'regime', value: s.regime });
@@ -208,7 +211,8 @@ function play(sim, { seed, years = 150, nations = 6, strategy = null, rankYear =
   // 1. 判断を求められた回数: 決めること (要求・語り手の出来事)・プレイヤーの国への講和の申し入れ・プレイヤーの国が入る講和会議
   let asks = 0;
   const origAdd = g.addDecision.bind(g);
-  g.addDecision = (dec) => { asks++; return origAdd(dec); };
+  const stories = {}; // 語り手の出来事の種類ごとの回数 (F19)
+  g.addDecision = (dec) => { asks++; if (dec.kind === 'story') stories[dec.type] = (stories[dec.type] || 0) + 1; return origAdd(dec); };
   const origConf = g.startConference.bind(g);
   g.startConference = (loser, winners, from) => { const n = g.conferences.length; const r = origConf(loser, winners, from); if (g.conferences.length > n && g.conferences[g.conferences.length - 1].bids.some((b) => b.realm === cap && !b.picks)) asks++; return r; };
   // 会議の知らせが光速で首都に届いてから開く会議 (B-030。届く途中は confSent。前の版にはない)
@@ -223,6 +227,10 @@ function play(sim, { seed, years = 150, nations = 6, strategy = null, rankYear =
   // 5. 逆転: rankYear 年目と終わりの年で、国の順位 (星系の数) の 1 位が変わったか
   const leader = () => { let best = null; for (const n of g.nations || []) { const k = g.realmSystems(n.cap).length; if (!best || k > best.k) best = { cap: n.cap, k }; } return best?.cap ?? null; };
   let midLeader = null;
+  // F16: 最初の 20 年の、自分の国の星系の出来事と判断を求められた回数。F18: 挑戦 (星系の数の最大・首都からいちばん遠い星系)。お金の推移 (B-069)
+  let early = 0, maxSystems = 0, maxDist = 0;
+  const creditsAt = {};
+  const home = g.system(cap);
   const t0 = Date.now();
   for (let y = 1; y <= years; y++) {
     const a0 = asks;
@@ -234,6 +242,10 @@ function play(sim, { seed, years = 150, nations = 6, strategy = null, rankYear =
     const busy = asks > a0 || evs.some((e) => e.sys === cap || ours.has(e.sys));
     if (busy) run = 0; else { quietYears++; run++; longestQuiet = Math.max(longestQuiet, run); }
     if (y === rankYear) midLeader = leader();
+    if (y <= 20) early += asks - a0 + evs.filter((e) => e.sys === cap || ours.has(e.sys)).length;
+    maxSystems = Math.max(maxSystems, ours.size);
+    for (const id of ours) maxDist = Math.max(maxDist, sim.distance(g.system(id), home));
+    if (y % 50 === 0) creditsAt[y] = Math.round(g.gov(cap).credits);
   }
   const systems = g.realmSystems(cap).length;
   const score = systems ? g.asRealm(cap, () => g.score().total) : 0;
@@ -241,6 +253,9 @@ function play(sim, { seed, years = 150, nations = 6, strategy = null, rankYear =
     seed: String(seed), score, systems, pop: g.realmPop(cap), credits: g.gov(cap).credits, alive: systems > 0 ? 1 : 0, indep: g.asRealm(cap, () => g.stats?.indepFromEarth || 0),
     asksPer100: (asks / years) * 100, quietShare: quietYears / years, longestQuiet,
     reversal: midLeader === null ? null : midLeader !== leader() ? 1 : 0, ms: Date.now() - t0, hash: sim.hash(g),
+    early10: years >= 20 ? early / 2 : null, stories, storyMax: Math.max(0, ...Object.values(stories)), maxSystems, maxDist, creditsAt,
+    // 挑戦 (CHALLENGES): 60 星系・遠征は一度でも届いたか、独立を許さない・統一は終わりの年の様子
+    challenges: { sixty: maxSystems >= 60 ? 1 : 0, far: maxDist > 40 ? 1 : 0, loyal: (g.asRealm(cap, () => g.stats?.indepFromEarth || 0)) === 0 ? 1 : 0, unify: g.asRealm(cap, () => g.independentRealms()) === 0 ? 1 : 0 },
   };
 }
 

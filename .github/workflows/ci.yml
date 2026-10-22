@@ -42,7 +42,7 @@ jobs:
           node tools/ci-report.js base-src.html head-src.html 8 150 6 > ci-report.md
       - name: 面白さの代わりの数と必勝法を探す AI (main と比べる)
         if: always()
-        run: node tools/fun-report.js base-src.html head-src.html 8 150 6 12 4 > fun-report.md
+        run: FUN_GATE_OUT=fun-gate.txt node tools/fun-report.js base-src.html head-src.html 8 150 6 12 4 > fun-report.md
       - name: 表を出す
         if: always()
         run: |
@@ -65,3 +65,15 @@ jobs:
       - name: 落ちた試験があれば失敗にする
         if: steps.tests.outcome == 'failure'
         run: exit 1
+      # 面白さの代わりの数が止める線を越えたら、PR の本文に理由がない限り失敗にする (docs/parallel.md の 4 の 3。本文は回し直したときにも読み直す)
+      - name: 面白さの数の止める線
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const crossed = fs.existsSync('fun-gate.txt') ? fs.readFileSync('fun-gate.txt', 'utf8').trim() : '';
+            if (!crossed) return;
+            const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: context.issue.number });
+            if (/面白さの数が悪くなった理由\s*[:：]\s*\S/.test(pr.body || '')) { core.notice(`止める線を越えたが、PR の本文に理由がある:\n${crossed}`); return; }
+            core.setFailed(`面白さの代わりの数が止める線を越えた。PR の本文に「面白さの数が悪くなった理由: …」を書いて、このジョブを回し直す:\n${crossed}`);
