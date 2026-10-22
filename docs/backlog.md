@@ -91,8 +91,8 @@
 |---|---|---|---|---|---|---|
 | B-065 | プレイ記録から F01〜F05 と、待つだけの時間・判断の数を人の遊びで測る道具 | `PlayLog`・`tools/fun-report.js` | B-060 | S | 道具と検証 | `sessions.md` の 5・`fun.md` の 5 (#117) |
 | B-066 | つり合いの本番: 6 つ以上の戦略 × 30 以上の銀河で F06 を判定する。必勝法が見つかったら直し方を台帳に載せて選んでもらう | `tools/strategy.js`・`tools/search.js`・`tools/fun-report.js`・`EDITIONS` | B-067・B-068 | M | 道具と検証 | `sessions.md` の 15・`game-plan.md` の段 12・`fun.md` の 5 |
-| B-067 | **済み (回 DO1)**。探索で変えられる値に、入植・交易・統治体制の選び方を足す (`fun.md` の 6.3) | `tools/strategy.js`・`tools/search.js` | — | M | 道具と検証 | `fun.md` の 5 (#117) |
-| B-068 | **済み (回 DO1)**。人間に近い遅れつきのボット (いまのボットは光の遅れなしで判断する)。拡張の一強は、いまの main では遅れなし・遅れつきのどちらでも出ない (`fun.md` の 6.2) | `tools/strategy.js`・`tools/bots.js`・`earthWarYearly` | — | M | 道具と検証 | `critique/04-plan.md` の 7 の G3・6 の Q5・5 |
+| B-067 | **済み (#187)**。探索で変えられる値に、入植・交易・統治体制の選び方を足す (`fun.md` の 6.3) | `tools/strategy.js`・`tools/search.js` | — | M | 道具と検証 | `fun.md` の 5 (#117) |
+| B-068 | **済み (#187)**。人間に近い遅れつきのボット (いまのボットは光の遅れなしで判断する)。拡張の一強は、いまの main では遅れなし・遅れつきのどちらでも出ない (`fun.md` の 6.2) | `tools/strategy.js`・`tools/bots.js`・`earthWarYearly` | — | M | 道具と検証 | `critique/04-plan.md` の 7 の G3・6 の Q5・5 |
 | B-069 | 自動対戦で見つかった壊れを直す: 挑戦「60 星系」「遠征」が届かない・拡張の一強・何もしないとお金が山になる。構造転換 (#152) のあとの版で測り直してから | `CHALLENGES`・`challengesYearly`・`colonize`・`score` | Q4・Q5・B-068 | M | 道具と検証 | `critique/04-plan.md` の 0-8・2.3 の 10〜12・2.1 の注意 |
 | B-070 | 従属国の型のティアリスト: 自動対戦で「全部を直轄にするのが最善」や「維持費のかからない家臣の量産」にならず、どの型もどこかの距離で最善になるかを確かめる | `tools/vassal-export.js` (`--force`)・`REGIMES`・`tools/strategy.js` | B-067 | M | 道具と検証 | `critique/04-plan.md` の 3-6・3 の 4 |
 | B-071 | 面白さの物差しを F 系の目標にする (最初の入植船まで・2 時間の継続・最初の 20 年の出来事・1 時間の重大な知らせ・戦略ごとの 1 位・挑戦の達成率・出来事の繰り返し・説明の段の数)。CI の表で大きく悪くなる PR を止める線を決める | `targets/targets.json`・`tools/check-targets.js`・`tools/fun-report.js`・`tools/ci-report.js` | Q1 | S | 道具と検証 | `critique/04-plan.md` の 5・3-2・0-7 |
