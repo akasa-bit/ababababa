@@ -50,7 +50,7 @@ function onPanelClick(e) {
   if (act === 'deselect') return app.deselect();
   if (act === 'fly') { const s = g.system(sys); if (s) { app.selectSystem(sys); app.setView('galaxy'); galaxyView.centerOn(s); } return; }
   if (act === 'ack' || act === 'ackall') {
-    const ids = act === 'ack' ? [Number(btn.dataset.id)] : g.knownEvents().filter((e) => evTier(e.kind) >= 3).map((e) => e.id);
+    const ids = act === 'ack' ? btn.dataset.id.split(',').map(Number) : g.knownEvents().filter((e) => evTier(e.kind) >= 3).map((e) => e.id); // ack は束ねた続報ごと
     issue('set', { key: 'acked', value: ids });
     setHtml($('rail'), railHtml(g));
     return;
