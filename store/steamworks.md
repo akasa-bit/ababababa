@@ -87,7 +87,7 @@
 
 - アプリの管理の「Application」→「Steam Input」→「Steam Input Template」で、キーボードとマウスの決まった型から選べる。
 - 自分で作った公式の設定は、「Custom Configuration (Bundled with Game)」として、設定のファイル (Action Manifest の VDF) をゲームに入れて配るのが、いまのおすすめ。
-- 割り当ての案は `desktop/controller.md` の 2 の案 A。
+- 割り当ての案は `desktop/controller.md` の 2 の案 A。**設定のファイルは回 SO2 で作った** (`desktop/steam-input/`。包装のフォルダの `resources/game/steam-input/action_manifest.vdf`)。出す前に Deck の実機で読み込んで確かめる (`desktop/steam-input/README.md` の 2・3)。
 
 ## 8. Electron とオーバーレイ
 
