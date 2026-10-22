@@ -66,6 +66,43 @@
       }
     }
   }
+  // 最初の時代の「作戦の手引き」(B-043。QD-07 = b): 別のチュートリアルの画面は作らず、時代の課題に向けて手を 1 つずつ導く。
+  // 状態を読むだけで、試合は変えない (画面からだけ呼ぶ)。地球が知っていることから作る
+  guideSteps() {
+    if ((this.era?.n ?? 0) > 0 || this.spectate) return null;
+    const cap = this.cap;
+    const own = this.knownOwnSystems().filter((s) => s.id !== cap);
+    const sent = own.length > 0 || this.ships.some((s) => s.body !== undefined && this.realmOf(s.from) === cap) || this.knownProjects().some((j) => j.type === 'ship');
+    const routed = this.routes.some((r) => r.a === cap || r.b === cap) || this.requests.some((q) => q.state === 'sending' && /^route/.test(q.act));
+    const answered = this.decisions.some((d) => d.state === 'sent' || (d.state === 'done' && !d.void));
+    const pick = sent ? null : this.guidePick();
+    const col = own[0];
+    const dec = this.visibleDecisions()[0];
+    const went = this.ships.find((s) => s.body !== undefined && this.realmOf(s.from) === cap) || this.knownProjects().find((j) => j.type === 'ship');
+    const steps = [
+      { done: sent, label: pick ? `${distance(this.system(cap), this.system(pick.sys)).toFixed(1)} 光年の${pick.name}に入植船を送る` : went ? `${this.target(went.to, went.body).name}へ入植船を送った` : '候補地のタブから、入植船を送る', pick },
+      { done: routed, label: col ? `${col.name}と${this.system(cap).name}を交易路で結ぶ (星系の欄の「交易路」から)` : `入植船が着いたら、${this.system(cap).name}と交易路で結ぶ`, sys: col?.id },
+      { done: answered, label: dec ? `届いた要求に返事をする (${this.system(dec.sys).name}。知らせの帯で答えを選ぶ)` : '星系から要求が届いたら、返事をする', sys: dec?.sys },
+    ];
+    if (steps.every((x) => x.done)) return null;
+    return { steps, now: steps.findIndex((x) => !x.done), tasks: this.era?.tasks ?? this.eraTasks(0) };
+  }
+  // 手引きの最初の行き先: 候補地のおすすめ順 (candRec) のいちばん上 (首都と同じ星系と、送れない天体は除く)
+  guidePick() {
+    const from = this.system(this.cap);
+    let best = null;
+    for (const sys of this.galaxy.systems) {
+      if (sys.id === from.id) continue;
+      for (const b of sys.bodies) {
+        if (!b.inHZ || b.type === 'belt' || this.knownColonyAt(sys.id, b.id, 'planet') || this.knownColonyAt(sys.id, b.id, 'station')) continue;
+        const grade = b.settle?.grade || 0, kind = grade >= 1 ? 'planet' : 'station';
+        if (!this.check(sys.id, b.id, kind).ok) continue;
+        const r = candRec(grade, distance(from, sys));
+        if (!best || r > best.r) best = { r, sys: sys.id, body: b.id, kind, name: b.name };
+      }
+    }
+    return best;
+  }
   independentRealms() { return this.colonizedSystems().filter((x) => x.id !== this.cap && this.realmOf(x.id) === x.id && this.gov(x.id).independent).length; }
   challengesYearly() {
     const sol = this.system(this.cap);
