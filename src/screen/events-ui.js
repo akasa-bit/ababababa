@@ -191,6 +191,7 @@ function eventsHtml(app) {
     <p class="note">遠い星系の出来事は、光が${ME.home}に届いてから表示される (年は起きた年)。</p>
     ${decisionsHtml(g)}
     <h3>いま起きている問題 (把握分 ${now.length + kwars.length + risks.length})</h3>${nowHtml}
+    <h3>${ico('inspect')}総督の手紙 (委任した星系の 10 年ごとの報告)</h3>${govReportsHtml(g)}
     <h3>履歴</h3>
     <div class="chips"><span class="muted">表示する段</span>${tiers}<span class="muted">表示</span><button data-act="evmode" data-m="list" class="${EvPrefs.mode === 'list' ? 'on' : ''}">一覧</button><button data-act="evmode" data-m="year" class="${EvPrefs.mode === 'year' ? 'on' : ''}">年ごと</button></div>
     <details class="evkinds"><summary class="muted">種類ごとに選ぶ</summary><div class="bulk">${kindBoxes}</div></details>
