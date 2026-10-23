@@ -14,7 +14,7 @@ const { chromium } = require('playwright');
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', (e) => errs.push(e.message + ' ' + (e.stack || '').split('\n')[1]));
   await p.goto(`file://${HTML}?seed=11`); await p.waitForFunction(() => window.__app && __app.game && Store.ready); await p.waitForTimeout(500);
   await p.evaluate(() => { if ($('home').hidden) openHome(); });
-  await p.click('[data-home="tab"][data-t="nations"]');
+  await p.evaluate(() => { app.homeTab = 'nations'; renderHome(); });
   const mk = async (sp, suf, traits, env, dist) => {
     await p.click('[data-home="natnew"]');
     await p.fill('#ne-species', sp); await p.press('#ne-species', 'Tab'); await p.waitForTimeout(150);
@@ -34,7 +34,7 @@ const { chromium } = require('playwright');
   await p.fill('#home-seed', '9'); await p.selectOption('#home-nat', '5');
   for (const el of await p.$$('#home .home-lib')) await el.check();
   await p.screenshot({ path: `shots/lib-newgame-${tag}.png` });
-  await p.click('[data-home="new"]'); await p.click('[data-home="new"]'); await p.waitForTimeout(500);
+  await p.click('[data-home="new"]'); await p.waitForTimeout(500);
   await p.screenshot({ path: `shots/lib-pick-${tag}.png` });
   const r = await p.evaluate(() => { const g = __app.game; return g.nations.map((n) => { const b = g.target(n.cap, n.body); return `${n.name}[${n.traits.join('+')}] ${b.surface} ${g.sysDist(0, n.cap).toFixed(0)}ly`; }).concat(['humans:' + __app.picking.humans.map((c) => g.nationOf(c).name).join(',')]); });
   await p.click('#pick [data-pick="go"]'); await p.waitForTimeout(300);

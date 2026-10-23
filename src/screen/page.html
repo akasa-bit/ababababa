@@ -59,14 +59,16 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 .kpi b { display:block; font-size:18px; color:var(--fg); } .kpi span { font-size:var(--fs1); color:var(--muted); }
 .age { font-size:var(--fs1); color:var(--muted); border:1px solid var(--line); border-radius:3px; padding:0 4px; margin-left:4px; white-space:nowrap; }
 .age.now { color:var(--accent); }
-#home { position:fixed; inset:0; z-index:20; background:rgba(5,7,13,.94); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
+#home { position:fixed; inset:0; z-index:20; background:var(--bg); overflow:auto; padding:40px max(16px, 4vw); }
 #home[hidden] { display:none; }
-#pick { position:fixed; z-index:15; left:12px; top:var(--pick-top,140px); width:min(380px,calc(100% - 24px)); max-height:calc(100% - 88px); overflow:auto; background:rgba(10,14,24,.93); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+#pick { position:fixed; z-index:20; inset:0; overflow:auto; background:var(--bg); padding:40px max(16px, 4vw) 0; }
+#pick > * { max-width:1100px; margin-left:auto; margin-right:auto; }
+#pick .nats { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px; }
 #pick[hidden] { display:none; }
 #pick .nb { display:flex; gap:6px; margin-top:6px; }
 #pick .nb button { margin:0; min-height:36px; padding:2px 12px; font-size:12px; }
 #pick .hm.on { outline:2px solid var(--accent); outline-offset:1px; }
-#pick .go button + button { margin-top:6px; }
+
 #pick .ed { margin-top:8px; border-top:1px solid var(--line); padding-top:6px; cursor:default; }
 #pick .ed label { display:block; margin:4px 0; }
 #pick .ed input[type=text], #pick .ed input:not([type]) { width:100%; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:4px 6px; }
@@ -94,14 +96,14 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #curtain h2 { font-size:24px; margin-bottom:8px; }
 #curtain .big { width:100%; min-height:48px; margin-top:14px; font-size:17px; }
 #turnbtn small { font-size:var(--fs1); opacity:.8; margin-left:4px; }
-#pick h2 { font-size:18px; margin:0 0 4px; }
-#pick .nat { border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-top:8px; cursor:pointer; font-size:13px; }
+
+#pick .nat { border:1px solid var(--line); border-radius:8px; padding:12px 14px; cursor:pointer; font-size:var(--fs2); }
 #pick .nat.on { border-color:var(--accent); background:rgba(120,170,255,.08); }
 #pick .nat b.nm { font-size:15px; }
 #pick .nat .tr { display:inline-block; border:1px solid var(--line); border-radius:4px; padding:0 5px; margin:2px 3px 0 0; font-size:12px; }
-#pick .go { position:sticky; bottom:-12px; background:rgba(10,14,24,.97); padding:8px 0 4px; margin-top:8px; }
-#pick .go button { width:100%; min-height:44px; font-size:16px; }
-@media (max-width: 900px) and (orientation: portrait) { #pick { top:auto; bottom:8px; max-height:48%; } }
+#pick .go { position:sticky; bottom:0; background:var(--bg); padding:12px 0 16px; margin-top:16px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+#pick .go button { min-width:min(320px, 100%); min-height:52px; font-size:var(--fs3); }
+
 #memobox { position:fixed; top:58px; right:12px; z-index:15; width:min(360px, calc(100vw - 24px)); background:var(--panel); border:1px solid var(--own); border-radius:8px; padding:10px 12px; box-shadow:0 6px 24px rgba(0,0,0,.5); }
 #memobox[hidden] { display:none; }
 #memobox .tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
@@ -109,7 +111,16 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #memobox textarea { width:100%; box-sizing:border-box; background:#0b1120; color:inherit; border:1px solid var(--line); border-radius:5px; padding:6px; font:inherit; }
 #memobox .row { display:flex; gap:8px; margin-top:6px; }
 #home .log td, #home .log th { padding:2px 6px; font-size:12px; text-align:left; }
-#home .card { width:min(660px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:22px 24px 26px; }
+#home.menu { padding:0; }
+#home .hmenu { min-height:100%; padding:12vh max(24px, 8vw) 40px; display:flex; flex-direction:column; gap:8px; background:linear-gradient(90deg, rgba(11,12,13,.92), rgba(11,12,13,.55) 60%, rgba(11,12,13,.2)), url("assets/space-galaxy.jpg") center / cover; }
+#home .hmenu h1 { margin:0; font-size:clamp(32px, 6vw, 64px); } #home .hmenu .tag { margin:0 0 4vh; color:var(--muted); font-size:var(--fs3); }
+#home .hmenu .items { display:flex; flex-direction:column; gap:10px; width:min(360px, 100%); }
+#home .hmenu .items button { margin:0; min-height:56px; font-size:var(--fs4); text-align:left; padding:10px 24px; }
+#home .hmenu .items .resume small { display:block; font-size:var(--fs1); opacity:.85; }
+#home .hpage, #pick > .phead { max-width:1100px; margin:0 auto; }
+#home .phead, #pick .phead { display:flex; gap:16px; align-items:center; margin-bottom:16px; } #home .phead h2, #pick .phead h2 { margin:0; font-size:var(--fs4); } #home .phead button, #pick .phead button { margin:0; min-height:44px; }
+#home .hgo { position:sticky; bottom:-40px; background:var(--bg); padding:16px 0 24px; margin-top:16px; display:flex; gap:12px; align-items:center; justify-content:flex-end; flex-wrap:wrap; border-top:1px solid var(--line); }
+#home .hgo .big { min-width:min(320px, 100%); min-height:52px; font-size:var(--fs3); }
 #home h1 { font-size:34px; margin-bottom:2px; }
 #home section { margin-top:14px; }
 #home .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 0; border-bottom:1px solid var(--line); }
@@ -118,14 +129,7 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #home .row button.ghost { margin-top:0; }
 #home .big { font-size:16px; padding:10px 22px; border-color:var(--accent); color:var(--accent); }
 /* ホームの表紙: 天の川の写真の上に名前と「はじめる」1 つ (B-045)。細かい設定は下の「詳しい設定」に畳む */
-#home .cover { margin:-22px -24px 16px; padding:56px 24px 20px; border-radius:10px 10px 0 0; border-bottom:1px solid var(--line); background:linear-gradient(rgba(11,12,13,.2), rgba(11,12,13,.88) 75%), url("assets/space-galaxy.jpg") center 40% / cover; display:flex; flex-direction:column; gap:8px; }
-#home .cover h1 { margin:0; } #home .cover p { margin:0; }
-#home .cover .go { display:flex; gap:8px; flex-wrap:wrap; align-items:stretch; margin-top:16px; }
-#home .cover .go .big { font-size:var(--fs4); padding:12px 48px; min-height:56px; }
-#home .cover .go button small { max-width:24em; }
-#home .cover .hint { color:var(--muted); font-size:var(--fs1); }
 #home details.sec { margin-top:8px; } #home details.sec > summary { font-size:var(--fs2); min-height:44px; }
-#home .htabs { display:flex; gap:6px; margin:10px 0 4px; } #home .htabs button { flex:1; min-height:44px; font-size:15px; } #home .htabs button.on { outline:2px solid var(--accent); }
 #home .natc { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px 0; border-bottom:1px solid var(--line); }
 #home .natc .info { flex:1; min-width:220px; font-size:14px; } #home .natc .nm { font-size:17px; } #home .natc .btns { display:flex; gap:6px; } #home .natc .btns button { white-space:nowrap; min-width:64px; margin:0; }
 #home .tr { display:inline-block; border:1px solid var(--line); border-radius:4px; padding:0 6px; margin:3px 4px 0 0; font-size:13px; }
@@ -450,7 +454,7 @@ nav button.hot { box-shadow:inset 0 0 0 2px var(--warn); }
 .tag.shortage, .tag.demand, .tag.politics { color:var(--warn); }
 .tag.natives, .tag.colony, .tag.migration, .tag.trade, .tag.story { color:var(--info); }
 .tag.goal { color:var(--good); }
-#home { background:color-mix(in srgb, var(--bg) 94%, transparent); }
+#home, #pick { background:var(--bg); }
 /* 掠れ: 見出しと数字だけ (動くものには掛けない) */
 h1, #empire h2, h3, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url(#worn); }
 </style>

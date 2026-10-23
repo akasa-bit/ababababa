@@ -47,18 +47,24 @@ function closeHome(speed) {
   updateTurnBtn();
   app.dirty = true;
 }
-$('homebtn').onclick = () => { setMenu(false); if (Net.on) return Net.render(); openHome(); }; // メニューを閉じてから (開いたままだと出典の文がホーム画面のボタンに重なる)
+$('homebtn').onclick = () => { setMenu(false); if (Net.on) return Net.render(); app.homeTab = 'menu'; openHome(); }; // メニューを閉じてから (開いたままだと出典の文がホーム画面のボタンに重なる)
+// シングルプレイの設定の欄を読む (描き直す前に読んでおく)
+function readHomeForm() {
+  if (!$('home-seed')) return;
+  app.homeSeed = $('home-seed').value.trim();
+  app.homeSpectate = !!$('home-spectate')?.checked;
+  app.homeEnd = Number($('home-end').value);
+  app.homeProd = $('home-prod').value; app.homeProdK = Number($('home-prodk').value);
+  app.homeNat = Number($('home-nat').value); app.homeHc = $('home-hc').value; if ($('home-pv')) app.homePv = $('home-pv').value;
+  app.homeLib = [...document.querySelectorAll('#home .home-lib')].filter((x) => x.checked).map((x) => x.value);
+  app.homeCh = [...document.querySelectorAll('#home .home-ch')].filter((x) => x.checked).map((x) => x.value);
+}
 $('home').onclick = (e) => {
   const b = e.target.closest('button[data-home]');
   if (!b) return;
   const act = b.dataset.home;
   const i = Number(b.dataset.i);
-  app.homeSeed = $('home-seed')?.value.trim() || '';
-  app.homeSpectate = !!$('home-spectate')?.checked;
-  if ($('home-end')) app.homeEnd = Number($('home-end').value);
-  if ($('home-prod')) { app.homeProd = $('home-prod').value; app.homeProdK = Number($('home-prodk').value); }
-  if ($('home-nat')) { app.homeNat = Number($('home-nat').value); app.homeHc = $('home-hc').value; if ($('home-pv')) app.homePv = $('home-pv').value; app.homeLib = [...document.querySelectorAll('#home .home-lib')].filter((x) => x.checked).map((x) => x.value); }
-  if ($('home-end')) app.homeCh = [...document.querySelectorAll('#home .home-ch')].filter((x) => x.checked).map((x) => x.value);
+  readHomeForm();
   app.homeNote = '';
   // 取り返しのつかない操作は2回押して確定する (confirm() は使えない環境がある)
   const confirm2 = (k) => { if (app.homeArmed === k) { app.homeArmed = null; return true; } app.homeArmed = k; renderHome(); return false; };
@@ -85,14 +91,14 @@ $('home').onclick = (e) => {
     return;
   }
   if (act === 'resume') return closeHome();
-  if (act === 'tab') { readNatForm(); app.homeTab = b.dataset.t; Cloud.status = ''; return renderHome(); }
+  if (act === 'tab') { readNatForm(); app.homeTab = b.dataset.t; if (b.dataset.from) app.homeFrom = b.dataset.from; Cloud.status = ''; app.homeArmed = null; renderHome(); $('home').scrollTop = 0; return; }
   if (act.startsWith('acct')) return accountAction(act, b.dataset.id);
   if (act.startsWith('nat')) return natAction(act, b.dataset.id);
   if (act === 'nethost') { closeHome(0); setSpeed(0); return Net.openHost(); }
   if (act === 'netjoin') { closeHome(0); setSpeed(0); Net.role = null; return Net.render(); }
-  // 「はじめる」は、いまのゲームが進んでいるときだけ 2 回押して確定する (開いたばかりなら 1 回で始まる)。「この設定ではじめる」はいつも 2 回
-  if (act === 'new' || act === 'start') {
-    if (act === 'new' ? !confirm2('new') : homeGoing() && !confirm2('start')) return;
+  // シングルプレイの設定を決めたら地図を作る。いまのゲームが進んでいるときだけ 2 回押して確定する (B-194)
+  if (act === 'new') {
+    if (homeGoing() && !confirm2('new')) return;
     newGame(app.homeSeed || String(Math.floor(Math.random() * 1e6)));
     if (app.homeSpectate) app.game.setSpectate(true);
     app.game.endYear = app.homeEnd === 0 ? null : START_YEAR + (app.homeEnd ?? 500);
@@ -110,7 +116,7 @@ $('home').onclick = (e) => {
     save();
     closeHome(1);
     pauseForFirstMove();
-    if (act === 'start') showConsent(); // はじめて遊ぶ人に、1 回だけ同意の画面 (B-060)
+    showConsent(); // はじめて遊ぶ人に、1 回だけ同意の画面 (B-060)
     return;
   }
   const k = SLOT_KEYS[i];
@@ -139,12 +145,16 @@ $('home').onclick = (e) => {
   app.homeArmed = null;
   renderHome();
 };
-// 畳んだ欄 (詳しい設定・セーブ) を開いたか閉じたかを覚えておく (ホーム画面は描き直すたびに作り直すので)
-$('home').addEventListener('toggle', (e) => {
-  const k = e.target.dataset?.homeMore;
-  if (k === 'settings') app.homeMore = e.target.open;
-  else if (k === 'saves') app.homeSaves = e.target.open;
-}, true);
+// ホーム画面の「説明」を開いたか閉じたかを覚えておく (ホーム画面は描き直すたびに作り直すので)
+$('home').addEventListener('toggle', onToggle, true);
+// 設定の選び方で、倍率の欄と「はじめる」の文字 (国家選択へ進むか) が変わる。描き直さずにその場で変える (選んでいる欄が消えないように)
+$('home').addEventListener('change', (e) => {
+  if (!['home-nat', 'home-prod'].includes(e.target.id) && !e.target.classList.contains('home-lib')) return;
+  readHomeForm();
+  $('home-prodk').disabled = app.homeProd !== 'custom';
+  const go = document.querySelector('#home [data-home="new"]');
+  if (go && app.homeArmed !== 'new') go.textContent = singleGoLabel();
+});
 // 通信の表示 (表示しない / 光の点)。見る人ごとの好みなのでブラウザに覚えておく
 const SIGNAL_MODES = { off: '表示しない', dots: '光の点' };
 try { const m = localStorage.getItem(`${STORE}-signals`); if (SIGNAL_MODES[m]) app.signalMode = m; } catch { /* 保存できない環境では既定値 */ }

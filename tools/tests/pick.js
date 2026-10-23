@@ -17,7 +17,7 @@ const OUT = process.argv[2] || '.';
     await p.waitForTimeout(800);
     await p.evaluate(() => { if ($('home').hidden) openHome(); });
     await p.selectOption('#home-nat', '6'); await p.selectOption('#home-hc', 'hard');
-    await p.click('[data-home="new"]'); await p.click('[data-home="new"]');
+    await p.click('[data-home="new"]');
     await p.waitForTimeout(800);
     await p.screenshot({ path: `${OUT}/pick-${tag}.png` });
     const caps = await p.evaluate(() => __app.game.nations.map((n) => n.cap));
