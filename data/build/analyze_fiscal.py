@@ -24,7 +24,8 @@
   R33〜R35 だけに使う列: cpi (物価の水準)、stir (短期の金利 [%/年]。ゲームは政策金利)
 ゲームの国債の値 (params。src/economy/fiscal-consts.js の DEBT に写す): 財政の反応の式の係数 (国ごとの最小二乗の中央値)・
   景気のずれの範囲 (HP フィルターのずれの 1%〜99% 点)・借りられる上限 (debtgdp の国ごとの中央値の中央値 = R21 の estimate。国ごとの 90% 点の中央値 limit_p90 では、ゲームの R21 が 1.13 と幅を超えた)・
-  手元に置く資金 (Eurostat の一般政府の現金・預金 ÷ 総収入の、国ごとの中央値の中央値。単位は年)
+  手元に置く資金 (Eurostat の一般政府の現金・預金 ÷ 総収入の、国ごとの中央値の中央値。単位は年)。
+  中央銀行・利回り・不履行の値 (CB の tp・credit・dmax・gap。money_params。回 KE1)
 幅の決め方 (ゲームの結果を見る前に決めた): 現実の国ごとの値の 10%〜90% 点。ゲームは、銀河ごと・国ごとの値の中央値がこの幅に入れば合格。
 
 使い方:
@@ -113,7 +114,26 @@ def params(jst):
     return {'a': r(coef['a'].median()), 'rho': r(coef['rho'].median()), 'beta': r(coef['beta'].median()), 'war': r(coef['war'].median()),
             'sd': r(coef['sd'].median()), 'ar': r(coef['ar'].median()), 'gap': [r(np.percentile(gaps, 1)), r(np.percentile(gaps, 99))],
             'limit': r(jst.groupby('country')['debtgdp'].median().median()), 'limit_p90': r(jst.groupby('country')['debtgdp'].quantile(0.9).median()),
-            'cash': r(held.median()), 'cash_p10_p90': [r(held.quantile(0.1)), r(held.quantile(0.9))], 'cash_countries': int(held.size)}
+            'cash': r(held.median()), 'cash_p10_p90': [r(held.quantile(0.1)), r(held.quantile(0.9))], 'cash_countries': int(held.size),
+            **money_params(jst)}
+
+def money_params(jst):
+    """中央銀行・利回り・不履行の値 (src/economy/fiscal-consts.js の CB。回 KE1):
+    tp・credit = 国ごとの (ltrate − stir)/100 = a + b·debtgdp の a と b の中央値、dmax = 国ごとの debtgdp の最大の中央値 (不履行の線)、
+    speed_gap = 実質 GDP の伸び − HP フィルター (λ = 100) の傾向の伸び の 1%〜99% 点 (中央銀行の則の景気のずれの幅)"""
+    r = lambda x: round(float(x), 4)
+    ab = []
+    for c, d in jst.dropna(subset=['ltrate', 'stir', 'debtgdp']).groupby('country'):
+        if len(d) >= 30 and d['debtgdp'].std() > 0:
+            ab.append(np.polyfit(d['debtgdp'], (d['ltrate'] - d['stir']) / 100, 1))
+    ab = np.array(ab)
+    dev = []
+    for c, d in jst.sort_values('year').groupby('country'):
+        y = np.log(d['rgdpbarro'].where(d['rgdpbarro'] > 0).dropna().to_numpy(float))
+        if len(y) >= 30:
+            dev += list(np.diff(y) - np.diff(hp_trend(y)))
+    return {'tp': r(np.median(ab[:, 1])), 'credit': r(np.median(ab[:, 0])), 'dmax': r(jst.groupby('country')['debtgdp'].max().median()),
+            'speed_gap': [r(np.percentile(dev, 1)), r(np.percentile(dev, 99))]}
 
 def summary(name, per, rows):
     return {'name': name, 'countries': int(per.size), 'rows': int(rows),

@@ -45,13 +45,15 @@ const TESTS = [
   ['fiscal', [SHOTS], (o) => {
     try {
       const j = JSON.parse(o.slice(o.indexOf('{'), o.lastIndexOf('}') + 1));
-      const good = (v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1.8,1,0.01' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
+      const good = (v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1.8,1,1,0.05' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
         && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.bad2.every((b) => b === false) && v.ok2 && v.ctax.join() === '0.1,0.05,true,1.935,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length;
       return Object.values(j).every(good) ? '' : '財政の結果が違う';
     } catch { return '出力を読めない'; }
   }],
   ['market', ['3', '80'], (o) => (o.includes('市場 合格') ? '' : '市場の結果が違う')],
   ['debt', ['3', '100'], (o) => (o.includes('国債 合格') ? '' : '国債の結果が違う')],
+  // 全部門の帳簿 (回 KE1・B-001): 国ごとの貸借の表と取引の表が毎刻み閉じる
+  ['ledger', ['7', '150', '6'], (o) => (o.trim().split('\n')[0].includes('全部門の帳簿 合格') ? '' : '全部門の帳簿 不合格')],
   ['rotate', [SHOTS, path.join(ROOT, 'index.html')], (o) => ((o.match(/rotated == fresh redraw: true \[\]/g) || []).length === 2 ? '' : '回したあとの絵が描き直しと違う')],
   // セーブ: 分ける前のゲームのセーブを読んで同じ筋で続く・仕組みごとのセーブの項目 (saveField) の初期値と既定 (回 R3)
   ['save', [], (o, code) => (code === 0 && o.includes('セーブ 合格') ? '' : 'セーブ 不合格')],

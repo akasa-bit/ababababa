@@ -1,4 +1,4 @@
-// 財政 (税・利子率・予算) の試験: 命令と政治力・選べない値の拒否・光速で広がること・税収と利子と予算の記帳・
+// 財政 (税・政策金利・予算) の試験: 命令と政治力・選べない値の拒否・光速で広がること・税収と利子と予算の記帳・
 // 忠誠度と離反の起きやすさと艦隊の戦力への効き目・保存と読み込み・画面 (横と縦)
 // 使い方: node tools/tests/fiscal.js [shots のフォルダ]
 const ROOT = require('path').resolve(__dirname, '../..');
@@ -27,14 +27,14 @@ const { chromium } = require('playwright');
       res.bad = [issue('fiscal', { tax: 0.279, rate: 0.05, welfare: 0.6, security: 0.3, military: 0.2 }).ok, issue('fiscal', { tax: 0.4 }).ok, issue('fiscal', { rate: 0.051 }).ok, issue('fiscal', { tax: 'nope' }).ok];
       res.ok = issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.1, military: 0.1 }).ok; // 前の段階の名前 (重税 = 15.5% × 1.8) も通る
       res.pc = 50 - g.pc; // 税と利子率を変えたので 5
-      res.now = [+g.taxK(0).toFixed(3), +g.taxK(far).toFixed(3), g.rateAt(far)]; // 首都はすぐ、遠い星系はまだ前のまま (1・0.01)
+      res.now = [+g.taxK(0).toFixed(3), +g.taxK(far).toFixed(3), g.fiscalFor(0, far).cb ?? 1, g.cbRateAt(0)]; // 首都はすぐ、遠い星系はまだ前のまま (1・中央銀行に任せたまま)。政策金利を選んだので首都は自分で決める (0.05)
       const L0 = g.loyaltyTerms(far).map((t) => t.label);
       for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25);
       const pc0 = g.pc;
       res.budgetOnly = [issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.2, military: 0.1 }).ok, pc0 - g.pc]; // 予算だけなら政治力は要らない (0)
       const cr0 = g.council;
       for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25);
-      res.later = [+g.taxK(far).toFixed(3), g.rateAt(far)];
+      res.later = [+g.taxK(far).toFixed(3), g.cbRateAt(far)];
       const L1 = g.loyaltyTerms(far);
       res.loyalty = [L0.some((l) => l.startsWith('税 (')), L1.some((t) => t.label === '税 (27.9%)' && Math.abs(t.v + 12) < 1e-6), L1.some((t) => t.label === '福祉の予算' && t.v > 0)]; // 重税 (×1.8) の忠誠度 −15 × 0.8 = −12
       // 幅の中の細かい値 (税率 20%・利子率 −0.75%・赤字の上限 7.5%) も通る。マイナスの利子率も選べる (docs/policy-ranges.md)

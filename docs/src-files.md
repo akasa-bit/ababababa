@@ -54,14 +54,15 @@
 | `economy/market-consts.js` | 経済 | 72 | 市場 (MARKET)・産業構造 (STRUCTURE)・研究 (RESEARCH)・部門 |
 | `core/snap.js` | 共通 (世話役: 道具と検証) | 12 | 星系の記録の JSON |
 | `politics/pc-vassal.js` | 政治 | 104 | 政治力・直轄・委任・総督・従属国の型 (VASSAL の区切り)・統治体制 (REGIMES)・離反の式 (HAZARD)・国家方針 |
-| `economy/fiscal-consts.js` | 経済 | 49 | 税・利子率・予算・関税・AI の財政・国債 (DEBT) |
+| `economy/fiscal-consts.js` | 経済 | 75 | 税・政策金利・予算・関税・AI の財政・国債 (DEBT)・中央銀行と物価と利回り (CB。セーブの項目 cb) |
 | `politics/policy-consts.js` | 政治 | 29 | 国家方針の費用・不満と要求・放置・議会・時代・終わりの年・挑戦 |
 | `politics/story.js` | 政治 | 115 | 語り手の出来事 (STORY) |
 | `politics/diplomacy-consts.js` | 政治 | 25 | 遅れて届く外交の協定 (PACT・PACT_KINDS・セーブの項目 diplo。回 SE2) |
 | `core/game-base.js` | 共通 (世話役: 道具と検証) | 333 | Game: 作り方 (constructor)・国の割り当て・星系と入植地の引き方・家臣の連なり |
 | `ship/war-peace.js` | 船と戦争 | 236 | Game: 戦争の状態・戦争疲弊・戦勝点・講和・講和会議 |
 | `politics/loyalty-regime.js` | 政治 | 468 | Game: 忠誠・統治体制・主権の束・共同統治・任免・不満と要求・独立・直轄・政治力 |
-| `economy/fiscal.js` | 経済 | 162 | Game: 予算・国債・利子・財政の値 |
+| `economy/fiscal.js` | 経済 | 169 | Game: 予算・国債・利子・財政の値 |
+| `economy/central-bank.js` | 経済 | 102 | Game: 中央銀行 (政策金利)・国の物価・長期の利回り・国債の利札と不履行 (回 KE1) |
 | `politics/policy-decisions.js` | 政治 | 125 | Game: 国家方針・直轄・決めること・語り手・議会 |
 | `screen/eras-score.js` | 画面と最初の体験 | 109 | Game: 時代の課題・挑戦・点数・終わり (手引きにする所。QD-07) |
 | `politics/earth-politics.js` | 政治 | 32 | Game: 主人の関与・地球の政治の自動 |
