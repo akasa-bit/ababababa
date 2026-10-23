@@ -38,7 +38,11 @@ npm run package:linux   # → desktop/electron/out/NoLongerUbiquitous-linux-x64/
 
 ## 1-3. ストアの画像を撮る (B-079。回 SO1)
 
-`node desktop/shots/shoot.mjs`。撮るためのセーブを作り、スクリーンショット (1920×1080) とカプセルの案を `desktop/shots/out/` に書く。中身と決まりは `store/images.md` の 2・5。
+`node desktop/shots/shoot.mjs`。撮るためのセーブを作り、スクリーンショット (1920×1080) とカプセルの案を `desktop/shots/out/` に書く。中身と決まりは `store/images.md` の 2・5。回 SO3 から、セーブは人の操作 (指令) で遊んで作る (`desktop/shots/play.mjs`。講和会議と「決めること」の場面ができる)。
+
+## 1-3-2. 予告編を作る (B-080。回 SO3)
+
+`node desktop/trailer/trailer.mjs [--saves desktop/shots/out]`。上と同じ遊んだ筋を 1 コマずつ撮り、ffmpeg で `desktop/trailer/out/trailer-<銀河>.mp4` (43 秒・1920×1080・30 コマ/秒・H.264 + AAC) にする。ffmpeg (libx264 と aac) が要る。中身は `store/images.md` の 3。
 
 ## 1-4. CI で Linux と Windows の包装を確かめる (B-086。回 SO2)
 

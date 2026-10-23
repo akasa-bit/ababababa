@@ -117,7 +117,7 @@
 | B-077 | ストアの文を英語と中国語に | `store/` | B-075・B-076 | S | 外向き | `status/S.md`・`store/steamworks.md` の 10 |
 | B-078 | **済み (#183。回 SO1。`store/page-ja.md` の 8)** ストアの下書きを今のゲームと突き合わせる (物理はゲーム版にも入った・第三次産業と研究が入った・従属国の型が入った) | `store/page-ja.md` | — | S | 外向き | `store/README.md`・`store/page-ja.md` の 7 |
 | B-079 | **済み (#183。回 SO1。`desktop/shots/shoot.mjs`・`store/images.md` の 2・5)** スクリーンショットを撮るためのセーブと、カプセルの案を作る | `store/images.md`・`desktop/` | S の返事 (大きさ・カプセルの絵) | S | 外向き | `status/S.md`・`store/images.md` の 4 |
-| B-080 | 予告編 (30〜60 秒。光の球 → 20 年後に届く → 講和のあとも戦う艦隊 → 答え合わせ) | `store/images.md`・新しい | B-052・B-054 | M | 外向き | `store/images.md` の 3・`critique/04-plan.md` の 4-1 |
+| B-080 | **済み (回 SO3。`desktop/trailer/trailer.mjs`・`store/images.md` の 3。音楽は音の素材が入ってから)** 予告編 (30〜60 秒。光の球 → 20 年後に届く → 講和のあとも戦う艦隊 → 答え合わせ) | `store/images.md`・新しい | B-052・B-054 | M | 外向き | `store/images.md` の 3・`critique/04-plan.md` の 4-1 |
 | B-081 | ストアのページを公開 (近日公開) し、名前と副題の案を 2〜3 作って反応を比べる | `store/` | Steamworks のアカウント (ユーザー)・B-079・Q7・Q10 | S | 外向き | `critique/04-plan.md` の 4-1・4-8・4-9・`store/steamworks.md` の 9 |
 | B-082 | 体験版 = 最初の時代 (2300〜2400 年) を作り、Next Fest に出る。配信者に鍵を配る | `END_CHOICES`・`ERA_YEARS`・`desktop/` | B-054・B-081 | M | 外向き | `critique/04-plan.md` の 4-2・4-5・4-6・`store/steamworks.md` の 3 |
 | B-083 | Steamworks の SDK をつなぐ: 実績・Steam Cloud とスロットのセーブ (案 D)・オーバーレイ (`--in-process-gpu`)・画面のキーボード (案 C)・ワークショップ | `desktop/electron`・新しい | Steamworks のアカウント (ユーザー) | L | 外向き | `status/S.md`・`desktop/README.md` の 4・`desktop/controller.md` の 2・`store/steamworks.md` の 8・10・`critique/04-plan.md` の 4-7 |
