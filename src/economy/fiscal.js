@@ -11,6 +11,7 @@
       for (const [k, x] of parts) this.earn(k, -x * f, p.cap, { hh: p.cap });
       gv.bpaid = (gv.bpaid ?? 1) + (f - (gv.bpaid ?? 1)) * Math.min(1, h);
     }
+    this.ageSpendStep(h); // 年金と医療 (demography.js。回 KE2)
     this.cbStep(h); // 中央銀行・物価・利回り (central-bank.js)
     this.interestStep(h);
     this.debtStep(h);

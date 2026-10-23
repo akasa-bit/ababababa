@@ -64,7 +64,7 @@
       cols: this.coloniesIn(id).map((c) => ({
         key: colKey(c), name: c.name, kind: c.kind, body: c.body, pop: c.pop, cap: this.capOf(c), growth: c.growth || 0,
         sat: c.sat ? { ...c.sat } : null, focus: c.focus, sh: c.sh ? { ...c.sh } : null, inc: c.inc, lv: { ...c.lv }, troops: c.troops, slaveTroops: c.slaveTroops,
-        races: { ...(c.races || {}) }, alerts: { ...(c.alerts || {}) }, industry: c.industry, slaveWork: c.slaveWork,
+        races: { ...(c.races || {}) }, alerts: { ...(c.alerts || {}) }, industry: c.industry, slaveWork: c.slaveWork, ages: c.age ? this.ageShares(c) : null,
       })),
       stock: { ...this.stockOf(id) },
       prod: fl ? { ...fl.prod } : zeroRes(), cons: fl ? { ...fl.cons } : zeroRes(),
