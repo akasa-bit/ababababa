@@ -466,14 +466,33 @@
       const enemies = this.aiEnemiesOf(root); // 開戦の知らせが首都に届いた戦争だけ
       if (enemies.length) this.aiStrike(root, enemies); // 大きく負けていれば光速の一撃 (ship/strike.js)
       const mine = this.realmSystems(root);
-      const strong = mine.filter((x) => (this.garrison[x.id] || 0) >= 3).sort((a, b) => (this.garrison[b.id] || 0) - (this.garrison[a.id] || 0))[0];
+      const strong = mine.filter((x) => (this.garrison[x.id] || 0) >= AI_WAR.minFleet).sort((a, b) => (this.garrison[b.id] || 0) - (this.garrison[a.id] || 0))[0];
       if (strong && enemies.length) {
         const n = this.garrison[strong.id] - 1;
-        // 攻める先は、首都に届いている記録 (光の遅れのぶん古い) で、敵の星系のうち駐留艦隊が少ないもの
         const foes = new Set(enemies);
-        const target = this.galaxy.systems.filter((x) => { const v = this.seenBy(root, x.id); return v && foes.has(v[1]) && !this.isHuman(x.id) && v[2] + this.fortLevel(x.id) < n; }) // 要塞は動かず大きいので、段も見えるものとする
-          .sort((a, b) => distance(a, strong) - distance(b, strong))[0];
-        if (target && distance(target, strong) <= 20) this.aiOrder(root, strong.id, target.id, n);
+        // 1. 救援 (B-168): 首都に届いている記録で、敵の艦隊が攻囲している (いる) 自国の星系
+        let relief = null;
+        for (const x of mine) {
+          if (x.id === strong.id || this.aiOrders.some((o) => o.to === x.id && o.realm === root)) continue;
+          const v = this.seenBy(root, x.id);
+          const foe = v?.[3] ? Object.entries(v[3]).filter(([r]) => foes.has(Number(r))).reduce((k, [, m]) => k + m, 0) : 0;
+          if (foe < 1 || this.battleOdds(n, foe) < AI_WAR.relief) continue;
+          const d = distance(x, strong);
+          if (!relief || d < relief.d) relief = { id: x.id, d };
+        }
+        if (relief) this.aiOrder(root, strong.id, relief.id, n);
+        else {
+          // 2. 攻撃: 首都に届いている記録 (光の遅れのぶん古い) で、range 光年以内の敵の星系の近い順に tries 個まで、勝つ見込みが attack 以上のもの
+          const near = this.galaxy.systems.map((x) => [x, this.seenBy(root, x.id)])
+            .filter(([x, v]) => v && foes.has(v[1]) && !this.isHuman(x.id) && distance(x, strong) <= AI_WAR.range)
+            .sort((a, b) => distance(a[0], strong) - distance(b[0], strong));
+          const target = near.slice(0, AI_WAR.tries).find(([x, v]) => this.battleOdds(n, v[2], 1, 1, this.fortLevel(x.id)) >= AI_WAR.attack)?.[0]; // 要塞は動かず大きいので、段も見えるものとする
+          if (target) this.aiOrder(root, strong.id, target.id, n);
+          else if (near.length) {
+            // 3. 集結: 攻める先はあるが足りないとき、range 光年以内の自国の星系の艦隊 (1 つ残す) を、いちばん多い星系へ集める
+            for (const x of mine) if (x.id !== strong.id && (this.garrison[x.id] || 0) >= 2 && distance(x, strong) <= AI_WAR.range) this.aiOrder(root, x.id, strong.id, this.garrison[x.id] - 1);
+          }
+        }
       }
       for (const e of enemies) {
         const key = this.warKey(root, e);

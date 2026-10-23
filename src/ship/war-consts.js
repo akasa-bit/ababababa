@@ -59,6 +59,12 @@ const STRIKE = { survive: 0.001, retaliate: 0.6, retaliateHit: 1, reach: 40, loy
 // 艦隊戦では、段の数だけ「要塞の区画」が防衛側に加わる: 耐久 hp (艦の hp 倍)、撃ち合いは艦と同じ、退かない、組織力は減らない。
 // 沈んだ区画の数だけ段が下がる (攻め落とされれば 0。建て直しは手動)。艦隊がいなくても要塞があれば、攻める艦隊は先に艦隊戦をする
 const FORT = { max: 10, auto: 1, hp: 3, cost: { credits: 200, metal: 100 }, growth: 1.35, aiGoal: 3 };
+// AI の国の攻め方と守り方 (B-168。回 FU5): いちばん艦隊の多い自国の星系 (minFleet 艦隊以上) から、
+// 1. 救援: 首都に届いた記録で敵に攻囲されている自国の星系があれば、勝つ見込み (battleOdds) が relief 以上なら、まずそこへ全艦隊 (1 つ残す) を送る
+// 2. 攻撃: そうでなければ、range 光年以内の敵の星系 (人間の国は除く) の近い順に tries 個まで見て、首都に見えている駐留と要塞の段に勝つ見込み (battleOdds) が attack 以上のもの
+// 3. 集結: 攻める先はあるが見込みが足りなければ、range 光年以内の自国の星系の艦隊 (1 つ残す) を、いちばん多い星系へ集める (次の年からまとめて攻める)
+// 戦争中の AI の国の多くは星系 1 つ・艦隊 4 ほどの小さな国なので (回 FU5 で数えた)、救援が出るのは大きな国だけ
+const AI_WAR = { relief: 0.5, attack: 0.6, tries: 3, range: 20, minFleet: 3 };
 // 戦死者の数の書き方 (人)
 function fmtDead(n) { return n >= 1e8 ? `${(n / 1e8).toFixed(1)} 億人` : n >= 1e4 ? `${Math.round(n / 1e4)} 万人` : `${Math.round(n)} 人`; } // 出来事の文にも入るので、端末ごとに違う toLocaleString は使わない
 // 艦隊戦の報告の 1 行 (battleReports の 1 つから)

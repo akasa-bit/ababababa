@@ -151,7 +151,7 @@
     for (const o of due) {
       if (!this.isColonized(o.from) || this.realmOf(o.from) !== o.realm || this.realmOf(o.realm) !== o.realm) continue;
       const dest = this.isColonized(o.to) ? this.realmOf(o.to) : null;
-      if (dest === null || !this.atWar(o.realm, dest)) continue;
+      if (dest === null || (dest !== o.realm && !this.atWar(o.realm, dest))) continue; // 自国の星系へは、救援・集結 (B-168)
       const n = Math.min(o.n, (this.garrison[o.from] || 0) - 1);
       if (n >= 1) this.sendFleet(o.from, o.to, n);
     }
