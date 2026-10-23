@@ -4,6 +4,10 @@
 // 3. 知らせ: 撃たれた国はかならず宣戦し (すでに戦争なら何もしない)、撃った国の家臣の忠誠は下がる。知らせは光速で届く
 // 4. セーブに入って戻る
 // 使い方: node tools/tests/strike.js
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ judge: J.passes('光速の一撃') }];
+if (require.main !== module) return;
 const H = require('../headless');
 const sim = H.load({ edition: 'game' });
 const S = sim.tables.STRIKE;

@@ -6,6 +6,10 @@
 // 5. どの選択肢にも観戦の AI の重み (weigh) があり、セーブで予約が残る
 // 6. 星系の政府が決めたこと (gv.did。回 SE4): 期限切れで現地が決めた・総督が方針で要求に答えた、を覚え、光の遅れで地球に届く
 // 使い方: node tools/tests/story.js
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ judge: J.passes('語り手') }];
+if (require.main !== module) return;
 const H = require('../headless');
 const sim = H.load({ edition: 'game' });
 const fails = [];

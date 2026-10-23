@@ -2,6 +2,10 @@
 // 1. 答えの分かっている作り物の記録で、F01〜F05・F20・F21 と待つだけの時間・判断の数を確かめる
 // 2. 公開用の index.html をブラウザで開き、同意して少し遊んだことにして「記録を書き出す」(exportPlayLog) のファイルを取り、道具がその形を読めるかを見る
 //    (画面と最初の体験が記録の形を変えたら、ここで分かる)
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ judge: J.passes('プレイ記録の道具') }];
+if (require.main !== module) return;
 const fs = require('fs');
 const os = require('os');
 const path = require('path');

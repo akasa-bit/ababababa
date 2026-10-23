@@ -6,6 +6,11 @@
 //     どの行も合計が 0 (ほかの国の列 = その国の外へ出た分)。国ごとに、部門の純資産の増加 = 記帳した出入りの合計
 //     (記帳しないで国の帳簿を書き換える所がない)。国の境目が変わった刻み (独立・征服) は比べない
 // 使い方: node tools/tests/ledger.js [シード] [年数] [国の数]   (画面なしの版で回す。HTML=… で版を選ぶ)
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+// 全部門の帳簿 (回 KE1・B-001): 国ごとの貸借の表と取引の表が毎刻み閉じる
+exports.ci = [{ args: ['7', '150', '6'], judge: J.firstLine('全部門の帳簿', '全部門の帳簿 不合格') }];
+if (require.main !== module) return;
 const path = require('path');
 const H = require(path.resolve(__dirname, '..', 'headless'));
 const [seed = '7', years = '150', nations = '6'] = process.argv.slice(2);

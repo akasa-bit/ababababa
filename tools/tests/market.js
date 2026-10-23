@@ -3,6 +3,10 @@
 // 構造転換 (段 5 の 3): 1 人あたりの実質の所得が測れていて保存に残る、サービスの割合と工業品の需要と研究者の数が所得とともに増える、工業品の需要の所得の弾力性が
 // 高い所得で 1 を下回る (こぶ型)、発展段階の名前が所得で変わる。画面なしの版で回す
 // 使い方: node tools/tests/market.js [シード] [年数]
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ args: ['3', '80'], judge: (o) => (o.includes('市場 合格') ? '' : '市場の結果が違う') }];
+if (require.main !== module) return;
 const path = require('path');
 const H = require(path.resolve(__dirname, '..', 'headless'));
 const [seed = '3', years = '80'] = process.argv.slice(2);

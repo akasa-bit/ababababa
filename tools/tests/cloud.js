@@ -2,6 +2,10 @@
 // 確かめること: ゲストでログイン・名前・クラウドのセーブ (保存・一覧・ロード・削除)・国家の保管庫 (送る・足す)・
 // 部屋のコードでのネット対戦 (ホストが部屋を作り、参加者がコードを入れるだけでつながる)・画面 (横と縦)
 // 使い方: node tools/tests/cloud.js [shots のフォルダ]
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ args: (c) => [c.shots], judge: J.byJson((j) => j.sync[0][1] === j.sync[1][1] && j.roomClosed === true && !j.errs.length, 'クラウドの結果が違う') }];
+if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`;
 const SHOTS = process.argv[2] || 'shots';
