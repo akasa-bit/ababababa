@@ -252,6 +252,7 @@
         this.mv(c.sys, r, -got, 'consume');
         if (MARKET.buy && v * h > got && this.stepping) { const un = (this.unmet[c.sys] ??= zeroRes()); un[r] += (v * h - got) / h; } // 必要な量のうち買えなかった分 (高くて控えた分も) は需要 (作る合図) に数える。値段で控えた消費だけを需要と見ると、不足のまま生産を絞って値段が天井に張りつく
         spent += got * this.price(c.sys, r);
+        if (got > 0 && this.stepping) { const b = ((this.basket ??= {})[c.sys] ??= [0, 0]); b[0] += got * this.price(c.sys, r); b[1] += got * basePrice(r); } // 国の物価の指数 (cbStep)
         return v > 0 ? Math.min(1, got / (v * h)) : 1; // 充足率は必要な量に対して
       };
       const food = use('food', c.pop);
