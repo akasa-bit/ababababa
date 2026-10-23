@@ -482,13 +482,13 @@
         }
         if (relief) this.aiOrder(root, strong.id, relief.id, n);
         else {
-          // 2. 攻撃: 首都に届いている記録 (光の遅れのぶん古い) で、range 光年以内の敵の星系の近い順に tries 個まで、駐留 + 要塞の段より多く送れるか (前からの形)、勝つ見込みが attack 以上のもの
+          // 2. 攻撃: 首都に届いている記録 (光の遅れのぶん古い) で、range 光年以内の敵の星系の近い順に、駐留 + 要塞の段より多く送れるか (前からの形)、近い tries 個のうち勝つ見込みが attack 以上のもの
           const near = this.galaxy.systems.map((x) => [x, this.seenBy(root, x.id)])
             .filter(([x, v]) => v && foes.has(v[1]) && !this.isHuman(x.id) && distance(x, strong) <= AI_WAR.range)
             .sort((a, b) => distance(a[0], strong) - distance(b[0], strong));
-          const target = near.slice(0, AI_WAR.tries).find(([x, v]) => v[2] + this.fortLevel(x.id) < n || this.battleOdds(n, v[2], 1, 1, this.fortLevel(x.id)) >= AI_WAR.attack)?.[0]; // 要塞は動かず大きいので、段も見えるものとする
+          const target = near.find(([x, v], i) => v[2] + this.fortLevel(x.id) < n || (i < AI_WAR.tries && this.battleOdds(n, v[2], 1, 1, this.fortLevel(x.id)) >= AI_WAR.attack))?.[0]; // 要塞は動かず大きいので、段も見えるものとする
           if (target) this.aiOrder(root, strong.id, target.id, n);
-          else if (near.length) {
+          else if (near.length && AI_WAR.gather) {
             // 3. 集結: 攻める先はあるが足りないとき、range 光年以内の自国の星系の艦隊 (1 つ残す) を、いちばん多い星系へ集める
             for (const x of mine) if (x.id !== strong.id && (this.garrison[x.id] || 0) >= 2 && distance(x, strong) <= AI_WAR.range) this.aiOrder(root, x.id, strong.id, this.garrison[x.id] - 1);
           }
