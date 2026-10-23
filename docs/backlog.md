@@ -56,7 +56,7 @@
 | B-167 | 光の遅れの残り: 戦争疲弊は損失の知らせが首都に届いてから増える・講和会議の条件は会議を開いた星系に届いた記録で・AI どうしの講和の交渉は申し入れと答えが光速で行き来してから | `exhaust`・`treatyTerms`・`bargain`・`realmsYearly` | B-030 | M | 船と戦争 | 回 FU2 の残り (`status/FU.md`)・`research/game-physics-audit.md` の 2.8 の c・f。**済み (回 FU4)** |
 | B-169 | 光より速い残り (船): 防衛の穴を数えるときに敵の艦隊も「向かっている」に入る (2.8 g)・宇宙の途中や入植していない星系から出る艦隊を首都のレーザーが一瞬で押す (2.8 m) | `incoming`・`pushFleet`・`bookShip` | B-167 | S | 船と戦争 | `research/game-physics-audit.md` の 2.8 の g・m |
 | B-170 | 光より速い残り (経済): 交易と資材の手配・移民が相手のいまの在庫や空きを見る、受け手が出発の時点で減速のエネルギーを払う (2.8 e)・取り消した要求の返金がすぐ (2.8 h)・先住民が接触の前から分かる (2.8 k) | `spareOf`・`procureFrom`・`migrate`・`isSurveyed` | — | M | 経済 | `research/game-physics-audit.md` の 2.8 の e・h・k |
-| B-171 | 光より速い残り (政治と画面): 視察団・医療団が光速で届く (2.8 j。人は光より遅い)・星系の画面の惑星の位置がいまの位相 (2.8 l)・政治の表の相手の戦争疲弊がいまの値 | `inspect`・`SystemView`・`politics-ui.js` | — | S | 政治・画面と最初の体験 | `research/game-physics-audit.md` の 2.8 の j・l・回 FU4 |
+| B-171 | 光より速い残り (政治と画面): 視察団・医療団が光速で届く (2.8 j。人は光より遅い)・星系の画面の惑星の位置がいまの位相 (2.8 l)・政治の表の相手の戦争疲弊がいまの値 | `inspect`・`SystemView`・`politics-ui.js` | — | S | 政治・画面と最初の体験 | `research/game-physics-audit.md` の 2.8 の j・l・回 FU4。**政治の分は済み (#226)。星系の画面の位相は GA へ** |
 | B-168 | 試合の中で艦隊戦が起きるようにする: 守りのある星系も勝つ見込みが十分なら攻める・攻められた国が艦隊を差し向ける・艦隊をまとめてから攻める。試合の中の艦隊戦で R16 を測る | `realmsYearly`・`aiOrder`・`battleOdds`・`tools/wars-headless.js` | B-034 | M | 船と戦争 | 回 FU2 の残り (`status/FU.md`。4 銀河 × 150 年で入植星系の艦隊戦が 0)。**済み (回 FU5)** |
 | B-032 | 試遊で「AI が弱い・強い」と言われたら、難易度の値を見直す | `HANDICAP` | B-063 | S | 船と戦争 | `status/A.md` の次にやること 3・`game-plan.md` の 4 の C11 |
 

@@ -115,7 +115,7 @@
     }
     const target = this.cmdTarget(act, d);
     if (target === undefined || target === null || target === this.cap) return this.exec(act, d);
-    const arrive = this.year + this.lightDelay(target);
+    const arrive = this.year + this.orderYears(act, d, target); // 人を送る指令は船で (politics/policy-decisions.js)
     this.requests.push({ id: this.nextShipId++, kind: 'order', from: this.cap, ...(this.cap !== 0 ? { by: this.cap } : {}), to: target, act, d: { ...d }, label: CMD_LABEL[act] || act, sent: this.year, arrive, state: 'sending' });
     this.message(`${this.system(target).name} へ指令「${CMD_LABEL[act] || act}」を送った (届くまで ${(arrive - this.year).toFixed(1)} 年)`);
     return { ok: true, queued: true };

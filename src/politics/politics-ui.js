@@ -5,8 +5,11 @@ function requestsTable(g) {
   const rows = [...vis].sort((a, b) => a.arrive - b.arrive).slice(0, 40).map((q) => {
     const what = q.kind === 'build' ? `建設資材 (${esc(q.label)})` : q.kind === 'order' ? `指令「${esc(q.label)}」` : q.kind === 'tribute' ? `朝貢 ${fmtAmt(q.amt)} cr` : q.kind === 'grant' ? `資金援助 ${fmtAmt(q.amt)} cr${q.auto ? ' (自動)' : ''}`
       : `${resText(q.res)} ${fmtAmt(q.amt)}${q.shipped ? ` <span class="muted">(発送済み ${fmtAmt(q.shipped)})</span>` : ''}`;
-    const st = q.arrive + (g.spectate ? 0 : g.lightDelay(q.to)) > g.year
-      ? `<span style="color:#c9a2ff">光速で送信中</span> あと ${(q.arrive - g.year).toFixed(1)} 年`
+    const seen = q.arrive + (g.spectate ? 0 : g.lightDelay(q.to)); // 届いたことが地球に見える年
+    const team = q.kind === 'order' && g.orderYears(q.act, q.d, q.to) > g.lightDelay(q.to) + 1e-9; // 人を船で送る指令 (視察団・医療団)
+    const st = q.arrive > g.year
+      ? `<span style="color:#c9a2ff">${team ? '船で移動中' : '光速で送信中'}</span> あと ${(q.arrive - g.year).toFixed(1)} 年`
+      : seen > g.year ? `届いた (${ME.home}に知らせが来るまで あと ${(seen - g.year).toFixed(1)} 年)`
       : '<span class="hz">送り手で処理中</span> (交易路の空きを待って発送)';
     return `<tr><td>${name(q.from)} → ${name(q.to)}</td><td>${what}</td><td>${st}</td></tr>`;
   }).join('');
@@ -46,7 +49,7 @@ function politicsSheet(app) {
     const others = g.knownEnemiesOf(root).filter((e) => e !== 0);
     return `<tr><td><span class="dot" style="background:${realmColor(root)}"></span>${goto(g.system(root))}</td><td>${n} 星系</td>
       <td>${war ? `<b class="bad">${ME.realm}と交戦中</b> (${(g.warStart(g.warKey(g.cap, root)) ?? g.year).toFixed(0)}年から)` : `${ME.realm}とは平和`}${others.length ? `<br><span class="bad">${others.map((e) => esc(g.realmName(e))).join('・')}と交戦中</span>` : ''}</td>
-      <td>${war ? `戦勝点 <b class="${g.warScore(g.cap, root) < 0 ? 'bad' : 'hz'}">${g.warScore(g.cap, root)}</b><br><span class="muted">相手の戦争疲弊 ${Math.round(g.exhaustion[root] || 0)}</span>` : '—'}</td>
+      <td>${war ? `戦勝点 <b class="${g.warScore(g.cap, root) < 0 ? 'bad' : 'hz'}">${g.warScore(g.cap, root)}</b><br><span class="muted">相手の戦争疲弊 ${Math.round(g.known(root)?.exh || 0)} (${(g.dataAge(root) ?? g.lightDelay(root)).toFixed(0)} 年前)</span>` : '—'}</td>
       <td>${war ? `${(() => { const o = g.peaceOffers.find((x) => x.from === root && x.to === g.cap); return o ? `<button data-act="acceptpeace" data-key="${g.warKey(g.cap, root)}">${ico('peace')}${o.surrender ? '降伏する<small>相手が降伏を求めている (持ち点 100 で相手が条件を選ぶ)</small>' : '講和に応じる<small>相手からの申し入れ</small>'}</button>` : ''; })()}<button data-act="peace" data-sys="${root}">${ico('peace')}講和を申し入れる<small>指令: 届くまで ${g.lightDelay(root).toFixed(1)} 年</small></button>` : `<button data-act="declarewar" data-sys="${root}">${ico('war')}宣戦する</button>`}</td></tr>`;
   }).join('');
   const myEx = Math.round(g.exhaustion[g.cap] || 0);
@@ -55,11 +58,13 @@ function politicsSheet(app) {
   const battles = g.knownSystems().map((x) => ({ x, bt: g.known(x.id)?.battle })).filter((v) => v.bt).map(({ x, bt }) => `<tr><td>${goto(x)}</td>
     <td><span class="dot" style="background:${realmColor(bt.realm)}"></span>${esc(g.system(bt.realm).name)} の国</td><td>${Math.ceil(bt.a)} / ${Math.round(bt.a0)} 艦隊</td>
     <td>${Math.ceil(bt.d)} / ${Math.round(bt.d0)} 艦隊</td><td>攻 ${supplyCell(bt.ea, bt.line)}<br>防 ${supplyCell(bt.ed)}</td><td>${bt.start.toFixed(1)}年から</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
-  return `<p class="note">星系の政府は忠誠度を持つ。忠誠度の目標は、主人の関与 (${ME.home}からの指令・主人からの資金援助・${ME.home}が命じた艦隊の来訪・視察団) が途絶えて${NEGLECT_GRACE}年を過ぎると年${NEGLECT_RATE}ずつ下がり (最大 −${NEGLECT_MAX})、主人や首都から遠いほど少し下がる (1光年あたり 0.6 と 0.3)。主人より人口が多い、指令が多すぎても下がり、主人の星系の艦隊・支援・統治体制・認めた要求・国家方針で上下する。遠い星系ほど関与が届くのに時間と政治力がかかる。
+  return `<h3>忠誠と自立</h3>
+    <p class="note">星系の政府は忠誠度を持つ。忠誠度の目標は、主人の関与 (${ME.home}からの指令・主人からの資金援助・${ME.home}が命じた艦隊の来訪・視察団) が途絶えて${NEGLECT_GRACE}年を過ぎると年${NEGLECT_RATE}ずつ下がり (最大 −${NEGLECT_MAX})、主人や首都から遠いほど少し下がる (1光年あたり 0.6 と 0.3)。主人より人口が多い、指令が多すぎても下がり、主人の星系の艦隊・支援・統治体制・認めた要求・国家方針で上下する。遠い星系ほど関与が届くのに時間と政治力がかかる。
       自立を求める動き (<b>不満</b>) は、<b>離反の起きやすさ</b> (年あたりのハザード = 基準 × 統治体制 × 通信の遅れ ÷ 1 世代 (${GENERATION_YEARS} 年) × 主人との人口の比 × 忠誠度) に従って起き、${UNREST_YEARS}年続くと主人へ<b>要求</b> (朝貢の免除か自治) を出す。主人が${ME.home}なら要求は光速で${ME.home}に届き (イベントタブの「決めること」)、返事も光速で戻る。総督の方針を前もって預けておけば、現地ですぐ決まる。のめば不満は収まる。拒めば<b>最後通牒</b>になり、${ULTIMATUM_YEARS}年後に独立を宣言するおそれがある (恐怖度・主人との友好度・忠誠度が高いほど確率が下がる。恐怖度100で 0.1 倍、友好度100で ${1 - FRIEND_DAMP} 倍、忠誠度100で 0.5 倍)。要求を出す前に、忠誠度が${UNREST_CALM}か動きが始まったときの忠誠度 +15 の高いほうまで上がれば収まる。
       恐怖度は、その星系に${ME.home}の艦隊が駐留していると上がる (反乱したときの推定艦隊と同数で50、2倍で100)。主人との友好度は、主人筋との貿易が大きいほど上がる。忠誠度が50未満 (連邦制は70未満) だと指令を拒むことがあり、自治領は指令を受けない。${ME.realm}からの独立は、半々の確率で (${ME.home}の艦隊が駐留していれば必ず) そのまま独立戦争になる (自治領は戦争にならない)。</p>
-    <label class="check auto"><input type="checkbox" data-act="autogrant" ${g.autoGrant ? 'checked' : ''}> ${ico('grant')}入植後${GRANT_YEARS}年の自動資金援助 (${ME.home}から)</label>
+    <h3>資金援助</h3>
     <p class="note">入植して${GRANT_YEARS}年以内の星系には、主人の星系が毎年、資金の3% (最大 ${GRANT_MAX} cr) を自動で送る。資金援助は支援物資と同じく忠誠度を上げる。チェックを外すと${ME.home}からの自動送金だけが止まる (ほかの星系どうしは続く)。個別の資金援助は星系の詳細欄から送れる。</p>
+    <label class="check auto"><input type="checkbox" data-act="autogrant" ${g.autoGrant ? 'checked' : ''}> ${ico('grant')}入植後${GRANT_YEARS}年の自動資金援助 (${ME.home}から)</label>
     <h3>独立国</h3>
     <div class="kpi"><div><span>${ico('war')}${esc(ME.realm)}の戦争疲弊</span><b class="${myEx >= 40 ? 'bad' : ''}">${myEx}</b><span>税収 −${Math.round(EXHAUST.tax * myEx * 100)}%・家臣の忠誠度 −${Math.round(EXHAUST.loyalty * myEx)}${myEx > 20 ? `・議会の支持 −${(EXHAUST.council * (myEx - 20)).toFixed(1)}/年` : ''}</span></div></div>
     ${realms ? `<div class="scroll"><table class="tbl"><tr><th>首都</th><th>規模 (把握分)</th><th>状態</th><th>戦況</th><th></th></tr>${realms}</table></div>` : '<p class="note">いまのところ独立国はない。</p>'}
