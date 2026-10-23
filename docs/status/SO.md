@@ -5,7 +5,7 @@
 - いま: 回 SO3 (2026-10-23。2 波目) が済んだ。次は翻訳の本番 (T1。2 波目の全部のあと、ほかのレーンを止めて 1 本で)。
 - 回 SO1 でしたこと: ストアの下書きを main `de69fc8` と突き合わせて直した (`store/page-ja.md` の 8)・撮るためのセーブとスクリーンショット 7 枚・カプセルの案 8 枚を作る台本 (`desktop/shots/shoot.mjs`。`store/images.md` の 2・5)・用語集 315 語と名前の作り方 (`docs/glossary/`。T1 が使う形)・字体を包装で同梱 (`desktop/prepare.mjs`・`electron/main.js`・`desktop/check.mjs`。`desktop/README.md` の 1-2)。
 - 回 SO2 でしたこと: CI に「包装 (Windows と Linux)」(`.github/workflows/desktop.yml`) を足し、包装した実行ファイルをネットなしで開いて、ゲームが動く・セーブを読み直せる・字体が同梱で読めるかを見る (`desktop/check.mjs`。`desktop/README.md` の 1-4)・Steam Input の既定の設定 (`desktop/steam-input/`。README の 1-5)。
-- 回 SO3 でしたこと: 予告編 (B-080。`desktop/trailer/trailer.mjs`。43 秒・1920×1080・30 コマ/秒・H.264 + 無音の AAC。`store/images.md` の 3)・撮るためのセーブを人の操作で遊んで作る台本 (`desktop/shots/play.mjs`) で、ストアの画像の場面 3 (決めること) と 6 (講和会議) を撮り直した (`store/images.md` の 2)。Firebase の設定 (B-089) はまだもらっていないので入れていない。
+- 回 SO3 (#217) でしたこと: 予告編 (B-080。`desktop/trailer/trailer.mjs`。43 秒・1920×1080・30 コマ/秒・H.264 + 無音の AAC。`store/images.md` の 3)・撮るためのセーブを人の操作で遊んで作る台本 (`desktop/shots/play.mjs`) で、ストアの画像の場面 3 (決めること) と 6 (講和会議) を撮り直した (`store/images.md` の 2)。Firebase の設定 (B-089) はまだもらっていないので入れていない。
 - 前のレーン S: Electron の包装 (#136)・ストアの下書きと画像の案と Steamworks の手順 (`store/`)。
 - 決まっていること: スクリーンショットは CSS 1280×720 を 1.5 倍で (QD-18)・カプセルは星図に文字だけ (QD-19)・字体は包装の側で同梱 (QD-20)・名前は副題を英語でも付けて反応を見る (QD-14)・狙う 1 位は L1〜L3 (QD-13)。
 - 返事待ち: 早期アクセス (QD-15)・値段 (QD-16)・中国語の訳し方 (QD-17。専門の訳者か販売元)・作った星系の名前の中国語 (QD-71。訳者に任せ、仮は英字)。Steam Input の設定を実機で読み込んで既定にする (QD-72。ユーザー)。ユーザーにしかできないこと (Steamworks のアカウントと書類・手数料・Firebase・Steam Deck の実機) は `docs/decisions.md` の 3。
@@ -16,7 +16,7 @@
 
 - SO1 (#183)
 - SO2 (#190)
-- SO3
+- SO3 (#217)
 
 ## 次にやること
 
