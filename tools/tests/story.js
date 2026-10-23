@@ -4,6 +4,7 @@
 // 3. 続きの星系が自国でなくなったら、連作はそこで切れる
 // 4. 同じ種類 (頭の出来事) は 1 試合に STORY_MAX 回まで。種類は 20 以上
 // 5. どの選択肢にも観戦の AI の重み (weigh) があり、セーブで予約が残る
+// 7. 人を送る指令 (視察団・医療団) は光速でなく船で届く (B-171)
 // 6. 星系の政府が決めたこと (gv.did。回 SE4): 期限切れで現地が決めた・総督が方針で要求に答えた、を覚え、光の遅れで地球に届く
 // 使い方: node tools/tests/story.js
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
@@ -105,6 +106,25 @@ g.govDid(far, 'z', 'w');
 check(gv.did.length <= sim.tables.GOV_DID.max && gv.did.every((x) => x.year > g.year - sim.tables.GOV_DID.years), `古い決めたことを捨てない (${gv.did.length} 件)`);
 const g3 = new sim.Game(sim.generateGalaxy({ seed: '5', starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
 check(g3.restore(JSON.parse(JSON.stringify(sim.buildSave(g)))) && g3.govs[far].did?.at(-1)?.what === 'z', '星系の政府が決めたことがセーブから戻らない');
+
+// 7
+g.pc = 100;
+g.command('inspect', { sys: far });
+const qi = g.requests.at(-1);
+check(qi?.act === 'inspect' && qi.arrive - g.year > g.lightDelay(far) + 0.1, `視察団が光速で届く (${(qi?.arrive - g.year).toFixed(2)} 年・光 ${g.lightDelay(far).toFixed(2)} 年)`);
+g.decisions = [];
+const big = g.coloniesIn(far).sort((a, b) => b.pop - a.pop)[0];
+if (big) big.pop = Math.max(big.pop, 1); // 疫病は 50 万人以上の入植地で起きる
+STORY.plague.start(g, far);
+const d7 = g.decisions.at(-1);
+if (d7?.type === 'plague') {
+  g.year = d7.seen;
+  g.gov(g.cap).credits = 5000;
+  g.command('decide', { sys: far, id: d7.id, opt: 'cure' });
+  const qc = g.requests.at(-1);
+  check(qc?.act === 'decide' && qc.arrive - g.year > g.lightDelay(far) + 0.1, '医療団が光速で届く');
+  g.command('decide', { sys: far, id: d7.id, opt: 'none' });
+}
 
 console.log(fails.length ? `語り手 不合格\n${fails.join('\n')}` : `語り手 合格 (種類 ${types.length}・光の遅れ ${g.lightDelay(far).toFixed(1)} 年の星系で)`);
 process.exit(fails.length ? 1 : 0);

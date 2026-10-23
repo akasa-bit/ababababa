@@ -70,7 +70,7 @@ function ruleBox(g, id, k) {
     ${ruleBtn}
     ${direct ? '' : `<label class="field">委任方針${pending('mandate') ? ' (変更の指令を送信中)' : ''} — 変えると指令 (政治力 ${g.pcCost('mandate', { sys: id })})${sel('mandate', MANDATES, k.mandate || 'balanced', MANDATE_NOTE)}</label>`}
     ${k.lord === g.cap ? `<label class="field">総督の方針 (不満が要求になったとき)${pending('governor') ? ' (変更の指令を送信中)' : ''} — 変えると指令 (政治力 ${g.pcCost('governor', { sys: id })})${sel('governor', GOVERNOR, k.governor || 'ask', GOVERNOR_NOTE)}</label>` : ''}
-    ${pcBtn(`data-act="inspect" data-sys="${id}"`, '視察団を送る', 'inspect', '関与になり、忠誠度 +3', pending('inspect') ? '視察団を送っている' : '')}`;
+    ${pcBtn(`data-act="inspect" data-sys="${id}"`, '視察団を送る', 'inspect', `船で ${g.orderYears('inspect', { sys: id }, id).toFixed(1)} 年。着くと関与になり、忠誠度 +3`, pending('inspect') ? '視察団を送っている' : '')}`;
 }
 
 // 史料の欄 (H4-1): 型ごとの当時の言葉・法と実態の差・事例・一次史料の出典・研究者の論争・ゲームで省いたこと。

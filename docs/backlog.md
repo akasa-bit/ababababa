@@ -56,7 +56,7 @@
 | B-167 | 光の遅れの残り: 戦争疲弊は損失の知らせが首都に届いてから増える・講和会議の条件は会議を開いた星系に届いた記録で・AI どうしの講和の交渉は申し入れと答えが光速で行き来してから | `exhaust`・`treatyTerms`・`bargain`・`realmsYearly` | B-030 | M | 船と戦争 | 回 FU2 の残り (`status/FU.md`)・`research/game-physics-audit.md` の 2.8 の c・f。**済み (回 FU4)** |
 | B-169 | 光より速い残り (船): 防衛の穴を数えるときに敵の艦隊も「向かっている」に入る (2.8 g)・宇宙の途中や入植していない星系から出る艦隊を首都のレーザーが一瞬で押す (2.8 m) | `incoming`・`pushFleet`・`bookShip` | B-167 | S | 船と戦争 | `research/game-physics-audit.md` の 2.8 の g・m |
 | B-170 | 光より速い残り (経済): 交易と資材の手配・移民が相手のいまの在庫や空きを見る、受け手が出発の時点で減速のエネルギーを払う (2.8 e)・取り消した要求の返金がすぐ (2.8 h)・先住民が接触の前から分かる (2.8 k) | `spareOf`・`procureFrom`・`migrate`・`isSurveyed` | — | M | 経済 | `research/game-physics-audit.md` の 2.8 の e・h・k |
-| B-171 | 光より速い残り (政治と画面): 視察団・医療団が光速で届く (2.8 j。人は光より遅い)・星系の画面の惑星の位置がいまの位相 (2.8 l)・政治の表の相手の戦争疲弊がいまの値 | `inspect`・`SystemView`・`politics-ui.js` | — | S | 政治・画面と最初の体験 | `research/game-physics-audit.md` の 2.8 の j・l・回 FU4 |
+| B-171 | 光より速い残り (政治と画面): 視察団・医療団が光速で届く (2.8 j。人は光より遅い)・星系の画面の惑星の位置がいまの位相 (2.8 l)・政治の表の相手の戦争疲弊がいまの値 | `inspect`・`SystemView`・`politics-ui.js` | — | S | 政治・画面と最初の体験 | `research/game-physics-audit.md` の 2.8 の j・l・回 FU4。**政治の分は済み (#226)。星系の画面の位相は GA へ** |
 | B-168 | 試合の中で艦隊戦が起きるようにする: 守りのある星系も勝つ見込みが十分なら攻める・攻められた国が艦隊を差し向ける・艦隊をまとめてから攻める。試合の中の艦隊戦で R16 を測る | `realmsYearly`・`aiOrder`・`battleOdds`・`tools/wars-headless.js` | B-034 | M | 船と戦争 | 回 FU2 の残り (`status/FU.md`。4 銀河 × 150 年で入植星系の艦隊戦が 0)。**済み (回 FU5)** |
 | B-032 | 試遊で「AI が弱い・強い」と言われたら、難易度の値を見直す | `HANDICAP` | B-063 | S | 船と戦争 | `status/A.md` の次にやること 3・`game-plan.md` の 4 の C11 |
 
@@ -98,7 +98,7 @@
 | 番号 | 中身 | 触るコードの場所 | 依存 | 大きさ | 新しいレーン案 | 出どころ |
 |---|---|---|---|---|---|---|
 | B-065 | **済み (#210)**。プレイ記録から F01〜F05 と、待つだけの時間・判断の数を人の遊びで測る道具 | `PlayLog`・`tools/fun-report.js` | B-060 | S | 道具と検証 | `sessions.md` の 5・`fun.md` の 5 (#117) |
-| B-066 | つり合いの本番: 6 つ以上の戦略 × 30 以上の銀河で F06 を判定する。必勝法が見つかったら直し方を台帳に載せて選んでもらう | `tools/strategy.js`・`tools/search.js`・`tools/fun-report.js`・`EDITIONS` | B-067・B-068 | M | 道具と検証 | `sessions.md` の 15・`game-plan.md` の段 12・`fun.md` の 5 |
+| B-066 | **済み (回 DO5)。必勝法は見つからなかった。F06 は 1 / 30 の銀河で不合格 (`fun.md` の 10)**。つり合いの本番: 6 つ以上の戦略 × 30 以上の銀河で F06 を判定する。必勝法が見つかったら直し方を台帳に載せて選んでもらう | `tools/strategy.js`・`tools/search.js`・`tools/fun-report.js`・`EDITIONS` | B-067・B-068 | M | 道具と検証 | `sessions.md` の 15・`game-plan.md` の段 12・`fun.md` の 5 |
 | B-067 | **済み (#187)**。探索で変えられる値に、入植・交易・統治体制の選び方を足す (`fun.md` の 6.3) | `tools/strategy.js`・`tools/search.js` | — | M | 道具と検証 | `fun.md` の 5 (#117) |
 | B-068 | **済み (#187)**。人間に近い遅れつきのボット (いまのボットは光の遅れなしで判断する)。拡張の一強は、いまの main では遅れなし・遅れつきのどちらでも出ない (`fun.md` の 6.2) | `tools/strategy.js`・`tools/bots.js`・`earthWarYearly` | — | M | 道具と検証 | `critique/04-plan.md` の 7 の G3・6 の Q5・5 |
 | B-069 | **測り直しは済み (#194)。直すのは持ち主 (`fun.md` の 7.2 の表)**。自動対戦で見つかった壊れを直す: 挑戦「60 星系」「遠征」が届かない・拡張の一強・何もしないとお金が山になる。構造転換 (#152) のあとの版で測り直してから | `CHALLENGES`・`challengesYearly`・`colonize`・`score` | Q4・Q5・B-068 | M | 道具と検証 | `critique/04-plan.md` の 0-8・2.3 の 10〜12・2.1 の注意 |
