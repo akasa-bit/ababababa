@@ -69,6 +69,16 @@ node tools/fun-targets.js --seeds 30 --years 500 --nations 6   # 楽しさの目
 
 試験: `node tools/tests/strategy.js` (CI の `strategy`)。`BASE` が放任と同じ筋になること、新しい値と遅れつきのボットが筋を変えることを見る。
 
+## プレイ記録から楽しさの目標を測る (tools/playlog-report.js)
+
+ホーム画面の「記録を書き出す」のファイル (同意した人だけ。`src/screen/playlog.js`) を読み、F01〜F05・F20・F21 と、待つだけの時間・判断の数を出す。1 つのファイル = 1 人 (セッションの id が重なるファイルは 1 人にまとめる)。30 人より少ないときは「参考」と出す。測り方は `docs/fun.md` の 8。
+
+```sh
+node tools/playlog-report.js 記録のフォルダ/ --players   # 人ごとの表も出す。--json 結果.json で数を書き出す
+```
+
+試験: `node tools/tests/playlog.js` (CI の `playlog`)。
+
 ## 画面なしで回せる版 (tools/headless.js)
 
 ブラウザを開かずに、Node だけで試合を回す (6 か国・100 年で約 2 秒)。`src/index.html` の `<script>` をそのまま動かし、画面の部品は何もしない代わりの物で受け流す。
