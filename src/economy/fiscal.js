@@ -11,6 +11,7 @@
       for (const [k, x] of parts) this.earn(k, -x * f, p.cap, { hh: p.cap });
       gv.bpaid = (gv.bpaid ?? 1) + (f - (gv.bpaid ?? 1)) * Math.min(1, h);
     }
+    this.cbStep(h); // 中央銀行・物価・利回り (central-bank.js)
     this.interestStep(h);
     this.debtStep(h);
   }
@@ -18,7 +19,7 @@
   // (マイナスなら返す。手元の資金で返しきれない分は持ち越す)。銀行が国債を買い、同じ額の預金を政府に作るので、政府の純額 (資金 − 国債) は変わらない (お金は湧かない)。
   // 行政サービス (民間の賃金と買い付け) には、式で決まる使える額 (税収 − s* × GDP) から、ふだんの支出 (建設・船・維持費・予算など、
   // DEBT.spend 年ほどでならした額) を除いた残りを使う (投資が先、行政サービスが後)。買い物で資金がマイナスになった分 (funds の
-  // 借りられる額で買った分) は国債で埋める。手元の資金が税収の DEBT.cash 年分を超えたら、超えた分で国債を返す (国債がなければ行政サービスに使う)。
+  // 借りられる額で買った分) は国債で埋める。手元の資金が税収の DEBT.cash 年分を超えたら、超えた分を行政サービスに使う (国債を返すのは式の分だけ。回 KE1)。
   // 人間が動かす首都は、財政で選んだ赤字の上限の範囲で、資金のマイナスを国債で埋め、手元の資金が多すぎれば国債を返す (行政サービスは自動では払わない)
   debtStep(h) {
     const war = new Set(Object.keys(this.realmWars).flatMap((k) => k.split('|').map(Number)));
@@ -65,7 +66,9 @@
       const pub = Math.min(Math.max(0, gv.credits), Math.max(0, T - s * fr.y - (fr.d ?? 0)) * h);
       if (pub > 0) this.earn('public', -pub, id, { hh: id });
       const extra = gv.credits - keepCash;
-      if (extra > 0 && gv.bond > 0) { const r = Math.min(gv.bond, extra * out); gv.credits -= r; gv.bond -= r; }
+      // 手元の資金が多すぎれば、行政サービスに使う。前は国債があれば先に返していた (DEBT.repay = 1。国債のある政府だけが余りで黒字になり、財政の反応 R28 が
+      // 式の 0.034 よりずっと強く 0.08 になった。返すのは式 s* の分だけにした。回 KE1・B-003。QD-28)
+      if (extra > 0 && DEBT.repay && gv.bond > 0) { const r = Math.min(gv.bond, extra * out); gv.credits -= r; gv.bond -= r; }
       else if (extra > 0) this.earn('public', -extra * out, id, { hh: id });
       gv.c0 = gv.credits;
     }
@@ -80,7 +83,8 @@
     if (this.isHuman(id) && !this.spectate) room = Math.min(room, Math.max(0, (this.fiscalFor(id, id).deficit || 0) * y - (gv.bw || 0)));
     return gv.credits + room;
   }
-  // 利子: 銀行から借りている会社・家計・先住民 (と国債の政府) が、その星系で効いている国の利子率で利子を払う。銀行はそれを、預金
+  // 利子: 銀行から借りている会社・家計・先住民が、その星系で効いている実質の利子率 (政策金利 − 物価の上がり方。rateAt) で、国債の政府が国債の実質の利札 (bondRate) で
+  // 利子を払う (帳簿は実質の cr なので。回 KE1)。銀行はそれを、預金
   // (政府の資金・家計と会社と先住民の手持ち) の額に比べて分ける。銀行の儲けは 0 (docs/fiscal.md)。運ぶ途中のお金には利子がつかない
   interestStep(h) {
     const debtors = [], deposits = [];
@@ -89,7 +93,7 @@
       const id = Number(key), gv = this.govs[key];
       if (gv.loan > 0) { const x = gv.loan * this.rateAt(id) * h; debtors.push([{ fm: id }, x]); paid += x; }
       if (gv.hloan > 0) { const x = gv.hloan * this.rateAt(id) * h; debtors.push([{ hh: id }, x]); paid += x; }
-      if (gv.bond > 0) { const x = gv.bond * this.rateAt(id) * h; debtors.push([{ gov: id }, x]); paid += x; gv.bondPaid = (gv.bondPaid || 0) + x; }
+      if (gv.bond > 0) { const x = gv.bond * this.bondRate(id) * h; debtors.push([{ gov: id }, x]); paid += x; gv.bondPaid = (gv.bondPaid || 0) + x; }
       if (gv.credits > 0) { deposits.push([{ gov: id }, gv.credits, id]); held += gv.credits; }
       if (gv.hh > 0) { deposits.push([{ hh: id }, gv.hh]); held += gv.hh; }
       if (gv.fm > 0) { deposits.push([{ fm: id }, gv.fm]); held += gv.fm; }
@@ -130,7 +134,6 @@
     const tariff = step(draw('/t', AI_FISCAL.tariff), TARIFF_STEP, TARIFF_RANGE);
     return (c[root] = { ...FISCAL_DEFAULT, tax, ctax, tariff });
   }
-  rateAt(id) { return this.fiscalAt(id).rate ?? FISCAL_DEFAULT.rate; }
   ctaxAt(id) { return this.fiscalAt(id).ctax || 0; } // 消費税 (その星系で効いている国の)
   // 関税: 買い手の星系で効いている国の関税率。同じ国の中の取引には掛からない
   tariffFor(buyer, seller) { return this.realmOf(buyer) === this.realmOf(seller) || this.pactFreeTrade(this.realmOf(buyer), this.realmOf(seller)) ? 0 : this.fiscalAt(buyer).tariff || 0; } // 交易協定の相手には掛けない (政治の pactFreeTrade。回 SE2)
@@ -142,21 +145,25 @@
     const cur = this.fiscal || FISCAL_DEFAULT;
     const rawTax = d.tax ?? cur.tax;
     if (!(typeof rawTax === 'number' || TAX_LEVELS[rawTax])) return fail('選べない値');
-    const tax = taxRateOf(rawTax), rate = Number(d.rate ?? cur.rate), deficit = Number(d.deficit ?? cur.deficit ?? 0), ctax = Number(d.ctax ?? cur.ctax ?? 0), tariff = Number(d.tariff ?? cur.tariff ?? 0);
+    const cb0 = cur.cb ?? 1, cb = d.cb !== undefined ? Number(d.cb) : Number(d.rate ?? cur.rate) !== cur.rate ? 0 : cb0; // 政策金利を動かしたら「自分で決める」に
+    if (cb !== 0 && cb !== 1) return fail('選べない値');
+    // 任せていたのをやめるときは、いまの中央銀行の政策金利から始める
+    const start = cb0 === 1 && cb === 0 && (d.rate === undefined || Number(d.rate) === cur.rate);
+    const tax = taxRateOf(rawTax), rate = start ? clamp(Math.round(this.cbRateAt(this.cap) / RATE_STEP) * RATE_STEP, RATE_RANGE[0], RATE_RANGE[1]) : Number(d.rate ?? cur.rate), deficit = Number(d.deficit ?? cur.deficit ?? 0), ctax = Number(d.ctax ?? cur.ctax ?? 0), tariff = Number(d.tariff ?? cur.tariff ?? 0);
     const budget = {};
     for (const k of Object.keys(BUDGET)) budget[k] = Number(d[k] ?? cur.budget?.[k] ?? 0);
     // 幅と刻みは docs/policy-ranges.md (前の段階の名前 (重税など) は刻みに乗らなくてもよい)
     if ((typeof rawTax === 'number' && !onStep(tax, TAX_RANGE, TAX_STEP)) || tax < TAX_RANGE[0] - 1e-9 || tax > TAX_RANGE[1] + 1e-9) return fail(`税率は ${TAX_RANGE[0] * 100}〜${TAX_RANGE[1] * 100}% (刻み ${TAX_STEP * 100}%)`);
-    if (!onStep(rate, RATE_RANGE, RATE_STEP)) return fail(`利子率は年 ${RATE_RANGE[0] * 100}〜${RATE_RANGE[1] * 100}% (刻み ${RATE_STEP * 100}%)`);
+    if (!onStep(rate, RATE_RANGE, RATE_STEP)) return fail(`政策金利は年 ${RATE_RANGE[0] * 100}〜${RATE_RANGE[1] * 100}% (刻み ${RATE_STEP * 100}%)`);
     if (!onStep(deficit, DEFICIT_RANGE, DEFICIT_STEP)) return fail(`赤字の上限は GDP の 0〜${DEFICIT_RANGE[1] * 100}% (刻み ${DEFICIT_STEP * 100}%)`);
     if (!onStep(ctax, CTAX_RANGE, CTAX_STEP)) return fail(`消費税は 0〜${CTAX_RANGE[1] * 100}% (刻み ${CTAX_STEP * 100}%)`);
     if (!onStep(tariff, TARIFF_RANGE, TARIFF_STEP)) return fail(`関税は 0〜${TARIFF_RANGE[1] * 100}% (刻み ${TARIFF_STEP * 100}%)`);
     if (Object.values(budget).some((v) => !onStep(v, BUDGET_RANGE, BUDGET_STEP))) return fail(`予算は機能ごとに 0〜${BUDGET_RANGE[1] * 100}% (刻み ${BUDGET_STEP * 100}%)`);
     const total = Object.values(budget).reduce((a, v) => a + v, 0);
     if (total > BUDGET_TOTAL + 1e-9) return fail(`予算は合わせて税収の ${BUDGET_TOTAL * 100}% まで`);
-    if (Math.abs(tax - taxRateOf(cur.tax)) < 1e-9 && ctax === (cur.ctax || 0) && tariff === (cur.tariff || 0) && rate === cur.rate && deficit === (cur.deficit || 0) && Object.keys(BUDGET).every((k) => budget[k] === (cur.budget?.[k] || 0))) return fail('いまと同じ');
-    this.fiscal = { tax, ctax, tariff, rate, deficit, budget, since: this.year, prev: { tax: taxRateOf(cur.tax), ctax: cur.ctax || 0, tariff: cur.tariff || 0, rate: cur.rate, deficit: cur.deficit || 0, budget: { ...(cur.budget || FISCAL_DEFAULT.budget) } } };
-    const parts = [`税率は ${(tax * 100).toFixed(1)}%`, `消費税は ${(ctax * 100).toFixed(1)}%`, `関税は ${(tariff * 100).toFixed(1)}%`, `利子率は年 ${(rate * 100).toFixed(2)}%`, `赤字の上限は ${deficit ? `GDP の ${(deficit * 100).toFixed(1)}%` : 'なし (国債を出さない)'}`, `予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
+    if (Math.abs(tax - taxRateOf(cur.tax)) < 1e-9 && ctax === (cur.ctax || 0) && tariff === (cur.tariff || 0) && rate === cur.rate && cb === cb0 && deficit === (cur.deficit || 0) && Object.keys(BUDGET).every((k) => budget[k] === (cur.budget?.[k] || 0))) return fail('いまと同じ');
+    this.fiscal = { tax, ctax, tariff, rate, cb, deficit, budget, since: this.year, prev: { tax: taxRateOf(cur.tax), ctax: cur.ctax || 0, tariff: cur.tariff || 0, rate: cur.rate, cb: cb0, deficit: cur.deficit || 0, budget: { ...(cur.budget || FISCAL_DEFAULT.budget) } } };
+    const parts = [`税率は ${(tax * 100).toFixed(1)}%`, `消費税は ${(ctax * 100).toFixed(1)}%`, `関税は ${(tariff * 100).toFixed(1)}%`, cb ? '政策金利は中央銀行に任せる' : `政策金利は年 ${(rate * 100).toFixed(2)}%`, `赤字の上限は ${deficit ? `GDP の ${(deficit * 100).toFixed(1)}%` : 'なし (国債を出さない)'}`, `予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
     this.event('goal', this.cap, `財政を変えた (${parts.join('、')})。遠い星系には知らせが光速で届いてから効く`, true);
     return { ok: true };
   }
