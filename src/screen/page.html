@@ -16,6 +16,17 @@ canvas { position:absolute; inset:0; width:100%; height:100%; display:block; tou
 #empire .scroll { overflow-x:auto; }
 /* 見出しのすぐ下の「説明」は、見出しの行の右端に置く (QD-59 の A2)。開いても押した札は動かず、中身は見出しの下に出る */
 #empire h3 + details.help { margin-top:0; } #empire h3 + details.help > summary { position:absolute; right:16px; transform:translateY(calc(-100% - 10px)); margin:0; }
+/* 候補地の表: 気温・重力・大気圧は 1 つの列に。帝国の欄が狭いとき (縦の画面) は、1 天体を 2〜3 行のカードにする (QD-59 の L1) */
+#empire { container-type:inline-size; }
+table.cands td, table.cands th { padding-right:8px; } table.cands td:first-child button { letter-spacing:0; } table.cands .send { margin-top:4px; } table.cands .send button { white-space:nowrap; margin:0; }
+@container (max-width: 980px) {
+  table.cands, table.cands tbody { display:block; }
+  table.cands tr:first-child { display:none; }
+  table.cands tr { display:flex; flex-wrap:wrap; gap:2px 14px; align-items:baseline; padding:8px 0; border-bottom:1px solid var(--line); }
+  table.cands td { display:block; border:0; padding:0; }
+  table.cands td:first-child { flex-basis:100%; }
+  table.cands td[data-l]::before { content:attr(data-l) " "; color:var(--muted); font-size:var(--fs1); }
+}
 #empire .tbl { font-size:12.5px; }
 #empire .tbl td, #empire .tbl th { padding:4px 10px 4px 0; white-space:nowrap; }
 #empire .tbl td.wrap { white-space:normal; min-width:12em; }
@@ -216,7 +227,11 @@ td > button[data-act="uproute"] { width:11em; }
 .fac { display:flex; flex-direction:column; gap:3px; font-size:12px; background:#111a2e; border-radius:5px; padding:6px; }
 .fac button { text-align:left; }
 aside > div > button, #panel > button { margin-top:6px; } #log div { margin-bottom:2px; }
-@media (max-width: 800px) { body.sheet-view aside { display:none; } main { flex-direction:column; } aside { width:auto; max-height:45%; border-left:0; border-top:1px solid var(--line); } }
+/* 右の欄 (QD-59 の T3): 地図以外の画面 (帝国・イベント・候補地) では出さない。縦の画面と狭い画面では、地図の下から出す引き出しにする (星系を選んだときだけ出て、地図はその分だけ上に縮む) */
+body.sheet-view aside { display:none; }
+@media (max-width: 800px), (orientation: portrait) { main { flex-direction:column; } aside { width:auto; max-height:44%; border-left:0; border-top:1px solid var(--line); } }
+/* 縦の画面では知らせの帯を地図の上半分までにし、短い知らせ (トースト) は下の引き出しに重ねず上に出す (T4) */
+@media (orientation: portrait) { #rail { max-height:calc(50% - 16px) !important; } #toast { bottom:auto; top:150px; } }
 
 @media (pointer: coarse) {
   button { min-height:40px; padding:6px 14px; }
