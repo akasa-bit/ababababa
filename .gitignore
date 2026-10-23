@@ -2,3 +2,4 @@ node_modules
 shots/
 __pycache__/
 /index.html
+export-out/
