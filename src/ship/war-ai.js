@@ -488,10 +488,6 @@
             .sort((a, b) => distance(a[0], strong) - distance(b[0], strong));
           const target = near.find(([x, v], i) => v[2] + this.fortLevel(x.id) < n || (i < AI_WAR.tries && this.battleOdds(n, v[2], 1, 1, this.fortLevel(x.id)) >= AI_WAR.attack))?.[0]; // 要塞は動かず大きいので、段も見えるものとする
           if (target) this.aiOrder(root, strong.id, target.id, n);
-          else if (near.length && AI_WAR.gather) {
-            // 3. 集結: 攻める先はあるが足りないとき、range 光年以内の自国の星系の艦隊 (1 つ残す) を、いちばん多い星系へ集める
-            for (const x of mine) if (x.id !== strong.id && (this.garrison[x.id] || 0) >= 2 && distance(x, strong) <= AI_WAR.range) this.aiOrder(root, x.id, strong.id, this.garrison[x.id] - 1);
-          }
         }
       }
       for (const e of enemies) {
