@@ -7,7 +7,8 @@ const [src, baseSrc, nS = '12', yS = '300', natS = '6'] = process.argv.slice(2);
 function measure(file) {
   const sim = H.load({ src: file });
   const done = [];
-  let gamesYears = 0, realmYears = 0, interstate = 0;
+  let gamesYears = 0, realmYears = 0, interstate = 0, sieged = 0;
+  const battles = []; // 試合の中の艦隊戦 [ln(攻撃 ÷ 防衛), 攻撃側の勝ち] (B-168)
   for (let seed = 1; seed <= Number(nS); seed++) {
     const g = sim.newGame(String(seed), { nations: Number(natS) });
     const wars = new Map();
@@ -22,6 +23,8 @@ function measure(file) {
     wrap('endWar', (orig, a, c, from) => { finish(g.warKey(a, c), mode || 'white'); return orig(a, c, from); });
     wrap('cleanWars', (orig) => { const before = new Set(Object.keys(g.realmWars)); const r = orig(); for (const k of before) if (g.realmWars[k] === undefined) finish(k, 'conquest'); return r; });
     wrap('surrender', (orig, root, winner) => { finish(g.warKey(root, winner), 'capitulation'); return orig(root, winner); });
+    wrap('startBattle', (orig, ...a) => { sieged++; return orig(...a); });
+    g.battleDone = (r) => battles.push([Math.log(Math.max(1, r.a0) / Math.max(1, r.d0 + (r.fort?.[0] || 0) * sim.tables.FORT.hp)), r.win]); // 要塞の区画は艦の hp 倍で数える
     sim.run(g, Number(yS));
     for (const k of [...wars.keys()]) finish(k, 'ongoing');
     gamesYears += Number(yS);
@@ -30,8 +33,19 @@ function measure(file) {
   const durs = ended.map((d) => d.dur).sort((a, b) => a - b);
   const med = durs[Math.floor(durs.length / 2)] || 0, mean = durs.reduce((k, x) => k + x, 0) / (durs.length || 1);
   const share = (h) => ended.filter((d) => d.how === h).length / (ended.length || 1);
+  // 試合の中の艦隊戦で測った R16 の勝ちの傾き (ロジスティック回帰。数が少なければ出さない)
+  let slope = null;
+  if (battles.length >= 30) {
+    let b0 = 0, b1 = 0;
+    for (let it = 0; it < 40; it++) {
+      let g0 = 0, g1 = 0, h00 = 0, h01 = 0, h11 = 0;
+      for (const [x, y] of battles) { const p = 1 / (1 + Math.exp(-(b0 + b1 * x))), w = p * (1 - p); g0 += y - p; g1 += (y - p) * x; h00 += w; h01 += w * x; h11 += w * x * x; }
+      const det = h00 * h11 - h01 * h01; if (!(Math.abs(det) > 1e-12)) break; b0 += (h11 * g0 - h01 * g1) / det; b1 += (h00 * g1 - h01 * g0) / det;
+    }
+    slope = b1;
+  }
   const r15 = powerTail(done.map((d) => d.dead).filter((x) => x > 0));
-  return { r15, deadWars: done.filter((d) => d.dead > 0).length, r19: (2 * interstate / (realmYears || 1)) * 100, per100y: (done.length / gamesYears) * 100, ended: ended.length, ongoing: done.length - ended.length, meanYears: mean, medianYears: med, meanOverMedian: med ? mean / med : null,
+  return { battles: battles.length, sieged, slope, r15, deadWars: done.filter((d) => d.dead > 0).length, r19: (2 * interstate / (realmYears || 1)) * 100, per100y: (done.length / gamesYears) * 100, ended: ended.length, ongoing: done.length - ended.length, meanYears: mean, medianYears: med, meanOverMedian: med ? mean / med : null,
     white: share('white'), treaty: share('treaty'), capitulation: share('capitulation'), conquest: share('conquest') };
 }
 // 戦死者数の裾のべき指数 (R15。Clauset–Shalizi–Newman の方法の連続版: xmin ごとに最尤の α を出し、KS 距離が一番小さい xmin を選ぶ。p 値のブートストラップはしない)
@@ -57,3 +71,6 @@ for (const [n, r] of rows) console.log(`| ${n} | ${r.r19.toFixed(2)} | ${f(r.per
 console.log('\n| | R15 戦死者数の裾のべき指数 α (COW 1.55、合格 1.25〜1.85) | 裾の始まり xmin (人) | 裾の戦争の数 | KS 距離 | 死者の出た戦争 |');
 console.log('|---|---|---|---|---|---|');
 for (const [n, r] of rows) console.log(`| ${n} | ${r.r15 ? r.r15.alpha.toFixed(2) : '—'} | ${r.r15 ? Math.round(r.r15.xmin) : '—'} | ${r.r15 ? r.r15.n : '—'} | ${r.r15 ? r.r15.D.toFixed(3) : '—'} | ${r.deadWars} |`);
+console.log('\n| | 試合の中の艦隊戦 (100 年あたり、1 つの銀河) | うち入植星系の艦隊戦 | その戦いで測った勝ちの傾き (R16 のゲーム版の補正: 作った戦いで 1.80) |');
+console.log('|---|---|---|---|');
+for (const [n, r] of rows) console.log(`| ${n} | ${(r.battles / Number(nS) / Number(yS) * 100).toFixed(1)} | ${(r.sieged / Number(nS) / Number(yS) * 100).toFixed(1)} | ${r.slope === null ? '— (30 戦より少ない)' : r.slope.toFixed(2)} |`);
