@@ -18,6 +18,10 @@
                               pb = 基礎収支 ÷ GDP = (revenue − expenditure) / gdp + ltrate/100 × d(前の年) (利子の払いは
                               JST にないので、長期の利子率 × 前の年の債務で近づける)、d = debtgdp、
                               gap = ln(rgdpbarro) − HP フィルター (λ = 100) の傾向。30 年以上ある国だけ (2026-10-20 に足した)
+  R33 物価の上がり方 (インフレ)    Δln cpi (国ごとの中央値。2026-10-23 に足した。回 KE1)
+  R34 期間の上乗せ              (ltrate − stir) / 100 (長期の国債の利回り − 短期の金利。国ごとの中央値。回 KE1)
+  R35 国債の上乗せと債務         国ごとの最小二乗 (ltrate − stir)/100 = a + b·debtgdp の b (債務 ÷ GDP が 1 増えたときの上乗せ。30 年以上ある国だけ。回 KE1)
+  R33〜R35 だけに使う列: cpi (物価の水準)、stir (短期の金利 [%/年]。ゲームは政策金利)
 ゲームの国債の値 (params。src/economy/fiscal-consts.js の DEBT に写す): 財政の反応の式の係数 (国ごとの最小二乗の中央値)・
   景気のずれの範囲 (HP フィルターのずれの 1%〜99% 点)・借りられる上限 (debtgdp の国ごとの中央値の中央値 = R21 の estimate。国ごとの 90% 点の中央値 limit_p90 では、ゲームの R21 が 1.13 と幅を超えた)・
   手元に置く資金 (Eurostat の一般政府の現金・預金 ÷ 総収入の、国ごとの中央値の中央値。単位は年)
@@ -127,7 +131,31 @@ def stats(df, years=None):
         out[k] = summary(name, per, len(d))
     if {'ltrate', 'rgdpbarro', 'war'} <= set(df.columns):
         out['R28'] = summary(REACTION, reaction(df), len(df))
+    out.update(money_stats(df))
     return out
+
+def spread_slope(df):
+    """R35: 国ごとの (ltrate − stir)/100 を debtgdp に当てた傾き b (pd.Series、国 → b)"""
+    out = {}
+    for c, d in df.dropna(subset=['ltrate', 'stir', 'debtgdp']).groupby('country'):
+        if len(d) >= 30 and d['debtgdp'].std() > 0:
+            out[c] = float(np.polyfit(d['debtgdp'], (d['ltrate'] - d['stir']) / 100, 1)[0])
+    return pd.Series(out, dtype=float)
+
+def money_stats(df):
+    """R33〜R35 (物価と金利)。列がなければ空"""
+    out = {}
+    if 'cpi' in df.columns:
+        d = df.sort_values('year').assign(v=lambda x: x.groupby('country')['cpi'].transform(lambda s: np.log(s.where(s > 0)).diff())).dropna(subset=['v'])
+        out['R33'] = summary(MONEY['R33'], d.groupby('country')['v'].median(), len(d))
+    if {'ltrate', 'stir'} <= set(df.columns):
+        d = df.assign(v=(df['ltrate'] - df['stir']) / 100).dropna(subset=['v'])
+        out['R34'] = summary(MONEY['R34'], d.groupby('country')['v'].median(), len(d))
+        if 'debtgdp' in df.columns:
+            out['R35'] = summary(MONEY['R35'], spread_slope(df), len(d))
+    return out
+
+MONEY = {'R33': '物価の上がり方 (Δln 物価の水準)', 'R34': '期間の上乗せ (長期の利回り − 短期の金利)', 'R35': '国債の上乗せの債務への傾き'}
 
 REACTION = '財政の反応 (前の年の債務 ÷ GDP に対する基礎収支 ÷ GDP の傾き)'
 
@@ -151,7 +179,7 @@ def game_stats(df):
         return stats(df)
     per = {g: stats(d) for g, d in df.groupby('galaxy')}
     out = {}
-    for k, name in [(k, n) for k, (n, _) in STATS.items()] + ([('R28', REACTION)] if any('R28' in s for s in per.values()) else []):
+    for k, name in [(k, n) for k, (n, _) in STATS.items()] + ([('R28', REACTION)] if any('R28' in s for s in per.values()) else []) + [(k, n) for k, n in MONEY.items() if any(k in s for s in per.values())]:
         v = pd.Series([s[k]['median'] for s in per.values() if k in s and s[k]['median'] is not None])
         out[k] = {'name': name, 'galaxies': int(v.size), 'median': round(float(v.median()), 4) if v.size else None,
                   'p10': round(float(v.quantile(0.1)), 4) if v.size else None, 'p90': round(float(v.quantile(0.9)), 4) if v.size else None}
