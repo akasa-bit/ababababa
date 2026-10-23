@@ -4,6 +4,10 @@
 // 3. 大きく勝っている国: 勝つ見込みが WAREND.decisiveP 以上なら受け入れる線は 100 (降伏を求める)。相手に見込みがなければ全面降伏の講和会議
 // 4. 人間の国への降伏の求め: 応じると、求めた国が持ち点 100 で条件を選ぶ講和会議になる
 // 使い方: node tools/tests/warend.js
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ judge: J.passes('戦争の終わり方') }];
+if (require.main !== module) return;
 const H = require('../headless');
 const sim = H.load({ edition: 'game' });
 const W = sim.tables.WAREND, T = sim.tables.TREATY;

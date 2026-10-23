@@ -1,4 +1,11 @@
 // 統治体制の試験: 指令で変える・朝貢・指令の拒否・自治領・強制労働の後遺症・自治を狭めたときの忠誠度・新しい入植地の既定・保存と読み込み・画面
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{
+  args: (c) => [c.shots],
+  judge: J.byJson((j) => Object.values(j).every((v) => v.regimes.join() === 'T14,T01,encomienda' && v.dominionLog === true && v.alias?.[1] === 'T13' && v.bundleCmd === true && v.bundle?.law === 'S' && v.elite === 'resist' && v.factV >= 6 && v.depose?.join() === 'true,true,coop' && v.arrears > 0 && v.union?.join() === 'true,true' && v.hist?.join() === 'true,true,true' && v.revoke[0] === true && v.saveLoad === true && !v.errs.length), '統治体制の結果が違う'),
+}];
+if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`; // 試す版 (HTML=$PWD/simulation.html でシミュレーション版)
 require('fs').mkdirSync('shots', { recursive: true }); // 画面の写しは、いまのフォルダの shots/ に書く

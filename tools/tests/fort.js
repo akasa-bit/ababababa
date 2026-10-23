@@ -5,6 +5,10 @@
 // 4. セーブに入って戻る。要塞の項目がない前の版のセーブは、入植した星系に Lv1 を建てて読む
 // 5. 地球に届いている記録 (known) に段が入る
 // 使い方: node tools/tests/fort.js
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ judge: J.passes('宇宙要塞') }];
+if (require.main !== module) return;
 const H = require('../headless');
 const sim = H.load({ edition: 'game' });
 const F = sim.tables.FORT;

@@ -2,6 +2,10 @@
 // 収まる (超えた分は国債の返済か行政サービスに使う) こと・人間が動かす首都は、赤字の上限が「なし」なら国債を出さず行政サービスも払わず、
 // 上限を選ぶとその分だけ借りられる (使える資金が増える) こと・保存と読み込みで残ること。画面なしの版で回す
 // 使い方: node tools/tests/debt.js [シード] [年数]
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ args: ['3', '100'], judge: (o) => (o.includes('国債 合格') ? '' : '国債の結果が違う') }];
+if (require.main !== module) return;
 const path = require('path');
 const H = require(path.resolve(__dirname, '..', 'headless'));
 const [seed = '3', years = '100'] = process.argv.slice(2);

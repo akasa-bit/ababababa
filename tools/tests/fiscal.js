@@ -1,6 +1,14 @@
 // 財政 (税・利子率・予算) の試験: 命令と政治力・選べない値の拒否・光速で広がること・税収と利子と予算の記帳・
 // 忠誠度と離反の起きやすさと艦隊の戦力への効き目・保存と読み込み・画面 (横と縦)
 // 使い方: node tools/tests/fiscal.js [shots のフォルダ]
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{
+  args: (c) => [c.shots],
+  judge: J.byJson((j) => Object.values(j).every((v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1.8,1,0.01' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
+    && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.bad2.every((b) => b === false) && v.ok2 && v.ctax.join() === '0.1,0.05,true,1.935,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length), '財政の結果が違う'),
+}];
+if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`;
 const SHOTS = process.argv[2] || 'shots';

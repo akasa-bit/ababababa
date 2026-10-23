@@ -94,5 +94,17 @@ A (戦争) と Q (下準備) は済んだので閉じた。前のレーンの状
 ### 道具と検証 (DO)
 
 - `tools/` と CI は、ほかのレーンの試験を止めないように変える。新しい試験を CI に足すときは、落ちたら止めるか参考にするかを本文に書く。
-- 試験の一覧 (`tools/ci-tests.js` の `TESTS`) は、みんなが書き足して衝突した (W1)。回 DO4 で、`tools/tests/` に置いたファイルを自動で拾う形にする (B-221)。それまでは、行を足すときに両方残す。
+- **試験の一覧は、`tools/tests/` に置いたファイルを自動で拾う** (回 DO4・B-221。前は `tools/ci-tests.js` の `TESTS` にみんなが 1 行ずつ書き足して衝突した)。試験を足すレーンは、`tools/tests/<名前>.js` を 1 つ置くだけで、`ci-tests.js` は触らない。CI での回し方と合否は、そのファイルの先頭 (説明のコメントのすぐ下) に書く:
+
+  ```js
+  // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+  const J = require('../ci-judge');
+  exports.ci = [{ args: ['5', '150'], judge: J.passes('語り手') }];
+  if (require.main !== module) return;   // ここから下が試験の本体 (CI が読むときは回さない)
+  ```
+
+  - `exports.ci` は配列で、1 つが CI の表の 1 行 (同じファイルを引数を変えて 2 回回すなら 2 つ)。`args` = 引数 (配列か `(c) => 配列`。`c = { root, shots, path }`、`shots` は画面の写しを書く作業場所)、`judge(出力, 終了コード)` = 落ちた理由の文字列 (合格なら空)、`env` = 足す環境変数、`optional: true` = シミュレーション版の試験 (表に「参考」と出し、落ちても止めない)、`needs` = このファイルがなければ回さない。
+  - 合否の小道具は `tools/ci-judge.js`: `J.passes('語り手')` = 終了コード 0 で「語り手 合格」が出る、`J.firstLine('R07', 理由)` = 1 行目に「R07 合格」、`J.noPageErrors(出力)`・`J.byJson(良いか, 理由)` (出力の JSON を読む)。
+  - `exports.ci` を書かないファイルは、引数なしで回して終了コード 0 なら合格。CI で回さない試験は `exports.ci = false`。
+  - 表は名前の順。手元では `node tools/ci-tests.js story` で 1 本だけ回せる。新しい試験は、落ちたら止めるか参考にするかを PR の本文に書く (`optional` を付けない = 止める)。
 - 面白さの代わりの数 (`tools/fun-report.js`) と必勝法を探す AI は、観戦の AI (`src/ship/earth-war.js` の `earthWarYearly`) を `tools/strategy.js` に写している。船と戦争がそこを変えたら、`strategy.js` を合わせ直す (どのレーンが直してもよい)。

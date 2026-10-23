@@ -1,6 +1,10 @@
 // 戦略ボットの試験 (tools/strategy.js): 観戦の AI と同じ値 (BASE) が放任と同じ筋になる (状態の要約が一致)。
 // 入植・交易・統治体制の値 (B-067) と、人間に近い遅れつきのボット (B-068) が、誤りなく回り、筋を変える
 // 使い方: node tools/tests/strategy.js [年数] [シード(カンマ区切り)]
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ args: ['60', '1,2'], judge: J.passes('戦略ボット') }];
+if (require.main !== module) return;
 const S = require('../strategy');
 const [years = '60', seedsS = '1,2'] = process.argv.slice(2);
 const Y = Number(years), seeds = seedsS.split(',');

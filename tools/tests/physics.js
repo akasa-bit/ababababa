@@ -8,6 +8,14 @@
 // 4. 加速と減速の遅れが式の値。5. 地表の線量の表と、地球と空気のない星の値
 // 6・7. 太陽電池の劣化と素子の作り (シミュレーション版)。ゲーム版は傷まず、フレアは適性を変えず、物理の切り替えのないセーブは物理なしのまま続く
 // 使い方: EDITION=game node tools/tests/physics.js [シード] [年数] [国の数]
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [
+  // ゲーム版の分 (遮蔽・加速の時間・フレアの表示。2026-10-21 の P6) は落ちたら止める。シミュレーション版の分 (太陽電池の劣化も) は参考
+  { args: ['5', '150'], judge: (o, code) => (code === 0 && o.trim().split('\n')[0].includes('物理 合格') ? '' : '物理 不合格 (ゲーム版)'), env: { EDITION: 'game' } },
+  { args: ['5', '150'], judge: (o, code) => (code === 0 && o.trim().split('\n')[0].includes('物理 合格') ? '' : '物理 不合格 (シミュレーション版)'), optional: true, env: { EDITION: 'sim' } },
+];
+if (require.main !== module) return;
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '../..');

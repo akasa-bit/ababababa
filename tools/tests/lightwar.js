@@ -6,6 +6,10 @@
 // 5. 集結の命令: 首都に届いている記録の駐留から出す
 // 6. 相手が見ている自分: 相手の首都に届いている光で数えた、こちらの艦隊の数と幅
 // 使い方: node tools/tests/lightwar.js
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ judge: J.passes('光の遅れ') }];
+if (require.main !== module) return;
 const H = require('../headless');
 const sim = H.load({ edition: 'game' });
 const fails = [];

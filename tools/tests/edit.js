@@ -1,4 +1,8 @@
 // 国家の編集: 種族・特性・国の名前・母星の好み
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ judge: (o) => (!/^(land|port) \d+ false/m.test(o) && J.noPageErrors(o) ? '' : '国家の編集が違う') }];
+if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`; // 試す版 (HTML=$PWD/simulation.html でシミュレーション版)
 require('fs').mkdirSync('shots', { recursive: true }); // 画面の写しは、いまのフォルダの shots/ に書く
