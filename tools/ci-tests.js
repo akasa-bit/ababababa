@@ -18,7 +18,8 @@ const TESTS = [];
 for (const f of fs.readdirSync(TESTDIR).filter((f) => f.endsWith('.js')).sort()) {
   const name = f.slice(0, -3);
   let ci;
-  try { ci = require(path.join(TESTDIR, f)).ci; }
+  // exports.ci を書いていないファイルは読まない (読むと試験の本体がこのプロセスで動いてしまう)
+  try { ci = /^exports\.ci\s*=/m.test(fs.readFileSync(path.join(TESTDIR, f), 'utf8')) ? require(path.join(TESTDIR, f)).ci : undefined; }
   catch (e) { TESTS.push([name, [], () => `試験のファイルを読めない: ${String(e.message).split('\n')[0]}`, { broken: true }]); continue; }
   if (ci === false) continue; // CI では回さない
   const exit0 = (o, code) => (code === 0 ? '' : `終了コード ${code}`);
