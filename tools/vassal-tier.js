@@ -7,7 +7,8 @@
 //    「最善になりうる」= その区分で、朝貢と残った年数の両方で上回る型がほかにない (パレート最適)。直轄 (direct) は上限 (DIRECT_MAX) を外して全部を直轄にしたもの。
 // 2. 戦略としての型 (--realm): 遅れつきのボット (tools/strategy.js の humanize) が、新しい家臣の型を 1 つに決めて遊んだときの点数。直轄を上限まで使う (direct: 1) も並べる。
 //
-// 使い方: node tools/vassal-tier.js [銀河の数] [年数] [国の数] [--horizon 年] [--types T01,T03,…] [--realm 銀河の数,年数] [--json 出力.json]
+// 使い方: node tools/vassal-tier.js [銀河の数] [年数] [国の数] [--horizon 年] [--types T01,T03,…] [--realm 銀河の数,年数] [--skip-forced] [--json 出力.json]
+//   (--skip-forced = 1 を回さず 2 だけ)
 //   例: node tools/vassal-tier.js 6 300 6 --realm 6,150   (THREADS=n で並べる数を絞る)
 const os = require('os');
 const fs = require('fs');
@@ -101,16 +102,17 @@ function runAll(jobs, threads) {
 }
 
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+const median = (xs) => { if (!xs.length) return null; const v = [...xs].sort((a, b) => a - b), m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
 const f1 = (x, k = 1) => (x === null ? '—' : x.toFixed(k));
 
-// 区分ごとに、パレート最適な型 (朝貢と残った年数の両方で上回る型がない) と、朝貢・残った年数それぞれの 1 位
+// 区分ごとに、パレート最適な型 (朝貢の中央値と残った年数の平均の両方で上回る型がない) と、それぞれの 1 位。朝貢は少数の豊かな家臣で平均が大きく振れるので中央値で比べる
 function judge(rows) {
   const out = {};
   for (const b of BANDS) {
     const rs = rows.filter((r) => r[b] && r[b].n >= 3).map((r) => ({ type: r.type, ...r[b] }));
-    const dominated = (x) => rs.some((y) => y !== x && y.tribute >= x.tribute && y.kept >= x.kept && (y.tribute > x.tribute || y.kept > x.kept));
+    const dominated = (x) => rs.some((y) => y !== x && y.tribMed >= x.tribMed && y.kept >= x.kept && (y.tribMed > x.tribMed || y.kept > x.kept));
     const top = (k) => rs.reduce((a, x) => (!a || x[k] > a[k] ? x : a), null)?.type ?? null;
-    out[b] = { front: rs.filter((x) => !dominated(x)).map((x) => x.type), byTribute: top('tribute'), byKept: top('kept') };
+    out[b] = { front: rs.filter((x) => !dominated(x)).map((x) => x.type), byTribute: top('tribMed'), byKept: top('kept') };
   }
   return out;
 }
@@ -122,6 +124,8 @@ function judge(rows) {
   const typesArg = opt('--types', null);
   const realmArg = opt('--realm', null);
   const jsonOut = opt('--json', null);
+  const skipForced = args.includes('--skip-forced');
+  if (skipForced) args.splice(args.indexOf('--skip-forced'), 1);
   const [nS = '6', yS = '300', natS = '6'] = args;
   const sim = H.load({ ...(process.env.HTML ? { src: process.env.HTML } : {}) });
   const { REGIME_ORDER, VASSAL_DATA } = sim.tables;
@@ -132,14 +136,18 @@ function judge(rows) {
   const years = Number(yS), nations = Number(natS);
 
   // 1. 距離ごとの型の比べ
-  const jobs = types.flatMap((force) => seeds.map((seed) => ({ kind: 'forced', seed, years, nations, force, horizon })));
+  const jobs = skipForced ? [] : types.flatMap((force) => seeds.map((seed) => ({ kind: 'forced', seed, years, nations, force, horizon })));
   const res = await runAll(jobs, threads);
   const rows = types.map((type) => {
     const ties = res.filter((_, i) => jobs[i].force === type).flat();
-    const row = { type, label: label(type), tributeRate: type === 'encomienda' ? 0.4 : VASSAL_DATA.types[type === 'direct' ? 'T20' : type]?.tribute ?? null };
+    // 始めの離反の倍率: 型の倍率 × 法と実態の差の項 (始めは法 = 型の法、実態 = 型の実態)。型の倍率は型の平均の差のときの値なので、差の項で打ち消しあう
+    const vt = VASSAL_DATA.types[type === 'direct' || type === 'encomienda' ? 'T20' : type];
+    const gap0 = vt ? [...vt.law].reduce((k, c, i) => k + (c !== vt.fact[i] ? 1 : 0), 0) : 0;
+    const hr0 = vt ? (type === 'encomienda' ? 1.6 : vt.hr) * (gap0 !== vt.gap ? Math.pow(VASSAL_DATA.model[0].hr, gap0 - vt.gap) : 1) : null;
+    const row = { type, label: label(type), hr0, tributeRate: type === 'encomienda' ? 0.4 : VASSAL_DATA.types[type === 'direct' ? 'T20' : type]?.tribute ?? null };
     for (const b of BANDS) {
       const ts = ties.filter((t) => t.band === b);
-      row[b] = { n: ts.length, tribute: mean(ts.map((t) => t.tribute)), kept: mean(ts.map((t) => t.kept)), indep: mean(ts.map((t) => t.indep)), war: mean(ts.map((t) => t.war)), lost: mean(ts.map((t) => t.lost)) };
+      row[b] = { n: ts.length, tribute: mean(ts.map((t) => t.tribute)), tribMed: median(ts.map((t) => t.tribute)), kept: mean(ts.map((t) => t.kept)), indep: mean(ts.map((t) => t.indep)), war: mean(ts.map((t) => t.war)), lost: mean(ts.map((t) => t.lost)) };
     }
     return row;
   });
@@ -147,20 +155,22 @@ function judge(rows) {
   const everBest = new Set(BANDS.flatMap((b) => best[b].front));
   const never = types.filter((t) => !everBest.has(t));
 
-  console.log(`## 従属国の型のティアリスト (B-070)\n`);
-  console.log(`銀河 ${nS} × ${years} 年 × ${nations} か国、型ごとに同じシード。すべての国の新しい家臣をその型にした。家臣 1 つあたり、結ばれてから ${horizon} 年のうちの数 (${horizon} 年を見届けられた結びつきだけ)。`);
-  console.log(`区分は家臣と主人の国の首都の光年: 陸続き < ${sim.tables.BUNDLE.aiDist[0]}・近い海 < ${sim.tables.BUNDLE.aiDist[1]}・遠い海 (AI が型を選ぶときと同じ)。★ = その区分でパレート最適 (朝貢と残った年数の両方で上回る型がない)。\n`);
-  console.log(`| 型 | 朝貢の割合 | ${BANDS.map((b) => `${BAND_LABEL[b]}: 件数・朝貢 cr・残った年・独立 %・戦争 %`).join(' | ')} |`);
-  console.log(`|---|---|${BANDS.map(() => '---').join('|')}|`);
-  for (const r of rows) {
-    const cell = (b) => { const x = r[b]; if (!x.n) return '—'; return `${best[b].front.includes(r.type) ? '★ ' : ''}${x.n}・${f1(x.tribute, 0)}・${f1(x.kept)}・${f1(100 * x.indep, 0)}・${f1(100 * x.war, 0)}`; };
-    console.log(`| ${r.type} ${r.label} | ${r.tributeRate === null ? '—' : `${Math.round(100 * r.tributeRate)}%`} | ${BANDS.map(cell).join(' | ')} |`);
+  if (!skipForced) {
+    console.log(`## 従属国の型のティアリスト (B-070)\n`);
+    console.log(`銀河 ${nS} × ${years} 年 × ${nations} か国、型ごとに同じシード。すべての国の新しい家臣をその型にした。家臣 1 つあたり、結ばれてから ${horizon} 年のうちの数 (${horizon} 年を見届けられた結びつきだけ)。`);
+    console.log(`区分は家臣と主人の国の首都の光年: 陸続き < ${sim.tables.BUNDLE.aiDist[0]}・近い海 < ${sim.tables.BUNDLE.aiDist[1]}・遠い海 (AI が型を選ぶときと同じ)。★ = その区分でパレート最適 (朝貢の中央値と残った年数の両方で上回る型がない)。始めの離反の倍率 = 型の倍率 × 法と実態の差の項 (結ばれたときの値)。\n`);
+    console.log(`| 型 | 朝貢の割合 | 始めの離反の倍率 | ${BANDS.map((b) => `${BAND_LABEL[b]}: 件数・朝貢 cr (中央値 / 平均)・残った年・独立 %`).join(' | ')} |`);
+    console.log(`|---|---|---|${BANDS.map(() => '---').join('|')}|`);
+    for (const r of rows) {
+      const cell = (b) => { const x = r[b]; if (!x.n) return '—'; return `${best[b].front.includes(r.type) ? '★ ' : ''}${x.n}・${f1(x.tribMed, 0)} / ${f1(x.tribute, 0)}・${f1(x.kept)}・${f1(100 * x.indep, 0)}`; };
+      console.log(`| ${r.type} ${r.label} | ${r.tributeRate === null ? '—' : `${Math.round(100 * r.tributeRate)}%`} | ${f1(r.hr0, 2)} | ${BANDS.map(cell).join(' | ')} |`);
+    }
+    console.log('');
+    for (const b of BANDS) console.log(`- ${BAND_LABEL[b]}: パレート最適 ${best[b].front.join('・') || '—'} / 朝貢の 1 位 ${best[b].byTribute ?? '—'} / 残った年の 1 位 ${best[b].byKept ?? '—'}`);
+    console.log(`- どの区分でも最善になれない型: ${never.length ? never.join('・') : 'なし'}`);
+    const allDirect = BANDS.every((b) => best[b].front.length === 1 && best[b].front[0] === 'direct');
+    console.log(`- 全部を直轄にするのが最善 (どの区分でも直轄だけがパレート最適): ${allDirect ? '**はい**' : 'いいえ'}`);
   }
-  console.log('');
-  for (const b of BANDS) console.log(`- ${BAND_LABEL[b]}: パレート最適 ${best[b].front.join('・') || '—'} / 朝貢の 1 位 ${best[b].byTribute ?? '—'} / 残った年の 1 位 ${best[b].byKept ?? '—'}`);
-  console.log(`- どの区分でも最善になれない型: ${never.length ? never.join('・') : 'なし'}`);
-  const allDirect = BANDS.every((b) => best[b].front.length === 1 && best[b].front[0] === 'direct');
-  console.log(`- 全部を直轄にするのが最善 (どの区分でも直轄だけがパレート最適): ${allDirect ? '**はい**' : 'いいえ'}`);
 
   // 2. 戦略としての型
   let realm = null;
