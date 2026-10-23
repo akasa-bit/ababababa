@@ -1,3 +1,7 @@
+// マーチング・スクエアの線 (角の印 k = 左上 1・右上 2・右下 4・左下 8 が中。辺は 0 = 上・1 = 右・2 = 下・3 = 左)
+const MS_SEGS = { 1: [[3, 0]], 2: [[0, 1]], 3: [[3, 1]], 4: [[1, 2]], 6: [[0, 2]], 7: [[3, 2]], 8: [[2, 3]], 9: [[2, 0]], 11: [[2, 1]], 12: [[1, 3]], 13: [[1, 0]], 14: [[0, 3]] };
+// 向かい合う 2 つの角だけが中のとき (5・10) は、升目の真ん中が中か外かで線を分ける ([外のとき, 中のとき])
+const MS_SADDLE = { 5: [[[3, 0], [1, 2]], [[3, 2], [1, 0]]], 10: [[[0, 1], [2, 3]], [[0, 3], [2, 1]]] };
 class GalaxyView {
   constructor(canvas, app) {
     this.canvas = canvas;
@@ -398,8 +402,11 @@ class GalaxyView {
     const known = new Map();
     const K = (id) => { if (!known.has(id)) known.set(id, id === game.cap ? game.snapshot(id) : game.known(id)); return known.get(id); };
 
-    // 国の領土 (ステラリスの銀河の地図にならう): 画面を小さな升目に分け、升目ごとに TERRITORY_LY 光年以内でいちばん近い入植星系の国を割り当てる。
-    // 国の色で淡く塗り、隣の升目と国が違う所 (国境と領土の端) を濃く塗る。升目の絵をなめらかに引き伸ばして貼るので、縁はやわらかくなる。
+    // 国の領土 (ステラリスの銀河の地図にならう): TERRITORY_LY 光年以内でいちばん近い入植星系の国の領土にする。
+    // 升目の角ごとに「いちばん近い国 a (距離 d1)」と「ほかの国でいちばん近い b (距離 d2)」を求め、国 r の場
+    // g_r = min(R − d_r, d_ほか − d_r) (正なら r の領土) を作る。中は升目の絵を淡く塗り、縁は g_r の等高線を
+    // 升目の辺の上で補間して線で引く (マーチング・スクエア。升目の階段が出ない)。隣の国どうしの縁は、
+    // それぞれ自分の側に少し入れて引くので、2 つの色が並ぶ。
     // 描いた絵は 1 枚のレイヤーに貯めておき、視点が止まったときと国ごとの星系が変わったときだけ描き直す (重いので)
     const members = [];
     for (const sx of game.knownSystems()) {
@@ -418,38 +425,49 @@ class GalaxyView {
         const R = TERRITORY_LY * this.cam.zoom;
         const C = clamp(Math.round(R / 12), 2, 4); // 升目の大きさ [px]
         const x0 = -m, y0 = -m, gw = Math.ceil((w + 2 * m) / C), gh = Math.ceil((h + 2 * m) / C);
-        // 入植星系を、大きさ R の箱に分けておく (升目ごとに近くの箱だけ調べる)
+        // 入植星系を、大きさ R の箱に分けておく (角ごとに近くの箱だけ調べる)
         const bins = new Map();
         const bk = (bx, by) => bx * 100003 + by;
         for (const o of owners) { const key = bk(Math.floor(o.x / R), Math.floor(o.y / R)); if (!bins.has(key)) bins.set(key, []); bins.get(key).push(o); }
         const realms = [...new Set(owners.map((o) => o.realm))];
         const ri = new Map(realms.map((r, n) => [r, n + 1]));
-        const grid = new Uint8Array(gw * gh);
-        for (let gy = 0; gy < gh; gy++) {
-          const py = y0 + (gy + 0.5) * C, by = Math.floor(py / R);
-          for (let gx = 0; gx < gw; gx++) {
-            const px = x0 + (gx + 0.5) * C, bx = Math.floor(px / R);
-            let best = R * R, who = 0;
+        // 升目の角 (gw+1)×(gh+1) ごとの a・d1・b・d2
+        const cw1 = gw + 1, N = cw1 * (gh + 1);
+        const A = new Uint8Array(N), B = new Uint8Array(N), D1 = new Float32Array(N).fill(Infinity), D2 = new Float32Array(N).fill(Infinity);
+        for (let cy = 0; cy <= gh; cy++) {
+          const py = y0 + cy * C, by = Math.floor(py / R);
+          for (let cx = 0; cx <= gw; cx++) {
+            const px = x0 + cx * C, bx = Math.floor(px / R), i = cy * cw1 + cx;
+            let d1 = Infinity, a = 0, d2 = Infinity, b = 0;
             for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
               const list = bins.get(bk(bx + dx, by + dy));
               if (!list) continue;
-              for (const o of list) { const d = (o.x - px) ** 2 + (o.y - py) ** 2; if (d < best) { best = d; who = ri.get(o.realm); } }
+              for (const o of list) {
+                const d = Math.hypot(o.x - px, o.y - py), v = ri.get(o.realm);
+                if (d < d1) { if (v !== a) { d2 = d1; b = a; } d1 = d; a = v; } else if (v !== a && d < d2) { d2 = d; b = v; }
+              }
             }
-            grid[gy * gw + gx] = who;
+            A[i] = a; D1[i] = d1; B[i] = b; D2[i] = d2;
           }
         }
+        // 国 v の場の値 (角 i)。a でも b でもない国は十分に外
+        const field = (v, i) => (A[i] === v ? Math.min(R - D1[i], D2[i] - D1[i]) : B[i] === v ? Math.min(R - D2[i], D1[i] - D2[i]) : -R);
+        // 中: 升目の中心がどの国か (中心の値は 4 つの角の平均で見る) を淡く塗る
         const rgb = realms.map((r) => { const c = realmColor(r); return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; });
         const img = new ImageData(gw, gh);
-        const at = (gx, gy) => (gx < 0 || gy < 0 || gx >= gw || gy >= gh ? 0 : grid[gy * gw + gx]);
         for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
-          const v = grid[gy * gw + gx];
+          const i = gy * cw1 + gx, js = [i, i + 1, i + cw1, i + cw1 + 1];
+          let v = 0, best = 0;
+          for (const j of js) for (const c of [A[j], B[j]]) {
+            if (!c) continue;
+            const g = (field(c, i) + field(c, i + 1) + field(c, i + cw1) + field(c, i + cw1 + 1)) / 4;
+            if (g > best) { best = g; v = c; }
+          }
           if (!v) continue;
-          const edge = at(gx - 1, gy) !== v || at(gx + 1, gy) !== v || at(gx, gy - 1) !== v || at(gx, gy + 1) !== v;
-          const mine = realms[v - 1] === game.cap;
           const [r, g2, b2] = rgb[v - 1];
           const o = (gy * gw + gx) * 4;
           img.data[o] = r; img.data[o + 1] = g2; img.data[o + 2] = b2;
-          img.data[o + 3] = edge ? (mine ? 235 : 200) : (mine ? 52 : 40);
+          img.data[o + 3] = realms[v - 1] === game.cap ? 52 : 40;
         }
         this.off ??= document.createElement('canvas');
         this.off.width = gw; this.off.height = gh;
@@ -460,6 +478,39 @@ class GalaxyView {
         lc.filter = 'none';
         // 作業用のキャンバスは描き終えたら小さくしてメモリを返す (タブレットでは大きなキャンバスが重なると表示が乱れる)
         this.off.width = this.off.height = 1;
+        // 縁: 国ごとに g_r = t の等高線を引く (t は線の幅の半分。自分の領土の側に線が入る)
+        const paths = realms.map(() => new Path2D());
+        const lw = (v) => (realms[v - 1] === game.cap ? 2.4 : 1.8);
+        const cross = (ga, gb, t) => (t - ga) / (gb - ga);
+        for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
+          const i = gy * cw1 + gx, js = [i, i + 1, i + cw1 + 1, i + cw1]; // 左上・右上・右下・左下
+          const seen = new Set();
+          for (const j of js) { if (A[j]) seen.add(A[j]); if (B[j]) seen.add(B[j]); }
+          for (const v of seen) {
+            const t = lw(v) / 2;
+            const g = js.map((j) => field(v, j) - t);
+            const k = (g[0] > 0 ? 1 : 0) | (g[1] > 0 ? 2 : 0) | (g[2] > 0 ? 4 : 0) | (g[3] > 0 ? 8 : 0);
+            if (k === 0 || k === 15) continue;
+            const px = x0 + gx * C, py = y0 + gy * C;
+            // 辺の上の交点: 0 = 上・1 = 右・2 = 下・3 = 左
+            const pt = (e) => {
+              if (e === 0) return [px + C * cross(g[0], g[1], 0), py];
+              if (e === 1) return [px + C, py + C * cross(g[1], g[2], 0)];
+              if (e === 2) return [px + C * cross(g[3], g[2], 0), py + C];
+              return [px, py + C * cross(g[0], g[3], 0)];
+            };
+            const segs = MS_SEGS[k] ?? (g[0] + g[1] + g[2] + g[3] > 0 ? MS_SADDLE[k][1] : MS_SADDLE[k][0]);
+            const path = paths[v - 1];
+            for (const [e1, e2] of segs) { const [ax, ay] = pt(e1), [bx2, by2] = pt(e2); path.moveTo(ax, ay); path.lineTo(bx2, by2); }
+          }
+        }
+        lc.lineCap = 'round'; lc.lineJoin = 'round';
+        realms.forEach((r, n) => {
+          const [cr, cg, cb] = rgb[n];
+          lc.strokeStyle = `rgba(${cr},${cg},${cb},${r === game.cap ? 0.92 : 0.78})`;
+          lc.lineWidth = lw(n + 1);
+          lc.stroke(paths[n]);
+        });
       });
     }
 
