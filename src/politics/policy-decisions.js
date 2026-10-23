@@ -41,7 +41,7 @@
     if (!this.spectate && dec.seen > this.year) return fail('まだ知らせが届いていない');
     const o = dec.opts.find((x) => x.k === d.opt);
     if (!o) return fail('不明な選択肢');
-    if ((o.cr || 0) > this.funds(this.cap)) return fail(`資金が足りない (${o.cr} cr)`);
+    if (o.cr && o.cr > this.funds(this.cap)) return fail(`資金が足りない (${o.cr} cr)`); // 費用のない選択肢は、資金がマイナスでも送れる
     if (o.cr) { this.earn('grant', -o.cr, this.cap); dec.payer = this.cap; this.cash('grant', o.cr, { way: dec, f: 'cr' }); }
     dec.state = 'sent';
     dec.reply = o.k;
@@ -70,7 +70,12 @@
     }
     if (dec.kind === 'pact') { this.resolvePact(dec, k); return { ok: true }; } // 遅れて届く外交 (politics/diplomacy.js)
     const s = STORY[dec.type];
-    if (s) s.resolve(this, dec, k, local);
+    if (s) {
+      s.resolve(this, dec, k, local);
+      // 連作: 続きの段を予約する (返事が届いた年から数えて。回 SE3)
+      const n = s.next?.(this, dec, k, local);
+      if (n && STORY[n.type]) (this.story.queue ??= []).push({ type: n.type, sys: n.sys ?? dec.sys, at: this.year + n.delay, data: n.data || {} });
+    }
     if (dec.cr) this.release('grant', dec, 'cr', dec.payer ?? 0, dec.payer ?? 0); // 使われなかった額は返す
     return { ok: true };
   }
@@ -93,6 +98,17 @@
   // --- 語り手: 何も起きない年が続くと、小さな出来事を配る (押す時期と休む時期を交互に) ---
   storyYearly() {
     const s = this.story;
+    // 連作の続き: 予約した年が来たら、押す時期・休む時期にかかわらず起こす (その星系がまだ自国のものなら)
+    s.queue ??= [];
+    const due = s.queue.filter((q) => q.at <= this.year + 1e-9);
+    if (due.length) {
+      s.queue = s.queue.filter((q) => !due.includes(q));
+      for (const q of due) {
+        if (!this.isColonized(q.sys) || this.realmOf(q.sys) !== this.cap) continue;
+        STORY[q.type].start(this, q.sys, q.data);
+        s.last = this.year;
+      }
+    }
     if (this.year >= s.phaseEnd) {
       s.phase = s.phase === 'on' ? 'off' : 'on';
       s.phaseEnd = this.year + (s.phase === 'on' ? 12 + 8 * this.rand() : 6 + 4 * this.rand());
@@ -100,13 +116,15 @@
     if (s.phase !== 'on') return;
     const gap = this.year - s.last;
     if (this.rand() >= clamp(0.15 * (gap - 2), 0, 0.7)) return;
-    // 同じ種類は25年に1回まで
+    // 同じ種類は25年に1回まで、1 試合に STORY_MAX 回まで (目標 F19)。連作の続きの段は選ばない
     s.recent ??= {};
-    const cands = Object.entries(STORY).filter(([type]) => !(this.year - (s.recent[type] ?? -1e9) < 25)).map(([type, def]) => ({ type, def, sys: def.pick(this) })).filter((x) => x.sys !== null && x.sys !== undefined);
+    s.count ??= {};
+    const cands = Object.entries(STORY).filter(([type, def]) => def.pick && !(this.year - (s.recent[type] ?? -1e9) < 25) && (s.count[type] || 0) < STORY_MAX).map(([type, def]) => ({ type, def, sys: def.pick(this) })).filter((x) => x.sys !== null && x.sys !== undefined);
     const pick = cands.length ? cands[Math.floor(this.rand() * cands.length)] : null;
     if (!pick) return;
     pick.def.start(this, pick.sys);
     s.recent[pick.type] = this.year;
+    s.count[pick.type] = (s.count[pick.type] || 0) + 1;
     s.last = this.year;
   }
 
