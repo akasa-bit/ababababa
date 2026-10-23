@@ -64,17 +64,10 @@ function playForced(sim, { seed, years, nations, force, horizon }) {
   return ties;
 }
 
-// 戦略としての型: 遅れつきのボットが新しい家臣の型を r にして遊ぶ (direct = 観戦の AI の型のまま、直轄を上限まで)
-function playRealm(sim, { seed, years, nations, regime }) {
-  const S = require('./strategy');
-  const s = S.humanize(regime === 'direct' ? { ...S.BASE, direct: 1 } : { ...S.BASE, regime });
-  return S.play(sim, { seed: String(seed), years, nations, strategy: s });
-}
-
 if (!isMainThread) {
   const sim = H.load({ ...(workerData.src ? { src: workerData.src } : {}) });
   parentPort.on('message', ({ i, job }) => {
-    try { parentPort.postMessage({ i, res: job.kind === 'realm' ? playRealm(sim, job) : playForced(sim, job) }); }
+    try { parentPort.postMessage({ i, res: playForced(sim, job) }); }
     catch (e) { parentPort.postMessage({ i, err: String(e.stack || e) }); }
   });
   return;
@@ -178,8 +171,12 @@ function judge(rows) {
     const [rn, ry] = realmArg.split(',').map(Number);
     const rseeds = Array.from({ length: rn }, (_, i) => i + 1);
     const rtypes = ['auto', ...types];
-    const rjobs = rtypes.flatMap((regime) => rseeds.map((seed) => ({ kind: 'realm', seed, years: ry, nations, regime: regime === 'auto' ? 'auto' : regime })));
-    const rres = await runAll(rjobs, threads);
+    // 戦略としての型: 遅れつきのボットが新しい家臣の型を regime にして遊ぶ (direct = 観戦の AI の型のまま、直轄を上限まで)。
+    // tools/strategy.js の runAll で回す (このファイルのワーカーで strategy.js を読むと、あちらのワーカーの受け手も動いてしまう)
+    const S = require('./strategy');
+    const stratOf = (regime) => S.humanize(regime === 'direct' ? { ...S.BASE, direct: 1 } : { ...S.BASE, regime });
+    const rjobs = rtypes.flatMap((regime) => rseeds.map((seed) => ({ regime, seed, src: process.env.HTML || undefined, years: ry, nations, strategy: stratOf(regime) })));
+    const rres = await S.runAll(rjobs.map(({ regime, ...j }) => ({ ...j, seed: String(j.seed) })), threads);
     realm = rtypes.map((t) => {
       const rs = rres.filter((_, i) => rjobs[i].regime === t);
       return { type: t, score: mean(rs.map((x) => x.score)), systems: mean(rs.map((x) => x.systems)), indep: mean(rs.map((x) => x.indep)), wins: 0 };
