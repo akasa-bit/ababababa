@@ -34,6 +34,11 @@
   }
   visibleDecisions() { return this.decisions.filter((d) => d.state === 'open' && (this.spectate || d.seen <= this.year)); }
   decisionOpt(d) { const dec = this.decisions.find((x) => x.id === Number(d.id)); return dec?.opts.find((o) => o.k === d.opt); }
+  // 指令が届くまでの年数。人を送る指令 (視察団・医療団のような team の選択肢) は光速でなく船で行く (B-171。監査の 2.8 の j)
+  orderYears(act, d, target) {
+    const team = act === 'inspect' || (act === 'decide' && this.decisionOpt(d)?.team);
+    return team ? this.shipYears(this.cap, target, !!this.routeBetween(this.cap, target)) : this.lightDelay(target);
+  }
   // 返事を送る (command から)。資金は地球からすぐ払い、効果は返事が届いたときに出る
   sendDecision(d) {
     const dec = this.decisions.find((x) => x.id === Number(d.id));

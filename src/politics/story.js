@@ -150,7 +150,7 @@ const STORY = {
       c.plague = g.year + 15;
       g.event('story', sys, `${c.name} で疫病が広がり始めた (15年のあいだ人口が伸びにくい)`);
       g.addDecision({ kind: 'story', type: 'plague', sys, col: colKey(c), deadline: g.year + g.lightDelay(sys) + 10, def: 'none', text: `${c.name} (${g.system(sys).name}) で疫病が広がっている。医療団を送れば、届いた時点で収まる。港を閉じて隔離すれば、費用なしで早く収まるが、閉じ込められた人々は恨む。`,
-        opts: [{ k: 'cure', label: '医療団を送る', cr: sys === g.cap ? 200 : 400, note: sys === g.cap ? '疫病が収まる (首都なので遠くへ送らずに済み、費用は半分)' : '届けば疫病が収まり、忠誠度 +5' }, { k: 'none', label: '隔離する', note: sys === g.cap ? '疫病は届いてから 5 年で収まる (送らなければ 15 年)。港の封鎖への反発で議会の支持 −4' : '疫病は届いてから 5 年で収まる (送らなければ 15 年)。閉じ込められた恨みで忠誠度 −10' }] });
+        opts: [{ k: 'cure', label: '医療団を送る', cr: sys === g.cap ? 200 : 400, ...(sys === g.cap ? {} : { team: true }), note: sys === g.cap ? '疫病が収まる (首都なので遠くへ送らずに済み、費用は半分)' : `船で ${g.shipYears(g.cap, sys, !!g.routeBetween(g.cap, sys)).toFixed(1)} 年かけて届けば疫病が収まり、忠誠度 +5` }, { k: 'none', label: '隔離する', note: sys === g.cap ? '疫病は届いてから 5 年で収まる (送らなければ 15 年)。港の封鎖への反発で議会の支持 −4' : '疫病は届いてから 5 年で収まる (送らなければ 15 年)。閉じ込められた恨みで忠誠度 −10' }] });
     },
     resolve(g, dec, k, local) {
       const c = g.colonyByKey(dec.col);
