@@ -4,3 +4,4 @@ electron/out/
 # 根の .gitignore の shots/ (試験の画面の写し) から、撮る台本のフォルダだけ外す。書き出したものは入れない
 !/shots/
 /shots/out/
+/trailer/out/
