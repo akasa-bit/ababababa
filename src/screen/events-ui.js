@@ -187,8 +187,9 @@ function eventsHtml(app) {
     }
     list = rows.map((r) => evRow(r.e, r.more)).join('');
   }
-  return `<h2>イベント</h2>
-    <p class="note">遠い星系の出来事は、光が${ME.home}に届いてから表示される (年は起きた年)。</p>
+  // 見出しは報告書の題にする (QD-59 の A4)。頭の説明は「説明」に畳む (A5)
+  return `<h2>${ME.gov} 出来事の記録 <span class="muted">${Math.floor(g.year)}年 ${Math.floor((g.year % 1) * 12) + 1}月</span></h2>
+    <details class="help" data-h="evhead" ${app.helpOpen?.has('evhead') ? 'open' : ''}><summary>説明</summary><p class="note">遠い星系の出来事は、光が${ME.home}に届いてから表示される (年は起きた年)。</p></details>
     ${decisionsHtml(g)}
     <h3>いま起きている問題 (把握分 ${now.length + kwars.length + risks.length})</h3>${nowHtml}
     <h3>${ico('inspect')}総督の手紙 (委任した星系の 10 年ごとの報告)</h3>${govReportsHtml(g)}

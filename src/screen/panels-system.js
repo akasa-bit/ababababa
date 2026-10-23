@@ -174,7 +174,7 @@ function helpify(html) {
     for (let i = 0; i < Math.min(plain.length, 80); i++) h = (h * 31 + plain.charCodeAt(i)) | 0;
     const key = `h${h}`;
     return `<details class="help" data-h="${key}" ${app.helpOpen?.has(key) ? 'open' : ''}><summary>説明</summary><p class="note">${inner}</p></details>`;
-  });
+  }).replace(/<\/p><\/details>(\s*)<details class="help"[^>]*><summary>説明<\/summary>/g, '</p>$1'); // 続いた「説明」は 1 つにまとめる (QD-59 の A2)
 }
 // 地図の左上の知らせの帯: 決めること (返事のボタンつき)、まだ確かめていない重大な知らせ (✓ で消す)、新しい普通の知らせ (10秒ほどで流れて消える)。
 // 押すと地図がその星系へ飛ぶ。古い知らせほど薄い
