@@ -1,12 +1,21 @@
   // --- 年齢つきの人口 (回 KE2・B-010。式と値は DEMO、説明は docs/demography.md) ---
   // 入植地の所得で補間した、5 歳きざみの率 { f, m, asfr } (現実の年あたり)。所得は 2021 年のドル
-  demoRates(c) {
-    const R = DEMO.rates, y = GM.log(Math.max(1, (c.inc ?? STRUCTURE.y0) * DEMO.usd2021));
+  // 補間の位置は 1% きざみに丸め、率と 1 刻みの生き残りの割合 (sf・sm。dt ごと) を使い回す (セーブには入れない。決まった計算の exp が重く、試合が 3 割遅くなったので)
+  demoRates(c, dt) {
+    const R = DEMO.rates, L = (this._demoLn ??= R.map((x) => GM.log(x.income))), y = GM.log(Math.max(1, (c.inc ?? STRUCTURE.y0) * DEMO.usd2021));
     let i = 0;
-    while (i < R.length - 2 && y > GM.log(R[i + 1].income)) i++;
-    const a = GM.log(R[i].income), b = GM.log(R[i + 1].income), t = clamp((y - a) / (b - a), 0, 1);
-    const mix = (k) => R[i][k].map((v, j) => v + (R[i + 1][k][j] - v) * t);
-    return { f: mix('f'), m: mix('m'), asfr: mix('asfr') };
+    while (i < R.length - 2 && y > L[i + 1]) i++;
+    const t = Math.round(clamp((y - L[i]) / (L[i + 1] - L[i]), 0, 1) * 100) / 100, key = `${i}|${t}|${dt}`;
+    const C = (this._demoCache ??= new Map());
+    let r = C.get(key);
+    if (!r) {
+      const mix = (k) => R[i][k].map((v, j) => v + (R[i + 1][k][j] - v) * t);
+      r = { f: mix('f'), m: mix('m'), asfr: mix('asfr') };
+      if (dt !== undefined) { r.sf = r.f.map((mx) => GM.exp(-mx * dt)); r.sm = r.m.map((mx) => GM.exp(-mx * dt)); }
+      r.tfr = r.asfr.reduce((k, v) => k + v, 0) * DEMO.width;
+      C.set(key, r);
+    }
+    return r;
   }
   // 年齢の表を c.pop に合わせる。ほかの所 (移民・入植・徴兵・戦争・疫病) が c.pop を動かした分は、増えたなら移民の年齢で足し、減ったなら年齢の割合のまま減らす。
   // 表がなければ作る: 人口の多い入植地 (始めからある本星) は、その所得の率で死なずに残る割合の形 (定常人口)、ほかは移民の年齢
@@ -34,14 +43,14 @@
   // fert = 出生のしやすさ (福祉・種族・統治体制・混み具合・食べ物と工業品の充足・疫病。前の人口の増え方 POP_GROWTH に掛けていたもの)。新しい人口を返す
   demoStep(c, h, fert, extra) {
     this.ageSync(c);
-    const r = this.demoRates(c), G = ED.generation / 28, dt = h / G, n = DEMO.bins, up = Math.min(1, dt / DEMO.width), ex = GM.exp(-extra * h);
+    const G = ED.generation / 28, dt = h / G, r = this.demoRates(c, dt), n = DEMO.bins, up = Math.min(1, dt / DEMO.width), ex = extra ? GM.exp(-extra * h) : 1;
     let births = 0;
     for (let a = 0; a < n; a++) births += c.age.f[a] * r.asfr[a] * dt;
     births *= Math.max(0, fert);
-    c.tfr = r.asfr.reduce((k, v) => k + v, 0) * DEMO.width; // その年に当てた合計特殊出生率 (目標 R37 を測る)
-    for (const [s, mx] of [['f', r.f], ['m', r.m]]) {
+    c.tfr = r.tfr; // その年に当てた合計特殊出生率 (目標 R37 を測る)
+    for (const [s, sv] of [['f', r.sf], ['m', r.sm]]) {
       const A = c.age[s];
-      for (let a = 0; a < n; a++) A[a] *= GM.exp(-mx[a] * dt) * ex;
+      for (let a = 0; a < n; a++) A[a] *= sv[a] * ex;
       for (let a = n - 2; a >= 0; a--) { const x = A[a] * up; A[a] -= x; A[a + 1] += x; }
     }
     c.age.m[0] += births * DEMO.boy;
@@ -69,7 +78,7 @@
       if (!this.isColonized(id)) continue;
       let pen = 0, med = 0;
       for (const c of this.coloniesIn(id)) {
-        const y = MARKET.buy ? this.incomeOf(c) : 0, s = this.ageShares(c);
+        const y = MARKET.buy ? c.incY ?? this.incomeOf(c) : 0, s = this.ageShares(c); // 所得は、この刻みの消費の所で計算したもの
         pen += DEMO.govScale * DEMO.pension * s.old * y;
         med += DEMO.govScale * DEMO.health * (1 + (DEMO.oldCost - 1) * s.old) * y;
       }
