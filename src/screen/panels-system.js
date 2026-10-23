@@ -174,7 +174,7 @@ function helpify(html) {
     for (let i = 0; i < Math.min(plain.length, 80); i++) h = (h * 31 + plain.charCodeAt(i)) | 0;
     const key = `h${h}`;
     return `<details class="help" data-h="${key}" ${app.helpOpen?.has(key) ? 'open' : ''}><summary>説明</summary><p class="note">${inner}</p></details>`;
-  });
+  }).replace(/<\/p><\/details>(\s*)<details class="help"[^>]*><summary>説明<\/summary>/g, '</p>$1'); // 続いた「説明」は 1 つにまとめる (QD-59 の A2)
 }
 // 地図の左上の知らせの帯: 決めること (返事のボタンつき)、まだ確かめていない重大な知らせ (✓ で消す)、新しい普通の知らせ (10秒ほどで流れて消える)。
 // 押すと地図がその星系へ飛ぶ。古い知らせほど薄い
@@ -259,12 +259,14 @@ function railHtml(g) {
       const why = (o.cr || 0) > g.funds(g.cap) ? '資金が足りない' : pc > g.pc ? '政治力が足りない' : '';
       return `<button data-act="decide" data-sys="${d.sys}" data-id="${d.id}" data-opt="${o.k}" ${why ? 'disabled' : ''} title="${esc(o.note || '')}">${esc(o.label)}<small>${esc(why || [o.cr ? `${o.cr} cr` : '', pc ? `政治力 ${pc}` : ''].filter(Boolean).join('・') || '費用なし')}</small><small class="clamp2">${esc(o.note || '')}</small></button>`;
     }).join('')}</div></div>`;
-  const shownMajors = majors.slice(0, 3);
-  const moreN = majors.slice(3).reduce((k, x) => k + x.ids.length, 0) + news.over;
+  // 縦の画面では帯が地図を覆いやすいので、重大な知らせは 2 件・届いたばかりの知らせは 1 件まで (QD-59 の T4)
+  const tall = innerHeight > innerWidth;
+  const shownMajors = majors.slice(0, tall ? 2 : 3);
+  const moreN = majors.slice(shownMajors.length).reduce((k, x) => k + x.ids.length, 0) + news.over;
   return `${consent}${surprise.slice(0, 2).map((w) => surpriseHtml(g, w)).join('')}${guide}${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
     ${hungry ? `<button class="state" data-act="view" data-v="events">${tagIco('famine')}飢餓・水不足の星系 ${hungry} — 地図の赤い「!」</button>` : ''}
     ${shownMajors.map((x) => item(x.e, true, x.ids)).join('')}${moreN ? `<button class="more" data-act="view" data-v="events">ほかに重大な知らせ ${moreN} 件 (イベントのタブ)</button>` : ''}
-    ${report}${recent.map((e) => item(e, false)).join('')}
+    ${report}${recent.slice(0, tall ? 1 : recent.length).map((e) => item(e, false)).join('')}
     <div class="railbar">${majors.length > 1 ? '<button data-act="ackall">重大な知らせをすべて確かめた</button>' : ''}<button data-act="railtoggle">隠す</button></div>`;
 }
 

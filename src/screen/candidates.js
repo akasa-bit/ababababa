@@ -37,20 +37,19 @@ function candidatesHtml(app) {
     const status = ship ? `<span class="tag colony">${ico('colony')}入植船 航行中</span> <span class="muted">あと ${(ship.arrive - g.year).toFixed(1)} 年</span>`
       : prep ? `<span class="tag shortage">${ico('develop')}入植船 準備中</span> <span class="muted">あと ${(prep.ready - g.year).toFixed(1)} 年</span>` : '';
     const mark = row === top ? '<span class="tag rec">おすすめ</span>' : row.same ? '<span class="tag muted">課題に数えない</span>' : '';
-    return `<tr class="${ship || prep ? 'enroute' : ''}${row.same ? ' same' : ''}"><td><button data-act="gobody" data-sys="${sys.id}" data-body="${esc(b.id)}">${planetIcon(b)}${esc(b.name)}</button>${mark ? ` ${mark}` : ''}${status ? `<br>${status}` : ''}</td>
-      <td>${d.toFixed(1)} ly <span class="muted">(${esc(from.name)})</span></td><td>${planetIcon(b)}${TYPE_LABEL[b.type]}</td>
-      <td>${solid ? `<b class="grade g${grade}">${GRADE_LABEL[grade]}</b>` : '<span class="muted">地表なし</span>'}</td>
-      <td>${solid ? `${Math.round(b.tSurf - 273)} ℃` : '—'}</td><td>${fmt(b.gravity)} g</td>
-      <td>${solid ? (b.pressure < 0.001 ? '真空' : `${fmt(b.pressure)} atm`) : '—'}</td>
-      <td>${nat}</td><td>${res}</td><td>${send}</td></tr>`;
+    return `<tr class="${ship || prep ? 'enroute' : ''}${row.same ? ' same' : ''}"><td><button data-act="gobody" data-sys="${sys.id}" data-body="${esc(b.id)}">${planetIcon(b)}${esc(b.name)}</button>${mark ? ` ${mark}` : ''}${status ? `<br>${status}` : ''}<div class="send">${send}</div></td>
+      <td data-l="首都から">${d.toFixed(1)} ly</td><td data-l="種類">${planetIcon(b)}${TYPE_LABEL[b.type]}</td>
+      <td data-l="入植適性">${solid ? `<b class="grade g${grade}">${GRADE_LABEL[grade]}</b>` : '<span class="muted">地表なし</span>'}</td>
+      <td data-l="環境">${solid ? `${Math.round(b.tSurf - 273)} ℃・` : ''}${fmt(b.gravity)} g${solid ? `・${b.pressure < 0.001 ? '真空' : `${fmt(b.pressure)} atm`}` : ''}</td>
+      <td data-l="先住民">${nat}</td><td data-l="資源">${res}</td></tr>`;
   }).join('');
   return `<h2>候補地 <span class="muted" style="font-size:13px">ハビタブルゾーン内の未入植の天体 ${rows.length} 件${rows.length > 100 ? ` (${{ rec: 'おすすめ順', dist: '近い順', grade: '入植適性の高い順' }[sort]}に100件を表示)` : ''}</span></h2>
     <div class="bulk">
       <label class="check"><input type="checkbox" data-act="candonly" ${app.candOnly ? 'checked' : ''}> 地表に入植できる天体だけ</label>
       並び順 <select data-act="candsort"><option value="rec" ${sort === 'rec' ? 'selected' : ''}>おすすめ順</option><option value="dist" ${sort === 'dist' ? 'selected' : ''}>首都から近い順</option><option value="grade" ${sort === 'grade' ? 'selected' : ''}>入植適性の高い順</option></select>
     </div>
-    <div class="scroll"><table class="tbl">
-      <tr><th>天体</th><th>${ico('dist')}首都から</th><th>種類</th><th>${ico('suit')}入植適性</th><th>${ico('temp')}気温</th><th>${ico('gravity')}重力</th><th>${ico('atmo')}大気圧</th><th>${ico('natives')}先住民</th><th>${ico('mine')}資源</th><th>${ico('colony')}入植船を送る</th></tr>
+    <div class="scroll"><table class="tbl cands">
+      <tr><th>天体・${ico('colony')}入植船を送る</th><th>${ico('dist')}首都から</th><th>種類</th><th>${ico('suit')}入植適性</th><th>${ico('temp')}気温・${ico('gravity')}重力・${ico('atmo')}大気圧</th><th>${ico('natives')}先住民</th><th>${ico('mine')}資源</th></tr>
       ${body}</table></div>
     <p class="note">入植船は首都から出る。地表に入植できない天体には宇宙ステーション (回って遠心力で重力を作る居住区) を送る。入植船が向かっている天体は色付きで、到着までの年数を表示する。</p>
     <p class="note">おすすめ順: 入植適性 (地表に住めないならステーション) の高さを、首都からの距離で割り引いた順 (適性 ÷ (1 + 距離/6 光年)²。6 光年で 4 分の 1、12 光年で 9 分の 1)。首都と同じ星系の天体は、時代の課題の「星系の数」に数えないので下に回す (資源や人口のために送るのはよい)。</p>`;
