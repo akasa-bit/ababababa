@@ -24,6 +24,8 @@
 ## 知らせ
 
 (ほかのレーンからの知らせは、ここに 1 行ずつ)
+
+- 2026-10-23 政治 (回 SE3・B-050) から: 語り手を連作にし、同じ種類 (頭の出来事) は 1 試合に 2 回まで (`STORY_MAX`) にした。F19 は作りの上で 2 回までになる (`tools/strategy.js` の数え方は、続きの段を別の種類として数えるので、そのまま使える)。試験 `tools/tests/story.js` を足し、`tools/ci-tests.js` に落ちたら止める行として入れた。
 - 2026-10-22 画面と最初の体験 (回 GA5・B-060) から: プレイ記録の形 (DO3 の道具が読むもの)。ホームの「記録を書き出す」のファイル = `{ app: 'nolongerubiquitous', edition, kind: 'playlog', exportedAt, sessions: [...] }`。セッションは `{ id, startedAt, seed, y0, y1, visibleMs, runningMs, pausedMs, idleMs, views: { 画面: ms }, vw, vh, ed, firsts: { colony, route, regime } (開いてからの秒), entries: [{ t: 開いてからの秒, y: ゲームの年, k, ... }], summary }`。`k` は act・set・fleet・fleetclear (命令)・speed・view・ui・home・idle (30 秒以上の操作なし。s = 秒)・memo (tag・text・snap・at・view)・first (what)。F04 は `firsts` の最小、F05 は止めていない間の命令の間隔、F03 は memo の confused と idle、F01・F02 は startedAt と visibleMs。同意 (QD-55 = a) した人だけが記録される。古い記録 (GA5 より前) には vw・vh・ed・firsts がない。
 - 2026-10-22 画面と最初の体験 (回 GA4・B-058) から: 評論家の 2-6 の「結末の型の分布 (自動対戦)」を測るときは、`g.ending()` (`src/screen/eras-score.js`。状態を読むだけ) が `{ type: 'empire' | 'federation' | 'balance' | 'decline', label, causes, share, indep, loose }` を返す。手元の 10 試合 (300 年): 地球だけの銀河 4 つはどれも帝国の維持、6 か国の銀河 6 つは均衡 5・衰え 1、連邦への移行は 0 (AI の家臣の既定の型が自治の家族でないため)。
 
