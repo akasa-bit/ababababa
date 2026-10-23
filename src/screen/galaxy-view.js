@@ -598,6 +598,7 @@ class GalaxyView {
         ctx.setLineDash([]);
       }
     }
+    this.labels = []; // 地図の札: 星のまわりの名前・警告・交戦などと指令の文字は、あとで大事な順に重ならないように置く (QD-59 の M1)
     this.drawLightSpheres(game);
 
     // 建設資材の輸送船
@@ -738,6 +739,7 @@ class GalaxyView {
           lx -= ctx.measureText(t).width;
           ctx.fillStyle = FLEET_COLOR[kind];
           ctx.fillText(t, lx, y + 4);
+          this.labels.push({ fixed: true, box: { x: lx, y: y - 8, w: ctx.measureText(t).width, h: 14 } }); // 札がよける
           lx -= 3;
         }
       }
@@ -749,9 +751,7 @@ class GalaxyView {
         ctx.strokeStyle = '#ffaa3c';
         ctx.beginPath(); ctx.arc(x, y, rr, -Math.PI / 2, -Math.PI / 2 + Math.max(0.05, k.siege.progress) * Math.PI * 2); ctx.stroke();
         ctx.lineWidth = 1;
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillStyle = '#ffaa3c';
-        ctx.fillText(`攻囲 ${Math.round(k.siege.progress * 100)}%`, x + rr + 4, y + rr);
+        this.labels.push({ text: `攻囲 ${Math.round(k.siege.progress * 100)}%`, font: 'bold 12px sans-serif', color: '#ffaa3c', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 4, y + rr], [x - rr - 4 - w, y + rr]] });
       }
       if (k && k.battle) {
         // 艦隊戦: 点滅する赤い輪と、両軍の残りの比 (左が攻撃側の国の色、右が防衛側)
@@ -769,14 +769,10 @@ class GalaxyView {
         ctx.fillRect(x + rr + 4, y + rr + 4, w * frac, 4);
         ctx.fillStyle = realmColor(k.realm);
         ctx.fillRect(x + rr + 4 + w * frac, y + rr + 4, w * (1 - frac), 4);
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillStyle = '#ff6b6b';
-        ctx.fillText(`艦隊戦 ${Math.ceil(bt.a)}対${Math.ceil(bt.d)}`, x + rr + 4, y + rr);
+        this.labels.push({ text: `艦隊戦 ${Math.ceil(bt.a)}対${Math.ceil(bt.d)}`, font: 'bold 12px sans-serif', color: '#ff6b6b', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 4, y + rr], [x - rr - 4 - w, y + rr]] });
       }
       if (k && k.cols.length && k.realm !== null && k.realm !== undefined && this.app.game.knownEnemiesOf(k.realm).length && (k.realm !== game.cap || s.id === game.cap)) {
-        ctx.fillStyle = '#ff6b6b';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText('交戦中', x - r - 34, y - r - 4);
+        this.labels.push({ text: '交戦中', font: 'bold 12px sans-serif', color: '#ff6b6b', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x - r - 4 - w, y - r - 4], [x - w / 2, y - r - 12], [x - r - 4 - w, y + r + 14]] });
       }
       const wars = k ? k.wars : [];
       if (wars.length) {
@@ -791,12 +787,8 @@ class GalaxyView {
         ctx.strokeStyle = `rgba(255,90,90,${pulse})`;
         ctx.beginPath(); ctx.arc(x, y, rr, -Math.PI / 2, -Math.PI / 2 + Math.max(0.05, prog) * Math.PI * 2); ctx.stroke();
         ctx.lineWidth = 1;
-        ctx.font = 'bold 12px sans-serif';
         const label = `⚔ ${Math.round(prog * 100)}%${wars.length > 1 ? ` ×${wars.length}` : ''}`;
-        ctx.fillStyle = 'rgba(10,14,24,0.85)';
-        ctx.fillRect(x + rr + 2, y - rr - 6, ctx.measureText(label).width + 8, 15);
-        ctx.fillStyle = '#ff6b6b';
-        ctx.fillText(label, x + rr + 6, y - rr + 5);
+        this.labels.push({ text: label, font: 'bold 12px sans-serif', color: '#ff6b6b', bg: 'rgba(10,14,24,0.85)', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 6, y - rr + 5], [x - rr - 6 - w, y - rr + 5], [x + rr + 6, y + rr + 10]] });
       }
       if (k && k.cols.length) {
         // 資源不足の印 (状態): 飢餓・水不足は赤、工業品・原料の不足は橙の「!」を星の右上に
@@ -810,9 +802,7 @@ class GalaxyView {
         // 不満の段階 (地球の国の星系): 不満・要求・最後通牒
         const st = k.unrest?.stage || 0;
         if (st && (k.realm ?? game.cap) === game.cap) {
-          ctx.font = 'bold 12px sans-serif';
-          ctx.fillStyle = st >= 3 ? '#ff6b6b' : st === 2 ? '#ff9f43' : '#f5d142';
-          ctx.fillText(UNREST_LABEL[st], x + r + 9, y - r - 1);
+          this.labels.push({ text: UNREST_LABEL[st], font: 'bold 12px sans-serif', color: st >= 3 ? '#ff6b6b' : st === 2 ? '#ff9f43' : '#f5d142', prio: 1, alpha: ctx.globalAlpha, at: (w) => [[x + r + 9, y - r - 1], [x - r - 9 - w, y - r - 1], [x - w / 2, y - r - 14]] });
         }
       }
       if (game.isSurveyed(s.id) && s.bodies.some((b) => b.natives)) {
@@ -821,9 +811,10 @@ class GalaxyView {
       }
       const labeled = z >= 10 || (k && k.cols.length) || s.id === this.app.sel.sys || s === this.hover;
       if (labeled) {
-        ctx.fillStyle = s === this.hover ? '#fff' : 'rgba(200,215,240,0.8)';
-        ctx.font = '12px sans-serif';
-        ctx.fillText(s.name, x + r + 7, y + 4);
+        // 大事な順: 自国の首都・選んだ星系 > 入植した星系 > ほかの星
+        const prio = s.id === game.cap || s.id === this.app.sel.sys || s === this.hover ? 0 : k && k.cols.length ? 3 + (k.realm === game.cap ? 0 : 0.5) : 4;
+        this.labels.push({ text: s.name, font: '12px sans-serif', color: s === this.hover ? '#fff' : 'rgba(200,215,240,0.8)', prio, alpha: ctx.globalAlpha,
+          at: (w) => [[x + r + 7, y + 4], [x - r - 7 - w, y + 4], [x - w / 2, y + r + 16], [x - w / 2, y - r - 8]] });
       }
       ctx.globalAlpha = 1;
       if (s.id === this.app.sel.sys) {
@@ -833,6 +824,7 @@ class GalaxyView {
       }
     }
     ctx.globalAlpha = 1;
+    this.placeLabels();
 
     // 艦隊の選択と移動先のプレビュー (Hearts of Iron 風)
     const fsel = this.app.fleetSel;
@@ -938,6 +930,34 @@ class GalaxyView {
     }
   }
 
+  // 札を大事な順 (prio の小さい順) に置く。候補の位置 (at) を順に試し、先に置いた札とぶつからない所に書く。
+  // どこもぶつかるものは書かない (prio 0 = 自国の首都・選んだ星系は、いつも書く)。字には暗い縁取りをつけて、国境の縁や線の上でも読めるようにする (M2)
+  placeLabels() {
+    const { ctx } = this;
+    const placed = this.labels.filter((L) => L.fixed).map((L) => L.box);
+    const hit = (b) => placed.some((q) => b.x < q.x + q.w && q.x < b.x + b.w && b.y < q.y + q.h && q.y < b.y + b.h);
+    ctx.save();
+    ctx.lineJoin = 'round';
+    for (const L of this.labels.filter((x) => !x.fixed).sort((a, b) => a.prio - b.prio)) {
+      ctx.font = L.font;
+      let pos, w = 0, text = L.text;
+      for (const t of [L.text, L.short].filter(Boolean)) {
+        w = ctx.measureText(t).width;
+        pos = L.at(w).find(([px, py]) => !hit({ x: px - 2, y: py - 12, w: w + 4, h: 15 }));
+        if (pos) { text = t; break; }
+      }
+      if (!pos) { if (L.prio > 0) continue; w = ctx.measureText(L.text).width; pos = L.at(w)[0]; }
+      const [px, py] = pos;
+      placed.push({ x: px - 2, y: py - 12, w: w + 4, h: 15 });
+      ctx.globalAlpha = L.alpha ?? 1;
+      if (L.bg) { ctx.fillStyle = L.bg; ctx.fillRect(px - 4, py - 11, w + 8, 15); }
+      else { ctx.strokeStyle = 'rgba(5,7,13,0.85)'; ctx.lineWidth = 3; ctx.strokeText(text, px, py); }
+      ctx.fillStyle = L.color;
+      ctx.fillText(text, px, py);
+    }
+    ctx.restore();
+    this.labels = [];
+  }
   // 光の球 (B-052): 自国が出した指令と返事の光は、出した星系から光の速さで球になって広がる (正射影なので球の輪郭は円)。
   // 縁の、行き先の向きの所に「届くまで あと n 年」。光が行き先を越えたら消える
   drawLightSpheres(game) {
@@ -958,7 +978,6 @@ class GalaxyView {
     ctx.font = '12px sans-serif';
     // 自分で出した指令 (予想のあるもの) の文字を先に、あとは早く届く順。文字が重なるものは書かない (球は描く)
     list.sort((a, b) => !!b.pred - !!a.pred || a.arrive - b.arrive);
-    const boxes = [];
     list.forEach((o, i) => {
       const a = game.system(o.from), b = game.system(o.to);
       const r = Math.max(0, game.year - o.sent); // 光年 (光は 1 年に 1 光年)
@@ -977,10 +996,8 @@ class GalaxyView {
       ctx.beginPath(); ctx.arc(ex, ey, 2.5, 0, Math.PI * 2); ctx.fill();
       if (i >= 4) return; // 文字は 4 つまで
       const text = `${o.label} 届くまで あと ${Math.max(0, o.arrive - game.year).toFixed(1)} 年${o.pred?.short ? `・${o.pred.short}` : ''}`;
-      const box = { x: ex + 6, y: ey - 18, w: ctx.measureText(text).width, h: 16 };
-      if (boxes.some((q) => box.x < q.x + q.w && q.x < box.x + box.w && box.y < q.y + q.h && q.y < box.y + box.h)) return;
-      boxes.push(box);
-      ctx.fillText(text, ex + 6, ey - 6);
+      // 入らないときは短い文 (「あと n 年」だけ) で置き直す
+      this.labels.push({ text, short: `あと ${Math.max(0, o.arrive - game.year).toFixed(1)} 年`, font: '12px sans-serif', color: '#aadcff', prio: 5 + i * 0.01, at: (w) => [[ex + 6, ey - 6], [ex + 6, ey + 16], [ex - 6 - w, ey - 6], [ex - 6 - w, ey + 16], ...[36, 56, 76].flatMap((d) => [[ex + 6, ey - d], [ex + 6, ey + d], [ex - 6 - w, ey - d], [ex - 6 - w, ey + d]])] });
     });
     ctx.restore();
   }
