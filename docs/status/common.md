@@ -13,7 +13,8 @@
 - 2026-10-21 (回 R4): 古い `docs/sessions.md`・`docs/parallel.md` と前のレーンの状態のファイルを `docs/archive/` に移し (中身はそのまま)、新しいレーン (KE・SE・FU・GA・DO・SO) で `docs/sessions.md`・`docs/parallel.md`・`docs/status/<レーン>.md` を作り直した。`docs/game-plan.md` の段取りを Q2 = b の順にした。
 - 2026-10-22 (`docs/requests/2026-10-22-common.md` の common-1): 回を始める前の確かめ `node tools/session-check.js <回>` を入れた。前に済んでいる必要がある回 (`tools/sessions.json`) がまだなら、理由を出して止まる。済んだかは各レーンの状態のファイルの「## 済んだ回」で見る。
 - 1 波目 (`docs/sessions.md` の 3。`src/` に触るのは GA・SE・FU。DO・SO も一緒に) は 2026-10-23 に済んだ (#179〜#212)。
-- 2026-10-23 (回 W1): 1 波目の見直し。数は下の「1 波目の数」。組み方の直す案と 2 波目の案を、返事待ちと一緒に 1 つの Artifact (https://claude.ai/artifact/AHGDJCqRqgGyYycX8GYYGD) で見せた。
+- 2026-10-23 (回 W1): 1 波目の見直し。数は下の「1 波目の数」。組み方の直す案と 2 波目の案を、返事待ちと一緒に 1 つの Artifact (https://claude.ai/artifact/AHGDJCqRqgGyYycX8GYYGD) で見せて決めてもらった (`docs/requests/2026-10-23-common.md` の common-1): Q1〜Q4 はおすすめ (知らせは `docs/notices/` に 1 件 1 ファイル・同じファイルを触る PR だけ 1 本ずつ・ほかのレーンのフォルダは core と同じ扱い・返事を待つあいだは止まらない仕事を進める。`docs/parallel.md`)、**翻訳の本番 (T1) は 2 波目のあと**、2 波目は前半 = 経済・画面・政治、後半 = 経済・政治 (集団)・船と戦争 (船の設計) (`docs/sessions.md` の 3・`tools/sessions.json`)、音の素材はあとで。
+- 次: 2 波目 (前半はいま始められる: KE1・GA6・SE4・DO4・SO3)。2 波目が終わったら T1 (翻訳の本番。ほかを止めて 1 本で)、そのあと W2 (見直し)。
 
 ## 1 波目の数 (回 W1、2026-10-23)
 
@@ -92,6 +93,8 @@
 ## 済んだ回
 
 回が済んだら (その回の最後の PR で)、ここに 1 行足す (例: `- W1 (#200)`)。`node tools/session-check.js` が、次の回を始めてよいかをこれで決める。
+
+- W1 (この回の PR)
 
 ## handoff.md から移したもの (2026-10-20、並行に移るときの後片付け。`docs/parallel.md` の 5)
 

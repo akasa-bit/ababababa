@@ -67,7 +67,7 @@
 
 ## 知らせ
 
-(ほかのレーンからの知らせは、ここに 1 行ずつ)
+(2026-10-23 から、新しい知らせは `docs/notices/FU/` に 1 件 1 ファイルで来る (`docs/notices/README.md`)。下は前からの知らせ。片付けたら消す)
 
 - 2026-10-22 政治 (回 SE2・B-026) から: **2 行の呼び出しのお願い** (ユーザーの決定 QD-38 = a)。遅れて届く外交の協定ができた (`src/politics/diplomacy.js`)。(1) `war-ai.js` の宣戦の相手選び (BARGAIN の `for (const r of roots)` の中と、前の確率表の `prey` の filter) に `if (this.pactBars(root, r)) continue;` (不可侵と同盟の相手には宣戦しない。縛られるのは協定の知らせが届いてから)。(2) `reservation` の相手の艦隊 `theirs` に `+ this.pactAllyShips(r, e)` (相手の同盟国の艦隊を、首都に届いている記録で足す。抑止)。入るまでは、AI が協定の相手に宣戦すると破約 (信頼が下がる) になるだけ。AI どうしも協定を結ぶ (QD-37 = b) ので、防衛同盟の参戦 (政治の側から `beginWar`) で戦争の多さ R29 が動く。測った値は `docs/status/SE.md`。
 

@@ -1,7 +1,7 @@
 {
-  "note": "回の順番 (docs/sessions.md の 3)。after = 始める前に済んでいる必要がある回。済んだかは docs/status/<レーン>.md の「## 済んだ回」で見る (tools/session-check.js)。回を足すときは、ここと docs/sessions.md の両方に足す",
-  "lanes": { "GA": "画面と最初の体験", "SE": "政治", "FU": "船と戦争", "DO": "道具と検証", "SO": "外向き", "KE": "経済", "W": "common", "T": "外向き" },
-  "status": { "GA": "GA", "SE": "SE", "FU": "FU", "DO": "DO", "SO": "SO", "KE": "KE", "W": "common", "T": "SO" },
+  "note": "回の順番 (docs/sessions.md の 3)。after = 始める前に済んでいる必要がある回。済んだかは docs/status/<レーン>.md の「## 済んだ回」で見る (tools/session-check.js)。回を足すときは、ここと docs/sessions.md の両方に足す。2 波目の後半 (SE6・FU3) は、KE2 と GA8 の両方を待つ (src に同時に触るのを 3 レーンまでにするため)",
+  "lanes": {"GA": "画面と最初の体験", "SE": "政治", "FU": "船と戦争", "DO": "道具と検証", "SO": "外向き", "KE": "経済", "W": "common", "T": "外向き"},
+  "status": {"GA": "GA", "SE": "SE", "FU": "FU", "DO": "DO", "SO": "SO", "KE": "KE", "W": "common", "T": "SO"},
   "sessions": {
     "GA1": [],
     "GA2": ["GA1"],
@@ -19,13 +19,24 @@
     "SO1": [],
     "SO2": ["SO1"],
     "W1": ["GA5", "SE3", "FU2", "DO3", "SO2"],
-    "KE1": ["W1"],
-    "KE2": ["KE1"],
-    "SE4": ["SE3", "KE2"],
-    "FU3": ["FU2", "KE2"],
     "FU4": ["FU2"],
     "FU5": ["FU4"],
+    "KE1": ["W1"],
+    "KE2": ["KE1"],
+    "KE3": ["KE2"],
+    "KE4": ["KE3"],
     "GA6": ["GA5", "W1"],
-    "T1": ["SO2", "W1"]
+    "GA7": ["GA6"],
+    "GA8": ["GA7"],
+    "SE4": ["SE3", "W1"],
+    "SE5": ["SE4"],
+    "SE6": ["SE5", "KE2", "GA8"],
+    "FU3": ["FU5", "KE2", "GA8"],
+    "DO4": ["DO3", "W1"],
+    "DO5": ["DO4"],
+    "DO6": ["DO5", "KE1"],
+    "SO3": ["SO2", "W1"],
+    "T1": ["KE4", "SE6", "FU3", "DO6", "SO3"],
+    "W2": ["T1"]
   }
 }
