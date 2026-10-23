@@ -71,6 +71,7 @@
     if (dec.kind === 'pact') { this.resolvePact(dec, k); return { ok: true }; } // 遅れて届く外交 (politics/diplomacy.js)
     const s = STORY[dec.type];
     if (s) {
+      if (local) this.govDid(dec.sys, `「${dec.opts.find((o) => o.k === k)?.label || k}」を選んだ`, `${this.homeName()}の返事が期限までに届かず、現地で決めた`);
       s.resolve(this, dec, k, local);
       // 連作: 続きの段を予約する (返事が届いた年から数えて。回 SE3)
       const n = s.next?.(this, dec, k, local);
