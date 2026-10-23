@@ -6,6 +6,10 @@
 // 5. 入植していない星系での艦隊戦は着いた時点で解ける
 // 6. 法則: 2 倍の兵力で勝つのは 65〜88%、ランチェスター則の指数は 0.2〜0.8 (ゲーム版の補正。tools/battles-headless.js で詳しく)
 // 使い方: node tools/tests/battle.js
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ judge: J.passes('艦隊戦') }];
+if (require.main !== module) return;
 const H = require('../headless');
 const sim = H.load({ edition: 'game' });
 const fails = [];

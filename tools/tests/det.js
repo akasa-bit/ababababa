@@ -1,5 +1,9 @@
 // 再現性の試験: (1) 別々のページで同じシード → 同じ結果 (Math.random はページごとにわざと変える)
 // (2) 保存→読み込み→保存が一致 (3) 読み込んだゲームが、元のゲームと同じ結果に進み続ける
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ args: ['3', '120'], judge: (o) => ((o.match(/一致/g) || []).length >= 3 && o.includes('保存→読込→保存: true') && J.noPageErrors(o) ? '' : '再現性が一致しない') }];
+if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`; // 試す版 (HTML=$PWD/simulation.html でシミュレーション版)
 require('fs').mkdirSync('shots', { recursive: true }); // 画面の写しは、いまのフォルダの shots/ に書く

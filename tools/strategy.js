@@ -255,7 +255,7 @@ function play(sim, { seed, years = 150, nations = 6, strategy = null, rankYear =
     reversal: midLeader === null ? null : midLeader !== leader() ? 1 : 0, ms: Date.now() - t0, hash: sim.hash(g),
     early10: years >= 20 ? early / 2 : null, stories, storyMax: Math.max(0, ...Object.values(stories)), maxSystems, maxDist, creditsAt,
     // 挑戦 (CHALLENGES): 60 星系・遠征は一度でも届いたか、独立を許さない・統一は終わりの年の様子
-    challenges: { sixty: maxSystems >= 60 ? 1 : 0, far: maxDist > 40 ? 1 : 0, loyal: (g.asRealm(cap, () => g.stats?.indepFromEarth || 0)) === 0 ? 1 : 0, unify: g.asRealm(cap, () => g.independentRealms()) === 0 ? 1 : 0 },
+    challenges: { sixty: maxSystems >= 60 ? 1 : 0, far: maxDist > 40 ? 1 : 0, loyal: (g.asRealm(cap, () => g.stats?.indepFromEarth || 0)) === 0 ? 1 : 0, unify: g.asRealm(cap, () => g.independentRealms()) === 0 && systems >= (sim.tables.CHALLENGES.unify.min || 0) ? 1 : 0 }, // 統一は地球の国が CHALLENGES.unify.min 星系以上のときだけ (QD-39 = a)
   };
 }
 

@@ -12,7 +12,7 @@
 
 PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメント (1 つを書き直す) とジョブの要約に出す。
 
-- `node tools/ci-tests.js`: 組み立て → 目標のファイルの固定の確認 → `tools/tests` の試験 (rotate と headless を含む 16 本)。出力から合否を決め (`docs/handoff.md` の 14 と同じ見方)、Markdown の表を出す。1 つでも落ちたら失敗。名前を渡すとその試験だけ (`node tools/ci-tests.js det net`)
+- `node tools/ci-tests.js`: 組み立て → 目標のファイルの固定の確認 → `tools/tests` の試験 (置いたファイルを自動で拾う。回 DO4・B-221。回し方と合否は各ファイルの先頭の `exports.ci` に書く。書き方は `docs/parallel.md` の 7 の道具と検証)。出力から合否を決め (`docs/handoff.md` の 14 と同じ見方)、Markdown の表を出す。1 つでも落ちたら失敗。名前を渡すとその試験だけ (`node tools/ci-tests.js det net`)
 - `node tools/ci-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数]`: 画面なしの版で、main と PR を同じシードで回し、入植地・人口・戦争・独立・資金などの平均と 10〜90% を並べる。合否は付けない (釣り合いが知らないうちに動いていないかを見る)
 - `node tools/fiscal-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]`: 画面なしの版で回し、国ごと・年ごとの財政と金融のパネルを、Jordà–Schularick–Taylor と同じ列 (`year, country, gdp, revenue, expenditure, debtgdp, tloans`) で書き出す。`python3 data/build/analyze_fiscal.py <出力.csv>` で、現実と同じ台本で R19〜R22 を出す (`docs/fiscal.md` の 3)
 - `node tools/market-panel.js <出力のフォルダ> [銀河の数] [年数] [国の数] [値のファイル.json]`: 画面なしの版で回し、星系ごと・年ごとの値段 (`prices.csv`) と在庫とふだんの消費 (`food.csv`・`goods.csv`) を書き出す。`python3 data/build/analyze_market.py <フォルダ>/prices.csv <フォルダ>/food.csv <フォルダ>/goods.csv` で、現実と同じ台本で R23〜R26 を出す (`docs/market.md` の 2)
@@ -161,6 +161,19 @@ node tools/secession.js "$PWD/index.html" sout 300 1,2,3,4,5,6 6
 プレイヤーの国も観戦の AI に任せ、主従の結びつき (家臣の星系 → 主人) ごとに、始まった年・統治体制・首都と主人からの距離・不満が始まった回数・終わった年と終わり方
 (独立・別の国へ移った・入植地がなくなった・試合の終わりまで続いた) を、銀河ごとに `sout/<シード>.json` へ書き出す。
 生存時間の分析 (Kaplan–Meier・Cox モデル) で、歴史の植民地の独立までの時間 (目標 R08・R09) と同じ形式で比べるための材料。結果は `docs/governance.md`。
+
+## 従属国の型のティアリスト (tools/vassal-tier.js)
+
+B-070 (評論家の 3-6)。どの従属国の型も、首都からのどこかの距離で最善になるか・「全部を直轄にするのが最善」や「維持費のかからない家臣の量産」にならないかを見る。ゲームの中身は変えない。
+
+```sh
+node tools/vassal-tier.js 12 300 6 --realm 8,150 --json tier.json   # 型ごとに 12 銀河 × 300 年 × 6 か国 + 戦略としての型 8 銀河 × 150 年
+```
+
+1. **距離ごと**: すべての国の新しい家臣をその型にした銀河を、型ごとに同じシードで回す (`vassal-export.js --force` と同じ実験)。家臣 1 つごとに、結ばれてから `--horizon` 年 (100) のうちに主人へ届けた朝貢・残った年数・独立を数え、首都からの光年で 3 つの区分 (陸続き・近い海・遠い海。`BUNDLE.aiDist`) に分ける。★ = その区分でパレート最適 (朝貢と残った年数の両方で上回る型がない)。直轄は上限を外して全部を直轄にしたもの。
+2. **戦略として** (`--realm 銀河の数,年数`): 遅れつきのボットが新しい家臣の型を 1 つに決めて遊んだときの点数 (`tools/strategy.js`)。direct は藩王国のまま直轄を上限まで。
+
+結果は `docs/fun.md` の 9。
 
 ## 公開用 index.html の組み立て
 

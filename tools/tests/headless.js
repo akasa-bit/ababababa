@@ -1,5 +1,9 @@
 // 画面なしの版 (tools/headless.js) の試験: 同じシード・同じ手順で、Node で回した状態の要約が、公開用の index.html をブラウザで回したものと一致する。
 // 国家選択なし・あり (6 か国) の 2 通り。値のファイルで表を書き換えると、結果が変わることも確かめる
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ args: ['100', '1,4,9'], judge: (o, code) => (code === 0 && o.includes('画面なしの版: 一致') ? '' : '画面なしの版がブラウザと違う') }];
+if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`;
 const { chromium } = require('playwright');

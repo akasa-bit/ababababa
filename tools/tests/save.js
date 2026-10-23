@@ -4,6 +4,10 @@
 // 2. 仕組みごとのセーブの項目 (core/base.js の saveField): 初期値 (init)・書く順 (前からの項目の後ろ、savedAt の前)・
 //    項目のない前の版のセーブを読んだときの既定 (read)・同じ名前を 2 回登録すると止まる
 // 使い方: node tools/tests/save.js
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ judge: J.passes('セーブ') }];
+if (require.main !== module) return;
 const fs = require('fs');
 const os = require('os');
 const path = require('path');

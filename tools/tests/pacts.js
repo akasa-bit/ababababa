@@ -6,6 +6,10 @@
 // 5. 不可侵の相手に宣戦すると破約。破約の多い国の申し入れは受けにくい
 // 6. セーブと読み込みで協定が残る
 // 使い方: node tools/tests/pacts.js
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ judge: J.passes('外交') }];
+if (require.main !== module) return;
 const H = require('../headless');
 const sim = H.load({ edition: 'game' });
 const fails = [];

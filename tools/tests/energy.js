@@ -7,6 +7,14 @@
 //   前: 当たる核子 Φ = ISM.nNuc × 航路の長さ、厚さ tf は Φ × 線量(tf) = 限度の前の分。横と後ろ: 宇宙線の線量率(ts) × 船の時間 = 限度の残り
 //   質量 = 前面 × (tf + ts) + 横 × ts (円柱。直径は遮蔽が一番軽くなる値を、細長さの範囲で切ったもの)
 // 使い方: node tools/tests/energy.js [シード] [年数]   (NAT=1 で国家選択あり、HTML=… で版を選ぶ)
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [
+  { args: ['5', '150'], judge: J.firstLine('R07', 'R07 不合格') },
+  // シミュレーション版 (参考。落ちても CI は止めない。docs/parallel.md の 6)。組み立てに失敗して simulation.html がなければ回さない
+  { args: ['5', '150'], judge: J.firstLine('R07', 'R07 不合格 (シミュレーション版)'), optional: true, env: (c) => ({ HTML: c.path.join(c.shots, 'simulation.html') }), needs: (c) => c.path.join(c.shots, 'simulation.html') },
+];
+if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`;
 const { chromium } = require('playwright');

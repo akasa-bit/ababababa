@@ -6,6 +6,10 @@
 //   - 出入りの種類が決まったものだけであること (域外への売却のような「どこからか湧く・どこかへ消える」ものがない)
 //   - エネルギー: 政府ごとに (記帳した出入り − 蓄えの増加) ÷ 取扱量 も 1e-9 以下
 // 使い方: node tools/tests/conserve.js [シード] [年数]   (NAT=1 で国家選択あり、HTML=… で版を選ぶ)
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [{ args: ['5', '150'], judge: (o) => (o.trim().split('\n')[0].includes('R03 合格') && o.includes('決まっていない出入り: なし') ? '' : 'R03 不合格') }];
+if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`;
 const { chromium } = require('playwright');

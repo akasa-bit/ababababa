@@ -8,6 +8,13 @@
 //   - 種類ごと: 出入りの種類ごとに、すべての帳簿の合計が 0 (どこかから出た分は、どこかへ入る)。交易は輸入 (import) と輸出 (trade) を合わせて見る
 //   - 出入りの種類が決まったものだけであること
 // 使い方: node tools/tests/money.js [シード] [年数] [国の数]   (画面なしの版で回す。HTML=… で版を選ぶ)
+// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
+const J = require('../ci-judge');
+exports.ci = [
+  { args: ['5', '150'], judge: (o) => (o.trim().split('\n')[0].includes('お金の保存 合格') && o.includes('決まっていない出入り: なし') ? '' : 'お金の保存 不合格') },
+  { args: ['7', '150', '6'], judge: (o) => (o.trim().split('\n')[0].includes('お金の保存 合格') && o.includes('決まっていない出入り: なし') ? '' : 'お金の保存 不合格 (6 か国)') },
+];
+if (require.main !== module) return;
 const path = require('path');
 const H = require(path.resolve(__dirname, '..', 'headless'));
 const [seed = '5', years = '150', nations = '0'] = process.argv.slice(2);
