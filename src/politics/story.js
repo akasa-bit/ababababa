@@ -13,7 +13,7 @@ let SIM = null;
 const rnd = () => (SIM ? SIM.rand() : Math.random());
 const pickOf = (list) => (list.length ? list[Math.floor(rnd() * list.length)] : null);
 const earthSystems = (g) => g.realmSystems(g.cap).map((x) => x.id);
-const loyaltyOf = (g, sys) => (sys === g.cap ? g.govs[sys]?.loyalty : g.known(sys)?.loyalty) ?? LOYALTY_START; // 地球に届いている記録で (光の遅れ)
+const loyaltyOf = (g, sys) => (sys === g.cap ? 60 : g.known(sys)?.loyalty ?? LOYALTY_START); // 地球に届いている記録で (光の遅れ)。首都は忠誠度を持たないので中ほどと見る
 const richer = (g, v) => (g.gov(g.cap).credits > v ? 0.5 : -0.5); // 資金に余裕があれば、払う選択肢を選びやすい
 // 忠誠度を動かす。首都 (忠誠度を持たない) では、その 3 分の 1 を議会の支持に
 const loyal = (g, sys, d) => {
@@ -61,7 +61,7 @@ const STORY = {
       c.pop *= 0.8;
       g.event('story', sys, `${c.name} で居住施設の事故が起き、人口の2割を失った`);
       g.addDecision({ kind: 'story', type: 'accident', sys, deadline: g.year + g.lightDelay(sys) + 15, def: 'none', text: `${c.name} (${g.system(sys).name}) で居住施設の事故があり、人口の2割を失った。復興を支えるか。`,
-        opts: [{ k: 'aid', label: '復興支援を送る', cr: 300, note: '資金 300 cr が届き、忠誠度 +10。議会の支持 −1 (遠くへの出費への批判)' },
+        opts: [{ k: 'aid', label: '復興支援を送る', cr: 200, note: '資金 200 cr が届き、忠誠度 +10。議会の支持 −1 (遠くへの出費への批判)' },
           { k: 'none', label: '自力で立て直させる', note: '忠誠度 −8。議会の支持 +2 (国庫を守った)' }] });
     },
     resolve(g, dec, k, local) {
@@ -72,7 +72,7 @@ const STORY = {
     },
     weigh(g, dec, k) {
       const L = loyaltyOf(g, dec.sys);
-      return k === 'aid' ? 1 + richer(g, 1500) + (L < 50 ? 0.8 : 0) : 1 + (g.council < 45 ? 0.6 : 0) + (L > 70 ? 0.6 : 0);
+      return k === 'aid' ? 1.2 + richer(g, 1000) + (L < 55 ? 0.8 : 0) : 1 + (g.council < 45 ? 0.6 : 0) + (L > 70 ? 0.4 : 0);
     },
   },
   refugees: {
@@ -116,7 +116,7 @@ const STORY = {
     next: (g, dec, k) => (k === 'rush' ? later('discovery2', { res: dec.res }) : null),
     weigh(g, dec, k) {
       const L = loyaltyOf(g, dec.sys);
-      return k === 'rush' ? 1 + richer(g, 1200) + (L > 65 ? 0.5 : 0) : 1 + (L < 55 ? 0.8 : 0);
+      return k === 'rush' ? 1.2 + richer(g, 800) + (L > 65 ? 0.5 : 0) : 1 + (L < 50 ? 0.6 : 0);
     },
   },
   envoy: {
@@ -140,7 +140,7 @@ const STORY = {
     next: (g, dec, k) => (k === 'welcome' ? later('envoy2', { body: dec.body }) : null),
     weigh(g, dec, k) {
       const rel = g.nativeOf(dec.sys, dec.body)?.st.rel ?? 0;
-      return k === 'welcome' ? 1 + richer(g, 1000) + (rel < 0 ? 0.6 : 0) : 1 + (g.council < 45 ? 0.8 : 0) + (rel > 40 ? 0.4 : 0);
+      return k === 'welcome' ? 1.3 + richer(g, 800) + (rel < 0 ? 0.6 : 0) : 1 + (g.council < 40 ? 0.6 : 0) + (rel > 40 ? 0.4 : 0);
     },
   },
   plague: {

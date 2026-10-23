@@ -94,7 +94,7 @@
 
 | 番号 | 中身 | 触るコードの場所 | 依存 | 大きさ | 新しいレーン案 | 出どころ |
 |---|---|---|---|---|---|---|
-| B-065 | プレイ記録から F01〜F05 と、待つだけの時間・判断の数を人の遊びで測る道具 | `PlayLog`・`tools/fun-report.js` | B-060 | S | 道具と検証 | `sessions.md` の 5・`fun.md` の 5 (#117) |
+| B-065 | **済み (#210)**。プレイ記録から F01〜F05 と、待つだけの時間・判断の数を人の遊びで測る道具 | `PlayLog`・`tools/fun-report.js` | B-060 | S | 道具と検証 | `sessions.md` の 5・`fun.md` の 5 (#117) |
 | B-066 | つり合いの本番: 6 つ以上の戦略 × 30 以上の銀河で F06 を判定する。必勝法が見つかったら直し方を台帳に載せて選んでもらう | `tools/strategy.js`・`tools/search.js`・`tools/fun-report.js`・`EDITIONS` | B-067・B-068 | M | 道具と検証 | `sessions.md` の 15・`game-plan.md` の段 12・`fun.md` の 5 |
 | B-067 | **済み (#187)**。探索で変えられる値に、入植・交易・統治体制の選び方を足す (`fun.md` の 6.3) | `tools/strategy.js`・`tools/search.js` | — | M | 道具と検証 | `fun.md` の 5 (#117) |
 | B-068 | **済み (#187)**。人間に近い遅れつきのボット (いまのボットは光の遅れなしで判断する)。拡張の一強は、いまの main では遅れなし・遅れつきのどちらでも出ない (`fun.md` の 6.2) | `tools/strategy.js`・`tools/bots.js`・`earthWarYearly` | — | M | 道具と検証 | `critique/04-plan.md` の 7 の G3・6 の Q5・5 |

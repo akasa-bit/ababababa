@@ -41,7 +41,7 @@
     if (!this.spectate && dec.seen > this.year) return fail('まだ知らせが届いていない');
     const o = dec.opts.find((x) => x.k === d.opt);
     if (!o) return fail('不明な選択肢');
-    if ((o.cr || 0) > this.funds(this.cap)) return fail(`資金が足りない (${o.cr} cr)`);
+    if (o.cr && o.cr > this.funds(this.cap)) return fail(`資金が足りない (${o.cr} cr)`); // 費用のない選択肢は、資金がマイナスでも送れる
     if (o.cr) { this.earn('grant', -o.cr, this.cap); dec.payer = this.cap; this.cash('grant', o.cr, { way: dec, f: 'cr' }); }
     dec.state = 'sent';
     dec.reply = o.k;
