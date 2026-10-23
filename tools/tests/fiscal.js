@@ -1,11 +1,11 @@
-// 財政 (税・利子率・予算) の試験: 命令と政治力・選べない値の拒否・光速で広がること・税収と利子と予算の記帳・
+// 財政 (税・政策金利・予算) の試験: 命令と政治力・選べない値の拒否・光速で広がること・税収と利子と予算の記帳・
 // 忠誠度と離反の起きやすさと艦隊の戦力への効き目・保存と読み込み・画面 (横と縦)
 // 使い方: node tools/tests/fiscal.js [shots のフォルダ]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
 exports.ci = [{
   args: (c) => [c.shots],
-  judge: J.byJson((j) => Object.values(j).every((v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1.8,1,0.01' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
+  judge: J.byJson((j) => Object.values(j).every((v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1.8,1,1,0.05' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
     && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.bad2.every((b) => b === false) && v.ok2 && v.ctax.join() === '0.1,0.05,true,1.935,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length), '財政の結果が違う'),
 }];
 if (require.main !== module) return;
@@ -35,14 +35,14 @@ const { chromium } = require('playwright');
       res.bad = [issue('fiscal', { tax: 0.279, rate: 0.05, welfare: 0.6, security: 0.3, military: 0.2 }).ok, issue('fiscal', { tax: 0.4 }).ok, issue('fiscal', { rate: 0.051 }).ok, issue('fiscal', { tax: 'nope' }).ok];
       res.ok = issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.1, military: 0.1 }).ok; // 前の段階の名前 (重税 = 15.5% × 1.8) も通る
       res.pc = 50 - g.pc; // 税と利子率を変えたので 5
-      res.now = [+g.taxK(0).toFixed(3), +g.taxK(far).toFixed(3), g.rateAt(far)]; // 首都はすぐ、遠い星系はまだ前のまま (1・0.01)
+      res.now = [+g.taxK(0).toFixed(3), +g.taxK(far).toFixed(3), g.fiscalFor(0, far).cb ?? 1, g.cbRateAt(0)]; // 首都はすぐ、遠い星系はまだ前のまま (1・中央銀行に任せたまま)。政策金利を選んだので首都は自分で決める (0.05)
       const L0 = g.loyaltyTerms(far).map((t) => t.label);
       for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25);
       const pc0 = g.pc;
       res.budgetOnly = [issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.2, military: 0.1 }).ok, pc0 - g.pc]; // 予算だけなら政治力は要らない (0)
       const cr0 = g.council;
       for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25);
-      res.later = [+g.taxK(far).toFixed(3), g.rateAt(far)];
+      res.later = [+g.taxK(far).toFixed(3), g.cbRateAt(far)];
       const L1 = g.loyaltyTerms(far);
       res.loyalty = [L0.some((l) => l.startsWith('税 (')), L1.some((t) => t.label === '税 (27.9%)' && Math.abs(t.v + 12) < 1e-6), L1.some((t) => t.label === '福祉の予算' && t.v > 0)]; // 重税 (×1.8) の忠誠度 −15 × 0.8 = −12
       // 幅の中の細かい値 (税率 20%・利子率 −0.75%・赤字の上限 7.5%) も通る。マイナスの利子率も選べる (docs/policy-ranges.md)
