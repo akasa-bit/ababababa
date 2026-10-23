@@ -47,11 +47,11 @@ if (p) {
 }
 
 // 3
-const nDec = g.decisions.length;
+const t3 = g.year;
 g.proposePact({ sys: g.cap, pact: 'nap' }, f);
 step(g.sysDist(f, g.cap) + 1.2);
 const dec = g.decisions.find((x) => x.kind === 'pact' && x.from === f && x.state === 'open');
-check(g.decisions.length > nDec && dec, 'AI の国からの申し入れが「決めること」として届かない');
+check(dec && dec.year > t3 - 1e-9, 'AI の国からの申し入れが「決めること」として届かない'); // 数で比べない (古い決めることは片づいて減る)
 if (dec) {
   check(dec.seen <= g.year + 1e-9, '自分の首都に届いた申し入れが、すぐ見えない');
   g.command('decide', { sys: dec.sys, id: dec.id, opt: 'accept' });
