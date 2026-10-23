@@ -47,7 +47,7 @@ function politicsSheet(app) {
     return `<tr><td><span class="dot" style="background:${realmColor(root)}"></span>${goto(g.system(root))}</td><td>${n} 星系</td>
       <td>${war ? `<b class="bad">${ME.realm}と交戦中</b> (${(g.warStart(g.warKey(g.cap, root)) ?? g.year).toFixed(0)}年から)` : `${ME.realm}とは平和`}${others.length ? `<br><span class="bad">${others.map((e) => esc(g.realmName(e))).join('・')}と交戦中</span>` : ''}</td>
       <td>${war ? `戦勝点 <b class="${g.warScore(g.cap, root) < 0 ? 'bad' : 'hz'}">${g.warScore(g.cap, root)}</b><br><span class="muted">相手の戦争疲弊 ${Math.round(g.exhaustion[root] || 0)}</span>` : '—'}</td>
-      <td>${war ? `${g.peaceOffers.some((o) => o.from === root && o.to === g.cap) ? `<button data-act="acceptpeace" data-key="${g.warKey(g.cap, root)}">${ico('peace')}講和に応じる<small>相手からの申し入れ</small></button>` : ''}<button data-act="peace" data-sys="${root}">${ico('peace')}講和を申し入れる<small>指令: 届くまで ${g.lightDelay(root).toFixed(1)} 年</small></button>` : `<button data-act="declarewar" data-sys="${root}">${ico('war')}宣戦する</button>`}</td></tr>`;
+      <td>${war ? `${(() => { const o = g.peaceOffers.find((x) => x.from === root && x.to === g.cap); return o ? `<button data-act="acceptpeace" data-key="${g.warKey(g.cap, root)}">${ico('peace')}${o.surrender ? '降伏する<small>相手が降伏を求めている (持ち点 100 で相手が条件を選ぶ)</small>' : '講和に応じる<small>相手からの申し入れ</small>'}</button>` : ''; })()}<button data-act="peace" data-sys="${root}">${ico('peace')}講和を申し入れる<small>指令: 届くまで ${g.lightDelay(root).toFixed(1)} 年</small></button>` : `<button data-act="declarewar" data-sys="${root}">${ico('war')}宣戦する</button>`}</td></tr>`;
   }).join('');
   const myEx = Math.round(g.exhaustion[g.cap] || 0);
   const sieges = g.knownSystems().map((x) => ({ x, sg: g.known(x.id)?.siege })).filter((v) => v.sg).map(({ x, sg }) => `<tr><td>${goto(x)}</td>
@@ -66,7 +66,7 @@ function politicsSheet(app) {
     ${diplomacyHtml(g, roots)}
     <p class="note"><b>戦争疲弊</b> (0〜100) は、艦隊を失うと 1 艦隊あたり ${EXHAUST.ship}、星系を攻め落とされると ${EXHAUST.system}、戦っている戦争 1 つにつき年 ${EXHAUST.warYear} (攻囲されている星系 1 つにつき年 ${EXHAUST.siegeYear}) 増え、平和なあいだは年 ${EXHAUST.peaceYear} ずつ減る。<b>戦勝点</b> (−100〜100) は、沈めた艦隊の差 (1 艦隊 ${WARSCORE.ship}) と、攻め落とした星系の差 (1 つ ${WARSCORE.system}) で決まる。
       講和は、勝っている側が<b>講和会議</b>で戦勝点 (100 まで) を条件に使う: 従属させる (${TREATY.vassal})・星系の割譲 (人口しだいで 5〜30)・賠償金 (${fmtAmt(TREATY.cash)} cr ごとに ${TREATY.cashPts})。戦勝点の差が 5 未満なら白紙講和。AI の国は、負けているほど・疲れているほど講和に応じ、戦争疲弊が 60 を超えるか戦勝点が −50 を下回ると自分から申し入れてくる。戦闘のないにらみ合いの戦争も、始まってすぐは年 35% ほど、長引くほど低い確率で申し入れてくる (20 年たつと年 6%)。</p>
-    <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は時間をかけて進み (ランチェスターの法則: 1艦隊が1年に敵の${BATTLE_RATE}艦隊を壊滅させる)、戦力が近いほど長引く。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。終わらせ方は上の「戦争疲弊」「講和会議」のとおり (仕掛けた側が大差で負ければ、相手に全面的に任せる持ち点 100 の講和会議になる)。独立国どうしも戦争をする (近くの弱い独立国に宣戦する)。交戦中でない国の星系へ艦隊を送ると奇襲攻撃になり、着いた時点で戦争が始まる。交戦中の国どうしでは物資をやり取りしない (各星系は開戦の知らせが光速で届いてから取引をやめる)。講和・降伏で戦争が終わっても、終戦の知らせが主星 (首都) を経て光速で届くまで、各地の艦隊は戦い続け攻囲も続く。</p>
+    <p class="note">戦争中は、艦隊を敵の星系へ送ると艦隊戦になる。艦隊戦は撃ち合いで自動に進み、組織力が尽きた艦は退く (詳しくは帝国 → 軍事の「艦隊戦の報告」)。途中で届いた艦隊はその場で加わる。勝てば攻囲が始まる。攻囲は艦隊の数と地上の抵抗 (歩兵・人口) でゆっくり進み、100%で降伏して攻めた国 (の首都) に従属する。終わらせ方は上の「戦争疲弊」「講和会議」のとおり (仕掛けた側が大差で負ければ、相手に全面的に任せる持ち点 100 の講和会議になる)。独立国どうしも戦争をする (近くの弱い独立国に宣戦する)。交戦中でない国の星系へ艦隊を送ると奇襲攻撃になり、着いた時点で戦争が始まる。交戦中の国どうしでは物資をやり取りしない (各星系は開戦の知らせが光速で届いてから取引をやめる)。講和・降伏で戦争が終わっても、終戦の知らせが主星 (首都) を経て光速で届くまで、各地の艦隊は戦い続け攻囲も続く。</p>
     <h3>戦争</h3>
     ${(() => {
       const rows = g.knownWarKeys().map((k) => {
