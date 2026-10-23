@@ -7,7 +7,55 @@ function saveInfo(m) {
   return `西暦 ${Math.floor(m.year)}年・入植星系 ${m.sys}・銀河 #${esc(String(m.seed))}${m.spectate ? '・<b>観戦</b>' : ''}
     ${m.savedAt ? `<br><span class="muted">${esc(new Date(m.savedAt).toLocaleString('ja-JP'))}</span>` : ''}`;
 }
+// ホームは全画面のページで進む (B-194): 最初のメニュー → シングルプレイの設定 → (国が 2 つ以上なら) 国家選択 → 地図。
+// 銀河の番号つきの URL で開いたときは、その番号が見えるように設定のページから (試験が銀河の番号の欄を使う)
+const HOME_PAGES = { single: 'シングルプレイ', load: 'ロード', multi: 'マルチプレイ', nations: '国家制作', credits: '著作権関連', account: 'アカウント' };
+function homePage() {
+  if (app.homeTab === undefined) app.homeTab = params.get('seed') !== null ? 'single' : 'menu';
+  return app.homeTab === 'game' ? 'single' : HOME_PAGES[app.homeTab] ? app.homeTab : 'menu';
+}
 function homeHtml() {
+  const page = homePage();
+  const note = app.homeNote ? `<p class="note bad">${esc(app.homeNote)}</p>` : '';
+  if (page === 'menu') {
+    const going = homeGoing();
+    return `<div class="hmenu"><h1>${brandHtml()}</h1><p class="tag">光速の壁の向こうへ広がる恒星間植民</p>${note}
+      <div class="items">
+        ${going ? `<button class="resume" data-home="resume">${app.started ? 'ゲームに戻る' : '続きから'}<small>${saveInfo(saveMeta(buildSave(app.game)))}</small></button>` : ''}
+        ${Object.entries(HOME_PAGES).filter(([k]) => k !== 'account').map(([k, l]) => `<button data-home="tab" data-t="${k}">${l}${k === 'nations' && NationLib.list.length ? ` (${NationLib.list.length})` : ''}</button>`).join('')}
+      </div></div>`;
+  }
+  const head = `<div class="phead"><button class="ghost" data-home="tab" data-t="${page === 'account' ? app.homeFrom || 'menu' : 'menu'}">戻る</button><h2>${HOME_PAGES[page]}</h2></div>${note}`;
+  const body = { single: singleHtml, load: loadHtml, multi: multiHtml, nations: nationsTabHtml, credits: creditsHtml, account: accountTabHtml }[page]();
+  return `<div class="hpage">${head}${body}</div>`;
+}
+// シングルプレイの設定。決めてから地図を作る (国が 2 つ以上なら、その前に全画面の国家選択)
+const singleGoLabel = () => ((app.homeNat ?? 1) > 1 || (app.homeLib || []).length ? '次へ (国家選択)' : 'この設定ではじめる');
+const homeHelp = (text) => helpify(`<p class="note">${text}</p>`);
+function singleHtml() {
+  const armed = (k) => app.homeArmed === k;
+  return `<section><h3>銀河</h3>
+      <div class="row"><label>銀河の番号 <input id="home-seed" type="text" inputmode="numeric" placeholder="空欄ならランダム" value="${esc(app.homeSeed || '')}"></label>
+        <label><input id="home-spectate" type="checkbox" ${app.homeSpectate ? 'checked' : ''}> 観戦モード</label></div>
+      ${homeHelp('観戦モード: 光の遅れなしに実際の様子 (船の実際の位置・各星系のいまの状態) を見られ、' + ME.gov + 'も自動で入植・開発・防衛・戦争をする。ゲーム中でも上の「観戦」ボタンで切り替えられる。')}</section>
+    <section><h3>国</h3>
+      <div class="row"><label>国の数 <select id="home-nat">${NATION_COUNTS.map((n) => `<option value="${n}" ${n === (app.homeNat ?? 1) ? 'selected' : ''}>${n === 1 ? '地球だけ (国家選択なし)' : `${n} か国から選ぶ`}</option>`).join('')}</select></label>
+        <label>難易度 <select id="home-hc">${Object.entries(HANDICAP).map(([k, h]) => `<option value="${k}" ${k === (app.homeHc ?? 'normal') ? 'selected' : ''}>${h.label}</option>`).join('')}</select></label></div>
+      ${NationLib.list.length ? `<div class="row"><span class="muted">自作の国を出す</span>${NationLib.list.map((n) => `<label><input type="checkbox" class="home-lib" value="${n.id}" ${(app.homeLib || []).includes(n.id) ? 'checked' : ''}> ${esc(n.name)}</label>`).join('')}</div>` : ''}
+      ${homeHelp(`国の数を 2 つ以上にすると、次の画面でどの国を動かすか選ぶ。選ばなかった国は AI が動かす。国ごとに種族と特性 (人口の増え方・得意な産業など) が違う。難易度 (ハンディキャップ表): ${Object.values(HANDICAP).map((h) => `${h.label} = AI の国の収入 ×${h.aiIncome}・建設費 ×${h.aiCost}・他国の艦隊${INFO_LABEL[h.info]}`).join('。')}。AI の考え方は変わらない。`)}</section>
+    <section><h3>経済</h3>
+      <div class="row"><label>生産性 <select id="home-prod">${Object.entries(PRODUCTIVITY).map(([k, p]) => `<option value="${k}" ${k === (app.homeProd ?? 'now') ? 'selected' : ''}>${p.label}</option>`).join('')}</select></label>
+        <label>倍率 <input id="home-prodk" type="number" inputmode="decimal" min="${PRODUCTIVITY_RANGE[0]}" max="${PRODUCTIVITY_RANGE[1]}" step="any" value="${esc(String(app.homeProdK ?? 1))}" ${(app.homeProd ?? 'now') === 'custom' ? '' : 'disabled'}></label></div>
+      ${ED.physics.pv ? `<div class="row"><label>スウォームの素子の作り (全部の星系の既定) <select id="home-pv">${['auto', ...Object.keys(PV_DESIGNS)].map((k) => `<option value="${k}" ${k === (app.homePv ?? 'auto') ? 'selected' : ''}>${k === 'auto' ? '星系ごとに自動' : `${k}. ${PV_DESIGNS[k].label} — ${PV_DESIGNS[k].note}`}</option>`).join('')}</select></label></div>` : ''}
+      ${homeHelp(`生産性: 1 人あたりの産出 (農業・鉱業・工業・採掘基地) の倍率。「現代のまま」は 2023 年の最前線の国の生産性。「2300 年の予測」は、1890〜2023 年の米国の労働生産性の伸び (年 2.0%) とコンドラチェフの波から延ばした値で、最近の伸び (年 1.3%) が続くなら ×33。「自分で決める」は ${PRODUCTIVITY_RANGE[0]}〜${PRODUCTIVITY_RANGE[1]} 倍。`)}</section>
+    <section><h3>試合</h3>
+      <div class="row"><label>終わりの年 <select id="home-end">${END_CHOICES.map(([y, l]) => `<option value="${y}" ${y === (app.homeEnd ?? 500) ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+      <div class="row"><span class="muted">挑戦 (選ばなくてもよい)</span>${Object.entries(CHALLENGES).map(([k, c]) => `<label title="${esc(c.desc)}"><input type="checkbox" class="home-ch" value="${k}" ${(app.homeCh || []).includes(k) ? 'checked' : ''}> ${c.label}</label>`).join('')}</div>
+      ${homeHelp(`挑戦: ${Object.values(CHALLENGES).map((c) => `${c.label} = ${esc(c.desc)}`).join('。')}。「60星系」と「独立を許さない」は引っ張り合う (広げるほど遠い家臣が増える)。終わりの年に点数が確定する (そのあとも続けて遊べる)。`)}</section>
+    <div class="hgo">${homeGoing() ? '<span class="muted">いまのゲームは、スロットにセーブしておかないと上書きされる</span>' : ''}
+      <button class="big" data-home="new">${armed('new') ? '本当に? いまのゲームは消える' : singleGoLabel()}</button></div>`;
+}
+function loadHtml() {
   const armed = (k) => app.homeArmed === k;
   const slots = SLOT_KEYS.map((k, i) => {
     const d = Store.meta[k];
@@ -16,62 +64,25 @@ function homeHtml() {
       <button data-home="slotload" data-i="${i}" ${d ? '' : 'disabled'}>ロード</button>
       <button class="ghost" data-home="slotdel" data-i="${i}" ${d ? '' : 'disabled'}>${armed(`del${i}`) ? '本当に削除?' : '削除'}</button></div>`;
   }).join('');
-  const tabs = `<div class="htabs"><button data-home="tab" data-t="game" class="${!['nations', 'account'].includes(app.homeTab) ? 'on' : ''}">ゲーム</button><button data-home="tab" data-t="nations" class="${app.homeTab === 'nations' ? 'on' : ''}">国家づくり (${NationLib.list.length})</button><button data-home="tab" data-t="account" class="${app.homeTab === 'account' ? 'on' : ''}">アカウント${Cloud.user ? ' ✓' : ''}</button></div>`;
-  if (app.homeTab === 'nations') return `<div class="card"><h1>${brandHtml()}</h1>${tabs}${nationsTabHtml()}</div>`;
-  if (app.homeTab === 'account') return `<div class="card"><h1>${brandHtml()}</h1>${tabs}${accountTabHtml()}</div>`;
-  // はじめて開いた人には「はじめる」1 つだけを見せ、細かい設定は「詳しい設定」に畳む (B-045)。
-  // 銀河の番号つきの URL で開いたときは、その番号が見えるように開いておく
-  const more = app.homeMore ?? params.get('seed') !== null;
-  const going = homeGoing();
-  return `<div class="card">
-    <div class="cover"><h1>${brandHtml()}</h1><p>光速の壁の向こうへ広がる恒星間植民</p>
-      <div class="go"><button class="big" data-home="start">${armed('start') ? '本当に? いまのゲームは消える' : 'はじめる'}</button>
-        ${going ? `<button data-home="resume">${app.started ? 'ゲームに戻る' : '続きから'}<small>${saveInfo(saveMeta(buildSave(app.game)))}</small></button>` : ''}</div>
-      <p class="hint">地球から最初の入植船を送るところから。時間は、最初の入植船を送るまで止まっている。</p></div>
-    ${app.homeNote ? `<p class="note bad">${esc(app.homeNote)}</p>` : ''}
-    ${tabs}
-    <p class="muted">${EDITION_LABEL[EDITION]} (<a href="${EDITION_FILE[EDITION === 'sim' ? 'game' : 'sim']}">${EDITION_LABEL[EDITION === 'sim' ? 'game' : 'sim']}を開く</a>)</p>
-    <details class="sec" data-home-more="settings" ${more ? 'open' : ''}><summary>詳しい設定<span class="syn">${homeSettingsSyn()}</span></summary>
-      <div class="row"><label>銀河の番号 <input id="home-seed" type="text" inputmode="numeric" placeholder="空欄ならランダム" value="${esc(app.homeSeed || '')}"></label>
-        <label><input id="home-spectate" type="checkbox" ${app.homeSpectate ? 'checked' : ''}> 観戦モード</label></div>
-      <div class="row"><label>国の数 <select id="home-nat">${NATION_COUNTS.map((n) => `<option value="${n}" ${n === (app.homeNat ?? 1) ? 'selected' : ''}>${n === 1 ? '地球だけ (国家選択なし)' : `${n} か国から選ぶ`}</option>`).join('')}</select></label>
-        <label>難易度 <select id="home-hc">${Object.entries(HANDICAP).map(([k, h]) => `<option value="${k}" ${k === (app.homeHc ?? 'normal') ? 'selected' : ''}>${h.label}</option>`).join('')}</select></label></div>
-      <div class="row"><label>生産性 <select id="home-prod">${Object.entries(PRODUCTIVITY).map(([k, p]) => `<option value="${k}" ${k === (app.homeProd ?? 'now') ? 'selected' : ''}>${p.label}</option>`).join('')}</select></label>
-        <label>倍率 <input id="home-prodk" type="number" inputmode="decimal" min="${PRODUCTIVITY_RANGE[0]}" max="${PRODUCTIVITY_RANGE[1]}" step="any" value="${esc(String(app.homeProdK ?? 1))}" ${(app.homeProd ?? 'now') === 'custom' ? '' : 'disabled'}></label></div>
-      <p class="note">生産性: 1 人あたりの産出 (農業・鉱業・工業・採掘基地) の倍率。「現代のまま」は 2023 年の最前線の国の生産性。「2300 年の予測」は、1890〜2023 年の米国の労働生産性の伸び (年 2.0%) とコンドラチェフの波から延ばした値で、最近の伸び (年 1.3%) が続くなら ×33。「自分で決める」は ${PRODUCTIVITY_RANGE[0]}〜${PRODUCTIVITY_RANGE[1]} 倍。</p>
-      ${NationLib.list.length ? `<div class="row"><span class="muted">自作の国を出す</span>${NationLib.list.map((n) => `<label><input type="checkbox" class="home-lib" value="${n.id}" ${(app.homeLib || []).includes(n.id) ? 'checked' : ''}> ${esc(n.name)}</label>`).join('')}</div>` : ''}
-      ${ED.physics.pv ? `<div class="row"><label>スウォームの素子の作り (全部の星系の既定) <select id="home-pv">${['auto', ...Object.keys(PV_DESIGNS)].map((k) => `<option value="${k}" ${k === (app.homePv ?? 'auto') ? 'selected' : ''}>${k === 'auto' ? '星系ごとに自動' : `${k}. ${PV_DESIGNS[k].label} — ${PV_DESIGNS[k].note}`}</option>`).join('')}</select></label></div>` : ''}
-      <div class="row"><label>終わりの年 <select id="home-end">${END_CHOICES.map(([y, l]) => `<option value="${y}" ${y === (app.homeEnd ?? 500) ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
-      <div class="row"><span class="muted">挑戦 (選ばなくてもよい)</span>${Object.entries(CHALLENGES).map(([k, c]) => `<label title="${esc(c.desc)}"><input type="checkbox" class="home-ch" value="${k}" ${(app.homeCh || []).includes(k) ? 'checked' : ''}> ${c.label}</label>`).join('')}
-        <button data-home="new">${armed('new') ? '本当に? いまのゲームは消える' : 'この設定ではじめる'}</button></div>
-      <p class="note">挑戦: ${Object.values(CHALLENGES).map((c) => `<b>${c.label}</b> = ${esc(c.desc)}`).join('。')}。「60星系」と「独立を許さない」は引っ張り合う (広げるほど遠い家臣が増える)。終わりの年に点数が確定する (そのあとも続けて遊べる)。</p>
-      <p class="note">国の数を2つ以上にすると、銀河地図の上でどの国を動かすか選ぶ。選ばなかった国は AI が動かす。国ごとに種族と特性 (人口の増え方・得意な産業など) が違う。<br>難易度 (ハンディキャップ表): ${Object.values(HANDICAP).map((h) => `<b>${h.label}</b> = AI の国の収入 ×${h.aiIncome}・建設費 ×${h.aiCost}・他国の艦隊${INFO_LABEL[h.info]}`).join('。')}。AI の考え方は変わらない。</p>
-      <p class="note">いまのゲームは、スロットにセーブしておかないと新しいゲームで上書きされる (自動セーブは1つだけ)。</p>
-      <p class="note">観戦モード: 光の遅れなしに実際の様子 (船の実際の位置・各星系のいまの状態) を見られ、${ME.gov}も自動で入植・開発・防衛・戦争をする。ゲーム中でも上の「観戦」ボタンで切り替えられる。</p>
-    </details>
-    <details class="sec" data-home-more="saves" ${app.homeSaves ? 'open' : ''}><summary>セーブ・ファイル・プレイ記録</summary>
-    <section><h3>セーブスロット</h3>${slots}</section>
+  return `<section><h3>セーブスロット</h3>${slots}</section>
     <section><h3>ファイル</h3><div class="row"><button data-home="export">ファイルに書き出し</button><button data-home="import">ファイルから読み込み</button></div></section>
-    ${playLogHtml()}
-    </details>
+    <section><h3>クラウドのセーブ</h3><div class="row"><div class="info">アカウントにログインすると、別の端末のセーブも読める。</div><button data-home="tab" data-t="account" data-from="load">アカウント${Cloud.user ? ' (ログイン中)' : ''}</button></div></section>
+    ${playLogHtml()}`;
+}
+function multiHtml() {
+  return `<section><h3>ホットシート (1 台を交代で使う)</h3>
+      <div class="row"><div class="info">シングルプレイで国の数を 2 つ以上にし、国家選択で「＋人間」を 2 つ以上にする。</div><button data-home="tab" data-t="single">シングルプレイの設定へ</button></div></section>
     <section><h3>ネット対戦</h3>
       <div class="row"><div class="info">別の端末の人と、サーバーなしでつないで遊ぶ。ホストは国家選択で「＋人間」を 2 つ以上にして「ネット対戦」を選ぶ (いまのゲームに人間が 2 人以上いれば、ここからもホストになれる)。参加する人は、ホストの招待コードを貼る。</div>
-        ${app.game.humans().length > 1 ? '<button data-home="nethost">ホストになる</button>' : ''}<button data-home="netjoin">参加する</button></div></section>
-  </div>`;
+        ${app.game.humans().length > 1 ? '<button data-home="nethost">ホストになる</button>' : ''}<button data-home="netjoin">参加する</button></div>
+      <div class="row"><div class="info">ログインしていれば、ホストは「部屋を作る」でコードを出し、参加する人はそのコードを入れるだけでつながる。</div><button data-home="tab" data-t="account" data-from="multi">アカウント${Cloud.user ? ' (ログイン中)' : ''}</button></div></section>`;
+}
+function creditsHtml() {
+  return `<section><h3>この版</h3><p>${EDITION_LABEL[EDITION]} (<a href="${EDITION_FILE[EDITION === 'sim' ? 'game' : 'sim']}">${EDITION_LABEL[EDITION === 'sim' ? 'game' : 'sim']}を開く</a>)</p></section>
+    <section><h3>画像・アイコンの出典</h3><p>${$('credits')?.innerHTML || ''}</p></section>`;
 }
 // いまのゲームを続ける意味があるか (始めたあと・セーブを読んだあと。開いたばかりの仮のゲームは数えない)
 function homeGoing() { return !!app.started || app.game.year > START_YEAR + 0.01; }
-// 「詳しい設定」を閉じていても、いまの設定が分かるように 1 行で
-function homeSettingsSyn() {
-  const parts = [];
-  if (app.homeSeed) parts.push(`銀河 #${esc(app.homeSeed)}`);
-  if ((app.homeNat ?? 1) > 1) parts.push(`${app.homeNat} か国`);
-  if ((app.homeHc ?? 'normal') !== 'normal') parts.push(HANDICAP[app.homeHc]?.label);
-  if ((app.homeProd ?? 'now') !== 'now') parts.push(`生産性 ${PRODUCTIVITY[app.homeProd]?.label}`);
-  if ((app.homeCh || []).length) parts.push(`挑戦 ${app.homeCh.length}`);
-  if (app.homeSpectate) parts.push('観戦');
-  return parts.length ? parts.join('・') : '標準 (地球だけ・ふつう・500 年)';
-}
 // ホーム画面の「アカウント」タブ: ログイン・名前・クラウドのセーブ・国家の保管庫・Firebase の設定
 function accountTabHtml() {
   const C = Cloud;
