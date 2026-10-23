@@ -47,7 +47,7 @@ const fake = () => {
   const H = await mk(1280, 780), G = await mk(854, 1200);
   // --- アカウントのタブ: ログイン前 → ゲストでログイン → 名前 ---
   await H.evaluate(() => { if ($('home').hidden) openHome(); });
-  await H.click('[data-home="tab"][data-t="account"]'); await H.waitForTimeout(300);
+  await H.evaluate(() => { app.homeTab = 'account'; renderHome(); }); await H.waitForTimeout(300);
   await H.screenshot({ path: `${SHOTS}/cloud-login-land.png` });
   await H.click('[data-home="acctguest"]'); await H.waitForFunction(() => Cloud.user);
   await H.fill('#acct-name', 'ホストさん'); await H.click('[data-home="acctname"]'); await H.waitForTimeout(300);
@@ -86,7 +86,7 @@ const fake = () => {
   await G.evaluate(() => { if ($('home').hidden) openHome(); app.homeTab = 'account'; renderHome(); });
   await G.click('[data-home="acctguest"]'); await G.waitForFunction(() => Cloud.user);
   await G.fill('#acct-name', '参加さん'); await G.click('[data-home="acctname"]'); await G.waitForTimeout(300);
-  await G.evaluate(() => { app.homeTab = 'game'; renderHome(); });
+  await G.evaluate(() => { app.homeTab = 'multi'; renderHome(); });
   await G.click('[data-home="netjoin"]');
   await G.fill('#netroom', code.toLowerCase()); await G.click('[data-net="roomjoin"]');
   await H.waitForFunction(() => Net.peers[0].dc && Net.peers[0].dc.readyState === 'open', null, { timeout: 20000 });

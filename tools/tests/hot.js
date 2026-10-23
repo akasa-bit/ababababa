@@ -12,7 +12,7 @@ const { chromium } = require('playwright');
   await p.evaluate(() => { if ($('home').hidden) openHome(); });
   await p.fill('#home-seed', '5');
   await p.selectOption('#home-nat', '5');
-  await p.click('[data-home="new"]'); await p.click('[data-home="new"]'); await p.waitForTimeout(500);
+  await p.click('[data-home="new"]'); await p.waitForTimeout(500);
   const caps = await p.evaluate(() => __app.game.nations.map((n) => n.cap));
   await p.click(`#pick [data-human="${caps[2]}"]`);
   await p.waitForTimeout(300);

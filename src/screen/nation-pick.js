@@ -24,7 +24,13 @@ function nationEditor(g, n) {
   const pk = app.picking;
   const clash = (t) => n.traits.some((x) => x !== t && TRAIT_CLASH.some((c) => c.includes(x) && c.includes(t)));
   let home = `<p>母星: <b>${esc(g.target(n.cap, n.body)?.name || '')}</b> (${esc(g.system(n.cap).name)}・太陽系から ${fmt(g.sysDist(0, n.cap), 1)} 光年)
-    ${n.cap === 0 ? '<span class="muted">地球の国の母星は変えられない</span>' : `<button data-ed="home">${pk.homeFor === n.cap ? '地図で星系を押す…' : '母星を選び直す'}</button>`}</p>`;
+    ${n.cap === 0 ? '<span class="muted">地球の国の母星は変えられない</span>' : `<button data-ed="home">${pk.homeFor === n.cap ? '選び直すのをやめる' : '母星を選び直す'}</button>`}</p>`;
+  // 国家選択は地図を出す前の全画面なので、星系は一覧から選ぶ (太陽系から近い順。母星にできる星系だけ)
+  if (pk.homeFor === n.cap) {
+    const opts = g.galaxy.systems.filter((x) => x.bodies.some((b) => b.type === 'rocky') && !homeworldProblem(g, n.cap, x.id))
+      .map((x) => ({ x, d: g.sysDist(0, x.id) })).sort((a, b) => a.d - b.d);
+    home += `<label>星系 <select data-ed="homesys"><option value="">選ぶ</option>${opts.map(({ x, d }) => `<option value="${x.id}" ${pk.homeSys === x.id ? 'selected' : ''}>${esc(x.name)} (太陽系から ${fmt(d, 1)} 光年)</option>`).join('')}</select></label>`;
+  }
   if (pk.homeFor === n.cap && pk.homeSys !== undefined) {
     const sys = g.system(pk.homeSys);
     const why = homeworldProblem(g, n.cap, pk.homeSys);
@@ -81,6 +87,8 @@ function pickEdit(e) {
       const n = defs[idx(defs)];
       n.traits = t.checked ? [...n.traits, t.dataset.tr].slice(0, NATION_TRAITS_MAX) : n.traits.filter((x) => x !== t.dataset.tr);
     });
+  } else if (t.dataset.ed === 'homesys' && e.type === 'change') {
+    pk.homeSys = t.value === '' ? undefined : Number(t.value);
   } else if (e.type !== 'click') return;
   else if (t.closest('[data-ed="close"]')) { pk.edit = pk.homeFor = pk.homeSys = undefined; }
   else if (t.closest('[data-ed="home"]')) { pk.homeFor = pk.homeFor === cap ? undefined : cap; pk.homeSys = undefined; }
@@ -101,20 +109,15 @@ function pickEdit(e) {
 function renderPick() {
   const g = app.game;
   const hs = app.picking.humans;
-  $('pick').innerHTML = `<h2>国家選択</h2><p class="muted" style="font-size:12px">カードか地図の首都を押して国を選ぶ。「アレンジする」で国の名前・種族・特性・母星を変えられる。「＋人間」で人間の国を増やすと、ホットシート (1 台を交代で使う) かネット対戦で遊べる。選ばなかった国は AI が動かす。難易度: <b>${HANDICAP[g.handicap].label}</b></p>
-    ${g.nations.map((n) => nationCard(g, n)).join('')}
+  $('pick').innerHTML = `<div class="phead"><button class="ghost" data-pick="back">戻る</button><h2>国家選択</h2></div>
+    <p class="muted">カードを押して国を選ぶ。「アレンジする」で国の名前・種族・特性・母星を変えられる。「＋人間」で人間の国を増やすと、ホットシート (1 台を交代で使う) かネット対戦で遊べる。選ばなかった国は AI が動かす。難易度: <b>${HANDICAP[g.handicap].label}</b></p>
+    <div class="nats">${g.nations.map((n) => nationCard(g, n)).join('')}</div>
     <div class="go">${hs.length > 1
     ? `<button class="big" data-pick="go">人間 ${hs.length} 人・交代で遊ぶ</button><button class="big" data-pick="net">人間 ${hs.length} 人・ネット対戦</button>`
     : `<button class="big" data-pick="go">${esc(g.nationOf(hs[0]).name)}ではじめる</button>`}</div>`;
 }
-// 首都を、地図のうちパネルに隠れていない部分の真ん中に出す
-function centerPick(sys) {
-  galaxyView.centerOn(sys);
-  const p = $('pick').getBoundingClientRect(), c = canvas.getBoundingClientRect(), z = galaxyView.cam.zoom;
-  if (!p.width) return;
-  if (p.bottom >= c.bottom - 20 && p.top > c.top + 40) galaxyView.cam.y += (c.bottom - p.top) / 2 / z; // 下に重なる (縦長の画面)
-  else galaxyView.cam.x -= Math.max(0, p.right - c.left) / 2 / z; // 左に重なる
-}
+// 首都を地図の真ん中に出す (国家選択は全画面なので、はじめたときに見える)
+function centerPick(sys) { galaxyView.centerOn(sys); }
 // 国を選ぶ (カード・地図の首都)。人間の国が 1 つだけのうちは、選んだ国がそのまま人間の国になる
 function pickFocus(cap) {
   app.picking.cap = cap;
@@ -128,7 +131,6 @@ function openPick(cap = 0) {
   app.setView('galaxy');
   app.selectSystem(cap);
   galaxyView.fit();
-  document.documentElement.style.setProperty('--pick-top', `${Math.round(document.querySelector('main').getBoundingClientRect().top) + 10}px`);
   renderPick();
   $('pick').hidden = false;
 }
@@ -146,6 +148,7 @@ $('pick').onclick = (e) => {
   }
   const el = e.target.closest('[data-pick]');
   if (!el) return;
+  if (el.dataset.pick === 'back') { app.picking = null; $('pick').hidden = true; app.homeTab = 'single'; return openHome(); }
   if (el.dataset.pick === 'go' || el.dataset.pick === 'net') {
     const caps = g.nations.map((n) => n.cap).filter((c) => app.picking.humans.includes(c)); // 国の順
     g.setPlayers(caps);
@@ -188,7 +191,7 @@ function drawPick(v) {
   }
   ctx.restore();
 }
-function renderHome() { $('home').innerHTML = homeHtml(); }
+function renderHome() { $('home').innerHTML = homeHtml(); $('home').classList.toggle('menu', homePage() === 'menu'); }
 function openHome() {
   if (!app.homeOpen) { app.homeSpeed = app.speed; app.speed = 0; updateSpeedButtons(); }
   app.homeOpen = true;

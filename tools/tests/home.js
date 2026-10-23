@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
   await p.evaluate(() => document.querySelector('#home-nat').scrollIntoView());
   await p.screenshot({ path: 'shots/home.png' });
   // classic new game still works
-  await p.click('[data-home="new"]'); await p.click('[data-home="new"]'); await p.waitForTimeout(500);
+  await p.click('[data-home="new"]'); await p.waitForTimeout(500);
   console.log(await p.evaluate(() => [$('pick').hidden, $('home').hidden, __app.game.cap, !!__app.game.nations, __app.speed]), errs);
   await b.close();
 })();
