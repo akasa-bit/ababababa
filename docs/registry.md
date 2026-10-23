@@ -88,6 +88,7 @@
 - saveField: confSent (船と戦争。src/ship/war-consts.js。知らせが届く途中の講和会議。回 FU1)
 - saveField: battleReports (船と戦争。src/ship/war-consts.js。艦隊戦の報告。回 FU2)
 - saveField: strikes (船と戦争。src/ship/war-consts.js。光速の一撃の記録。回 FU2)
+- saveField: forts (船と戦争。src/ship/war-consts.js。宇宙要塞の段。2026-10-22 の依頼)
 - saveField: exhaustSent・bargainSent (船と戦争。src/ship/war-consts.js。届く途中の損失の知らせと AI どうしの講和の申し入れ。回 FU4)
 - EDITIONS.game.battle (pos・luck。艦隊戦の補正。台帳の C27・C28。回 FU2)。EDITIONS.sim.battle も同じ名前で CDB90 の値
 

@@ -132,6 +132,7 @@
       case 'route2': return this.openRoute(Number(d.a), Number(d.b));
       case 'uproute': { const r = this.routes.find((x) => x.id === Number(d.route)); return r ? this.upgradeRoute(r) : fail('交易路がない'); }
       case 'warship': return this.buildWarship(sys, Number(d.n) || 1);
+      case 'fort': return this.fortUpgrade(sys); // 宇宙要塞 (船と戦争。ship/fort.js)
       case 'fleet': {
         const from = Number(d.from);
         if (this.stackRealm(from) !== this.cap) return fail('他国の艦隊には命令できない');

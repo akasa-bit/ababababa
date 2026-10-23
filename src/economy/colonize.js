@@ -234,6 +234,8 @@
       if (o) o.lv++;
       else this.outposts.push({ sys: job.sys, body: job.body, lv: 1 });
       this.message(`${this.target(job.sys, job.body).name} の採掘基地が Lv${o ? o.lv : 1} になった`, job.sys);
+    } else if (job.type === 'fort') {
+      this.fortBuilt(job); // 宇宙要塞 (船と戦争。ship/fort.js)
     } else if (job.type === 'ship') {
       this.launch(job.sys, job.to, job.body, job.kind, job.supplies, job);
     }

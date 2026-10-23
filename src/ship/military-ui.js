@@ -23,7 +23,8 @@ function militarySheet(app) {
       : '<span class="muted">軍事基地なし</span>';
     const awe = g.knownAwe(id);
     const aweT = g.known(id)?.lord === g.cap && (g.known(id)?.realm ?? g.cap) === g.cap && g.known(id)?.cols.length ? g.aweGoal(id) : 0;
-    return `<tr><td>${goto(s)}<br>${ageBadge(g, id)}</td><td><b>${n}</b> 艦隊${coming ? ` <span class="muted">(+${coming} 向かっている)</span>` : ''}${awe || aweT ? `<br><span class="muted">うち威圧 ${awe}${aweT ? ` / ${aweT}` : ''}</span>` : ''}</td><td>${build}</td>
+    const fl = g.knownFort(id);
+    return `<tr><td>${goto(s)}<br>${ageBadge(g, id)}</td><td><b>${n}</b> 艦隊${fl ? `<br><span class="muted">宇宙要塞 Lv${fl}</span>` : ''}${coming ? ` <span class="muted">(+${coming} 向かっている)</span>` : ''}${awe || aweT ? `<br><span class="muted">うち威圧 ${awe}${aweT ? ` / ${aweT}` : ''}</span>` : ''}</td><td>${build}</td>
       <td><button data-act="rally" data-sys="${id}">全艦隊をここへ集結</button></td></tr>`;
   }).join('');
   const milTable = `<h3>艦隊</h3>${defenseToggle(g)}<div class="scroll"><table class="tbl">

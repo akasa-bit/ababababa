@@ -127,6 +127,7 @@ function militaryBox(app, sys) {
   const unhold = isOwnStack(g, sys.id) && heldN > 0
     ? `<button data-act="fleetclear" data-sys="${sys.id}">指令を取り消す<small>命令で駐留中 ${heldN} 艦隊 → 自動防衛配備に任せる${sys.id === g.cap ? '' : `・届くまで ${g.lightDelay(sys.id).toFixed(1)} 年`}</small></button>` : '';
   return `<h3>軍事</h3>
+    ${fortBox(g, sys)}
     ${pick}${unhold}
     ${aweLine(g, sys.id)}
     ${supplyLine(g, sys.id, n)}
@@ -168,4 +169,17 @@ function strikeBox(g, sys, realm, from) {
     <p class="note">艦隊を減速させずに ${esc(sys.name)} へ突っ込ませる。1 艦隊で 1 つの天体の入植地を焼き (人口の ${STRIKE.survive * 100}% だけが地下に残り、施設・備蓄・歩兵はなくなる)、艦隊は残らない。光の遅れで、${esc(g.realmName(realm))}には着く直前 (約 ${(ly / OFFROUTE_SPEED - ly).toFixed(1)} 年前) まで見えず、止められない。
       知らせが光速で届いた国は宣戦する (撃たれた国はかならず、${STRIKE.reach} 光年以内の国は ${Math.round(STRIKE.retaliate * 100)}%)。自国の家臣は忠誠度が ${STRIKE.loyalty} 下がり、悪名が ${STRIKE.infamy} 増える。いま知っている天体は ${bodies} つ。</p>
     <div class="btns"><button data-act="strike" data-from="${from}" data-n="1" class="bad">1 艦隊で突入</button>${bodies > 1 ? `<button data-act="strike" data-from="${from}" data-n="${bodies}" class="bad">${bodies} 艦隊で突入 (全部の天体)</button>` : ''}</div></details>`;
+}
+
+// 宇宙要塞 (星系ごと。入植すると Lv1、あとは手動で Lv10 まで)。地球に届いている記録で
+function fortBox(g, sys) {
+  const k = sys.id === g.cap ? null : g.known(sys.id);
+  if (sys.id !== g.cap && !k?.cols.length) return '';
+  const lv = g.knownFort(sys.id);
+  const own = sys.id === g.cap || (k?.realm ?? g.cap) === g.cap;
+  const busy = busyText(g, (j) => j.type === 'fort' && j.sys === sys.id);
+  const btn = own && lv < FORT.max
+    ? costButton(g, `data-act="fort" data-sys="${sys.id}"`, `${ico('fleet')}要塞を Lv${lv + 1} に`, g.fortCost(sys.id), sys.id, busy) : '';
+  return `<p class="note">宇宙要塞 <b>Lv${lv}</b> / ${FORT.max}${own ? '' : ` (${esc(g.realmName(k.realm))})`}。艦隊戦では段の数だけ要塞の区画 (艦の ${FORT.hp} 倍の耐久、退かない) が守りに加わる。区画が沈むと段が下がる。艦隊がいなくても、要塞があれば攻める艦隊は先に艦隊戦をする。</p>
+    ${btn ? `<div class="btns">${btn}</div>` : ''}`;
 }
