@@ -95,7 +95,7 @@ function sysFlags(g, sys, k, cols) {
     if (o?.stage) flags.push([o.stage >= 3 ? 'enemy' : 'warn', UNREST_LABEL[o.stage], outlookText(o, true)]);
     else if (o?.warn) flags.push(['warn', '不満の兆し', outlookText(o, true)]);
     const neglect = Math.max(0, g.year - (k.attended ?? k.founded ?? k.year));
-    if (neglect > NEGLECT_GRACE) flags.push(['warn', `放っておかれて ${Math.floor(neglect)} 年`, '視察団・指令・資金援助で戻る']);
+    if (NEGLECT_MAX && neglect > NEGLECT_GRACE) flags.push(['warn', `放っておかれて ${Math.floor(neglect)} 年`, '視察団・指令・資金援助で戻る']);
     if ((k.autonomy || 0) > g.year) flags.push(['info', `自治を認めている (${Math.round(k.autonomy)}年まで)`]);
     else if ((k.taxFree || 0) > g.year) flags.push(['info', `朝貢を免除している (${Math.round(k.taxFree)}年まで)`]);
     if (k.direct) flags.push(['own', '直轄']);

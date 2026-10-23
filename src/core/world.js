@@ -14,7 +14,7 @@ function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, negle
     { label: '最近の指令', v: -(2 * orders) },
     { label: '主人の星系の艦隊', v: Math.min(15, 2 * lordShips) },
     { label: '支援で深まった従属', v: Math.min(40, dep) },
-    { label: '放っておかれた年数', v: -Math.min(NEGLECT_MAX, NEGLECT_RATE * Math.max(0, neglect - NEGLECT_GRACE)), note: `${Math.floor(neglect)} 年` },
+    ...(NEGLECT_MAX ? [{ label: '放っておかれた年数', v: -Math.min(NEGLECT_MAX, NEGLECT_RATE * Math.max(0, neglect - NEGLECT_GRACE)), note: `${Math.floor(neglect)} 年` }] : []), // NEGLECT_MAX = 0 なら効かない
     { label: `統治体制 (${REGIMES[regime].label})`, v: REGIMES[regime].loyalty },
     { label: '減税・自治', v: concession ? 15 : 0 },
     ...(arrears ? [{ label: '関税受領官 (滞納)', v: -H33.arrears }] : []),
