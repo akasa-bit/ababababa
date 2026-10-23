@@ -4,6 +4,7 @@
 // 3. 続きの星系が自国でなくなったら、連作はそこで切れる
 // 4. 同じ種類 (頭の出来事) は 1 試合に STORY_MAX 回まで。種類は 20 以上
 // 5. どの選択肢にも観戦の AI の重み (weigh) があり、セーブで予約が残る
+// 6. 星系の政府が決めたこと (gv.did。回 SE4): 期限切れで現地が決めた・総督が方針で要求に答えた、を覚え、光の遅れで地球に届く
 // 使い方: node tools/tests/story.js
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
@@ -77,6 +78,33 @@ g.story.queue = [{ type: 'signal2', sys: far, at: g.year + 5, data: {} }];
 const saved = JSON.parse(JSON.stringify(sim.buildSave(g)));
 const g2 = new sim.Game(sim.generateGalaxy({ seed: '5', starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
 check(g2.restore(saved) && g2.story.queue?.[0]?.type === 'signal2', '連作の予約がセーブから戻らない');
+
+// 6
+g.decisions = [];
+gv.did = [];
+STORY.accident.start(g, far);
+const d6 = g.decisions.find((x) => x.type === 'accident');
+check(d6, '事故の出来事が起きない');
+if (d6) {
+  g.year = d6.deadline + 0.01;
+  g.decisionsYearly();
+  const did = g.govs[far].did?.at(-1);
+  check(did && did.year === Math.floor(g.year) && /現地で決めた/.test(did.why), `期限切れで現地が決めたことを覚えない (${JSON.stringify(g.govs[far].did)})`);
+  g.recordSnapshots();
+  check(!(g.known(far)?.did || []).some((x) => x.year === did?.year && x.what === did?.what), '星系の政府が決めたことが光より速く地球に見えた');
+  const t0 = g.year;
+  for (let i = 0; i < Math.ceil(g.lightDelay(far)) + 1; i++) { g.year = t0 + i + 1; g.recordSnapshots(); }
+  check((g.known(far)?.did || []).some((x) => x.what === did?.what), '星系の政府が決めたことが、光の遅れのあとも地球に届かない');
+}
+gv.governor = 'yield';
+gv.unrest = { stage: 1, since: g.year - 10 };
+g.raiseDemand(far, gv);
+check(/総督の方針「譲歩する」/.test(gv.did?.at(-1)?.why || ''), `総督が方針で要求に答えたことを覚えない (${JSON.stringify(gv.did?.at(-1))})`);
+gv.did = Array.from({ length: 20 }, (_, i) => ({ year: Math.floor(g.year) - 30 + i, what: 'x', why: 'y' }));
+g.govDid(far, 'z', 'w');
+check(gv.did.length <= sim.tables.GOV_DID.max && gv.did.every((x) => x.year > g.year - sim.tables.GOV_DID.years), `古い決めたことを捨てない (${gv.did.length} 件)`);
+const g3 = new sim.Game(sim.generateGalaxy({ seed: '5', starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
+check(g3.restore(JSON.parse(JSON.stringify(sim.buildSave(g)))) && g3.govs[far].did?.at(-1)?.what === 'z', '星系の政府が決めたことがセーブから戻らない');
 
 console.log(fails.length ? `語り手 不合格\n${fails.join('\n')}` : `語り手 合格 (種類 ${types.length}・光の遅れ ${g.lightDelay(far).toFixed(1)} 年の星系で)`);
 process.exit(fails.length ? 1 : 0);

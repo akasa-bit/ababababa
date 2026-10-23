@@ -343,6 +343,14 @@
       this.event('politics', id, `${name} は最後通牒の期限が来たが、独立を思いとどまった (恐怖度 ${Math.round(gv.fear || 0)}・友好度 ${Math.round(gv.friend || 0)}・忠誠度 ${Math.round(loyal)})。不満はまだ残っている`);
     }
   }
+  // 星系の政府が決めたことを覚える (gv.did = [{ year, what, why }]。snapshot で地球へ光の遅れで届き、総督の手紙が読む)
+  govDid(id, what, why) {
+    const gv = this.govs[id];
+    if (!gv || id === this.realmOf(id)) return; // 首都は自分で決める
+    const list = (gv.did || []).filter((d) => d.year > this.year - GOV_DID.years);
+    list.push({ year: Math.floor(this.year), what, why });
+    gv.did = list.slice(-GOV_DID.max);
+  }
   calmUnrest(id, gv, why) {
     gv.unrest = { stage: 0 };
     for (const p of this.players) for (const d of p.decisions || []) if (d.kind === 'demand' && d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
@@ -361,6 +369,7 @@
       return;
     }
     const gov = gv.governor || 'ask';
+    if (gov !== 'ask') this.govDid(id, gov === 'yield' ? `${what}の要求を認めた` : gov === 'suppress' ? `${what}の要求を退けて鎮圧した` : `${what}の要求に返事をしなかった`, `総督の方針「${GOVERNOR[gov]}」に従った (忠誠度 ${Math.round(gv.loyalty ?? LOYALTY_START)})`);
     if (gov === 'yield') { this.event('demand', id, `${name} が${what}を求め、総督が方針どおりその場で認めた`); return this.grantDemand(id, gv); }
     if (gov === 'suppress') { this.event('demand', id, `${name} が${what}を求め、総督が方針どおり鎮圧に動いた`); return this.refuseDemand(id, gv, '総督が要求を退けて鎮圧した', 'suppress'); }
     if (gov === 'ignore') {

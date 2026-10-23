@@ -38,6 +38,7 @@
 | B-024 | 傀儡国が、宗主の敗戦で消える道筋を入れる | `REGIMES`・`warsYearly`・`TREATY` | — | S | 政治 | `status/H.md` の残り。**済み (#185)** |
 | B-025 | 史料の原文確認: 裁定者が自分の知識で決めた 3 か所と、本文に当たれなかった条約 (Aitchison・理藩院則例・実録・COFA の条番号・中世の文書) | `data/raw/vassal/`・`data/build/build_vassal_game.py` → `VASSAL_DATA` | — | S | 政治 | `status/H.md` の注意・`vassal-game.md` の 7・`vassal-cases.md` の 2 |
 | B-026 | 遅れて届く外交: 同盟・不可侵・交易の協定を足し、どれも届いた所から効く。交渉の模型の「相手が受け入れる線」を「何なら受けるか」の形で見せる | `TREATY`・`BARGAIN`・`PC_DIPLOMACY`・`openTreaty`・`renderTreaty` | Q2 | L | 政治 | `critique/04-plan.md` の 2-2・2.3 の 16・3 の 5。**済み (回 SE2)** |
+| B-140 | 語り手の選択肢の片寄り: 信仰を認めた続き (断る 100%・巡礼船 0%)・鉱脈の 3 段目 (自治を認める 91%)・総督の汚職の 3 段目 (押し切る 93%)・使節の続き (交易 100%、件数 4)。観戦の AI の重み (`weigh`) か、得と損の釣り合いかを、試遊のプレイ記録 (DO3 の道具) で人の選び方を見てから直す | `politics/story.js` の `STORY` | 試遊 (F20・F21) | S | 政治 | `docs/status/SE.md` の「回 SE4 の測り直し」 |
 | B-028 | AI の国が入植を急ぎ、銀河を取り合う。構造転換 (#152) のあとで入植が増えたので、先に測り直す | `aiOrdersYearly`・`colonize` | Q2・B-068 | M | 政治 | `critique/04-plan.md` の 2-1・2.3 の 9・2.1 の注意 |
 | B-029 | 国ごとに規則が違う開始: 種族の特性を倍率から規則の違いへ。開始の人口と星系も国ごとに | `SPECIES_TRAITS`・`HUMAN_TRAITS`・`NATION_COUNTS`・`NationLib` | Q2 | M | 政治 | `critique/04-plan.md` の 2-4・2.3 の 15 |
 
@@ -115,7 +116,7 @@
 | B-077 | ストアの文を英語と中国語に | `store/` | B-075・B-076 | S | 外向き | `status/S.md`・`store/steamworks.md` の 10 |
 | B-078 | **済み (#183。回 SO1。`store/page-ja.md` の 8)** ストアの下書きを今のゲームと突き合わせる (物理はゲーム版にも入った・第三次産業と研究が入った・従属国の型が入った) | `store/page-ja.md` | — | S | 外向き | `store/README.md`・`store/page-ja.md` の 7 |
 | B-079 | **済み (#183。回 SO1。`desktop/shots/shoot.mjs`・`store/images.md` の 2・5)** スクリーンショットを撮るためのセーブと、カプセルの案を作る | `store/images.md`・`desktop/` | S の返事 (大きさ・カプセルの絵) | S | 外向き | `status/S.md`・`store/images.md` の 4 |
-| B-080 | 予告編 (30〜60 秒。光の球 → 20 年後に届く → 講和のあとも戦う艦隊 → 答え合わせ) | `store/images.md`・新しい | B-052・B-054 | M | 外向き | `store/images.md` の 3・`critique/04-plan.md` の 4-1 |
+| B-080 | **済み (回 SO3。`desktop/trailer/trailer.mjs`・`store/images.md` の 3。音楽は音の素材が入ってから)** 予告編 (30〜60 秒。光の球 → 20 年後に届く → 講和のあとも戦う艦隊 → 答え合わせ) | `store/images.md`・新しい | B-052・B-054 | M | 外向き | `store/images.md` の 3・`critique/04-plan.md` の 4-1 |
 | B-081 | ストアのページを公開 (近日公開) し、名前と副題の案を 2〜3 作って反応を比べる | `store/` | Steamworks のアカウント (ユーザー)・B-079・Q7・Q10 | S | 外向き | `critique/04-plan.md` の 4-1・4-8・4-9・`store/steamworks.md` の 9 |
 | B-082 | 体験版 = 最初の時代 (2300〜2400 年) を作り、Next Fest に出る。配信者に鍵を配る | `END_CHOICES`・`ERA_YEARS`・`desktop/` | B-054・B-081 | M | 外向き | `critique/04-plan.md` の 4-2・4-5・4-6・`store/steamworks.md` の 3 |
 | B-083 | Steamworks の SDK をつなぐ: 実績・Steam Cloud とスロットのセーブ (案 D)・オーバーレイ (`--in-process-gpu`)・画面のキーボード (案 C)・ワークショップ | `desktop/electron`・新しい | Steamworks のアカウント (ユーザー) | L | 外向き | `status/S.md`・`desktop/README.md` の 4・`desktop/controller.md` の 2・`store/steamworks.md` の 8・10・`critique/04-plan.md` の 4-7 |
