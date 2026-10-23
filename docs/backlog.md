@@ -7,9 +7,9 @@
 
 | 番号 | 中身 | 触るコードの場所 | 依存 | 大きさ | 新しいレーン案 | 出どころ |
 |---|---|---|---|---|---|---|
-| B-001 | 全部門の帳簿 (家計・会社・銀行・中央銀行・政府・ほかの国) を作り、全取引と貸借の表が毎年 0 になる試験にする。国の物価指数とインフレ、政策金利 → 利回りの期間構造、国債の信用の危険と不履行、利子率の手段を中央銀行へ。値段の水準に錨を付ける (船の費用と物価の連動) | `gv.hh`・`gv.fm`・`bankMove`・`interestStep`・`debtStep`・`DEBT`・`PRICE`・`MARKET`・`tools/tests/money.js` | — | L | 経済 | `sessions.md` の 21・`econ-policy.md` の 7 の 3・`econ-policy-list.md` の 4・`status/C.md` の次にやること 2 と C の 6 |
+| B-001 | **済み (回 KE1)** 全部門の帳簿 (家計・会社・銀行・中央銀行・政府・ほかの国) を作り、全取引と貸借の表が毎年 0 になる試験にする。国の物価指数とインフレ、政策金利 → 利回りの期間構造、国債の信用の危険と不履行、利子率の手段を中央銀行へ。値段の水準に錨を付ける (船の費用と物価の連動) | `gv.hh`・`gv.fm`・`bankMove`・`interestStep`・`debtStep`・`DEBT`・`PRICE`・`MARKET`・`tools/tests/money.js` | — | L | 経済 | `sessions.md` の 21・`econ-policy.md` の 7 の 3・`econ-policy-list.md` の 4・`status/C.md` の次にやること 2 と C の 6 |
 | B-002 | R22 (民間の信用) を合格にする: 会社の設備投資の借りと、家計の住宅の借りを入れる | `gv.fm`・`gv.hh`・`FACILITY`・`bankMove` | B-001 | M | 経済 | `status/C.md` のいまの数・`structure.md` の 7.1・`debt.md` (C-15 の b) |
-| B-003 | R28 (財政の反応、0.082) を幅に戻す。国債の上限・手元の資金と、Bohn の式の当て方 (GDP の傾向のならし方・小さな国) を見直す | `DEBT` (`limit`・`cash`・`trend`)・`debtStep`・`funds` | B-001 と同じ回 | M | 経済 | `status/C.md` の次にやること 1・`debt.md` |
+| B-003 | **済み (回 KE1。R28 0.045)** R28 (財政の反応、0.082) を幅に戻す。国債の上限・手元の資金と、Bohn の式の当て方 (GDP の傾向のならし方・小さな国) を見直す | `DEBT` (`limit`・`cash`・`trend`)・`debtStep`・`funds` | B-001 と同じ回 | M | 経済 | `status/C.md` の次にやること 1・`debt.md` |
 | B-004 | R11 (研究の生産性、−2.51) を幅に入れる。研究者の増え方 (研究開発費 ÷ GDP が所得で上がる形。WDI GB.XPD.RSDV.GD.ZS) | `RESEARCH`・`researchStep`・`STRUCTURE` | C の 4 (C-22 で「そのまま」。決め直し) | S | 経済 | `status/C.md` の次にやること 1 と C の 4・`structure.md` の 5 |
 | B-005 | R10・R25・R26 の不合格の直し。C-22 で入れないと決めた 3 (部門の間の賃金の差)・5 (倉の上限か、測り方を合計 ÷ 合計に。閉じた #171)・7 (会社の在庫の目標) を、やるなら入れる | `STRUCTURE`・`laborStep`・`MARKET.cover`・`stockCap`・`targets/targets.json` | C の 3・5・7 の決め直し | M | 経済 | `status/C.md` の次にやること 3 と C の 3・5・7・`structure.md` の 6 |
 | B-006 | 政策の反応を現実と比べる: 局所射影で現実 (Romer & Romer・Ramey・金融政策のショック) から目標を先に登録し、画面なしの版で政策を無作為に変えて同じ台本で測る。AI の中央銀行はテイラー則。値は積率法か ABC と Sobol で幅を出す | 新しい (`tools/`)・`AI_FISCAL`・`aiFiscal`・`targets/targets.json` | B-001 | L | 経済 | `sessions.md` の 22・`econ-policy.md` の 7 の 4・`econ-policy-list.md` の 4 |

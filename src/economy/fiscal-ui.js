@@ -13,7 +13,7 @@ function councilChart(v) {
     </svg><figcaption><span class="sw own"></span>支持 ${n} <span class="sw opp"></span>不支持 ${100 - n}</figcaption></figure>`;
 }
 
-// 帝国 → 目標の「財政」: 税・利子率・予算。変えると光速で広がる (国家方針と同じ)
+// 帝国 → 目標の「財政」: 税・中央銀行と政策金利・予算。変えると光速で広がる (国家方針と同じ)
 // 財政のスライダーの値の見せ方 (data-fmt)
 function fiscalFmt(fmt, v) {
   v = Number(v);
@@ -33,17 +33,21 @@ function fiscalHtml(g) {
   const used = Object.keys(BUDGET).reduce((a, k) => a + (f.budget?.[k] || 0), 0);
   const paid = g.gov(g.cap).bpaid ?? 1;
   const taxRate = taxRateOf(f.tax), taxK = taxRate / MARKET.tax, bK = burdenK(f);
+  const rule = (f.cb ?? 1) === 1, cbRate = g.cbRateAt(g.cap), cbs = g.cb[g.cap] || { pi: CB.pistar }; // 中央銀行 (回 KE1。画面から状態を作らない)
   const rows = Object.entries(BUDGET).map(([k, b]) => {
     const sh = f.budget?.[k] || 0;
     return `<tr><td>${b.label}</td><td>${slider(k, BUDGET_RANGE, BUDGET_STEP, sh, 'pct0', b.label)}</td><td>${sh ? `${fmtAmt(sh * tax)} cr/年・効き目 ${pct(budgetEffect(sh * paid))}` : '<span class="muted">使わない</span>'}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
   }).join('');
   return `<h3>${ico('credits')}財政</h3>
-    <p class="note">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・利子率・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く${pend ? ` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
+    <p class="note">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・政策金利・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く${pend ? ` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
     <table class="tbl">
       <tr><td>税率</td><td>${slider('tax', TAX_RANGE, TAX_STEP, taxRate, 'pct1', '税率')}</td><td colspan="2" class="muted wrap">所得への税 (標準 ${(MARKET.tax * 100).toFixed(1)}% の ×${taxK.toFixed(2)})${Math.abs(bK - 1) > 1e-9 ? `・消費税と合わせた重さ ×${bK.toFixed(2)}: 家臣の忠誠度の目標 ${TAX_LOYALTY * (bK - 1) > 0 ? '+' : ''}${(TAX_LOYALTY * (bK - 1)).toFixed(1)}・議会の支持 年 ${TAX_COUNCIL * (bK - 1) > 0 ? '+' : ''}${(TAX_COUNCIL * (bK - 1)).toFixed(2)}` : ''}。自給の所得には掛からない</td></tr>
       <tr><td>消費税</td><td>${slider('ctax', CTAX_RANGE, CTAX_STEP, f.ctax || 0, 'pct1', '消費税')}</td><td colspan="2" class="muted wrap">家計の買い物 (物とサービス) の値段に掛け、星系の政府に入る。所得の低い星系に重い (逆進)。忠誠度と議会への効き目は税率と合わせた重さで決まる</td></tr>
       <tr><td>関税</td><td>${slider('tariff', TARIFF_RANGE, TARIFF_STEP, f.tariff || 0, 'pct1', '関税')}</td><td colspan="2" class="muted wrap">ほかの国からの輸入の値段に掛ける (買い手の会社が、買い手の星系の政府に払う)。高いほど国の中の売り手から買う。政府の資材の買い付けと主人の支援には掛からない</td></tr>
-      <tr><td>利子率</td><td>${slider('rate', RATE_RANGE, RATE_STEP, f.rate, 'pct2', '利子率')}</td><td colspan="2" class="muted wrap">政府の貯えにつく利子と、国債・会社と家計の借りに払う利子。高いほど、運ぶ年数ぶん輸入の値段が上がる (e^(利子率 × 年数) 倍)。マイナスなら預金が利子を払う</td></tr>
+      <tr><td>中央銀行</td><td><select data-act="fiscal" data-k="cb" aria-label="政策金利の決め方"><option value="1"${rule ? ' selected' : ''}>任せる (テイラー則)</option><option value="0"${rule ? '' : ' selected'}>自分で決める</option></select></td><td colspan="2" class="muted wrap">任せると、中央銀行が物価の上がり方と景気の速さを見て政策金利を決める (年 ${(CB.rstar * 100).toFixed(0)}% + 物価の上がり方 + ${CB.phiPi} × (物価の上がり方 − 目標 ${(CB.pistar * 100).toFixed(0)}%) + ${CB.phiY} × 景気のずれ)。政策金利を動かすと「自分で決める」になる</td></tr>
+      <tr><td>政策金利</td><td>${slider('rate', RATE_RANGE, RATE_STEP, rule ? cbRate : f.rate, 'pct2', '政策金利')}</td><td colspan="2" class="muted wrap">名目の金利。会社と家計の借り・預金・交易の運ぶ年数には、物価の上がり方を引いた実質の金利 (いま 年 ${(g.rateAt(g.cap) * 100).toFixed(2)}%) が効く (運ぶ年数ぶん輸入の値段が e^(実質の金利 × 年数) 倍)。物価より低いまま止めると、物価の上がり方が上がっていく</td></tr>
+      <tr><td>物価</td><td class="num">年 ${(cbs.pi * 100).toFixed(1)}%</td><td colspan="2" class="muted wrap">物価の上がり方 (目標 ${(CB.pistar * 100).toFixed(0)}%)。物価の指数 ${g.cpiOf(g.cap).toFixed(2)} (始め 1)。帳簿は始めの値段で数えるので、思ったより物価が上がると、預金と国債の重さがそのぶん減る</td></tr>
+      <tr><td>長期の国債の利回り</td><td class="num">年 ${(g.longYield(g.cap) * 100).toFixed(2)}%</td><td colspan="2" class="muted wrap">10 年の国債: 政策金利の見込み + 期間の上乗せ + 信用の上乗せ (国債 ÷ GDP × ${(CB.credit * 100).toFixed(2)}%。いま ${(CB.credit * Math.min(CB.dmax, (cg.bond || 0) / Math.max(cg.fr?.y || 0, 1e-9)) * 100).toFixed(2)}%)。国債 ÷ GDP が ${Math.round(CB.dmax * 100)}% を超えると不履行になり、国債の ${Math.round(CB.haircut * 100)}% を払わない (預金がそのぶん目減りする)</td></tr>
       <tr><td>赤字の上限</td><td>${slider('deficit', DEFICIT_RANGE, DEFICIT_STEP, f.deficit || 0, 'pct1gdp', '赤字の上限')}</td><td colspan="2" class="muted wrap">資金が足りない分を、1 年にこの額まで国債で借りる (${ME.capName}の GDP ${fmtAmt(cg.fr?.y || 0)} cr/年)。国債 ${fmtAmt(cg.bond || 0)} cr・いま借りられる額 ${fmtAmt(Math.max(0, g.funds(g.cap) - cg.credits))} cr。手元の資金が税収の ${Math.round(DEBT.cash * 12)} か月分を超えると、超えた分で国債を返す。国債 ÷ GDP は ${Math.round(DEBT.limit * 100)}% まで</td></tr>
     </table>
     <h3>予算 (${ME.capName}の税収 ${fmtAmt(tax)} cr/年 のうち ${Math.round(used * 100)}% を使う。合わせて ${BUDGET_TOTAL * 100}% まで)</h3>
