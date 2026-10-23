@@ -102,5 +102,6 @@ saveField('bargainSent', (game) => (game.bargainSent.length ? game.bargainSent :
 // 宇宙要塞の段 { [星系]: Lv }。前の版のセーブ (項目がない) は、入植した星系に Lv FORT.auto を建てて読む
 saveField('forts', (game) => game.forts, {
   init: (game) => { game.forts = {}; game.fortsYearly(); },
-  read: (game, d) => { game.forts = d.forts && typeof d.forts === 'object' ? Object.fromEntries(Object.entries(d.forts).filter(([, v]) => Number.isFinite(v))) : {}; game.fortsYearly(); },
+  // 要塞のないセーブ (前の版) だけ、入植した星系に Lv1 を建てる。ある版で建て直すと、年の途中で入植した星系に要塞が早く建ち、保存の前と筋が変わる
+  read: (game, d) => { if (d.forts && typeof d.forts === 'object') game.forts = Object.fromEntries(Object.entries(d.forts).filter(([, v]) => Number.isFinite(v))); else { game.forts = {}; game.fortsYearly(); } },
 });
