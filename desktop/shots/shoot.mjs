@@ -1,22 +1,24 @@
 // ストアのスクリーンショットとカプセルの案を撮る (B-079。store/images.md の 2・4)。
-// 1. 撮るためのセーブを作る: 銀河の番号を決めて 6 か国で観戦のまま進め、地球の国 (最初の国) の目に戻して、セーブを JSON に書く。
+// 1. 撮るためのセーブを作る: 銀河の番号を決めて 6 か国で始め、観戦で少し進めたあと、人の操作 (画面の指令と同じ issue) で遊ぶ (回 SO3。play.mjs)。
+//    「決めること」が届いた所と、地球の国が勝った講和会議の知らせが届いた所のセーブができる。
 //    ゲームの中の式と乱数だけで進むので、同じ版のゲームなら、何度作っても同じセーブになる (tools/tests/headless.js が確かめている)。
 // 2. そのセーブを新しいページで読み込み、場面ごとに撮る。大きさは CSS 1280×720 を 1.5 倍 (= 1920×1080。QD-18 の案 1)。
 // 3. カプセル: 星図だけを残して、ゲームの名前の文字を載せる (QD-19 の案 1)。大きさは store/images.md の 1。
 // ゲームの中身は変えない (ページの関数を呼ぶだけ)。書き出したものはリポジトリに入れない (既定は desktop/shots/out/。.gitignore 済み)。
-// 使い方: node tools/build.mjs && node desktop/shots/shoot.mjs [--seed 20261020] [--years 200] [--out <フォルダ>] [--only shots|capsules]
-//         [--save <セーブ.json>] (作らずに、そのセーブを読んで撮る)
+// 使い方: node tools/build.mjs && node desktop/shots/shoot.mjs [--seed 20261020] [--spec 80] [--out <フォルダ>] [--only shots|capsules]
+//         [--save <セーブ.json>] (作らずに、そのセーブを読んで撮る。手で遊んだセーブ。場面 3・6 は、そのセーブに決めることと講和会議があれば使う)
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { playInPage } from './play.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
 const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; };
 const SEED = arg('seed', '20261020');
-const YEARS = Number(arg('years', 200));
+const SPEC = Number(arg('spec', 80));
 const OUT = resolve(arg('out', join(here, 'out')));
 const ONLY = arg('only', '');
 const HTML = process.env.HTML || join(root, 'index.html');
@@ -32,7 +34,8 @@ async function openPage(b, viewport, scale) {
   const p = await b.newPage({ viewport, deviceScaleFactor: scale });
   p.errs = [];
   p.on('pageerror', (e) => p.errs.push(e.message));
-  await p.addInitScript(() => { try { localStorage.clear(); } catch { /* 使えない環境 */ } });
+  // 遊び方の記録の同意 (B-060) は「記録しない」にしておく (撮る画面に同意の欄を出さない。記録もしない)
+  await p.addInitScript(() => { try { localStorage.clear(); localStorage.setItem('moribin-playlog-consent', 'no'); } catch { /* 使えない環境 */ } });
   await p.goto(`file://${HTML}?seed=${SEED}&home=0`);
   await p.waitForFunction(() => window.__app && __app.game);
   await p.evaluate(() => setSpeed(0));
@@ -42,21 +45,21 @@ async function openPage(b, viewport, scale) {
 const load = (p, text) => p.evaluate((t) => { const ok = loadSave(parseSave(t)); setSpeed(0); __app.dirty = true; return ok; }, text);
 const settle = (p) => p.waitForTimeout(600);
 
-// 1. 撮るためのセーブ
-async function makeSave(b) {
+// 1. 撮るためのセーブ (play.mjs で遊んで作る)。saves = { decision, reply, offer, front, conference } (JSON の文字列)
+async function makeSaves(b) {
   const p = await openPage(b, { width: 1280, height: 720 }, 1);
-  const r = await p.evaluate(({ seed, years }) => {
-    newGame(seed);
-    const g = __app.game;
-    g.foundNations(6); g.setPlayerNation(g.nations[0].cap);
-    g.setSpectate(true); for (let i = 0; i < Math.round(years * 4); i++) g.advance(0.25); g.setSpectate(false);
-    return { text: saveJSON(g, { speed: 0 }), year: Math.round(g.year), colonies: g.colonies.length, routes: g.routes.length, wars: Object.keys(g.realmWars).length };
-  }, { seed: SEED, years: YEARS });
+  const r = await p.evaluate(playInPage, { seed: SEED, spec: SPEC });
   await p.close();
-  const file = join(OUT, `save-${SEED}-${r.year}.json`);
-  writeFileSync(file, r.text);
-  console.log(`セーブ: ${file} (${(r.text.length / 1e6).toFixed(1)} MB・${r.year} 年・入植地 ${r.colonies}・交易路 ${r.routes}・戦争 ${r.wars})`);
-  return r.text;
+  if (r.error) throw new Error(`${r.error}\n${r.log.join('\n')}`);
+  console.log(`遊んだ筋 (銀河 ${SEED}・観戦 ${SPEC} 年のあと):\n  ${r.log.join('\n  ')}`);
+  for (const [k, text] of Object.entries(r.saves)) {
+    const file = join(OUT, `save-${SEED}-${k}.json`);
+    writeFileSync(file, text);
+    console.log(`セーブ ${k}: ${file} (${(text.length / 1e6).toFixed(1)} MB)`);
+  }
+  // 遊んだ筋の年と場所 (予告編の字幕に使う。desktop/trailer/trailer.mjs --saves)
+  writeFileSync(join(OUT, `play-${SEED}.json`), JSON.stringify({ offer: r.offer, front: r.front, log: r.log }, null, 1));
+  return r;
 }
 
 // 2. 場面 (store/images.md の 2 の表の番号)。prep はページの中で動き、撮る前の画面を作る。
@@ -76,12 +79,23 @@ const SCENES = [
     document.querySelector('[data-sec="loyal"]')?.scrollIntoView({ block: 'start' });
     galaxyView.fitColonies(); galaxyView.cam.zoom *= 1.5; galaxyView.centerOn(__app.game.system(__app.sel.sys));
   } },
-  { n: 3, name: 'news', what: '何年前の知らせかが分かる、地図の左上の知らせ', prep: () => {
-    __app.secOpen = {}; __app.setView('galaxy'); __app.selectSystem(__app.game.cap);
-  }, after: () => { $('panel').scrollIntoView({ block: 'start' }); galaxyView.fitColonies(); galaxyView.cam.zoom *= 1.3; } },
+  { n: 3, name: 'decision', save: 'decision', what: '「決めること」が地図の左上の知らせの帯に届いた所', prep: () => {
+    const g = __app.game;
+    const d = g.visibleDecisions().sort((a, b) => g.lightDelay(b.sys) - g.lightDelay(a.sys))[0];
+    __app.secOpen = {}; __app.setView('galaxy'); __app.selectSystem(d ? d.sys : g.cap);
+    return d && `${g.system(d.sys).name}・${g.lightDelay(d.sys).toFixed(1)} 光年`;
+  }, after: () => { $('panel').scrollIntoView({ block: 'start' }); galaxyView.fitColonies(); galaxyView.cam.zoom *= 1.3; galaxyView.centerOn(__app.game.system(__app.sel.sys)); } },
   { n: 4, name: 'routes', what: '帝国 → 交易路 (交易路の網と運ぶ量)', prep: () => { __app.empireTab = 'routes'; __app.setView('empire'); } },
   { n: 5, name: 'politics', what: '帝国 → 政治 (独立と戦争の原因と見通し)', prep: () => { __app.empireTab = 'politics'; __app.setView('empire'); } },
-  { n: 6, name: 'military', what: '帝国 → 軍事 (戦争と講和)', prep: () => { __app.empireTab = 'military'; __app.setView('empire'); } },
+  { n: 6, name: 'treaty', what: '講和会議で条件を選ぶ所 (セーブに講和会議がなければ 帝国 → 軍事)', prep: () => {
+    const g = __app.game;
+    const c = g.conferences.find((x) => x.bids.some((b) => b.realm === g.cap && !b.picks));
+    if (!c) { __app.empireTab = 'military'; __app.setView('empire'); return '講和会議がないので 帝国 → 軍事'; }
+    __app.setView('galaxy'); $('rail').hidden = true; __app.selectSystem(c.loser); openTreaty(c.id);
+    const bid = c.bids.find((b) => b.realm === g.cap);
+    __app.treaty.picks = g.aiTreatyPicks(c, bid); renderTreaty(); // 押した順の番号が見えるように、おまかせの選び方で選んでおく (送らない)
+    return `${g.realmName(c.loser)}・持ち点 ${bid.pts}・会議は ${Math.floor(c.year)}年に開き、${Math.floor(g.year)}年に届いた`;
+  }, after: () => { galaxyView.fitColonies(); galaxyView.cam.zoom *= 1.5; galaxyView.centerOn(__app.game.system(__app.sel.sys)); } },
   { n: 7, name: 'system', what: '星系マップ (天体と背景の天体写真)', prep: () => {
     const g = __app.game;
     const s = g.knownOwnSystems().filter((x) => x.id !== g.cap).sort((a, b) => b.bodies.length - a.bodies.length)[0];
@@ -90,11 +104,13 @@ const SCENES = [
   } },
 ];
 
-async function shots(b, save) {
+async function shots(b, saves) {
   const p = await openPage(b, { width: 1280, height: 720 }, 1.5);
-  if (!(await load(p, save))) throw new Error('セーブを読み込めない');
   const done = [];
+  let loaded = null;
   for (const s of SCENES) {
+    const k = saves[s.save] ? s.save : 'conference'; // 場面ごとのセーブ (なければ講和会議の知らせが届いた所)
+    if (loaded !== k) { if (!(await load(p, saves[k]))) throw new Error(`セーブ ${k} を読み込めない`); loaded = k; await settle(p); }
     const note = await p.evaluate(`(${s.prep})()`);
     await settle(p);
     if (s.after) { await p.evaluate(`(${s.after})()`); await settle(p); }
@@ -185,9 +201,9 @@ async function capsules(b, save) {
 mkdirSync(OUT, { recursive: true });
 const b = await launch();
 try {
-  const save = arg('save') ? readFileSync(arg('save'), 'utf8') : await makeSave(b);
-  if (ONLY !== 'capsules') await shots(b, save);
-  if (ONLY !== 'shots') await capsules(b, save);
+  const saves = arg('save') ? { conference: readFileSync(arg('save'), 'utf8') } : (await makeSaves(b)).saves;
+  if (ONLY !== 'capsules') await shots(b, saves);
+  if (ONLY !== 'shots') await capsules(b, saves.conference);
 } finally {
   await b.close();
 }
