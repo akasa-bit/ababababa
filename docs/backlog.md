@@ -38,6 +38,7 @@
 | B-024 | 傀儡国が、宗主の敗戦で消える道筋を入れる | `REGIMES`・`warsYearly`・`TREATY` | — | S | 政治 | `status/H.md` の残り。**済み (#185)** |
 | B-025 | 史料の原文確認: 裁定者が自分の知識で決めた 3 か所と、本文に当たれなかった条約 (Aitchison・理藩院則例・実録・COFA の条番号・中世の文書) | `data/raw/vassal/`・`data/build/build_vassal_game.py` → `VASSAL_DATA` | — | S | 政治 | `status/H.md` の注意・`vassal-game.md` の 7・`vassal-cases.md` の 2 |
 | B-026 | 遅れて届く外交: 同盟・不可侵・交易の協定を足し、どれも届いた所から効く。交渉の模型の「相手が受け入れる線」を「何なら受けるか」の形で見せる | `TREATY`・`BARGAIN`・`PC_DIPLOMACY`・`openTreaty`・`renderTreaty` | Q2 | L | 政治 | `critique/04-plan.md` の 2-2・2.3 の 16・3 の 5。**済み (回 SE2)** |
+| B-140 | 語り手の選択肢の片寄り: 信仰を認めた続き (断る 100%・巡礼船 0%)・鉱脈の 3 段目 (自治を認める 91%)・総督の汚職の 3 段目 (押し切る 93%)・使節の続き (交易 100%、件数 4)。観戦の AI の重み (`weigh`) か、得と損の釣り合いかを、試遊のプレイ記録 (DO3 の道具) で人の選び方を見てから直す | `politics/story.js` の `STORY` | 試遊 (F20・F21) | S | 政治 | `docs/status/SE.md` の「回 SE4 の測り直し」 |
 | B-028 | AI の国が入植を急ぎ、銀河を取り合う。構造転換 (#152) のあとで入植が増えたので、先に測り直す | `aiOrdersYearly`・`colonize` | Q2・B-068 | M | 政治 | `critique/04-plan.md` の 2-1・2.3 の 9・2.1 の注意 |
 | B-029 | 国ごとに規則が違う開始: 種族の特性を倍率から規則の違いへ。開始の人口と星系も国ごとに | `SPECIES_TRAITS`・`HUMAN_TRAITS`・`NATION_COUNTS`・`NationLib` | Q2 | M | 政治 | `critique/04-plan.md` の 2-4・2.3 の 15 |
 
