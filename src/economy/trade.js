@@ -47,7 +47,7 @@
         room.set(k, room.get(k) - amt);
         sent.set(k, (sent.get(k) || 0) + amt);
       }
-      if (TRADE_AUDIT) TRADE_AUDIT.push([q.to, q.from, this.year, amt * PRICE[q.res], 't']);
+      if (TRADE_AUDIT) TRADE_AUDIT.push([q.to, q.from, this.year, amt * PRICE[q.res], 't', q.res]);
       const cMode = this.routeMode(q.to, q.from, (amt * RES_KG[q.res]) / UNIT_KG);
       if (SIM_ONLY) this.bookPath('cargo', amt * RES_KG[q.res], [q.to, ...legs.map((l) => l.next)], cMode); else this.bookShip('cargo', amt * RES_KG[q.res], SHIP_SPEED, cMode, q.to, q.from);
       this.shipCargo(q.to, legs, q.res, amt);

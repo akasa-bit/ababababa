@@ -19,6 +19,7 @@ PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメ
 - `node tools/region-panel.js <地域.csv> <労働分配率.csv> [銀河の数] [年数] [国の数]`: 国の中の星系ごとの 1 人あたりの所得 (10 年ごと) と、国ごとの労働分配率 (年ごと) を、DOSE v2・Penn World Table と同じ列で書き出す。`python3 data/build/build_regions.py <地域.csv> <労働分配率.csv>` で、現実と同じ台本で R38・R39 の合否を出す (回 KE5。`docs/regions.md`)。`node tools/region-gap.js` は首都と開拓星系の所得の差の要約
 - `fiscal-panel.js`・`market-panel.js`・`sector-panel.js`・`research-panel.js` は `HTML=<別の src/index.html>` で別の版 (main など) を測れる (`money.js` と同じ)。
 - `node tools/sector-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json or -] [開始時の生産性]`: 画面なしの版で回し、星系ごと・年ごとの 1 人あたりの実質の所得 (2011 年の国際ドル) と農業・工業・サービスの就業の割合を書き出す。`python3 data/build/build_sectors.py --game <出力.csv>` で、実データと同じ関数で R10 の合否を出す (`docs/structure.md` の 5)
+- `node tools/tech-panel.js <出力.csv> [銀河の数] [年数] [国の数]`: 入植地ごと・年ごとの 1 人あたりの実質の所得と、工業品の付加価値のうち高付加価値物品の割合を書き出す。`python3 data/build/build_tech.py <出力.csv>` で、現実 (WDI の中・高技術の製造業の割合) と同じ台本で R61 の合否を出す (回 KE5。`docs/structure.md` の 9)
 - `node tools/research-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]`: 国ごと・年ごとの技術の伸びと研究者の数を書き出す。`python3 data/build/build_ideas.py --game <出力.csv>` で、Bloom ほか 2020 と同じ式で R11 の合否を出す
 
 - `node tools/fun-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数] [探索の予算] [探索の銀河の数]`: 面白さの代わりの数 (判断を求められる回数・待つだけの年・1 つの戦略が強すぎないか・逆転・選ぶ意味の大きさ) を main と並べ、PR の版で必勝法を探す AI の小さな探索を回す。合否は付けないが、main より大きく悪くなったら「止める線」に出す (`FUN_GATE_OUT` のファイルに書き、CI のジョブ「面白さの数の止める線」が見る。線は `docs/parallel.md` の 4 の 3)。数の中身は `docs/fun.md`

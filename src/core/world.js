@@ -1,4 +1,4 @@
-const RES = ['food', 'water', 'metal', 'fuel', 'rare', 'goods', 'slaves'];
+const RES = ['food', 'water', 'metal', 'fuel', 'rare', 'goods', 'slaves', 'hitech']; // goods = 低付加価値物品、hitech = 高付加価値物品 (回 KE5。前の版のセーブと番号をずらさないように末尾に足した)
 const MINED = ['water', 'metal', 'fuel', 'rare'];
 const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番号 (計算用のキーに使う)
 // 忠誠度の目標の内訳。目標 = 先頭から順に足した値 (0〜100 に収める)
@@ -24,8 +24,8 @@ function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, negle
     ...(welfare ? [{ label: '福祉の予算', v: BUDGET.welfare.loyalty * welfare }] : []),
   ];
 }
-const RES_LABEL = { food: '食料', water: '水', metal: '金属', fuel: '燃料', rare: '希少元素', goods: '工業品', slaves: '奴隷', credits: 'cr' };
-const PRICE = { food: 1, water: 0.8, metal: 1.5, fuel: 2, rare: 8, goods: 4, slaves: 3 };
+const RES_LABEL = { food: '食料', water: '水', metal: '金属', fuel: '燃料', rare: '希少元素', goods: '低付加価値物品', slaves: '奴隷', hitech: '高付加価値物品', credits: 'cr' };
+const PRICE = { food: 1, water: 0.8, metal: 1.5, fuel: 2, rare: 8, goods: 4, slaves: 3, hitech: 12 }; // hitech: 原料 (低付加価値物品 0.5・希少元素 0.05) の 2.4 の 5 倍 (HITECH)
 const TECH_LABEL = ['石器時代', '農耕時代', '産業時代', '情報時代'];
 const KANA_A = ['カ', 'ヴェ', 'ロ', 'リ', 'サ', 'トゥ', 'ネ', 'ミ', 'ゾ', 'アル', 'エル', 'オル', 'ダ', 'フィ', 'ゼ', 'ユ', 'ハ', 'ボ', 'ギ', 'セ'];
 const KANA_B = ['ラ', 'タ', 'ニス', 'ロン', 'ドール', 'リア', 'ソル', 'ヴェン', 'ムス', 'タン', 'リス', 'ガル', 'ファ', 'コン', 'ディス', 'リクス'];

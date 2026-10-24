@@ -7,7 +7,7 @@ const YEAR_S = 31557600; // 1 年 (ユリウス年) [s]
 const L_SUN_W = 3.828e26; // 太陽の光度 [W] (IAU 2015 決議 B3)
 const UNIT_KG = 1e9; // 資源の 1 単位 = 100 万 t (食料 1 単位 = 100 万人の 1 年分 = 1 人 1 t/年)
 // 資源ごとの 1 単位の質量 [kg]。工業品は、作るのに使う金属 0.5 単位と同じ質量 (工業で質量が保存される。燃料は燃やして出ていく)
-const RES_KG = { food: UNIT_KG, water: UNIT_KG, metal: UNIT_KG, fuel: UNIT_KG, rare: UNIT_KG, goods: 0.5 * UNIT_KG, slaves: UNIT_KG };
+const RES_KG = { food: UNIT_KG, water: UNIT_KG, metal: UNIT_KG, fuel: UNIT_KG, rare: UNIT_KG, goods: 0.5 * UNIT_KG, slaves: UNIT_KG, hitech: 0.3 * UNIT_KG }; // hitech = 原料の低付加価値物品 0.5 単位 + 希少元素 0.05 単位の質量 (経済。回 KE5)
 const PROP = {
   pv: 0.3, // ダイソン・スウォームの発電効率 (光 → 電気)
   laser: 0.5, // レーザーの電気 → 光
@@ -232,7 +232,7 @@ const E_UNIT = propulsion(UNIT_KG, SHIP_SPEED, 'route').acc; // 交易路で 100
 const E_UNIT_DEC = propulsion(UNIT_KG, SHIP_SPEED, 'route').dec; // 同じく、受ける側の減速 [J] (シミュレーション版は 0.16 倍。使うのは decUnit())
 const decUnit = () => (SIM_ONLY ? E_UNIT_DEC : E_UNIT); // 受ける側の減速 (読み込みのあとで物理を切っても効くように、使うときに決める)
 const E_UNIT_FREE = ((p) => p.acc + p.dec)(propulsion(UNIT_KG, SHIP_SPEED, 'free')); // 同じく、減速を磁気帆と反物質で行うとき (送る側がすべて払う) [J]
-let TRADE_AUDIT = null; // 試験用: 配列にすると、星系どうしの取引 (送った星系・受けた星系・年・基準価格での額) を書き出す (目標 R01)
+let TRADE_AUDIT = null; // 試験用: 配列にすると、星系どうしの取引 (送った星系・受けた星系・年・基準価格での額・種類・資源) を書き出す (目標 R01。資源は回 KE5 の品ごとの R01)
 let MASS_AUDIT = null; // 試験用: { flows: {}, energy: {} } にすると、備蓄とエネルギーの出入りを星系・資源・種類ごとに足し上げる
 let ENERGY_AUDIT = null; // 試験用: 配列にすると、記帳した船を 1 便ずつ書き出す
 let MONEY_AUDIT = null; // 試験用: {} にすると、お金の出入りを種類・帳簿 (gov・hh・fm・nat・way) ごとに足し上げる

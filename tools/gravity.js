@@ -4,6 +4,7 @@
 //   国の固定効果にあたるものは「銀河・星系 × 10 年」。1 つの組の 10 年の合計が正のものだけを書く (実データの本推定と同じく、空の組は使わない)
 // 使い方: node tools/gravity.js [銀河の数=30] [年数=300] [並列=4] [出力=gravity.csv]   (NAT=6 で国家選択あり、HTML=… で版を選ぶ)
 //   KIND=t で交易 (物資移送要求) だけ、KIND=b で建設の資材の取り寄せだけ (既定は両方)。TW='TRADE.rate=0.02' のように、試合の前に値を変えられる (較正用)
+//   RES=1 で、品 (資源) ごとに分けて res の列を足す (R01 の品ごと。回 KE5。data/build/analyze_trade_goods.py <出力> で品ごとに推定する)
 const ROOT = require('path').resolve(__dirname, '..');
 const HTML = process.env.HTML || `${ROOT}/index.html`;
 const fs = require('fs');
@@ -12,6 +13,7 @@ const [N = '30', Y = '300', PAR = '4', OUT = 'gravity.csv'] = process.argv.slice
 const NAT = Number(process.env.NAT || 0);
 const KIND = process.env.KIND || '';
 const TW = process.env.TW || '';
+const BYRES = !!process.env.RES;
 (async () => {
   const b = await chromium.launch({ ...(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {}), args: ['--no-sandbox'] });
   const rows = [];
@@ -25,7 +27,7 @@ const TW = process.env.TW || '';
       await p.addInitScript(() => { try { localStorage.clear(); } catch {} window.requestAnimationFrame = () => 0; });
       await p.goto(`file://${HTML}?seed=${seed}&home=0`);
       await p.waitForFunction(() => window.__app && __app.game);
-      const r = await p.evaluate(([Y, NAT, KIND, TW]) => {
+      const r = await p.evaluate(([Y, NAT, KIND, TW, BYRES]) => {
         __app.speed = 0;
         if (TW) (0, eval)(TW);
         const g = __app.game;
@@ -34,21 +36,21 @@ const TW = process.env.TW || '';
         TRADE_AUDIT = [];
         for (let i = 0; i < Y * 4; i++) g.advance(0.25);
         const agg = new Map();
-        for (const [o, d, y, v, kind] of TRADE_AUDIT) {
+        for (const [o, d, y, v, kind, res] of TRADE_AUDIT) {
           if (o === d || !(v > 0) || (KIND && kind !== KIND)) continue;
-          const k = `${o}|${d}|${Math.floor((y - START_YEAR) / 10) * 10}`;
+          const k = `${o}|${d}|${Math.floor((y - START_YEAR) / 10) * 10}${BYRES ? `|${res}` : ''}`;
           agg.set(k, (agg.get(k) || 0) + v);
         }
         TRADE_AUDIT = null;
-        return [...agg].map(([k, v]) => { const [o, d, t] = k.split('|').map(Number); return [o, d, t, g.sysDist(o, d), v]; });
-      }, [Number(Y), NAT, KIND, TW]);
-      for (const [o, d, t, dist, v] of r) rows.push([`${seed}:${t}`, `${seed}:${o}`, `${seed}:${d}`, dist, v]);
+        return [...agg].map(([k, v]) => { const [o, d, t, res] = k.split('|'); return [Number(o), Number(d), Number(t), g.sysDist(Number(o), Number(d)), v, res]; });
+      }, [Number(Y), NAT, KIND, TW, BYRES]);
+      for (const [o, d, t, dist, v, res] of r) rows.push([`${seed}:${t}`, `${seed}:${o}`, `${seed}:${d}`, dist, v, ...(BYRES ? [res] : [])]);
       process.stderr.write(`銀河 ${seed}: 組 ${r.length}\n`);
       await p.close();
     }
   };
   await Promise.all(Array.from({ length: Number(PAR) }, work));
-  fs.writeFileSync(OUT, `year,iso3_o,iso3_d,dist,tradeflow\n${rows.map((x) => x.join(',')).join('\n')}\n`);
+  fs.writeFileSync(OUT, `year,iso3_o,iso3_d,dist,tradeflow${BYRES ? ',res' : ''}\n${rows.map((x) => x.join(',')).join('\n')}\n`);
   console.log(`${OUT}: ${rows.length} 行`, errs.slice(0, 3));
   await b.close();
 })();

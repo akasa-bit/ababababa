@@ -26,16 +26,16 @@ function play(seed) {
     sim.run(g, 1);
     for (const s of g.colonizedSystems()) {
       let pop = 0, usdPop = 0;
-      const sh = { farm: 0, mine: 0, ind: 0, serv: 0, home: 0 };
+      const sh = { farm: 0, mine: 0, ind: 0, hi: 0, serv: 0, home: 0 }; // hi = 高付加価値の工業 (回 KE5。工業に数える)
       for (const c of g.coloniesIn(s.id)) {
         if (!c.sh) continue;
         usdPop += g.incomeUSD(c) * c.pop; // 入植地ごとの 1 人あたりの実質の所得 (ゲームの中と同じ定義) を人口で重みづける
         pop += c.pop;
-        for (const x of Object.keys(sh)) sh[x] += c.pop * c.sh[x];
+        for (const x of Object.keys(sh)) sh[x] += c.pop * (c.sh[x] || 0);
       }
       if (!(pop > 0) || !(usdPop > 0)) continue;
       const usd = usdPop / pop;
-      rows.push([`${seed}-${s.id}`, seed, Math.round(g.year), usd, pop, (sh.farm + sh.home) / pop, (sh.mine + sh.ind) / pop, sh.serv / pop]); // 農業 = 市場の農業 + 自給 (ILO の数え方)
+      rows.push([`${seed}-${s.id}`, seed, Math.round(g.year), usd, pop, (sh.farm + sh.home) / pop, (sh.mine + sh.ind + sh.hi) / pop, sh.serv / pop]); // 農業 = 市場の農業 + 自給 (ILO の数え方)
     }
   }
   return rows;
