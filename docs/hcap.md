@@ -40,15 +40,30 @@ SE6 の決まった案は「階層 5 (所得の 5 分位) × 民族 (種族と�
 - 読む関数: `schoolBy(c)` (集団ごとの表)・`schoolOf(c)` (大人の平均)・`schoolAges(c)` (区分ごとの平均)・`schoolMean(c, f, 区分の始め, 区分の終わり)`。表の読み方と鍵の決め方は `docs/notices/SE/2026-10-24-KE-school.md`
 - 階層 (所得の 5 分位) ごとの就学年数の差は、この回では作らない (国の中の学歴の不平等のデータ (Thomas, Wang & Fan 2001 の学歴のジニ係数など) を、SE6 で集団を作るときに使う)
 
-## 3. 結果
+## 3. 結果 (30 銀河 × 150 年 × 6 か国。財政は 60 銀河、所得の差は 8 銀河)
 
-(30 銀河の測定のあとに書く)
+| 目標 | main (輸送船のあと) | この版 | 幅 |
+|---|---|---|---|
+| R62 就学年数と所得 | (学歴がない) | 不合格 (5 分位のうち 2)。中央値は低い分位から 9.96・10.59・9.47・9.28・9.98 年。豊かな 2 分位だけ幅の中 | 分位ごと (いちばん下 2.2〜4.1 年) |
+| R63 就学年数の伸び | (学歴がない) | 不合格 (比べられる区分が 2 つ。どちらも幅の中: 8〜10 年 0.089・10 年〜 0.073) | 区分ごと (3 つ以上で比べる) |
+| R10 工業の就業の山の所得 | 3,607 ドル (不合格) | 3,851 ドル (不合格) | 6,200〜10,660 |
+| R38 国の中の地域の収束 | 年 1.73% (合格) | 年 1.92% (合格) | 0.91〜2.73% |
+| R39 労働分配率 | 0.549 (合格) | 0.549 (合格) | |
+| R61 高付加価値の割合 | 不合格 (5 分位のうち 3) | 不合格 (2)。いちばん貧しい分位は 0.30 で幅の上 (ばらつきが大きい分位。`docs/trade.md` の 9.3) | |
+| R01 距離の弾力性 (まとめた) | −0.589 (幅の中) | −0.565 (幅のすぐ外。品ごとは燃料 −0.760・金属 −0.222) | −1.174〜−0.574 |
+| 財政 R19〜R22・R27・R28・R33・R35 | 合格 | 合格 | |
+| **R34 期間の上乗せ** | 0.0129 (合格) | **0.0164 (不合格)** | −0.0003〜0.0134 |
+
+- **R62・R63 が合格しない理由**: どの入植地も、地球と同じ学校に通った入植者から始まる。貧しい入植地 (所得 5,000 ドル未満) の就学年数は 9〜10 年のままで、現実のこの所得の国 (2〜8 年) より長い。開拓の星系が貧しいのは学歴ではなく、資本・工業・原料・交易が足りないから (`docs/regions.md`。次の「投資の行き先と原料の手配」で見る)。R63 は、就学年数の短い入植地がないので、比べられる区分が 2 つしかない (比べられた 2 つは幅の中)
+- **R34 が外れた理由**: 就学年数の収益を 0 にした版 (生産性が変わらない) では 0.0121 で main と同じなので、学歴による生産性の伸びのせい。中央銀行の景気のずれ (`speedGap` = 1 年の伸び − 5 年の伸び) は、伸びがだんだん遅くなると負になる。学歴の伸びは就学年数が上限に近づくにつれて遅くなるので、ずれがいつも少し負になり、政策金利が低め (中立の金利より約 1.35 点下。main は約 0.87 点) に出て、長期と短期の差が開いた。中立の金利 (`CB.rstar`) を伸びに合わせて動かす (Laubach & Williams 2003 の形) と直る見込み。中央銀行の作りの変更なので、この回では直さず残りにした (`docs/status/KE.md`)
+- 所得の差 (`tools/region-gap.js`、8 銀河): 総人口 94,802 → 103,786 百万人、首都の所得 (人口の重みの平均) 91,244 → 130,276 ドル、首都でない入植地の所得の中央値 169 → 225 ドル、国の中の β 収束 年 1.89% → 1.97%。首都の大人の就学年数は 150 年で 7.7 → 約 10.5 年、働く人の生産性は約 1.2 倍
 
 ## 出典
 
 - Barro, R. J. & Lee, J.-W. (2013). A New Data Set of Educational Attainment in the World, 1950–2010. *Journal of Development Economics* 104, 184–198.
 - Caselli, F. (2005). Accounting for Cross-Country Income Differences. *Handbook of Economic Growth* 1A, 679–741.
 - Thomas, V., Wang, Y. & Fan, X. (2001). Measuring Education Inequality: Gini Coefficients of Education. *World Bank Policy Research Working Paper* 2525.
+- Laubach, T. & Williams, J. C. (2003). Measuring the Natural Rate of Interest. *Review of Economics and Statistics* 85(4), 1063–1070.
 - Hanushek, E. A. & Woessmann, L. (2015). *The Knowledge Capital of Nations*. MIT Press.
 - Psacharopoulos, G. (1994). Returns to Investment in Education: A Global Update. *World Development* 22(9), 1325–1343.
 - Feenstra, R. C., Inklaar, R. & Timmer, M. P. (2015). The Next Generation of the Penn World Table. *American Economic Review* 105(10), 3150–3182.
