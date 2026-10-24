@@ -181,7 +181,7 @@
     else if (job.flight) this.bookShip('settler', job.flight.m, job.flight.beta, 'free', sysId, sysId, job.flight.ly ?? 0);
     else if (cost.energy) this.bookE('build', -cost.energy, sysId);
     for (const x of p.plan) {
-      if (x.from !== sysId && TRADE_AUDIT) TRADE_AUDIT.push([x.from, sysId, this.year, x.amt * PRICE[x.r], 'b']);
+      if (x.from !== sysId && TRADE_AUDIT) TRADE_AUDIT.push([x.from, sysId, this.year, x.amt * PRICE[x.r], 'b', x.r]);
       if (x.from !== sysId) {
         const bMode = this.routeMode(x.from, sysId, (x.amt * RES_KG[x.r]) / UNIT_KG);
         if (SIM_ONLY) this.bookPath('build', x.amt * RES_KG[x.r], this.voyage(x.from, sysId).path, bMode, { offSpeed: SHIP_SPEED }); else this.bookShip('build', x.amt * RES_KG[x.r], SHIP_SPEED, bMode, x.from, sysId);

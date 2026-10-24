@@ -40,7 +40,7 @@ const incomeText = (y) => `${Math.round(y || 0).toLocaleString('en-US')} ドル/
 // 就業の割合 (農・鉱・工・サービス)。short なら表のための短い形
 const shareText = (c, short = false) => {
   const sh = c.sh || sharesOf(c.focus);
-  const parts = [['農', sh.farm], ['鉱', sh.mine], ['工', sh.ind], [short ? 'サ' : 'サービス', sh.serv], ...(sh.home > 0.015 ? [[short ? '自' : '自給', sh.home]] : [])].map(([l, v]) => `${l}${short ? Math.round(v * 100) : pct(v)}`);
+  const parts = [['農', sh.farm], ['鉱', sh.mine], ['工', sh.ind + (sh.hi || 0)], [short ? 'サ' : 'サービス', sh.serv], ...(sh.home > 0.015 ? [[short ? '自' : '自給', sh.home]] : [])].map(([l, v]) => `${l}${short ? Math.round(v * 100) : pct(v)}`);
   return parts.join(short ? ' ' : '・');
 };
 // 開始の画面で選んだ生産性の倍率 (自分で決めた値は決まった幅に収める)

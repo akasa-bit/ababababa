@@ -2,7 +2,7 @@
 //   (記帳した出入りの合計 − 備蓄の増加) ÷ 取扱量 (出入りの絶対値の合計)
 // を計算し、絶対値の最大が 1e-9 以下なら合格。あわせて次も確かめる。
 //   - 船で運ぶ途中の物: 積み出した量 − 着いた量 = 運んでいる途中の量の増加 (貨物船・入植船の食料と水・積み込みを待つ入植船)
-//   - 工業の質量: 工業品の産出の質量 = 投入した金属の質量 (燃料は燃やして出ていく)
+//   - 工業の質量: 低付加価値物品と高付加価値物品の産出の質量 = 投入した金属・低付加価値物品・希少元素の質量 (燃料は燃やして出ていく。高付加価値物品は回 KE5)
 //   - 出入りの種類が決まったものだけであること (域外への売却のような「どこからか湧く・どこかへ消える」ものがない)
 //   - エネルギー: 政府ごとに (記帳した出入り − 蓄えの増加) ÷ 取扱量 も 1e-9 以下
 // 使い方: node tools/tests/conserve.js [シード] [年数]   (NAT=1 で国家選択あり、HTML=… で版を選ぶ)
@@ -56,8 +56,8 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
             totals[k] = (totals[k] || 0) + Math.abs(v) * RES_KG[res];
           }
           shipOut[res] = (shipOut[res] || 0) - (fl.ship || 0); arriveIn[res] = (arriveIn[res] || 0) + (fl.arrive || 0);
-          if (res === 'goods') make += (fl.make || 0) * RES_KG.goods;
-          if (res === 'metal') use -= (fl.use || 0) * RES_KG.metal;
+          if (res === 'goods' || res === 'hitech') make += (fl.make || 0) * RES_KG[res];
+          if (res === 'metal' || res === 'goods' || res === 'rare') use -= (fl.use || 0) * RES_KG[res];
           const d = (s1[sys]?.[res] || 0) - (s0[sys]?.[res] || 0);
           const q = abs ? Math.abs(sum - d) / abs : Math.abs(d);
           through += abs;

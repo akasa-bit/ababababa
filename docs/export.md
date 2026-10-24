@@ -118,7 +118,7 @@ python3 tools/export_example.py export-out                       # 分析の例 
 | 列 | 中身 |
 |---|---|
 | `system` | 星系の番号 |
-| `food`・`water`・`metal`・`fuel`・`rare`・`goods`・`slaves` | 資源ごとの、その星系の市場の値段 (cr / ゲームの量の単位。`price`) |
+| `food`・`water`・`metal`・`fuel`・`rare`・`goods`・`slaves`・`hitech` | 資源ごとの、その星系の市場の値段 (cr / ゲームの量の単位。`price`)。`goods` は低付加価値物品、`hitech` は高付加価値物品 (回 KE5。`docs/structure.md` の 9) |
 
 `country` はその星系の国。
 

@@ -45,7 +45,7 @@
       const tryOrder = (cost, run) => (cost && this.funds(id) >= 2 * (cost.credits || 0) && !this.procure(cost, id).why ? run() : null);
       for (const { r } of short) {
         let done = null;
-        if (r === 'food' || r === 'goods') {
+        if (r === 'food' || r === 'goods' || r === 'hitech') { // 高付加価値物品も工場で (回 KE5)
           const fac = r === 'food' ? 'farm' : 'factory';
           const c = cols.find((x) => x.lv[fac] < FACILITY_MAX[fac] && !this.pending((j) => j.type === 'upgrade' && j.col === colKey(x) && j.fac === fac));
           if (c) done = tryOrder(this.upgradeCost(c, fac), () => this.order(this.upgradeCost(c, fac), c.sys, { type: 'upgrade', col: colKey(c), fac, label: `${tag}${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` }));

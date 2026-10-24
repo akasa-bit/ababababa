@@ -42,7 +42,7 @@ for (let sd = 1; sd <= N; sd++) {
     if (isCap(g, c)) { cy += y * c.pop; cp += c.pop; continue; }
     nFront++; fy += y * c.pop; fp += c.pop; ys.push(y);
     const i = BINS.findIndex(([a, b]) => c.pop >= a && c.pop < b);
-    bins[i].n++; bins[i].y.push(y); bins[i].ind += c.sh.ind;
+    bins[i].n++; bins[i].y.push(y); bins[i].ind += c.sh.ind + (c.sh.hi || 0);
     const k = !onRoute.has(c.sys) ? '交易路がない' : (c.industry ?? 0) > 0.5 ? '工業が動いている' : c.sh.ind > 0.05 ? '工業の人はいるが原料待ち' : '交易路はあるが工業に人がいない';
     const K = (kinds[k] ??= { n: 0, y: [] }); K.n++; K.y.push(y);
   }

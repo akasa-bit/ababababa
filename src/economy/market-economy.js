@@ -9,6 +9,7 @@
       const got = this.absorb[key], short = this.unmet[key];
       const cap = stockCap(this.flowPop?.[key] || 0);
       for (const r of RES) {
+        if (m.u[r] === undefined) { m.u[r] = 0; m.p[r] = basePrice(r); m.L[r] = m.p[r]; } // 前の版のセーブの市場 (高付加価値物品がない。回 KE5)
         m.u[r] += ((got?.[r] || 0) / h + (short?.[r] || 0) - m.u[r]) * (fresh ? 1 : a); // 受注残は年あたりの需要として
         let goal = this.priceAt(r, st[r], m.u[r], MARKET.anchor ? m.L[r] : undefined); // 使い道がなければ最低の値段
         if (st[r] < 0.95 * cap) goal = Math.max(goal, m.L[r] * (1 - MARKET.store)); // 倉に空きがあれば、蓄える人が値段を支える
@@ -44,32 +45,37 @@
   }
   // 交易の代金の受け渡し: 生産物 (在庫) は会社のものなので、星系の会社の帳簿で払う・受け取る (MARKET.buy = 0 なら前の版どおり政府)
   payFrom(kind, v, sys) { if (MARKET.buy) this.cash(kind, v, { fm: sys }); else this.earn(kind, v, sys); }
-  // 1 人 (人口の単位) あたりの年の産出。sector = farm (食料)・mine (資源 r)・ind (工業品)
+  // 1 人 (人口の単位) あたりの年の産出。sector = farm (食料)・mine (資源 r)・ind (低付加価値物品)・hi (高付加価値物品。回 KE5)
   yieldOf(c, sector, r) {
     const k = (this.productivity || 1) * STRUCTURE.modern * this.techA(c.sys, sector) * this.laborK(c); // 開始時に選ぶ生産性 × 物差しの倍率 × 国の技術の水準 × 働き手の倍率 (回 KE2)
     if (sector === 'farm') return k * YIELD.farm * (1 + this.fertility(c)) * (1 + 0.25 * c.lv.farm);
     const tm = this.modsOf(c.sys);
     if (sector === 'ind') return k * YIELD.ind * (1 + 0.25 * c.lv.factory) * tm.ind;
+    if (sector === 'hi') return k * YIELD.hi * (1 + 0.25 * c.lv.factory) * tm.ind; // 工場の段と種族の工業の特性は、低付加価値の工業と同じく効く
     const forced = REGIMES[regimeKey(this.govs[c.sys])].mine || 1; // 強制労働の採掘の上乗せ
     return k * YIELD.mine * (this.target(c.sys, c.body).deposits?.[r] || 0) * (1 + 0.25 * c.lv.mine) * tm.mine * forced;
   }
-  // 部門ごとの、値段から見た 1 人あたりの年の稼ぎ [cr]。工業は投入 (金属 0.5・燃料 0.2) を引いた付加価値で、原料が足りなかった分 (c.industry) だけ下がる。
+  // 1 単位の付加価値 [cr]: 低付加価値物品 = 値段 − 金属 0.5 − 燃料 0.2、高付加価値物品 = 値段 − 低付加価値物品 0.5 − 希少元素 0.05 (HITECH)。p = 値段 (関数)
+  vaGoods(p) { return Math.max(0, p('goods') - 0.5 * p('metal') - 0.2 * p('fuel')); }
+  vaHitech(p) { return Math.max(0, p('hitech') - HITECH.goods * p('goods') - HITECH.rare * p('rare')); }
+  // 部門ごとの、値段から見た 1 人あたりの年の稼ぎ [cr]。工業は投入 (金属 0.5・燃料 0.2。高付加価値は HITECH) を引いた付加価値で、原料が足りなかった分 (c.industry・c.industryHi) だけ下がる。
   // 稼働率 (sold = util): 需要で決まる生産 (economy の 1) で作る分だけ稼ぐ。売れない物は作らないので、その部門の人は稼働率の分しか稼がない
   // (会社は売れた物の分だけ賃金を払える。段 5 の 3。これがないと、会社が売れない産出の賃金を借りで払い続け、民間の信用が GDP の 30 倍になった)
   wagesOf(c) {
     const p = (r) => this.price(c.sys, r);
     const K = this.util?.[c.sys];
-    const sold = (r) => (K ? K[r] : 1);
+    const sold = (r) => (K ? K[r] ?? 1 : 1);
     const w = {
       farm: p('food') * this.yieldOf(c, 'farm') * sold('food'),
       mine: MINED.reduce((k, r) => k + p(r) * this.yieldOf(c, 'mine', r) * sold(r), 0),
-      ind: Math.max(0, p('goods') - 0.5 * p('metal') - 0.2 * p('fuel')) * this.yieldOf(c, 'ind') * (c.industry ?? 1) * sold('goods'),
+      ind: this.vaGoods(p) * this.yieldOf(c, 'ind') * (c.industry ?? 1) * sold('goods'),
+      hi: this.vaHitech(p) * this.yieldOf(c, 'hi') * (c.industryHi ?? 1) * sold('hitech'),
       serv: 0, // (下で、物の部門の付加価値から決める)
       home: basePrice('food') * YIELD.home, // 自給: 自分の食べる分の値打ち (基準の値段。留保賃金)
     };
     // サービスの売上 = serv ÷ (1 − serv) × 物の部門の付加価値 (serv は所得で決まる割合。構造転換)。1 人あたりの稼ぎ = 売上 ÷ サービスの人数
     const sh = c.sh || sharesOf(c.focus);
-    const goods = w.farm * sh.farm + w.mine * sh.mine + w.ind * sh.ind;
+    const goods = w.farm * sh.farm + w.mine * sh.mine + w.ind * sh.ind + w.hi * (sh.hi || 0);
     const serv = this.servShare(c.inc ?? STRUCTURE.y0);
     w.serv = (serv / (1 - serv)) * goods / Math.max(sh.serv, 0.01);
     return w;
@@ -78,16 +84,25 @@
   servShare(y) { const [a, b] = STRUCTURE.serv; return clamp(1 / (1 + GM.exp(-(a + b * GM.log(Math.max(y, 1))))), 0.02, 0.95); }
   goodsNeed(y) { const [c0, c1, c2] = STRUCTURE.goods, l = GM.log(Math.max(y, 1)); return clamp(GM.exp(c0 + c1 * l + c2 * l * l), STRUCTURE.goodsCap[0], STRUCTURE.goodsCap[1]); }
   researchers(y) { const [d0, d1] = STRUCTURE.research; return GM.exp(d0 + d1 * GM.log(Math.max(y, 1))); } // [人/100 万人]
+  // 工業品の需要の値打ちのうち、高付加価値物品の割合 (回 KE5)。付加価値の割合が STRUCTURE.hitech の曲線 v になるように決める:
+  // 高付加価値物品 x 単位は原料に低付加価値物品 g x 単位を使うので、付加価値の割合 v = a_h x ÷ (a_h x + a_l (家計の低付加価値物品 + g x)) を、需要の値打ちの割合について解いた
+  // (a = 1 単位の付加価値、基準の値段で)
+  hitechShare(y) {
+    const [a, b] = STRUCTURE.hitech, v = 1 / (1 + GM.exp(-(a + b * GM.log(Math.max(y, 1)))));
+    const pg = PRICE.goods, ph = PRICE.hitech, al = this.vaGoods((r) => PRICE[r]), ah = this.vaHitech((r) => PRICE[r]);
+    const D = ah * (1 - v) - v * al * HITECH.goods;
+    return D > 0 ? clamp((v * al * ph) / (pg * D + v * al * ph), 0, 0.95) : 0.95;
+  }
   // 星系 sys の国の、分野 f の技術の水準 (まだなければ 1)
-  techA(sys, f) { const A = this.tech[this.realmOf(sys)]?.A; return A ? A[f] : 1; }
+  techA(sys, f) { const A = this.tech[this.realmOf(sys)]?.A; return A ? A[f] ?? 1 : 1; } // 前の版のセーブの国には hi (回 KE5) がない
   // 研究 (RESEARCH): 国ごとに研究者を数え、分野に分けて技術の水準を伸ばす。試合の始めに alpha を決める
   researchStep(h) {
     const byRealm = {};
     for (const c of this.colonies) {
-      const R = (byRealm[this.realmOf(c.sys)] ??= { S: 0, va: { farm: 0, mine: 0, ind: 0 } });
+      const R = (byRealm[this.realmOf(c.sys)] ??= { S: 0, va: { farm: 0, mine: 0, ind: 0, hi: 0 } });
       R.S += c.pop * this.researchers(c.inc ?? STRUCTURE.y0); // [人] (人口は 100 万人、研究者は 100 万人あたり)
       const sh = c.sh || sharesOf(c.focus), w = this.wagesOf(c);
-      for (const f of RESEARCH.fields) R.va[f] += c.pop * sh[f] * w[f];
+      for (const f of RESEARCH.fields) R.va[f] += c.pop * (sh[f] || 0) * w[f];
     }
     if (this.alpha === undefined) {
       const S = byRealm[this.players[0]?.cap ?? 0]?.S;
@@ -95,10 +110,11 @@
       this.alpha = RESEARCH.g0 / S; // 本星の始めの伸びが g0 になるように (A = 1)
     }
     for (const [key, R] of Object.entries(byRealm)) {
-      const T = (this.tech[key] ??= { A: { farm: 1, mine: 1, ind: 1 } });
-      const tot = R.va.farm + R.va.mine + R.va.ind;
+      const T = (this.tech[key] ??= { A: { farm: 1, mine: 1, ind: 1, hi: 1 } });
+      const tot = RESEARCH.fields.reduce((k, f) => k + R.va[f], 0);
       for (const f of RESEARCH.fields) {
-        const Sf = tot > 0 ? (R.S * R.va[f]) / tot : R.S / 3;
+        T.A[f] ??= 1; // 前の版のセーブの国 (hi がない)
+        const Sf = tot > 0 ? (R.S * R.va[f]) / tot : R.S / RESEARCH.fields.length;
         T.A[f] *= 1 + this.alpha * Sf * GM.pow(T.A[f], -RESEARCH.beta) * h;
       }
       T.S = R.S;
@@ -111,14 +127,16 @@
   potentialUSD(c) {
     const sh = c.sh || sharesOf(c.focus);
     const v = sh.farm * basePrice('food') * this.yieldOf(c, 'farm') + sh.mine * MINED.reduce((k, r) => k + basePrice(r) * this.yieldOf(c, 'mine', r), 0)
-      + sh.ind * Math.max(0, basePrice('goods') - 0.5 * basePrice('metal') - 0.2 * basePrice('fuel')) * this.yieldOf(c, 'ind') + sh.home * basePrice('food') * YIELD.home;
+      + sh.ind * this.vaGoods(basePrice) * this.yieldOf(c, 'ind') + (sh.hi || 0) * this.vaHitech(basePrice) * this.yieldOf(c, 'hi') + sh.home * basePrice('food') * YIELD.home;
     return (v / Math.max(1 - sh.serv, 0.05) / basePrice('food')) * STRUCTURE.usdPerT;
   }
   // 入植地の 1 人あたりの実質の所得 [2011 年の国際ドル] (目標 R10 の sim の定義):
   // 所得 (付加価値。自給の分も入れる = GDP) を地元の消費者物価 (食料 1・工業品 0.3・水 0.1 (水が要る入植地だけ) の基準の量を、いまの値段 ÷ 基準の値段で
-  // 測ったもの) で割り、食料の基準の値段を 2011 年の世界の穀物の値段 (STRUCTURE.usdPerT) に合わせて読み替え、人口で割る
+  // 測ったもの) で割り、食料の基準の値段を 2011 年の世界の穀物の値段 (STRUCTURE.usdPerT) に合わせて読み替え、人口で割る。
+  // 工業品 0.3 (低付加価値物品の単位) は、基準の値打ちの STRUCTURE.cpiHitech を高付加価値物品にする (回 KE5。基準の値段で測った量は前と同じ)
   incomeUSD(c, income = this.incomeAll(c)) {
-    const basket = this.needsWater(c) ? [['food', 1], ['goods', 0.3], ['water', 0.1]] : [['food', 1], ['goods', 0.3]];
+    const gl = 0.3 * (1 - STRUCTURE.cpiHitech), gh = (0.3 * STRUCTURE.cpiHitech * PRICE.goods) / PRICE.hitech;
+    const basket = this.needsWater(c) ? [['food', 1], ['goods', gl], ['hitech', gh], ['water', 0.1]] : [['food', 1], ['goods', gl], ['hitech', gh]];
     const P = basket.reduce((k, [r, q]) => k + q * this.price(c.sys, r), 0) / basket.reduce((k, [r, q]) => k + q * basePrice(r), 0);
     return (income / P / basePrice('food')) * STRUCTURE.usdPerT / Math.max(c.pop, 1e-9);
   }
@@ -126,7 +144,7 @@
   // 自給 (home) の分は市場を通らないので、税の土台 (incomeOf) には入れない (現実の自給農業も課税されにくい)。GDP に入れるときは incomeAll
   incomeOf(c) {
     const sh = c.sh || sharesOf(c.focus), w = this.wagesOf(c);
-    return c.pop * MARKET_SECTORS.reduce((k, x) => k + sh[x] * w[x], 0);
+    return c.pop * MARKET_SECTORS.reduce((k, x) => k + (sh[x] || 0) * w[x], 0);
   }
   incomeAll(c) { const sh = c.sh || sharesOf(c.focus); return this.incomeOf(c) + c.pop * sh.home * basePrice('food') * YIELD.home; }
   // 人の部門の移り: 稼ぎが平均より低い部門から、年に mobility × (平均との差の割合) の人が出て、平均より高い部門に、差の大きさに比べて入る
@@ -171,9 +189,11 @@
     const plan = {};
     for (const c of this.colonies) {
       const f = (c.sh ??= sharesOf(c.focus)), P = (plan[c.sys] ??= zeroRes());
+      if (!Number.isFinite(f.hi)) f.hi = 0; // 前の版のセーブ (高付加価値の工業がない。回 KE5)
       P.food += c.pop * f.farm * this.yieldOf(c, 'farm');
       for (const r of MINED) P[r] += c.pop * f.mine * this.yieldOf(c, 'mine', r);
       P.goods += c.pop * f.ind * this.yieldOf(c, 'ind');
+      P.hitech += c.pop * f.hi * this.yieldOf(c, 'hi');
     }
     for (const o of this.outposts) { const P = (plan[o.sys] ??= zeroRes()); for (const [r, v] of Object.entries(this.outpostYield(o))) P[r] += v; }
     this.util = {};
@@ -194,6 +214,7 @@
       add('food', c.pop * (f.home || 0) * YIELD.home); // 自給 (自分で食べる分。消費は下で、ほかの人と同じく備蓄から)
       for (const r of MINED) add(r, c.pop * f.mine * this.yieldOf(c, 'mine', r) * K.mine);
       c.plan = c.pop * f.ind * this.yieldOf(c, 'ind') * K.goods;
+      c.planHi = c.pop * f.hi * this.yieldOf(c, 'hi') * K.hitech;
       fl.pop += c.pop;
     }
     for (const o of this.outposts) {
@@ -238,6 +259,30 @@
         this.watch(c, 'industry', k, 'shortage', () => `${c.name} の工場が原料 (金属・燃料) 不足で減産 (稼働 ${pct(k)})`, `${c.name} の工場の原料不足が解消した`);
       }
     }
+    // 2b. 高付加価値の工業 (回 KE5): 高付加価値物品 1 につき低付加価値物品 0.5 と希少元素 0.05 を使う (HITECH)。原料が足りなければ減産。質量は原料と同じ
+    for (const c of this.colonies) {
+      const st = this.stockOf(c.sys), fl = F(c.sys);
+      let need = (c.planHi || 0) * h;
+      if (MARKET.buy && need > 0) {
+        // 原料が高ければ減らし (低付加価値の工業と同じ)、利ざや (値段 − 原料) が値段の HITECH.ramp より薄ければ、その分だけ減らす。
+        // 低付加価値の工業と同じく「割に合わなければ止める」にすると、低付加価値物品の値段が跳ねるたびに工場が止まって在庫が戻り、また動いて値段が跳ねる、を刻みごとに繰り返した。
+        // ならした値段で決める形も試したが、高付加価値物品が値段の天井に張りついたまま人が集まり、首都の農業の人が抜けて飢えた
+        const p = (r) => this.price(c.sys, r);
+        const unit = HITECH.goods * p('goods') + HITECH.rare * p('rare'), base = HITECH.goods * basePrice('goods') + HITECH.rare * basePrice('rare');
+        need *= clamp(GM.pow(unit / base, -MARKET.input), 0, 1) * clamp((p('hitech') - unit) / (HITECH.ramp * p('hitech')), 0, 1);
+      }
+      const k = need > 0 ? clamp(Math.min(st.goods / (HITECH.goods * need), st.rare / (HITECH.rare * need)), 0, 1) : 0;
+      if (MARKET.buy && need > 0 && k < 1 && this.stepping) { const un = (this.unmet[c.sys] ??= zeroRes()); un.goods += (HITECH.goods * need * (1 - k)) / h; un.rare += (HITECH.rare * need * (1 - k)) / h; }
+      this.mv(c.sys, 'goods', -HITECH.goods * need * k, 'use');
+      this.mv(c.sys, 'rare', -HITECH.rare * need * k, 'use');
+      this.mv(c.sys, 'hitech', need * k, 'make');
+      const run = c.planHi > 0 ? (need / (c.planHi * h)) * k : 0;
+      fl.cons.goods += HITECH.goods * (c.planHi || 0) * (MARKET.buy ? run : 1);
+      fl.cons.rare += HITECH.rare * (c.planHi || 0) * (MARKET.buy ? run : 1);
+      if (MARKET.buy && need > 0 && k < 1) { const want = (need / h) * (1 - k); fl.short.goods += HITECH.goods * want; fl.short.rare += HITECH.rare * want; }
+      fl.prod.hitech += (c.planHi || 0) * run;
+      c.industryHi = run;
+    }
     // 地元で作れば儲かるのに作れていない工業品 (市場の需要 − 星系の工場の生産) の原料も、取り寄せる合図にする (docs/regions.md の 2。輸入の代わりに地元で作る)。
     // 工業の人がほとんどいない星系は、いまの工場の不足だけを数えると注文が最小の量に届かず、原料が来ない → 人が来ない、のまま動かなかった
     if (MARKET.buy) for (const key of Object.keys(plan)) {
@@ -245,6 +290,12 @@
       if (!(u > made) || !(0.5 * this.price(id, 'metal') + 0.2 * this.price(id, 'fuel') < this.price(id, 'goods'))) continue;
       const fl = F(id), gap = u - made;
       fl.short.metal += 0.5 * gap; fl.short.fuel += 0.2 * gap;
+    }
+    if (MARKET.buy) for (const key of Object.keys(plan)) { // 高付加価値物品も同じ (回 KE5)
+      const id = Number(key), u = this.market[id]?.u.hitech || 0, made = flow[id]?.prod.hitech || 0;
+      if (!(u > made) || !(HITECH.goods * this.price(id, 'goods') + HITECH.rare * this.price(id, 'rare') < this.price(id, 'hitech'))) continue;
+      const fl = F(id), gap = u - made;
+      fl.short.goods += HITECH.goods * gap; fl.short.rare += HITECH.rare * gap;
     }
     // 3. 消費と人口の増減、税収
     // 食べ物・水・工業品の在庫は星系でまとめて持つので、不足の知らせは星系でいちばん大きな入植地 (head) だけが出し、ほかの入植地は状態 (alerts) を写す
@@ -273,8 +324,11 @@
       };
       const food = use('food', c.pop);
       const water = this.needsWater(c) ? use('water', 0.1 * c.pop) : 1;
-      const goods = use('goods', (MARKET.buy ? this.goodsNeed(inc) : 0.3) * c.pop); // 工業品の需要は所得で決まる (Engel 曲線)
-      c.sat = { food, water, goods };
+      // 工業品の需要は所得で決まる (Engel 曲線)。その値打ちのうち hitechShare の割合が高付加価値物品 (回 KE5)。充足率は値打ちで重みをつけた平均
+      const gNeed = (MARKET.buy ? this.goodsNeed(inc) : 0.3) * c.pop, sH = MARKET.buy ? this.hitechShare(inc) : 0;
+      const low = use('goods', gNeed * (1 - sH)), high = sH > 0 ? use('hitech', (gNeed * sH * PRICE.goods) / PRICE.hitech) : 1;
+      const goods = (1 - sH) * low + sH * high;
+      c.sat = { food, water, goods, hitech: high };
       if (lead) this.watch(c, 'food', food, 'famine', () => `${c.name} で飢餓が発生 (食料の充足率 ${pct(food)})`, `${c.name} の飢餓が解消した`);
       if (this.needsWater(c) && (lead || !this.needsWater(head[c.sys]))) this.watch(c, 'water', water, 'famine', () => `${c.name} で水不足が発生 (充足率 ${pct(water)})`, `${c.name} の水不足が解消した`);
       if (lead && c.pop >= 1) this.watch(c, 'goods', goods, 'shortage', () => `${c.name} で工業品が不足 (充足率 ${pct(goods)})`, `${c.name} の工業品不足が解消した`);

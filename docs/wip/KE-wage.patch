@@ -1,0 +1,152 @@
+diff --git a/src/economy/market-consts.js b/src/economy/market-consts.js
+index 6eaa084..6f157de 100644
+--- a/src/economy/market-consts.js
++++ b/src/economy/market-consts.js
+@@ -55,6 +55,15 @@ const RESEARCH = { beta: 3.045, g0: 0.0167, fields: ['farm', 'mine', 'ind'] };
+ //   (data/build/build_regions.py の capital の game。目標 R39)。delta と irr は、民間の投資の行き先 (回 KE5 の次の PR) の収益率の基準に使う。
+ //   入植地ごとの資本 K を産出に (K ÷ K*)^alpha で効かせる形も試したが、首都の 1 人あたりの所得が 2〜5 割下がったので入れていない (docs/regions.md の 4.2)
+ const CAPITAL = { alpha: 0.451, delta: 0.04, irr: 0.107 };
++// 賃金率と粘り (回 KE5・B-114。docs/regions.md の 5)
++//   仕事のない人 (idle): 物の部門 (農・鉱・工) で、売れなくて作らない分 (稼働の残り) の人と、原料が足りずに動かない工場の人は、自給 (home) で食べる分を作る
++//     (あぶれた人は自給に戻る。前は、売れない分は部門の人みんなの稼ぎが減るだけで、仕事のない人は何も作らなかった)
++//   賃金率 (sticky): 入植地の部門ごとに名目の賃金率 c.wn を持ち、限界の稼ぎ ((1 − alpha) × 仕事のある人 1 人あたりの付加価値。ならした値段で) へ、
++//     上がるときは up 年、下がるときは down 年で寄る。名目の賃金は年 cut の割合より速くは下がらない (名目の賃金の下方硬直。Dickens ほか 2007)。
++//     会社は仕事のある人に min(1 人あたりの付加価値, max(賃金率, いまの限界の稼ぎ)) を払い、残りを配当にする (値段が下がった年は労働分配率が上がる)
++//   部門の選び方 (choose): 人の部門の移り (laborStep) は、仕事のある見込み × もらえる額 + 見込みの残り × 自給の値打ち で比べる (前は 1 人あたりの付加価値の全部)
++//   up・down・cut は仮の値
++const WAGE = { up: 1, down: 3, cut: 0.01, idle: 1, sticky: 1, choose: 1 };
+ // 部門ごとの 1 人あたりの産出の大きさ (開始時の生産性 ×1 のとき。docs/structure.md の 4)。farm = 食料 [単位/人/年] × (1 + 肥沃さ)、ind = 工業品 [単位/人/年]、
+ // mine = 埋蔵量の係数に掛ける倍率。前は farm 2 × (1 + 肥沃さ)・ind 1・mine 1 で、農業が最も生産的な部門だった (温暖な惑星で 1 人 4 単位。付加価値で工業の 1.4 倍)。
+ // 現実の低い所得の国では逆で、農業の 1 人あたりの付加価値は非農業の 1/4〜1/5 (GGDC 10 部門: 所得 604〜1,999 ドルの国で非農業 ÷ 農業 の中央値 5.4、
+diff --git a/src/economy/market-economy.js b/src/economy/market-economy.js
+index 24828c7..4aa1ca1 100644
+--- a/src/economy/market-economy.js
++++ b/src/economy/market-economy.js
+@@ -74,6 +74,40 @@
+     w.serv = (serv / (1 - serv)) * goods / Math.max(sh.serv, 0.01);
+     return w;
+   }
++  // 仕事のない人の割合 (WAGE.idle): 物の部門の人のうち、売れなくて作らない分と、原料が足りずに動かない工場の人
++  idleOf(c) { const sh = c.sh || sharesOf(c.focus), W = c.work; return W && WAGE.idle ? sh.farm * (1 - W.farm) + sh.mine * (1 - W.mine) + sh.ind * (1 - W.ind) : 0; }
++  // 部門ごとの、仕事のある人 1 人あたりにもらう額 [cr/年] (WAGE)。v = wagesOf (部門の人 1 人あたりの付加価値)
++  payOf(c, v = this.wagesOf(c)) {
++    const W = c.work, out = {};
++    for (const x of MARKET_SECTORS) {
++      const per = W && W[x] > 1e-9 ? v[x] / W[x] : W ? 0 : v[x], m = (1 - CAPITAL.alpha) * per;
++      out[x] = WAGE.sticky && c.w ? Math.min(per, Math.max(c.w[x] || 0, m)) : m;
++    }
++    return out;
++  }
++  // 労働の所得 [cr/年] = 仕事のある人 × もらう額 + 自給の値打ち (仕事のない人の自給を含む)。目標 R39
++  laborIncome(c) {
++    const sh = c.sh || sharesOf(c.focus), W = c.work, pay = this.payOf(c);
++    return c.pop * (MARKET_SECTORS.reduce((k, x) => k + sh[x] * (W ? W[x] : 1) * pay[x], 0) + (sh.home + this.idleOf(c)) * basePrice('food') * YIELD.home);
++  }
++  // 賃金率 (WAGE.sticky): 部門ごとの名目の賃金率を、ならした値段の限界の稼ぎへ寄せる (刻みの始めに)
++  wageStep(h) {
++    if (!WAGE.sticky) return;
++    for (const c of this.colonies) {
++      const sh = c.sh || sharesOf(c.focus), L = this.market[c.sys]?.L, p = (r) => L?.[r] ?? basePrice(r), k = 1 - CAPITAL.alpha;
++      const v = { farm: p('food') * this.yieldOf(c, 'farm'), mine: MINED.reduce((a, r) => a + p(r) * this.yieldOf(c, 'mine', r), 0), ind: Math.max(0, p('goods') - 0.5 * p('metal') - 0.2 * p('fuel')) * this.yieldOf(c, 'ind') };
++      const W = c.work || { farm: 1, mine: 1, ind: 1, serv: 1 };
++      v.serv = sh.serv > 1e-9 ? this.wagesOf(c).serv : 0; // サービスはみんな仕事がある (売上 ÷ 人)
++      const P = this.cpiOf ? this.cpiOf(this.realmOf(c.sys)) : 1, wn = (c.wn ??= {}), w = (c.w = {});
++      for (const x of MARKET_SECTORS) {
++        const goal = k * v[x] * P;
++        if (!(wn[x] > 0)) wn[x] = goal;
++        else if (goal >= wn[x]) wn[x] += (goal - wn[x]) * Math.min(1, h / WAGE.up);
++        else wn[x] -= Math.min((wn[x] - goal) * Math.min(1, h / WAGE.down), wn[x] * WAGE.cut * h);
++        w[x] = wn[x] / P;
++      }
++    }
++  }
+   // 構造転換の曲線 (STRUCTURE)。y = 1 人あたりの実質の所得 [2011 年の国際ドル]
+   servShare(y) { const [a, b] = STRUCTURE.serv; return clamp(1 / (1 + GM.exp(-(a + b * GM.log(Math.max(y, 1))))), 0.02, 0.95); }
+   goodsNeed(y) { const [c0, c1, c2] = STRUCTURE.goods, l = GM.log(Math.max(y, 1)); return clamp(GM.exp(c0 + c1 * l + c2 * l * l), STRUCTURE.goodsCap[0], STRUCTURE.goodsCap[1]); }
+@@ -128,14 +162,20 @@
+     const sh = c.sh || sharesOf(c.focus), w = this.wagesOf(c);
+     return c.pop * MARKET_SECTORS.reduce((k, x) => k + sh[x] * w[x], 0);
+   }
+-  incomeAll(c) { const sh = c.sh || sharesOf(c.focus); return this.incomeOf(c) + c.pop * sh.home * basePrice('food') * YIELD.home; }
++  incomeAll(c) { const sh = c.sh || sharesOf(c.focus); return this.incomeOf(c) + c.pop * (sh.home + this.idleOf(c)) * basePrice('food') * YIELD.home; } // 仕事のない人の自給も (WAGE)
+   // 人の部門の移り: 稼ぎが平均より低い部門から、年に mobility × (平均との差の割合) の人が出て、平均より高い部門に、差の大きさに比べて入る
+   // (移るのに費用がかかるので一度に全員は動かない。Artuç, Chaudhuri & McLaren 2010 の形)。入る先は差の大きさで決まり、いまの大きさには比べないので、
+   // 小さな部門 (1% の下限) でも稼ぎが高ければ速く増える (前は割合 × ln(稼ぎ ÷ 平均) で、1% から 30% まで 40 年かかった)。どの部門にも少しは残す
+   laborStep(h) {
+     const k = Math.min(1, MARKET.mobility * h);
+     for (const c of this.colonies) {
+-      const sh = (c.sh ??= sharesOf(c.focus)), now = this.wagesOf(c);
++      const sh = (c.sh ??= sharesOf(c.focus)), v = this.wagesOf(c);
++      let now = v;
++      if (WAGE.choose && c.work) { // 仕事のある見込み × もらえる額 + 見込みの残り × 自給の値打ち (WAGE)
++        const pay = this.payOf(c, v), home = basePrice('food') * YIELD.home;
++        now = { home: v.home };
++        for (const x of MARKET_SECTORS) now[x] = c.work[x] * pay[x] + (1 - c.work[x]) * home;
++      }
+       const w = (c.wexp ??= { ...now }); // 見込みの稼ぎ (expect 年でならす)
+       for (const x of SECTORS) { if (!Number.isFinite(sh[x])) sh[x] = 0; w[x] = (w[x] ?? now[x]) + (now[x] - (w[x] ?? now[x])) * Math.min(1, h / MARKET.expect); }
+       let avg = SECTORS.reduce((a, x) => a + sh[x] * w[x], 0);
+@@ -163,6 +203,7 @@
+     }
+     const flow = {};
+     const F = (s) => (flow[s] ??= { prod: zeroRes(), cons: zeroRes(), short: zeroRes(), pop: 0 }); // short = 原料が足りずに使えなかった投入 (交易の買い手が見る)
++    this.wageStep(h); // 賃金率 (回 KE5)
+ 
+     // 1. 生産: 人口を就業の割合 (c.sh。値段で動く。laborStep) で農業・鉱業・工業・サービスに振り分ける。施設レベル1ごとに +25%。
+     //    需要で決まる生産 (段 5 の 3): 部門の人が作れる量 (plan) のうち、星系の需要 (市場のふだんの消費 u。消費・工業の投入・建設・輸出・補給と、足りなかった分) と
+@@ -190,6 +231,7 @@
+       const f = c.sh, K = this.util[c.sys];
+       const fl = F(c.sys);
+       const add = (r, v) => { this.mv(c.sys, r, v * h, 'extract'); fl.prod[r] += v; };
++      c.work = { farm: K.food, mine: K.mine, ind: K.goods, serv: 1 }; // 仕事のある割合 (WAGE。工業は原料の足りた割合も、2 で掛ける)
+       add('food', c.pop * f.farm * this.yieldOf(c, 'farm') * K.food);
+       add('food', c.pop * (f.home || 0) * YIELD.home); // 自給 (自分で食べる分。消費は下で、ほかの人と同じく備蓄から)
+       for (const r of MINED) add(r, c.pop * f.mine * this.yieldOf(c, 'mine', r) * K.mine);
+@@ -224,6 +266,7 @@
+       if (MARKET.buy && need > 0 && k < 1) { const want = (need / h) * (1 - k); fl.short.metal += 0.5 * want; fl.short.fuel += 0.2 * want; } // 使えなかった原料も、取り寄せる合図にする (trade の use)
+       fl.prod.goods += c.plan * run;
+       c.industry = run;
++      if (c.plan > 0) c.work.ind *= run; // 原料が足りずに動かない工場の人も仕事がない
+       const L = c.lv.slaveworks || 0;
+       if (L) {
+         const use = SLAVEWORKS_USE * L * h;
+@@ -238,6 +281,8 @@
+         this.watch(c, 'industry', k, 'shortage', () => `${c.name} の工場が原料 (金属・燃料) 不足で減産 (稼働 ${pct(k)})`, `${c.name} の工場の原料不足が解消した`);
+       }
+     }
++    // 仕事のない人の自給 (WAGE.idle。自給の人の分は 1 で作った)
++    if (WAGE.idle) for (const c of this.colonies) { const v = c.pop * this.idleOf(c) * YIELD.home; if (v > 0) { this.mv(c.sys, 'food', v * h, 'extract'); F(c.sys).prod.food += v; } }
+     // 地元で作れば儲かるのに作れていない工業品 (市場の需要 − 星系の工場の生産) の原料も、取り寄せる合図にする (docs/regions.md の 2。輸入の代わりに地元で作る)。
+     // 工業の人がほとんどいない星系は、いまの工場の不足だけを数えると注文が最小の量に届かず、原料が来ない → 人が来ない、のまま動かなかった
+     if (MARKET.buy) for (const key of Object.keys(plan)) {
+@@ -305,7 +350,7 @@
+       if (c.pop >= 1) this.watch(c, 'aging', DEMO.alert / Math.max(this.ageShares(c).dep, 1e-9), 'shortage', () => `${c.name} の扶養比が ${Math.round(this.ageShares(c).dep * 100)} に上がった (働き手 100 人で支える子どもと高齢の数。年金と医療が増える)`, `${c.name} の扶養比が下がった`); // 10-5 の知らせ
+       const income = MARKET.buy ? this.incomeOf(c) : 0;
+       c.incY = income; // この刻みの所得 (年金と医療で使う。ageSpendStep)
+-      va[c.sys] = (va[c.sys] || 0) + income * h; // 星系の市場の付加価値 (賃金と配当に分ける。economy の 7)
++      if (MARKET.buy) { const sh = c.sh, pay = this.payOf(c); va[c.sys] = (va[c.sys] || 0) + c.pop * MARKET_SECTORS.reduce((k, x) => k + sh[x] * (c.work?.[x] ?? 1) * pay[x], 0) * h; } // 星系の賃金 (economy の 7。WAGE)
+       if (MARKET.buy) {
+         // 家計は買った物とサービスの代金を会社に払う (サービスの売上 = サービスの人の稼ぎの合計)。会社は売上を賃金として家計に払う (刻みの終わり。economy の 7)
+         const S = c.pop * (c.sh || sharesOf(c.focus)).serv * this.wagesOf(c).serv * h;
+@@ -363,7 +408,7 @@
+     //    毎年 GDP の 5〜10% 増え続けた (docs/structure.md の 7)。いまは評価損を配当 (alpha の分) が受ける。会社の手持ちのマイナス (借り) に残るのは、
+     //    輸入の代金 (出荷のときに払い、売ってから返す運転資金。回 KE4) と、配当で受けきれなかった評価損。設備の借りは別の残高 (gv.bl。回 KE3)
+     if (MARKET.buy) for (const key of Object.keys(this.govs)) {
+-      const gv = this.govs[key], id = Number(key), W = (1 - CAPITAL.alpha) * (va[id] || 0);
++      const gv = this.govs[key], id = Number(key), W = va[id] || 0; // 仕事のある人 × もらう額 (WAGE。粘りのない形なら付加価値の 1 − alpha)
+       if (W > 0) { this.cash('wages', -W, { fm: id }); this.cash('wages', W, { hh: id }); }
+       if (gv.fm > 0) { const v = gv.fm; this.cash('dividend', -v, { fm: id }); this.cash('dividend', v, { hh: id }); }
+     }
+diff --git a/tools/region-panel.js b/tools/region-panel.js
+index 0061a11..caa194c 100644
+--- a/tools/region-panel.js
++++ b/tools/region-panel.js
+@@ -23,7 +23,7 @@ for (let sd = 1; sd <= Number(nS); sd++) {
+     const lab = {};
+     for (const c of g.colonies) {
+       const va = g.incomeOf(c), home = g.incomeAll(c) - va, X = (lab[g.realmOf(c.sys)] ??= [0, 0]);
+-      X[0] += (1 - alpha) * va + home; X[1] += va + home;
++      X[0] += g.laborIncome ? g.laborIncome(c) : (1 - alpha) * va + home; X[1] += va + home; // 賃金率のある版 (回 KE5) は、仕事のある人がもらう額の合計
+     }
+     for (const [realm, [w, y2]] of Object.entries(lab)) if (y2 > 0) L.push(`${sd}-${realm},${year},${(w / y2).toPrecision(6)}`);
+     if (y % 10) continue;
