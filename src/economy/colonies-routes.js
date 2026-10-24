@@ -47,9 +47,37 @@
     if (typeof a !== 'number' || typeof b !== 'number') return this.routes.find((r) => (r.a === a && r.b === b) || (r.a === b && r.b === a));
     return this.routeIx.map.get(a * 65536 + b);
   }
-  routeCap(r) { return 200 * r.lv; } // 片道あたりの輸送量[単位/年]
-  routeCost(a, b) { return { credits: Math.round(100 + 10 * this.sysDist(a, b)) }; }
-  routeUpCost(r) { return { credits: 150 * r.lv, metal: 50 * r.lv }; }
+  // --- 輸送船 (SHIPPING。回 KE5) ---
+  routeTrip(r) { return 2 * this.shipYears(r.a, r.b) + SHIPPING.port; } // 1 隻の往復の年数
+  shipsFor(r, cap) { return (cap * this.routeTrip(r)) / SHIPPING.payload; } // 片道 cap [質量の単位/年] を運ぶのに要る船の数
+  routeShips(r) { return r.ships ?? this.shipsFor(r, SHIPPING.base * r.lv); } // 前の版のセーブの交易路は、前の送れる量 (段 × 200) の分の船があるとみる
+  portCap(r) { return SHIPPING.base * r.lv; } // 両端の発射所と減速設備の容量 [質量の単位/年、片道]。交易路の段 (政府が広げる) × base
+  routeCap(r) { return Math.min((this.routeShips(r) * SHIPPING.payload) / this.routeTrip(r), this.portCap(r)); } // 片道あたりの送れる量 [質量の単位/年] (船と港の小さいほう)
+  // n 隻の船を造る費用: 船の質量 (積み荷 × hull) を高付加価値物品と金属で、造る手間 (家計の賃金) は資材の値打ちと同じ
+  freighterCost(n) {
+    const m = n * SHIPPING.payload * SHIPPING.hull, hitech = (m * SHIPPING.hitech * UNIT_KG) / RES_KG.hitech, metal = (m * (1 - SHIPPING.hitech) * UNIT_KG) / RES_KG.metal;
+    const v = hitech * basePrice('hitech') + metal * basePrice('metal');
+    return { credits: v, hitech, metal }; // 丸めない (市場の値段の水準では船 1 隻が 1 cr より安い)
+  }
+  // 運賃 [cr / 質量の単位 / 光年] (船の年の費用 ÷ 1 隻が 1 年に運ぶ質量 × 光年)
+  freightRate() {
+    const c = this.freighterCost(1), v = c.hitech * basePrice('hitech') + c.metal * basePrice('metal') + c.credits;
+    return ((CAPITAL.irr + 1 / SHIPPING.life) * v) / (SHIPPING.payload * SHIP_SPEED * SHIPPING.load);
+  }
+  // 輸送船を造る造船所: 払う星系から交易路網で近い順に、高付加価値物品の在庫が足りる星系 (なければ払う星系)。t = 造った船が交易路まで飛ぶ年数
+  shipyard(o, cost) {
+    if (this.stockOf(o).hitech >= cost.hitech) return { id: o, t: 0 };
+    const { dist } = this.reach(o);
+    for (const s of this.reachSorted(o)) if (!this.tradeBlocked(o, s) && this.stockOf(s).hitech >= cost.hitech) return { id: s, t: dist[s] };
+    return { id: o, t: 0 };
+  }
+  // 交易路 r に n 隻の輸送船を足す。pay = 払う帳簿 ({ gov: 星系 } か { fm: 星系 })
+  buyShips(r, n, pay, job) {
+    const cost = this.freighterCost(n), y = this.shipyard(pay.gov ?? pay.fm, cost);
+    return this.order(cost, y.id, { type: 'ships', route: r.id, n, delay: y.t, pay, ...job });
+  }
+  routeCost(a, b) { return { credits: Math.round(100 + 10 * this.sysDist(a, b)) }; } // 両端の発射所と減速設備 (船は別に造る)
+  routeUpCost(r) { return { credits: 150 * r.lv, metal: 50 * r.lv }; } // 交易路の拡張 = 港を広げる (船は運送業の会社が足す)
   openRoute(a, b) {
     if (a === b || !this.isColonized(a) || !this.isColonized(b)) return fail('両端に入植地が必要');
     if (this.routeBetween(a, b)) return fail('開設済み');
@@ -57,19 +85,35 @@
     if (this.realmOf(a) !== this.realmOf(b) && this.tradeBlocked(a, b)) return fail('交戦中の国とは交易路を結べない');
     const paid = this.pay(this.routeCost(a, b), undefined, a);
     if (!paid.ok) return paid;
-    this.routes.push({ id: this.nextShipId++, a, b, lv: 1, transit: [zeroRes(), zeroRes()], vol: [0, 0], built: this.year, by: a });
+    const r = { id: this.nextShipId++, a, b, lv: 1, ships: 0, transit: [zeroRes(), zeroRes()], vol: [0, 0], built: this.year, by: a };
+    this.routes.push(r);
     this.message(`${this.system(a).name} ⇄ ${this.system(b).name} の交易路を開設した`, a);
+    // 最初の船 (片道 base の分) を、開いた星系の政府が造る。船ができるまでは送れない。造れなければ、運送業の会社があとで造る (routesYearly)
+    this.buyShips(r, this.shipsFor(r, SHIPPING.base), { gov: a }, { label: `${this.system(a).name} ⇄ ${this.system(b).name} の輸送船` });
     return { ok: true };
   }
   upgradeRoute(r, tag = '') {
     if (this.pending((j) => j.type === 'route' && j.route === r.id)) return fail('拡張中');
     return this.order(this.routeUpCost(r), r.a, { type: 'route', route: r.id, label: `${tag}${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路 Lv${r.lv + 1}` });
   }
-  routeUse(r) { return Math.max(r.vol[0], r.vol[1]) / this.routeCap(r); }
+  routeOwner(r) { const o = r.by ?? r.a; return this.isColonized(o) ? o : this.isColonized(o === r.a ? r.b : r.a) ? (o === r.a ? r.b : r.a) : null; } // 船の持ち主 (開いた星系。いなくなっていれば反対の端)
+  routeUse(r) { const c = this.routeCap(r); return c > 0 ? Math.max(r.vol[0], r.vol[1]) / c : r.vol[0] + r.vol[1] > 0 ? Infinity : 0; }
   // 交易路の混雑 (年1回): 片道の輸送量が容量の9割を超えたら知らせ、端の星系 (r.a) の政府が自動で拡張する。
   // 太陽系と直轄の星系の交易路は「交易路の自動拡張」がオンのときだけ。資金が費用の1.5倍以上あり、資材が手に入るとき。
   // 知らせは混み始めたときに1回 (8割を下回ったら数え直す)、地球の国の星系がかかわる交易路だけ
   routesYearly() {
+    // 輸送船 (SHIPPING): 船は年に 1 ÷ life ずつ古くなって減る。持ち主の運送業の会社が自分の払いで造る (SHIPPING の説明)。造りかけの船があれば待つ
+    for (const r of this.routes) {
+      r.ships = this.routeShips(r); // 前の版のセーブの交易路にも船を持たせる
+      if (!MARKET.buy) continue; // 市場のない版は、船は古くならない
+      const lost = r.ships / SHIPPING.life, use = this.routeUse(r);
+      r.ships -= lost;
+      const o = this.routeOwner(r);
+      if (o === null || this.pending((j) => j.type === 'ships' && j.route === r.id)) continue;
+      // 使われている交易路は港の容量の分まで、使われていない交易路 (使われた割合が idle 未満) は片道 base の分まで船をそろえる (古くなった分と、港が広がった分)
+      const n = this.shipsFor(r, use >= SHIPPING.idle ? this.portCap(r) : SHIPPING.base) - r.ships;
+      if (n > 0) this.buyShips(r, n, { fm: o }, { label: `${this.system(r.a).name} ⇄ ${this.system(r.b).name} の輸送船` });
+    }
     for (const r of this.routes) {
       const use = this.routeUse(r);
       if (use < 0.8) { r.hot = false; continue; }
@@ -82,6 +126,7 @@
       const owner = this.players[this.playerOf(this.realmOf(r.a))];
       if (owner && ((this.isHuman(r.a) && !this.spectate) || gv.direct) ? !owner.autoRoutes : false) continue;
       if (this.pending((j) => j.type === 'route' && j.route === r.id)) continue;
+      if (this.routeCap(r) < 0.9 * this.portCap(r)) continue; // 足りないのが船なら、運送業の会社が足す (港を広げても送れる量は増えない。船は古くなった分の 1 年は少ないので 9 割で見る)
       const cost = this.routeUpCost(r);
       if (this.funds(r.a) < 1.5 * cost.credits || this.procure(cost, r.a).why) continue;
       this.upgradeRoute(r, '[自動] ');

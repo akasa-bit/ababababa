@@ -105,16 +105,17 @@
   // 建設資材の調達計画。地元の備蓄で足りない分は、近い入植星系から順に取り寄せる。
   // 取り寄せ元には1年分の需要 (市場のある版は目標の在庫の厚さぶん) を残す。eta は最も遠い取り寄せ元からの搬入年数 (0 なら即時)。
   // 取り寄せる資材は買い取る (基準価格)。輸入費を払えなければ、主人の星系の備蓄だけから支援として無償で取り寄せる (従属が深まる)
-  procure(cost, sysId) {
-    const p = this.procureFrom(cost, sysId);
-    if (!p.poor) return p;
+  // funds: 払う人の手持ち (輸送船は造船所の星系で造り、ほかの星系の政府か会社が払う。会社は借りてよいので Infinity。回 KE5)。渡したときは主人の支援もない
+  procure(cost, sysId, funds) {
+    const p = this.procureFrom(cost, sysId, undefined, funds);
+    if (!p.poor || funds !== undefined) return p;
     const lord = this.gov(sysId).lord;
     if (lord === null || lord === undefined) return { why: p.why };
     const a = this.procureFrom(cost, sysId, lord);
     return a.why ? { why: p.why } : { ...a, imp: 0, aid: a.imp };
   }
-  procureFrom(cost, sysId, onlyFrom) {
-    if ((cost.credits || 0) > this.funds(sysId ?? 0)) return { why: 'クレジット不足' };
+  procureFrom(cost, sysId, onlyFrom, funds = this.funds(sysId ?? 0)) {
+    if ((cost.credits || 0) > funds) return { why: 'クレジット不足' };
     // エネルギー: 船の推進の分と、取り寄せる資材を交易路で減速させる分は受け手、加速させる分は取り寄せ元が払う
     const eHave = this.energyOf(sysId ?? 0) - (cost.energy || 0);
     if (eHave < 0) return { why: `エネルギー不足 (${fmtJ(Math.max(0, this.energyOf(sysId ?? 0)))}/${fmtJ(cost.energy)})` };
@@ -160,7 +161,7 @@
     }
     const imp = plan.filter((x) => x.from !== sysId).reduce((k, x) => k + x.amt * x.price, 0);
     const local = plan.filter((x) => x.from === sysId).reduce((k, x) => k + x.amt * (x.price || 0), 0); // 地元で買う資材の代金 (MARKET.buy)
-    if (onlyFrom === undefined && imp + local > 0 && (cost.credits || 0) + imp + local > this.funds(sysId)) return { why: `資金不足 (資材の代金 ${Math.ceil(imp + local)} cr を含む)`, poor: true };
+    if (onlyFrom === undefined && imp + local > 0 && (cost.credits || 0) + imp + local > funds) return { why: `資金不足 (資材の代金 ${Math.ceil(imp + local)} cr を含む)`, poor: true };
     return { why: '', eta, plan, imp };
   }
   // 建設を発注する。費用はその場で払い、資材が届いた時点で完成する。
@@ -169,13 +170,17 @@
     if (!this.nations || this.isHuman(this.realmOf(sysId)) || !cost.credits) return cost;
     return { ...cost, credits: Math.round(cost.credits * HANDICAP[this.handicap].aiCost) };
   }
+  // job.pay: 払う帳簿 ({ gov: 星系 } か { fm: 星系 })。ないときは建てる星系の政府。輸送船は造船所の星系 sysId で造り、交易路の持ち主が払う (回 KE5)。
+  // job.delay: 完成してから使えるまでの年数 (造った輸送船が交易路まで飛ぶ)
   order(cost, sysId, job) {
-    cost = this.aiCost(cost, sysId);
-    const p = this.procure(cost, sysId);
+    const payer = job.pay ?? { gov: sysId }, firm = payer.fm !== undefined;
+    if (!firm) cost = this.aiCost(cost, payer.gov);
+    const p = this.procure(cost, sysId, firm ? Infinity : payer.gov !== sysId ? this.funds(payer.gov) : undefined);
     if (p.why) return fail(p.why);
+    const eta = Math.max(p.eta, job.delay || 0);
     // 支払いは建てる星系の民間へ。入植船の開拓資金は船が運び、着いた星系に渡す
     const seed = job.type === 'ship' ? SEED_FUNDS[job.kind] || 0 : 0;
-    if (cost.credits) { this.cash('build', -cost.credits, { gov: sysId }); this.cash('build', cost.credits - seed, { hh: sysId }); } // 賃金は家計へ
+    if (cost.credits) { this.cash('build', -cost.credits, payer); this.cash('build', cost.credits - seed, { hh: sysId }); } // 賃金は家計へ
     if (seed) this.cash('build', seed, { way: job, f: 'seed' });
     if (job.flight && SIM_ONLY && job.flight.path) this.bookPath('settler', job.flight.m, job.flight.path, 'free', { payer: sysId });
     else if (job.flight) this.bookShip('settler', job.flight.m, job.flight.beta, 'free', sysId, sysId, job.flight.ly ?? 0);
@@ -191,15 +196,15 @@
         // 資材は売り手の星系の会社から買う。主人の支援なら、主人の政府が代わりに払う
         const v = x.amt * (x.price || 0);
         if (v > 0 && p.aid && x.from !== sysId) { this.cash('grant', -v, { gov: x.from }); this.cash('grant', v, { fm: x.from }); }
-        else if (v > 0 && x.from !== sysId) this.earn('import', -v, sysId, { fm: x.from });
-        else if (v > 0) { this.cash('build', -v, { gov: sysId }); this.cash('build', v, { fm: sysId }); }
-      } else if (x.from !== sysId && !p.aid) { this.earn('import', -x.amt * x.price, sysId); this.earn('trade', x.amt * x.price, x.from); }
+        else if (v > 0 && x.from !== sysId) { if (firm) { this.cash('import', -v, payer); this.cash('import', v, { fm: x.from }); } else this.earn('import', -v, payer.gov, { fm: x.from }); }
+        else if (v > 0 && payer.fm !== sysId) { this.cash('build', -v, payer); this.cash('build', v, { fm: sysId }); } // 会社が自分の在庫を使うときは払わない
+      } else if (x.from !== sysId && !p.aid) { this.earn('import', -x.amt * x.price, payer.gov ?? sysId); this.earn('trade', x.amt * x.price, x.from); }
       if (x.from !== sysId) this.noteLordTrade(sysId, x.from, x.amt * x.price); // 主人との友好度: 支援として無償で受け取った資材も数える
     }
     if (p.aid) this.receiveAid(sysId, p.aid);
-    if (p.eta <= 0) { this.finish({ ...job, sys: sysId }); return { ok: true }; }
+    if (eta <= 0) { this.finish({ ...job, sys: sysId }); return { ok: true }; }
     Object.assign(job, {
-      id: this.nextShipId++, sys: sysId, start: this.year, ready: this.year + p.eta,
+      id: this.nextShipId++, sys: sysId, start: this.year, ready: this.year + eta,
       from: [...new Set(p.plan.filter((x) => x.from !== sysId).map((x) => x.from))],
       // 物資移送要求が光速で取り寄せ元に届いてから、資材が交易路で出発する
       legs: [...new Set(p.plan.filter((x) => x.from !== sysId).map((x) => x.from))].map((f) => {
@@ -212,7 +217,7 @@
       this.requests.push({ id: this.nextShipId++, kind: 'build', from: sysId, to: l.path[0], job: job.id, label: job.label, sent: this.year, arrive: l.times[0], state: 'sending' });
     }
     this.projects.push(job);
-    this.message(`${job.label}: 資材を周辺の星系から搬入中 (${p.aid ? `主人の ${this.system(this.gov(sysId).lord).name} から支援 ${Math.ceil(p.aid)} cr 相当` : `輸入費 ${Math.ceil(p.imp || 0)} cr`}、完成まで ${p.eta.toFixed(1)} 年)`, sysId);
+    if (!firm) this.message(`${job.label}: 資材を周辺の星系から搬入中 (${p.aid ? `主人の ${this.system(this.gov(sysId).lord).name} から支援 ${Math.ceil(p.aid)} cr 相当` : `輸入費 ${Math.ceil(p.imp || 0)} cr`}、完成まで ${eta.toFixed(1)} 年)`, sysId);
     return { ok: true };
   }
   pending(pred) { return this.projects.find(pred); }
@@ -222,6 +227,9 @@
       if (!c) return;
       c.lv[job.fac]++;
       this.message(`${c.name} の${FACILITY[job.fac]}を Lv${c.lv[job.fac]} に拡張した`, c.sys);
+    } else if (job.type === 'ships') { // 輸送船 (回 KE5)
+      const r = this.routes.find((x) => x.id === job.route);
+      if (r) r.ships = this.routeShips(r) + job.n;
     } else if (job.type === 'warship') {
       const n = job.n || 1;
       this.garrison[job.sys] = (this.garrison[job.sys] || 0) + n;
@@ -229,7 +237,7 @@
     } else if (job.type === 'route') {
       const r = this.routes.find((x) => x.id === job.route);
       if (!r) return;
-      r.lv++;
+      r.lv++; // 港が広がる。広がった分の船は、運送業の会社が次の年に足す (回 KE5)
       this.message(`${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路を Lv${r.lv} に拡張した`, r.a);
     } else if (job.type === 'troop') {
       const c = this.colonyByKey(job.col);
