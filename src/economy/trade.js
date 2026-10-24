@@ -8,10 +8,11 @@
     if (!this.routes.length) { for (const q of this.requests) if (q.kind === 'trade') this.refund(q); this.requests = this.requests.filter((q) => q.kind !== 'trade'); return; }
     // 輸送中の量は毎回、貨物から数え直す (足し引きの積み重ねだと、読み込み直したゲームと最後の桁がずれて結果が分かれるので)
     this.rebuildTransit();
-    // 交易路の向きごとの残りの輸送量と送った量 (キーは 交易路の番号×2+向き)
+    // 交易路の向きごとの残りの輸送量と送った量 [質量の単位] (キーは 交易路の番号×2+向き)。運賃 [cr / 質量の単位 / 光年] (市場のある版だけ。回 KE5)
     const room = new Map();
     for (const r of this.routes) { const c = this.routeCap(r) * h; room.set(r.id * 2, c); room.set(r.id * 2 + 1, c); }
     const sent = new Map();
+    const fRate = MARKET.buy ? this.freightRate() : 0;
     const spareOf = (id, res) => this.stockOf(id)[res] - 2 * (flow[id]?.cons[res] || 0); // 送り手が自分の在庫を見るとき
     // 届いた要求を処理する
     for (const q of this.requests) {
@@ -24,7 +25,8 @@
       if (spare <= 0.001) { q.state = 'waiting'; continue; }
       const legs = this.legsOf(rp.path).map((l, i) => ({ ...l, next: rp.path[i + 1] }));
       let amt = Math.min(q.amt, spare, (this.routeRoom(q.to, q.from) * UNIT_KG) / RES_KG[q.res]); // 送る側の加速と受ける側の減速のエネルギー
-      for (const l of legs) amt = Math.min(amt, room.get(l.r.id * 2 + l.dir));
+      const kg = RES_KG[q.res] / UNIT_KG; // 1 単位の質量 [質量の単位]
+      for (const l of legs) amt = Math.min(amt, room.get(l.r.id * 2 + l.dir) / kg);
       q.state = 'waiting';
       if (amt <= 0.001) continue;
       // 代金 (基準価格に、航行の年数ぶんの利子を乗せた値段) は、売り手が送り出すときに受け手の会社が払う (信用状。回 KE4・B-016)。
@@ -44,8 +46,11 @@
       if (aid > 0) { this.receiveAid(q.from, aid * price); this.noteLordTrade(q.from, q.to, aid * price); }
       for (const l of legs) {
         const k = l.r.id * 2 + l.dir;
-        room.set(k, room.get(k) - amt);
-        sent.set(k, (sent.get(k) || 0) + amt);
+        room.set(k, room.get(k) - amt * kg);
+        sent.set(k, (sent.get(k) || 0) + amt * kg);
+        // 運賃: 買い手の会社が、区間ごとに交易路の船の持ち主の会社へ払う (送り出すときに記帳)
+        const o = fRate > 0 ? this.routeOwner(l.r) : null;
+        if (o !== null) { const v = fRate * amt * kg * this.sysDist(l.r.a, l.r.b); this.cash('freight', -v, { fm: q.from }); this.cash('freight', v, { fm: o }); }
       }
       if (TRADE_AUDIT) TRADE_AUDIT.push([q.to, q.from, this.year, amt * PRICE[q.res], 't', q.res]);
       const cMode = this.routeMode(q.to, q.from, (amt * RES_KG[q.res]) / UNIT_KG);
@@ -112,7 +117,8 @@
           const kp = sysRes(S, res);
           const avail = this.spareSeen(T, S, res) - (promised.get(kp) || 0); // 買い手に届いている売り手の余り (回 KE3。前はいまの余り)
           if (avail <= min) continue;
-          const w = avail * GM.pow((this.tradePrice(S, res, dist[S], rate) * (1 + this.tariffFor(T, S))) / PRICE[res], -TRADE.sigma); // 値段の安い売り手ほど多く買う。関税のぶん、ほかの国の売り手は高く見える
+          const fr = (fRate * RES_KG[res] * dist[S] * SHIP_SPEED) / UNIT_KG; // 運賃の見込み (航行の年数 × 速さ = 光年)
+          const w = avail * GM.pow((this.tradePrice(S, res, dist[S], rate) * (1 + this.tariffFor(T, S)) + fr) / PRICE[res], -TRADE.sigma); // 値段の安い売り手ほど多く買う。関税のぶん、ほかの国の売り手は高く見え、遠いほど運賃が乗る
           const lead = dist[S] + this.travelYears(T, S);
           cands.push({ S, kpair, kp, avail, w });
           W += w; WL += w * lead;

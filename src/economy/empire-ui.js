@@ -16,9 +16,9 @@ function routesSheet(app) {
     const a = g.system(r.a);
     const b = g.system(r.b);
     const cap = g.routeCap(r);
-    const use = Math.max(r.vol[0], r.vol[1]) / cap;
+    const use = g.routeUse(r);
     const busy = busyText(g, (j) => j.type === 'route' && j.route === r.id);
-    return `<tr><td>${goto(a)} ⇄ ${goto(b)}</td><td>${distance(a, b).toFixed(1)} ly</td><td>Lv${r.lv} <span class="muted">(${fmtAmt(cap)}/年)</span></td>
+    return `<tr><td>${goto(a)} ⇄ ${goto(b)}</td><td>${distance(a, b).toFixed(1)} ly</td><td>Lv${r.lv} <span class="muted">(輸送船 ${Math.round(g.routeShips(r))} 隻・${fmtAmt(cap)}/年)</span></td>
       <td>${fmtAmt(r.vol[0])}/年</td><td>${fmtAmt(r.vol[1])}/年</td><td class="${use > 0.9 ? 'bad' : ''}">${pct(Math.min(use, 1))}</td>
       <td>${top(r.transit[0])}</td><td>${top(r.transit[1])}</td>
       <td>${costButton(g, `data-act="uproute" data-route="${r.id}"`, '拡張', g.routeUpCost(r), r.a, busy)}</td></tr>`;
@@ -43,6 +43,7 @@ function routesSheet(app) {
     <h3>新しい交易路</h3>${open}
     ${requestsTable(g)}
     <h3>${ico('route')}交易路の一覧</h3>
+    <p class="note">送れる量は輸送船の数と港の容量 (規模) の小さいほうで、質量 (100 万 t) で数える。船は 30 年で古くなり、交易路を開いた星系の運送業の会社が運賃で造り直し、港が広がったら足す。</p>
     ${rows ? `<div class="scroll"><table class="tbl">
       <tr><th>区間 (A ⇄ B)</th><th>距離</th><th>規模</th><th>A→B</th><th>B→A</th><th>稼働率</th><th>通過中の荷 A→B</th><th>通過中の荷 B→A</th><th></th></tr>${rows}</table></div>
       <p class="note">稼働率が100%近い交易路は、拡張すると運べる量が増える。稼働率が9割を超えると知らせが出て、端の星系 (A) の政府が自動で拡張する (資金が費用の1.5倍以上あるとき)。</p>` : '<p class="note">まだ交易路はない。</p>'}
