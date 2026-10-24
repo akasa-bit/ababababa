@@ -2,12 +2,14 @@
   marketStep(h) {
     const a = Math.min(1, h / MARKET.smooth);
     for (const [key, st] of Object.entries(this.stock)) {
+      const fresh = !this.market[key]; // 新しい市場は、この刻みの需要をそのまま「ふだんの消費」にする (回 KE4・B-019。0 から 1 年かけて立ち上げると、
+      // 需要で決まる生産が始めほとんど作らず、試合の始めの本星と新しい星系で 1〜2 年の飢餓になった)
       const m = (this.market[key] ??= { u: zeroRes(), p: Object.fromEntries(RES.map((r) => [r, basePrice(r)])) });
       m.L ??= { ...m.p }; // ならした値段
       const got = this.absorb[key], short = this.unmet[key];
       const cap = stockCap(this.flowPop?.[key] || 0);
       for (const r of RES) {
-        m.u[r] += ((got?.[r] || 0) / h + (short?.[r] || 0) - m.u[r]) * a; // 受注残は年あたりの需要として
+        m.u[r] += ((got?.[r] || 0) / h + (short?.[r] || 0) - m.u[r]) * (fresh ? 1 : a); // 受注残は年あたりの需要として
         let goal = this.priceAt(r, st[r], m.u[r], MARKET.anchor ? m.L[r] : undefined); // 使い道がなければ最低の値段
         if (st[r] < 0.95 * cap) goal = Math.max(goal, m.L[r] * (1 - MARKET.store)); // 倉に空きがあれば、蓄える人が値段を支える
         m.p[r] = MARKET.tau > 0 ? m.p[r] * GM.pow(goal / m.p[r], Math.min(1, h / MARKET.tau)) : goal;
@@ -236,7 +238,12 @@
       }
     }
     // 3. 消費と人口の増減、税収
+    // 食べ物・水・工業品の在庫は星系でまとめて持つので、不足の知らせは星系でいちばん大きな入植地 (head) だけが出し、ほかの入植地は状態 (alerts) を写す
+    // (回 KE4・B-019。前は国の本星の星系のステーションも同じ不足をそれぞれ知らせ、1 試合の飢餓の知らせ約 48 件のうち 27 件がそれだった)
+    const head = {};
+    for (const c of this.colonies) if (!head[c.sys] || c.pop > head[c.sys].pop) head[c.sys] = c;
     for (const c of this.colonies) {
+      const lead = head[c.sys] === c;
       const st = this.stockOf(c.sys);
       const fl = F(c.sys);
       const inc = c.inc ?? STRUCTURE.y0;
@@ -259,9 +266,9 @@
       const water = this.needsWater(c) ? use('water', 0.1 * c.pop) : 1;
       const goods = use('goods', (MARKET.buy ? this.goodsNeed(inc) : 0.3) * c.pop); // 工業品の需要は所得で決まる (Engel 曲線)
       c.sat = { food, water, goods };
-      this.watch(c, 'food', food, 'famine', () => `${c.name} で飢餓が発生 (食料の充足率 ${pct(food)})`, `${c.name} の飢餓が解消した`);
-      if (this.needsWater(c)) this.watch(c, 'water', water, 'famine', () => `${c.name} で水不足が発生 (充足率 ${pct(water)})`, `${c.name} の水不足が解消した`);
-      if (c.pop >= 1) this.watch(c, 'goods', goods, 'shortage', () => `${c.name} で工業品が不足 (充足率 ${pct(goods)})`, `${c.name} の工業品不足が解消した`);
+      if (lead) this.watch(c, 'food', food, 'famine', () => `${c.name} で飢餓が発生 (食料の充足率 ${pct(food)})`, `${c.name} の飢餓が解消した`);
+      if (this.needsWater(c) && (lead || !this.needsWater(head[c.sys]))) this.watch(c, 'water', water, 'famine', () => `${c.name} で水不足が発生 (充足率 ${pct(water)})`, `${c.name} の水不足が解消した`);
+      if (lead && c.pop >= 1) this.watch(c, 'goods', goods, 'shortage', () => `${c.name} で工業品が不足 (充足率 ${pct(goods)})`, `${c.name} の工業品不足が解消した`);
       const life = Math.min(food, water);
       const n = c.kind === 'planet' ? this.nativeOf(c.sys, c.body) : null;
       const unrest = n && n.st.status !== 'integrated' && n.st.rel < -20 ? 0.02 : 0;
@@ -298,6 +305,14 @@
       const base = MARKET.buy ? MARKET.tax * income : BASE_TAX[c.kind] + 0.08 * c.pop * (0.5 + 0.5 * goods); // 所得への税 (前の版は人口から。自給の分は入らない)
       this.earn('tax', base * this.taxK(c.sys) * h, c.sys, { hh: c.sys }); // 星系の家計が払う。税の重さは財政で選ぶ
       if (MARKET.buy) { const y = this.potentialUSD(c); c.inc = c.inc === undefined ? y : c.inc + (y - c.inc) * Math.min(1, h / STRUCTURE.smooth); } // 1 人あたりの生産力 (smooth 年でならす。構造転換の曲線に使う)
+    }
+    for (const c of this.colonies) { // 星系でいちばん大きな入植地の不足の状態を写す (知らせは出さない)
+      const H = head[c.sys];
+      if (H === c || !H) continue;
+      c.alerts ??= {};
+      c.alerts.food = !!H.alerts?.food;
+      c.alerts.goods = !!H.alerts?.goods;
+      if (this.needsWater(c) && this.needsWater(H)) c.alerts.water = !!H.alerts?.water;
     }
     // 4. 先住民: 拠点がある星系では友好度が少しずつ上がる。友好的なら交易、制圧していれば貢納
     for (const [key, st] of Object.entries(this.natives)) {
