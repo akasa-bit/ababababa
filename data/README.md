@@ -67,6 +67,43 @@ python3 data/build/analyze_trade.py     # 推定する (numpy が要る。約 1 
 
 出典: Conte, M., Cotterlaz, P. & Mayer, T. (2022) The CEPII Gravity database, CEPII Working Paper 2022-05・Santos Silva, J. M. C. & Tenreyro, S. (2006) The Log of Gravity, Review of Economics and Statistics 88, 641–658・Correia, S., Guimarães, P. & Zylkin, T. (2020) Fast Poisson estimation with high-dimensional fixed effects, Stata Journal 20, 95–115・Disdier, A.-C. & Head, K. (2008) The Puzzling Persistence of the Distance Effect on Bilateral Trade, Review of Economics and Statistics 90, 37–48
 
+### 品ごとの交易 (R01 の品ごとの幅。回 KE5)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_trade_goods.py` → `data/raw/trade_goods/` | CEPII BACI HS17 V202501 (Gaulier & Zignago 2010)。元の zip (約 690 MB) はリポジトリに置けないので、2017〜2019 年 (CEPII Gravity の距離と重なる年) の品目別の額を、HS の章・項・号の頭でゲームの資源 (食料・燃料・金属・工業品・水・希少元素・その他) にまとめて `baci_hs17_groups_2017_2019.csv.gz` (2.0 MB) に置く。元の zip の URL・取得日・SHA-256、まとめ方・行数・額の割合を `data/raw/trade_goods/MANIFEST.json` に記録する。同じ zip からは同じバイト列になる |
+| 加工 | `data/build/analyze_trade_goods.py` (推定は `data/build/gravity.py`) → `data/derived/trade_goods.json` | 品ごとに R01 と同じ式 (PPML、輸出国×年・輸入国×年の固定効果、ln 距離だけ、空の組は使わない)。距離は `data/raw/trade/` の distw_harmonic |
+
+```sh
+python3 data/fetch/fetch_trade_goods.py     # 生データを取り直す (約 690 MB を落とす。約 3 分)
+python3 data/build/analyze_trade_goods.py   # 推定する (numpy が要る。約 20 秒)
+```
+
+- **推定の結果**: 燃料 −1.251・食料 −1.088・金属 −1.060・工業品 −0.819 (全部まとめると −0.842)。原料ほど距離が効く。希少元素 −0.48・水 −1.89 は参考 (額が小さいか、ゲームの品と合わない)
+- **額の割合**: 工業品 69%・燃料 13%・食料 9%・金属 6%・その他 (金・宝石など) 3%
+- **限界**: HS の品目をゲームの 4 つの品に分けるのは粗い (たとえば 25 章の土石は工業品に入れた)。BACI は正の交易額しか載せない (R01 と同じ)
+
+出典: Gaulier, G. & Zignago, S. (2010) BACI: International Trade Database at the Product-Level. The 1994-2007 Version, CEPII Working Paper 2010-23
+
+## 国の中の地域と労働分配率のデータ (目標 R38・R39。回 KE5)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_regions.py` → `data/raw/regions/` | DOSE v2 (Wenz ほか 2023。83 か国・1,661 地域・1953〜2020 年。Zenodo 7573249) の地域の 1 人あたり総生産と人口・統計の切れ目の 8 列 (`dose_v2.csv.gz`)、Penn World Table 10.01 (DataverseNL) の labsh・rgdpe・pop (`pwt1001_labsh.csv.gz`)。元のファイルの URL・取得日・SHA-256、列・行数を `data/raw/regions/MANIFEST.json` に記録する (pandas が要る) |
+| 加工 | `data/build/build_regions.py` → `data/derived/regions.json` | R38: 地域の 1 人あたり総生産 (2015 年の値段) の 10 年の伸びを初めの ln に当てた β 収束 (国 × 期間の固定効果。重ならない 10 年。統計の切れ目をまたぐ組は使わない) と、国を引き直すブートストラップ。参考に、国の中の地域の 90% 点 ÷ 10% 点。R39: labsh の国ごとの中央値の分布と、所得の 5 分位ごとの四分位範囲 |
+
+```sh
+python3 data/fetch/fetch_regions.py     # 生データを取り直す (約 18 MB)
+python3 data/build/build_regions.py     # 計算する (約 20 秒)
+python3 data/build/build_regions.py 地域のパネル.csv [労働分配率のパネル.csv]   # ゲームの R38・R39 を同じ式で
+```
+
+- **結果**: R38 年 1.82% (54 か国・2,190 組。ブートストラップの 5〜95% 点 1.35〜2.20%。統計の切れ目を気にしないと 1.96%)。R39 国ごとの中央値の 10・50・90% 点 0.384・0.549・0.690 (138 か国)。所得の分位ごとの中央値は 0.50〜0.56 で、所得とほとんど関係がない
+- **統計の切れ目**: DOSE の StructChange は、元のデータか地域の境が変わった年に 0 でない値をとる (Wenz ほか 2023 の Methods)。2015 年に 3 がつく国が多い (44 か国) ので、2010〜2020 年の組の多くは使っていない
+- **限界**: DOSE は国によって始まりの年が違い (中央値 1995 年)、地域の数も違う。labsh は国によって推計のしかたが違う (PWT の文書)。3 か国はどの年も同じ値 (推計で埋めた値とみられる) で、そのまま入れた
+
+出典: Wenz, L., Carr, R. D., Kögel, N., Kotz, M. & Kalkuhl, M. (2023) DOSE – Global data set of reported sub-national economic output, Scientific Data 10, 425・Feenstra, R. C., Inklaar, R. & Timmer, M. P. (2015) The Next Generation of the Penn World Table, American Economic Review 105(10), 3150–3182・Barro, R. J. & Sala-i-Martin, X. (1992) Convergence, Journal of Political Economy 100(2), 223–251
+
 ## 財政と金融のデータ (目標 R19〜R22)
 
 | 段 | 場所 | 中身 |

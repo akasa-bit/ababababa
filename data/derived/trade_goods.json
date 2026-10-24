@@ -1,0 +1,67 @@
+{
+ "source": "data/raw/trade_goods/baci_hs17_groups_2017_2019.csv.gz (CEPII BACI HS17 V202501) × data/raw/trade/ の距離 (CEPII Gravity V202211)",
+ "estimator": "data/build/gravity.py の elasticity (R01 の本推定と同じ: PPML、輸出国 × 年・輸入国 × 年の固定効果、ln 距離だけ、空の組は使わない)",
+ "years": [
+  2017,
+  2019
+ ],
+ "rows_without_distance": 5501,
+ "all_goods": {
+  "beta": -0.8418,
+  "rows": 84325
+ },
+ "goods": {
+  "food": {
+   "beta": -1.0875,
+   "rows": 62052,
+   "band": [
+    -1.3875,
+    -0.7875
+   ]
+  },
+  "fuel": {
+   "beta": -1.2514,
+   "rows": 29962,
+   "band": [
+    -1.5514,
+    -0.9514
+   ]
+  },
+  "metal": {
+   "beta": -1.0603,
+   "rows": 40593,
+   "band": [
+    -1.3603,
+    -0.7603
+   ]
+  },
+  "goods": {
+   "beta": -0.8188,
+   "rows": 80035,
+   "band": [
+    -1.1188,
+    -0.5188
+   ]
+  },
+  "rare": {
+   "beta": -0.4841,
+   "rows": 5188,
+   "band": null
+  },
+  "water": {
+   "beta": -1.8857,
+   "rows": 13467,
+   "band": null
+  }
+ },
+ "share": {
+  "food": 0.0896,
+  "fuel": 0.1274,
+  "goods": 0.6857,
+  "metal": 0.0591,
+  "other": 0.0358,
+  "rare": 0.0021,
+  "water": 0.0002
+ },
+ "band_rule": "R01 と同じ: 品ごとの推定値との差 0.3 以内"
+}
