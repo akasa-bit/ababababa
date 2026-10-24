@@ -1,10 +1,17 @@
   // --- 調査と先住民 ---
-  // 先住民の有無・文明は天体観測で入植前から分かる (直接の接触は入植地か艦隊が到達したとき)
-  isSurveyed() { return true; }
+  // 先住民が分かるのは、接触 (入植地か艦隊・入植船が到達したとき) の知らせが光速で届いてから。ただし情報時代の先住民 (tech 3) は電波を出しているので、
+  // 接触の前から分かる (回 KE3・B-170。前は、どの先住民も天体観測で入植前から分かるとしていた: docs/research/game-physics-audit.md の 2.8 k。
+  // 石器時代の文明を数十光年先の望遠鏡で見分けるのは無理)。viewer = 見ている星系 (既定は、いま操作しているプレイヤーの首都)
+  isSurveyed(sysId, viewer = this.cap) {
+    if (this.spectate || this.system(sysId)?.bodies.some((b) => b.natives?.tech >= 3)) return true;
+    const at = this.surveyAt?.[sysId] ?? (this.contacted(sysId) ? -Infinity : undefined);
+    return at !== undefined && at + this.sysDist(viewer, sysId) <= this.year;
+  }
   contacted(sysId) { return this.surveyed.includes(sysId); }
   survey(sysId) {
     if (this.contacted(sysId)) return;
     this.surveyed.push(sysId);
+    (this.surveyAt ??= {})[sysId] = this.year; // 接触した年 (知らせが光速で広がる。isSurveyed)
     for (const b of this.system(sysId).bodies) {
       if (b.natives) this.event('natives', sysId, `${b.name} で先住民「${b.natives.species}」(${TECH_LABEL[b.natives.tech]}) と接触した`);
     }
@@ -127,7 +134,8 @@
       const sources = this.colonizedSystems()
         .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !this.tradeBlocked(sysId, s.id) && (onlyFrom === undefined || s.id === onlyFrom))
         // 取り寄せ元に残す量: 前の版は 1 年分の需要。市場のある版は、目標の在庫の厚さぶん (それより多くは、値段で売る。bulkPrice)
-        .map((s) => ({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id), spare: this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) * (MARKET.buy ? MARKET.cover[r] : 1) }))
+        // 取り寄せ元は、光の遅れのぶん古い記録で余りが見える星系から選ぶ (回 KE3)。送れる量は、いまの在庫が上限 (取り寄せの注文が届くまでの遅れは、まだ入れていない)
+        .map((s) => ({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id), spare: Math.min(this.spareSeen(sysId, s.id, r), this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) * (MARKET.buy ? MARKET.cover[r] : 1)) }))
         .filter((x) => x.spare > 0)
         .sort((a, b) => a.d - b.d);
       for (const x of sources) {

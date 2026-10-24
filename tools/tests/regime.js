@@ -48,8 +48,9 @@ const { chromium } = require('playwright');
       res.regimes = [a, c, e].map((x) => g.regimeOf(g.govs[x]));
       // 冊封朝貢国 (実態で外交と任免を従属国が握る) は指令を受けない (統治体制の変更は受ける)
       g.pc = 100;
+      // 待つあいだに自治を認める出来事が起きることがある (シードによる。自治の拒否が先に出て、冊封朝貢国の拒否が見えない。回 KE3)。指令が届くまで自治を外しておく
       res.mandate = issue('mandate', { sys: c, value: 'develop' }).ok;
-      for (let i = 0; i < Math.ceil(g.lightDelay(c) * 4) + 4; i++) g.advance(0.25);
+      for (let i = 0; i < Math.ceil(g.lightDelay(c) * 4) + 4; i++) { delete g.govs[c].autonomy; g.advance(0.25); }
       res.dominionLog = g.log.filter((m) => /冊封朝貢国なので指令を受けない/.test(m.text || m.t || '')).length > 0 || JSON.stringify(g.log.slice(-40)).includes('冊封朝貢国なので');
       res.mandateNow = g.govs[c].mandate || 'balanced';
       // 強制労働の後遺症: 20 年で 0.4 前後

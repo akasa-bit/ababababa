@@ -96,6 +96,8 @@
 
 - EDITIONS.game.demoTotal (年齢つきの人口の合計は前の増え方のまま。台帳の C13。回 KE2)
 - 入植地の項目 c.age・c.tfr・c.ws (セーブの colonies にそのまま入る。回 KE2)
+- saveField: econIntel・refunds・surveyAt (経済。src/economy/market-consts.js。経済の記録・光速で届く途中の返金・先住民と接触した年。回 KE3)
+- 星系の政府の項目 gv.hm・gv.bl (家計と会社の借り。セーブの govs にそのまま入る。回 KE3)
 - saveField: cb (経済。src/economy/fiscal-consts.js。国ごとの中央銀行の状態: 物価の水準・見込み・政策金利の記録。回 KE1)
 
 ### 政治

@@ -44,8 +44,8 @@ function sheet() {
   for (const [key, v] of Object.entries(g.govs)) {
     const id = Number(key), r = R(g.realmOf(id));
     map[key] = g.realmOf(id);
-    r.hh.dep += v.hh || 0; r.hh.loan += v.hloan || 0;
-    r.fm.dep += v.fm || 0; r.fm.loan += v.loan || 0;
+    r.hh.dep += v.hh || 0; r.hh.loan += (v.hloan || 0) + (v.hm || 0); // hm・bl = 民間の信用 (回 KE3)
+    r.fm.dep += v.fm || 0; r.fm.loan += (v.loan || 0) + (v.bl || 0);
     r.gov.dep += Math.max(0, v.credits); r.gov.loan += Math.max(0, -v.credits); r.gov.bond += v.bond || 0;
   }
   for (const [key, st] of Object.entries(g.natives)) { const r = R(natRealm(key)); r.nat.dep += st.cr || 0; r.nat.loan += st.loan || 0; map[key] = natRealm(key); }
@@ -54,6 +54,7 @@ function sheet() {
   for (const d of g.decisions) way += d.cr || 0;
   for (const s of g.ships) way += s.seed || 0;
   for (const j of g.projects) way += j.seed || 0;
+  for (const r of g.refunds || []) way += r.v || 0; // 光速で届く途中の返金 (回 KE3)
   const net = {};
   for (const [realm, r] of Object.entries(S)) net[realm] = Object.fromEntries(SECTORS.map((k) => [k, r[k].dep - r[k].loan - (r[k].bond || 0)]));
   return { S, net, way, map: JSON.stringify(map) };

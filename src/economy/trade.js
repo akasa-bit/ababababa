@@ -3,6 +3,8 @@
   // 2) 要求が届いた星系が、交易路を乗り継いで荷を送る。交易路の輸送量が足りなければ待機して少しずつ送る
   // 受け手の目標 = 需要 × (2年 + 要求の往復と航行の年数)。輸送中の荷と未処理の要求も数え、備蓄上限の8割は超えない。
   trade(h, flow) {
+    this.refundsArrive(); // 光速で届いた返金 (回 KE3)
+    this.recordEconIntel(flow); // 経済の記録 (econ-intel.js。買い手と移民の送り手は、光の遅れのぶん古い記録で相手を選ぶ)
     if (!this.routes.length) { for (const q of this.requests) if (q.kind === 'trade') this.refund(q); this.requests = this.requests.filter((q) => q.kind !== 'trade'); return; }
     // 輸送中の量は毎回、貨物から数え直す (足し引きの積み重ねだと、読み込み直したゲームと最後の桁がずれて結果が分かれるので)
     this.rebuildTransit();
@@ -10,7 +12,7 @@
     const room = new Map();
     for (const r of this.routes) { const c = this.routeCap(r) * h; room.set(r.id * 2, c); room.set(r.id * 2 + 1, c); }
     const sent = new Map();
-    const spareOf = (id, res) => this.stockOf(id)[res] - 2 * (flow[id]?.cons[res] || 0);
+    const spareOf = (id, res) => this.stockOf(id)[res] - 2 * (flow[id]?.cons[res] || 0); // 送り手が自分の在庫を見るとき
     // 届いた要求を処理する
     for (const q of this.requests) {
       if (q.kind !== 'trade' || q.arrive > this.year) continue;
@@ -108,7 +110,7 @@
           if (pendingPair.has(kpair)) continue;
           if (blocked(T, S)) continue; // 交戦中の国どうしでは取引しない (開戦を知ってから)
           const kp = sysRes(S, res);
-          const avail = spareOf(S, res) - (promised.get(kp) || 0);
+          const avail = this.spareSeen(T, S, res) - (promised.get(kp) || 0); // 買い手に届いている売り手の余り (回 KE3。前はいまの余り)
           if (avail <= min) continue;
           const w = avail * GM.pow((this.tradePrice(S, res, dist[S], rate) * (1 + this.tariffFor(T, S))) / PRICE[res], -TRADE.sigma); // 値段の安い売り手ほど多く買う。関税のぶん、ほかの国の売り手は高く見える
           const lead = dist[S] + this.travelYears(T, S);
@@ -141,10 +143,27 @@
       for (const dir of [0, 1]) r.vol[dir] += ((sent.get(r.id * 2 + dir) || 0) / h - r.vol[dir]) * Math.min(1, h);
     }
   }
-  // 取り消した物資移送要求の先払いを、受け手に返す (返金は光速で届くが、簡単のためすぐ返す)
+  // 取り消した物資移送要求の先払いを、受け手に返す。返金は送り手 (q.to) から光速で届く (回 KE3・B-170。前はすぐ返していた)。
+  // 届くまでは運ぶ途中のお金 (this.refunds の v)。届いたら refundsArrive で受け手の会社 (前の版は政府) へ
   refund(q) {
-    if (q.pre > 0) { if (MARKET.buy) { const v = q.pre; this.cash('import', -v, { way: q, f: 'pre' }); this.cash('import', v, { fm: q.from }); } else this.release('import', q, 'pre', q.from, q.from); }
+    if (q.pre > 0) {
+      const r = { to: q.from, from: q.to, v: 0, at: this.year + this.sysDist(q.to, q.from) };
+      const v = q.pre;
+      this.cash('import', -v, { way: q, f: 'pre' });
+      this.cash('import', v, { way: r, f: 'v' });
+      this.refunds.push(r);
+    }
     q.amt = 0;
+  }
+  refundsArrive() {
+    if (!this.refunds.length) return;
+    const left = [];
+    for (const r of this.refunds) {
+      if (r.at > this.year) { left.push(r); continue; }
+      const v = r.v;
+      if (MARKET.buy) { this.cash('import', -v, { way: r, f: 'v' }); this.cash('import', v, { fm: r.to }); } else this.release('import', r, 'v', r.to, r.to);
+    }
+    this.refunds = left;
   }
   // 貨物を積み出す。path は経由する星系の列、times は各星系に着く年
   shipCargo(from, legs, res, amt) {
