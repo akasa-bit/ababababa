@@ -7,7 +7,7 @@
 //   revenue     = 税 (所得への税・消費税・関税) + 先住民からの収入 + 預金の利子
 //   expenditure = revenue − 政府の純貸出 (国の政府の資金の増加。国の中の朝貢・資金援助・交易は差し引きで消える)
 //   debtgdp     = 政府の総債務 (国債の残高の合計。資金がマイナスの政府があれば、そのマイナス分も) ÷ gdp
-//   tloans      = 国の星系の会社 (在庫の分) と家計と先住民の、銀行からの借り
+//   tloans      = 国の星系の会社 (在庫の分と設備の借り bl) と家計 (住宅などの借り hm を含む) と先住民の、銀行からの借り
 //   ltrate      = 国の長期の国債の利回り [%/年] (政府ごとの longYield を国債の額で重みをつけた平均。国債がなければ首都の値)。中央銀行のない前の版は国の利子率
 //   stir        = 国の政策金利 [%/年] (首都の中央銀行。回 KE1)。前の版は ltrate と同じ
 //   cpi         = 国の物価の指数 (cpiOf。前の版は 1)
@@ -66,7 +66,7 @@ function play(seed) {
       R.debt += (gv.bond || 0) + Math.max(0, -gv.credits);
       if (g.longYield && gv.bond > 0) { R.yl += g.longYield(id) * gv.bond; R.bonds += gv.bond; }
       if (g.inflOf) R.infl += g.inflOf(id) * ((gv.bond || 0) - Math.max(0, gv.credits)); // 名目の利子のうち物価の目減りを埋める分 (払う − 受け取る)
-      R.tloans += (gv.loan || 0) + (gv.hloan || 0);
+      R.tloans += (gv.loan || 0) + (gv.hloan || 0) + (gv.hm || 0) + (gv.bl || 0); // hm・bl = 民間の信用 (回 KE3)
       R.pop += g.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
     }
     for (const [key, st] of Object.entries(g.natives)) {

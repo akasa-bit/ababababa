@@ -18,7 +18,7 @@ if (require.main !== module) return;
 const path = require('path');
 const H = require(path.resolve(__dirname, '..', 'headless'));
 const [seed = '5', years = '150', nations = '0'] = process.argv.slice(2);
-const KINDS = ['tax', 'natives', 'upkeep', 'build', 'trade', 'import', 'tribute', 'grant', 'treaty', 'interest', 'welfare', 'security', 'military', 'public', 'wages', 'spend', 'ctax', 'tariff', 'default', 'pension', 'health'];
+const KINDS = ['tax', 'natives', 'upkeep', 'build', 'trade', 'import', 'tribute', 'grant', 'treaty', 'interest', 'welfare', 'security', 'military', 'public', 'wages', 'spend', 'ctax', 'tariff', 'default', 'pension', 'health', 'housing'];
 const sim = H.load(process.env.HTML ? { src: process.env.HTML } : {});
 const g = sim.newGame(seed, { nations: Number(nations) });
 const holdings = () => {
@@ -26,8 +26,8 @@ const holdings = () => {
   let loan = 0;
   for (const v of Object.values(g.govs)) {
     h.gov += (v.credits || 0) - (v.bond || 0); loan += v.bond || 0; if (v.bond < 0) h.bad = true;
-    h.hh += (v.hh || 0) - (v.hloan || 0); loan += v.hloan || 0; if (v.hh < 0 || v.hloan < 0) h.bad = true;
-    h.fm += (v.fm || 0) - (v.loan || 0); loan += v.loan || 0; if (v.fm < 0 || v.loan < 0) h.bad = true;
+    h.hh += (v.hh || 0) - (v.hloan || 0) - (v.hm || 0); loan += (v.hloan || 0) + (v.hm || 0); if (v.hh < 0 || v.hloan < 0 || v.hm < 0) h.bad = true;
+    h.fm += (v.fm || 0) - (v.loan || 0) - (v.bl || 0); loan += (v.loan || 0) + (v.bl || 0); if (v.fm < 0 || v.loan < 0 || v.bl < 0) h.bad = true;
     if (v.pv !== undefined) h.bad = true; // 前の版の帳簿が残っていない
   }
   for (const st of Object.values(g.natives)) { h.nat += (st.cr || 0) - (st.loan || 0); loan += st.loan || 0; if (st.cr < 0 || st.loan < 0) h.bad = true; }
@@ -36,6 +36,7 @@ const holdings = () => {
   for (const d of g.decisions) h.way += d.cr || 0;
   for (const s of g.ships) h.way += s.seed || 0;
   for (const j of g.projects) h.way += j.seed || 0;
+  for (const r of g.refunds || []) h.way += r.v || 0; // 光速で届く途中の返金 (回 KE3)
   return h;
 };
 let worst = 0, worstAt = '', worstAcct = 0, worstAcctAt = '', worstKind = 0, worstKindAt = '', bad = new Set(), through = 0;

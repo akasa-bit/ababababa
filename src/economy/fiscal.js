@@ -13,6 +13,7 @@
     }
     this.ageSpendStep(h); // 年金と医療 (demography.js。回 KE2)
     this.cbStep(h); // 中央銀行・物価・利回り (central-bank.js)
+    this.creditStep(h); // 民間の信用 (回 KE3)
     this.interestStep(h);
     this.debtStep(h);
   }
@@ -74,6 +75,22 @@
       gv.c0 = gv.credits;
     }
   }
+  // 民間の信用 (LOANS)。入植している星系ごとに、家計と会社が GDP (ならした値) に比べて新しく借り、残高に比べて返す。
+  // 借りる・返すは銀行が預金を作る・消すだけなので、家計と会社の純額 (手持ち − 借り) は変わらない (お金の試験の出入りに載せない)。
+  // 家計が借りた分で住宅を買う代金 (housing) だけが、家計から会社への出入り
+  creditStep(h) {
+    for (const key of Object.keys(this.govs)) {
+      const id = Number(key), gv = this.govs[key], y = gv.fr?.y || 0;
+      if (!this.isColonized(id) || !(y > 0)) continue;
+      const nh = (LOANS.hh.stock / LOANS.hh.years) * y * h, rh = (gv.hm || 0) * Math.min(1, h / LOANS.hh.years);
+      bankMove(gv, 'hh', nh - rh, 'hloan');
+      gv.hm = (gv.hm || 0) + nh - rh;
+      if (nh > 0) { this.cash('housing', -nh, { hh: id }); this.cash('housing', nh, { fm: id }); }
+      const nf = (LOANS.fm.stock / LOANS.fm.years) * y * h, rf = (gv.bl || 0) * Math.min(1, h / LOANS.fm.years);
+      bankMove(gv, 'fm', nf - rf);
+      gv.bl = (gv.bl || 0) + nf - rf;
+    }
+  }
   // 使える資金 = 手元の資金 + 国債で借りられる額。人間が動かしていない政府は、国債 ÷ GDP が DEBT.limit になるまで借りられる。
   // 人間が動かす首都は、財政で選んだ赤字の上限 (この 1 年に出した国債を除く) まで。足りない分の国債は、刻みの終わりに出す (debtStep)
   funds(id) {
@@ -94,6 +111,8 @@
       const id = Number(key), gv = this.govs[key];
       if (gv.loan > 0) { const x = gv.loan * this.rateAt(id) * h; debtors.push([{ fm: id }, x]); paid += x; }
       if (gv.hloan > 0) { const x = gv.hloan * this.rateAt(id) * h; debtors.push([{ hh: id }, x]); paid += x; }
+      if (gv.hm > 0) { const x = gv.hm * this.rateAt(id) * h; debtors.push([{ hh: id }, x]); paid += x; } // 民間の信用 (回 KE3)
+      if (gv.bl > 0) { const x = gv.bl * this.rateAt(id) * h; debtors.push([{ fm: id }, x]); paid += x; }
       if (gv.bond > 0) { const x = gv.bond * this.bondRate(id) * h; debtors.push([{ gov: id }, x]); paid += x; gv.bondPaid = (gv.bondPaid || 0) + x; }
       if (gv.credits > 0) { deposits.push([{ gov: id }, gv.credits, id]); held += gv.credits; }
       if (gv.hh > 0) { deposits.push([{ hh: id }, gv.hh]); held += gv.hh; }

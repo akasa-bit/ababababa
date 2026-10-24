@@ -241,6 +241,8 @@
    0.295
   ],
   "cash_countries": 30,
+  "loans_hh": 0.214,
+  "loans_fm": 0.26,
   "tp": -0.0004,
   "credit": 0.0175,
   "dmax": 1.3821,

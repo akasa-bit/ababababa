@@ -25,7 +25,7 @@
 ゲームの国債の値 (params。src/economy/fiscal-consts.js の DEBT に写す): 財政の反応の式の係数 (国ごとの最小二乗の中央値)・
   景気のずれの範囲 (HP フィルターのずれの 1%〜99% 点)・借りられる上限 (debtgdp の国ごとの中央値の中央値 = R21 の estimate。国ごとの 90% 点の中央値 limit_p90 では、ゲームの R21 が 1.13 と幅を超えた)・
   手元に置く資金 (Eurostat の一般政府の現金・預金 ÷ 総収入の、国ごとの中央値の中央値。単位は年)。
-  中央銀行・利回り・不履行の値 (CB の tp・credit・dmax・gap。money_params。回 KE1)
+  中央銀行・利回り・不履行の値 (CB の tp・credit・dmax・gap。money_params。回 KE1)。民間の信用の家計と会社の分け方 (LOANS の stock。回 KE3)
 幅の決め方 (ゲームの結果を見る前に決めた): 現実の国ごとの値の 10%〜90% 点。ゲームは、銀河ごと・国ごとの値の中央値がこの幅に入れば合格。
 
 使い方:
@@ -132,7 +132,11 @@ def money_params(jst):
         y = np.log(d['rgdpbarro'].where(d['rgdpbarro'] > 0).dropna().to_numpy(float))
         if len(y) >= 30:
             dev += list(np.diff(y) - np.diff(hp_trend(y)))
-    return {'tp': r(np.median(ab[:, 1])), 'credit': r(np.median(ab[:, 0])), 'dmax': r(jst.groupby('country')['debtgdp'].max().median()),
+    # 民間の信用 (R22) の家計と会社の割合 (回 KE3): 国ごとの thh ÷ gdp・tbus ÷ gdp の中央値の中央値の比で、tloans ÷ gdp の中央値の中央値 (R22 の estimate) を分ける
+    med = lambda k: float((jst[k] / jst['gdp']).groupby(jst['country']).median().median())
+    hh, bus, tot = med('thh'), med('tbus'), med('tloans')
+    return {'loans_hh': r(tot * hh / (hh + bus)), 'loans_fm': r(tot * bus / (hh + bus)),
+            'tp': r(np.median(ab[:, 1])), 'credit': r(np.median(ab[:, 0])), 'dmax': r(jst.groupby('country')['debtgdp'].max().median()),
             'speed_gap': [r(np.percentile(dev, 1)), r(np.percentile(dev, 99))]}
 
 def summary(name, per, rows):

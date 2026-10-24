@@ -70,3 +70,21 @@ const ABSORB = new Set(['consume', 'use', 'burn', 'build', 'ship', 'supply']); /
 const sharesOf = (focus) => { const f = FOCUS[focus] || FOCUS.balanced; return { farm: f.farm, mine: f.mine, ind: f.ind, serv: 0, home: 0 }; };
 const zeroRes = () => { const o = {}; for (const r of RES) o[r] = 0; return o; };
 const colKey = (c) => `${c.sys}|${c.body}|${c.kind}`;
+// 経済の記録 (回 KE3・B-170。docs/structure.md の 8): 星系ごとに 1 年に 1 回、資源ごとの余り (在庫 − 2 年分の消費) と、入植地ごとの移民の受け入れ (食べ物と水が足りているか・空き) を記録する。
+// 交易の買い手・移民の送り手は、光の遅れのぶん古い記録で相手を選ぶ (econSeen)。前は遠い星系のいまの在庫や空きを見ていた (光より速い。docs/research/game-physics-audit.md の 2.8 e)。
+// { y: 最後に記録した年, s: { [星系]: [[年, [資源ごとの余り (RES の順)], { [入植地の鍵]: [受け入れられるか 0/1, 空き] }], …] } }。
+// 値は 3 桁に丸める (セーブを小さくする)。いちばん遠い 2 つの星系の距離より古い記録は捨てる
+saveField('econIntel', (game) => (Object.keys(game.econIntel.s).length ? game.econIntel : undefined), {
+  init: (game) => { game.econIntel = { y: -Infinity, s: {} }; },
+  read: (game, d) => { const o = d.econIntel; game.econIntel = o && typeof o === 'object' && o.s && typeof o.s === 'object' ? { y: Number.isFinite(o.y) ? o.y : -Infinity, s: o.s } : { y: -Infinity, s: {} }; },
+});
+// 光速で届く途中の返金 (回 KE3。trade.js の refund): [{ to: 受け手, from: 送り手, v: 額, at: 届く年 }]。なければ書かない
+saveField('refunds', (game) => (game.refunds.length ? game.refunds : undefined), {
+  init: (game) => { game.refunds = []; },
+  read: (game, d) => { game.refunds = Array.isArray(d.refunds) ? d.refunds.filter((r) => r && Number.isFinite(r.v) && Number.isFinite(r.at)) : []; },
+});
+// 先住民と接触した年 { [星系]: 年 } (回 KE3。colonize.js の isSurveyed。接触の知らせは光速で広がる)。前の版のセーブ (項目がない) は、接触ずみの星系をずっと前から知っていたとして読む
+saveField('surveyAt', (game) => (game.surveyAt && Object.keys(game.surveyAt).length ? game.surveyAt : undefined), {
+  init: (game) => { game.surveyAt = {}; },
+  read: (game, d) => { game.surveyAt = d.surveyAt && typeof d.surveyAt === 'object' ? Object.fromEntries(Object.entries(d.surveyAt).filter(([, v]) => Number.isFinite(v))) : {}; },
+});

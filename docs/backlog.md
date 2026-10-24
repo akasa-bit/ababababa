@@ -8,7 +8,7 @@
 | 番号 | 中身 | 触るコードの場所 | 依存 | 大きさ | 新しいレーン案 | 出どころ |
 |---|---|---|---|---|---|---|
 | B-001 | **済み (#218。回 KE1)** 全部門の帳簿 (家計・会社・銀行・中央銀行・政府・ほかの国) を作り、全取引と貸借の表が毎年 0 になる試験にする。国の物価指数とインフレ、政策金利 → 利回りの期間構造、国債の信用の危険と不履行、利子率の手段を中央銀行へ。値段の水準に錨を付ける (船の費用と物価の連動) | `gv.hh`・`gv.fm`・`bankMove`・`interestStep`・`debtStep`・`DEBT`・`PRICE`・`MARKET`・`tools/tests/money.js` | — | L | 経済 | `sessions.md` の 21・`econ-policy.md` の 7 の 3・`econ-policy-list.md` の 4・`status/C.md` の次にやること 2 と C の 6 |
-| B-002 | R22 (民間の信用) を合格にする: 会社の設備投資の借りと、家計の住宅の借りを入れる | `gv.fm`・`gv.hh`・`FACILITY`・`bankMove` | B-001 | M | 経済 | `status/C.md` のいまの数・`structure.md` の 7.1・`debt.md` (C-15 の b) |
+| B-002 | **済み (#232。回 KE3。R22 0.347)** R22 (民間の信用) を合格にする: 会社の設備投資の借りと、家計の住宅の借りを入れる | `gv.fm`・`gv.hh`・`FACILITY`・`bankMove` | B-001 | M | 経済 | `status/C.md` のいまの数・`structure.md` の 7.1・`debt.md` (C-15 の b) |
 | B-003 | **済み (#218。回 KE1。R28 0.045)** R28 (財政の反応、0.082) を幅に戻す。国債の上限・手元の資金と、Bohn の式の当て方 (GDP の傾向のならし方・小さな国) を見直す | `DEBT` (`limit`・`cash`・`trend`)・`debtStep`・`funds` | B-001 と同じ回 | M | 経済 | `status/C.md` の次にやること 1・`debt.md` |
 | B-004 | R11 (研究の生産性、−2.51) を幅に入れる。研究者の増え方 (研究開発費 ÷ GDP が所得で上がる形。WDI GB.XPD.RSDV.GD.ZS) | `RESEARCH`・`researchStep`・`STRUCTURE` | C の 4 (C-22 で「そのまま」。決め直し) | S | 経済 | `status/C.md` の次にやること 1 と C の 4・`structure.md` の 5 |
 | B-005 | R10・R25・R26 の不合格の直し。C-22 で入れないと決めた 3 (部門の間の賃金の差)・5 (倉の上限か、測り方を合計 ÷ 合計に。閉じた #171)・7 (会社の在庫の目標) を、やるなら入れる | `STRUCTURE`・`laborStep`・`MARKET.cover`・`stockCap`・`targets/targets.json` | C の 3・5・7 の決め直し | M | 経済 | `status/C.md` の次にやること 3 と C の 3・5・7・`structure.md` の 6 |
@@ -56,7 +56,7 @@
 | B-031 | 戦争の多さ (R29) を今の main (C-22 と P6 のあと) で 30 以上の銀河で測り直す。R14 (確認用。条約 7 割) を直すか決める | `BARGAIN.declareChance`・`warsYearly`・`tools/wars-headless.js` | — | S | 船と戦争 | `status/A.md` の次にやること 1・`game-plan.md` の 5 (R14) |
 | B-167 | 光の遅れの残り: 戦争疲弊は損失の知らせが首都に届いてから増える・講和会議の条件は会議を開いた星系に届いた記録で・AI どうしの講和の交渉は申し入れと答えが光速で行き来してから | `exhaust`・`treatyTerms`・`bargain`・`realmsYearly` | B-030 | M | 船と戦争 | 回 FU2 の残り (`status/FU.md`)・`research/game-physics-audit.md` の 2.8 の c・f。**済み (回 FU4)** |
 | B-169 | 光より速い残り (船): 防衛の穴を数えるときに敵の艦隊も「向かっている」に入る (2.8 g)・宇宙の途中や入植していない星系から出る艦隊を首都のレーザーが一瞬で押す (2.8 m) | `incoming`・`pushFleet`・`bookShip` | B-167 | S | 船と戦争 | `research/game-physics-audit.md` の 2.8 の g・m |
-| B-170 | 光より速い残り (経済): 交易と資材の手配・移民が相手のいまの在庫や空きを見る、受け手が出発の時点で減速のエネルギーを払う (2.8 e)・取り消した要求の返金がすぐ (2.8 h)・先住民が接触の前から分かる (2.8 k) | `spareOf`・`procureFrom`・`migrate`・`isSurveyed` | — | M | 経済 | `research/game-physics-audit.md` の 2.8 の e・h・k |
+| B-170 | **済み (#232。回 KE3。減速のエネルギーの分は船と戦争に頼んだ)** 光より速い残り (経済): 交易と資材の手配・移民が相手のいまの在庫や空きを見る、受け手が出発の時点で減速のエネルギーを払う (2.8 e)・取り消した要求の返金がすぐ (2.8 h)・先住民が接触の前から分かる (2.8 k) | `spareOf`・`procureFrom`・`migrate`・`isSurveyed` | — | M | 経済 | `research/game-physics-audit.md` の 2.8 の e・h・k |
 | B-171 | 光より速い残り (政治と画面): 視察団・医療団が光速で届く (2.8 j。人は光より遅い)・星系の画面の惑星の位置がいまの位相 (2.8 l)・政治の表の相手の戦争疲弊がいまの値 | `inspect`・`SystemView`・`politics-ui.js` | — | S | 政治・画面と最初の体験 | `research/game-physics-audit.md` の 2.8 の j・l・回 FU4。**政治の分は済み (#226)。星系の画面の位相は GA へ** |
 | B-168 | 試合の中で艦隊戦が起きるようにする: 守りのある星系も勝つ見込みが十分なら攻める・攻められた国が艦隊を差し向ける・艦隊をまとめてから攻める。試合の中の艦隊戦で R16 を測る | `realmsYearly`・`aiOrder`・`battleOdds`・`tools/wars-headless.js` | B-034 | M | 船と戦争 | 回 FU2 の残り (`status/FU.md`。4 銀河 × 150 年で入植星系の艦隊戦が 0)。**済み (回 FU5)** |
 | B-032 | 試遊で「AI が弱い・強い」と言われたら、難易度の値を見直す | `HANDICAP` | B-063 | S | 船と戦争 | `status/A.md` の次にやること 3・`game-plan.md` の 4 の C11 |

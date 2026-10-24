@@ -73,3 +73,11 @@ saveField('cb', (game) => (Object.keys(game.cb).length ? game.cb : undefined), {
   init: (game) => { game.cb = {}; },
   read: (game, d) => { game.cb = d.cb && typeof d.cb === 'object' ? Object.fromEntries(Object.entries(d.cb).filter(([, s]) => s && Number.isFinite(s.P) && Number.isFinite(s.i) && Array.isArray(s.h))) : {}; },
 });
+// 民間の信用 (回 KE3・B-002。目標 R22。docs/debt.md の 7)。家計の借り (住宅など。gv.hm) と会社の借り (設備投資など。gv.bl) を、預金と差し引かない残高として持つ
+// (前は家計と会社の手持ちと借りを差し引いた 1 つの値だったので、預金と借りを同時に持てず、R22 が 0 だった)。
+// 毎年 GDP の stock ÷ years を新しく借り、残高の 1 ÷ years を返す。定常では残高 ÷ GDP = stock (伸びる星系ではそれより低い)。
+//   stock = JST R6 の 18 か国の民間の信用 ÷ GDP の中央値の中央値 (0.474) を、家計 (thh) と会社 (tbus) の中央値の比で分けた値 (data/build/analyze_fiscal.py の params の loans_hh・loans_fm)
+//   years = 返す年数 (家計 15 年: 住宅ローンと消費者の借りの間、会社 5 年。仮の値)
+//   家計は借りた分で会社から住宅を買う (housing。会社の売上になり、賃金として家計に戻る)。会社は借りた分を設備に使う (会社の手持ちになり、賃金として家計に戻る)。
+//   どちらも利子は、その星系の実質の利子率 (rateAt) で払う
+const LOANS = { hh: { stock: 0.214, years: 15 }, fm: { stock: 0.26, years: 5 } };
