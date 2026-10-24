@@ -223,8 +223,8 @@ node tools/build.mjs
 
 | 段 | 場所 | 中身 |
 |---|---|---|
-| 取得 | `data/fetch/fetch_hcap.py` → `data/raw/hcap/` | 世界銀行 Education Statistics (EdStats) の API: BAR.SCHL.25UP (25 歳以上の平均の就学年数)・BAR.SCHL.2529 (25〜29 歳)。Barro–Lee の推計 (Barro & Lee 2013) の写し。国だけ。取得日・URL・SHA-256・行数を `MANIFEST.json` に記録する。所得は R61 と同じ `data/raw/tech/` の NY.GDP.PCAP.PP.KD |
-| 加工 | `data/build/build_hcap.py` → `data/derived/hcap.json` | 所得の 5 分位ごとの就学年数の 25%〜75% 点 (R62)・10 年の伸びの、初めの就学年数の区分ごとの 25%〜75% 点 (R63)・ゲームの若い世代の就学年数の曲線 (25〜29 歳の就学年数 = 14 ÷ (1 + exp(−(a + b ln y)))。所得は 2021 年のドル ÷ 1.21 で 2011 年のドルに) |
+| 取得 | `data/fetch/fetch_hcap.py` → `data/raw/hcap/` | 世界銀行 Education Statistics (EdStats) の API: BAR.SCHL.25UP (25 歳以上の平均の就学年数)・BAR.SCHL.2529 (25〜29 歳) (`edstats_bl.csv.gz`)、5 歳ごとの区分 BAR.SCHL.2529〜BAR.SCHL.75UP (`edstats_age.csv.gz`)、SE.XPD.TOTL.GD.ZS (政府の教育の支出 ÷ GDP。UNESCO 統計研究所。`edstats_spend.csv.gz`)。Barro–Lee の推計 (Barro & Lee 2013) の写し。国だけ。取得日・URL・SHA-256・行数を `MANIFEST.json` に記録する。所得は R61 と同じ `data/raw/tech/` の NY.GDP.PCAP.PP.KD |
+| 加工 | `data/build/build_hcap.py` → `data/derived/hcap.json` | 所得の 5 分位ごとの就学年数の 25%〜75% 点 (R62)・10 年の伸びの、初めの就学年数の区分ごとの 25%〜75% 点 (R63)・ゲームの係数 (game): 若い世代の就学年数の曲線 (25〜29 歳の就学年数 = 14 ÷ (1 + exp(−(a + b ln y)))。所得は 2021 年のドル ÷ 1.21 で 2011 年のドルに)、教育の支出の効き方 (spend)、始めの年齢ごとの就学年数の形 (cohort) |
 
 ```sh
 python3 data/fetch/fetch_hcap.py     # 生データを取り直す
@@ -234,4 +234,5 @@ python3 data/build/build_hcap.py ゲームのパネル.csv   # ゲームの R62�
 
 - **結果**: R62 は 141 か国・702 国・年 (1990〜2010 年の 5 年ごと)。就学年数の中央値は所得の低い分位から 3.06・5.49・7.23・9.30・9.91 年。R63 は 144 か国・720 組 (1960〜2010 年)。伸びの中央値は初めの就学年数の低い区分から 0.053・0.098・0.118・0.114・0.110・0.066 年/年。若い世代の曲線は logit = −5.883 + 0.711 ln y (R² 0.59。200 ドルで 1.5 年、5,000 ドルで 7.6 年、60,000 ドルで 12.2 年)
 - **限界**: 世界銀行の写しは 2010 年まで (Barro–Lee の元の表は 2015 年まで)。就学年数は学校に通った長さで、学んだ中身 (学力) は数えない。国の中の差 (地域・階層) は見ない
+- **ゲームの係数** (回 KE5・B-117。目標ではない): 教育の支出 ÷ GDP が 1% 高いと、25〜29 歳の就学年数の logit が 0.059 高い (ln y と一緒に当てた。131 か国・488 組。国を引き直す 5%〜95% 点 0.027〜0.126)。年齢ごとの就学年数は、年上の区分ほど学校を出たころの所得が年 4.5% ずつ低かったとみると、5 歳ごとの区分 (7,722 組) をよく再現する
 - **元の頁**: Barro–Lee の頁 (barrolee.github.io) の表は「All rights reserved」(引用すれば使ってよい) なので、生データは CC BY 4.0 の世界銀行の写しから取った

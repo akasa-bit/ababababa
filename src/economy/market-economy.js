@@ -47,7 +47,7 @@
   payFrom(kind, v, sys) { if (MARKET.buy) this.cash(kind, v, { fm: sys }); else this.earn(kind, v, sys); }
   // 1 人 (人口の単位) あたりの年の産出。sector = farm (食料)・mine (資源 r)・ind (低付加価値物品)・hi (高付加価値物品。回 KE5)
   yieldOf(c, sector, r) {
-    const k = (this.productivity || 1) * STRUCTURE.modern * this.techA(c.sys, sector) * this.laborK(c); // 開始時に選ぶ生産性 × 物差しの倍率 × 国の技術の水準 × 働き手の倍率 (回 KE2)
+    const k = (this.productivity || 1) * STRUCTURE.modern * this.techA(c.sys, sector) * this.laborK(c) * (c.hk ?? 1); // 開始時に選ぶ生産性 × 物差しの倍率 × 国の技術の水準 × 働き手の倍率 (回 KE2) × 学歴 (回 KE5)
     if (sector === 'farm') return k * YIELD.farm * (1 + this.fertility(c)) * (1 + 0.25 * c.lv.farm);
     const tm = this.modsOf(c.sys);
     if (sector === 'ind') return k * YIELD.ind * (1 + 0.25 * c.lv.factory) * tm.ind;

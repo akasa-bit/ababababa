@@ -25,7 +25,7 @@ const H = require('./headless');
 
 const [out = 'fiscal-panel.csv', nS = '30', yS = '150', natS = '6', paramFile] = process.argv.slice(2);
 const params = paramFile ? JSON.parse(fs.readFileSync(paramFile, 'utf8')) : null;
-const GOV_BUY = new Set(['build', 'upkeep', 'welfare', 'security', 'military', 'public', 'health']); // 医療 (回 KE2) は政府が会社から買うので GDP に入る。年金は移転なので入れない
+const GOV_BUY = new Set(['build', 'upkeep', 'welfare', 'security', 'military', 'education', 'public', 'health']); // 医療 (回 KE2) は政府が会社から買うので GDP に入る。年金は移転なので入れない
 const REVENUE = new Set(['tax', 'ctax', 'tariff', 'natives', 'interest']);
 const VALUE = new Set(['extract', 'make', 'use', 'burn']);
 const sim = H.load({ params, ...(process.env.HTML ? { src: process.env.HTML } : {}) }); // HTML=… で別の版 (main など) を測れる // 1 回だけ読み込む (回している途中で src が書き換わっても、同じ版で回す)

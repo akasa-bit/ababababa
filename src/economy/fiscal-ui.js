@@ -43,7 +43,8 @@ function fiscalHtml(g) {
   const rule = (f.cb ?? 1) === 1, cbRate = g.cbRateAt(g.cap), cbs = g.cb[g.cap] || { pi: CB.pistar }; // 中央銀行 (回 KE1。画面から状態を作らない)
   const rows = Object.entries(BUDGET).map(([k, b]) => {
     const sh = f.budget?.[k] || 0;
-    return `<tr><td>${b.label}</td><td>${slider(k, BUDGET_RANGE, BUDGET_STEP, sh, 'pct0', b.label)}</td><td>${sh ? `${fmtAmt(sh * tax)} cr/年・効き目 ${pct(budgetEffect(sh * paid))}` : '<span class="muted">使わない</span>'}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
+    const eff = k === 'education' ? `教育の支出 GDP の ${g.eduSpendPct({ sys: g.cap }).toFixed(1)}%` : `効き目 ${pct(budgetEffect(sh * paid))}`; // 教育は budgetEffect でなく教育の支出 ÷ GDP で効く (回 KE5)
+    return `<tr><td>${b.label}</td><td>${slider(k, BUDGET_RANGE, BUDGET_STEP, sh, 'pct0', b.label)}</td><td>${sh ? `${fmtAmt(sh * tax)} cr/年・${eff}` : '<span class="muted">使わない</span>'}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
   }).join('');
   return `<h3>${ico('credits')}財政</h3>
     <p class="note">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・政策金利・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く${pend ? ` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>

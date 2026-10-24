@@ -38,7 +38,7 @@ check(rows.trade.every((r) => r.i !== r.j), '国の中の輸送が交易の表�
 
 // 3. GFS
 for (const r of rows.gfs) {
-  const ge = r.GF01 + r.GF02 + r.GF03 + r.GF04 + r.GF10 + r.GF0107 + r.GE_TR;
+  const ge = r.GF01 + r.GF02 + r.GF03 + r.GF04 + r.GF09 + r.GF10 + r.GF0107 + r.GE_TR;
   if (!near(r.GR, r.GR11 + r.GR13 + r.GR14) || !near(r.GR11, r.GR111 + r.GR114 + r.GR115) || !near(r.GE, ge) || !near(r.GNLB, r.GR - r.GE, r.GR, r.GE)) { fails.push(`GFS の恒等式が合わない (${r.year} 年 国 ${r.country})`); break; }
 }
 

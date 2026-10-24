@@ -10,6 +10,9 @@
       sys: sysId, body: bodyId, kind, founded: this.year, name, pop, focus: 'balanced',
       lv: LV0(), troops: 0, slaveTroops: 0, races: { [species]: 1 },
     });
+    // 入植者は、送り出した星系のいちばん大きい入植地の、年齢の区分ごとの就学年数を持って来る (よそ生まれ。回 KE5)。送り出した星系がなければ、所得の曲線で決める (schoolBy)
+    const from = lord !== null && lord !== undefined && lord !== sysId ? this.coloniesIn(lord).reduce((m, x) => (!m || x.pop > m.pop ? x : m), null) : null;
+    if (from) { const c = this.colonies[this.colonies.length - 1]; c.edu = { away: this.eduGroup(c, this.schoolAges(from)) }; }
     // 入植船が種のスウォームを持ちこむ (母星は 2300 年の割合から)
     if (fresh) this.govs[sysId].sw = this.isHome(sysId) ? [SWARM.home, START_YEAR] : [SWARM.seed, this.year];
     this.stockOf(sysId);
