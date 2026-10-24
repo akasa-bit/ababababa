@@ -1,0 +1,157 @@
+{
+ "source": "data/raw/hcap/edstats_bl.csv.gz (世界銀行 EdStats の Barro–Lee の推計 BAR.SCHL.25UP・BAR.SCHL.2529)・data/raw/tech/wdi_tech.csv.gz (NY.GDP.PCAP.PP.KD)。計算は data/build/build_hcap.py",
+ "countries": 141,
+ "country_years": 702,
+ "years": [
+  1990,
+  2010
+ ],
+ "by_income": [
+  {
+   "income": [
+    525,
+    3466
+   ],
+   "school": [
+    2.2,
+    4.09
+   ],
+   "median": 3.06,
+   "n": 141
+  },
+  {
+   "income": [
+    3466,
+    8590
+   ],
+   "school": [
+    4.098,
+    7.69
+   ],
+   "median": 5.485,
+   "n": 140
+  },
+  {
+   "income": [
+    8590,
+    15864
+   ],
+   "school": [
+    5.862,
+    9.062
+   ],
+   "median": 7.225,
+   "n": 140
+  },
+  {
+   "income": [
+    15864,
+    38123
+   ],
+   "school": [
+    8.045,
+    11.035
+   ],
+   "median": 9.3,
+   "n": 140
+  },
+  {
+   "income": [
+    38123,
+    132502
+   ],
+   "school": [
+    8.29,
+    11.03
+   ],
+   "median": 9.91,
+   "n": 141
+  }
+ ],
+ "growth_by_level": [
+  {
+   "school": [
+    0,
+    2
+   ],
+   "growth": [
+    0.03,
+    0.094
+   ],
+   "median": 0.053,
+   "n": 153
+  },
+  {
+   "school": [
+    2,
+    4
+   ],
+   "growth": [
+    0.069,
+    0.139
+   ],
+   "median": 0.098,
+   "n": 160
+  },
+  {
+   "school": [
+    4,
+    6
+   ],
+   "growth": [
+    0.08,
+    0.1625
+   ],
+   "median": 0.1185,
+   "n": 142
+  },
+  {
+   "school": [
+    6,
+    8
+   ],
+   "growth": [
+    0.0675,
+    0.165
+   ],
+   "median": 0.114,
+   "n": 119
+  },
+  {
+   "school": [
+    8,
+    10
+   ],
+   "growth": [
+    0.078,
+    0.154
+   ],
+   "median": 0.11,
+   "n": 97
+  },
+  {
+   "school": [
+    10,
+    null
+   ],
+   "growth": [
+    0.049,
+    0.09
+   ],
+   "median": 0.066,
+   "n": 49
+  }
+ ],
+ "growth_windows": 720,
+ "note": "所得は 2021 年の国際ドル。就学年数は 25 歳以上の平均 [年]。伸びは 10 年の差 ÷ 10 [年/年]",
+ "game": {
+  "young": [
+   -5.8827,
+   0.7112
+  ],
+  "top": 14.0,
+  "r2": 0.593,
+  "rows": 698,
+  "note": "young = SCHOOL の曲線。学校を出たばかりの世代 (25〜29 歳) の就学年数 = top / (1 + exp(−(a + b ln y)))、y は 2011 年の国際ドル"
+ }
+}
