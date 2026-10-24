@@ -71,7 +71,7 @@ python3 data/build/analyze_trade.py     # 推定する (numpy が要る。約 1 
 
 | 段 | 場所 | 中身 |
 |---|---|---|
-| 取得 | `data/fetch/fetch_trade_goods.py` → `data/raw/trade_goods/` | CEPII BACI HS17 V202501 (Gaulier & Zignago 2010)。元の zip (約 690 MB) はリポジトリに置けないので、2017〜2019 年 (CEPII Gravity の距離と重なる年) の品目別の額を、HS の章・項・号の頭でゲームの資源 (食料・燃料・金属・工業品・水・希少元素・その他) にまとめて `baci_hs17_groups_2017_2019.csv.gz` (2.0 MB) に置く。元の zip の URL・取得日・SHA-256、まとめ方・行数・額の割合を `data/raw/trade_goods/MANIFEST.json` に記録する。同じ zip からは同じバイト列になる |
+| 取得 | `data/fetch/fetch_trade_goods.py` → `data/raw/trade_goods/` | CEPII BACI HS17 V202501 (Gaulier & Zignago 2010)。元の zip (約 690 MB) はリポジトリに置けないので、2017〜2019 年 (CEPII Gravity の距離と重なる年) の品目別の額を、HS の章・項・号の頭でゲームの資源 (食料・燃料・金属・低付加価値物品・高付加価値物品・水・希少元素・その他) にまとめて `baci_hs17_groups_2017_2019.csv.gz` (2.5 MB) に置く。元の zip の URL・取得日・SHA-256、まとめ方・行数・額の割合を `data/raw/trade_goods/MANIFEST.json` に記録する。同じ zip からは同じバイト列になる |
 | 加工 | `data/build/analyze_trade_goods.py` (推定は `data/build/gravity.py`) → `data/derived/trade_goods.json` | 品ごとに R01 と同じ式 (PPML、輸出国×年・輸入国×年の固定効果、ln 距離だけ、空の組は使わない)。距離は `data/raw/trade/` の distw_harmonic |
 
 ```sh
@@ -79,11 +79,30 @@ python3 data/fetch/fetch_trade_goods.py     # 生データを取り直す (約 6
 python3 data/build/analyze_trade_goods.py   # 推定する (numpy が要る。約 20 秒)
 ```
 
-- **推定の結果**: 燃料 −1.251・食料 −1.088・金属 −1.060・工業品 −0.819 (全部まとめると −0.842)。原料ほど距離が効く。希少元素 −0.48・水 −1.89 は参考 (額が小さいか、ゲームの品と合わない)
-- **額の割合**: 工業品 69%・燃料 13%・食料 9%・金属 6%・その他 (金・宝石など) 3%
+- **推定の結果**: 燃料 −1.251・食料 −1.088・金属 −1.060・低付加価値物品 −0.984・高付加価値物品 −0.782 (全部まとめると −0.842)。重くて値打ちの低い物ほど距離が効く。希少元素 −0.48・水 −1.89 は参考 (額が小さいか、ゲームの品と合わない)
+- **工業品の分け方** (目標の版 17): 高付加価値物品 = 28〜38 章 (化学品・医薬品)・84〜93 章 (機械・電気機器・輸送機械・精密機器・武器)。OECD の研究開発の強さで中・高技術とされる産業で、R61 (UNIDO の中・高技術の製造業) と同じ分け方。低付加価値物品 = 残りの 25〜96 章。版 16 は合わせて工業品 (−0.819) にしていた
+- **額の割合**: 高付加価値物品 50%・低付加価値物品 19%・燃料 13%・食料 9%・金属 6%・その他 (金・宝石・美術品など) 4%
 - **限界**: HS の品目をゲームの 4 つの品に分けるのは粗い (たとえば 25 章の土石は工業品に入れた)。BACI は正の交易額しか載せない (R01 と同じ)
 
 出典: Gaulier, G. & Zignago, S. (2010) BACI: International Trade Database at the Product-Level. The 1994-2007 Version, CEPII Working Paper 2010-23
+
+## 製造業の中の高付加価値の割合のデータ (目標 R61。回 KE5)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_tech.py` → `data/raw/tech/` | 世界銀行 WDI の API: NV.MNF.TECH.ZS.UN (製造業の付加価値のうち中・高技術の産業の割合。UNIDO の Competitive Industrial Performance database)・NV.IND.MANF.ZS (製造業 ÷ GDP。参考)・NY.GDP.PCAP.PP.KD (1 人あたり GDP、2021 年の国際ドル)。国だけ。取得日・URL・SHA-256・行数を `MANIFEST.json` に記録する |
+| 加工 | `data/build/build_tech.py` → `data/derived/tech.json` | 所得の 5 分位ごとの中・高技術の割合の 25%〜75% 点 (R61)。ゲームの需要の曲線 (工業品の需要の値打ちのうち高付加価値物品の割合 = logit を ln 所得に当てたもの。所得は 2021 年のドル ÷ 1.21 で 2011 年のドルに) |
+
+```sh
+python3 data/fetch/fetch_tech.py     # 生データを取り直す
+python3 data/build/build_tech.py     # 計算する
+python3 data/build/build_tech.py ゲームのパネル.csv   # ゲームの R61 を同じ分位で
+```
+
+- **結果**: 149 か国・5,184 国・年 (1990〜2024 年)。中・高技術の割合の中央値は所得の低い分位から 0.099・0.129・0.185・0.271・0.374。需要の曲線は logit = −6.127 + 0.490 ln y (y は 2011 年のドル。2,000 ドルで 0.08、50,000 ドルで 0.30)
+- **限界**: これは作る側 (製造業の付加価値) の割合で、買う側の割合ではない。ゲームでは、工業品の需要の曲線 (これも工業の付加価値から当てたもの) を同じ割合で分ける。OECD の分け方は 2 桁の産業ごとで、同じ産業の中の品の違いは見ない
+
+出典: UNIDO, Competitive Industrial Performance (CIP) database (World Bank WDI, NV.MNF.TECH.ZS.UN)・Galindo-Rueda, F. & Verger, F. (2016) OECD Taxonomy of Economic Activities Based on R&D Intensity, OECD Science, Technology and Industry Working Papers 2016/04
 
 ## 国の中の地域と労働分配率のデータ (目標 R38・R39。回 KE5)
 

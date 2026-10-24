@@ -1,0 +1,12 @@
+[
+ {
+  "file": "wdi_tech.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{NV.MNF.TECH.ZS.UN,NV.IND.MANF.ZS,NY.GDP.PCAP.PP.KD}",
+  "fetched": "2026-10-24T07:58:19Z",
+  "sha256": "aa708a5998489d38c93835fc9cf2492f134d0be10308a0aaee487eeba70db2b3",
+  "bytes": 243573,
+  "rows": 20265,
+  "filter": "国だけ (地域の集計を除く)・1960〜2024 年",
+  "license": "CC BY 4.0 (世界銀行の利用条件)"
+ }
+]

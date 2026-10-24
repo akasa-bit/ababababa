@@ -9,7 +9,7 @@
  "zip_sha256": "75d975f19fb844b4ad587db104c1e97f44c31f8b39130988c00fe665c52f2b5e",
  "fetched": "2026-10-24T05:45:00Z",
  "license": "CEPII のデータの利用条件 (出典を明記して研究・教育に使う) に従う",
- "groups": "data/fetch/fetch_trade_goods.py の GROUPS の説明 (HS の章・項・号の頭で、ゲームの資源に分ける)",
+ "groups": "data/fetch/fetch_trade_goods.py の品の分け方の説明 (HS の章・項・号の頭で、ゲームの資源に分ける。目標の版 17 で工業品を goods と hitech に分けた)",
  "files": [
   {
    "file": "baci_hs17_groups_2017_2019.csv.gz",
@@ -24,15 +24,16 @@
     2017,
     2019
    ],
-   "rows": 265837,
-   "sha256": "ff91df2fda262021e115b29917f907119bb3c4efe621243d2d8cfa2476f6b433",
+   "rows": 336069,
+   "sha256": "0263de0896eef944febfdaff0e48cde58ce8525b9e0f729f901f4f810bfa2556",
    "filter": "輸出国 ≠ 輸入国。額は品目の額 (千米ドル) を品のまとまりごとに足したもの",
    "share": {
     "food": 0.0877,
     "fuel": 0.1262,
-    "goods": 0.6897,
+    "goods": 0.1866,
+    "hitech": 0.5017,
     "metal": 0.0593,
-    "other": 0.0348,
+    "other": 0.0362,
     "rare": 0.002,
     "water": 0.0002
    }
