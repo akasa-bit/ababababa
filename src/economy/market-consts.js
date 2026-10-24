@@ -50,6 +50,11 @@ const STRUCTURE = { usdPerT: 356.4, y0: 2000, modern: 6, smooth: 1, // smooth = 
 //   研究者 S = 人口 × 所得で決まる数 (STRUCTURE.research)。国の分野には、部門の付加価値の比で分ける。研究者はサービスの中の人 (目標 R10 の数え方)
 //   alpha は試合の始めに 1 つ決める: 最初のプレイヤーの本星の技術の伸びが g0 (Bloom ほかの TFP の伸びの平均 年 1.67%) になる値。セーブに入れる (alpha)
 const RESEARCH = { beta: 3.045, g0: 0.0167, fields: ['farm', 'mine', 'ind'] };
+// 資本の分け前 (回 KE5・B-114。docs/regions.md の 4)。会社は市場の付加価値の 1 − alpha を賃金、残りを配当として払う (economy の 7)。
+//   alpha = 1 − 労働分配率、delta = 資本の減価償却、irr = 資本の実質の収益率。どれも Penn World Table 10.01 の国ごとの中央値
+//   (data/build/build_regions.py の capital の game。目標 R39)。delta と irr は、民間の投資の行き先 (回 KE5 の次の PR) の収益率の基準に使う。
+//   入植地ごとの資本 K を産出に (K ÷ K*)^alpha で効かせる形も試したが、首都の 1 人あたりの所得が 2〜5 割下がったので入れていない (docs/regions.md の 4.2)
+const CAPITAL = { alpha: 0.451, delta: 0.04, irr: 0.107 };
 // 部門ごとの 1 人あたりの産出の大きさ (開始時の生産性 ×1 のとき。docs/structure.md の 4)。farm = 食料 [単位/人/年] × (1 + 肥沃さ)、ind = 工業品 [単位/人/年]、
 // mine = 埋蔵量の係数に掛ける倍率。前は farm 2 × (1 + 肥沃さ)・ind 1・mine 1 で、農業が最も生産的な部門だった (温暖な惑星で 1 人 4 単位。付加価値で工業の 1.4 倍)。
 // 現実の低い所得の国では逆で、農業の 1 人あたりの付加価値は非農業の 1/4〜1/5 (GGDC 10 部門: 所得 604〜1,999 ドルの国で非農業 ÷ 農業 の中央値 5.4、
