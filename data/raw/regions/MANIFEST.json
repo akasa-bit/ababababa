@@ -1,0 +1,47 @@
+{
+ "source": "DOSE v2 (Wenz ほか 2023, Scientific Data 10, 425。Zenodo 10.5281/zenodo.7573249、CC BY 4.0)・Penn World Table 10.01 (Feenstra, Inklaar & Timmer 2015, AER 105(10)。DataverseNL 10.34894/QT5BCC、CC BY 4.0)",
+ "fetched": "2026-10-24T05:44:00Z",
+ "license": "どちらも CC BY 4.0 (出典を明記する)",
+ "files": [
+  {
+   "file": "dose_v2.csv.gz",
+   "columns": [
+    "country",
+    "GID_0",
+    "GID_1",
+    "year",
+    "pop",
+    "grp_pc_lcu_2015",
+    "grp_pc_usd_2015",
+    "StructChange"
+   ],
+   "rows": 46797,
+   "sha256": "d69bb2edc09bf6b296e4a8da4310cc4ed50a5ae35b83b19f9f6cac2e2b3ad453",
+   "from": "DOSE_V2.csv",
+   "url": "https://zenodo.org/api/records/7573249/files/DOSE_V2.csv/content",
+   "source_sha256": "96ba21af19841f6298ec4c637abe2454fd8ab52e765358ffa6512c996b0b4719",
+   "filter": "なし (列だけを取り出した)"
+  },
+  {
+   "file": "pwt1001.csv.gz",
+   "columns": [
+    "countrycode",
+    "year",
+    "labsh",
+    "rgdpe",
+    "pop",
+    "irr",
+    "delta",
+    "cn",
+    "cgdpo",
+    "csh_i"
+   ],
+   "rows": 7970,
+   "sha256": "27b68f3cb0cc526e786ecc4ad55cba7c6b70b0cfe2c2201845b56f62f996b5bc",
+   "from": "pwt1001.dta",
+   "url": "https://dataverse.nl/api/access/datafile/354098",
+   "source_sha256": "746a483666a5371f8e686f8bfea6c20e211e5ecdd928842c6e01d2bd623ffb4c",
+   "filter": "labsh のある国・年"
+  }
+ ]
+}

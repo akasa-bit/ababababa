@@ -94,6 +94,17 @@
 
 取得は `data/fetch/fetch_regions.py` (新規) → `data/raw/regions/` (MANIFEST とチェックサム) → `data/build/` の形で。ゲームの側は `tools/region-gap.js` を元に、目標と同じ定義のパネルを書き出す道具を作る。
 
+### 3.3.1 決めた目標 (回 KE5 の最初の PR。目標の版 16)
+
+| 目標 | 実データの値 | 幅 | ゲーム (前の回の道具の値) |
+|---|---|---|---|
+| R38 国の中の地域の収束 | 年 1.82% (DOSE v2 の 54 か国・2,190 組。ブートストラップの 5〜95% 点 1.35〜2.20%) | 年 0.91〜2.73% (±50%。R11・R37 と同じ形) | 年 0.88% (`region-gap.js`。#238 のあと) |
+| R39 労働分配率 | 国ごとの中央値の中央値 0.549 (PWT 10.01 の 138 か国) | 0.384〜0.690 (国ごとの値の 10%〜90% 点) | まだ測れない (賃金と利潤を分けていない。労働分配率は実質 100%) |
+| (参考) 国の中の地域の差 | 90% 点 ÷ 10% 点 の国ごとの中央値 1.99 (75 か国。10〜90% 点 1.38〜3.93) | 目標にしない | 首都 ÷ 開拓星系の中央値 約 300 倍 (1 の表) |
+| R01 の品ごと | 燃料 −1.25・食料 −1.09・金属 −1.06・工業品 −0.82 (BACI HS17 の 2017〜2019 年。全部まとめると −0.84) | 品ごとの推定値 ±0.3 を、まとめた幅 (−1.174〜−0.574。変えない) に足した | まだ測っていない |
+
+**R01 の見立ては外れた**: 2.1 の「現実でも産地の限られた品 (石油など) は距離が効きにくい」は、品ごとに測ると逆だった。燃料はいちばん距離が効く品で (−1.25)、原料 (食料・燃料・金属) はどれも工業品 (−0.82) より強い。重くて値打ちの低い物ほど運賃が効く、という形 (Hummels 2007 の運賃の話と同じ向き)。だから R01 は緩めず、品ごとの幅を足した。ゲームで開拓星系が遠い首都から燃料を買うのは「現実と違う」ほうで、B で直す (会社が近くの産地から原料を手配する・売り手の在庫の厚さ・燃料の産地)。
+
 ### 3.4 道具と、手元で使った測り方
 
 - `node tools/region-gap.js [銀河=8] [年=150] [国=6]` (`HTML=…` で版を選ぶ): 1 の表・人口の大きさごと・止まっている理由・β 収束。
@@ -107,5 +118,6 @@
 - Feenstra, R. C., Inklaar, R. & Timmer, M. P. (2015). The next generation of the Penn World Table. American Economic Review 105(10), 3150–3182.
 - Gennaioli, N., La Porta, R., Lopez-de-Silanes, F. & Shleifer, A. (2014). Growth in regions. Journal of Economic Growth 19(3), 259–309.
 - Krugman, P. (1991). Increasing returns and economic geography. Journal of Political Economy 99(3), 483–499.
+- Hummels, D. (2007). Transportation costs and international trade in the second era of globalization. Journal of Economic Perspectives 21(3), 131–154.
 - Lucas, R. E. (1990). Why doesn't capital flow from rich to poor countries? American Economic Review 80(2), 92–96.
 - Wenz, L., Carr, R. D., Kögel, N., Kotz, M. & Kalkuhl, M. (2023). DOSE – Global data set of reported sub-national economic output. Scientific Data 10, 425.
