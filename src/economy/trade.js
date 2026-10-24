@@ -27,9 +27,8 @@
       for (const l of legs) amt = Math.min(amt, room.get(l.r.id * 2 + l.dir));
       q.state = 'waiting';
       if (amt <= 0.001) continue;
-      // 代金 (基準価格に、航行の年数ぶんの利子を乗せた値段) は、受け手が注文のときに先に払ってある (q.pre)。売り手は送った分を受け取る。
-      // 先払いの足りない分は、送り手が受け手の主人なら支援として無償で送る。そうでなければ送らない。
-      // (前の版のセーブの要求は先払いがないので、送るときに受け手の資金から払う)
+      // 代金 (基準価格に、航行の年数ぶんの利子を乗せた値段) は、売り手が送り出すときに受け手の会社が払う (信用状。回 KE4・B-016)。
+      // 市場のない版は、受け手の政府が注文のときに先に払ってある (q.pre)。先払いの足りない分は、送り手が受け手の主人なら支援として無償で送る。そうでなければ送らない
       const price = q.price ?? PRICE[q.res] * tradeCost(this.reach(q.to).dist[q.from] ?? 0, this.rateAt(q.from));
       const prepaid = q.pre !== undefined;
       const paid = Math.min(amt, Math.max(0, prepaid ? q.pre : MARKET.buy ? Infinity : this.gov(q.from).credits) / price);
@@ -121,7 +120,9 @@
         // 受け手の目標 = 需要 × (在庫の厚さ + 要求の往復と航行の年数の重み付きの平均)。在庫の厚さは現実の値 (MARKET.cover。前の版は 2 年)
         const want = Math.min(((MARKET.buy ? MARKET.cover[res] : 2) + WL / W) * ft.cons[res], 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked.get(ka) || 0);
         if (want <= min) continue;
-        // 代金は注文のときに先に払う (主人への支援の頼みは払わない)。資金が足りなければ、どの売り手への注文も同じ割合で減らす
+        // 市場のある版は、代金は送り出すときに払う (信用状: 買い手の銀行が注文の時点で払うと約束するので、売り手は光速の送金を待たずに送れる。回 KE4・B-016。
+        // 前は注文のときに先に払い、入荷待ちの注文 (平均 16 年) のぶん、試合の始めに GDP の約 1% が運ぶ途中に寝ていた)。
+        // 市場のない版は注文のときに先に払う (主人への支援の頼みは払わない)。資金が足りなければ、どの売り手への注文も同じ割合で減らす
         for (const c of cands) { c.price = this.tradePrice(c.S, res, dist[c.S], rate); c.amt = Math.min((want * c.w) / W, c.avail); }
         const bill = cands.reduce((k, c) => k + c.amt * c.price, 0);
         const scale = broke || bill <= 0 || MARKET.buy ? 1 : Math.min(1, Math.max(0, this.gov(T).credits) / bill);
@@ -129,8 +130,9 @@
           const price = c.price;
           const amt = c.amt * scale;
           if (amt <= min) continue;
-          const pre = broke ? 0 : amt * price;
-          const q = { id: this.nextShipId++, kind: 'trade', from: T, to: c.S, res, amt, price, pre: 0, sent: this.year, arrive: this.year + this.travelYears(T, c.S), state: 'sending' };
+          const pre = broke || MARKET.buy ? 0 : amt * price;
+          const q = { id: this.nextShipId++, kind: 'trade', from: T, to: c.S, res, amt, price, sent: this.year, arrive: this.year + this.travelYears(T, c.S), state: 'sending' };
+          if (!MARKET.buy) q.pre = 0; // 先払いのない要求 (q.pre がない) は、送り出すときに払う
           this.requests.push(q);
           if (pre) { this.payFrom('import', -pre, T); this.cash('import', pre, { way: q, f: 'pre' }); } // 先払いは、送り手に渡るまで運ぶ途中
           pendingPair.add(c.kpair);
