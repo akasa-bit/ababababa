@@ -78,6 +78,7 @@ python3 tools/export_example.py export-out                       # 分析の例 
 | `GF02` | 防衛 | 軍の維持費と軍事の予算 (種類 `upkeep`・`military`) |
 | `GF03` | 治安 | 治安の予算 (種類 `security`) |
 | `GF04` | 経済業務 | 政府の建設 (種類 `build`) |
+| `GF09` | 教育 | 教育の予算 (種類 `education`。回 KE5) |
 | `GF10` | 社会保護 | 福祉の予算 (種類 `welfare`) |
 | `GE_TR` | 移転 (支払い) | 主人への朝貢・家臣への資金援助を送った分 |
 | `GNLB` | 純貸出 / 純借入 (GFS の定義) | `GR` − `GE` |

@@ -34,10 +34,12 @@ const BUDGET = {
   welfare: { label: '福祉', good: '家臣の忠誠度の目標 +最大 12・人口の増え方 ×最大 1.15', loyalty: 12, growth: 0.15 },
   security: { label: '治安', good: '離反の起きやすさ ×最大 0.6', hazard: 0.4 },
   military: { label: '軍事', good: '艦隊の戦力 ×最大 1.25', fleet: 0.25 },
+  // 教育 (回 KE5・B-117。ユーザーの依頼 2026-10-24): 効き目は budgetEffect でなく、教育の支出 ÷ GDP で学校を出る世代の就学年数を延ばす (SCHOOL.spend。docs/hcap.md)
+  education: { label: '教育', good: '学校を出る世代の就学年数が延び、その世代が働くようになると生産性が上がる (教育の支出 GDP の 1% ごとに、所得 5,000 ドルの入植地で約 0.2 年。効くのは世代が入れ替わる数十年あと)' },
 };
 const BUDGET_HALF = 0.1;
 const budgetEffect = (share) => (share > 0 ? share / (share + BUDGET_HALF) : 0);
-const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, budget: { welfare: 0, security: 0, military: 0 } };
+const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, budget: { welfare: 0, security: 0, military: 0, education: 0 } };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)

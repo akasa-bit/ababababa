@@ -29,7 +29,7 @@ const seedList = (s) => (Array.isArray(s) ? s.map(String) : String(s).includes('
 // 列 (CSV の見出しの順)
 const COLS = {
   sna: ['galaxy', 'year', 'country', 'name', 'POP', 'B1GQ', 'P3_S14', 'P3_S13', 'P51G_S13', 'P6', 'P7', 'D1', 'D2', 'D5', 'B9_S13'],
-  gfs: ['galaxy', 'year', 'country', 'GR', 'GR11', 'GR111', 'GR114', 'GR115', 'GR13', 'GR14', 'GR141', 'GE', 'GF01', 'GF0107', 'GF02', 'GF03', 'GF04', 'GF10', 'GE_TR', 'GNLB'],
+  gfs: ['galaxy', 'year', 'country', 'GR', 'GR11', 'GR111', 'GR114', 'GR115', 'GR13', 'GR14', 'GR141', 'GE', 'GF01', 'GF0107', 'GF02', 'GF03', 'GF04', 'GF09', 'GF10', 'GE_TR', 'GNLB'],
   balance: ['galaxy', 'year', 'country', 'S14_F2_A', 'S14_F4_L', 'S11_F2_A', 'S11_F4_L', 'S13_F2_A', 'S13_F4_L', 'S13_F3_L', 'S1N_F2_A', 'S1N_F4_L', 'S122_F2_L', 'S122_F4_A', 'S122_F3_A', 'S122_RES_A'],
   rates: ['galaxy', 'year', 'country', 'CPI', 'INFL', 'IRS', 'IRL', 'CB_RULE'],
   prices: null, // 資源の名前が列になるので、あとで決める
@@ -38,7 +38,7 @@ const COLS = {
   wars_part: ['galaxy', 'WarNum', 'ccode', 'StateName', 'Side', 'StartYear', 'EndYear', 'Initiator'],
   policy: ['galaxy', 'year', 'country', 'policy', 'from', 'to'],
 };
-const GOV_BUY = { public: 'GF01', upkeep: 'GF02', military: 'GF02', security: 'GF03', build: 'GF04', welfare: 'GF10' };
+const GOV_BUY = { public: 'GF01', upkeep: 'GF02', military: 'GF02', security: 'GF03', build: 'GF04', education: 'GF09', welfare: 'GF10' };
 
 // onYear(g, y) = 年の始めに呼ぶ (試験でわざと政策を変えるため)
 function play(sim, seed, years, nations, emit, onYear = null) {
@@ -127,7 +127,7 @@ function play(sim, seed, years, nations, emit, onYear = null) {
       const intIn = Math.max(0, G('interest')), intOut = Math.max(0, -G('interest'));
       const other = Math.max(0, G('natives'));
       const GR11 = tax + ctax + tariff, GR14 = intIn + other, GR = GR11 + grants + GR14;
-      const cof = { GF01: 0, GF02: 0, GF03: 0, GF04: 0, GF10: 0 };
+      const cof = { GF01: 0, GF02: 0, GF03: 0, GF04: 0, GF09: 0, GF10: 0 };
       for (const [kind, code] of Object.entries(GOV_BUY)) cof[code] += Math.max(0, -G(kind));
       const GE_TR = Math.max(0, -G('grant')) + Math.max(0, -G('tribute'));
       const GE = Object.values(cof).reduce((a, v) => a + v, 0) + intOut + GE_TR;

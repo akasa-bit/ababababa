@@ -7,6 +7,13 @@
   ゲームの曲線 (src/economy/market-consts.js の SCHOOL): 学校を出たばかりの世代 (25〜29 歳) の就学年数 = top / (1 + exp(−(a + b ln y)))。
       top は 14 年 (国・年の最大 14.7 年に近い切りのよい値)。logit (s ÷ (top − s)) を ln y に当てた最小二乗 (国・年をそのまま)。
       y はゲームの所得の物差し (2011 年の国際ドル) にするため、2021 年のドルを米国の GDP デフレーターの比 1.21 で割ってから当てる (R36・R61 と同じ読み替え)
+  ゲームの係数 (回 KE5・B-117。目標ではない):
+    spend: 教育の支出 ÷ GDP [%] の効き方。25〜29 歳の就学年数の logit を ln y と、その世代が学校にいたころ (5〜20 年前) の教育の支出の平均に当てた傾き
+           (国・年。国を引き直すブートストラップの 5%〜95% 点も)。予算の「教育」は、この傾きで若い世代の曲線をずらす
+    stock: 25 歳以上の平均の就学年数の、同じ形の曲線 (参考)
+    cohort: 始めからある入植地の年齢ごとの就学年数の形。年齢 a の区分の就学年数 = 若い世代の曲線 (y × exp(−cohort × (a − 27)))、
+            つまり年上の世代ほど、学校を出たころの所得が年 cohort ずつ低かったとみる。EdStats の 5 歳ごとの区分 (25〜29 歳 … 75 歳〜) に、
+            二乗の誤差がいちばん小さくなる値を 0.0025 きざみで探す
 
 使い方: python3 data/build/build_hcap.py → data/derived/hcap.json
         python3 data/build/build_hcap.py ゲームのパネル.csv → ゲームの R62・R63
@@ -19,6 +26,8 @@ import pandas as pd
 
 HERE = os.path.dirname(__file__)
 RAW = os.path.join(HERE, '..', 'raw', 'hcap', 'edstats_bl.csv.gz')
+SPEND = os.path.join(HERE, '..', 'raw', 'hcap', 'edstats_spend.csv.gz')
+AGE = os.path.join(HERE, '..', 'raw', 'hcap', 'edstats_age.csv.gz')
 INC = os.path.join(HERE, '..', 'raw', 'tech', 'wdi_tech.csv.gz')
 OUT = os.path.join(HERE, '..', 'derived', 'hcap.json')
 TO2011 = 1.21  # 2021 年のドル ÷ 2011 年のドル (米国の GDP デフレーター。R36・R61 と同じ)
@@ -38,6 +47,39 @@ def panel():
     inc = inc[inc['indicator'] == 'NY.GDP.PCAP.PP.KD'][['iso3', 'year', 'value']].rename(columns={'value': 'y'})
     x = w.merge(inc, on=['iso3', 'year']).dropna(subset=['s', 'y'])
     return x[(x['y'] > 0)]
+
+
+def spending(v):
+    """25〜29 歳の就学年数の logit を、ln y と、5〜20 年前の教育の支出 ÷ GDP [%] の平均に当てる。傾き (支出) と、国を引き直すブートストラップの 5%〜95% 点"""
+    d = pd.read_csv(SPEND)
+    d = d[d['indicator'] == 'SE.XPD.TOTL.GD.ZS']
+    rows = []
+    for _, r in v.iterrows():
+        s = d[(d['iso3'] == r['iso3']) & (d['year'] >= r['year'] - 20) & (d['year'] <= r['year'] - 5)]['value']
+        if len(s) >= 3:
+            rows.append((r['iso3'], float(np.log(r['y'] / TO2011)), float(s.mean()), float(np.log(r['young'] / (TOP - r['young'])))))
+    t = pd.DataFrame(rows, columns=['iso3', 'ly', 'sp', 'lg'])
+    fit = lambda q: np.linalg.lstsq(np.column_stack([np.ones(len(q)), q['ly'], q['sp']]), q['lg'], rcond=None)[0]
+    beta = fit(t)
+    rng = np.random.default_rng(1)
+    cs = t['iso3'].unique()
+    bs = [fit(pd.concat([t[t['iso3'] == c] for c in rng.choice(cs, len(cs))]))[2] for _ in range(400)]
+    return {'coef': round(float(beta[2]), 4), 'boot_5_95': [round(float(x), 4) for x in np.quantile(bs, [.05, .95])], 'rows': int(len(t)), 'countries': int(len(cs)),
+            'median_spend': round(float(t['sp'].median()), 2), 'note': '教育の支出 ÷ GDP [%] 1 点あたりの、25〜29 歳の就学年数の logit のずれ (ln y と一緒に当てた最小二乗)'}
+
+
+def cohort(a, b):
+    """始めの年齢ごとの就学年数の形 (cohort)。a, b = 若い世代の曲線"""
+    d = pd.read_csv(AGE)
+    d['age'] = d['indicator'].str.extract(r'BAR\.SCHL\.(\d\d)')[0].astype(int) + 2
+    d.loc[d['indicator'] == 'BAR.SCHL.75UP', 'age'] = 80
+    inc = pd.read_csv(INC)
+    inc = inc[inc['indicator'] == 'NY.GDP.PCAP.PP.KD'][['iso3', 'year', 'value']].rename(columns={'value': 'y'})
+    d = d.merge(inc, on=['iso3', 'year']).dropna()
+    err = lambda g: float(((d['value'] - TOP / (1 + np.exp(-(a + b * (np.log(d['y'] / TO2011) - g * (d['age'] - 27)))))) ** 2).mean())
+    gs = np.arange(0, 0.0601, 0.0025)
+    g = float(gs[int(np.argmin([err(x) for x in gs]))])
+    return {'value': round(g, 4), 'rows': int(len(d)), 'rmse': round(err(g) ** 0.5, 3), 'note': '年齢 a の区分の就学年数 = 若い世代の曲線 (y × exp(−value × (a − 27)))'}
 
 
 def quintiles(y):
@@ -139,6 +181,10 @@ def main():
     b, a = np.polyfit(X, Y, 1)
     pred = TOP / (1 + np.exp(-(a + b * X)))
     r2 = 1 - float(((v['young'] - pred) ** 2).sum() / ((v['young'] - v['young'].mean()) ** 2).sum())
+    # 25 歳以上の曲線 (始めの入植地の就学年数)
+    u = x[(x['s'] > 0) & (x['s'] < TOP)]
+    bs_, as_ = np.polyfit(np.log(u['y'] / TO2011), np.log(u['s'] / (TOP - u['s'])), 1)
+    sp = spending(v)
     out = {
         'source': 'data/raw/hcap/edstats_bl.csv.gz (世界銀行 EdStats の Barro–Lee の推計 BAR.SCHL.25UP・BAR.SCHL.2529)・data/raw/tech/wdi_tech.csv.gz (NY.GDP.PCAP.PP.KD)。計算は data/build/build_hcap.py',
         'countries': int(x['iso3'].nunique()), 'country_years': int(len(x)), 'years': [int(x['year'].min()), int(x['year'].max())],
@@ -146,7 +192,9 @@ def main():
         'growth_by_level': r63, 'growth_windows': int(len(gr)),
         'note': '所得は 2021 年の国際ドル。就学年数は 25 歳以上の平均 [年]。伸びは 10 年の差 ÷ 10 [年/年]',
         'game': {'young': [round(float(a), 4), round(float(b), 4)], 'top': TOP, 'r2': round(r2, 3), 'rows': int(len(v)),
-                 'note': 'young = SCHOOL の曲線。学校を出たばかりの世代 (25〜29 歳) の就学年数 = top / (1 + exp(−(a + b ln y)))、y は 2011 年の国際ドル'},
+                 'stock': [round(float(as_), 4), round(float(bs_), 4)], 'spend': sp, 'cohort': cohort(a, b),
+                 'note': 'young = SCHOOL の曲線。学校を出たばかりの世代 (25〜29 歳) の就学年数 = top / (1 + exp(−(a + b ln y)))、y は 2011 年の国際ドル。'
+                         'stock = 25 歳以上の平均の同じ形の曲線。spend = 教育の支出 ÷ GDP [%] 1 点あたりの logit のずれ (ln y と一緒に当てた傾き)'},
     }
     print(json.dumps(out, ensure_ascii=False, indent=1))
     with open(OUT, 'w', encoding='utf-8') as f:

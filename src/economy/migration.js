@@ -51,7 +51,7 @@
         const mMode = this.routeMode(c.sys, d.sys, (n * 1e6 * MIGRANT_KG) / UNIT_KG);
         if (SIM_ONLY) this.bookPath('migrant', n * 1e6 * MIGRANT_KG, v.path, mMode, { offSpeed: SHIP_SPEED }); else this.bookShip('migrant', n * 1e6 * MIGRANT_KG, SHIP_SPEED, mMode, c.sys, d.sys);
       }
-      this.migrants.push({ id: this.nextShipId++, from: colKey(c), to: colKey(d), fromSys: c.sys, toSys: d.sys, n, races: { ...(c.races || { [HUMAN]: 1 }) },
+      this.migrants.push({ id: this.nextShipId++, from: colKey(c), to: colKey(d), fromSys: c.sys, toSys: d.sys, n, races: { ...(c.races || { [HUMAN]: 1 }) }, edu: this.schoolAges(c), // 移民は自分の年齢の区分ごとの就学年数を運ぶ (回 KE5)
         path: v.path, times: v.times.map((x) => this.year + x), depart: this.year, arrive: this.year + t });
       incoming.set(colKey(d), (incoming.get(colKey(d)) || 0) + n);
     }

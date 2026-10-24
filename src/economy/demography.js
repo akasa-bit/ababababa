@@ -57,6 +57,7 @@
     c.age.f[0] += births * (1 - DEMO.boy);
     const pop = c.age.f.reduce((k, v) => k + v, 0) + c.age.m.reduce((k, v) => k + v, 0);
     c.ws = this.ageShares(c).work; // 働き手の割合 (生産に効く。yieldOf)
+    this.eduStep(c, up, births); // 学歴 (回 KE5)
     return pop;
   }
   // 年齢 3 区分の割合と扶養比 { young (0〜14 歳), work (15〜64 歳), old (65 歳〜), dep = (young + old) ÷ work }。表がなければ移民の年齢で
@@ -71,6 +72,75 @@
   }
   // 生産に効く働き手の倍率 (働き手の割合 ÷ 世界の 2023 年の割合)
   laborK(c) { return (c.ws ?? DEMO.workRef) / DEMO.workRef; }
+  // --- 学歴と生産性 (SCHOOL。回 KE5・B-117。docs/hcap.md) ---
+  // 表 c.edu = { 集団の鍵: { p: [5 歳の区分ごとの人数 (百万人)], s: [区分ごとの平均の就学年数] } }。区分は年齢の表 c.age と同じ (人数の合計は c.age に合わせる)。
+  // 就学年数を持つのは 25 歳の区分 (SCHOOL.bin) から上だけ。鍵はいまは生まれ (here = ここ生まれ・away = よそ生まれ)。政治の SE6 が階層と価値観を足せる
+  // 就学年数の折れ線の収益 φ(s) と、所得 y [2011 年のドル] の若い世代の曲線 (pct = 予算の教育の支出 ÷ GDP [%])
+  schoolPhi(s) { let v = 0, lo = 0; for (const [hi, r] of SCHOOL.ret) { v += r * clamp(s - lo, 0, hi - lo); lo = hi; } return v; }
+  schoolCurve(y, pct = 0) { return SCHOOL.top / (1 + GM.exp(-(SCHOOL.young[0] + SCHOOL.young[1] * GM.log(Math.max(y, 1)) + SCHOOL.spend * pct))); }
+  // 始めの年齢ごとの就学年数: 年上の区分ほど、学校を出たころの所得が年 SCHOOL.cohort ずつ低かったとみる (EdStats の年齢の区分の就学年数に当てた値)
+  schoolAgeProfile(y) { return Array.from({ length: DEMO.bins }, (_, a) => (a < SCHOOL.bin ? 0 : this.schoolCurve(y * GM.exp(-SCHOOL.cohort * DEMO.width * (a - SCHOOL.bin))))); }
+  // 年齢の表 (なければ移民の年齢) の人数で、就学年数の形 s の 1 つの集団を作る
+  eduGroup(c, s) {
+    const T = c.age ? c.age.f.map((v, a) => v + c.age.m[a]) : DEMO.migrant.map((v) => (c.pop * v) / DEMO.migrant.reduce((k, x) => k + x, 0));
+    return { p: T, s: [...s] };
+  }
+  // 集団ごとの表。ないとき (始めからある入植地・前の版のセーブ) は、所得 (まだ測れていなければ生産力) の年齢ごとの形の「ここ生まれ」で作る
+  schoolBy(c) { return (c.edu ??= { here: this.eduGroup(c, this.schoolAgeProfile(c.inc ?? (MARKET.buy ? this.potentialUSD(c) : STRUCTURE.y0))) }); }
+  // 区分ごとの、集団を合わせた平均の就学年数 (移民と入植者が運ぶ形)
+  schoolAges(c) {
+    const E = Object.values(this.schoolBy(c));
+    return Array.from({ length: DEMO.bins }, (_, a) => { let p = 0, v = 0; for (const g of E) { p += g.p[a]; v += g.p[a] * g.s[a]; } return p > 0 ? v / p : 0; });
+  }
+  // 年齢の区分 a0〜a1 の人の平均 (f = 就学年数の関数)
+  schoolMean(c, f = (s) => s, a0 = SCHOOL.bin, a1 = DEMO.bins - 1) {
+    let p = 0, v = 0;
+    for (const g of Object.values(this.schoolBy(c))) for (let a = a0; a <= a1; a++) { p += g.p[a]; v += g.p[a] * f(g.s[a]); }
+    return p > 0 ? v / p : 0;
+  }
+  // 大人 (25 歳〜) の平均の就学年数
+  schoolOf(c) { return this.schoolMean(c); }
+  // 働く人の生産性の倍率 (yieldOf): 25〜64 歳の exp(φ(s)) の平均 ÷ exp(φ(ref))
+  schoolK(c) { return this.schoolMean(c, (s) => GM.exp(this.schoolPhi(s)), SCHOOL.bin, DEMO.work[1]) / GM.exp(this.schoolPhi(SCHOOL.ref)) || 1; }
+  // 予算の教育の支出 ÷ GDP [%] (人間の国だけ。予算の割合 × 払えた割合 × 税収 ÷ 国の所得。光の遅れのある財政の値で)
+  eduSpendPct(c) {
+    const root = this.realmOf(c.sys), share = this.fiscalFor(root, c.sys).budget?.education || 0;
+    if (!(share > 0)) return 0;
+    const gv = this.govs[root], memo = (this._eduY ??= {});
+    if (memo.year !== this.year) { memo.year = this.year; memo.y = {}; }
+    const y = (memo.y[root] ??= this.colonies.reduce((k, x) => (this.realmOf(x.sys) === root ? k + (x.incY || 0) : k), 0));
+    return y > 0 ? (100 * share * (gv?.bpaid ?? 1) * Math.max(0, gv?.ledger?.tax || 0)) / y : 0;
+  }
+  // 1 刻み (demoStep の年をとったあと): 集団ごとに年齢の表と同じ割合 up で次の区分へ移し、25 歳の区分に入る人は学校を出た世代の就学年数
+  // ((1 − rho) × 所得の曲線 + rho × 大人の平均) を持つ。生まれた子 births は「ここ生まれ」の 0 歳の区分へ。最後に区分ごとの人数を c.age に合わせる (死亡と、ほかの所の増減)
+  eduStep(c, up, births) {
+    const E = this.schoolBy(c), n = DEMO.bins, b = SCHOOL.bin;
+    const sNew = (1 - SCHOOL.rho) * this.schoolCurve(c.inc ?? STRUCTURE.y0, this.eduSpendPct(c)) + SCHOOL.rho * this.schoolOf(c);
+    const mix = (g, a, x, s) => { if (a >= b) g.s[a] = g.p[a] + x > 0 ? (g.s[a] * g.p[a] + s * x) / (g.p[a] + x) : s; g.p[a] += x; };
+    for (const g of Object.values(E)) {
+      for (let a = n - 2; a >= 0; a--) { const x = g.p[a] * up; g.p[a] -= x; mix(g, a + 1, x, a + 1 === b ? sNew : g.s[a]); }
+    }
+    (E.here ??= { p: Array(n).fill(0), s: Array(n).fill(0) }).p[0] += births;
+    const s0 = this.schoolAges(c);
+    for (let a = 0; a < n; a++) {
+      const T = c.age.f[a] + c.age.m[a], G = Object.values(E), S = G.reduce((k, g) => k + g.p[a], 0);
+      if (S > 0) for (const g of G) g.p[a] *= T / S;
+      else if (T > 0) { E.here.p[a] = T; E.here.s[a] = a >= b ? s0[a] || sNew : 0; }
+    }
+    c.hk = this.schoolK(c);
+  }
+  // よそから来た人 n [百万人] (移民・入植者。移民の年齢の形で来る。s = その人たちの区分ごとの就学年数の配列か数。分からなければ、この入植地の区分ごとの値) を
+  // 「よそ生まれ」に混ぜる。c.pop を増やす前に呼ぶ (人数は、そのあと ageSync が c.age に足す分と同じ)
+  eduMix(c, n, s) {
+    if (!(n > 0)) return;
+    const E = this.schoolBy(c), mig = DEMO.migrant, ms = mig.reduce((k, v) => k + v, 0), loc = s === undefined ? this.schoolAges(c) : null;
+    const g = (E.away ??= { p: Array(DEMO.bins).fill(0), s: Array(DEMO.bins).fill(0) });
+    for (let a = 0; a < DEMO.bins; a++) {
+      const x = (n * mig[a]) / ms, v = loc ? loc[a] : Array.isArray(s) ? s[a] : s;
+      if (a >= SCHOOL.bin) g.s[a] = g.p[a] + x > 0 ? (g.s[a] * g.p[a] + v * x) / (g.p[a] + x) : v;
+      g.p[a] += x;
+    }
+  }
   // 政府の年金と医療 (10-3 の c)。星系の政府が、その星系の家計に年金を、会社に医療の代金を払う。人間が動かす首都は、手元の資金の分だけ払う (払えた割合 apaid)
   ageSpendStep(h) {
     for (const key of Object.keys(this.govs)) {

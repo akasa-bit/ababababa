@@ -1,8 +1,9 @@
   // --- 種族 ---
   // 入植地に人を加え、種族の構成比を混ぜる。races は加える人々の構成比
-  addPeople(c, n, races) {
+  addPeople(c, n, races, edu) {
     const total = c.pop + n;
     if (total <= 0) return;
+    this.eduMix(c, n, edu); // 学歴 (economy/demography.js。edu = 来た人の就学年数。回 KE5)
     const out = {};
     for (const [k, v] of Object.entries(c.races || { [HUMAN]: 1 })) out[k] = (out[k] || 0) + v * c.pop / total;
     for (const [k, v] of Object.entries(races)) out[k] = (out[k] || 0) + v * n / total;
@@ -177,7 +178,7 @@
         const d = this.colonyByKey(m.to);
         const from = this.colonyByKey(m.from);
         if (!d) continue;
-        this.addPeople(d, m.n, m.races || { [HUMAN]: 1 });
+        this.addPeople(d, m.n, m.races || { [HUMAN]: 1 }, m.edu);
         d.migIn = (d.migIn || 0) + m.n;
         this.migLog.unshift({ year: this.year, seen: this.year + this.lightDelay(d.sys), from: from ? from.name : '?', to: d.name, n: m.n });
       }

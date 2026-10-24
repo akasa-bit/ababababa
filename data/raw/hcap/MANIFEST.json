@@ -2,11 +2,31 @@
  {
   "file": "edstats_bl.csv.gz",
   "url": "https://api.worldbank.org/v2/country/all/indicator/{BAR.SCHL.25UP,BAR.SCHL.2529}?source=12",
-  "fetched": "2026-10-24T10:18:55Z",
+  "fetched": "2026-10-24T22:33:24Z",
   "sha256": "f30df49a13c8bec3ecb6c6620c606eb24f91d66683b5f8576668d00f52a8cb39",
   "bytes": 18311,
   "rows": 3168,
   "filter": "国だけ (地域の集計を除く)・1950〜2015 年",
-  "license": "CC BY 4.0 (世界銀行の利用条件)。元の推計は Barro & Lee 2013 (出典を明記する)"
+  "license": "CC BY 4.0 (世界銀行の利用条件)。元の推計は Barro & Lee 2013・UNESCO 統計研究所 (出典を明記する)"
+ },
+ {
+  "file": "edstats_age.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{BAR.SCHL.2529,BAR.SCHL.3034,BAR.SCHL.3539,BAR.SCHL.4044,BAR.SCHL.4549,BAR.SCHL.5054,BAR.SCHL.5559,BAR.SCHL.6064,BAR.SCHL.6569,BAR.SCHL.7074,BAR.SCHL.75UP}?source=12",
+  "fetched": "2026-10-24T22:33:34Z",
+  "sha256": "213feeb5b9460186ddc4b373d366585d0df892a493196abb9fbbd5296f87db6b",
+  "bytes": 97777,
+  "rows": 17424,
+  "filter": "国だけ (地域の集計を除く)・1950〜2015 年",
+  "license": "CC BY 4.0 (世界銀行の利用条件)。元の推計は Barro & Lee 2013・UNESCO 統計研究所 (出典を明記する)"
+ },
+ {
+  "file": "edstats_spend.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{SE.XPD.TOTL.GD.ZS}?source=12",
+  "fetched": "2026-10-24T22:33:34Z",
+  "sha256": "568f4ea8df508424df68238442231dbcd2befc6c45e7ee55855d8c578d445f96",
+  "bytes": 27887,
+  "rows": 3583,
+  "filter": "国だけ (地域の集計を除く)・1970〜2015 年",
+  "license": "CC BY 4.0 (世界銀行の利用条件)。元の推計は Barro & Lee 2013・UNESCO 統計研究所 (出典を明記する)"
  }
 ]
