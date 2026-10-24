@@ -1,0 +1,12 @@
+[
+ {
+  "file": "edstats_bl.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{BAR.SCHL.25UP,BAR.SCHL.2529}?source=12",
+  "fetched": "2026-10-24T10:18:55Z",
+  "sha256": "f30df49a13c8bec3ecb6c6620c606eb24f91d66683b5f8576668d00f52a8cb39",
+  "bytes": 18311,
+  "rows": 3168,
+  "filter": "国だけ (地域の集計を除く)・1950〜2015 年",
+  "license": "CC BY 4.0 (世界銀行の利用条件)。元の推計は Barro & Lee 2013 (出典を明記する)"
+ }
+]
