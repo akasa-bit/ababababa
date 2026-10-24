@@ -162,6 +162,15 @@ node tools/secession.js "$PWD/index.html" sout 300 1,2,3,4,5,6 6
 (独立・別の国へ移った・入植地がなくなった・試合の終わりまで続いた) を、銀河ごとに `sout/<シード>.json` へ書き出す。
 生存時間の分析 (Kaplan–Meier・Cox モデル) で、歴史の植民地の独立までの時間 (目標 R08・R09) と同じ形式で比べるための材料。結果は `docs/governance.md`。
 
+## データの書き出し (tools/export.js)
+
+B-072 (回 DO6)。現実の統計と同じ形 (SNA・GFS/COFOG・部門の貸借・物価と金利・値段・BACI の交易・COW の戦争・政策の出来事) の表を CSV で書き出す。コードブックは `docs/export.md`。
+
+```sh
+node tools/export.js --out export-out --seeds 30 --years 150 --nations 6   # か、設定のファイル 1 つ: node tools/export.js 設定.json
+python3 tools/export_example.py export-out                                 # 分析の例
+```
+
 ## 従属国の型のティアリスト (tools/vassal-tier.js)
 
 B-070 (評論家の 3-6)。どの従属国の型も、首都からのどこかの距離で最善になるか・「全部を直轄にするのが最善」や「維持費のかからない家臣の量産」にならないかを見る。ゲームの中身は変えない。
