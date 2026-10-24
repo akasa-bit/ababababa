@@ -110,12 +110,28 @@ def capital(p):
 
 
 def game(region_csv, labsh_csv=None):
+    """ゲームのパネルの R38・R39 (targets/targets.json の sim と pass の決まり)。国の名前は「銀河-国」"""
+    t = {r['id']: r for r in json.load(open(os.path.join(HERE, '..', '..', 'targets', 'targets.json'), encoding='utf-8'))['realism']}
     d = pd.read_csv(region_csv, dtype={'GID_0': str, 'GID_1': str})
     p, est = convergence(d, 'grp_pc')
+    lo, hi = t['R38']['band']
+    est['pass'] = bool(lo <= est['speed'] <= hi)
     res = {'R38': est, 'spread': spread(d, 'grp_pc')}
     if labsh_csv:
-        res['R39'] = labor_share(pd.read_csv(labsh_csv, dtype={'countrycode': str}))
+        L = pd.read_csv(labsh_csv, dtype={'countrycode': str})
+        ls = labor_share(L)
+        # 銀河ごとに、国ごとの中央値の国のあいだの中央値をとり、銀河のあいだの中央値で判定する
+        m = L.groupby('countrycode')['labsh'].median()
+        per = m.groupby(m.index.str.split('-').str[0]).median()
+        lo, hi = t['R39']['band']
+        ls['galaxies'] = len(per)
+        ls['median_of_galaxies'] = round(float(per.median()), 4)
+        ls['pass'] = bool(lo <= ls['median_of_galaxies'] <= hi)
+        res['R39'] = ls
     print(json.dumps(res, ensure_ascii=False))
+    print(f"R38 {'合格' if res['R38']['pass'] else '不合格'} (年 {res['R38']['speed'] * 100:.2f}%、幅 {t['R38']['band'][0] * 100:.2f}〜{t['R38']['band'][1] * 100:.2f}%、組 {res['R38']['pairs']})")
+    if 'R39' in res:
+        print(f"R39 {'合格' if res['R39']['pass'] else '不合格'} ({res['R39']['median_of_galaxies']:.3f}、幅 {t['R39']['band'][0]}〜{t['R39']['band'][1]}、銀河 {res['R39']['galaxies']})")
 
 
 def main():
