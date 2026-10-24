@@ -87,7 +87,8 @@
     for (const T of [...new Set(this.routes.flatMap((r) => [r.a, r.b]))]) {
       const ft = flow[T];
       if (!ft) continue;
-      const needs = RES.filter((res) => ft.prod[res] < ft.cons[res]);
+      const use = (res) => ft.cons[res] + (ft.short?.[res] || 0); // 使った量 + 原料が足りずに使えなかった量 (docs/regions.md の 2。使った量だけを見ると、燃料のない星の工場は止まったまま輸入も始まらなかった)
+      const needs = RES.filter((res) => ft.prod[res] < use(res));
       if (!needs.length) continue;
       const { dist } = this.reach(T);
       const rate = this.rateAt(T); // 買い手の国の利子率
@@ -96,7 +97,7 @@
       const sto = this.stockOf(T);
       const lord = this.gov(T).lord;
       for (const res of needs) {
-        const min = Math.max(0.5, 0.05 * ft.cons[res]);
+        const min = Math.max(0.5, 0.05 * use(res));
         // 代金は買い手の星系の民間が払う (払えない分は銀行から借りる)。前の版 (MARKET.buy = 0) は政府が払い、払えない星系は主人にだけ支援を求める
         const broke = !MARKET.buy && this.gov(T).credits < min * PRICE[res];
         const ka = sysRes(T, res);
@@ -118,7 +119,7 @@
         }
         if (!cands.length) continue;
         // 受け手の目標 = 需要 × (在庫の厚さ + 要求の往復と航行の年数の重み付きの平均)。在庫の厚さは現実の値 (MARKET.cover。前の版は 2 年)
-        const want = Math.min(((MARKET.buy ? MARKET.cover[res] : 2) + WL / W) * ft.cons[res], 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked.get(ka) || 0);
+        const want = Math.min(((MARKET.buy ? MARKET.cover[res] : 2) + WL / W) * use(res), 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked.get(ka) || 0);
         if (want <= min) continue;
         // 市場のある版は、代金は送り出すときに払う (信用状: 買い手の銀行が注文の時点で払うと約束するので、売り手は光速の送金を待たずに送れる。回 KE4・B-016。
         // 前は注文のときに先に払い、入荷待ちの注文 (平均 16 年) のぶん、試合の始めに GDP の約 1% が運ぶ途中に寝ていた)。
