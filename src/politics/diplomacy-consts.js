@@ -24,3 +24,7 @@ saveField('diplo', (game) => game.diplo, {
     game.diplo = { pacts: Array.isArray(o.pacts) ? o.pacts : [], sent: Array.isArray(o.sent) ? o.sent : [], breach: o.breach && typeof o.breach === 'object' ? o.breach : {} };
   },
 });
+// AI の国が銀河を取りに来る (回 SE5・B-028。目標 R40・R41):
+// 抜けた独立国への権利の主張 (gv.claim)。抜けられた AI の国は years 年のあいだ、その国への開戦の見込みに bonus 点を足し、
+// 開戦を考える年の割合を chance だけ上げる (失地回復。補正の台帳 C21)。入植の補正は EDITIONS.game.aiRush (C20)
+const CLAIM = { years: 100, bonus: 60, chance: 0.3 };

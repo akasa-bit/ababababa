@@ -1,5 +1,18 @@
   // --- 遅れて届く外交 (回 SE2・B-026。PACT・PACT_KINDS は politics/diplomacy-consts.js) ---
   realmAlive(r) { return this.isColonized(r) && this.realmOf(r) === r; }
+  // --- AI の国が銀河を取りに来る (回 SE5・B-028) ---
+  // 入植の補正 (EDITIONS.game.aiRush。補正の台帳 C20): AI の国 (国家選択の国) の星系は、入植の間隔・探す範囲・人口の下限・同時に飛ばせる入植船を緩める
+  // 首都 (cap) と首都でない星系で値が違う: 首都は間隔 capWait 年・探す範囲 capRange 光年・同時に飛ばせる入植船 fly 隻。首都でない星系は人口 pop 百万人から・間隔 wait 年・範囲 range 光年
+  aiRushOf(id) {
+    const r = this.realmOf(id), a = ED.aiRush;
+    if (!a || this.isHuman(r) || !this.nationOf(r)) return null;
+    return id === r ? { pop: 3, wait: a.capWait, range: a.capRange, fly: a.fly } : { pop: a.pop, wait: a.wait, range: a.range, fly: 1 };
+  }
+  // 抜けた独立国への権利の主張 (CLAIM。台帳 C21): root の国から独立した国 r なら、開戦の見込みに足す点
+  claimOn(root, r) { const c = this.govs[r]?.claim; return !!c && c.realm === root && this.year - c.year <= CLAIM.years && !!this.nationOf(root) && !this.isHuman(root) && this.realmAlive(r); }
+  claimBonus(root, r) { return this.claimOn(root, r) ? CLAIM.bonus : 0; }
+  // 主張している相手がいれば、開戦を考える年の割合を上げる
+  claimChance(root) { return this.colonizedSystems().some((x) => this.claimOn(root, x.id)) ? CLAIM.chance : 0; }
   pactBetween(x, y, kind) { return this.diplo.pacts.find((p) => p.kind === kind && ((p.a === x && p.b === y) || (p.a === y && p.b === x))); }
   // 国 x が協定 p に縛られているか (x の首都に協定の知らせが届いているか)
   pactBound(p, x) { return this.year >= (x === p.a ? p.onA : p.onB) - 1e-9; }

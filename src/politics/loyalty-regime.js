@@ -330,8 +330,9 @@
     if (u.stage === 1) { if (this.year - u.since >= UNREST_YEARS) this.raiseDemand(id, gv); return; }
     if (u.stage === 2) {
       if (u.aiAt !== undefined && this.year >= u.aiAt) {
-        // 主人の政府の判断 (半々)
-        if (this.rand() < 0.5) this.grantDemand(id, gv); else this.refuseDemand(id, gv, `${this.system(gv.lord).name} に要求を拒まれた`);
+        // 主人の政府の判断: 拒めば独立しそうなほど、のむ (回 SE5・B-028。前は半々)
+        const risk = this.declareChance({ ...gv, loyalty: Math.max(0, (gv.loyalty ?? LOYALTY_START) - 10) });
+        if (this.rand() < clamp(2 * risk, 0.2, 0.95)) this.grantDemand(id, gv); else this.refuseDemand(id, gv, `${this.system(gv.lord).name} に要求を拒まれた`);
       } else if (this.year >= (u.timeout ?? Infinity)) this.refuseDemand(id, gv, '返事が届かないので、要求は拒まれたとみなした');
       return;
     }
@@ -418,6 +419,7 @@
     const cause = unionEnd ? '。継承の危機で同君連合が解けた (継承は従属国が握っていた)' : `。忠誠度 ${Math.round(gv.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(gv.fear || 0)}・友好度 ${Math.round(gv.friend || 0)}${why ? ` (主な原因: ${why})` : ''}`;
     gv.lord = null;
     gv.independent = true;
+    gv.claim = { realm: formerRealm, year: Math.floor(this.year) }; // 抜けられた国の権利の主張 (回 SE5・B-028)
     gv.loyalty = 0;
     gv.fear = 0;
     gv.friend = 0;

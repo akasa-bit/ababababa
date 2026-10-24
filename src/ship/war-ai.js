@@ -523,13 +523,13 @@
         } else if (this.rand() < this.peaceChance(e, root)) this.makePeace(root, e, root);
       }
       if (BARGAIN.on) {
-        if (enemies.length || this.rand() >= BARGAIN.declareChance) continue;
+        if (enemies.length || this.rand() >= BARGAIN.declareChance + this.claimChance(root)) continue; // 失地回復の主張があれば上がる (政治。B-028)
         // 首都に届いている記録で、まだ独立国の相手のうち、開戦の見込みがいちばん良いもの (読み違いはその場で引く)
         let best = null;
         for (const r of roots) {
           if (r === root || this.seenBy(root, r)?.[1] !== r || this.realmOf(r) !== r || this.sysDist(r, root) > BARGAIN.warDist) continue;
           if (this.pactBars(root, r)) continue; // 不可侵と同盟の相手には宣戦しない (政治。B-026。協定の知らせが届いてから)
-          const v = this.reservation(root, r, this.misread(), 0);
+          const v = this.reservation(root, r, this.misread(), 0) + this.claimBonus(root, r); // 抜けた国の失地回復 (政治。B-028)
           if (v > BARGAIN.declare && (!best || v > best.v)) best = { r, v };
         }
         if (best) {

@@ -105,16 +105,18 @@
   canColonize(id) {
     const gv = this.gov(id);
     const pop = this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
-    const busy = this.projects.some((j) => j.type === 'ship' && j.sys === id) || this.ships.some((x) => x.from === id);
+    const rush = this.aiRushOf(id); // AI の国の入植の補正 (politics/diplomacy.js。B-028)
+    const busy = this.projects.some((j) => j.type === 'ship' && j.sys === id) || this.ships.filter((x) => x.from === id).length >= (rush?.fly ?? 1);
     const pol = this.policyAt(id);
-    const wait = Math.max(3, (this.isHuman(id) || this.nationOf(id) ? 5 : gv.mandate === 'expand' ? 6 : 10) + (pol === 'expand' ? -4 : pol === 'consolidate' ? 5 : 0));
-    return pop >= 3 && !busy && this.year - (gv.lastColony ?? gv.founded) >= wait;
+    const wait = Math.max(rush ? Math.min(3, rush.wait) : 3, (rush ? rush.wait : this.isHuman(id) || this.nationOf(id) ? 5 : gv.mandate === 'expand' ? 6 : 10) + (pol === 'expand' ? -4 : pol === 'consolidate' ? 5 : 0));
+    return pop >= (rush ? rush.pop : 3) && !busy && this.year - (gv.lastColony ?? gv.founded) >= wait;
   }
   // 入植先: 未入植で入植できる惑星のうち、適性が高く近いところ。ふだんは10光年以内 (観戦モードの地球政府は20)、
   // 星系内に手の届く建設がなくなった政府 (far) は25光年まで探す。
   // 住める惑星のない星系も、主星を回る宇宙ステーションで押さえる (適性1の惑星より6光年ぶん近いときだけ選ぶ)
   colonyTarget(id) {
-    const range = this.isHuman(id) || this.nationOf(id) ? 20 : this.gov(id).far ? 25 : this.gov(id).mandate === 'expand' ? 15 : 10;
+    const rush = this.aiRushOf(id);
+    const range = rush ? Math.max(rush.range, this.gov(id).far ? 25 : 0) : this.isHuman(id) || this.nationOf(id) ? 20 : this.gov(id).far ? 25 : this.gov(id).mandate === 'expand' ? 15 : 10;
     let best = null;
     for (const [tid, d] of this.nearSystems(id)) {
       if (d > range || tid === id || this.isColonized(tid)) continue;
