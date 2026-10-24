@@ -32,11 +32,12 @@ check(f.arrive - f.depart < g.fleetYears(g.cap, e), '減速しない艦隊が、
 // 2
 const bodies = new Set(g.coloniesIn(e).map((c) => c.body)).size;
 const pop0 = g.coloniesIn(e).reduce((k, c) => k + c.pop, 0);
+const before = new Map(g.coloniesIn(e).map((c) => [c, c.pop])); // 一撃の前の人口 (小さくて施設のない入植地を、焼けたと数えないように。回 KE2 で筋が変わって 3 / 2 になった)
 const vassal = g.realmSystems(g.cap).map((x) => x.id).find((id) => id !== g.cap);
 const loyal0 = vassal !== undefined ? g.gov(vassal).loyalty ?? 70 : null;
 g.fleets = g.fleets.filter((x) => x !== f);
 g.strikeArrives(f);
-const burned = g.coloniesIn(e).filter((c) => c.pop <= S.survive * pop0 + 1e-9 && Object.values(c.lv).every((v) => !v));
+const burned = g.coloniesIn(e).filter((c) => c.pop <= S.survive * (before.get(c) ?? pop0) + 1e-9 && Object.values(c.lv).every((v) => !v));
 check(g.atWar(g.cap, e), '突入で戦争が始まらない');
 check(new Set(burned.map((c) => c.body)).size === Math.min(2, bodies), `焼けた天体の数が違う (${new Set(burned.map((c) => c.body)).size} / ${Math.min(2, bodies)})`);
 const st = g.warStats[g.warKey(g.cap, e)];

@@ -62,6 +62,8 @@
 | `ship/war-peace.js` | 船と戦争 | 236 | Game: 戦争の状態・戦争疲弊・戦勝点・講和・講和会議 |
 | `politics/loyalty-regime.js` | 政治 | 468 | Game: 忠誠・統治体制・主権の束・共同統治・任免・不満と要求・独立・直轄・政治力 |
 | `economy/fiscal.js` | 経済 | 169 | Game: 予算・国債・利子・財政の値 |
+| `economy/demography-consts.js` | 経済 | 48 | 年齢つきの人口の率と値 (DEMO。回 KE2) |
+| `economy/demography.js` | 経済 | 83 | Game: 年齢つきの人口 (コーホート・率の補間・年金と医療。回 KE2) |
 | `economy/central-bank.js` | 経済 | 102 | Game: 中央銀行 (政策金利)・国の物価・長期の利回り・国債の利札と不履行 (回 KE1) |
 | `politics/policy-decisions.js` | 政治 | 125 | Game: 国家方針・直轄・決めること・語り手・議会 |
 | `screen/eras-score.js` | 画面と最初の体験 | 109 | Game: 時代の課題・挑戦・点数・終わり (手引きにする所。QD-07) |

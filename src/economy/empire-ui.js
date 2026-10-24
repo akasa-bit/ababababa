@@ -2,7 +2,8 @@ function empireHtml(app) {
   const t = app.empireTab || 'overview';
   const chips = `<div class="chips">${Object.entries(EMPIRE_TABS).map(([k, l]) => `<button data-act="etab" data-t="${k}" class="${k === t ? 'on' : ''}">${l}</button>`).join('')}</div>`;
   const body = t === 'routes' ? routesSheet(app) : t === 'migration' ? migrationSheet(app) : t === 'military' ? militarySheet(app) : t === 'politics' ? politicsSheet(app) : t === 'goals' ? goalsSheet(app) : empireOverview(app);
-  return `<h2>帝国</h2>${chips}${body}`;
+  const g = app.game;
+  return `<h2>${ME.gov} 年次報告 <span class="muted">${Math.floor(g.year)}年 ${Math.floor((g.year % 1) * 12) + 1}月</span></h2>${chips}${body}`; // 見出しは報告書の題 (GA6 の QD-59 の A4 = b)
 }
 
 // 帝国 → 交易路: 全交易路の一覧と開設
