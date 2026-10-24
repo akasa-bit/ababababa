@@ -20,12 +20,12 @@
 | B-011 | 会社の設備投資の上に、国有化・民営化・土地改革・資本規制を入れる (選べば) | `gv.fm`・`FACILITY`・新しい | B-002・C の 8 | L | 経済 | `econ-policy-list.md` の 4 (24-4) と 3 の H・E |
 | B-012 | 通す手間: 政策ごとの帰着の表 (家計・会社・政府・ほかの国の損得)、損の大きさに比べて忠誠と議会が下がる式、政策ごとの行政の遅れ | `burdenK`・`TAX_LOYALTY`・`POLICY_YEARS`・`POLICY_COST`・`setFiscal`・`.since` | B-001・C の 10 | M | 経済 | `econ-policy-list.md` の 5・`status/C.md` の C の 10 |
 | B-013 | セッション 19・20 で取れなかった政策の生データ (OECD の税率・IMF の iMaPP・Global Trade Alert・Reinhart–Rogoff の危機の表) を取り、書き写した値 (※) と照らす | `data/fetch/`・`data/raw/policy/`・`data/build/build_policy.py` | — | S | 経済 | `econ-policy-list.md` の冒頭 |
-| B-014 | 物理 (P6) で交易路の輸送量が半分になった理由を確かめる (蓄えで `routeRoom` が絞られた見込み)。R01 は物理ありの版で測り直す | `routeRoom`・`TRADE`・`E_UNIT`・`shieldOf` | — | S | 経済 | `status/C.md` の気をつけること・`physics.md` の 11 |
-| B-015 | 利子率の既定 (年 1%) を、Schmelzing の現代の値 (約 2%) にするか決めて直す。R01 の較正とまとめて | `FISCAL_DEFAULT`・`TRADE.rate`・`RATE_RANGE` | B-014 | S | 経済 | `status/C.md` のまだ決めていない仮の値 |
-| B-016 | 交易の注文の先払いが大きい件を調べる | `TRADE`・`prepaid` | — | S | 経済 | `status/C.md` の気をつけること |
-| B-017 | 小さな政府の軍の維持費: 駐留先の星系でなく、国の政府が払う形にするか | `WARSHIP_UPKEEP`・`TROOP_UPKEEP`・`funds` | 政治と相談 | S | 経済 | `status/C.md` の気をつけること |
+| B-014 | **済み (#235。回 KE4。R01 −1.006 で合格)** 物理 (P6) で交易路の輸送量が半分になった理由を確かめる (蓄えで `routeRoom` が絞られた見込み)。R01 は物理ありの版で測り直す | `routeRoom`・`TRADE`・`E_UNIT`・`shieldOf` | — | S | 経済 | `status/C.md` の気をつけること・`physics.md` の 11 |
+| B-015 | **済み (#236。回 KE4。1% のまま、QD-32)** 利子率の既定 (年 1%) を、Schmelzing の現代の値 (約 2%) にするか決めて直す。R01 の較正とまとめて | `FISCAL_DEFAULT`・`TRADE.rate`・`RATE_RANGE` | B-014 | S | 経済 | `status/C.md` のまだ決めていない仮の値 |
+| B-016 | **済み (#234。回 KE4)** 交易の注文の先払いが大きい件を調べる | `TRADE`・`prepaid` | — | S | 経済 | `status/C.md` の気をつけること |
+| B-017 | **調べた (#237。回 KE4。QD-31・政治に相談中)** 小さな政府の軍の維持費: 駐留先の星系でなく、国の政府が払う形にするか | `WARSHIP_UPKEEP`・`TROOP_UPKEEP`・`funds` | 政治と相談 | S | 経済 | `status/C.md` の気をつけること |
 | B-018 | 仮の値を生データで決め直す: 税の段階と予算の効き目、研究の g0、自給の値打ち、食料の弾力性の所得の傾き、人の移る速さ | `BUDGET`・`TAX_LOYALTY`・`RESEARCH.g0`・`STRUCTURE`・`laborStep` | — | M | 経済 | `status/C.md` のまだ決めていない仮の値・`fiscal.md` の 5 |
-| B-019 | 飢餓と不足の知らせが 1 試合で約 110 件・80 件ある理由を調べる (経済の壊れか、表示の段の問題か)。経済が大きく変わったので、いまの main で測り直してから | `MARKET`・`marketStep`・`EVENT_TIER` | — | S | 経済 | `critique/04-plan.md` の 0-7 と 2.3 の 7 |
+| B-019 | **済み (#233。回 KE4)** 飢餓と不足の知らせが 1 試合で約 110 件・80 件ある理由を調べる (経済の壊れか、表示の段の問題か)。経済が大きく変わったので、いまの main で測り直してから | `MARKET`・`marketStep`・`EVENT_TIER` | — | S | 経済 | `critique/04-plan.md` の 0-7 と 2.3 の 7 |
 
 ## 政治
 
@@ -150,7 +150,7 @@
 | B-101 | Alesina–Spolaore・Fearon・選択権者理論を切り替えて比べる | `BARGAIN`・`HAZARD`・新しい | 公開のあと | L | 政治 | `game-plan.md` の 6 |
 | B-102 | 年齢の較正を HMD・HFD・WPP で (HMD・HFD は登録が要る) | `.pop`・`data/raw/` | B-010 | M | 経済 | `game-plan.md` の 6・`status/Q.md` |
 | B-103 | 産業連関表 (WIOD・EXIOBASE) の投入係数と、5 部門の貸借表の完全な形 | `STRUCTURE`・`SECTORS`・`MARKET_SECTORS` | B-001 | L | 経済 | `game-plan.md` の 6 |
-| B-104 | R01 (交易と距離) の直し方 (案 A〜C) と、R02 (RICardo) の取得 | `TRADE`・`routeRoom`・`data/raw/` | B-014 | M | 経済 | `game-plan.md` の 5 と 6 (G2)・`trade.md` の 5・`reality-check.md` の 4 の 7 |
+| B-104 | (R01 は回 KE4 でゲーム版が合格。残りは R02 とシミュレーション版) R01 (交易と距離) の直し方 (案 A〜C) と、R02 (RICardo) の取得 | `TRADE`・`routeRoom`・`data/raw/` | B-014 | M | 経済 | `game-plan.md` の 5 と 6 (G2)・`trade.md` の 5・`reality-check.md` の 4 の 7 |
 | B-105 | すべての量に単位を持たせ、次元を自動で検査する | 新しい (`tools/`) | 公開のあと | L | 道具と検証 | `game-plan.md` の 6 |
 | B-106 | 時間刻みの収束試験 (R18) | `tools/tests/` | 公開のあと | S | 道具と検証 | `game-plan.md` の 6 |
 | B-107 | 複数の形の目標の事前登録・ABC-SMC・エミュレータ・Sobol で、結果を分布で出す | `tools/`・`targets/` | B-006 (手法を共有) | L | 道具と検証 | `game-plan.md` の 6 |
