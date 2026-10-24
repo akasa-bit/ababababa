@@ -3,8 +3,8 @@
 
 統計量 (WDI の NV.MNF.TECH.ZS.UN (UNIDO) と NY.GDP.PCAP.PP.KD。国・年):
   R61: 1 人あたり所得 (2021 年の国際ドル) の 5 分位ごとの、製造業の付加価値のうち中・高技術の割合の 25%〜75% 点 (R36 と同じ形)
-  ゲームの需要の曲線 (src/economy/market-consts.js の STRUCTURE.hitech): 工業品の需要 (STRUCTURE.goods。工業の付加価値から当てた曲線) のうち
-      高付加価値物品の値打ちの割合 = 1 / (1 + exp(−(a + b ln y)))。中・高技術の割合の logit を ln y に当てた最小二乗 (国・年をそのまま)。
+  ゲームの需要の曲線 (src/economy/market-consts.js の STRUCTURE.hitech): 工業品の付加価値のうち高付加価値物品の割合 = 1 / (1 + exp(−(a + b ln y)))
+      (ゲームは、これを工業品の需要 (STRUCTURE.goods) の分け方に読み替える)。中・高技術の割合の logit を ln y に当てた最小二乗 (国・年をそのまま)。
       y はゲームの所得の物差し (2011 年の国際ドル) にするため、2021 年のドルを米国の GDP デフレーターの比 1.21 で割ってから当てる (R36 と同じ読み替え)
 
 使い方: python3 data/build/build_tech.py → data/derived/tech.json
@@ -74,8 +74,9 @@ def main():
         'countries': int(x['iso3'].nunique()), 'country_years': int(len(x)), 'years': [int(x['year'].min()), int(x['year'].max())],
         'by_income': bands,
         'note': '所得は 2021 年の国際ドル。割合は製造業の付加価値のうち中・高技術の産業の割合',
-        'game': {'hitech': [round(float(a), 4), round(float(b), 4)],
-                 'note': 'STRUCTURE.hitech。工業品の需要の値打ちのうち高付加価値物品の割合 = 1/(1+exp(-(a + b ln y)))、y は 2011 年の国際ドル'},
+        'game': {'hitech': [round(float(a), 4), round(float(b), 4)], 'cpi': round(float(np.median(x['share'])), 3),
+                 'note': 'hitech = STRUCTURE.hitech。工業品の付加価値のうち高付加価値物品の割合 = 1/(1+exp(-(a + b ln y)))、y は 2011 年の国際ドル。'
+                         'cpi = すべての国・年の割合の中央値 (消費者物価の工業品を、低付加価値物品と高付加価値物品に分ける値打ちの割合)'},
     }
     print(json.dumps(out, ensure_ascii=False, indent=1))
     with open(OUT, 'w', encoding='utf-8') as f:
