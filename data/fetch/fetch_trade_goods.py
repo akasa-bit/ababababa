@@ -14,8 +14,11 @@
   food:  01〜24 章 (動物・植物・食品)。ゲームの食料
   fuel:  27 章 (鉱物性燃料)。ゲームの燃料
   metal: 26 章 (鉱石)・72 (鉄鋼)・74〜76・78〜81 章 (卑金属)。ゲームの金属 (工業の原料)
-  other: 71 章の残り (金・宝石。値打ちが重さと関係しないので外す)・98〜99 章 (分類できないもの)
-  goods: それ以外の 25〜97 章 (化学品・プラスチック・機械・輸送機器など、と 25 章の土石)。ゲームの工業品
+  other: 71 章の残り (金・宝石。値打ちが重さと関係しないので外す)・97〜99 章 (美術品・分類できないもの)
+  hitech: 28〜38 章 (化学品・医薬品)・84〜93 章 (機械・電気機器・輸送機械・精密機器・武器)。ゲームの高付加価値物品
+          (OECD の研究開発の強さで中・高技術とされる産業。UNIDO の中・高技術の製造業 (WDI の NV.MNF.TECH.ZS.UN。目標 R61) と同じ分け方)
+  goods: それ以外の 25〜96 章 (土石・プラスチック・ゴム・皮革・木材・紙・繊維・衣類・履物・ガラス・陶磁器・金属製品・家具・雑品)。
+         ゲームの低付加価値物品 (OECD の中・低技術と低技術。前の版 (目標の版 16) は hitech も含めて工業品にしていた)
 列: year, iso3_o (輸出国), iso3_d (輸入国), group, v (千米ドル)
 
 使い方: python3 data/fetch/fetch_trade_goods.py [zip のパス (省略すると取得する)] [その zip を落とした日時 (UTC。MANIFEST に書く)]
@@ -43,8 +46,10 @@ def group(k):
         return 'fuel'
     if ch in METAL:
         return 'metal'
-    if ch == '71' or ch >= '98':
+    if ch == '71' or ch >= '97':
         return 'other'
+    if '28' <= ch <= '38' or '84' <= ch <= '93':
+        return 'hitech'
     return 'goods'
 
 
@@ -102,7 +107,7 @@ def main():
         'source': 'CEPII BACI HS17 V202501 (Gaulier, G. & Zignago, S. 2010, CEPII Working Paper 2010-23)',
         'url': URL, 'members': members, 'zip_sha256': h.hexdigest(), 'fetched': fetched or '(手元の zip から作った)',
         'license': 'CEPII のデータの利用条件 (出典を明記して研究・教育に使う) に従う',
-        'groups': 'data/fetch/fetch_trade_goods.py の GROUPS の説明 (HS の章・項・号の頭で、ゲームの資源に分ける)',
+        'groups': 'data/fetch/fetch_trade_goods.py の品の分け方の説明 (HS の章・項・号の頭で、ゲームの資源に分ける。目標の版 17 で工業品を goods と hitech に分けた)',
         'files': [{'file': out_name, 'columns': cols, 'years': list(YEARS), 'rows': len(agg), 'sha256': sha_out,
                    'filter': '輸出国 ≠ 輸入国。額は品目の額 (千米ドル) を品のまとまりごとに足したもの',
                    'share': {k: round(v / s, 4) for k, v in sorted(tot.items())}}],

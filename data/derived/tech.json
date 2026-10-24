@@ -1,0 +1,79 @@
+{
+ "source": "data/raw/tech/wdi_tech.csv.gz (WDI の NV.MNF.TECH.ZS.UN (UNIDO の CIP)・NY.GDP.PCAP.PP.KD)。計算は data/build/build_tech.py",
+ "countries": 149,
+ "country_years": 5184,
+ "years": [
+  1990,
+  2024
+ ],
+ "by_income": [
+  {
+   "income": [
+    511,
+    4850
+   ],
+   "share": [
+    0.0552,
+    0.1752
+   ],
+   "median": 0.0994,
+   "n": 1037
+  },
+  {
+   "income": [
+    4850,
+    10803
+   ],
+   "share": [
+    0.0699,
+    0.224
+   ],
+   "median": 0.1287,
+   "n": 1037
+  },
+  {
+   "income": [
+    10803,
+    19509
+   ],
+   "share": [
+    0.1059,
+    0.2784
+   ],
+   "median": 0.1846,
+   "n": 1036
+  },
+  {
+   "income": [
+    19509,
+    41934
+   ],
+   "share": [
+    0.1715,
+    0.3949
+   ],
+   "median": 0.2706,
+   "n": 1037
+  },
+  {
+   "income": [
+    41934,
+    174570
+   ],
+   "share": [
+    0.2241,
+    0.4853
+   ],
+   "median": 0.3739,
+   "n": 1037
+  }
+ ],
+ "note": "所得は 2021 年の国際ドル。割合は製造業の付加価値のうち中・高技術の産業の割合",
+ "game": {
+  "hitech": [
+   -6.1273,
+   0.4903
+  ],
+  "note": "STRUCTURE.hitech。工業品の需要の値打ちのうち高付加価値物品の割合 = 1/(1+exp(-(a + b ln y)))、y は 2011 年の国際ドル"
+ }
+}

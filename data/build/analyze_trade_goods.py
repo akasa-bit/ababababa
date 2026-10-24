@@ -17,7 +17,7 @@ HERE = os.path.dirname(__file__)
 FLOWS = os.path.join(HERE, '..', 'raw', 'trade_goods', 'baci_hs17_groups_2017_2019.csv.gz')
 DIST = os.path.join(HERE, '..', 'raw', 'trade', 'cepii_gravity_2000_2019.csv.gz')
 OUT = os.path.join(HERE, '..', 'derived', 'trade_goods.json')
-GROUPS = ['food', 'fuel', 'metal', 'goods']  # 合否に使う品 (水・希少元素・その他は額が小さいか、ゲームの品と合わないので参考だけ)
+GROUPS = ['food', 'fuel', 'metal', 'goods', 'hitech']  # 合否に使う品 (goods = 低付加価値物品、hitech = 高付加価値物品。目標の版 17) (水・希少元素・その他は額が小さいか、ゲームの品と合わないので参考だけ)
 REF = ['rare', 'water']
 
 
