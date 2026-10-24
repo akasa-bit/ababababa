@@ -66,7 +66,7 @@ function ruleBox(g, id, k) {
   return `<h3>統治</h3>
     <p class="note">${direct ? `<b>直接統治 (直轄)</b>: 星系政府は自分では開発・入植・交易路の開設をせず、${ME.home}の指令をかならず実行する (指令の政治力は半分・朝貢50%・忠誠度の目標 +10・年に政治力 1)。`
       : `<b>${REGIMES[regime].label}</b> (委任方針「${MANDATES[k.mandate || 'balanced']}」): 星系政府が自分の資金で動く。${esc(REGIMES[regime].note)}。`}${k.scar ? ` 強制労働の後遺症 <b class="bad">${pct(k.scar)}</b> (税収 −${pct(FORCED.scarTax * k.scar)})。` : ''}
-      主人の関与 (指令・資金援助・${ME.home}が命じた艦隊の来訪・視察) が途絶えて <b class="${neglect > NEGLECT_GRACE ? 'bad' : ''}">${Math.floor(neglect)} 年</b> (${ME.home}の知る限り。${NEGLECT_GRACE}年を過ぎると忠誠度の目標が年${NEGLECT_RATE}ずつ下がる)。${concession ? `認めている要求: ${concession}。` : ''}</p>
+      ${NEGLECT_MAX ? `主人の関与 (指令・資金援助・${ME.home}が命じた艦隊の来訪・視察) が途絶えて <b class="${neglect > NEGLECT_GRACE ? 'bad' : ''}">${Math.floor(neglect)} 年</b> (${ME.home}の知る限り。${NEGLECT_GRACE}年を過ぎると忠誠度の目標が年${NEGLECT_RATE}ずつ下がる)。` : ''}${concession ? `認めている要求: ${concession}。` : ''}</p>
     ${ruleBtn}
     ${direct ? '' : `<label class="field">委任方針${pending('mandate') ? ' (変更の指令を送信中)' : ''} — 変えると指令 (政治力 ${g.pcCost('mandate', { sys: id })})${sel('mandate', MANDATES, k.mandate || 'balanced', MANDATE_NOTE)}</label>`}
     ${k.lord === g.cap ? `<label class="field">総督の方針 (不満が要求になったとき)${pending('governor') ? ' (変更の指令を送信中)' : ''} — 変えると指令 (政治力 ${g.pcCost('governor', { sys: id })})${sel('governor', GOVERNOR, k.governor || 'ask', GOVERNOR_NOTE)}</label>` : ''}
