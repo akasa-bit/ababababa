@@ -3,7 +3,9 @@
 // 同じ分析の台本 data/build/analyze_fiscal.py を、現実の JST とこのパネルの両方にかける。
 // ゲームの中身は変えない (出入りの関数を道具の側で包んで数えるだけ)。定義は docs/fiscal.md の 3。
 //   gdp         = 民間の付加価値 + 政府が民間から買った分 (建設・維持費・予算。費用で測る)。民間の付加価値は、市場のある版は税の土台と同じ所得
-//                 (物の産出 × 市場の値段 − 工業の投入 + サービス。incomeOf)、ない版は採掘・収穫と工業の産出 − 工業の投入 (基準価格)
+//                 (物の産出 × 市場の値段 − 工業の投入 + サービス。incomeOf) の、その年の刻みごとの値 (c.incY) × 刻みの年数の合計、ない版は採掘・収穫と工業の産出 − 工業の投入 (基準価格)。
+//                 前は年の終わりの 1 回の incomeOf だった。値段は在庫からすぐ決まり、首都の所得は刻みごとに 2〜4 倍振れる (2 刻みの周期) ので、年の終わりの 1 回の値は
+//                 振れの向きで偏った (回 KE5。民間の資本を入れて首都どうしの振れの向きがそろうと、R21・R27 が幅の外に出た)
 //   revenue     = 税 (所得への税・消費税・関税) + 先住民からの収入 + 預金の利子
 //   expenditure = revenue − 政府の純貸出 (国の政府の資金の増加。国の中の朝貢・資金援助・交易は差し引きで消える)
 //   debtgdp     = 政府の総債務 (国債の残高の合計。資金がマイナスの政府があれば、そのマイナス分も) ÷ gdp
@@ -28,11 +30,12 @@ const REVENUE = new Set(['tax', 'ctax', 'tariff', 'natives', 'interest']);
 const VALUE = new Set(['extract', 'make', 'use', 'burn']);
 const sim = H.load({ params, ...(process.env.HTML ? { src: process.env.HTML } : {}) }); // HTML=… で別の版 (main など) を測れる // 1 回だけ読み込む (回している途中で src が書き換わっても、同じ版で回す)
 const { PRICE } = sim.tables;
+const MKT = !!sim.tables.MARKET?.buy; // 市場のある版 (刻みごとの所得 c.incY がある)
 
 function play(seed) {
   const g = sim.newGame(seed, { nations: Number(natS) });
   const acc = {}; // 星系ごとの 1 年の足し上げ { va, buy, rev, flow }
-  const A = (id) => (acc[id] ??= { va: 0, buy: 0, rev: 0, flow: 0 });
+  const A = (id) => (acc[id] ??= { va: 0, buy: 0, rev: 0, flow: 0, inc: 0 });
   const mv = g.mv.bind(g), earn = g.earn.bind(g), cash = g.cash.bind(g);
   g.mv = (sys, res, amt, kind) => { if (VALUE.has(kind)) A(sys).va += amt * (g.price ? g.price(sys, res) : PRICE[res]); return mv(sys, res, amt, kind); }; // その星系の市場の値段 (段 5)
   g.earn = (kind, amount, sys = 0, other = null) => {
@@ -48,6 +51,8 @@ function play(seed) {
     else if ((acct.hh !== undefined || acct.fm !== undefined || acct.pv !== undefined) && GOV_BUY.has(kind) && v > 0) A(acct.hh ?? acct.fm ?? acct.pv).buy += v;
     return cash(kind, v, acct);
   };
+  const eco = g.economy.bind(g);
+  g.economy = (h) => { const r = eco(h); if (g.incomeOf) for (const c of g.colonies) A(c.sys).inc += (c.incY || 0) * h; return r; }; // 刻みごとの所得 (税の土台と同じ)
   const rows = [];
   for (let y = 0; y < Number(yS); y++) {
     for (const k of Object.keys(acc)) delete acc[k];
@@ -57,9 +62,9 @@ function play(seed) {
       const id = Number(key);
       if (!g.isColonized(id)) continue;
       const R = (realms[g.realmOf(id)] ??= { gdp: 0, revenue: 0, flow: 0, debt: 0, tloans: 0, pop: 0, yl: 0, bonds: 0, infl: 0 });
-      const a = acc[id] || { va: 0, buy: 0, rev: 0, flow: 0 }, gv = g.govs[key];
-      // 民間の付加価値: 市場のある版は、税の土台と同じ所得 (サービスを含む。incomeOf) を年の終わりの値で。ない版は、産出 × 値段の足し上げ
-      const va = g.incomeOf ? g.coloniesIn(id).reduce((k, c) => k + g.incomeOf(c), 0) : a.va;
+      const a = acc[id] || { va: 0, buy: 0, rev: 0, flow: 0, inc: 0 }, gv = g.govs[key];
+      // 民間の付加価値: 市場のある版は、税の土台と同じ所得 (サービスを含む。incomeOf) のその年の合計。ない版は、産出 × 値段の足し上げ
+      const va = g.incomeOf ? (MKT ? a.inc : g.coloniesIn(id).reduce((k, c) => k + g.incomeOf(c), 0)) : a.va;
       R.gdp += va + a.buy;
       R.revenue += a.rev;
       R.flow += a.flow;

@@ -249,7 +249,7 @@
     // 3. 消費と人口の増減、税収
     // 食べ物・水・工業品の在庫は星系でまとめて持つので、不足の知らせは星系でいちばん大きな入植地 (head) だけが出し、ほかの入植地は状態 (alerts) を写す
     // (回 KE4・B-019。前は国の本星の星系のステーションも同じ不足をそれぞれ知らせ、1 試合の飢餓の知らせ約 48 件のうち 27 件がそれだった)
-    const head = {};
+    const head = {}, va = {};
     for (const c of this.colonies) if (!head[c.sys] || c.pop > head[c.sys].pop) head[c.sys] = c;
     for (const c of this.colonies) {
       const lead = head[c.sys] === c;
@@ -305,6 +305,7 @@
       if (c.pop >= 1) this.watch(c, 'aging', DEMO.alert / Math.max(this.ageShares(c).dep, 1e-9), 'shortage', () => `${c.name} の扶養比が ${Math.round(this.ageShares(c).dep * 100)} に上がった (働き手 100 人で支える子どもと高齢の数。年金と医療が増える)`, `${c.name} の扶養比が下がった`); // 10-5 の知らせ
       const income = MARKET.buy ? this.incomeOf(c) : 0;
       c.incY = income; // この刻みの所得 (年金と医療で使う。ageSpendStep)
+      va[c.sys] = (va[c.sys] || 0) + income * h; // 星系の市場の付加価値 (賃金と配当に分ける。economy の 7)
       if (MARKET.buy) {
         // 家計は買った物とサービスの代金を会社に払う (サービスの売上 = サービスの人の稼ぎの合計)。会社は売上を賃金として家計に払う (刻みの終わり。economy の 7)
         const S = c.pop * (c.sh || sharesOf(c.focus)).serv * this.wagesOf(c).serv * h;
@@ -356,10 +357,16 @@
     this.unmet = {};
     this.laborStep(h);
     this.researchStep(h);
-    // 7. 賃金と配当: 会社は、この刻みの売上 (家計の買い物・政府の資材の買い付け・輸出) をすべて賃金と配当として家計に払う (会社の手持ちは 0)。
-    //    賃金を「作った物の値打ち」で払う形も試したが、値段の高いときに在庫を作って安いときに売る (在庫の評価損) で会社の借りが毎年 GDP の 5〜10% 増え続けた
-    //    (docs/structure.md の 7)。会社の手持ちのマイナス (借り) に残るのは、輸入の代金 (出荷のときに払い、売ってから返す運転資金。回 KE4) だけ。設備の借りは別の残高 (gv.bl。回 KE3)
-    if (MARKET.buy) for (const key of Object.keys(this.govs)) { const gv = this.govs[key]; if (gv.fm > 0) { const v = gv.fm, id = Number(key); this.cash('wages', -v, { fm: id }); this.cash('wages', v, { hh: id }); } }
+    // 7. 賃金と配当: 会社は、この刻みの市場の付加価値の 1 − alpha を賃金として払い (CAPITAL。回 KE5。手持ちが足りなければ借りる)、残りの手持ち
+    //    (売上 (家計の買い物・政府の資材の買い付け・輸出) − 賃金) をすべて配当として家計に払う (会社の手持ちは 0)。前は売上をすべて賃金と配当 (wages) として払っていた
+    //    (労働分配率は実質 100%)。賃金の全部を「作った物の値打ち」で払う形は前に試して、値段の高いときに在庫を作って安いときに売る (在庫の評価損) で会社の借りが
+    //    毎年 GDP の 5〜10% 増え続けた (docs/structure.md の 7)。いまは評価損を配当 (alpha の分) が受ける。会社の手持ちのマイナス (借り) に残るのは、
+    //    輸入の代金 (出荷のときに払い、売ってから返す運転資金。回 KE4) と、配当で受けきれなかった評価損。設備の借りは別の残高 (gv.bl。回 KE3)
+    if (MARKET.buy) for (const key of Object.keys(this.govs)) {
+      const gv = this.govs[key], id = Number(key), W = (1 - CAPITAL.alpha) * (va[id] || 0);
+      if (W > 0) { this.cash('wages', -W, { fm: id }); this.cash('wages', W, { hh: id }); }
+      if (gv.fm > 0) { const v = gv.fm; this.cash('dividend', -v, { fm: id }); this.cash('dividend', v, { hh: id }); }
+    }
     // 7. 軍の維持費
     // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)。受け取るのは払う星系の民間 (兵の給料と補給の買い付け)
     const payer = (id) => (this.isColonized(id) ? id : 0);
