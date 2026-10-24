@@ -29,19 +29,38 @@ def by_group(rows, key):
 
 
 def game(path):
+    """ゲームの書き出し (品ごと) の R01: 品をまとめた推定と、交易額の 5% 以上の品ごとの推定を、targets.json の幅と比べる"""
+    T = next(r for r in json.load(open(os.path.join(HERE, '..', '..', 'targets', 'targets.json'), encoding='utf-8'))['realism'] if r['id'] == 'R01')
     rows = read_flows(path)
-    tot = {}
+    tot, agg = {}, {}
     for r in rows:
         tot[r['res']] = tot.get(r['res'], 0.0) + float(r['tradeflow'])
+        k = (r['year'], r['iso3_o'], r['iso3_d'])
+        if k not in agg:
+            agg[k] = {'year': r['year'], 'iso3_o': r['iso3_o'], 'iso3_d': r['iso3_d'], 'dist': r['dist'], 'tradeflow': 0.0}
+        agg[k]['tradeflow'] += float(r['tradeflow'])
     s = sum(tot.values()) or 1
-    res = {'all': round(elasticity(rows)['beta'], 4), 'share': {k: round(v / s, 4) for k, v in sorted(tot.items())}, 'goods': {}}
+    allb = elasticity(list(agg.values()))['beta']
+    res = {'all': round(allb, 4), 'share': {k: round(v / s, 4) for k, v in sorted(tot.items())}, 'goods': {}}
+    lo, hi = T['band']
+    ok = bool(lo <= allb <= hi)
+    compared = 0
     for g, rs in sorted(by_group(rows, 'res').items()):
         try:
             e = elasticity(rs)
             res['goods'][g] = {'beta': round(e['beta'], 4), 'rows': e['rows']}
         except Exception as ex:  # 組が少なすぎる品
             res['goods'][g] = {'beta': None, 'rows': len(rs), 'error': str(ex)[:80]}
+            continue
+        band = T['goods'].get(g, {}).get('band')
+        if band and tot[g] / s >= 0.05:
+            compared += 1
+            inside = band[0] <= e['beta'] <= band[1]
+            res['goods'][g].update({'band': band, 'inside': inside})
+            ok = ok and inside
+    ok = ok and compared >= 2
     print(json.dumps(res, ensure_ascii=False))
+    print(f"R01 {'合格' if ok else '不合格'} (まとめた推定 {allb:.3f}、幅 {lo}〜{hi}。交易額の 5% 以上の品 {compared})")
 
 
 def main():
