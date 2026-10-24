@@ -162,7 +162,7 @@
       if (over > 0) this.bookE('waste', -over, id);
     }
     const flow = {};
-    const F = (s) => (flow[s] ??= { prod: zeroRes(), cons: zeroRes(), pop: 0 });
+    const F = (s) => (flow[s] ??= { prod: zeroRes(), cons: zeroRes(), short: zeroRes(), pop: 0 }); // short = 原料が足りずに使えなかった投入 (交易の買い手が見る)
 
     // 1. 生産: 人口を就業の割合 (c.sh。値段で動く。laborStep) で農業・鉱業・工業・サービスに振り分ける。施設レベル1ごとに +25%。
     //    需要で決まる生産 (段 5 の 3): 部門の人が作れる量 (plan) のうち、星系の需要 (市場のふだんの消費 u。消費・工業の投入・建設・輸出・補給と、足りなかった分) と
@@ -221,6 +221,7 @@
       const run = c.plan > 0 ? (need / (c.plan * h)) * k : 0; // 稼働率 (値段で減らした分と、原料が足りなかった分)
       fl.cons.metal += 0.5 * c.plan * (MARKET.buy ? run : 1);
       fl.cons.fuel += 0.2 * c.plan * (MARKET.buy ? run : 1);
+      if (MARKET.buy && need > 0 && k < 1) { const want = (need / h) * (1 - k); fl.short.metal += 0.5 * want; fl.short.fuel += 0.2 * want; } // 使えなかった原料も、取り寄せる合図にする (trade の use)
       fl.prod.goods += c.plan * run;
       c.industry = run;
       const L = c.lv.slaveworks || 0;
@@ -236,6 +237,14 @@
       if (c.pop >= 1 && c.plan > 0) {
         this.watch(c, 'industry', k, 'shortage', () => `${c.name} の工場が原料 (金属・燃料) 不足で減産 (稼働 ${pct(k)})`, `${c.name} の工場の原料不足が解消した`);
       }
+    }
+    // 地元で作れば儲かるのに作れていない工業品 (市場の需要 − 星系の工場の生産) の原料も、取り寄せる合図にする (docs/regions.md の 2。輸入の代わりに地元で作る)。
+    // 工業の人がほとんどいない星系は、いまの工場の不足だけを数えると注文が最小の量に届かず、原料が来ない → 人が来ない、のまま動かなかった
+    if (MARKET.buy) for (const key of Object.keys(plan)) {
+      const id = Number(key), u = this.market[id]?.u.goods || 0, made = flow[id]?.prod.goods || 0;
+      if (!(u > made) || !(0.5 * this.price(id, 'metal') + 0.2 * this.price(id, 'fuel') < this.price(id, 'goods'))) continue;
+      const fl = F(id), gap = u - made;
+      fl.short.metal += 0.5 * gap; fl.short.fuel += 0.2 * gap;
     }
     // 3. 消費と人口の増減、税収
     // 食べ物・水・工業品の在庫は星系でまとめて持つので、不足の知らせは星系でいちばん大きな入植地 (head) だけが出し、ほかの入植地は状態 (alerts) を写す
@@ -349,7 +358,7 @@
     this.researchStep(h);
     // 7. 賃金と配当: 会社は、この刻みの売上 (家計の買い物・政府の資材の買い付け・輸出) をすべて賃金と配当として家計に払う (会社の手持ちは 0)。
     //    賃金を「作った物の値打ち」で払う形も試したが、値段の高いときに在庫を作って安いときに売る (在庫の評価損) で会社の借りが毎年 GDP の 5〜10% 増え続けた
-    //    (docs/structure.md の 7)。会社の借りに残るのは、輸入の先払い (売ってから返す運転資金) だけ
+    //    (docs/structure.md の 7)。会社の手持ちのマイナス (借り) に残るのは、輸入の代金 (出荷のときに払い、売ってから返す運転資金。回 KE4) だけ。設備の借りは別の残高 (gv.bl。回 KE3)
     if (MARKET.buy) for (const key of Object.keys(this.govs)) { const gv = this.govs[key]; if (gv.fm > 0) { const v = gv.fm, id = Number(key); this.cash('wages', -v, { fm: id }); this.cash('wages', v, { hh: id }); } }
     // 7. 軍の維持費
     // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)。受け取るのは払う星系の民間 (兵の給料と補給の買い付け)
