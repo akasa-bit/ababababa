@@ -13,6 +13,13 @@ function councilChart(v) {
     </svg><figcaption><span class="sw own"></span>支持 ${n} <span class="sw opp"></span>不支持 ${100 - n}</figcaption></figure>`;
 }
 
+// 年齢 3 区分の帯と扶養比 (回 KE2。10-5 の a)。s = ageShares() か、記録 (known) の cols[].ages。星系の欄 (画面のレーン) からも呼べる
+function ageBarHtml(s) {
+  if (!s) return '<span class="muted">—</span>';
+  const seg = (v, col, label) => `<span title="${label} ${pct(v)}" style="display:inline-block;height:0.7em;width:${(v * 100).toFixed(1)}%;background:${col}"></span>`;
+  return `<span class="agebar" style="display:inline-flex;width:8em;vertical-align:middle;border:1px solid var(--line)">${seg(s.young, 'var(--info)', '0〜14 歳')}${seg(s.work, 'var(--fg)', '15〜64 歳')}${seg(s.old, 'var(--warn)', '65 歳〜')}</span>
+    <span class="muted">子ども ${pct(s.young)}・働き手 ${pct(s.work)}・高齢 ${pct(s.old)}・扶養比 <span class="${s.dep > DEMO.alert ? 'bad' : ''}">${Math.round(s.dep * 100)}</span></span>`;
+}
 // 帝国 → 目標の「財政」: 税・中央銀行と政策金利・予算。変えると光速で広がる (国家方針と同じ)
 // 財政のスライダーの値の見せ方 (data-fmt)
 function fiscalFmt(fmt, v) {
@@ -50,6 +57,12 @@ function fiscalHtml(g) {
       <tr><td>長期の国債の利回り</td><td class="num">年 ${(g.longYield(g.cap) * 100).toFixed(2)}%</td><td colspan="2" class="muted wrap">10 年の国債: 政策金利の見込み + 期間の上乗せ + 信用の上乗せ (国債 ÷ GDP × ${(CB.credit * 100).toFixed(2)}%。いま ${(CB.credit * Math.min(CB.dmax, (cg.bond || 0) / Math.max(cg.fr?.y || 0, 1e-9)) * 100).toFixed(2)}%)。国債 ÷ GDP が ${Math.round(CB.dmax * 100)}% を超えると不履行になり、国債の ${Math.round(CB.haircut * 100)}% を払わない (預金がそのぶん目減りする)</td></tr>
       <tr><td>赤字の上限</td><td>${slider('deficit', DEFICIT_RANGE, DEFICIT_STEP, f.deficit || 0, 'pct1gdp', '赤字の上限')}</td><td colspan="2" class="muted wrap">資金が足りない分を、1 年にこの額まで国債で借りる (${ME.capName}の GDP ${fmtAmt(cg.fr?.y || 0)} cr/年)。国債 ${fmtAmt(cg.bond || 0)} cr・いま借りられる額 ${fmtAmt(Math.max(0, g.funds(g.cap) - cg.credits))} cr。手元の資金が税収の ${Math.round(DEBT.cash * 12)} か月分を超えると、超えた分で国債を返す。国債 ÷ GDP は ${Math.round(DEBT.limit * 100)}% まで</td></tr>
     </table>
+    ${(() => { // 年金と医療 (回 KE2)。首都の星系の年齢と、払った額
+      const c = g.coloniesIn(g.cap).sort((a, b) => b.pop - a.pop)[0];
+      const L = cg.ledger || {};
+      return c ? `<h3>年齢と、年金・医療</h3><table class="tbl"><tr><td>${esc(c.name)}の年齢</td><td>${ageBarHtml(g.ageShares(c))}</td></tr>
+        <tr><td>年金・医療</td><td>${fmtAmt(-(L.pension || 0))} cr/年・${fmtAmt(-(L.health || 0))} cr/年${(cg.apaid ?? 1) < 0.99 ? ` <span class="bad">(資金が足りず ${pct(cg.apaid)} しか払えていない)</span>` : ''} <span class="muted">高齢 (65 歳〜。ゲームの年数は 100 ÷ 28 倍) が多いほど増える。政府が自動で払う</span></td></tr></table>` : '';
+    })()}
     <h3>予算 (${ME.capName}の税収 ${fmtAmt(tax)} cr/年 のうち ${Math.round(used * 100)}% を使う。合わせて ${BUDGET_TOTAL * 100}% まで)</h3>
     <table class="tbl">${rows}</table>
     ${paid < 0.99 && used ? `<p class="note bad">資金が足りず、予算を ${pct(paid)} しか払えていない (効き目もそのぶん下がる)</p>` : ''}`;

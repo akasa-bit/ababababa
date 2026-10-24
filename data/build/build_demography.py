@@ -9,6 +9,7 @@
      5 歳きざみの死亡率 mx・出生率 ASFR (セッション 10 が、世代の比で延ばしてコーホートの率にする元)
 
 使い方: python3 data/build/build_demography.py → data/derived/demography.json
+        python3 data/build/build_demography.py ゲームのパネル.csv  → ゲームの R36・R37 (tools/demography-panel.js の出力。同じ分位の境目・同じ傾きの式)
 """
 import json, os, sys
 import numpy as np
@@ -42,6 +43,19 @@ def slope(p):
         yd[k] -= y[k].mean()
     return float((xd @ yd) / (xd @ xd))
 
+def game_rates(rates):
+    """ゲームの年齢つきの人口 (src/economy/demography-consts.js の DEMO) に写す値 (回 KE2): 分位ごとの代表の国の、5 歳きざみ (0〜4・5〜9・…・100 歳〜。21 きざみ) の
+    死亡率 mx (0〜4 歳は 0 歳と 1〜4 歳の mx を 1 : 4 の年数で重みづけた平均) と年齢別出生率 asfr、1 人あたり所得 (2021 年の国際ドル)"""
+    out = []
+    for r in rates:
+        mx = {}
+        for sex, k in (('Female', 'f'), ('Male', 'm')):
+            m = {int(a): v for a, v in r['mx'][sex].items()}
+            mx[k] = [round((m[0] + 4 * m[1]) / 5, 6)] + [round(m[a], 6) for a in range(5, 101, 5)]
+        f = {int(a): v for a, v in r['asfr'].items()}
+        out.append({'iso3': r['iso3'], 'income': round(r['gdppc']), 'mx': mx, 'asfr': [round(f.get(a, 0), 6) for a in range(0, 101, 5)]})
+    return out
+
 def main():
     w = wdi()
     p = w[(w['year'] >= 1990) & (w['year'] <= 2023)].dropna(subset=['young', 'work', 'old', 'gdppc', 'tfr'])
@@ -71,13 +85,14 @@ def main():
         mid = s.iloc[(s['TFR'] - s['TFR'].median()).abs().argsort().iloc[0]]  # 出生率が分位の中央値に近い国
         m = lt[lt['ISO3_code'] == mid['iso3']]
         f = fx[fx['ISO3_code'] == mid['iso3']]
-        rates.append({'iso3': mid['iso3'], 'country': mid['Location'], 'tfr': float(mid['TFR']),
+        rates.append({'iso3': mid['iso3'], 'country': mid['Location'], 'tfr': float(mid['TFR']), 'gdppc': float(mid['gdppc']),
                       'mx': {sex: {int(r.AgeGrpStart): float(r.mx) for r in m[m['Sex'] == sex].itertuples()} for sex in ('Male', 'Female')},
                       'asfr': {int(r.AgeGrpStart): float(r.ASFR) / 1000 for r in f.itertuples()}})
+    game = game_rates(rates)
     res = {'note': '割合は 0〜1。所得は 2021 年の国際ドル (WDI、PPP)。帯は [25%, 50%, 75%] 点。asfr は女性 1 人あたり年あたりの出生',
            'age_by_income': age, 'years': [int(p['year'].min()), int(p['year'].max())], 'countries': int(len(cs)),
            'tfr_income_elasticity': {'b': b, 'band_5_95': [float(np.quantile(boots, .05)), float(np.quantile(boots, .95))], 'boots': len(boots)},
-           'life_by_income_2023': life, 'rates_2023_median_country': rates}
+           'life_by_income_2023': life, 'rates_2023_median_country': rates, 'game': game}
     with open(OUT, 'w', encoding='utf-8') as f:
         json.dump(res, f, ensure_ascii=False, indent=1)
     print(f"{res['countries']} か国・{res['years']}・出生率の所得弾力性 {b:.3f} (5〜95%: {res['tfr_income_elasticity']['band_5_95'][0]:.3f}〜{res['tfr_income_elasticity']['band_5_95'][1]:.3f})")
@@ -86,5 +101,32 @@ def main():
     for l, r in zip(life, rates):
         print(f"  2023 所得 {l['income'][0]:8.0f}〜: 平均寿命 {l['le0'][0]:.1f}〜{l['le0'][2]:.1f}  出産の平均年齢 {l['mac'][1]:.1f}  中央の国 {r['country']} (TFR {r['tfr']:.2f})")
 
+def game(path):
+    """ゲームのパネル: R36 = WDI と同じ所得の分位の境目で分け、入植地・年が 100 以上ある分位の 3 つの割合の中央値を幅と比べる。
+    R37 = 銀河ごとに slope() (年の固定効果) を当て、銀河のあいだの中央値"""
+    d = json.load(open(OUT, encoding='utf-8'))
+    g = pd.read_csv(path)
+    edges = [q['income'][0] for q in d['age_by_income']] + [d['age_by_income'][-1]['income'][1]]
+    g['q'] = np.clip(np.searchsorted(np.log(edges), np.log(g['gdppc']), side='right') - 1, 0, 4)
+    r36 = []
+    for q, ref in enumerate(d['age_by_income']):
+        s = g[g['q'] == q]
+        if len(s) < 100:
+            r36.append({'q': q, 'n': int(len(s))})
+            continue
+        m = {k: float(s[k].median()) for k in ('young', 'work', 'old')}
+        r36.append({'q': q, 'n': int(len(s)), **{k: round(v, 4) for k, v in m.items()},
+                    'inside': all(ref[k][0] <= m[k] <= ref[k][2] for k in m)})
+    comp = [x for x in r36 if 'inside' in x]
+    ok36 = len(comp) >= 3 and sum(x['inside'] for x in comp) >= 2 / 3 * len(comp)
+    b = [slope(s) for _, s in g.groupby('galaxy') if s['gdppc'].nunique() > 2 and s['tfr'].nunique() > 2]
+    b37 = float(np.median(b)) if b else None
+    band = [round(d['tfr_income_elasticity']['b'] * 1.5, 4), round(d['tfr_income_elasticity']['b'] * 0.5, 4)]
+    print(json.dumps({'R36': {'quintiles': r36, 'pass': ok36}, 'R37': {'median': b37, 'p10_p90': [float(np.quantile(b, .1)), float(np.quantile(b, .9))] if b else None, 'galaxies': len(b), 'band': band,
+                      'pass': b37 is not None and band[0] <= b37 <= band[1]}}, ensure_ascii=False, indent=1))
+
 if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        game(sys.argv[1])
+        sys.exit()
     sys.exit(main())
