@@ -6,8 +6,9 @@
     使う列だけを取り出して data/raw/regions/dose_v2.csv.gz に置く:
       country, GID_0, GID_1, year, pop, grp_pc_lcu_2015 (2015 年の値段の地域の 1 人あたり総生産、自国通貨), grp_pc_usd_2015, StructChange (統計の切れ目)
   - Penn World Table 10.01 (Feenstra, Inklaar & Timmer 2015) … DataverseNL doi:10.34894/QT5BCC の pwt1001.dta (約 3.5 MB)。
-    使う列だけを取り出して data/raw/regions/pwt1001_labsh.csv.gz に置く:
-      countrycode, year, labsh (労働分配率), rgdpe (支出側の実質 GDP、2017 年の購買力平価の百万ドル), pop (百万人)
+    使う列だけを取り出して data/raw/regions/pwt1001.csv.gz に置く:
+      countrycode, year, labsh (労働分配率), rgdpe (支出側の実質 GDP、2017 年の購買力平価の百万ドル), pop (百万人),
+      irr (資本の実質の収益率), delta (資本の減価償却の率), cn (資本ストック、いまの購買力平価の百万ドル), cgdpo (生産側の GDP、同じ), csh_i (投資 ÷ GDP)
 元のファイルの URL・取得日・SHA-256 と、取り出した列・行数を data/raw/regions/MANIFEST.json に記録する (同じ元のファイルから同じバイト列になる)。
 
 使い方: python3 data/fetch/fetch_regions.py [DOSE_V2.csv のパス] [pwt1001.dta のパス] [それを落とした日時 (UTC)]   (パスを省くと取得する。pandas が要る)
@@ -20,7 +21,7 @@ ROOT = os.path.join(os.path.dirname(__file__), '..', 'raw', 'regions')
 DOSE_URL = 'https://zenodo.org/api/records/7573249/files/DOSE_V2.csv/content'
 PWT_URL = 'https://dataverse.nl/api/access/datafile/354098'
 DOSE_COLS = ['country', 'GID_0', 'GID_1', 'year', 'pop', 'grp_pc_lcu_2015', 'grp_pc_usd_2015', 'StructChange']
-PWT_COLS = ['countrycode', 'year', 'labsh', 'rgdpe', 'pop']
+PWT_COLS = ['countrycode', 'year', 'labsh', 'rgdpe', 'pop', 'irr', 'delta', 'cn', 'cgdpo', 'csh_i']
 UA = {'User-Agent': 'NoLongerUbiquitous data fetch (research game; contact via repository)'}
 
 
@@ -58,7 +59,7 @@ def main():
     p['year'] = p['year'].astype(int)
     files = [
         {**write_gz(d, 'dose_v2.csv.gz'), 'from': 'DOSE_V2.csv', 'url': DOSE_URL, 'source_sha256': sha(dose), 'filter': 'なし (列だけを取り出した)'},
-        {**write_gz(p, 'pwt1001_labsh.csv.gz'), 'from': 'pwt1001.dta', 'url': PWT_URL, 'source_sha256': sha(pwt), 'filter': 'labsh のある国・年'},
+        {**write_gz(p, 'pwt1001.csv.gz'), 'from': 'pwt1001.dta', 'url': PWT_URL, 'source_sha256': sha(pwt), 'filter': 'labsh のある国・年'},
     ]
     man = {
         'source': 'DOSE v2 (Wenz ほか 2023, Scientific Data 10, 425。Zenodo 10.5281/zenodo.7573249、CC BY 4.0)・'

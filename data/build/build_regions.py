@@ -9,6 +9,8 @@
       速さ λ = −ln(1 + 10 b) ÷ 10 (b は傾き。年あたり)。国を引き直すブートストラップ 1000 回の 5%〜95% 点も出す
   (参考) 国の中の地域の差: 国・年ごとに、地域の 1 人あたり総生産の 90% 点 ÷ 10% 点 (地域が 5 つ以上)。国ごとの中央値の分布
   R39 労働分配率: Penn World Table 10.01 の labsh の国ごとの中央値の分布 (10%・25%・50%・75%・90% 点)。所得 (rgdpe ÷ pop) の 5 分位ごとの中央値も
+  ゲームの資本の値 (src/economy/market-consts.js の CAPITAL。回 KE5): 資本の分け前 alpha = 1 − labsh の国ごとの中央値の中央値、減価償却 delta・資本の収益率 irr・
+      資本 ÷ 産出 (cn ÷ cgdpo)・投資 ÷ GDP (csh_i) の国ごとの中央値の中央値と四分位範囲
 
 使い方: python3 data/build/build_regions.py → data/derived/regions.json
         python3 data/build/build_regions.py 地域のパネル.csv [労働分配率のパネル.csv] → ゲームの R38・R39 (同じ式。tools/region-panel.js の出力)
@@ -98,6 +100,15 @@ def labor_share(p):
     return out
 
 
+def capital(p):
+    """ゲームの資本の値 (CAPITAL) の元: 国ごとの中央値の、国のあいだの 25%・50%・75% 点"""
+    x = p.assign(ky=p['cn'] / p['cgdpo'])
+    q = lambda col: [round(float(v), 4) for v in x.dropna(subset=[col]).groupby('countrycode')[col].median().quantile([0.25, 0.5, 0.75])]
+    out = {k: q(k) for k in ('labsh', 'delta', 'irr', 'ky', 'csh_i')}
+    out['game'] = {'alpha': round(1 - out['labsh'][1], 3), 'delta': round(out['delta'][1], 3), 'irr': round(out['irr'][1], 3)}
+    return out
+
+
 def game(region_csv, labsh_csv=None):
     d = pd.read_csv(region_csv, dtype={'GID_0': str, 'GID_1': str})
     p, est = convergence(d, 'grp_pc')
@@ -118,15 +129,18 @@ def main():
     ref = {'keep_breaks': convergence(d.assign(StructChange=0), 'grp_pc_lcu_2015')[1],
            'usd_2015': convergence(d, 'grp_pc_usd_2015')[1]}
     print('参考', ref, flush=True)
-    pw = pd.read_csv(os.path.join(RAW, 'pwt1001_labsh.csv.gz'))
+    pw = pd.read_csv(os.path.join(RAW, 'pwt1001.csv.gz'))
     ls = labor_share(pw)
     print('R39', ls, flush=True)
+    cap = capital(pw)
+    print('資本', cap, flush=True)
     out = {
         'source': 'data/raw/regions/ (DOSE v2・Penn World Table 10.01)。計算は data/build/build_regions.py',
         'convergence': {**est, 'reference': ref,
                         'note': '国 × 期間の固定効果つきの β 収束。期間は重ならない 10 年、統計の切れ目 (StructChange ≠ 0) をまたぐ組は使わない。速さは年あたり'},
         'spread_90_10': spread(d, 'grp_pc_lcu_2015'),
         'labor_share': ls,
+        'capital': {**cap, 'note': '国ごとの中央値の、国のあいだの 25%・50%・75% 点。game はゲームの CAPITAL に写す値 (alpha = 1 − labsh の中央値)'},
     }
     with open(OUT, 'w', encoding='utf-8') as f:
         json.dump(out, f, ensure_ascii=False, indent=1)

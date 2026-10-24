@@ -89,8 +89,8 @@ python3 data/build/analyze_trade_goods.py   # 推定する (numpy が要る。�
 
 | 段 | 場所 | 中身 |
 |---|---|---|
-| 取得 | `data/fetch/fetch_regions.py` → `data/raw/regions/` | DOSE v2 (Wenz ほか 2023。83 か国・1,661 地域・1953〜2020 年。Zenodo 7573249) の地域の 1 人あたり総生産と人口・統計の切れ目の 8 列 (`dose_v2.csv.gz`)、Penn World Table 10.01 (DataverseNL) の labsh・rgdpe・pop (`pwt1001_labsh.csv.gz`)。元のファイルの URL・取得日・SHA-256、列・行数を `data/raw/regions/MANIFEST.json` に記録する (pandas が要る) |
-| 加工 | `data/build/build_regions.py` → `data/derived/regions.json` | R38: 地域の 1 人あたり総生産 (2015 年の値段) の 10 年の伸びを初めの ln に当てた β 収束 (国 × 期間の固定効果。重ならない 10 年。統計の切れ目をまたぐ組は使わない) と、国を引き直すブートストラップ。参考に、国の中の地域の 90% 点 ÷ 10% 点。R39: labsh の国ごとの中央値の分布と、所得の 5 分位ごとの四分位範囲 |
+| 取得 | `data/fetch/fetch_regions.py` → `data/raw/regions/` | DOSE v2 (Wenz ほか 2023。83 か国・1,661 地域・1953〜2020 年。Zenodo 7573249) の地域の 1 人あたり総生産と人口・統計の切れ目の 8 列 (`dose_v2.csv.gz`)、Penn World Table 10.01 (DataverseNL) の labsh・rgdpe・pop と、資本の irr・delta・cn・cgdpo・csh_i (`pwt1001.csv.gz`)。元のファイルの URL・取得日・SHA-256、列・行数を `data/raw/regions/MANIFEST.json` に記録する (pandas が要る) |
+| 加工 | `data/build/build_regions.py` → `data/derived/regions.json` | R38: 地域の 1 人あたり総生産 (2015 年の値段) の 10 年の伸びを初めの ln に当てた β 収束 (国 × 期間の固定効果。重ならない 10 年。統計の切れ目をまたぐ組は使わない) と、国を引き直すブートストラップ。参考に、国の中の地域の 90% 点 ÷ 10% 点。R39: labsh の国ごとの中央値の分布と、所得の 5 分位ごとの四分位範囲。ゲームの資本の値 (`CAPITAL`): 資本の分け前 = 1 − labsh・減価償却・資本の収益率の国ごとの中央値 |
 
 ```sh
 python3 data/fetch/fetch_regions.py     # 生データを取り直す (約 18 MB)
@@ -99,6 +99,7 @@ python3 data/build/build_regions.py 地域のパネル.csv [労働分配率の�
 ```
 
 - **結果**: R38 年 1.82% (54 か国・2,190 組。ブートストラップの 5〜95% 点 1.35〜2.20%。統計の切れ目を気にしないと 1.96%)。R39 国ごとの中央値の 10・50・90% 点 0.384・0.549・0.690 (138 か国)。所得の分位ごとの中央値は 0.50〜0.56 で、所得とほとんど関係がない
+- **資本の値** (国ごとの中央値の 25・50・75% 点): 減価償却 0.035・0.040・0.047、資本の実質の収益率 0.068・0.107・0.164、資本 ÷ 産出 2.06・2.70・3.94、投資 ÷ GDP 0.154・0.208・0.260。ゲームの `CAPITAL` は alpha 0.451・delta 0.040・irr 0.107 (`data/derived/regions.json` の capital の game)
 - **統計の切れ目**: DOSE の StructChange は、元のデータか地域の境が変わった年に 0 でない値をとる (Wenz ほか 2023 の Methods)。2015 年に 3 がつく国が多い (44 か国) ので、2010〜2020 年の組の多くは使っていない
 - **限界**: DOSE は国によって始まりの年が違い (中央値 1995 年)、地域の数も違う。labsh は国によって推計のしかたが違う (PWT の文書)。3 か国はどの年も同じ値 (推計で埋めた値とみられる) で、そのまま入れた
 

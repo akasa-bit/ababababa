@@ -23,16 +23,21 @@
    "filter": "なし (列だけを取り出した)"
   },
   {
-   "file": "pwt1001_labsh.csv.gz",
+   "file": "pwt1001.csv.gz",
    "columns": [
     "countrycode",
     "year",
     "labsh",
     "rgdpe",
-    "pop"
+    "pop",
+    "irr",
+    "delta",
+    "cn",
+    "cgdpo",
+    "csh_i"
    ],
    "rows": 7970,
-   "sha256": "93c7de8ada89088909504fd22a8a0e82a158f82a620c9642a1fdff4998b0700c",
+   "sha256": "27b68f3cb0cc526e786ecc4ad55cba7c6b70b0cfe2c2201845b56f62f996b5bc",
    "from": "pwt1001.dta",
    "url": "https://dataverse.nl/api/access/datafile/354098",
    "source_sha256": "746a483666a5371f8e686f8bfea6c20e211e5ecdd928842c6e01d2bd623ffb4c",
