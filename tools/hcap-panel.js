@@ -24,7 +24,7 @@ for (let sd = 1; sd <= Number(nS); sd++) {
     for (const c of g.colonies) {
       if (c.pop < 1) continue;
       const v = inc[key(c)];
-      rows.push(`${sd}-${key(c)},${sd},${Math.round(g.year)},${((g.year - y0) / G).toFixed(4)},${(v[0] / v[1]).toPrecision(6)},${g.schoolOf(c).toPrecision(5)},${g.learnCurve(g.eduY(c), g.eduSpendPct(c)).toFixed(1)}`);
+      rows.push(`${sd}-${key(c)},${sd},${Math.round(g.year)},${((g.year - y0) / G).toFixed(4)},${(v[0] / v[1]).toPrecision(6)},${g.schoolOf(c).toPrecision(5)},${g.eduY ? g.learnCurve(g.eduY(c), g.eduSpendPct(c)).toFixed(1) : ''}`); // 学力のない前の版は空
     }
   }
   process.stderr.write(`銀河 ${sd}/${nS} (${((Date.now() - t0) / 1000).toFixed(0)} 秒)\n`);
