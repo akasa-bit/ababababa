@@ -219,6 +219,21 @@ node tools/build.mjs
 | 集め | `data/raw/sf_critiques/` | 物理学者・天文学者が、SF の映画・テレビ・ゲーム・アニメ・コミックの描写を物理で論じた 349 件 (6 組に分けて集め、どれも出典のページを開いて確かめた URL つき)。`classified.json` は事例ごとの分類 (今の知見で正しいか・物理の論点・ゲームに当てはまるか) |
 | 加工 | `data/build/build_sf_critiques.py` → `data/derived/sf_critiques.json` | 物理学者の指摘で、今の知見で正しい 266 件を選び、ゲームへの当てはまりを集計する。中身は `docs/sf-critiques.md` |
 
+## GNI と GDP のデータ (目標 R65。回 KE5・B-114)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_gni.py` → `data/raw/gni/` | 世界銀行 World Development Indicators の API: NY.GNP.MKTP.CD (国民総所得)・NY.GDP.MKTP.CD (国内総生産)。名目の米ドル。BX.KLT.DINV.WD.GD.ZS (直接投資の受け入れ (純) ÷ GDP)・NE.GDI.FTOT.ZS (総固定資本形成 ÷ GDP)・BM.KLT.DINV.WD.GD.ZS (外への直接投資 ÷ GDP)。1990〜2024 年、国だけ。取得日・URL・SHA-256・行数を `MANIFEST.json` に記録する。所得は R61 と同じ `data/raw/tech/` の NY.GDP.PCAP.PP.KD |
+| 加工 | `data/build/build_gni.py` → `data/derived/gni.json` | 所得の 5 分位ごとの GNI ÷ GDP の 25%〜75% 点 (R65)・国ごとの中央値の分布・ゲームの係数 (game): 新しい投資のうち外国が出す割合 (fdi = 直接投資 ÷ 総固定資本形成の国ごとの中央値の中央値)・外への直接投資 ÷ GDP の所得への弾力性 (outward) |
+
+```sh
+python3 data/fetch/fetch_gni.py     # 生データを取り直す
+python3 data/build/build_gni.py     # 計算する
+python3 data/build/build_gni.py ゲームのパネル.csv   # ゲームの R65 を同じ区分で
+```
+
+- **結果**: 198 か国・6,623 国・年。GNI ÷ GDP の中央値は所得の低い分位から 0.989・0.982・0.976・0.971・0.991。国ごとの中央値の 10%〜90% 点は 0.942〜1.022。新しい投資のうち外国が出す割合は国ごとの中央値の中央値 0.110 (178 か国。25%〜75% 点 0.061〜0.176)。外への直接投資 ÷ GDP の所得への弾力性は 1.04 (受け入れ ÷ GDP は 0.24。172 か国)
+
 ## 学歴 (就学年数) と学力のデータ (目標 R62・R63・R64。回 KE5・B-117)
 
 | 段 | 場所 | 中身 |
