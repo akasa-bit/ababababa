@@ -67,6 +67,19 @@ const RESEARCH = { beta: 3.045, g0: 0.0167, fields: ['farm', 'mine', 'ind', 'hi'
 //   step・keep = 記録の間隔と覚えておく年数 (首都どうしのいちばん遠い光の年数 (400 星系の銀河で 100 光年ほど) より長く)。
 //   国の技術 (tech) に h = [[年, A_farm, A_mine, A_ind, A_hi], …] (6 桁に丸めた値) を持つ。セーブが大きくならないように、間隔を 2 年にした
 const DIFFUSE = { kappa: 0.0247, lays: 0.1824, step: 2, keep: 120 };
+// 研究開発の政策 (回 KE6・B-122。docs/innovation.md の 3)。研究者 (STRUCTURE.research の曲線) を、政府が出す分と会社が出す分に分け、研究者に費用を付ける。
+//   cost   = 研究者 1 人の研究開発費 ÷ 1 人あたり所得 = exp(a + b ln y) (y は 2011 年の国際ドル。WDI の研究開発費 ÷ 研究者、1861 国・年。所得の上の 2 分位で 4.551 倍)
+//   gshare = 研究開発費のうち政府が出す割合 [%] = a + b ln y を range で止めたもの (OECD MSTI の G_FG、1234 国・年。目標 R74)。
+//            曲線の研究者のこの割合は、政府のふだんの支出 (行政サービス) で雇われているとみる (お金の流れは足さない)
+//   会社の研究者 = 曲線の (1 − gshare) × ((1 − 控除の率) ÷ (1 − 既定の率))^(−elastic) × (公の研究者 ÷ 曲線の公の研究者)^crowd。倍率は adjust 年でならす
+//            elastic = 研究開発の税の値段への長期の弾力性 1 (Bloom, Van Reenen & Williams 2019, JEP 33(3) の展望で「1 以上」)、crowd = 政府の研究開発を 10% 増やすと会社の
+//            研究開発が 5〜6% 増える (Moretti, Steinwender & Van Reenen, NBER w26483) の 0.5、adjust = 研究開発の懐妊の平均 1.94 年 (Li & Hall, NBER w22473) の 2 年
+//   予算の「研究」で足した公の研究者は、lag 年 (8〜15 年。公の非防衛の研究開発が TFP を上げるまでの遅れ。Fieldhouse & Mertens 2023, Dallas Fed WP 2305) 前の値の平均で
+//   技術に効く。記録は国の技術の pe に 1 年ごと
+//   税額控除は、会社の研究開発費 × 控除の率を、国の首都の政府がその星系の会社に払う (お金の種類 rdcredit)
+//   max = 効き目の上限 [GDP の %]: 政府が出す研究開発費と、会社が出す研究開発費の、OECD の国・年の 99% 点 (1.114%・3.559%。data/derived/innovation.json の rnd.caps)。
+//         この 2 つと呼び水の弾力性は、現実で見た範囲の中でしか確かめられていないので、予算と控除で押し上げられる研究者はここまでにする (それを超えて払った分は人を雇えない)
+const RND = { cost: [7.1542, -0.5388], gshare: [149.975, -10.816], range: [17.08, 66.31], elastic: 1, crowd: 0.5, adjust: 2, lag: [8, 15], max: [1.114, 3.559] };
 // 資本の分け前 (回 KE5・B-114。docs/regions.md の 4)。会社は市場の付加価値の 1 − alpha を賃金、残りを配当として払う (economy の 7)。
 //   alpha = 1 − 労働分配率、delta = 資本の減価償却、irr = 資本の実質の収益率。どれも Penn World Table 10.01 の国ごとの中央値
 //   (data/build/build_regions.py の capital の game。目標 R39)。delta と irr は、民間の投資の行き先 (回 KE5 の次の PR) の収益率の基準に使う。

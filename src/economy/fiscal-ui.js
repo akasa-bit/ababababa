@@ -43,7 +43,8 @@ function fiscalHtml(g) {
   const rule = (f.cb ?? 1) === 1, cbRate = g.cbRateAt(g.cap), cbs = g.cb[g.cap] || { pi: CB.pistar }; // 中央銀行 (回 KE1。画面から状態を作らない)
   const rows = Object.entries(BUDGET).map(([k, b]) => {
     const sh = f.budget?.[k] || 0;
-    const eff = k === 'education' ? `教育の支出 GDP の ${g.eduSpendPct({ sys: g.cap }).toFixed(1)}%` : `効き目 ${pct(budgetEffect(sh * paid))}`; // 教育は budgetEffect でなく教育の支出 ÷ GDP で効く (回 KE5)
+    const T = g.tech[g.cap], w = T?.rd && T.S > 0 ? T.rd.spend / T.S : 0; // 研究は、払った額 ÷ 研究者 1 人の費用だけ公の研究者を足す (回 KE6)
+    const eff = k === 'education' ? `教育の支出 GDP の ${g.eduSpendPct({ sys: g.cap }).toFixed(1)}%` : k === 'research' ? `公の研究者 +${fmtAmt(w > 0 ? (sh * paid * tax) / w : 0)} 人 (効くのは ${RND.lag[0]}〜${RND.lag[1]} 年あと)` : `効き目 ${pct(budgetEffect(sh * paid))}`; // 教育は budgetEffect でなく教育の支出 ÷ GDP で効く (回 KE5)
     return `<tr><td>${b.label}</td><td>${slider(k, BUDGET_RANGE, BUDGET_STEP, sh, 'pct0', b.label)}</td><td>${sh ? `${fmtAmt(sh * tax)} cr/年・${eff}` : '<span class="muted">使わない</span>'}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
   }).join('');
   return `<h3>${ico('credits')}財政</h3>
@@ -57,6 +58,7 @@ function fiscalHtml(g) {
       <tr><td>物価</td><td class="num">年 ${(cbs.pi * 100).toFixed(1)}%</td><td colspan="2" class="muted wrap">物価の上がり方 (目標 ${(CB.pistar * 100).toFixed(0)}%)。物価の指数 ${g.cpiOf(g.cap).toFixed(2)} (始め 1)。帳簿は始めの値段で数えるので、思ったより物価が上がると、預金と国債の重さがそのぶん減る</td></tr>
       <tr><td>長期の国債の利回り</td><td class="num">年 ${(g.longYield(g.cap) * 100).toFixed(2)}%</td><td colspan="2" class="muted wrap">10 年の国債: 政策金利の見込み + 期間の上乗せ + 信用の上乗せ (国債 ÷ GDP × ${(CB.credit * 100).toFixed(2)}%。いま ${(CB.credit * Math.min(CB.dmax, (cg.bond || 0) / Math.max(cg.fr?.y || 0, 1e-9)) * 100).toFixed(2)}%)。国債 ÷ GDP が ${Math.round(CB.dmax * 100)}% を超えると不履行になり、国債の ${Math.round(CB.haircut * 100)}% を払わない (預金がそのぶん目減りする)</td></tr>
       <tr><td>赤字の上限</td><td>${slider('deficit', DEFICIT_RANGE, DEFICIT_STEP, f.deficit || 0, 'pct1gdp', '赤字の上限')}</td><td colspan="2" class="muted wrap">資金が足りない分を、1 年にこの額まで国債で借りる (${ME.capName}の GDP ${fmtAmt(cg.fr?.y || 0)} cr/年)。国債 ${fmtAmt(cg.bond || 0)} cr・いま借りられる額 ${fmtAmt(Math.max(0, g.funds(g.cap) - cg.credits))} cr。手元の資金が税収の ${Math.round(DEBT.cash * 12)} か月分を超えると、超えた分で国債を返す。国債 ÷ GDP は ${Math.round(DEBT.limit * 100)}% まで</td></tr>
+      ${(() => { const T = g.tech[g.cap], rd = T?.rd, Y = rd?.y || 0; return `<tr><td>研究開発の税額控除</td><td>${slider('rdcredit', RDCREDIT_RANGE, RDCREDIT_STEP, f.rdcredit ?? FISCAL_DEFAULT.rdcredit, 'pct1', '研究開発の税額控除')}</td><td colspan="2" class="muted wrap">会社の研究開発費のこの割合を政府が返す (いま ${fmtAmt(rd?.credit || 0)} cr/年。研究開発費は GDP の ${Y > 0 ? ((100 * rd.spend) / Y).toFixed(2) : '0'}%、そのうち政府が出す分 ${rd?.spend > 0 ? pct(rd.pub / rd.spend) : '—'})。既定は ${(FISCAL_DEFAULT.rdcredit * 100).toFixed(1)}% (現実の国の中央値)。控除を上げると会社の研究者が増える (研究開発の値段への弾力性 ${RND.elastic}。${RND.adjust} 年ほどで寄る)</td></tr>`; })()}
       ${(() => { const Y = g.realmSystems(g.cap).reduce((k, x) => k + (g.govs[x.id]?.fr?.y || 0), 0), pin = cg.pinY || 0; return `<tr><td>外との配当</td><td class="num">${pin >= 0 ? '+' : '−'}${fmtAmt(Math.abs(pin))} cr/年</td><td colspan="2" class="muted wrap">国民総所得 (GNI) = GDP + ほかの国の会社の持ち分から受け取る配当 − ほかの国の持ち主に払う配当。国の GDP ${fmtAmt(Y)} cr/年 に対して GNI ÷ GDP ${Y > 0 ? ((Y + pin) / Y).toFixed(3) : '—'}。新しい投資の ${Math.round(OWNER.fdi * 100)}% はほかの国が出す (豊かな国ほど多く出す)</td></tr>`; })()}
     </table>
     ${(() => { // 年金と医療 (回 KE2)。首都の星系の年齢と、払った額
