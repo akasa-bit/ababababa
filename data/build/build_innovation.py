@@ -17,6 +17,7 @@
        年率の伸び [%/年] を LAYS と ln 所得 (2000 年) に当てた、LAYS の係数 [%/年 ÷ 年]
   R72: 発展会計で、学歴 (人的資本) が所得のばらつきに占める割合 cov(ln hc, ln y) ÷ var(ln y) (y は就業者 1 人あたりの実質 GDP rgdpo ÷ emp。
        2015〜2019 年の国ごとの平均)。資本と TFP の割合 (K/Y の形、資本の分配率 1/3) も参考に出す
+  ゲームの伝播の係数 (目標ではない。src/economy/market-consts.js の DIFFUSE。回 KE6・B-121): game の diffusion (diffusion() の説明)
   ゲームの係数 (目標ではない。src/economy/market-consts.js の STRUCTURE.research): ln 研究者 = a + b ln y + c 学力 ÷ 100 の a・b・c。
        y はゲームの所得の物差し (2011 年の国際ドル) にするため、2021 年のドルを米国の GDP デフレーターの比 1.21 で割ってから当てる (R62 と同じ読み替え)
 
@@ -110,6 +111,27 @@ def growth(p, y0, y1):
     j = s0[['a', 'rtfpna']].join(s1[['rtfpna']], rsuffix='1', how='inner').join(ls, how='inner')
     j = j[(j['rtfpna'] > 0) & (j['rtfpna1'] > 0)].dropna()
     return j.assign(g=(np.log(j['rtfpna1']) - np.log(j['rtfpna'])) / (y1 - y0) / j['labsh'])
+
+
+def diffusion():
+    """ゲームの伝播の係数 (目標ではない。src/economy/market-consts.js の DIFFUSE): lays = 技術水準の前線比の ln (2010〜2019 年の平均の a) を
+    LAYS (2010〜2020 年の平均) に当てた傾き。kappa = 1995〜2019 年の a の年率の伸びを、1995 年の a と LAYS に当てた a の係数の符号を変えたもの (条件つきの収束の速さ)"""
+    p = pwt()
+    L = series(LAYS, 'HD.HCI.LAYS', 'lays').groupby('iso3')['lays'].mean()
+    lv = pd.concat([p[(p['year'] >= 2010) & (p['year'] <= 2019)].groupby('iso3')['a'].mean(), L], axis=1, join='inner').dropna()
+    d = np.polyfit(lv['lays'], lv['a'], 1)
+    out = {'lays': round(float(d[0]), 4), 'lays_intercept': round(float(d[1]), 4), 'lays_r': round(float(np.corrcoef(lv['lays'], lv['a'])[0, 1]), 3), 'lays_countries': int(len(lv))}
+    for y0, key in ((1995, 'kappa'), (2000, 'kappa_2000')):
+        j = growth(p, y0, 2019).join(L, how='inner').dropna()
+        b = fit(j, 'g', ['a', 'lays'])
+        out[key] = round(float(-b[1]), 4)
+        if key == 'kappa':
+            out['kappa_boot_5_95'] = [round(float(-v), 4) for v in np.quantile(boot(j, lambda t: fit(t, 'g', ['a', 'lays'])[1]), [.95, .05])]
+            out['kappa_lays'] = round(float(b[2]), 4)
+            out['kappa_countries'] = int(len(j))
+    out['note'] = ('DIFFUSE.lays = lays (theta = min(1, exp(lays × (LAYS − 前線の国の LAYS))))、DIFFUSE.kappa = kappa (年あたりの追いつく割合)。'
+                   'kappa_lays ÷ kappa は定常状態の ln 前線比の LAYS への傾きで、lays と比べる確かめ')
+    return out
 
 
 def technology():
@@ -257,7 +279,8 @@ def main():
                         'note': '所得は 2021 年の国際ドル。研究者は人口 100 万人あたり'},
         'learning': lr,
         'technology': technology(),
-        'game': {'research': [lr['a'], lr['b'], lr['c']], 'note': 'STRUCTURE.research = [a, b, c]: ln 研究者 [人/100 万人] = a + b ln y + c 学力 ÷ 100 (y は 2011 年の国際ドル)'},
+        'game': {'research': [lr['a'], lr['b'], lr['c']], 'note': 'STRUCTURE.research = [a, b, c]: ln 研究者 [人/100 万人] = a + b ln y + c 学力 ÷ 100 (y は 2011 年の国際ドル)',
+                 'diffusion': diffusion()},
     }
     print(json.dumps(out, ensure_ascii=False, indent=1))
     with open(OUT, 'w', encoding='utf-8') as f:

@@ -34,7 +34,7 @@
 | B-118 | 中央銀行の中立の金利を潜在の伸びで動かす (Laubach & Williams 2003)。景気のずれを伸びの速さの差でなく潜在の産出からのずれで測る。R33・R34 を幅に戻す (回 KE5 で学歴・投資のあと外れた。ユーザーの決定 2026-10-24「残りに書いて後で」) | `CB`・`speedGap`・`cbStep`・`longYield` | — | M | 経済 | `status/KE.md`・`hcap.md` の 3・`regions.md` の 5.2 |
 | B-119 | 民間の投資を採掘のほかにも (工場・建物・機械) ひろげ、その資本の持ち主 (`gv.own`) と一緒に GNI に。投資 ÷ GDP を現実 (約 22%) に近づける。R01・R10・R61 の見直し | `INVEST`・`capacityYearly`・`OWNER`・`FACILITY` | B-114 | L | 経済 | `regions.md` の 5.3・6.3 |
 | B-120 | **済み (回 KE6。R66・R67 合格、R11 は −2.04% で不合格。`docs/innovation.md` の 1)** 技術革新 ①: 研究者の数を所得だけでなく学力で決める (ln f = c0 + b1 ln y + b2 HLO/100。WDI と HCI の当てはめ)。ユーザーの依頼 2026-10-25 (`docs/requests/2026-10-25-KE.md` の KE-1・KE-2)。目標を先に固定する (研究者の所得五分位・学力との偏相関) | `STRUCTURE.research`・`researchers`・`researchStep` | — | M | 経済 | `research/innovation.md` |
-| B-121 | 技術革新 ②: 国の間の技術の伝播。光速で遅れて見える最前線へ、人的資本 (LAYS) で決まる上限まで、年 κ の速さで追いつく項を足す。目標を先に固定する (技術水準の前線比・規模効果のなさ・TFP の収束・LAYS と伸び・発展会計) | `researchStep`・`tech`・新しい履歴 | B-120 | L | 経済 | `research/innovation.md` |
+| B-121 | **済み (回 KE6。150 年ではほとんど効かず、450 年で遅れた国を引き上げる。R69 合格、R68・R70・R71 は不合格。`docs/innovation.md` の 2)** 技術革新 ②: 国の間の技術の伝播。光速で遅れて見える最前線へ、人的資本 (LAYS) で決まる上限まで、年 κ の速さで追いつく項を足す。目標を先に固定する (技術水準の前線比・規模効果のなさ・TFP の収束・LAYS と伸び・発展会計) | `researchStep`・`tech`・新しい履歴 | B-120 | L | 経済 | `research/innovation.md` |
 | B-122 | 技術革新 ③: 研究開発の政策。研究者を有給にし、予算に公的研究費、財政に税額控除を足す (長期の弾力性 1・公から民への呼び水 0.5・公的研究の遅れ 8〜15 年)。目標を先に固定する (研究開発費 ÷ GDP の所得五分位) | `BUDGET`・`FISCAL`・`researchStep`・貨幣の試験 | B-121 | L | 経済 | `research/innovation.md` |
 | B-123 | 技術革新 ④: 汎用技術 (GPT)。平均 60 年に一度のポアソンの到来、国ごとの S カーブの採用 (遅れは LAYS の梯子)、効果の遅れ、A に畳み込む。周期 (コンドラチェフ) は入れない。目標を先に固定する (前線の 10 年の伸びのばらつき・採用の速さと所得の梯子) | `researchStep`・新しい GPT の状態 | B-121 | L | 経済 | `research/innovation.md` |
 
