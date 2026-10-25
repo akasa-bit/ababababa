@@ -28,5 +28,15 @@
   "rows": 3583,
   "filter": "国だけ (地域の集計を除く)・1970〜2015 年",
   "license": "CC BY 4.0 (世界銀行の利用条件)。元の推計は Barro & Lee 2013・UNESCO 統計研究所 (出典を明記する)"
+ },
+ {
+  "file": "hci_hlos.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{HD.HCI.HLOS}?source=63",
+  "fetched": "2026-10-25T00:02:46Z",
+  "sha256": "ccd30a72fcdb9578871acc4e060b0f1e59a9cb8554c9f3826a36e59a0c57c7f0",
+  "bytes": 6918,
+  "rows": 601,
+  "filter": "国だけ (地域の集計を除く)・2010〜2020 年",
+  "license": "CC BY 4.0 (世界銀行の利用条件)。元の推計は Patrinos & Angrist 2018 の調和された学力 (出典を明記する)"
  }
 ]
