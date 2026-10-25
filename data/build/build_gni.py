@@ -4,6 +4,8 @@
 統計量 (世界銀行 WDI の NY.GNP.MKTP.CD・NY.GDP.MKTP.CD (data/raw/gni/wdi_gni.csv.gz) と NY.GDP.PCAP.PP.KD (data/raw/tech/wdi_tech.csv.gz)。国・年):
   R65: 1 人あたり所得 (2021 年の国際ドル) の 5 分位ごとの、GNI ÷ GDP の 25%〜75% 点 (1990 年から。R36・R61・R62 と同じ形)。
        GNI ÷ GDP − 1 = 外からの所得の受け取り − 外への支払い (利潤・配当・利子・雇用者の報酬) の GDP 比
+  ゲームの係数 (目標ではない): fdi = 新しい投資のうち外国が出す割合 (直接投資の受け入れ (純) ÷ 総固定資本形成) の、国ごとの中央値の中央値
+       (src/economy/market-consts.js の OWNER.fdi。遠くの持ち分は、資本の入れ替わりの速さでこの値に近づく)
 
 使い方: python3 data/build/build_gni.py → data/derived/gni.json
         python3 data/build/build_gni.py ゲームのパネル.csv → ゲームの R65
@@ -22,6 +24,7 @@ TO2011 = 1.21  # 2021 年のドル ÷ 2011 年のドル (米国の GDP デフレ
 
 def panel():
     d = pd.read_csv(RAW)
+    d = d[d['indicator'].isin(['NY.GNP.MKTP.CD', 'NY.GDP.MKTP.CD'])]  # 表を組むときに、ほかの指標の欠けで行が落ちないように
     w = d.pivot_table(index=['iso3', 'year'], columns='indicator', values='value').reset_index()
     w = w.rename(columns={'NY.GNP.MKTP.CD': 'gni', 'NY.GDP.MKTP.CD': 'gdp'}).dropna(subset=['gni', 'gdp'])
     w = w[w['gdp'] > 0]
@@ -31,6 +34,19 @@ def panel():
     x = x[x['y'] > 0].copy()
     x['r'] = x['gni'] / x['gdp']
     return x
+
+
+def fdi_share():
+    """直接投資の受け入れ (純) ÷ 総固定資本形成 (国・年。総固定資本形成が正のものだけ) の、国ごとの中央値の分布"""
+    d = pd.read_csv(RAW)
+    d = d[d['indicator'].isin(['BX.KLT.DINV.WD.GD.ZS', 'NE.GDI.FTOT.ZS'])]
+    w = d.pivot_table(index=['iso3', 'year'], columns='indicator', values='value').reset_index().dropna(subset=['BX.KLT.DINV.WD.GD.ZS', 'NE.GDI.FTOT.ZS'])
+    w = w[w['NE.GDI.FTOT.ZS'] > 0]
+    f = w['BX.KLT.DINV.WD.GD.ZS'] / w['NE.GDI.FTOT.ZS']
+    c = f.groupby(w['iso3']).median()
+    return {'value': round(float(np.median(c)), 4), 'country_p25_p75': [round(float(np.quantile(c, .25)), 4), round(float(np.quantile(c, .75)), 4)],
+            'country_years_median': round(float(np.median(f)), 4), 'countries': int(len(c)), 'country_years': int(len(f)),
+            'note': '新しい投資のうち外国が出す割合 = BX.KLT.DINV.WD.GD.ZS ÷ NE.GDI.FTOT.ZS。value は国ごとの中央値の中央値 (OWNER.fdi)'}
 
 
 def quintiles(y):
@@ -76,6 +92,7 @@ def main():
         'by_income': r65,
         'country_median': {k: round(float(v), 4) for k, v in zip(['p10', 'p25', 'p50', 'p75', 'p90'], np.quantile(c, [.1, .25, .5, .75, .9]))},
         'note': '所得は 2021 年の国際ドル。ratio = GNI ÷ GDP (名目の米ドルどうし)',
+        'game': {'fdi': fdi_share()},
     }
     print(json.dumps(out, ensure_ascii=False, indent=1))
     with open(OUT, 'w', encoding='utf-8') as f:

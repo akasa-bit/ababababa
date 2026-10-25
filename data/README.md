@@ -223,8 +223,8 @@ node tools/build.mjs
 
 | 段 | 場所 | 中身 |
 |---|---|---|
-| 取得 | `data/fetch/fetch_gni.py` → `data/raw/gni/` | 世界銀行 World Development Indicators の API: NY.GNP.MKTP.CD (国民総所得)・NY.GDP.MKTP.CD (国内総生産)。名目の米ドル、1990〜2024 年、国だけ。取得日・URL・SHA-256・行数を `MANIFEST.json` に記録する。所得は R61 と同じ `data/raw/tech/` の NY.GDP.PCAP.PP.KD |
-| 加工 | `data/build/build_gni.py` → `data/derived/gni.json` | 所得の 5 分位ごとの GNI ÷ GDP の 25%〜75% 点 (R65)・国ごとの中央値の分布 |
+| 取得 | `data/fetch/fetch_gni.py` → `data/raw/gni/` | 世界銀行 World Development Indicators の API: NY.GNP.MKTP.CD (国民総所得)・NY.GDP.MKTP.CD (国内総生産)。名目の米ドル。BX.KLT.DINV.WD.GD.ZS (直接投資の受け入れ (純) ÷ GDP)・NE.GDI.FTOT.ZS (総固定資本形成 ÷ GDP)。1990〜2024 年、国だけ。取得日・URL・SHA-256・行数を `MANIFEST.json` に記録する。所得は R61 と同じ `data/raw/tech/` の NY.GDP.PCAP.PP.KD |
+| 加工 | `data/build/build_gni.py` → `data/derived/gni.json` | 所得の 5 分位ごとの GNI ÷ GDP の 25%〜75% 点 (R65)・国ごとの中央値の分布・ゲームの係数 (game): 新しい投資のうち外国が出す割合 (fdi = 直接投資 ÷ 総固定資本形成の国ごとの中央値の中央値) |
 
 ```sh
 python3 data/fetch/fetch_gni.py     # 生データを取り直す
@@ -232,7 +232,7 @@ python3 data/build/build_gni.py     # 計算する
 python3 data/build/build_gni.py ゲームのパネル.csv   # ゲームの R65 を同じ区分で
 ```
 
-- **結果**: 198 か国・6,623 国・年。GNI ÷ GDP の中央値は所得の低い分位から 0.989・0.982・0.976・0.971・0.991。国ごとの中央値の 10%〜90% 点は 0.942〜1.022
+- **結果**: 198 か国・6,623 国・年。GNI ÷ GDP の中央値は所得の低い分位から 0.989・0.982・0.976・0.971・0.991。国ごとの中央値の 10%〜90% 点は 0.942〜1.022。新しい投資のうち外国が出す割合は国ごとの中央値の中央値 0.110 (178 か国。25%〜75% 点 0.061〜0.176)
 
 ## 学歴 (就学年数) と学力のデータ (目標 R62・R63・R64。回 KE5・B-117)
 

@@ -75,5 +75,18 @@
   "p75": 0.9973,
   "p90": 1.0219
  },
- "note": "所得は 2021 年の国際ドル。ratio = GNI ÷ GDP (名目の米ドルどうし)"
+ "note": "所得は 2021 年の国際ドル。ratio = GNI ÷ GDP (名目の米ドルどうし)",
+ "game": {
+  "fdi": {
+   "value": 0.1103,
+   "country_p25_p75": [
+    0.0606,
+    0.1756
+   ],
+   "country_years_median": 0.1059,
+   "countries": 178,
+   "country_years": 5344,
+   "note": "新しい投資のうち外国が出す割合 = BX.KLT.DINV.WD.GD.ZS ÷ NE.GDI.FTOT.ZS。value は国ごとの中央値の中央値 (OWNER.fdi)"
+  }
+ }
 }
