@@ -58,8 +58,35 @@ SE6 の決まった案は「階層 5 (所得の 5 分位) × 民族 (種族と�
 - **R34 が外れた理由**: 就学年数の収益を 0 にした版 (生産性が変わらない) では 0.0121 で main と同じなので、学歴による生産性の伸びのせい。中央銀行の景気のずれ (`speedGap` = 1 年の伸び − 5 年の伸び) は、伸びがだんだん遅くなると負になる。学歴の伸びは就学年数が上限に近づくにつれて遅くなるので、ずれがいつも少し負になり、政策金利が低め (中立の金利より約 1.35 点下。main は約 0.87 点) に出て、長期と短期の差が開いた。中立の金利 (`CB.rstar`) を伸びに合わせて動かす (Laubach & Williams 2003 の形) と直る見込み。中央銀行の作りの変更なので、この回では直さず残りにした (`docs/status/KE.md`)
 - 所得の差 (`tools/region-gap.js`、8 銀河): 総人口 94,802 → 103,786 百万人、首都の所得 (人口の重みの平均) 91,244 → 130,276 ドル、首都でない入植地の所得の中央値 169 → 225 ドル、国の中の β 収束 年 1.89% → 1.97%。首都の大人の就学年数は 150 年で 7.7 → 約 10.5 年、働く人の生産性は約 1.2 倍
 
+## 4. 学力 (目標の版 19。ユーザーの決定 2026-10-24「学力も効く形を足す」。`docs/requests/2026-10-24-KE.md` の KE-10)
+
+就学年数 (学校に通った年数) だけでは、同じ年数で学んだ中身の差が入らない。現実では、国際的な学力の試験の点数は国の所得と強く結びつき、点数の差は就学年数より所得の差をよく説明する (Hanushek & Woessmann 2012・Angrist ほか 2021)。
+
+### 4.1 現実の目標 (作る前に固定した)
+
+生データは世界銀行 Human Capital Index の調和された試験の点数 (HD.HCI.HLOS。PISA・TIMSS・PIRLS と地域の試験を同じ物差し (300〜625 点) にそろえたもの。Patrinos & Angrist 2018。`data/README.md` の「学歴 (就学年数) と学力のデータ」)。
+
+| 目標 | 統計量 | 中央値 (低い方から) |
+|---|---|---|
+| R64 学力と所得 | 所得 (2021 年の国際ドル) の 5 分位ごとの、試験の点数の 25%〜75% 点 (170 か国・595 国・年。2010・2017・2018・2020 年) | 368.2・388.1・419.0・485.4・517.2 点 |
+
+- 試験の点数は学校に通う子どもの学力なので、ゲームでは学校を出る世代 (年齢の区分の 25〜29 歳に入った人) の学力と比べる。
+- ゲームの曲線の材料として、点数と所得の当てはめも出した: 点数 = 300 + 325 ÷ (1 + exp(−(−6.834 + 0.675 ln y)))、y は 2011 年の国際ドル (R² 0.61。200 ドルで 312 点、5,000 ドルで 382 点、60,000 ドルで 509 点)。前の 10 年の教育の支出 (GDP 比) を足すと、支出 1% あたり logit +0.056 (国を引き直すブートストラップの 5〜95% 点 0.005〜0.109)。教育の支出を GDP の 1% 増やすと、5,000 ドルの国で約 +3 点 (所得 2 倍で約 +32 点。就学年数への効き (2) と同じく小さい)。`data/derived/hcap.json` の game の learn。
+
+### 4.2 作り (このあとの PR で決める)
+
+考えている形 (目標を固定したあとに、ゲームの値を見ながら決める):
+
+- 世代ごとに、就学年数 `s` と並べて学力 `q` (試験の点数の物差し) を持つ (`c.edu` の集団ごとの表に足す。2.1 の形のまま)。学校を出る世代の学力は、上の曲線 (所得と教育の予算) で決まる。移民は自分の学力を運ぶ。
+- 生産性には、世界銀行の Human Capital Index と同じ「学力で直した就学年数」(LAYS = s × q ÷ 625。Kraay 2019・Filmer ほか 2020) を、いまの就学 1 年あたりの収益 φ に入れる。首都の生産性の基準 (`SCHOOL.ref`) も同じ直しをして、前の版と首都の生産性がそろうようにする。
+
 ## 出典
 
+- Angrist, N., Djankov, S., Goldberg, P. K. & Patrinos, H. A. (2021). Measuring human capital using global learning data. *Nature* 592, 403–408.
+- Filmer, D., Rogers, H., Angrist, N. & Sabarwal, S. (2020). Learning-adjusted years of schooling (LAYS): Defining a new macro measure of education. *Economics of Education Review* 77, 101971.
+- Hanushek, E. A. & Woessmann, L. (2012). Do better schools lead to more growth? Cognitive skills, economic outcomes, and causation. *Journal of Economic Growth* 17(4), 267–321.
+- Kraay, A. (2019). The World Bank Human Capital Index: A Guide. *World Bank Research Observer* 34(1), 1–33.
+- Patrinos, H. A. & Angrist, N. (2018). Global Dataset on Education Quality: A Review and Update (2000–2017). *World Bank Policy Research Working Paper* 8592.
 - Barro, R. J. & Lee, J.-W. (2013). A New Data Set of Educational Attainment in the World, 1950–2010. *Journal of Development Economics* 104, 184–198.
 - Caselli, F. (2005). Accounting for Cross-Country Income Differences. *Handbook of Economic Growth* 1A, 679–741.
 - Thomas, V., Wang, Y. & Fan, X. (2001). Measuring Education Inequality: Gini Coefficients of Education. *World Bank Policy Research Working Paper* 2525.
