@@ -196,6 +196,7 @@
       P.hitech += c.pop * f.hi * this.yieldOf(c, 'hi');
     }
     for (const o of this.outposts) { const P = (plan[o.sys] ??= zeroRes()); for (const [r, v] of Object.entries(this.outpostYield(o))) P[r] += v; }
+    for (const k of this.capacity) { const P = (plan[k.sys] ??= zeroRes()); for (const [r, v] of Object.entries(this.capacityYield(k))) P[r] += v; } // 民間の採掘の能力 (回 KE5)
     this.util = {};
     for (const [key, P] of Object.entries(plan)) {
       const id = Number(key), m = this.market[id], st = this.stockOf(id), K = (this.util[id] = {});
@@ -217,9 +218,9 @@
       c.planHi = c.pop * f.hi * this.yieldOf(c, 'hi') * K.hitech;
       fl.pop += c.pop;
     }
-    for (const o of this.outposts) {
+    for (const o of [...this.outposts, ...this.capacity]) {
       const fl = F(o.sys), K = this.util[o.sys];
-      for (const [r, v] of Object.entries(this.outpostYield(o))) { this.mv(o.sys, r, v * K.mine * h, 'extract'); fl.prod[r] += v * K.mine; }
+      for (const [r, v] of Object.entries(o.lv !== undefined ? this.outpostYield(o) : this.capacityYield(o))) { this.mv(o.sys, r, v * K.mine * h, 'extract'); fl.prod[r] += v * K.mine; }
     }
     // 2. 工業: 工業品1につき金属0.5と燃料0.2を使う。原料が足りなければ減産
     for (const c of this.colonies) {
