@@ -134,6 +134,7 @@
     }
     for (const key of Object.keys(this.tech)) if (!byRealm[key]) delete this.tech[key]; // 入植地のなくなった国
     this.diffuseStep(h, byRealm);
+    this.gptStep(h, byRealm);
   }
   // 研究開発の政策 (RND。回 KE6・B-122)。研究者 1 人の研究開発費 ÷ 1 人あたり所得 (所得は学歴と学力を決める所得 eduY) と、研究開発費のうち政府が出す割合 (0〜1)
   rndCost(c) { const [a, b] = RND.cost; return GM.exp(a + b * GM.log(Math.max(this.eduY(c), 1))); }
@@ -167,6 +168,34 @@
     }
     T.rd = { spend: R.Sg * w + hired + R.priv * T.m, pub: R.Sg * w + hired, credit, y: R.y }; // 研究開発費はいま雇っている分 (技術に効くのは遅れて)
     return R.Sg + Sx + (R.Sc - R.Sg) * T.m;
+  }
+  // 汎用技術 (GPT。回 KE6・B-123)。国 i の GPT g の採用 (0〜1) と、その遅れ [年] (L = 国ごとの LAYS)
+  gptLag(i, g, L) { const top = Math.max(...Object.values(L)); return this.sysDist(g.inv, Number(i)) + GPT.ladder * Math.max(0, top - (L[i] ?? top)); }
+  gptAdopt(t, g, lag) { return 1 / (1 + GM.exp(-GPT.sigma * (t - g.t - lag - GM.log(1 / GPT.start - 1) / GPT.sigma))); }
+  // 到来: 刻みごとに rate × 刻みの年数 の確率 (シードと刻みのハッシュで引く。試合の乱数の流れを変えない)。発明国は研究者の数の比で引く。
+  // 国ごとに GPT の前の刻みの効き目 (e = 遅れた採用、da = 採用の速さ) を覚え (tech の gp)、増えた分だけ ln A に足す。覚えていない GPT (独立した国が元の国から技術を
+  // 持ってきたときなど) は、いまの値から数え始める
+  gptStep(h, byRealm) {
+    const G = (this.gpts ??= []), keys = Object.keys(byRealm).filter((k) => this.tech[k]), tick = Math.round(this.year * 4);
+    const hash = (tag) => (hashSeed(`${this.galaxy.seed}/gpt/${tick}${tag}`) % 1000000) / 1000000;
+    if (keys.length && hash('') < GPT.rate * h) {
+      const tot = keys.reduce((k, i) => k + (byRealm[i].S || 0), 0);
+      let r = hash('/inv') * tot, inv = keys[keys.length - 1];
+      for (const i of keys) { r -= byRealm[i].S || 0; if (r <= 0) { inv = i; break; } }
+      G.push({ t: this.year, inv: Number(inv) });
+    }
+    if (!G.length) return;
+    const L = Object.fromEntries(keys.map((k) => [k, byRealm[k].p > 0 ? byRealm[k].L / byRealm[k].p : 0]));
+    for (const i of keys) {
+      const T = this.tech[i], st = (T.gp ??= {});
+      let d = 0;
+      G.forEach((g, k) => {
+        const lag = this.gptLag(i, g, L), a = this.gptAdopt(this.year, g, lag), e = this.gptAdopt(this.year - GPT.effect, g, lag), da = GPT.sigma * a * (1 - a);
+        if (st[k]) d += GPT.size * (e - st[k][0]) - GPT.jdip * (da - st[k][1]);
+        st[k] = [e, da];
+      });
+      if (d) for (const f of RESEARCH.fields) T.A[f] *= GM.exp(d);
+    }
   }
   // その年に学校を出る世代の、学力で調整した就学年数 [年] (LAYS。DIFFUSE の theta)
   laysOf(c) { const y = this.eduY(c), pct = this.eduSpendPct(c); return (this.schoolCurve(y, pct) * this.learnCurve(y, pct)) / LEARN.full; }
