@@ -359,6 +359,7 @@
       if (c.pop >= 1) this.watch(c, 'aging', DEMO.alert / Math.max(this.ageShares(c).dep, 1e-9), 'shortage', () => `${c.name} の扶養比が ${Math.round(this.ageShares(c).dep * 100)} に上がった (働き手 100 人で支える子どもと高齢の数。年金と医療が増える)`, `${c.name} の扶養比が下がった`); // 10-5 の知らせ
       const income = MARKET.buy ? this.incomeOf(c) : 0;
       c.incY = income; // この刻みの所得 (年金と医療で使う。ageSpendStep)
+      if (MARKET.buy) { const y = this.incomeUSD(c, income + c.pop * (c.sh || sharesOf(c.focus)).home * basePrice('food') * YIELD.home); const u = c.incU ?? c.inc ?? this.potentialUSD(c); c.incU = u + (y - u) * Math.min(1, h / SCHOOL.smooth); } // 学歴と学力を決める所得 (SCHOOL.smooth。始めは生産力から)
       va[c.sys] = (va[c.sys] || 0) + income * h; // 星系の市場の付加価値 (賃金と配当に分ける。economy の 7)
       if (MARKET.buy) {
         // 家計は買った物とサービスの代金を会社に払う (サービスの売上 = サービスの人の稼ぎの合計)。会社は売上を賃金として家計に払う (刻みの終わり。economy の 7)
