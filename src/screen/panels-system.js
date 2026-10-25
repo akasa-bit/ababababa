@@ -30,7 +30,7 @@ function fmtJ(v) {
 function researchHtml(g) {
   const T = g.tech[g.cap];
   if (!T) return '';
-  const label = { farm: '農業', mine: '鉱業', ind: '工業' };
+  const label = { farm: '農業', mine: '鉱業', ind: '工業', hi: '高付加価値の工業' }; // hi は回 KE5 で足した分野 (前は「undefinedの技術」と出ていた。回 KE6 で 1 行だけ直した)
   const rows = RESEARCH.fields.map((f) => `<tr><th>${label[f]}の技術</th><td>×${T.A[f].toFixed(3)}</td></tr>`).join('');
   return `<h3>${ME.gov}の研究</h3><table class="tbl">${rows}<tr><th>研究者</th><td>${fmtAmt(T.S || 0)} 人</td></tr></table>
     <p class="note">技術の水準は 1 人あたりの産出に掛かる。研究者の数は人口と所得で決まり、分野には付加価値の比で分かれる。研究者 1 人あたりの研究の生産性は、技術が進むほど下がる (アイデアは見つけにくくなる)。</p>`;
