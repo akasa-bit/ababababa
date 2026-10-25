@@ -7,7 +7,7 @@
 | 1 | 研究者の数を所得だけでなく学力で決める (B-120) | R66・R67 (版 21) | 済み |
 | 2 | 光速で遅れる技術の伝播 (B-121) | R68〜R72・R11 の測り方 (版 22) | 済み |
 | 3 | 研究開発の政策 (公の研究の予算と税額控除。B-122) | R73〜R75 (版 23) | この PR |
-| 4 | 汎用技術 (GPT) と J カーブ (B-123) | | |
+| 4 | 汎用技術 (GPT) と J カーブ (B-123) | R76・R77 (版 24) | この PR |
 
 ## 1. 学力で決まる研究者 (B-120)
 
@@ -163,6 +163,34 @@
 - **R11 はこの版でも直らない**: 既定の財政のままでは研究者は増えないので、R11 は −2.04% のまま (B-004)。人間の国が予算の「研究」と控除を使えば、前線の国の伸びは上がる (3.2 の試し)。時とともに研究者の割合が上がる分 (1 の 1.3) は、まだ入っていない。
 - **R76 は GPT の前から幅に入っている**: 前線の国の伸びは、研究者の増え方と伝播で 10 年の伸びが揺れる (0.66〜0.75 ポイント)。データ (0.92) より小さい。GPT (4) で足す揺れの目当て。
 
+## 4. 汎用技術 (GPT) と J カーブ (B-123)
+
+### 4.1 現実の目標 (目標の版 24)
+
+作る前に固定した (`docs/targets.md` の版 24)。生データは Fernald の TFP (サンフランシスコ連銀)・OWID の米国の家庭の技術の普及・WDI の携帯電話とインターネット (`data/raw/gpt`。`data/fetch/fetch_gpt.py`)。
+
+| 目標 | 統計量 | 実データ |
+|---|---|---|
+| R76 前線の技術の伸びの揺れ | 米国の TFP の伸び (利用率を補正、労働増大的な形) の 10 年の移動平均の標準偏差 (1948〜2025 年) | 0.924 ポイント (幅 0.46〜1.39) |
+| R77 新しい技術の採用の遅れと所得 | 携帯電話とインターネットが 10% に達した年の、所得のいちばん上の 5 分位からの遅れ (192 か国) | 4 番目の分位から携帯 3・5・8・10 年、インターネット 3・7・11・16 年 |
+
+### 4.2 作り (`GPT`・`gptStep`。`economy/market-consts.js`・`economy/market-economy.js`)
+
+| | 中身 | 値の出どころ |
+|---|---|---|
+| 到来 | 銀河全体で年 1/60 の割合でばらばらに (ポアソン) 現れる。刻みごとの確率はシードと刻みのハッシュで引く (試合の乱数の流れを変えない)。発明する国は研究者の数の比で引く。周期の時計は入れない | 蒸気・電気・ICT と、突破の特許の 3 つの波 (Kelly ほか 2021)。報告の C027〜C030 で 1/75〜1/50。コンドラチェフの周期は検定でほぼ退けられている |
+| 採用 | 国 i の採用 a_i(t) = 1 / (1 + exp(−0.1226 (t − 現れた年 − 遅れ_i − 37.5)))。遅れ_i = 発明した国の首都からの光の年数 + 1.84 × (いちばん LAYS の高い国の LAYS − 国の LAYS)。遅れのあと 1% から始まり、1% → 10% に 20 年、10% → 90% に 36 年 | 傾き 0.1226/年は米国の家庭の 43 の技術の普及率の logit の傾きの中央値。1.84 年は携帯電話 (1.32) とインターネット (2.35) の遅れを LAYS に当てた傾きの平均 |
+| 効き目 | どの分野の ln A にも 0.21 × a_i(t − 10) を足す (A に畳み込む) | 蒸気 0.21・電気 0.17・ICT 0.26 の、成長会計で積み上げた労働生産性への寄与の平均 (Crafts 2002・2004 ほか。報告の C034・C035・C038)。効果の遅れ 5〜15 年の中ほど |
+| J カーブ | 採用の途中は、ln A から 3.69 × da_i/dt を引く (補完の投資に人を回す)。採用が終わると 0 に戻る | 無形の補完投資を測りに入れると ICT の時代の TFP が 11.3% 高い (Brynjolfsson, Rock & Syverson 2021) を、採用の速さの山 0.1226 ÷ 4 で割った |
+| 記録 | 銀河の GPT の表 `gpts` ([{ t: 現れた年, inv: 発明した国の首都 }]。セーブに入れる: `core/save.js`・`core/restore.js` に 1 行ずつ) と、国ごとの前の刻みの効き目 `tech[国].gp` | 覚えていない GPT (独立した国が元の国から技術を持ってきたとき) は、いまの値から数え始める (二重に足さない) |
+
+- 前線の国にも働く (伝播と違って [·]⁺ はない)。本星の始めの伸び (α の決め方) は GPT の前に決まるので変わらない。
+- 測る道具: `tools/gpt-panel.js` (GPT・国ごとの、採用が 10% に達した年 → `data/build/build_innovation.py --game パネル.csv この表.csv` の R77)。R76 は `tools/innovation-panel.js` の lnA から。
+
+### 4.3 結果
+
+(測定中)
+
 ## 出典
 
 - Bloom, N., Jones, C. I., Van Reenen, J. & Webb, M. (2020). Are Ideas Getting Harder to Find? *American Economic Review* 110(4), 1104–1144.
@@ -177,4 +205,9 @@
 - Fieldhouse, A. J. & Mertens, K. (2023). The Returns to Government R&D: Evidence from U.S. Appropriations Shocks. Federal Reserve Bank of Dallas Working Paper 2305.
 - Lucking, B., Bloom, N. & Van Reenen, J. Have R&D Spillovers Declined in the 21st Century? NBER Working Paper 24622.
 - OECD. Main Science and Technology Indicators・R&D Tax Incentives Database (CC BY 4.0)。
+- Fernald, J. G. (2014). A Quarterly, Utilization-Adjusted Series on Total Factor Productivity. Federal Reserve Bank of San Francisco Working Paper 2012-19 (2026-10-01 の版)。
+- Comin, D. & Hobijn, B. (2004). Cross-Country Technology Adoption: Making the Theories Face the Facts. *Journal of Monetary Economics* 51(1), 39–83 (Our World in Data の普及の系列)。
+- Brynjolfsson, E., Rock, D. & Syverson, C. (2021). The Productivity J-Curve. *American Economic Journal: Macroeconomics* 13(1), 333–372.
+- Kelly, B., Papanikolaou, D., Seru, A. & Taddy, M. (2021). Measuring Technological Innovation over the Long Run. *American Economic Review: Insights* 3(3), 303–320.
+- Crafts, N. (2004). Steam as a General Purpose Technology: A Growth Accounting Perspective. *Economic Journal* 114(495), 338–351.
 - Nelson, R. R. & Phelps, E. S. (1966). Investment in Humans, Technological Diffusion, and Economic Growth. *American Economic Review* 56(1/2), 69–75.
