@@ -85,9 +85,10 @@
   goodsNeed(y) { const [c0, c1, c2] = STRUCTURE.goods, l = GM.log(Math.max(y, 1)); return clamp(GM.exp(c0 + c1 * l + c2 * l * l), STRUCTURE.goodsCap[0], STRUCTURE.goodsCap[1]); }
   // 研究者の数 [人/100 万人]: 所得 y [2011 年のドル] と学力 q (試験の点数の物差し。省くと所得の曲線の学力) で (STRUCTURE.research)
   researchers(y, q = this.learnCurve(y)) { const [d0, d1, d2] = STRUCTURE.research; return GM.exp(d0 + d1 * GM.log(Math.max(y, 1)) + d2 * (q / 100)); }
-  // 入植地の研究者の数 [人/100 万人]: 学歴と学力を決める所得 (eduY) と、学校を出たばかりの世代 (25〜29 歳の区分) の平均の学力で
-  // (データの学力 (HCI の試験の点数) は学校にいる子どもの学力で、働く世代に入るのはその少しあと。大人の平均は上の世代ほど低く、データより低く出る)
-  researchersOf(c) { return this.researchers(this.eduY(c), this.schoolMean(c, (s, q) => q, SCHOOL.bin, SCHOOL.bin) || this.learnCurve(this.eduY(c))); }
+  // 入植地の研究者の数 [人/100 万人]: 学歴と学力を決める所得 (eduY) と、その年に学校を出る世代の学力 (learnCurve。目標 R64 と同じ) で。
+  // データの学力 (HCI の試験の点数) は学校にいる子どもの学力なので、それに合わせる (大人や 25〜29 歳の平均では、所得の伸びに遅れて豊かな国の研究者が R66 の幅より少なかった。
+  // docs/innovation.md の 1)。研究者の数そのものは eduY (smooth 年でならした所得) で遅れて動く
+  researchersOf(c) { return this.researchers(this.eduY(c), this.learnCurve(this.eduY(c), this.eduSpendPct(c))); }
   // 工業品の需要の値打ちのうち、高付加価値物品の割合 (回 KE5)。付加価値の割合が STRUCTURE.hitech の曲線 v になるように決める:
   // 高付加価値物品 x 単位は原料に低付加価値物品 g x 単位を使うので、付加価値の割合 v = a_h x ÷ (a_h x + a_l (家計の低付加価値物品 + g x)) を、需要の値打ちの割合について解いた
   // (a = 1 単位の付加価値、基準の値段で)

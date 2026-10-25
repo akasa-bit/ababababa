@@ -34,7 +34,7 @@ const MARKET = { eta: 1, smooth: 1, min: 0.1, max: 10, cover: { food: 0.28, wate
 //             所得の弾力性は 2,000 ドルで 1.6、50,000 ドルで 0.6 (高い所得で下がるので、工業の就業がこぶ型になる)。goodsCap はその幅
 //   research: 研究者の数 [人/100 万人] = exp(d0 + d1 ln y + d2 × 学力 ÷ 100)。WDI (UNESCO) の研究者を、ln 所得と HCI の試験の点数 (学力) に当てた
 //             (104 か国・301 国・年、2010〜2020 年。data/derived/innovation.json の game の research。目標 R66・R67。回 KE6・B-120。docs/innovation.md の 1)。
-//             y は学歴と学力を決める所得 (市場で測った所得をならした c.incU。eduY)、学力は 25〜64 歳の平均。前は所得だけ (exp(−6.3424 + 1.3536 ln y)、
+//             y は学歴と学力を決める所得 (市場で測った所得をならした c.incU。eduY)、学力はその年に学校を出る世代の学力 (learnCurve)。前は所得だけ (exp(−6.3424 + 1.3536 ln y)、
 //             生産力 c.inc。Maddison の所得の 135 か国 1996〜2022 年)。学力を入れると所得の係数は 1.37 から 0.77 に下がる (研究者の所得の勾配の大半は学力の勾配)
 //   hitech:   工業品の付加価値のうち高付加価値物品の割合 = 1 / (1 + exp(−(a + b ln y)))。WDI の NV.MNF.TECH.ZS.UN (UNIDO。製造業の付加価値のうち中・高技術の産業の割合。
 //             149 か国 1990〜2024 年) の logit を ln 所得に当てた (data/build/build_tech.py → data/derived/tech.json の game。目標 R61)。工業品の需要 (goods) を、
