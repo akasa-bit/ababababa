@@ -59,6 +59,20 @@ const RESEARCH = { beta: 3.045, g0: 0.0167, fields: ['farm', 'mine', 'ind', 'hi'
 //   (data/build/build_regions.py の capital の game。目標 R39)。delta と irr は、民間の投資の行き先 (回 KE5 の次の PR) の収益率の基準に使う。
 //   入植地ごとの資本 K を産出に (K ÷ K*)^alpha で効かせる形も試したが、首都の 1 人あたりの所得が 2〜5 割下がったので入れていない (docs/regions.md の 4.2)
 const CAPITAL = { alpha: 0.451, delta: 0.04, irr: 0.107 };
+// 民間の採掘の能力 (回 KE5・B-114 の 2。ユーザーの依頼 2026-10-24「現実に一番近い形にして」。docs/regions.md の 5)。
+//   星系の会社が、銀行から借りて、採掘の能力 (game.capacity = [{ sys, body, k, by }]。k は採掘基地の段と同じ大きさの単位で、小数でよい) を買い足す。
+//   毎年、値段が基準の (1 + margin) 倍より高く、いまの設備を全部動かしていて、需要 (ふだんの需要 + 地元の工業が動いたら要る原料) が産出を上回る資源について、
+//   足りない分の speed の割合の能力を、その星系でいちばん埋蔵の多い採掘基地の天体に足す。地元の工業が動いたら要る原料 = 足りない工業品 (値段が高いときの
+//   ふだんの需要 − 産出) × 原料の割合 (低付加価値物品 1 に金属 0.5・燃料 0.2、高付加価値物品 1 に希少元素 HITECH.rare)。
+//   費用 [cr] = ky × 足す年の産出 × 基準の値段 (ky = alpha ÷ (irr + delta) = 3.07 は、PWT の値で、民間の収益率がふつうのときの資本 ÷ 付加価値)。
+//   払うのはその星系の会社 (造る手間は家計の賃金。借りてよい)。能力は年 CAPITAL.delta ずつ古くなる。採掘基地 (政府が建てる。費用は決まった cr) と同じ式で掘る。
+//   着工から build 年で掘り始める (Koeva 2000 の米国の工場の建設の年数。2 年ほど)。建設中の能力は、足りない分から引く (二重に注文しない)。
+//   margin・speed は仮の値。遠くの会社が持つ形 (利潤を送り返す・GNI) は次の PR
+const INVEST = { ky: CAPITAL.alpha / (CAPITAL.irr + CAPITAL.delta), margin: 0.5, speed: 0.5, build: 2, res: ['fuel', 'metal', 'rare'] };
+saveField('capacity', (game) => (game.capacity.length ? game.capacity : undefined), {
+  init: (game) => { game.capacity = []; },
+  read: (game, d) => { game.capacity = Array.isArray(d.capacity) ? d.capacity.filter((k) => k && Number.isFinite(k.k) && k.k > 0 && game.system(k.sys)?.bodies.some((b) => b.id === k.body)) : []; },
+});
 // 部門ごとの 1 人あたりの産出の大きさ (開始時の生産性 ×1 のとき。docs/structure.md の 4)。farm = 食料 [単位/人/年] × (1 + 肥沃さ)、ind = 工業品 [単位/人/年]、
 // mine = 埋蔵量の係数に掛ける倍率。前は farm 2 × (1 + 肥沃さ)・ind 1・mine 1 で、農業が最も生産的な部門だった (温暖な惑星で 1 人 4 単位。付加価値で工業の 1.4 倍)。
 // 現実の低い所得の国では逆で、農業の 1 人あたりの付加価値は非農業の 1/4〜1/5 (GGDC 10 部門: 所得 604〜1,999 ドルの国で非農業 ÷ 農業 の中央値 5.4、
