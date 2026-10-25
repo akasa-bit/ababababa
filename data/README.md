@@ -229,7 +229,7 @@ node tools/build.mjs
 ```sh
 python3 data/fetch/fetch_gni.py     # 生データを取り直す
 python3 data/build/build_gni.py     # 計算する
-python3 data/build/build_gni.py ゲームのパネル.csv   # ゲームの R65 を同じ区分で
+python3 data/build/build_gni.py ゲームのパネル.csv   # ゲームの R65 を同じ区分で (パネルは node tools/fiscal-panel.js の書き出し。列 gni・income)
 ```
 
 - **結果**: 198 か国・6,623 国・年。GNI ÷ GDP の中央値は所得の低い分位から 0.989・0.982・0.976・0.971・0.991。国ごとの中央値の 10%〜90% 点は 0.942〜1.022。新しい投資のうち外国が出す割合は国ごとの中央値の中央値 0.110 (178 か国。25%〜75% 点 0.061〜0.176)。外への直接投資 ÷ GDP の所得への弾力性は 1.04 (受け入れ ÷ GDP は 0.24。172 か国)
