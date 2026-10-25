@@ -453,7 +453,7 @@
     for (const r of new Set(this.colonizedSystems().map((x) => this.realmOf(x.id)))) {
       const list = (this.shipHist[r] ??= []), n = this.realmShips(r), last = list[list.length - 1];
       if (!last || last[1] !== n) list.push([this.year, n]);
-      while (list.length > 1 && list[1][0] <= this.year - (this.intelSpan || 0) - BARGAIN.shiftYears - 1) list.shift();
+      while (list.length > 1 && list[1][0] <= this.year - (this.intelSpan ??= Math.ceil(Math.max(...this.galaxy.systems.map((a) => Math.max(...this.galaxy.systems.map((b) => distance(a, b))))))) - BARGAIN.shiftYears - 1) list.shift(); // intelSpan は読み込みの直後でも計算する (回 KE6)
     }
     for (const k of Object.keys(this.shipHist)) if (!this.isColonized(Number(k)) || this.realmOf(Number(k)) !== Number(k)) delete this.shipHist[k];
   }

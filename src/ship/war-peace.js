@@ -100,7 +100,7 @@
     if (sys === undefined || sys === null) return;
     const ev = (st.ev ??= []);
     ev.push([this.year, sys, by, kind, n]);
-    const span = (this.intelSpan || 0) + 1;
+    const span = (this.intelSpan ??= Math.ceil(Math.max(...this.galaxy.systems.map((a) => Math.max(...this.galaxy.systems.map((b) => distance(a, b))))))) + 1; // 読み込みの直後でも、知らせが銀河の端まで届く年数で捨てる (前は計算前の 0 で、読み込んだ試合だけ古い知らせを早く捨てた。回 KE6 で 1 行だけ直した)
     while (ev.length && ev[0][0] <= this.year - span) ev.shift();
   }
   // 星系 viewer に知らせが届いている戦果 { k, t }。viewer が null なら本当の戦果 (観戦・古いセーブ)
