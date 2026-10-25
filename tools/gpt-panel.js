@@ -2,14 +2,15 @@
 // ゲームの中身は変えない。GPT・国 (首都とその従属星系) ごとに 1 行:
 //   galaxy、gpt = 銀河の中の番号、arrival = 現れた年、inv = 発明した国の首都、country = 銀河-首都、
 //   income = GPT が現れた年の国の 1 人あたりの実質の所得 (incomeUSD の人口の重みの平均。2011 年の国際ドル)、
-//   year10 = 国の採用 (gptAdopt) が 10% に達した年 (年の終わりの値の間を直線で埋める。試合の終わりまでに達しなければ空)
+//   year10 = 国の採用 (gptAdopt) が 10% に達した年 (年の終わりの値の間を直線で埋める。試合の終わりまでに達しなければ空)、
+//   light = 発明した国の首都からの光の年数、lays = 10% に達した年の国の LAYS (達しなければ試合の終わり)、top = その年のいちばん高い国の LAYS (遅れの内訳を見るため。R77 の計算には使わない)
 // 使い方: node tools/gpt-panel.js <出力.csv> [銀河の数=30] [年数=150] [国の数=6]   (HTML=… で版を選ぶ)
 const fs = require('fs');
 const path = require('path');
 const H = require(path.resolve(__dirname, 'headless'));
 const [out = 'gpt-panel.csv', nS = '30', yS = '150', natS = '6'] = process.argv.slice(2);
 const sim = H.load(process.env.HTML ? { src: process.env.HTML } : {});
-const rows = ['galaxy,gpt,arrival,inv,country,income,year10'];
+const rows = ['galaxy,gpt,arrival,inv,country,income,year10,light,lays,top'];
 const t0 = Date.now();
 for (let sd = 1; sd <= Number(nS); sd++) {
   const g = sim.newGame(String(sd), { nations: Number(natS) });
@@ -22,15 +23,16 @@ for (let sd = 1; sd <= Number(nS); sd++) {
     g.gpts.forEach((gp, k) => {
       for (const r of Object.keys(L)) {
         const key = `${k}|${r}`, a = g.gptAdopt(g.year, gp, g.gptLag(r, gp, L));
-        const x = (rec[key] ??= { k, r, income: inc[r] ? inc[r][0] / inc[r][1] : NaN, prev: null, year10: null });
+        const x = (rec[key] ??= { k, r, income: inc[r] ? inc[r][0] / inc[r][1] : NaN, prev: null, year10: null, light: g.sysDist(gp.inv, Number(r)) });
         if (x.year10 === null && a >= 0.1) x.year10 = x.prev && x.prev[1] < 0.1 ? x.prev[0] + ((0.1 - x.prev[1]) / (a - x.prev[1])) * (g.year - x.prev[0]) : g.year;
+        if (x.year10 === null || x.lays === undefined) { x.lays = L[r]; x.top = Math.max(...Object.values(L)); }
         x.prev = [g.year, a];
       }
     });
   }
   for (const x of Object.values(rec)) {
     const gp = g.gpts[x.k];
-    rows.push(`${sd},${x.k},${gp.t.toFixed(2)},${gp.inv},${sd}-${x.r},${Number.isFinite(x.income) ? x.income.toPrecision(6) : ''},${x.year10 === null ? '' : x.year10.toFixed(2)}`);
+    rows.push(`${sd},${x.k},${gp.t.toFixed(2)},${gp.inv},${sd}-${x.r},${Number.isFinite(x.income) ? x.income.toPrecision(6) : ''},${x.year10 === null ? '' : x.year10.toFixed(2)},${x.light.toFixed(2)},${x.lays.toFixed(3)},${x.top.toFixed(3)}`);
   }
   process.stderr.write(`銀河 ${sd}/${nS} (${((Date.now() - t0) / 1000).toFixed(0)} 秒)\n`);
 }
