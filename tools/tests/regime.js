@@ -87,7 +87,7 @@ const { chromium } = require('playwright');
       const B = g.bundleOf(g.govs[w]);
       res.bundle = { law: B.law[2], gap: bundleGap(B.law, B.fact) };
       // 現地のエリートの抵抗: 忠誠度が低いままなら、実態が「従」へ寄っていく
-      for (let i = 0; i < 150; i++) { g.govs[w].loyalty = 10; g.bundleYearly(); }
+      for (let i = 0; i < 400; i++) { g.govs[w].loyalty = 10; g.bundleYearly(); } // 項目ごとに年 BUNDLE.p (2%) で半段。150 年では「宗」の項目が「従」まで届かないことが 2 割あり、試合の筋 (乱数の並び) で落ちた (回 KE5)
       res.elite = g.govs[w].elite;
       res.factV = [...g.bundleOf(g.govs[w]).fact].filter((c) => c === 'V').length;
       g.govs[w].loyalty = 90;

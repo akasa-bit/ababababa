@@ -6,6 +6,34 @@
     const b = this.target(o.sys, o.body);
     return Object.fromEntries(outpostRes(b).map((r) => [r, (this.productivity || 1) * STRUCTURE.modern * this.techA(o.sys, 'mine') * YIELD.mine * OUTPOST_RATE * (b.deposits?.[r] || 0) * o.lv]));
   }
+  // --- 民間の採掘の能力 (INVEST。回 KE5) ---
+  capacityAt(sysId, bodyId) { return this.capacity.find((k) => k.sys === sysId && k.body === bodyId); }
+  capacityYield(k) { return this.outpostYield({ sys: k.sys, body: k.body, lv: k.k }); }
+  // 年 1 回 (autoDevelop の始め): 能力が古くなり、会社が足りない資源の能力を買い足す (INVEST の説明)
+  capacityYearly() {
+    for (const k of this.capacity) k.k *= 1 - CAPITAL.delta;
+    this.capacity = this.capacity.filter((k) => k.k > 1e-6 && this.isColonized(k.sys));
+    if (!MARKET.buy) return;
+    for (const s of this.colonizedSystems()) {
+      const id = s.id, fl = this.flow[id], m = this.market[id], K = this.util?.[id];
+      if (!fl || !m || !K) continue;
+      const pr = (r) => this.price(id, r) / basePrice(r), gap = (r) => (pr(r) > 1 + INVEST.margin ? Math.max(0, m.u[r] - fl.prod[r]) : 0);
+      const ind = { fuel: 0.2 * gap('goods'), metal: 0.5 * gap('goods'), rare: HITECH.rare * gap('hitech') }; // 地元の工業が動いたら要る原料
+      const pipe = zeroRes(); // 建設中の能力の年の産出
+      for (const j of this.projects) if (j.type === 'capacity' && j.sys === id) for (const [r, v] of Object.entries(this.capacityYield({ sys: id, body: j.body, k: j.k }))) pipe[r] += v;
+      for (const r of INVEST.res) {
+        if (pr(r) < 1 + INVEST.margin || K[r] < 0.99) continue; // 値段がふつう、か、いまの設備に余りがある
+        const short = m.u[r] + ind[r] - fl.prod[r] - pipe[r];
+        if (!(short > 1e-3)) continue;
+        const b = this.system(id).bodies.filter((x) => outpostRes(x).includes(r) && (x.deposits?.[r] || 0) > 0.05 && this.outpostCheck(id, x.id).ok)
+          .sort((x, y) => y.deposits[r] - x.deposits[r])[0];
+        if (!b) continue; // 掘れる天体がなければ取り寄せる
+        const q = INVEST.speed * short, y1 = this.capacityYield({ sys: id, body: b.id, k: 1 })[r];
+        if (!(y1 > 0)) continue;
+        this.order({ credits: INVEST.ky * q * basePrice(r) }, id, { type: 'capacity', body: b.id, k: q / y1, pay: { fm: id }, delay: INVEST.build, label: `${b.name} の民間の採掘` });
+      }
+    }
+  }
   outpostCheck(sysId, bodyId) {
     const b = this.target(sysId, bodyId);
     const res = outpostRes(b);
@@ -30,6 +58,7 @@
   // 採掘資源なら星系内で最も埋蔵量の多い天体の採掘基地 (なければ入植地の鉱山)、食料は農場、工業品は工場。
   // クレジットは費用の2倍以上あるときだけ使う。
   autoDevelop() {
+    this.capacityYearly(); // 民間の採掘の能力 (回 KE5)
     // 太陽系 (プレイヤー) は自動開発をオンにしたときだけ。他の星系の政府はいつも自分の資金で開発する
     for (const id of this.colonizedSystems().map((x) => x.id).filter((k) => !this.isHuman(k) || this.auto[k])) {
       const fl = this.flow[id];

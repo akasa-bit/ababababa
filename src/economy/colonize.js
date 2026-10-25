@@ -245,6 +245,9 @@
       c.troops += 1;
       c.pop = Math.max(0.001, c.pop - TROOP_DRAFT);
       if (!job.quiet) this.message(`${c.name} で歩兵連隊を訓練した (駐留 ${c.troops} 連隊)`, c.sys);
+    } else if (job.type === 'capacity') { // 民間の採掘の能力 (回 KE5)
+      const k = this.capacityAt(job.sys, job.body);
+      if (k) k.k += job.k; else this.capacity.push({ sys: job.sys, body: job.body, k: job.k, by: job.pay?.fm ?? job.sys });
     } else if (job.type === 'outpost') {
       const o = this.outpostAt(job.sys, job.body);
       if (o) o.lv++;
