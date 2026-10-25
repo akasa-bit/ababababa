@@ -6,7 +6,7 @@
 |---|---|---|---|
 | 1 | 研究者の数を所得だけでなく学力で決める (B-120) | R66・R67 (版 21) | 済み |
 | 2 | 光速で遅れる技術の伝播 (B-121) | R68〜R72・R11 の測り方 (版 22) | この PR |
-| 3 | 研究開発の政策 (公の研究の予算と税額控除。B-122) | | |
+| 3 | 研究開発の政策 (公の研究の予算と税額控除。B-122) | R73〜R75 (版 23) | この PR |
 | 4 | 汎用技術 (GPT) と J カーブ (B-123) | | |
 
 ## 1. 学力で決まる研究者 (B-120)
@@ -112,6 +112,37 @@
 - **R68 が合わない理由**: ゲームの貧しい国は、技術ではなく交易路のなさや開拓の若さで貧しい (`docs/regions.md` の 5)。どの入植地も地球で学校に通った入植者から始まるので、貧しい国の LAYS もデータより高く (R62 のいちばん下の分位はゲーム 7.7 年、データ 2.2〜4.1 年)、θ が高いままになる。データの貧しい国の技術の遅れ (前線比の中央値 0.18) は、LAYS の差 (所得のいちばん下の分位 4.95 年、いちばん上 11.18 年。θ = exp(−0.18 × 6.2) = 0.32) と、伝播の遅れでできている。R62 が直れば、R68 の下の分位も近づく見込み。伝播は遅れた国を引き上げるので、下の分位をかえって前線に近づける。
 - **R70・R71 が合わない理由**: データの収束 (1995〜2019 年) は、中国や東欧のような大きく遅れた国が追いつく分でできている。ゲームの国は前線に近く、θ × 遅れた前線のところでつり合っているので、追いつく途中の国がほとんどない。
 
+## 3. 研究開発の政策 (B-122)
+
+### 3.1 現実の目標 (目標の版 23)
+
+作る前に固定した (`docs/targets.md` の版 23)。生データは WDI の研究開発費 ÷ GDP (`data/raw/research`) と、OECD の MSTI と R&D Tax Incentives (`data/raw/rnd`。`data/fetch/fetch_rnd.py`)。
+
+| 目標 | 統計量 | 実データ |
+|---|---|---|
+| R73 研究開発費と所得 | 所得の 5 分位ごとの研究開発費 ÷ GDP の 25%〜75% 点 (149 か国・2,416 国・年) | 中央値 0.18・0.35・0.56・1.38・1.88% |
+| R74 研究開発費のうち政府が出す割合 | 国ごとの平均 (2015〜2023 年) の国の中央値 (46 か国) | 32.4% (幅 24.7〜38.4%) |
+| R75 研究開発の税の優遇 | 税の優遇 ÷ GDP の国の中央値 (55 か国、0 の 9 か国も入れる) | 0.030% (幅 0.0013〜0.116%) |
+
+### 3.2 作り (`RND`・`FISCAL_DEFAULT.rdcredit`・予算の「研究」。`economy/market-consts.js`・`economy/fiscal-consts.js`・`economy/market-economy.js` の `rndRealm`)
+
+| | 中身 | 値の出どころ |
+|---|---|---|
+| 研究者の費用 | 研究者 1 人の研究開発費 = 1 人あたり所得 × exp(7.154 − 0.539 ln y) (y = `eduY`、2011 年のドル)。所得 10,000 ドルで 9.0 倍、50,000 ドルで 3.8 倍 | WDI の研究開発費 ÷ 研究者 (1,861 国・年)。所得の上の 2 分位の中央値は 4.55 倍 |
+| 政府が出す分 | 研究者の曲線 (1 の) のうち gshare = 149.98 − 10.82 ln y [%] (17.1〜66.3% で止める) を政府が出す分とみる。この分は、いまの政府のふだんの支出で雇われているとみて、お金の流れは足さない | OECD MSTI の GERD のうち政府が出した割合を ln 所得に当てた (1,234 国・年、46 か国) |
+| 会社が出す分 | 曲線の残り × 倍率 m。m は ((1 − 控除の率) ÷ (1 − 0.04))^(−1) × ((公の研究者) ÷ (曲線の公の研究者))^0.5 に、2 年でならして寄る | 税の値段への長期の弾力性 1 (Bloom, Van Reenen & Williams 2019)、政府の研究開発 10% で会社の研究開発 5〜6% (Moretti, Steinwender & Van Reenen)、懐妊 1.94 年 (Li & Hall) |
+| 研究開発の税額控除 (財政の新しい手段) | 会社の研究開発費 × 控除の率を、国の首都の政府がその星系の会社に払う (お金の種類 `rdcredit`)。幅は 0〜28%、既定 4% (AI の国も既定) | `docs/policy-ranges.md` |
+| 予算の「研究」(人間の国) | 払った額 ÷ 研究者 1 人の費用だけ公の研究者を雇う (首都の家計に払う。お金の種類 `research`)。技術に効くのは 8〜15 年前に雇った数の平均 | 公の非防衛の研究開発が TFP を上げるまでの遅れ (Fieldhouse & Mertens 2023) |
+| 上限 | 政府が出す研究開発費は GDP の 1.114%、会社が出す研究開発費は 3.559% まで (超えて払った予算は人を雇えない) | OECD MSTI の国・年の 99% 点。弾力性は現実で見た範囲でしか確かめられていないため |
+
+- 既定の財政のままなら (AI の国と、予算と控除を動かさない人間の国)、倍率は 1 で、研究者の数は 1 と 2 のままになる。違うのは、既定の控除 (会社の研究開発費の 4%) を政府が会社に払うお金の流れだけ。
+- 人間の国が予算の「研究」に税収の 20%、控除に 15% を入れた試し (シード 4、40 年): 研究開発費 ÷ GDP は 0.18% → 1.47% (上限で止まる)、そのうち政府が出す分 76%、40 年後の技術は既定より約 19% 高い。
+- 序盤の効き目は大きすぎる: 本星の始めの伸び (年 1.67%) は、始めの研究者 (研究開発費 ÷ GDP 0.18%) で合わせているので (α の決め方。`docs/structure.md` の 3)、序盤の研究者 1 人の効き目は、現実の研究開発の社会的な収益率 (年 58%。Lucking, Bloom & Van Reenen) の 10 倍を超える。中盤からは、前線の国の研究開発費が GDP の 1.5% 前後・伸びが年 0.9% ほどで、収益率は現実と同じくらいになる。上限はこの序盤の暴れを抑えるためでもある。
+
+### 3.3 結果
+
+(測定中)
+
 ## 出典
 
 - Bloom, N., Jones, C. I., Van Reenen, J. & Webb, M. (2020). Are Ideas Getting Harder to Find? *American Economic Review* 110(4), 1104–1144.
@@ -120,4 +151,10 @@
 - World Bank. World Development Indicators (SP.POP.SCIE.RD.P6・NY.GDP.PCAP.PP.KD)・Human Capital Index (HD.HCI.HLOS・HD.HCI.LAYS)。
 - Feenstra, R. C., Inklaar, R. & Timmer, M. P. (2015). The Next Generation of the Penn World Table. *American Economic Review* 105(10), 3150–3182 (Penn World Table 11.0)。
 - Eaton, J. & Kortum, S. (1999). International Technology Diffusion: Theory and Measurement. *International Economic Review* 40(3), 537–570.
+- Bloom, N., Van Reenen, J. & Williams, H. (2019). A Toolkit of Policies to Promote Innovation. *Journal of Economic Perspectives* 33(3), 163–184.
+- Moretti, E., Steinwender, C. & Van Reenen, J. The Intellectual Spoils of War? Defense R&D, Productivity and International Spillovers. NBER Working Paper 26483.
+- Li, W. C. Y. & Hall, B. H. Depreciation of Business R&D Capital. NBER Working Paper 22473.
+- Fieldhouse, A. J. & Mertens, K. (2023). The Returns to Government R&D: Evidence from U.S. Appropriations Shocks. Federal Reserve Bank of Dallas Working Paper 2305.
+- Lucking, B., Bloom, N. & Van Reenen, J. Have R&D Spillovers Declined in the 21st Century? NBER Working Paper 24622.
+- OECD. Main Science and Technology Indicators・R&D Tax Incentives Database (CC BY 4.0)。
 - Nelson, R. R. & Phelps, E. S. (1966). Investment in Humans, Technological Diffusion, and Economic Growth. *American Economic Review* 56(1/2), 69–75.
