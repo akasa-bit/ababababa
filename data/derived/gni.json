@@ -1,0 +1,98 @@
+{
+ "source": "data/raw/gni/wdi_gni.csv.gz (世界銀行 WDI の NY.GNP.MKTP.CD・NY.GDP.MKTP.CD)・data/raw/tech/wdi_tech.csv.gz (NY.GDP.PCAP.PP.KD)。計算は data/build/build_gni.py",
+ "countries": 198,
+ "country_years": 6623,
+ "years": [
+  1990,
+  2024
+ ],
+ "by_income": [
+  {
+   "income": [
+    511,
+    3589
+   ],
+   "ratio": [
+    0.9719,
+    1.0005
+   ],
+   "median": 0.9886,
+   "n": 1325
+  },
+  {
+   "income": [
+    3589,
+    8689
+   ],
+   "ratio": [
+    0.9555,
+    1.0127
+   ],
+   "median": 0.9816,
+   "n": 1324
+  },
+  {
+   "income": [
+    8689,
+    16940
+   ],
+   "ratio": [
+    0.9547,
+    0.9953
+   ],
+   "median": 0.9759,
+   "n": 1325
+  },
+  {
+   "income": [
+    16940,
+    37434
+   ],
+   "ratio": [
+    0.949,
+    0.9873
+   ],
+   "median": 0.971,
+   "n": 1324
+  },
+  {
+   "income": [
+    37434,
+    174570
+   ],
+   "ratio": [
+    0.966,
+    1.0115
+   ],
+   "median": 0.9912,
+   "n": 1325
+  }
+ ],
+ "country_median": {
+  "p10": 0.9422,
+  "p25": 0.9637,
+  "p50": 0.981,
+  "p75": 0.9973,
+  "p90": 1.0219
+ },
+ "note": "所得は 2021 年の国際ドル。ratio = GNI ÷ GDP (名目の米ドルどうし)",
+ "game": {
+  "fdi": {
+   "value": 0.1103,
+   "country_p25_p75": [
+    0.0606,
+    0.1756
+   ],
+   "country_years_median": 0.1059,
+   "countries": 178,
+   "country_years": 5344,
+   "note": "新しい投資のうち外国が出す割合 = BX.KLT.DINV.WD.GD.ZS ÷ NE.GDI.FTOT.ZS。value は国ごとの中央値の中央値 (OWNER.fdi)"
+  },
+  "outward": {
+   "value": 1.0445,
+   "inward": 0.235,
+   "countries": 172,
+   "note": "value = ln (外への直接投資 ÷ GDP) を ln y に当てた傾き (国ごとの中央値)。inward = 受け入れ ÷ GDP の同じ傾き (参考)"
+  }
+ }
+}

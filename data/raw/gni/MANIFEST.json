@@ -1,0 +1,12 @@
+[
+ {
+  "file": "wdi_gni.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{NY.GNP.MKTP.CD,NY.GDP.MKTP.CD,BX.KLT.DINV.WD.GD.ZS,NE.GDI.FTOT.ZS,BM.KLT.DINV.WD.GD.ZS}",
+  "fetched": "2026-10-25T01:12:01Z",
+  "sha256": "e2331ebed2e1a2b8a53b338d1ef953c2303eee309be9a861d59db720986b42c1",
+  "bytes": 398420,
+  "rows": 31540,
+  "filter": "国だけ (地域の集計を除く)・1990〜2024 年",
+  "license": "CC BY 4.0 (世界銀行の利用条件)"
+ }
+]
