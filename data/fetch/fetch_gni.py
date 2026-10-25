@@ -6,6 +6,7 @@
   - NY.GDP.MKTP.CD: 国内総生産 (GDP)
   - BX.KLT.DINV.WD.GD.ZS: 直接投資の受け入れ (純) ÷ GDP [%]、NE.GDI.FTOT.ZS: 総固定資本形成 ÷ GDP [%]
     (新しい投資のうち外国が出す割合 = 直接投資 ÷ 総固定資本形成。遠くの持ち分が近づく先 OWNER.fdi を決める。目標ではない)
+  - BM.KLT.DINV.WD.GD.ZS: 外への直接投資 (純) ÷ GDP [%] (豊かな国ほど外へ出す。出す国の重み OWNER.out を決める。目標ではない)
   1990〜2024 年。所得の分位は R61・R62 と同じ WDI の NY.GDP.PCAP.PP.KD (data/raw/tech/wdi_tech.csv.gz。data/fetch/fetch_tech.py) で分ける。
 保存先は data/raw/gni/wdi_gni.csv.gz (列 indicator, iso3, country, year, value。国だけ、地域の集計を除く)。
 取得日・URL・SHA-256・行数を data/raw/gni/MANIFEST.json に記録する。
@@ -16,7 +17,7 @@ import csv, datetime, gzip, hashlib, io, json, os, sys, urllib.request
 
 ROOT = os.path.join(os.path.dirname(__file__), '..', 'raw', 'gni')
 UA = {'User-Agent': 'NoLongerUbiquitous data fetch (research game; contact via repository)'}
-WDI = ['NY.GNP.MKTP.CD', 'NY.GDP.MKTP.CD', 'BX.KLT.DINV.WD.GD.ZS', 'NE.GDI.FTOT.ZS']
+WDI = ['NY.GNP.MKTP.CD', 'NY.GDP.MKTP.CD', 'BX.KLT.DINV.WD.GD.ZS', 'NE.GDI.FTOT.ZS', 'BM.KLT.DINV.WD.GD.ZS']
 
 
 def fetch(url):

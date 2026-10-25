@@ -87,6 +87,12 @@
    "countries": 178,
    "country_years": 5344,
    "note": "新しい投資のうち外国が出す割合 = BX.KLT.DINV.WD.GD.ZS ÷ NE.GDI.FTOT.ZS。value は国ごとの中央値の中央値 (OWNER.fdi)"
+  },
+  "outward": {
+   "value": 1.0445,
+   "inward": 0.235,
+   "countries": 172,
+   "note": "value = ln (外への直接投資 ÷ GDP) を ln y に当てた傾き (国ごとの中央値)。inward = 受け入れ ÷ GDP の同じ傾き (参考)"
   }
  }
 }
