@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""技術革新 (回 KE6・B-120〜B-123。docs/research/innovation.md) の様式化された事実を計算する。目標 R66・R67 と R68〜R72。
+"""技術革新 (回 KE6・B-120〜B-123。docs/research/innovation.md) の様式化された事実を計算する。目標 R66・R67 と R68〜R72 と R73〜R75。
 
 統計量 (国・年):
   R66: 1 人あたり所得 (WDI NY.GDP.PCAP.PP.KD、2021 年の国際ドル) の 5 分位ごとの、研究者の数 (人口 100 万人あたり。WDI SP.POP.SCIE.RD.P6。
@@ -17,6 +17,11 @@
        年率の伸び [%/年] を LAYS と ln 所得 (2000 年) に当てた、LAYS の係数 [%/年 ÷ 年]
   R72: 発展会計で、学歴 (人的資本) が所得のばらつきに占める割合 cov(ln hc, ln y) ÷ var(ln y) (y は就業者 1 人あたりの実質 GDP rgdpo ÷ emp。
        2015〜2019 年の国ごとの平均)。資本と TFP の割合 (K/Y の形、資本の分配率 1/3) も参考に出す
+  研究開発の費用と政府の支援 (OECD MSTI・RDTAX。data/raw/rnd/oecd_rnd.csv.gz):
+  R73: 1 人あたり所得の 5 分位ごとの、研究開発費 ÷ GDP [%] (WDI GB.XPD.RSDV.GD.ZS) の 25%〜75% 点 (1996〜2024 年の国・年。R66 と同じ形)
+  R74: 研究開発費 (GERD) のうち政府が出した割合 [%] の、2015〜2023 年の国ごとの平均の、国の中央値 (幅は国の 25%〜75% 点)
+  R75: 研究開発の税の優遇 (GTARD) ÷ GDP [%] の、2015〜2023 年の国ごとの平均の、国の中央値 (幅は国の 25%〜75% 点。0 の国も入れる)
+  ゲームの研究者 1 人の費用 (目標ではない): 研究者 1 人の研究開発費 ÷ 1 人あたり GDP の ln を ln 所得に当てた係数 (rnd.cost.ln_fit)
   ゲームの伝播の係数 (目標ではない。src/economy/market-consts.js の DIFFUSE。回 KE6・B-121): game の diffusion (diffusion() の説明)
   ゲームの係数 (目標ではない。src/economy/market-consts.js の STRUCTURE.research): ln 研究者 = a + b ln y + c 学力 ÷ 100 の a・b・c。
        y はゲームの所得の物差し (2011 年の国際ドル) にするため、2021 年のドルを米国の GDP デフレーターの比 1.21 で割ってから当てる (R62 と同じ読み替え)
@@ -25,7 +30,8 @@
         python3 data/build/build_innovation.py --game ゲームのパネル.csv → ゲームの R66・R67
             (列 country, galaxy, year, pop (100 万人), income (1 人あたりの実質の所得。2011 年の国際ドル)、researchers (人口 100 万人あたり)、
              learn (大人 (25〜64 歳) の平均の学力。試験の点数の物差し)、lnA (技術の水準の ln)、rel (銀河でいちばん大きい国との ln の差)、
-             hk (学歴の倍率)、lays (学力で調整した就学年数)。国・年ごとに 1 行。tools/innovation-panel.js。lnA〜lays のない古いパネルは R66・R67 だけ)
+             hk (学歴の倍率)、lays (学力で調整した就学年数)、rd (研究開発費 ÷ GDP [%])、gshare (そのうち政府が出した割合 [%])、tax (研究開発の税の優遇 ÷ GDP [%])。
+             国・年ごとに 1 行。tools/innovation-panel.js。ない列の目標は測らない)
 """
 import json, os, sys
 import numpy as np
@@ -37,6 +43,7 @@ INC = os.path.join(HERE, '..', 'raw', 'tech', 'wdi_tech.csv.gz')
 HLO = os.path.join(HERE, '..', 'raw', 'hcap', 'hci_hlos.csv.gz')
 LAYS = os.path.join(HERE, '..', 'raw', 'hcap', 'hci_lays.csv.gz')
 PWT = os.path.join(HERE, '..', 'raw', 'tfp', 'pwt110.csv.gz')
+OECD = os.path.join(HERE, '..', 'raw', 'rnd', 'oecd_rnd.csv.gz')
 OUT = os.path.join(HERE, '..', 'derived', 'innovation.json')
 SEED = 20261025
 LATE = 2401  # ゲームは 2301 年に始まり、始めはどの国も A = 1。100 年たってからの国・年だけを比べる (R68〜R72)
@@ -111,6 +118,48 @@ def growth(p, y0, y1):
     j = s0[['a', 'rtfpna']].join(s1[['rtfpna']], rsuffix='1', how='inner').join(ls, how='inner')
     j = j[(j['rtfpna'] > 0) & (j['rtfpna1'] > 0)].dropna()
     return j.assign(g=(np.log(j['rtfpna1']) - np.log(j['rtfpna'])) / (y1 - y0) / j['labsh'])
+
+
+def rnd(x):
+    """R73〜R75 と、ゲームの研究者 1 人の費用 (研究開発の政策。回 KE6・B-122)。x = panel() (研究者と所得の国・年)"""
+    d = series(RES, 'GB.XPD.RSDV.GD.ZS', 'rd').merge(series(INC, 'NY.GDP.PCAP.PP.KD', 'y'), on=['iso3', 'year']).dropna()
+    d = d[(d['rd'] > 0) & (d['y'] > 0)]
+    q, edges = quintiles(d['y'])
+    out = {'intensity': {'countries': int(d['iso3'].nunique()), 'country_years': int(len(d)), 'years': [int(d['year'].min()), int(d['year'].max())], 'by_income': [
+        {'income': [round(edges[i]), round(edges[i + 1])], 'rd': [round(float(np.quantile(d['rd'][q == i], .25)), 3), round(float(np.quantile(d['rd'][q == i], .75)), 3)],
+         'median': round(float(np.median(d['rd'][q == i])), 3), 'n': int((q == i).sum())} for i in range(5)],
+        'note': '研究開発費 ÷ GDP [%] (WDI GB.XPD.RSDV.GD.ZS。UNESCO 統計研究所)。所得は 2021 年の国際ドル'}}
+    o = pd.read_csv(OECD)
+    o = o[~o['iso3'].isin(['OECD', 'EU27_2020'])]
+    def cm(m, unit=None):
+        v = o[(o['measure'] == m) & (o['unit'] == (unit or {'G_FG': 'PT_GERD'}.get(m, 'PT_B1GQ'))) & (o['year'] >= 2015) & (o['year'] <= 2023)].groupby('iso3')['value'].mean()
+        return {'median': round(float(v.median()), 4), 'p25_p75': [round(float(v.quantile(.25)), 4), round(float(v.quantile(.75)), 4)], 'countries': int(len(v)),
+                'zero': int((v <= 1e-9).sum())}
+    out['government_share'] = {**cm('G_FG'), 'note': 'GERD のうち政府が出した割合 [%] の、2015〜2023 年の国ごとの平均 (OECD MSTI。OECD と協力国)'}
+    out['tax_support'] = {**cm('RDTAX'), 'note': '研究開発の税の優遇 (GTARD) ÷ GDP [%] の、2015〜2023 年の国ごとの平均 (OECD R&D Tax Incentives。0 の国も入れる)'}
+    out['direct_support'] = {**cm('DF'), 'note': '政府が直接出した会社の研究開発費 ÷ GDP [%] (参考)'}
+    out['credit'] = {'tax_of_berd': cm('RDTAX', 'PT_BERD'), 'direct_of_berd': cm('DF', 'PT_BERD'),
+                     'note': '会社の研究開発費 (BERD) に対する、税の優遇と政府の直接の支出の割合 [%] (2015〜2023 年の国ごとの平均)。ゲームの既定の税額控除の率は tax_of_berd の中央値'}
+    gg = o[o['measure'] == 'G'][['iso3', 'year', 'value']].rename(columns={'value': 'g'}).merge(
+        o[o['measure'] == 'G_FG'][['iso3', 'year', 'value']].rename(columns={'value': 'fg'}), on=['iso3', 'year'])
+    pub, priv = gg['g'] * gg['fg'] / 100, gg['g'] * (1 - gg['fg'] / 100)
+    out['caps'] = {'public_p99': round(float(np.quantile(pub, .99)), 3), 'private_p99': round(float(np.quantile(priv, .99)), 3), 'public_median': round(float(pub.median()), 3),
+                   'private_median': round(float(priv.median()), 3), 'country_years': int(len(gg)),
+                   'note': '政府が出した研究開発費 ÷ GDP と、それ以外 (会社など) が出した研究開発費 ÷ GDP [%] の国・年の 99% 点 (OECD MSTI。ゲームの政策の効き目の上限)'}
+    g = o[o['measure'] == 'G_FG'].merge(series(INC, 'NY.GDP.PCAP.PP.KD', 'y'), on=['iso3', 'year']).dropna()
+    b = np.polyfit(np.log(g['y'] / TO2011), g['value'], 1)
+    out['government_share']['income_slope'] = round(float(b[0]), 3)
+    out['government_share']['income_fit'] = [round(float(b[1]), 3), round(float(b[0]), 3)]  # 割合 [%] = a + b ln y (y は 2011 年の国際ドル。ゲームの既定の公の研究の割合)
+    out['government_share']['range'] = [round(float(g.groupby('iso3')['value'].mean().min()), 2), round(float(g.groupby('iso3')['value'].mean().max()), 2)]
+    out['government_share']['country_years'] = int(len(g))
+    # 研究者 1 人の費用 ÷ 1 人あたり GDP = (研究開発費 ÷ GDP) ÷ (研究者 ÷ 人口)
+    c = d.merge(x[['iso3', 'year', 'res']], on=['iso3', 'year']).dropna()
+    c = c.assign(cost=(c['rd'] / 100) / (c['res'] / 1e6), ly=np.log(c['y'] / TO2011))
+    k = np.polyfit(c['ly'], np.log(c['cost']), 1)
+    out['cost'] = {'median': round(float(c['cost'].median()), 3), 'rich_median': round(float(c['cost'][c['y'] >= edges[3]].median()), 3),
+                   'ln_fit': [round(float(k[1]), 4), round(float(k[0]), 4)], 'country_years': int(len(c)),
+                   'note': '研究者 1 人の研究開発費 ÷ 1 人あたり GDP。ln_fit = [a, b]: ln 費用の比 = a + b ln y (y は 2011 年の国際ドル)。rich_median は所得の上の 2 分位'}
+    return out
 
 
 def diffusion():
@@ -205,12 +254,37 @@ def game(path):
     res['R67'] = {'pass': c is not None and band[0] <= c <= band[1], 'coef': None if c is None else round(c, 4), 'band': band, 'rows': int(len(t))}
     if {'lnA', 'rel', 'hk', 'lays'} <= set(g.columns):
         res.update(game_tech(g, T))
+    if {'rd', 'gshare', 'tax'} <= set(g.columns):
+        res.update(game_rnd(g, T))
     print(json.dumps(res, ensure_ascii=False))
     print(f"R66 {'合格' if res['R66']['pass'] else '不合格'} (比べられる分位 {n}、幅の中 {ok})")
     print(f"R67 {'合格' if res['R67']['pass'] else '不合格'} (学力の係数 {res['R67']['coef']}、幅 {band[0]}〜{band[1]})")
-    for k in ('R68', 'R69', 'R70', 'R71', 'R72'):
+    for k in ('R68', 'R69', 'R70', 'R71', 'R72', 'R73', 'R74', 'R75'):
         if k in res:
             print(f"{k} {'合格' if res[k]['pass'] else '不合格'} ({', '.join(f'{a} {b}' for a, b in res[k].items() if a not in ('pass', 'bins'))})")
+
+
+def game_rnd(g, T):
+    """R73〜R75 のゲームの値 (列 rd = 研究開発費 ÷ GDP [%]、gshare = そのうち政府が出した割合 [%]、tax = 税の優遇 ÷ GDP [%])"""
+    g = g.dropna(subset=['rd']).copy()
+    g['y21'] = g['income'] * TO2011
+    res, out, ok, n = {}, [], 0, 0
+    for b in T['R73']['bands']:
+        lo, hi = b['income']
+        s = g[(g['y21'] >= lo) & (g['y21'] < hi)]['rd']
+        if len(s) < 100:
+            out.append({'income': b['income'], 'n': len(s)}); continue
+        m = float(s.median()); inside = b['rd'][0] <= m <= b['rd'][1]
+        n += 1; ok += inside
+        out.append({'income': b['income'], 'n': len(s), 'median': round(m, 3), 'band': b['rd'], 'inside': bool(inside)})
+    res['R73'] = {'pass': bool(n >= 3 and ok >= 2 * n / 3), 'compared': n, 'inside': ok, 'bins': out}
+    late = g[g['year'] >= LATE].groupby('country')[['gshare', 'tax']].mean()
+    for k, c in (('R74', 'gshare'), ('R75', 'tax')):
+        v = late[c].dropna()
+        band = T[k]['band']
+        m = float(v.median()) if len(v) else None
+        res[k] = {'pass': bool(m is not None and len(v) >= 100 and band[0] <= m <= band[1]), 'value': None if m is None else round(m, 4), 'band': band, 'rows': int(len(v))}
+    return res
 
 
 def windows(g, n):
@@ -278,6 +352,7 @@ def main():
         'researchers': {'countries': int(x['iso3'].nunique()), 'country_years': int(len(x)), 'years': [int(x['year'].min()), int(x['year'].max())], 'by_income': r66,
                         'note': '所得は 2021 年の国際ドル。研究者は人口 100 万人あたり'},
         'learning': lr,
+        'rnd': rnd(x),
         'technology': technology(),
         'game': {'research': [lr['a'], lr['b'], lr['c']], 'note': 'STRUCTURE.research = [a, b, c]: ln 研究者 [人/100 万人] = a + b ln y + c 学力 ÷ 100 (y は 2011 年の国際ドル)',
                  'diffusion': diffusion()},
