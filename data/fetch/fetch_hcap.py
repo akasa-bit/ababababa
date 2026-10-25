@@ -9,9 +9,11 @@
   - BAR.SCHL.3034〜BAR.SCHL.7074・BAR.SCHL.75UP: 5 歳ごとの年齢の区分の平均の就学年数 (始めからある入植地の、年齢ごとの就学年数の形を決める。回 KE5)
   - HD.HCI.HLOS: 調和された試験の点数 (Harmonized Test Scores。300〜625 点。国際的な学力の試験を同じ物差しにそろえた学力。世界銀行の
     Human Capital Index (API の source 63) の 2010・2017・2018・2020 年。Patrinos & Angrist 2018・Kraay 2019。目標 R64 と学力の作り。回 KE5)
+  - HD.HCI.LAYS: 学力で調整した就学年数 (Learning-Adjusted Years of Schooling = 就学年数 × 試験の点数 ÷ 625。同じ Human Capital Index。
+    目標 R71 (所得をそろえた TFP の伸びと人的資本)。回 KE6)
   (Barro–Lee の元の頁 barrolee.github.io の表は「All rights reserved」なので、CC BY 4.0 で配られている世界銀行の写しを使う)
 保存先は data/raw/hcap/edstats_bl.csv.gz (就学年数)・data/raw/hcap/edstats_age.csv.gz (年齢の区分ごとの就学年数)・data/raw/hcap/edstats_spend.csv.gz (教育の支出)・
-data/raw/hcap/hci_hlos.csv.gz (試験の点数) (列 indicator, iso3, country, year, value。国だけ、地域の集計を除く)。
+data/raw/hcap/hci_hlos.csv.gz (試験の点数)・data/raw/hcap/hci_lays.csv.gz (学力で調整した就学年数) (列 indicator, iso3, country, year, value。国だけ、地域の集計を除く)。
 取得日・URL・SHA-256・行数を data/raw/hcap/MANIFEST.json に記録する。
 
 使い方: python3 data/fetch/fetch_hcap.py [ファイル名…]  (ファイル名を並べると、そのファイルだけを取り直し、MANIFEST の同じ名前の行だけを書き換える)
@@ -24,6 +26,7 @@ IND = ['BAR.SCHL.25UP', 'BAR.SCHL.2529']
 SPEND = ['SE.XPD.TOTL.GD.ZS']
 AGES = [f'BAR.SCHL.{a}{a + 4}' for a in range(25, 75, 5)] + ['BAR.SCHL.75UP']
 HCI = ['HD.HCI.HLOS']
+LAYS = ['HD.HCI.LAYS']
 LICENSE = 'CC BY 4.0 (世界銀行の利用条件)。元の推計は Barro & Lee 2013・UNESCO 統計研究所 (出典を明記する)'
 HCI_LICENSE = 'CC BY 4.0 (世界銀行の利用条件)。元の推計は Patrinos & Angrist 2018 の調和された学力 (出典を明記する)'
 
@@ -72,7 +75,8 @@ def main():
     files = {'edstats_bl.csv.gz': (IND, '1950:2015', '国だけ (地域の集計を除く)・1950〜2015 年', 12, LICENSE),
              'edstats_age.csv.gz': (AGES, '1950:2015', '国だけ (地域の集計を除く)・1950〜2015 年', 12, LICENSE),
              'edstats_spend.csv.gz': (SPEND, '1970:2015', '国だけ (地域の集計を除く)・1970〜2015 年', 12, LICENSE),
-             'hci_hlos.csv.gz': (HCI, '2010:2020', '国だけ (地域の集計を除く)・2010〜2020 年', 63, HCI_LICENSE)}
+             'hci_hlos.csv.gz': (HCI, '2010:2020', '国だけ (地域の集計を除く)・2010〜2020 年', 63, HCI_LICENSE),
+             'hci_lays.csv.gz': (LAYS, '2010:2020', '国だけ (地域の集計を除く)・2010〜2020 年', 63, HCI_LICENSE)}
     want = sys.argv[1:] or list(files)
     path = os.path.join(ROOT, 'MANIFEST.json')
     old = {m['file']: m for m in json.load(open(path, encoding='utf-8'))} if os.path.exists(path) else {}

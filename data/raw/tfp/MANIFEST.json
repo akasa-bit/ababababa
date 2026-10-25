@@ -1,0 +1,31 @@
+{
+ "source": "Penn World Table 11.0 (Feenstra, Inklaar & Timmer 2015, AER 105(10) の更新。DataverseNL 10.34894/FABVLR の pwt110.xlsx、CC BY 4.0)",
+ "url": "https://dataverse.nl/api/access/datafile/554105",
+ "fetched": "2026-10-25T08:00:04Z",
+ "license": "CC BY 4.0 (出典を明記する)",
+ "files": [
+  {
+   "file": "pwt110.csv.gz",
+   "from": "pwt110.xlsx (シート Data)",
+   "columns": [
+    "countrycode",
+    "country",
+    "year",
+    "rgdpe",
+    "rgdpo",
+    "pop",
+    "emp",
+    "hc",
+    "ctfp",
+    "rtfpna",
+    "labsh",
+    "cn",
+    "rnna"
+   ],
+   "rows": 13690,
+   "sha256": "908e984f5b1dbf0b60a29eec8404178cb2edbaf82e8e8f879d02c67446a9a4cd",
+   "source_sha256": "7b337e94f39dfe304bc459e433f8ce0624496c812707ae0c924888f5142b3ab3",
+   "filter": "なし (列だけを取り出した)"
+  }
+ ]
+}

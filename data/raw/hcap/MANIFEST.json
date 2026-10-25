@@ -38,5 +38,15 @@
   "rows": 601,
   "filter": "国だけ (地域の集計を除く)・2010〜2020 年",
   "license": "CC BY 4.0 (世界銀行の利用条件)。元の推計は Patrinos & Angrist 2018 の調和された学力 (出典を明記する)"
+ },
+ {
+  "file": "hci_lays.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{HD.HCI.LAYS}?source=63",
+  "fetched": "2026-10-25T08:04:43Z",
+  "sha256": "e3d6bc3c1f64d60b0a73a7be163187507c7fe1defa875f083a793be9a0c587e1",
+  "bytes": 7844,
+  "rows": 597,
+  "filter": "国だけ (地域の集計を除く)・2010〜2020 年",
+  "license": "CC BY 4.0 (世界銀行の利用条件)。元の推計は Patrinos & Angrist 2018 の調和された学力 (出典を明記する)"
  }
 ]
