@@ -18,6 +18,9 @@
 //                expenditure に 物価の上がり方 × 国債、revenue に 物価の上がり方 × 政府の預金 を足す (名目の利子のうち、物価の目減りを埋める分)
 //   war         = その年の終わりに、国がどこかと戦争をしていれば 1
 //   pop         = 国の人口 [100 万人] (JST にはない列。小さな国を除いて見るときに使う。analyze_fiscal.py は使わない)
+//   gni         = gdp + その年にほかの国の持ち主から受け取った配当 − ほかの国の持ち主に払った配当 (遠くの持ち主。game.pinc の差。回 KE5。目標 R65。
+//                 data/build/build_gni.py が読む。analyze_fiscal.py は使わない)
+//   income      = 国の 1 人あたりの実質の所得 [2011 年の国際ドル] (incomeUSD の、人口の重みの、その年の刻みの平均。R65 の所得の分位)
 // 使い方: node tools/fiscal-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]
 const fs = require('fs');
 const path = require('path');
@@ -35,7 +38,7 @@ const MKT = !!sim.tables.MARKET?.buy; // 市場のある版 (刻みごとの所�
 function play(seed) {
   const g = sim.newGame(seed, { nations: Number(natS) });
   const acc = {}; // 星系ごとの 1 年の足し上げ { va, buy, rev, flow }
-  const A = (id) => (acc[id] ??= { va: 0, buy: 0, rev: 0, flow: 0, inc: 0 });
+  const A = (id) => (acc[id] ??= { va: 0, buy: 0, rev: 0, flow: 0, inc: 0, yr: 0, pp: 0 });
   const mv = g.mv.bind(g), earn = g.earn.bind(g), cash = g.cash.bind(g);
   g.mv = (sys, res, amt, kind) => { if (VALUE.has(kind)) A(sys).va += amt * (g.price ? g.price(sys, res) : PRICE[res]); return mv(sys, res, amt, kind); }; // その星系の市場の値段 (段 5)
   g.earn = (kind, amount, sys = 0, other = null) => {
@@ -52,17 +55,23 @@ function play(seed) {
     return cash(kind, v, acct);
   };
   const eco = g.economy.bind(g);
-  g.economy = (h) => { const r = eco(h); if (g.incomeOf) for (const c of g.colonies) A(c.sys).inc += (c.incY || 0) * h; return r; }; // 刻みごとの所得 (税の土台と同じ)
+  g.economy = (h) => { // 刻みごとの所得 (税の土台と同じ) と、1 人あたりの実質の所得 (R65)
+    const r = eco(h);
+    if (g.incomeOf) for (const c of g.colonies) { const a = A(c.sys); a.inc += (c.incY || 0) * h; if (g.incomeUSD && c.pop > 0) { a.yr += c.pop * g.incomeUSD(c); a.pp += c.pop; } }
+    return r;
+  };
   const rows = [];
   for (let y = 0; y < Number(yS); y++) {
     for (const k of Object.keys(acc)) delete acc[k];
+    const P0 = { ...(g.pinc || {}) };
     sim.run(g, 1);
     const realms = {};
     for (const key of Object.keys(g.govs)) {
       const id = Number(key);
       if (!g.isColonized(id)) continue;
-      const R = (realms[g.realmOf(id)] ??= { gdp: 0, revenue: 0, flow: 0, debt: 0, tloans: 0, pop: 0, yl: 0, bonds: 0, infl: 0 });
-      const a = acc[id] || { va: 0, buy: 0, rev: 0, flow: 0, inc: 0 }, gv = g.govs[key];
+      const R = (realms[g.realmOf(id)] ??= { gdp: 0, revenue: 0, flow: 0, debt: 0, tloans: 0, pop: 0, yl: 0, bonds: 0, infl: 0, yr: 0, pp: 0 });
+      const a = acc[id] || { va: 0, buy: 0, rev: 0, flow: 0, inc: 0, yr: 0, pp: 0 }, gv = g.govs[key];
+      R.yr += a.yr; R.pp += a.pp;
       // 民間の付加価値: 市場のある版は、税の土台と同じ所得 (サービスを含む。incomeOf) のその年の合計。ない版は、産出 × 値段の足し上げ
       const va = g.incomeOf ? (MKT ? a.inc : g.coloniesIn(id).reduce((k, c) => k + g.incomeOf(c), 0)) : a.va;
       R.gdp += va + a.buy;
@@ -83,14 +92,15 @@ function play(seed) {
       if (!(R.gdp > 0)) continue;
       const r = Number(realm), stir = g.cbRateAt ? g.cbRateAt(r) : g.rateAt(r), lt = g.longYield ? (R.bonds > 0 ? R.yl / R.bonds : g.longYield(r)) : stir;
       const rev = R.revenue + Math.max(0, -R.infl), exp = R.revenue - R.flow + Math.max(0, R.infl);
-      rows.push([Math.round(g.year), `${seed}-${realm}`, seed, R.gdp, rev, exp, R.debt / R.gdp, R.tloans, 100 * lt, R.gdp, war.has(r) ? 1 : 0, R.pop, 100 * stir, g.cpiOf ? g.cpiOf(r) : 1]);
+      const net = (g.pinc?.[realm] || 0) - (P0[realm] || 0);
+      rows.push([Math.round(g.year), `${seed}-${realm}`, seed, R.gdp, rev, exp, R.debt / R.gdp, R.tloans, 100 * lt, R.gdp, war.has(r) ? 1 : 0, R.pop, 100 * stir, g.cpiOf ? g.cpiOf(r) : 1, R.gdp + net, R.pp > 0 ? R.yr / R.pp : 0]);
     }
   }
   return rows;
 }
 
 const t0 = Date.now();
-const lines = ['year,country,galaxy,gdp,revenue,expenditure,debtgdp,tloans,ltrate,rgdpbarro,war,pop,stir,cpi'];
+const lines = ['year,country,galaxy,gdp,revenue,expenditure,debtgdp,tloans,ltrate,rgdpbarro,war,pop,stir,cpi,gni,income'];
 for (let i = 1; i <= Number(nS); i++) {
   for (const r of play(String(i))) lines.push(r.map((v) => (typeof v === 'number' && !Number.isInteger(v) ? v.toPrecision(8) : v)).join(','));
   process.stderr.write(`銀河 ${i}/${nS} (${((Date.now() - t0) / 1000).toFixed(0)} 秒)\n`);

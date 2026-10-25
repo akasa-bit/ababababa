@@ -420,7 +420,16 @@
     if (MARKET.buy) for (const key of Object.keys(this.govs)) {
       const gv = this.govs[key], id = Number(key), W = (1 - CAPITAL.alpha) * (va[id] || 0);
       if (W > 0) { this.cash('wages', -W, { fm: id }); this.cash('wages', W, { hh: id }); }
-      if (gv.fm > 0) { const v = gv.fm; this.cash('dividend', -v, { fm: id }); this.cash('dividend', v, { hh: id }); }
+      if (gv.fm > 0) {
+        const v = gv.fm;
+        let here = v;
+        this.cash('dividend', -v, { fm: id });
+        if (gv.own) { // 遠くの持ち主の分 (OWNER): 利潤 (付加価値の alpha。配当できる手持ちまで) × 持ち分を、光速で送る
+          const P = Math.min(v, CAPITAL.alpha * (va[id] || 0));
+          for (const [o, s] of Object.entries(gv.own)) { const x = P * s; here -= x; this.remit(id, Number(o), x); }
+        }
+        this.cash('dividend', here, { hh: id });
+      }
     }
     // 7. 軍の維持費
     // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)。受け取るのは払う星系の民間 (兵の給料と補給の買い付け)
@@ -470,6 +479,13 @@
     // 学歴と学力を決める所得 (SCHOOL.smooth。回 KE5): 刻みの終わりの、市場で測った 1 人あたりの実質の所得 (R10・R62 と同じ incomeUSD) をならす。始めは生産力から。
     // (刻みの途中の所得で測ると、値段と量の 2 刻みの振れがそろって、刻みの終わりの値の約 2 倍になった)
     if (MARKET.buy) for (const c of this.colonies) { const y = this.incomeUSD(c), u = c.incU ?? c.inc ?? y; c.incU = u + (y - u) * Math.min(1, h / SCHOOL.smooth); }
+    // 国の外との配当 (GNI − GDP。OWNER。回 KE5): 首都の政府に、1 年でならした年あたりの額 (財政の画面)
+    const pinT = this._pinT || {};
+    this._pinT = {};
+    for (const root of new Set(this.colonizedSystems().map((x) => this.realmOf(x.id)))) {
+      const gv = this.govs[root], now = (pinT[root] || 0) / h;
+      if (gv && (now || gv.pinY)) gv.pinY = (gv.pinY || 0) + (now - (gv.pinY || 0)) * Math.min(1, h);
+    }
     const a = Math.min(1, h);
     for (const gv of Object.values(this.govs)) {
       gv.ledger ??= {};

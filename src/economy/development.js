@@ -57,8 +57,35 @@
   // 自動開発を有効にした星系では、年に1回、生産が需要に届かない資源を1つ選んで手を打つ:
   // 採掘資源なら星系内で最も埋蔵量の多い天体の採掘基地 (なければ入植地の鉱山)、食料は農場、工業品は工場。
   // クレジットは費用の2倍以上あるときだけ使う。
+  // 年 1 回: 遠くの持ち分が、資本の入れ替わりの速さ (delta + 地元の実質の所得の伸び) で目標に近づく。目標 = OWNER.fdi × ほかの国の重みの割合
+  // (重み = 国の大きさ × 1 人あたりの所得の OWNER.out 乗。その国の首都の家計が持つ)。
+  // 持ち主がいなくなった分は地元へ (OWNER。回 KE5)
+  ownYearly() {
+    const Y = {}, N = {}, ys = {};
+    for (const c of this.colonies) { const v = c.pop * (c.incU ?? c.inc ?? 0), r = this.realmOf(c.sys); Y[r] = (Y[r] || 0) + v; N[r] = (N[r] || 0) + c.pop; ys[c.sys] = (ys[c.sys] || 0) + v; } // 実質の所得 (ならしたもの)
+    const W = {};
+    for (const [r, v] of Object.entries(Y)) if (v > 0 && N[r] > 0) W[r] = v * GM.pow(v / N[r], OWNER.out); // 出す国の重み
+    const tot = Object.values(W).reduce((k, v) => k + v, 0);
+    for (const [k, gv] of Object.entries(this.govs)) {
+      const id = Number(k), y = ys[id] || 0;
+      const first = gv.ownY === undefined && !gv.own; // 始めからある星系 (と前の版のセーブ): 2300 年の世界にはもう直接投資があるとみて、目標の持ち分で始める
+      const g = gv.ownY > 0 && y > 0 ? clamp(GM.log(y / gv.ownY), 0, OWNER.gmax) : 0;
+      gv.ownY = y;
+      if (!this.isColonized(id)) { delete gv.own; continue; }
+      const me = this.realmOf(id), rest = tot - (W[me] || 0), T = {};
+      if (rest > 0) for (const [r, v] of Object.entries(W)) if (Number(r) !== me) T[r] = (OWNER.fdi * v) / rest;
+      const own = (gv.own ??= {}), q = first ? 0 : GM.exp(-(CAPITAL.delta + g));
+      for (const r of Object.keys(T)) own[r] ??= 0;
+      for (const o of Object.keys(own)) {
+        own[o] = (T[o] || 0) + (own[o] - (T[o] || 0)) * q;
+        if (own[o] < OWNER.min || !this.isColonized(Number(o))) delete own[o];
+      }
+      if (!Object.keys(own).length) delete gv.own;
+    }
+  }
   autoDevelop() {
     this.capacityYearly(); // 民間の採掘の能力 (回 KE5)
+    this.ownYearly(); // 遠くの持ち主 (回 KE5)
     // 太陽系 (プレイヤー) は自動開発をオンにしたときだけ。他の星系の政府はいつも自分の資金で開発する
     for (const id of this.colonizedSystems().map((x) => x.id).filter((k) => !this.isHuman(k) || this.auto[k])) {
       const fl = this.flow[id];
