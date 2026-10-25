@@ -1,0 +1,109 @@
+{
+ "source": "data/raw/research/wdi_research.csv.gz (WDI SP.POP.SCIE.RD.P6)・data/raw/tech/wdi_tech.csv.gz (NY.GDP.PCAP.PP.KD)・data/raw/hcap/hci_hlos.csv.gz (HD.HCI.HLOS)。計算は data/build/build_innovation.py",
+ "researchers": {
+  "countries": 138,
+  "country_years": 1930,
+  "years": [
+   1996,
+   2024
+  ],
+  "by_income": [
+   {
+    "income": [
+     952,
+     12904
+    ],
+    "researchers": [
+     38.0,
+     480.5
+    ],
+    "median": 95.9,
+    "n": 386
+   },
+   {
+    "income": [
+     12904,
+     22131
+    ],
+    "researchers": [
+     348.8,
+     1365.7
+    ],
+    "median": 696.0,
+    "n": 386
+   },
+   {
+    "income": [
+     22131,
+     36662
+    ],
+    "researchers": [
+     826.4,
+     2348.9
+    ],
+    "median": 1571.8,
+    "n": 386
+   },
+   {
+    "income": [
+     36662,
+     53230
+    ],
+    "researchers": [
+     2096.2,
+     4391.4
+    ],
+    "median": 3220.4,
+    "n": 386
+   },
+   {
+    "income": [
+     53230,
+     174570
+    ],
+    "researchers": [
+     3213.7,
+     5749.5
+    ],
+    "median": 4642.0,
+    "n": 386
+   }
+  ],
+  "note": "所得は 2021 年の国際ドル。研究者は人口 100 万人あたり"
+ },
+ "learning": {
+  "a": -6.3481,
+  "b": 0.7712,
+  "c": 1.2098,
+  "r2": 0.745,
+  "rows": 301,
+  "countries": 104,
+  "years": [
+   2010,
+   2017,
+   2018,
+   2020
+  ],
+  "c_boot_5_95": [
+   0.8728,
+   1.5238
+  ],
+  "b_boot_5_95": [
+   0.5834,
+   0.9891
+  ],
+  "income_only": {
+   "a": -6.7103,
+   "b": 1.3716
+  },
+  "note": "ln 研究者 [人/100 万人] = a + b ln y + c 学力 ÷ 100。y は 2011 年の国際ドル (2021 年のドル ÷ 1.21)。学力は HCI の試験の点数 (300〜625 点)。income_only は学力を入れない同じ国・年の当てはめ"
+ },
+ "game": {
+  "research": [
+   -6.3481,
+   0.7712,
+   1.2098
+  ],
+  "note": "STRUCTURE.research = [a, b, c]: ln 研究者 [人/100 万人] = a + b ln y + c 学力 ÷ 100 (y は 2011 年の国際ドル)"
+ }
+}
