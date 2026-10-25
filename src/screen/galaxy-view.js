@@ -538,9 +538,10 @@ class GalaxyView {
       const p = seenAt((t) => game.fleetPosition(f, t), f.start ?? f.depart, f.arrive);
       if (!p) continue;
       const [px, py] = this.toScreen(p.x, p.y, p.z);
-      const fcolor = FLEET_COLOR[realmFleetKind(game, f.owner ?? 0)];
+      const fkind = realmFleetKind(game, f.owner ?? 0), fcolor = FLEET_COLOR[fkind];
       // 「ありうる今」(B-053): よその国の艦隊は、見えているのは光が出たときの姿。いまはそこから (いちばん速い船の速さ × 光が来るのにかかった年) の内のどこかにいる
-      if ((f.owner ?? 0) !== game.cap) this.drawMaybeNow(p, px, py, distance(p, game.system(game.cap)), fcolor);
+      // 中立の艦隊の雲は描かない (遠い艦隊ほど雲が大きく、何隻も重なって地図を塗りつぶしていた。2026-10-25 の依頼 GA-2)
+      if ((f.owner ?? 0) !== game.cap && fkind !== 'neutral') this.drawMaybeNow(p, px, py, distance(p, game.system(game.cap)), fcolor);
       if ((f.owner ?? 0) === game.cap) {
         this.fleetDots.push({ id: f.id, x: px, y: py });
         if (this.app.fleetMove.has(f.id)) {
@@ -1008,6 +1009,14 @@ class GalaxyView {
     const R = Math.max(SHIP_SPEED, OFFROUTE_SPEED) * age * this.cam.zoom;
     if (R < 6) return;
     ctx.save();
+    // 画面の 1/4 より大きい雲は塗らず、縁の破線だけにする (塗ると重なって地図が見えなくなる。GA-2)
+    if (R > Math.min(this.w, this.h) / 4) {
+      ctx.strokeStyle = `${color}30`;
+      ctx.setLineDash([2, 6]);
+      ctx.beginPath(); ctx.arc(px, py, R, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      return;
+    }
     const g = ctx.createRadialGradient(px, py, 0, px, py, R);
     g.addColorStop(0, `${color}33`);
     g.addColorStop(1, `${color}00`);
