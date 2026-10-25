@@ -138,6 +138,27 @@
     while (lo < hi) { const m = (lo + hi + 1) >> 1; if (H[m][0] <= at) lo = m; else hi = m - 1; }
     return H[lo][1 + RESEARCH.fields.indexOf(f)] ?? 1;
   }
+  // 国 i から見えている前線 (分野ごとの F = ほかの国の、光の年数だけ前の技術のいちばん高い値、theta = 吸収の上限、top = その国)。L = 国ごとの LAYS (省くと数える)。
+  // 画面にも使える (前線のない分野は F = 0)
+  techFrontier(i, L = this.laysByRealm()) {
+    const yr = this.year, out = {};
+    for (const f of RESEARCH.fields) {
+      let F = 0, top = null;
+      for (const j of Object.keys(this.tech)) {
+        if (j === i || !(j in L)) continue;
+        const a = this.techSeen(j, f, yr - this.sysDist(Number(i), Number(j)));
+        if (a > F) { F = a; top = j; }
+      }
+      out[f] = { F, top, theta: top ? Math.min(1, GM.exp(DIFFUSE.lays * ((L[i] ?? 0) - L[top]))) : 0 }; // 前線の国の LAYS はいまの値 (光の遅れの分は小さい)
+    }
+    return out;
+  }
+  // 国ごとの LAYS (laysOf の人口の重みの平均)
+  laysByRealm() {
+    const s = {};
+    for (const c of this.colonies) { const r = this.realmOf(c.sys), v = (s[r] ??= [0, 0]); v[0] += c.pop * this.laysOf(c); v[1] += c.pop; }
+    return Object.fromEntries(Object.entries(s).map(([k, [a, p]]) => [k, p > 0 ? a / p : 0]));
+  }
   // 技術の伝播 (DIFFUSE。回 KE6・B-121): 光速で遅れて見える前線の theta 倍まで、年 kappa の割合で追いつく。全部の国の増え分を先に出してから足す (国の順に依らない)
   diffuseStep(h, byRealm) {
     const yr = this.year, keys = Object.keys(byRealm).filter((k) => this.tech[k]);
@@ -148,17 +169,10 @@
     }
     const L = Object.fromEntries(keys.map((k) => [k, byRealm[k].p > 0 ? byRealm[k].L / byRealm[k].p : 0])), add = [];
     for (const i of keys) {
-      const A = this.tech[i].A;
+      const A = this.tech[i].A, fr = this.techFrontier(i, L);
       for (const f of RESEARCH.fields) {
-        let F = 0, top = null;
-        for (const j of keys) {
-          if (j === i) continue;
-          const a = this.techSeen(j, f, yr - this.sysDist(Number(i), Number(j)));
-          if (a > F) { F = a; top = j; }
-        }
-        if (!top) continue;
-        const gap = Math.min(1, GM.exp(DIFFUSE.lays * (L[i] - L[top]))) * F - A[f]; // 前線の国の LAYS はいまの値 (光の遅れの分は小さい)
-        if (gap > 0) add.push([A, f, DIFFUSE.kappa * gap * h]);
+        const gap = fr[f].theta * fr[f].F - A[f];
+        if (fr[f].top && gap > 0) add.push([A, f, DIFFUSE.kappa * gap * h]);
       }
     }
     for (const [A, f, d] of add) A[f] += d;

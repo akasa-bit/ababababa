@@ -5,7 +5,7 @@
 | | 仕組み | 目標 | 状態 |
 |---|---|---|---|
 | 1 | 研究者の数を所得だけでなく学力で決める (B-120) | R66・R67 (版 21) | 済み |
-| 2 | 光速で遅れる技術の伝播 (B-121) | R68〜R72・R11 の測り方 (版 22) | 目標を固定した |
+| 2 | 光速で遅れる技術の伝播 (B-121) | R68〜R72・R11 の測り方 (版 22) | この PR |
 | 3 | 研究開発の政策 (公の研究の予算と税額控除。B-122) | | |
 | 4 | 汎用技術 (GPT) と J カーブ (B-123) | | |
 
@@ -62,9 +62,44 @@
 - **R61 が下がった理由**: 研究者は分野に付加価値の比で分かれるので、研究者が減ると小さい高付加価値の工業の技術が伸びず、R61 の 2 番目の分位 (4,850〜10,803 ドル) の中央値が 0.189 → 0.016 になった。
 - **R33 が合格した**: 伸びが遅く落ち着いたので、景気のずれ (1 年の伸び − 5 年の伸び) が負に偏りにくくなった見込み (B-118 の見立てと同じ向き)。
 
+## 2. 光速で遅れる技術の伝播 (B-121)
+
+### 2.1 現実の目標 (目標の版 22)
+
+作る前に固定した (`docs/targets.md` の版 22)。生データは Penn World Table 11.0 (`data/raw/tfp`) と WDI の LAYS (`data/raw/hcap/hci_lays.csv.gz`)。ゲームの A は働き手 1 人あたりの産出に掛かるので、TFP を労働増大的な形 a = ln ctfp ÷ (その国と米国の労働分配率の平均) に直して比べる。
+
+| 目標 | 統計量 | 実データ |
+|---|---|---|
+| R68 技術水準の前線比と所得 | 所得の 5 分位ごとの前線比 exp(a) の 25%〜75% 点 (118 か国・3,479 国・年。1990〜2019 年) | 中央値 0.175・0.295・0.446・0.627・0.894 |
+| R69 技術の規模効果のなさ | 2015〜2019 年の a を ln 人口と ln 人的資本に当てた ln 人口の係数 (120 か国) | −0.032 (幅 −0.089〜0.028) |
+| R70 技術の収束 | 1995〜2019 年の a の年率の伸びを 1995 年の a に当てた傾き (120 か国) | −0.0175 (幅 −0.026〜−0.009) |
+| R71 技術の伸びと LAYS | 所得をそろえた 2000〜2019 年の a の伸び [%/年] の LAYS の係数 (116 か国) | 1.61 (幅 0.80〜2.41) |
+| R72 所得の差のうち学歴の分 | cov(ln hc, ln y) ÷ var(ln y) (120 か国) | 0.21 (幅 0.10〜0.31) |
+| R11 研究の生産性の低下 | 前線の国 (最後の 10 年の技術の水準がいちばん高い国) で測るように変えた | 幅は前のまま |
+
+### 2.2 作り (`DIFFUSE`。`economy/market-consts.js`・`economy/market-economy.js` の `diffuseStep`)
+
+| | 中身 | 値の出どころ |
+|---|---|---|
+| 前線 | 分野ごとに、ほかの国の技術の、首都どうしの光の年数だけ前の値 (`techSeen`) のいちばん高いもの F。知らせは光速でしか届かない | 首都どうしの距離 (`sysDist`)。1 年 = 1 光年 |
+| 追いつく | dA/dt += κ × max(0, θ × F − A)。前線より上の国には働かない ([·]⁺) ので、前線の国の伸び (本星の始めの伸び g0 = 年 1.67% の決め方) と R11 は変わらない | κ = 0.0247/年。PWT 11.0 の 1995〜2019 年の技術の伸びを、初めの水準と LAYS に当てた条件つきの収束の速さ (116 か国。5%〜95% 点 0.019〜0.032。2000〜2019 年では 0.033) |
+| 吸収の上限 θ | min(1, exp(0.1824 × (LAYS − 前線の国の LAYS)))。LAYS はその年に学校を出る世代の学力で調整した就学年数 (就学年数 × 学力 ÷ 625。人口の重みの平均。`laysOf`) | 0.1824 は、技術の前線比の ln を WDI の LAYS に当てた傾き (116 か国、相関 0.64)。条件つきの収束の式の LAYS の係数 ÷ κ = 0.17 とも合う |
+| 前線の国との差にした理由 | ゲームの国の LAYS (5〜8 年) は、データの豊かな国 (11〜13 年) より低い。データの切片 (−2.42) のままでは前線の国でも θ が 0.4 になり、どの国も追いつけない | |
+| 記録 | 国の技術に `h` = [[年, A_farm, A_mine, A_ind, A_hi], …] を 2 年ごとに 120 年分持つ (6 桁に丸める)。いちばん遠い首都どうしは 100 光年ほど | 1 年ごと・丸めなしではセーブが 2.3% 増えた。いまは 0.4% |
+
+- 独立した国は前のとおり元の国の技術を持っていく (`politics/loyalty-regime.js`)。記録はその年から始まる。
+- 試してやめたもの: データの切片のままの θ = min(1, exp(−2.422 + 0.1824 × LAYS)) (どの国も θ × F が自分の A より低く、伝播が働かなかった)。
+
+### 2.3 結果
+
+(測定中)
+
 ## 出典
 
 - Bloom, N., Jones, C. I., Van Reenen, J. & Webb, M. (2020). Are Ideas Getting Harder to Find? *American Economic Review* 110(4), 1104–1144.
 - Jones, C. I. (1995). R&D-Based Models of Economic Growth. *Journal of Political Economy* 103(4), 759–784.
 - Patrinos, H. A. & Angrist, N. (2018). Global Dataset on Education Quality: A Review and Update (2000–2017). World Bank Policy Research Working Paper 8592.
-- World Bank. World Development Indicators (SP.POP.SCIE.RD.P6・NY.GDP.PCAP.PP.KD)・Human Capital Index (HD.HCI.HLOS)。
+- World Bank. World Development Indicators (SP.POP.SCIE.RD.P6・NY.GDP.PCAP.PP.KD)・Human Capital Index (HD.HCI.HLOS・HD.HCI.LAYS)。
+- Feenstra, R. C., Inklaar, R. & Timmer, M. P. (2015). The Next Generation of the Penn World Table. *American Economic Review* 105(10), 3150–3182 (Penn World Table 11.0)。
+- Eaton, J. & Kortum, S. (1999). International Technology Diffusion: Theory and Measurement. *International Economic Review* 40(3), 537–570.
+- Nelson, R. R. & Phelps, E. S. (1966). Investment in Humans, Technological Diffusion, and Economic Growth. *American Economic Review* 56(1/2), 69–75.
