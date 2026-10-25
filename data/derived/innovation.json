@@ -98,6 +98,158 @@
   },
   "note": "ln 研究者 [人/100 万人] = a + b ln y + c 学力 ÷ 100。y は 2011 年の国際ドル (2021 年のドル ÷ 1.21)。学力は HCI の試験の点数 (300〜625 点)。income_only は学力を入れない同じ国・年の当てはめ"
  },
+ "rnd": {
+  "intensity": {
+   "countries": 149,
+   "country_years": 2416,
+   "years": [
+    1996,
+    2024
+   ],
+   "by_income": [
+    {
+     "income": [
+      843,
+      10873
+     ],
+     "rd": [
+      0.097,
+      0.33
+     ],
+     "median": 0.18,
+     "n": 483
+    },
+    {
+     "income": [
+      10873,
+      18752
+     ],
+     "rd": [
+      0.197,
+      0.638
+     ],
+     "median": 0.347,
+     "n": 483
+    },
+    {
+     "income": [
+      18752,
+      33298
+     ],
+     "rd": [
+      0.363,
+      0.883
+     ],
+     "median": 0.561,
+     "n": 483
+    },
+    {
+     "income": [
+      33298,
+      51495
+     ],
+     "rd": [
+      0.817,
+      2.104
+     ],
+     "median": 1.377,
+     "n": 483
+    },
+    {
+     "income": [
+      51495,
+      174570
+     ],
+     "rd": [
+      1.051,
+      2.676
+     ],
+     "median": 1.876,
+     "n": 484
+    }
+   ],
+   "note": "研究開発費 ÷ GDP [%] (WDI GB.XPD.RSDV.GD.ZS。UNESCO 統計研究所)。所得は 2021 年の国際ドル"
+  },
+  "government_share": {
+   "median": 32.4064,
+   "p25_p75": [
+    24.696,
+    38.3614
+   ],
+   "countries": 46,
+   "zero": 0,
+   "note": "GERD のうち政府が出した割合 [%] の、2015〜2023 年の国ごとの平均 (OECD MSTI。OECD と協力国)",
+   "income_slope": -10.816,
+   "income_fit": [
+    149.975,
+    -10.816
+   ],
+   "range": [
+    17.08,
+    66.31
+   ],
+   "country_years": 1234
+  },
+  "tax_support": {
+   "median": 0.0299,
+   "p25_p75": [
+    0.0013,
+    0.1161
+   ],
+   "countries": 55,
+   "zero": 9,
+   "note": "研究開発の税の優遇 (GTARD) ÷ GDP [%] の、2015〜2023 年の国ごとの平均 (OECD R&D Tax Incentives。0 の国も入れる)"
+  },
+  "direct_support": {
+   "median": 0.0527,
+   "p25_p75": [
+    0.0193,
+    0.0924
+   ],
+   "countries": 49,
+   "zero": 0,
+   "note": "政府が直接出した会社の研究開発費 ÷ GDP [%] (参考)"
+  },
+  "credit": {
+   "tax_of_berd": {
+    "median": 3.9008,
+    "p25_p75": [
+     0.3222,
+     9.5847
+    ],
+    "countries": 52,
+    "zero": 10
+   },
+   "direct_of_berd": {
+    "median": 5.2278,
+    "p25_p75": [
+     3.5344,
+     7.1567
+    ],
+    "countries": 49,
+    "zero": 0
+   },
+   "note": "会社の研究開発費 (BERD) に対する、税の優遇と政府の直接の支出の割合 [%] (2015〜2023 年の国ごとの平均)。ゲームの既定の税額控除の率は tax_of_berd の中央値"
+  },
+  "caps": {
+   "public_p99": 1.114,
+   "private_p99": 3.559,
+   "public_median": 0.522,
+   "private_median": 0.888,
+   "country_years": 1417,
+   "note": "政府が出した研究開発費 ÷ GDP と、それ以外 (会社など) が出した研究開発費 ÷ GDP [%] の国・年の 99% 点 (OECD MSTI。ゲームの政策の効き目の上限)"
+  },
+  "cost": {
+   "median": 5.19,
+   "rich_median": 4.551,
+   "ln_fit": [
+    7.1542,
+    -0.5388
+   ],
+   "country_years": 1861,
+   "note": "研究者 1 人の研究開発費 ÷ 1 人あたり GDP。ln_fit = [a, b]: ln 費用の比 = a + b ln y (y は 2011 年の国際ドル)。rich_median は所得の上の 2 分位"
+  }
+ },
  "technology": {
   "frontier": {
    "countries": 118,

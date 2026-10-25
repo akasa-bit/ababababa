@@ -219,13 +219,14 @@ node tools/build.mjs
 | 集め | `data/raw/sf_critiques/` | 物理学者・天文学者が、SF の映画・テレビ・ゲーム・アニメ・コミックの描写を物理で論じた 349 件 (6 組に分けて集め、どれも出典のページを開いて確かめた URL つき)。`classified.json` は事例ごとの分類 (今の知見で正しいか・物理の論点・ゲームに当てはまるか) |
 | 加工 | `data/build/build_sf_critiques.py` → `data/derived/sf_critiques.json` | 物理学者の指摘で、今の知見で正しい 266 件を選び、ゲームへの当てはまりを集計する。中身は `docs/sf-critiques.md` |
 
-## 技術革新のデータ (目標 R66〜R72。回 KE6・B-120〜B-123)
+## 技術革新のデータ (目標 R66〜R75。回 KE6・B-120〜B-123)
 
 | 段 | 場所 | 中身 |
 |---|---|---|
 | 取得 | 前からある `data/raw/research/` (WDI の研究者 SP.POP.SCIE.RD.P6・研究開発費 GB.XPD.RSDV.GD.ZS。`data/fetch/fetch_research.py`)・`data/raw/tech/` (所得 NY.GDP.PCAP.PP.KD)・`data/raw/hcap/` (HCI の試験の点数 HD.HCI.HLOS) | |
 | 取得 | `data/fetch/fetch_pwt.py` → `data/raw/tfp/pwt110.csv.gz` | Penn World Table 11.0 (DataverseNL の pwt110.xlsx、CC BY 4.0) の使う列 (ctfp・rtfpna・labsh・pop・emp・hc・rgdpe・rgdpo・cn・rnna)。185 か国 1950〜2023 年。取得日・SHA-256 は `MANIFEST.json` |
 | 取得 | `data/fetch/fetch_hcap.py hci_lays.csv.gz` → `data/raw/hcap/hci_lays.csv.gz` | 世界銀行 Human Capital Index の学力で調整した就学年数 (HD.HCI.LAYS。2010〜2020 年) |
+| 取得 | `data/fetch/fetch_rnd.py` → `data/raw/rnd/oecd_rnd.csv.gz` | OECD の MSTI (研究開発費 ÷ GDP・そのうち政府が出した割合) と R&D Tax Incentives (税の優遇と、政府が直接出した会社の研究開発費の、GDP と会社の研究開発費に対する割合)。59 の国と集計、1981〜2025 年。CC BY 4.0 |
 | 加工 | `data/build/build_innovation.py` → `data/derived/innovation.json` | 所得の 5 分位ごとの研究者 (人口 100 万人あたり) の 25%〜75% 点 (R66)・ln 研究者を ln 所得と学力に当てた係数 (R67 と、ゲームの研究者の曲線 game.research) ・技術水準の国際比較 (technology。R68〜R72): 所得の 5 分位ごとの前線比、規模効果、収束、LAYS の効き、発展会計の学歴の割合 |
 
 ```sh
@@ -235,6 +236,7 @@ python3 data/build/build_innovation.py --game ゲームのパネル.csv   # ゲ�
 
 - **結果**: R66 は 138 か国・1,930 国・年。研究者の中央値は所得の低い分位から 95.9・696.0・1,571.8・3,220.4・4,642.0 人。R67 の学力の係数は 1.2098 (所得の係数 0.7712、R² 0.745、301 国・年)。学力を入れないと所得の係数は 1.3716
 - **技術水準 (R68〜R72)**: ゲームの A は働き手 1 人あたりの産出に掛かるので、TFP を労働増大的な形 (ln ctfp ÷ その国と米国の労働分配率の平均) に直した。前線比の中央値は所得の低い分位から 0.175・0.295・0.446・0.627・0.894 (118 か国・3,479 国・年)。規模効果 (人的資本をそろえた ln 人口の係数) -0.0319、収束の傾き -0.01746、LAYS の係数 1.6062 %/年、学歴が所得のばらつきに占める割合 0.2095
+- **研究開発 (R73〜R75)**: 研究開発費 ÷ GDP の中央値は所得の低い分位から 0.180・0.347・0.561・1.377・1.876%。政府が出す割合は国の中央値 32.4064%、税の優遇は GDP の 0.0299%。研究者 1 人の費用は 1 人あたり GDP の 5.19 倍 (rnd.cost)
 - 調べもの (536 件の目録) と、このあとの目標の案は `docs/research/innovation.md`
 
 ## GNI と GDP のデータ (目標 R65。回 KE5・B-114)
