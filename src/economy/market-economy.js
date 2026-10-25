@@ -467,6 +467,9 @@
     for (const g of this.sieges) { const sp = supply(g.realm, g.sys, g.ships, g.realm); g.sup = smooth(g.sup, sp.k); g.line = sp.d; }
 
     this.flow = flow;
+    // 学歴と学力を決める所得 (SCHOOL.smooth。回 KE5): 刻みの終わりの、市場で測った 1 人あたりの実質の所得 (R10・R62 と同じ incomeUSD) をならす。始めは生産力から。
+    // (刻みの途中の所得で測ると、値段と量の 2 刻みの振れがそろって、刻みの終わりの値の約 2 倍になった)
+    if (MARKET.buy) for (const c of this.colonies) { const y = this.incomeUSD(c), u = c.incU ?? c.inc ?? y; c.incU = u + (y - u) * Math.min(1, h / SCHOOL.smooth); }
     const a = Math.min(1, h);
     for (const gv of Object.values(this.govs)) {
       gv.ledger ??= {};
