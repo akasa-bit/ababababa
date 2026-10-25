@@ -15,6 +15,7 @@ S は研究費を研究者の賃金で割ったもの。賃金は、論文の本
 使い方: python3 data/build/build_ideas.py <置き場>   (置き場は data/fetch/fetch_ideas.py と同じ) → data/derived/ideas.json
         python3 data/build/build_ideas.py --derive     ideas.json の game (beta・g0) だけを計算し直す
         python3 data/build/build_ideas.py --game <パネル.csv>   ゲームのパネル (tools/research-panel.js) を同じ式で計算し、R11 の合否を出す
+            (銀河ごとに前線の国 (最後の 10 年の技術の水準 lnA がいちばん高い国) の値をとり、銀河の中央値で判定する。目標の版 22)
 """
 import json, math, os, re, sys, zipfile
 
@@ -128,18 +129,24 @@ def game(path):
     p = pd.read_csv(path)
     p = p[p['start'] == 1]  # 試合の始めから終わりまである国だけ
     last = p['year'].max()
-    per = {}
+    per, front = {}, {}
     for (gx, c), d in p.sort_values('year').groupby(['galaxy', 'country']):
         if d['year'].max() < last:
             continue
         v = decades(d['year'].to_numpy(), d['dlnA'].to_numpy(), d['researchers'].to_numpy())
         if np.isfinite(v):
             per.setdefault(gx, []).append(v)
+            if 'lnA' in d:  # 前線の国 = 最後の 10 年の技術の水準がいちばん高い国 (目標の版 22。追う国の伸びには外国からの伝播が入る)
+                lvl = float(d[d['year'] > last - 10]['lnA'].mean())
+                if gx not in front or lvl > front[gx][0]:
+                    front[gx] = (lvl, v)
     med = {gx: float(np.median(v)) for gx, v in per.items()}
-    vals = np.array(list(med.values()))
-    res = {'galaxies': len(med), 'countries': int(sum(len(v) for v in per.values())),
+    allv = np.array(list(med.values()))
+    vals = np.array([v for _, v in front.values()]) if front else allv  # lnA のない古いパネルは国の中央値
+    res = {'galaxies': len(med), 'countries': int(sum(len(v) for v in per.values())), 'frontier': bool(front),
            'median_pct_per_year': float(np.median(vals)) if len(vals) else None,
            'galaxy_p10_p90': [float(np.quantile(vals, .1)), float(np.quantile(vals, .9))] if len(vals) else None,
+           'all_countries_median_pct_per_year': float(np.median(allv)) if len(allv) else None,
            'band': tgt['band'], 'estimate': tgt['estimate']}
     res['pass'] = bool(len(vals) and tgt['band'][0] <= res['median_pct_per_year'] <= tgt['band'][1])
     g = p.groupby('year')['dlnA'].median()
