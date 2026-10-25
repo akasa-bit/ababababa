@@ -90,7 +90,9 @@ const RND = { cost: [7.1542, -0.5388], gshare: [149.975, -10.816], range: [17.08
 //   ladder = 1.84 年 (携帯電話とインターネットが 10% に達した遅れを LAYS に当てた傾き 1.32・2.35 年 ÷ 年の平均。gpt.ladder.lag_per_lays)
 //   effect = 10 年 (採用から生産性に効くまでの遅れ 5〜15 年の中ほど。報告の C030・C040)
 //   jdip  = 3.69 年 (無形の補完投資を測りに入れると ICT の時代の TFP が 11.3% 高い (Brynjolfsson, Rock & Syverson 2021) を、採用の速さの山 sigma ÷ 4 で割った)
-const GPT = { rate: 1 / 60, size: 0.21, sigma: 0.1226, start: 0.01, ladder: 1.84, effect: 10, jdip: 3.69 };
+//   phases = 国の採用の段階の名前 (Perez の大きな波の段階。名前だけで、ゲームの数は変えない。報告の問い 13)。cut の採用で区切る: 10% = 立ち上がり (R77 と同じ)、
+//            50% = J カーブの下がりが終わるあたり (ゲームで、10% に達してから約 15 年。docs/innovation.md の 4.3)
+const GPT = { rate: 1 / 60, size: 0.21, sigma: 0.1226, start: 0.01, ladder: 1.84, effect: 10, jdip: 3.69, phases: ['導入期', '転換点', '展開期'], cut: [0.1, 0.5] };
 // 資本の分け前 (回 KE5・B-114。docs/regions.md の 4)。会社は市場の付加価値の 1 − alpha を賃金、残りを配当として払う (economy の 7)。
 //   alpha = 1 − 労働分配率、delta = 資本の減価償却、irr = 資本の実質の収益率。どれも Penn World Table 10.01 の国ごとの中央値
 //   (data/build/build_regions.py の capital の game。目標 R39)。delta と irr は、民間の投資の行き先 (回 KE5 の次の PR) の収益率の基準に使う。

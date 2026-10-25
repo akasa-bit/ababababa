@@ -172,6 +172,14 @@
   // 汎用技術 (GPT。回 KE6・B-123)。国 i の GPT g の採用 (0〜1) と、その遅れ [年] (L = 国ごとの LAYS)
   gptLag(i, g, L) { const top = Math.max(...Object.values(L)); return this.sysDist(g.inv, Number(i)) + GPT.ladder * Math.max(0, top - (L[i] ?? top)); }
   gptAdopt(t, g, lag) { return 1 / (1 + GM.exp(-GPT.sigma * (t - g.t - lag - GM.log(1 / GPT.start - 1) / GPT.sigma))); }
+  // 画面向け: 国 i に知らせが届いた (発明した国の首都から光の年数がたった) GPT ごとの採用と段階の名前 ([{ k, t: 現れた年, inv: 発明した国の首都, a: 採用 (0〜1), phase }])
+  gptPhases(i, L = this.laysByRealm()) {
+    return (this.gpts ?? []).flatMap((g, k) => {
+      if (this.year < g.t + this.sysDist(g.inv, Number(i))) return [];
+      const a = this.gptAdopt(this.year, g, this.gptLag(i, g, L));
+      return [{ k, t: g.t, inv: g.inv, a, phase: GPT.phases[GPT.cut.filter((c) => a >= c).length] }];
+    });
+  }
   // 到来: 刻みごとに rate × 刻みの年数 の確率 (シードと刻みのハッシュで引く。試合の乱数の流れを変えない)。発明国は研究者の数の比で引く。
   // 国ごとに GPT の前の刻みの効き目 (e = 遅れた採用、da = 採用の速さ) を覚え (tech の gp)、増えた分だけ ln A に足す。覚えていない GPT (独立した国が元の国から技術を
   // 持ってきたときなど) は、いまの値から数え始める
