@@ -107,6 +107,7 @@
 - saveField: econIntel・refunds・surveyAt (経済。src/economy/market-consts.js。経済の記録・光速で届く途中の返金・先住民と接触した年。回 KE3)
 - 星系の政府の項目 gv.hm・gv.bl (家計と会社の借り。セーブの govs にそのまま入る。回 KE3)
 - saveField: cb (経済。src/economy/fiscal-consts.js。国ごとの中央銀行の状態: 物価の水準・見込み・政策金利の記録。回 KE1)
+- saveField: capacity (経済。src/economy/market-consts.js。星系の会社が持つ民間の採掘の能力。回 KE5。`docs/regions.md` の 5)
 
 ### 政治
 
