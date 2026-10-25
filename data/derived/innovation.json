@@ -232,6 +232,21 @@
    0.7712,
    1.2098
   ],
-  "note": "STRUCTURE.research = [a, b, c]: ln 研究者 [人/100 万人] = a + b ln y + c 学力 ÷ 100 (y は 2011 年の国際ドル)"
+  "note": "STRUCTURE.research = [a, b, c]: ln 研究者 [人/100 万人] = a + b ln y + c 学力 ÷ 100 (y は 2011 年の国際ドル)",
+  "diffusion": {
+   "lays": 0.1824,
+   "lays_intercept": -2.4219,
+   "lays_r": 0.636,
+   "lays_countries": 116,
+   "kappa": 0.0247,
+   "kappa_boot_5_95": [
+    0.0187,
+    0.0316
+   ],
+   "kappa_lays": 0.0043,
+   "kappa_countries": 116,
+   "kappa_2000": 0.0325,
+   "note": "DIFFUSE.lays = lays (theta = min(1, exp(lays × (LAYS − 前線の国の LAYS))))、DIFFUSE.kappa = kappa (年あたりの追いつく割合)。kappa_lays ÷ kappa は定常状態の ln 前線比の LAYS への傾きで、lays と比べる確かめ"
+  }
  }
 }

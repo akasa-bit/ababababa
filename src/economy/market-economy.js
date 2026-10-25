@@ -130,20 +130,20 @@
   }
   // その年に学校を出る世代の、学力で調整した就学年数 [年] (LAYS。DIFFUSE の theta)
   laysOf(c) { const y = this.eduY(c), pct = this.eduSpendPct(c); return (this.schoolCurve(y, pct) * this.learnCurve(y, pct)) / LEARN.full; }
-  // 国 key の分野 f の技術の、年 at の値 (1 年ごとの記録。記録より前なら 0 = まだ見えない)
+  // 国 key の分野 f の技術の、年 at の値 (DIFFUSE.step 年ごとの記録の、at 以前でいちばん新しいもの。記録より前なら 0 = まだ見えない)
   techSeen(key, f, at) {
     const H = this.tech[key]?.h;
     if (!H?.length || at < H[0][0]) return 0;
     let lo = 0, hi = H.length - 1;
     while (lo < hi) { const m = (lo + hi + 1) >> 1; if (H[m][0] <= at) lo = m; else hi = m - 1; }
-    return H[lo][1][f] ?? 1;
+    return H[lo][1 + RESEARCH.fields.indexOf(f)] ?? 1;
   }
   // 技術の伝播 (DIFFUSE。回 KE6・B-121): 光速で遅れて見える前線の theta 倍まで、年 kappa の割合で追いつく。全部の国の増え分を先に出してから足す (国の順に依らない)
   diffuseStep(h, byRealm) {
     const yr = this.year, keys = Object.keys(byRealm).filter((k) => this.tech[k]);
     for (const k of keys) {
-      const H = (this.tech[k].h ??= []);
-      if (!H.length || yr - H[H.length - 1][0] >= 1 - 1e-9) H.push([yr, { ...this.tech[k].A }]);
+      const H = (this.tech[k].h ??= []), A = this.tech[k].A;
+      if (!H.length || yr - H[H.length - 1][0] >= DIFFUSE.step - 1e-9) H.push([yr, ...RESEARCH.fields.map((f) => Number((A[f] ?? 1).toPrecision(6)))]);
       while (H.length > 1 && yr - H[1][0] > DIFFUSE.keep) H.shift();
     }
     const L = Object.fromEntries(keys.map((k) => [k, byRealm[k].p > 0 ? byRealm[k].L / byRealm[k].p : 0])), add = [];
