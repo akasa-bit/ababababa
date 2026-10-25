@@ -80,6 +80,19 @@ const DIFFUSE = { kappa: 0.0247, lays: 0.1824, step: 2, keep: 120 };
 //   max = 効き目の上限 [GDP の %]: 政府が出す研究開発費と、会社が出す研究開発費の、OECD の国・年の 99% 点 (1.114%・3.559%。data/derived/innovation.json の rnd.caps)。
 //         この 2 つと呼び水の弾力性は、現実で見た範囲の中でしか確かめられていないので、予算と控除で押し上げられる研究者はここまでにする (それを超えて払った分は人を雇えない)
 const RND = { cost: [7.1542, -0.5388], gshare: [149.975, -10.816], range: [17.08, 66.31], elastic: 1, crowd: 0.5, adjust: 2, lag: [8, 15], max: [1.114, 3.559] };
+// 汎用技術 (GPT。回 KE6・B-123。docs/innovation.md の 4)。銀河全体で年 rate の割合でばらばらに (ポアソン) 現れ、研究者の数の比で引いた国が発明する (周期の時計は入れない)。
+//   国 i の採用 a_i(t) = 1 / (1 + exp(−sigma (t − 現れた年 − 遅れ_i − m)))、m = ln(1/start − 1) ÷ sigma (遅れのあと、採用が start から始まる)
+//   遅れ_i = 発明した国の首都からの光の年数 + ladder × (いちばん LAYS の高い国の LAYS − 国の LAYS) (年)
+//   効き目: どの分野の ln A にも size × a_i(t − effect) を足し、採用の途中は jdip × da_i/dt を引く (補完の投資に人を回す J カーブ。採用が終われば戻る)。A に畳み込む
+//   rate  = 1/60 年 (蒸気・電気・ICT と、テキストで測った突破の特許の 3 つの波 (Kelly ほか 2021)。報告の C027〜C030 で 1/75〜1/50)
+//   size  = 0.21 (蒸気 0.21・電気 0.17・ICT 0.26 の、成長会計で積み上げた労働生産性への寄与の平均。Crafts 2002・2004 ほか。報告の C034・C035・C038)
+//   sigma = 0.1226/年 (米国の家庭の 43 の技術の普及率の logit の傾きの中央値。data/derived/innovation.json の gpt.adoption_speed)、start = 1%
+//   ladder = 1.84 年 (携帯電話とインターネットが 10% に達した遅れを LAYS に当てた傾き 1.32・2.35 年 ÷ 年の平均。gpt.ladder.lag_per_lays)
+//   effect = 10 年 (採用から生産性に効くまでの遅れ 5〜15 年の中ほど。報告の C030・C040)
+//   jdip  = 3.69 年 (無形の補完投資を測りに入れると ICT の時代の TFP が 11.3% 高い (Brynjolfsson, Rock & Syverson 2021) を、採用の速さの山 sigma ÷ 4 で割った)
+//   phases = 国の採用の段階の名前 (Perez の大きな波の段階。名前だけで、ゲームの数は変えない。報告の問い 13)。cut の採用で区切る: 10% = 立ち上がり (R77 と同じ)、
+//            50% = J カーブの下がりが終わるあたり (ゲームで、10% に達してから約 15 年。docs/innovation.md の 4.3)
+const GPT = { rate: 1 / 60, size: 0.21, sigma: 0.1226, start: 0.01, ladder: 1.84, effect: 10, jdip: 3.69, phases: ['導入期', '転換点', '展開期'], cut: [0.1, 0.5] };
 // 資本の分け前 (回 KE5・B-114。docs/regions.md の 4)。会社は市場の付加価値の 1 − alpha を賃金、残りを配当として払う (economy の 7)。
 //   alpha = 1 − 労働分配率、delta = 資本の減価償却、irr = 資本の実質の収益率。どれも Penn World Table 10.01 の国ごとの中央値
 //   (data/build/build_regions.py の capital の game。目標 R39)。delta と irr は、民間の投資の行き先 (回 KE5 の次の PR) の収益率の基準に使う。
