@@ -104,8 +104,9 @@
   researchStep(h) {
     const byRealm = {};
     for (const c of this.colonies) {
-      const R = (byRealm[this.realmOf(c.sys)] ??= { S: 0, va: { farm: 0, mine: 0, ind: 0, hi: 0 } });
+      const R = (byRealm[this.realmOf(c.sys)] ??= { S: 0, va: { farm: 0, mine: 0, ind: 0, hi: 0 }, L: 0, p: 0 });
       R.S += c.pop * this.researchersOf(c); // [人] (人口は 100 万人、研究者は 100 万人あたり)
+      R.L += c.pop * this.laysOf(c); R.p += c.pop;
       const sh = c.sh || sharesOf(c.focus), w = this.wagesOf(c);
       for (const f of RESEARCH.fields) R.va[f] += c.pop * (sh[f] || 0) * w[f];
     }
@@ -125,6 +126,42 @@
       T.S = R.S;
     }
     for (const key of Object.keys(this.tech)) if (!byRealm[key]) delete this.tech[key]; // 入植地のなくなった国
+    this.diffuseStep(h, byRealm);
+  }
+  // その年に学校を出る世代の、学力で調整した就学年数 [年] (LAYS。DIFFUSE の theta)
+  laysOf(c) { const y = this.eduY(c), pct = this.eduSpendPct(c); return (this.schoolCurve(y, pct) * this.learnCurve(y, pct)) / LEARN.full; }
+  // 国 key の分野 f の技術の、年 at の値 (1 年ごとの記録。記録より前なら 0 = まだ見えない)
+  techSeen(key, f, at) {
+    const H = this.tech[key]?.h;
+    if (!H?.length || at < H[0][0]) return 0;
+    let lo = 0, hi = H.length - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (H[m][0] <= at) lo = m; else hi = m - 1; }
+    return H[lo][1][f] ?? 1;
+  }
+  // 技術の伝播 (DIFFUSE。回 KE6・B-121): 光速で遅れて見える前線の theta 倍まで、年 kappa の割合で追いつく。全部の国の増え分を先に出してから足す (国の順に依らない)
+  diffuseStep(h, byRealm) {
+    const yr = this.year, keys = Object.keys(byRealm).filter((k) => this.tech[k]);
+    for (const k of keys) {
+      const H = (this.tech[k].h ??= []);
+      if (!H.length || yr - H[H.length - 1][0] >= 1 - 1e-9) H.push([yr, { ...this.tech[k].A }]);
+      while (H.length > 1 && yr - H[1][0] > DIFFUSE.keep) H.shift();
+    }
+    const L = Object.fromEntries(keys.map((k) => [k, byRealm[k].p > 0 ? byRealm[k].L / byRealm[k].p : 0])), add = [];
+    for (const i of keys) {
+      const A = this.tech[i].A;
+      for (const f of RESEARCH.fields) {
+        let F = 0, top = null;
+        for (const j of keys) {
+          if (j === i) continue;
+          const a = this.techSeen(j, f, yr - this.sysDist(Number(i), Number(j)));
+          if (a > F) { F = a; top = j; }
+        }
+        if (!top) continue;
+        const gap = Math.min(1, GM.exp(DIFFUSE.lays * (L[i] - L[top]))) * F - A[f]; // 前線の国の LAYS はいまの値 (光の遅れの分は小さい)
+        if (gap > 0) add.push([A, f, DIFFUSE.kappa * gap * h]);
+      }
+    }
+    for (const [A, f, d] of add) A[f] += d;
   }
   // 入植地の 1 人あたりの生産力 [2011 年の国際ドル] (構造転換の曲線に入れる所得 c.inc): いまの就業の割合で物の部門が作れる付加価値を基準の値段で測り
   // (生産側の実質 GDP。市場の値段の揺れと売れ残りの値下がりを受けない)、物の部門の人 1 人あたりにしたもの (サービスの人も同じ生産力とみなす)。

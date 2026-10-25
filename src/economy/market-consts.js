@@ -57,6 +57,13 @@ const STRUCTURE = { usdPerT: 356.4, y0: 2000, modern: 6, smooth: 1, // smooth = 
 //   研究者 S = 人口 × 所得と学力で決まる数 (STRUCTURE.research。回 KE6)。国の分野には、部門の付加価値の比で分ける。研究者はサービスの中の人 (目標 R10 の数え方)
 //   alpha は試合の始めに 1 つ決める: 最初のプレイヤーの本星の技術の伸びが g0 (Bloom ほかの TFP の伸びの平均 年 1.67%) になる値。セーブに入れる (alpha)
 const RESEARCH = { beta: 3.045, g0: 0.0167, fields: ['farm', 'mine', 'ind', 'hi'] }; // hi = 高付加価値の工業 (回 KE5。前の版のセーブの国は 1 から)
+// 技術の伝播 (回 KE6・B-121。docs/innovation.md の 2)。ほかの国の技術は、首都どうしの光の年数だけ遅れて見える。国は、分野ごとに見えている前線 (いちばん高い国の値)
+//   の theta 倍まで、年 kappa の割合で追いつく: dA_f/dt += kappa × max(0, theta × F_f − A_f)、F_f = max_j A_j,f(t − τ_ij)。前線の国には働かない ([·]⁺)
+//   theta = min(1, exp(lays × (LAYS − 前線の国の LAYS)))。LAYS = その年に学校を出る世代の、学力で調整した就学年数 (就学年数 × 学力 ÷ 625。人口の重みの平均)。
+//   lays は PWT 11.0 の技術の前線比 (労働増大的な形) の ln を WDI の LAYS に当てた傾き (116 か国。data/derived/innovation.json の game の diffusion)。
+//   前線の国との差にするのは、ゲームの国の LAYS (5〜8 年) がデータの豊かな国 (11〜13 年) より低く、データの切片のままでは前線の国でも theta が 0.4 になるため
+//   keep = 覚えておく年数 (首都どうしのいちばん遠い光の年数より長く)。h = [[年, A], …] を 1 年ごとに国の技術 (tech) に持つ
+const DIFFUSE = { kappa: 0.03, lays: 0.1824, keep: 150 };
 // 資本の分け前 (回 KE5・B-114。docs/regions.md の 4)。会社は市場の付加価値の 1 − alpha を賃金、残りを配当として払う (economy の 7)。
 //   alpha = 1 − 労働分配率、delta = 資本の減価償却、irr = 資本の実質の収益率。どれも Penn World Table 10.01 の国ごとの中央値
 //   (data/build/build_regions.py の capital の game。目標 R39)。delta と irr は、民間の投資の行き先 (回 KE5 の次の PR) の収益率の基準に使う。
