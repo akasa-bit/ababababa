@@ -69,6 +69,19 @@ const CAPITAL = { alpha: 0.451, delta: 0.04, irr: 0.107 };
 //   着工から build 年で掘り始める (Koeva 2000 の米国の工場の建設の年数。2 年ほど)。建設中の能力は、足りない分から引く (二重に注文しない)。
 //   margin・speed は仮の値。遠くの会社が持つ形 (利潤を送り返す・GNI) は次の PR
 const INVEST = { ky: CAPITAL.alpha / (CAPITAL.irr + CAPITAL.delta), margin: 0.5, speed: 0.5, build: 2, res: ['fuel', 'metal', 'rare'] };
+// 遠くの持ち主と GNI (回 KE5・B-114。docs/regions.md の 6)。星系の会社の持ち分 gv.own = { [持ち主の星系]: 割合 } (残りはその星系の家計)。
+//   新しく入植した星系の会社は、入植船を送った星系の家計がすべて (colony) 持って始まる (開拓の資本を出したのは送り手。入植会社・勅許会社の形)。
+//   会社の利潤 (市場の付加価値の CAPITAL.alpha。配当できる手持ちまで) のうち持ち分の分を、遠くの持ち主へ光速で送る (届くまでは運ぶ途中のお金。refunds の hh。
+//   届く年は年の終わりに切り上げ)。国の GNI = GDP + ほかの国の持ち主から受け取った配当 − ほかの国の持ち主に払った配当 (game.pinc に足す。目標 R65)。
+//   新しい投資 (建て直しと伸びの分) のうち fdi の割合はほかの国が出す。出す国の重みは、国の大きさ (実質の所得の合計) × 1 人あたりの実質の所得の out 乗
+//   (豊かな国ほど外へ出す。WDI の外への直接投資 ÷ GDP の所得への弾力性) で、その国の首都の家計が持つ。
+//   持ち分は、その目標に資本の入れ替わりの速さ (年 delta + 伸び。伸びは地元の実質の所得 (学歴の c.incU と同じならした値) の伸びで、0〜gmax に収める) で近づく
+//   (資本は年 delta ずつ古くなり、建て直しと伸びの分の新しい資本のうち fdi をほかの国が出す)。入植したときの送り手の持ち分も、同じ速さで目標 (同じ国なら 0) に近づく。
+//   持ち分の決まり方には光の遅れを入れていない (年数十年かけて動くので)。配当の送金は光速。
+//   fdi・out は data/derived/gni.json の game の fdi・outward (WDI の直接投資の受け入れ ÷ 総固定資本形成の、国ごとの中央値の中央値と、外への直接投資 ÷ GDP の
+//   所得への弾力性。手で決めない)。
+//   持ち主の星系に入植地がなくなったら、その分は地元のものになる。min より小さい持ち分は消す
+const OWNER = { colony: 1, fdi: 0.1103, out: 1.0445, min: 1e-3, gmax: 0.2 };
 saveField('capacity', (game) => (game.capacity.length ? game.capacity : undefined), {
   init: (game) => { game.capacity = []; },
   read: (game, d) => { game.capacity = Array.isArray(d.capacity) ? d.capacity.filter((k) => k && Number.isFinite(k.k) && k.k > 0 && game.system(k.sys)?.bodies.some((b) => b.id === k.body)) : []; },
@@ -118,10 +131,10 @@ saveField('econIntel', (game) => (Object.keys(game.econIntel.s).length ? game.ec
   init: (game) => { game.econIntel = { y: -Infinity, s: {} }; },
   read: (game, d) => { const o = d.econIntel; game.econIntel = o && typeof o === 'object' && o.s && typeof o.s === 'object' ? { y: Number.isFinite(o.y) ? o.y : -Infinity, s: o.s } : { y: -Infinity, s: {} }; },
 });
-// 光速で届く途中の返金 (回 KE3。trade.js の refund): [{ to: 受け手, from: 送り手, v: 額, at: 届く年 }]。なければ書かない
+// 光速で届く途中の返金 (回 KE3。trade.js の refund): [{ to: 受け手, from: 送り手, v: 額, at: 届く年 }]。hh: 1 は遠くの持ち主への配当 (受け手の家計へ。回 KE5。remit)。なければ書かない
 saveField('refunds', (game) => (game.refunds.length ? game.refunds : undefined), {
-  init: (game) => { game.refunds = []; },
-  read: (game, d) => { game.refunds = Array.isArray(d.refunds) ? d.refunds.filter((r) => r && Number.isFinite(r.v) && Number.isFinite(r.at)) : []; },
+  init: (game) => { game.refunds = []; delete game._remit; },
+  read: (game, d) => { delete game._remit; game.refunds = Array.isArray(d.refunds) ? d.refunds.filter((r) => r && Number.isFinite(r.v) && Number.isFinite(r.at)) : []; },
 });
 // 先住民と接触した年 { [星系]: 年 } (回 KE3。colonize.js の isSurveyed。接触の知らせは光速で広がる)。前の版のセーブ (項目がない) は、接触ずみの星系をずっと前から知っていたとして読む
 saveField('surveyAt', (game) => (game.surveyAt && Object.keys(game.surveyAt).length ? game.surveyAt : undefined), {

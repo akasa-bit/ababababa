@@ -170,9 +170,23 @@
     for (const r of this.refunds) {
       if (r.at > this.year) { left.push(r); continue; }
       const v = r.v;
-      if (MARKET.buy) { this.cash('import', -v, { way: r, f: 'v' }); this.cash('import', v, { fm: r.to }); } else this.release('import', r, 'v', r.to, r.to);
+      if (r.hh) { this.cash('dividend', -v, { way: r, f: 'v' }); this.cash('dividend', v, { hh: this.isColonized(r.to) || !this.govs[r.from] ? r.to : r.from }); this._remit?.delete(`${r.to}|${r.at}`); } // 遠くの持ち主への配当 (remit)
+      else if (MARKET.buy) { this.cash('import', -v, { way: r, f: 'v' }); this.cash('import', v, { fm: r.to }); } else this.release('import', r, 'v', r.to, r.to);
     }
     this.refunds = left;
+  }
+  // 星系 from の会社の配当のうち、遠くの持ち主 to (OWNER) の分 v を、光速で送る (届くまでは運ぶ途中のお金。届く年は光の年数を年の終わりに切り上げ、
+  // 同じ受け手・同じ届く年の分はまとめる (from は最初の送り手。受け手がなくなっていたら、そこへ返す))。国をまたぐ分は、国の GNI に数える
+  // (game.pinc: 国ごとの、受け取った − 払った配当の合計。パネルが差を取る。_pinT: この刻みの分。首都の政府の gv.pinY (1 年でならした年あたりの額。財政の画面) に入れる)。
+  // まとめる先の索引 _remit はセーブしない (なければ refunds から作り直す)
+  remit(from, to, v) {
+    if (!(v > 0)) return;
+    const a = this.realmOf(to), b = this.realmOf(from);
+    if (a !== b) { const P = (this.pinc ??= {}), T = (this._pinT ??= {}); P[a] = (P[a] || 0) + v; P[b] = (P[b] || 0) - v; T[a] = (T[a] || 0) + v; T[b] = (T[b] || 0) - v; }
+    const at = Math.ceil(this.year + this.sysDist(from, to) - 1e-9), M = (this._remit ??= new Map(this.refunds.filter((q) => q.hh).map((q) => [`${q.to}|${q.at}`, q])));
+    let r = M.get(`${to}|${at}`);
+    if (!r) { r = { to, from, v: 0, at, hh: 1 }; this.refunds.push(r); M.set(`${to}|${at}`, r); }
+    this.cash('dividend', v, { way: r, f: 'v' });
   }
   // 貨物を積み出す。path は経由する星系の列、times は各星系に着く年
   shipCargo(from, legs, res, amt) {
