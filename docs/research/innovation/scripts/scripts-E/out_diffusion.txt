@@ -1,0 +1,71 @@
+                                             tech  first_year  first_share  y10    y50    y90  d10_50  d10_90  logit_slope  max_share
+                                     Flush toilet        1860         1.00 1890 1931.0 1970.0    41.0    80.0     0.052937     100.00
+                                    Running water        1890        24.00 1890 1940.0 1960.0    50.0    70.0     0.049848     100.00
+                                            Stove        1900        10.00 1900 1937.0 1957.0    37.0    57.0     0.073615      99.00
+                                         Landline        1903        10.00 1903 1946.0 1969.0    43.0    66.0     0.034868      95.00
+                                   Electric power        1908        10.00 1908 1925.0 1949.0    17.0    41.0     0.105511      99.00
+                                       Automobile        1915        10.00 1915 1926.0 1989.0    11.0    74.0     0.040835      92.00
+                                           Washer        1920        39.00 1920 1930.0 1998.0    10.0    78.0     0.024829      92.20
+                                           Vacuum        1922        31.50 1922 1948.0 1969.0    26.0    47.0     0.056169      99.90
+                                            Radio        1925        10.00 1925 1931.0 1947.0     6.0    22.0     0.137659      99.00
+                                     Refrigerator        1925         1.00 1930 1938.0 1953.0     8.0    23.0     0.174383      99.90
+                                  Washing machine        1930        10.00 1930 1965.0    NaN    35.0     NaN     0.049208      81.00
+                           Household refrigerator        1931        10.00 1931 1942.0 1954.0    11.0    23.0     0.177814      99.30
+                                             Iron        1933        96.00 1933 1933.0 1933.0     0.0     0.0          NaN     100.00
+                                  Central heating        1900         0.00 1940 1950.0    NaN    10.0     NaN     0.054286      78.00
+                                   Electric Range        1933         5.00 1950 1980.0    NaN    30.0     NaN     0.052963      57.00
+                           Automatic transmission        1910         0.00 1951 1953.0 1968.0     2.0    17.0     0.143789     100.00
+                                     Water Heater        1933         1.00 1953    NaN    NaN     NaN     NaN     0.035433      35.00
+                                   Power steering        1951         0.00 1954 1964.0 1970.0    10.0    16.0     0.234653     100.00
+                            Home air conditioning        1957        10.00 1957 1974.0    NaN    17.0     NaN     0.077370      89.00
+                                          Freezer        1950         6.00 1960    NaN    NaN     NaN     NaN     0.022900      42.00
+                                            Dryer        1950         1.00 1960 1992.0    NaN    32.0     NaN     0.074671      89.10
+                                       Dishwasher        1922         1.10 1964 1998.0    NaN    34.0     NaN     0.065238      69.40
+                                        Colour TV        1966        10.00 1966 1974.0 1985.0     8.0    19.0     0.140279      97.00
+           Shipping container port infrastructure        1964         1.00 1968 1977.0 1982.0     9.0    14.0     0.269814      92.00
+                                      Disk brakes        1966         1.00 1969 1972.0 1976.0     3.0     7.0     0.619631     100.00
+                                         Cable TV        1968         7.60 1971 1985.0    NaN    14.0     NaN     0.118977      65.36
+                                     Radial tires        1972         0.50 1974 1976.0 1980.0     2.0     6.0     0.616538     100.00
+                              Electronic ignition        1962         0.00 1979 1982.0 1983.0     3.0     4.0     1.070419     100.00
+                                        Microwave        1975         3.00 1982 1986.0 1998.0     4.0    16.0     0.110583      97.10
+                                    Microcomputer        1984         8.20 1985 2000.0    NaN    15.0     NaN     0.122598      78.00
+                 Nox pollution controls (boilers)        1990        16.00 1990 1997.0 2005.0     7.0    15.0     0.254249      92.00
+                                         Computer        1992        20.70 1992 2003.0    NaN    11.0     NaN     0.132958      89.30
+                           Videocassette recorder        1992        73.80 1992 1992.0 2003.0     0.0    11.0     0.069874      92.20
+                                       Television        1992        96.60 1992 1992.0 1992.0     0.0     0.0     0.007466      98.90
+                                         Internet        1993        10.00 1993 2002.0    NaN     9.0     NaN     0.177570      88.00
+                                   Cellular phone        1994        10.00 1994 2002.0 2013.0     8.0    19.0     0.209842      96.00
+                                    RTGS adoption        1970         0.00 1996 2005.0    NaN     9.0     NaN     0.225483      52.00
+                                       Podcasting        2006        11.00 2006    NaN    NaN     NaN     NaN     0.143320      33.00
+                               Social media usage        2005         5.00 2006 2011.0    NaN     5.0     NaN     0.254144      80.00
+                                     Ebook reader        2009         2.00 2011    NaN    NaN     NaN     NaN     0.135508      27.50
+                                           Tablet        2010         3.00 2011 2016.0    NaN     5.0     NaN     0.394915      64.00
+                                 Smartphone usage        2011        35.00 2011 2013.0    NaN     2.0     NaN     0.248075      81.00
+                               Electricity access        2011       100.00 2011 2011.0 2011.0     0.0     0.0          NaN     100.00
+Households with only mobile phones (no landlines)        2013        40.00 2013 2015.0    NaN     2.0     NaN     0.118322      54.90
+                               Amazon Prime users        2014        11.13 2014    NaN    NaN     NaN     NaN     0.390334      36.58
+
+US techs observed crossing 10% then 50%: n=18 median years 10->50 = 9.0  IQR 4.25-14.75
+  OLS years(10->50) on year(10%): slope -0.235 yr per calendar yr (=-2.35 per decade), n=18
+  y10 in [1900,1950): n=2 median 10->50 = 9.0
+  y10 in [1950,1990): n=12 median 10->50 = 9.5
+  y10 in [1990,2025): n=3 median 10->50 = 5.0
+  logistic slope (per yr) median 0.123 IQR 0.055-0.218 n=43
+
+== mob: first year reaching threshold, by 2015-23 PPP income quintile
+  >= 10: Q1: med 2007 p25 2006 p75 2008 n=40; Q2: med 2005 p25 2003 p75 2006 n=40; Q3: med 2002 p25 2001 p75 2004 n=39; Q4: med 2000 p25 1999 p75 2001 n=40; Q5: med 1997 p25 1996 p75 1997 n=40 | not yet reached (of quintile-classified): 0
+    world 5th pct year = 1996; median lag vs Q5 median: Q1 10y, Q2 8y, Q3 5y, Q4 3y
+  >= 50: Q1: med 2012 p25 2011 p75 2015 n=37; Q2: med 2009 p25 2008 p75 2010 n=37; Q3: med 2006 p25 2005 p75 2008 n=38; Q4: med 2004 p25 2002 p75 2005 n=40; Q5: med 2000 p25 2000 p75 2002 n=40 | not yet reached (of quintile-classified): 7
+    world 5th pct year = 2000; median lag vs Q5 median: Q1 12y, Q2 8y, Q3 6y, Q4 4y
+  years 10->50: Q1 med 6 (n=37); Q2 med 5 (n=37); Q3 med 4 (n=38); Q4 med 4 (n=40); Q5 med 4 (n=40); all med 4
+
+== net: first year reaching threshold, by 2015-23 PPP income quintile
+  >= 10: Q1: med 2015 p25 2012 p75 2018 n=39; Q2: med 2010 p25 2008 p75 2013 n=40; Q3: med 2007 p25 2004 p75 2009 n=39; Q4: med 2002 p25 2000 p75 2002 n=39; Q5: med 1998 p25 1997 p75 2000 n=39 | not yet reached (of quintile-classified): 2
+    world 5th pct year = 1997; median lag vs Q5 median: Q1 17y, Q2 12y, Q3 9y, Q4 4y
+  >= 50: Q1: med 2022 p25 2020 p75 2023 n=4; Q2: med 2019 p25 2017 p75 2020 n=31; Q3: med 2016 p25 2014 p75 2019 n=38; Q4: med 2011 p25 2008 p75 2013 n=39; Q5: med 2003 p25 2002 p75 2007 n=39 | not yet reached (of quintile-classified): 47
+    world 5th pct year = 2002; median lag vs Q5 median: Q1 18y, Q2 16y, Q3 13y, Q4 8y
+  years 10->50: Q1 med 10 (n=4); Q2 med 10 (n=31); Q3 med 9 (n=38); Q4 med 9 (n=39); Q5 med 6 (n=39); all med 8
+Uncond. convergence 1960-2000: n=107 slope of growth(%/yr) on ln y0 = 0.235; implied beta = -0.22%/yr
+Uncond. convergence 1990-2019: n=191 slope of growth(%/yr) on ln y0 = -0.304; implied beta = 0.32%/yr
+Uncond. convergence 2000-2019: n=197 slope of growth(%/yr) on ln y0 = -0.446; implied beta = 0.47%/yr
+Uncond. convergence 2000-2023: n=196 slope of growth(%/yr) on ln y0 = -0.374; implied beta = 0.39%/yr
