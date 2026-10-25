@@ -32,7 +32,10 @@ const MARKET = { eta: 1, smooth: 1, min: 0.1, max: 10, cover: { food: 0.28, wate
 //   goods:    工業品の 1 人 (100 万人) あたりの需要 [単位/年] = exp(c0 + c1 ln y + c2 (ln y)²)。GGDC の鉱業・製造業・電気ガス水道の実質の付加価値 ÷ 人口を
 //             ln 所得の 2 次式に当てた Engel 曲線 (国の固定効果つき)。水準は米国 2010 年 (名目の付加価値の割合 × 所得 ÷ 工業品 1 単位の値段)。
 //             所得の弾力性は 2,000 ドルで 1.6、50,000 ドルで 0.6 (高い所得で下がるので、工業の就業がこぶ型になる)。goodsCap はその幅
-//   research: 研究者の数 [人/100 万人] = exp(d0 + d1 ln y)。WDI (UNESCO) の 135 か国 1996〜2022 年を ln 所得に当てた
+//   research: 研究者の数 [人/100 万人] = exp(d0 + d1 ln y + d2 × 学力 ÷ 100)。WDI (UNESCO) の研究者を、ln 所得と HCI の試験の点数 (学力) に当てた
+//             (104 か国・301 国・年、2010〜2020 年。data/derived/innovation.json の game の research。目標 R66・R67。回 KE6・B-120。docs/innovation.md の 1)。
+//             y は学歴と学力を決める所得 (市場で測った所得をならした c.incU。eduY)、学力はその年に学校を出る世代の学力 (learnCurve)。前は所得だけ (exp(−6.3424 + 1.3536 ln y)、
+//             生産力 c.inc。Maddison の所得の 135 か国 1996〜2022 年)。学力を入れると所得の係数は 1.37 から 0.77 に下がる (研究者の所得の勾配の大半は学力の勾配)
 //   hitech:   工業品の付加価値のうち高付加価値物品の割合 = 1 / (1 + exp(−(a + b ln y)))。WDI の NV.MNF.TECH.ZS.UN (UNIDO。製造業の付加価値のうち中・高技術の産業の割合。
 //             149 か国 1990〜2024 年) の logit を ln 所得に当てた (data/build/build_tech.py → data/derived/tech.json の game。目標 R61)。工業品の需要 (goods) を、
 //             付加価値の割合がこの曲線になるように、低付加価値物品と高付加価値物品の値打ちに分ける (hitechShare)。cpiHitech: 消費者物価の工業品のうち
@@ -45,13 +48,13 @@ const MARKET = { eta: 1, smooth: 1, min: 0.1, max: 10, cover: { food: 0.28, wate
 //             6 = 2022 年の世界の平均 (Maddison 16,857 ドル ÷ 2,800)、21 = 2022 年の米国 (58,487 ドル ÷ 2,800)。
 //             ユーザーが選ぶ (docs/status/C.md の「決めてもらうこと」)。選ぶまでは世界の平均。1 つの値で戻せる
 const STRUCTURE = { usdPerT: 356.4, y0: 2000, modern: 6, smooth: 1, // smooth = 曲線に入れる所得 (生産力) をならす年数
-  serv: [-7.3719, 0.7908], goods: [-22.5061, 3.8272, -0.1476], goodsCap: [0.02, 40], research: [-6.3424, 1.3536], hitech: [-6.1273, 0.4903], cpiHitech: 0.195,
+  serv: [-7.3719, 0.7908], goods: [-22.5061, 3.8272, -0.1476], goodsCap: [0.02, 40], research: [-6.3481, 0.7712, 1.2098], hitech: [-6.1273, 0.4903], cpiHitech: 0.195,
   stages: [[1999, '農業期'], [7944, '工業化期'], [22463, '成熟期'], [Infinity, '脱工業期']] };
 // 研究 (段 5 の 3。docs/structure.md)。国ごと・分野 (農業 farm・鉱業 mine・工業 ind) ごとの技術の水準 A_f (始め 1) が、1 人あたりの産出に掛かる。
 //   dA_f/dt = alpha × S_f × A_f^(1 − beta)   (Jones 1995 の形のアイデアの生産関数。研究者 1 人あたりの研究の生産性 (Ȧ/A) ÷ S = alpha × A^(−beta) は、
 //   A が上がるほど下がる。Bloom ほか 2020「アイデアは見つけにくくなっている」)
 //   beta = 研究の生産性の下がり方 ÷ TFP の伸び (Bloom ほか 2020 の米国全体: 年 5.09% ÷ 1930〜2000 年代の TFP の伸びの平均 年 1.67% = 3.04。data/derived/ideas.json の game)
-//   研究者 S = 人口 × 所得で決まる数 (STRUCTURE.research)。国の分野には、部門の付加価値の比で分ける。研究者はサービスの中の人 (目標 R10 の数え方)
+//   研究者 S = 人口 × 所得と学力で決まる数 (STRUCTURE.research。回 KE6)。国の分野には、部門の付加価値の比で分ける。研究者はサービスの中の人 (目標 R10 の数え方)
 //   alpha は試合の始めに 1 つ決める: 最初のプレイヤーの本星の技術の伸びが g0 (Bloom ほかの TFP の伸びの平均 年 1.67%) になる値。セーブに入れる (alpha)
 const RESEARCH = { beta: 3.045, g0: 0.0167, fields: ['farm', 'mine', 'ind', 'hi'] }; // hi = 高付加価値の工業 (回 KE5。前の版のセーブの国は 1 から)
 // 資本の分け前 (回 KE5・B-114。docs/regions.md の 4)。会社は市場の付加価値の 1 − alpha を賃金、残りを配当として払う (economy の 7)。

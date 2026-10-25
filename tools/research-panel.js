@@ -1,7 +1,8 @@
 // 研究の年次パネルを書き出す (目標 R11)。画面なしの版で銀河を回し、国 (首都) ごと・年ごとに 1 行。
 // 同じ台本 data/build/build_ideas.py (--game) を、現実の Bloom ほか 2020 の計算とこのパネルの両方にかける。ゲームの中身は変えない。
 // 列: country = 銀河-首都、year、dlnA = その年の技術の伸び (分野ごとの Δln A_f を、その年の部門の付加価値で重みづけた平均)、
-//     researchers = その年の研究者の数 [人] (年の終わりの値)、start = 国が試合の始めからあるか (1/0)
+//     researchers = その年の研究者の数 [人] (年の終わりの値)、start = 国が試合の始めからあるか (1/0)、
+//     lnA = 技術の水準 (分野ごとの ln A_f を、同じ付加価値で重みづけた平均。前線の国を選ぶのに使う。回 KE6)
 // 使い方: node tools/research-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]
 const fs = require('fs');
 const H = require('./headless');
@@ -21,19 +22,21 @@ function play(seed) {
     // 国ごとの部門の付加価値 (重み)
     const va = {};
     for (const c of g.colonies) {
-      const root = g.realmOf(c.sys), V = (va[root] ??= { farm: 0, mine: 0, ind: 0 });
+      const root = g.realmOf(c.sys), V = (va[root] ??= Object.fromEntries(RESEARCH.fields.map((f) => [f, 0])));
       const sh = c.sh, w = g.wagesOf(c);
       if (!sh) continue;
-      for (const f of RESEARCH.fields) V[f] += c.pop * sh[f] * w[f];
+      for (const f of RESEARCH.fields) V[f] += c.pop * (sh[f] || 0) * (w[f] || 0);
     }
     const cur = {};
     for (const [key, T] of Object.entries(g.tech)) {
       cur[key] = { ...T.A };
       const p = prev[key];
       if (!p) continue;
-      const V = va[key] || { farm: 1, mine: 1, ind: 1 }, tot = V.farm + V.mine + V.ind;
-      const dln = RESEARCH.fields.reduce((k, f) => k + (tot > 0 ? V[f] / tot : 1 / 3) * (Math.log(T.A[f]) - Math.log(p[f])), 0);
-      rows.push([`${seed}-${key}`, seed, Math.round(g.year), dln, T.S || 0, first.has(key) ? 1 : 0]);
+      // 分野ごとの付加価値の重み (高付加価値の工業 hi を含む。回 KE5 で hi を足したとき、ここが 3 分野のままで伸びが NaN になっていた。回 KE6 で直した)
+      const F = RESEARCH.fields.filter((f) => T.A[f] > 0 && p[f] > 0), V = va[key] || {}, tot = F.reduce((k, f) => k + (V[f] || 0), 0);
+      const wt = (f) => (tot > 0 ? (V[f] || 0) / tot : 1 / F.length);
+      const dln = F.reduce((k, f) => k + wt(f) * (Math.log(T.A[f]) - Math.log(p[f])), 0), lnA = F.reduce((k, f) => k + wt(f) * Math.log(T.A[f]), 0);
+      rows.push([`${seed}-${key}`, seed, Math.round(g.year), dln, T.S || 0, first.has(key) ? 1 : 0, lnA]);
     }
     prev = cur;
   }
@@ -41,7 +44,7 @@ function play(seed) {
 }
 
 const t0 = Date.now();
-const lines = ['country,galaxy,year,dlnA,researchers,start'];
+const lines = ['country,galaxy,year,dlnA,researchers,start,lnA'];
 for (let i = 1; i <= Number(nS); i++) {
   for (const r of play(String(i))) lines.push(r.map((v) => (typeof v === 'number' && !Number.isInteger(v) ? v.toPrecision(8) : v)).join(','));
   process.stderr.write(`銀河 ${i}/${nS} (${((Date.now() - t0) / 1000).toFixed(0)} 秒)\n`);
