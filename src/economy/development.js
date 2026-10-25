@@ -19,16 +19,18 @@
       if (!fl || !m || !K) continue;
       const pr = (r) => this.price(id, r) / basePrice(r), gap = (r) => (pr(r) > 1 + INVEST.margin ? Math.max(0, m.u[r] - fl.prod[r]) : 0);
       const ind = { fuel: 0.2 * gap('goods'), metal: 0.5 * gap('goods'), rare: HITECH.rare * gap('hitech') }; // 地元の工業が動いたら要る原料
+      const pipe = zeroRes(); // 建設中の能力の年の産出
+      for (const j of this.projects) if (j.type === 'capacity' && j.sys === id) for (const [r, v] of Object.entries(this.capacityYield({ sys: id, body: j.body, k: j.k }))) pipe[r] += v;
       for (const r of INVEST.res) {
         if (pr(r) < 1 + INVEST.margin || K[r] < 0.99) continue; // 値段がふつう、か、いまの設備に余りがある
-        const short = m.u[r] + ind[r] - fl.prod[r];
+        const short = m.u[r] + ind[r] - fl.prod[r] - pipe[r];
         if (!(short > 1e-3)) continue;
         const b = this.system(id).bodies.filter((x) => outpostRes(x).includes(r) && (x.deposits?.[r] || 0) > 0.05 && this.outpostCheck(id, x.id).ok)
           .sort((x, y) => y.deposits[r] - x.deposits[r])[0];
         if (!b) continue; // 掘れる天体がなければ取り寄せる
         const q = INVEST.speed * short, y1 = this.capacityYield({ sys: id, body: b.id, k: 1 })[r];
         if (!(y1 > 0)) continue;
-        this.order({ credits: INVEST.ky * q * basePrice(r) }, id, { type: 'capacity', body: b.id, k: q / y1, pay: { fm: id }, label: `${b.name} の民間の採掘` });
+        this.order({ credits: INVEST.ky * q * basePrice(r) }, id, { type: 'capacity', body: b.id, k: q / y1, pay: { fm: id }, delay: INVEST.build, label: `${b.name} の民間の採掘` });
       }
     }
   }

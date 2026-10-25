@@ -66,8 +66,9 @@ const CAPITAL = { alpha: 0.451, delta: 0.04, irr: 0.107 };
 //   ふだんの需要 − 産出) × 原料の割合 (低付加価値物品 1 に金属 0.5・燃料 0.2、高付加価値物品 1 に希少元素 HITECH.rare)。
 //   費用 [cr] = ky × 足す年の産出 × 基準の値段 (ky = alpha ÷ (irr + delta) = 3.07 は、PWT の値で、民間の収益率がふつうのときの資本 ÷ 付加価値)。
 //   払うのはその星系の会社 (造る手間は家計の賃金。借りてよい)。能力は年 CAPITAL.delta ずつ古くなる。採掘基地 (政府が建てる。費用は決まった cr) と同じ式で掘る。
+//   着工から build 年で掘り始める (Koeva 2000 の米国の工場の建設の年数の中央値 約 2 年)。建設中の能力は、足りない分から引く (二重に注文しない)。
 //   margin・speed は仮の値。遠くの会社が持つ形 (利潤を送り返す・GNI) は次の PR
-const INVEST = { ky: CAPITAL.alpha / (CAPITAL.irr + CAPITAL.delta), margin: 0.5, speed: 0.5, res: ['fuel', 'metal', 'rare'] };
+const INVEST = { ky: CAPITAL.alpha / (CAPITAL.irr + CAPITAL.delta), margin: 0.5, speed: 0.5, build: 2, res: ['fuel', 'metal', 'rare'] };
 saveField('capacity', (game) => (game.capacity.length ? game.capacity : undefined), {
   init: (game) => { game.capacity = []; },
   read: (game, d) => { game.capacity = Array.isArray(d.capacity) ? d.capacity.filter((k) => k && Number.isFinite(k.k) && k.k > 0 && game.system(k.sys)?.bodies.some((b) => b.id === k.body)) : []; },
