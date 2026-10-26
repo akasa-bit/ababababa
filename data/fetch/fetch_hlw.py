@@ -5,6 +5,8 @@
   - Holston, Laubach & Williams (2023) の推計 (ニューヨーク連銀 Holston_Laubach_Williams_current_estimates.xlsx の HLW Estimates のシート。片側の推計、四半期):
       米国・カナダ・ユーロ圏の潜在の伸び g (年率 %)・その他の要因 z・自然利子率 r*・需給ギャップ
       → data/raw/hlw/hlw_estimates.csv.gz (列 economy, date, g, z, rstar, gap)
+  - 同じファイルの推計に使った実質 GDP の対数 (US・CA・EA input data のシートの gdp.log。四半期)
+      → data/raw/hlw/hlw_gdp.csv.gz (列 economy, date, gdp_log)
   - World Development Indicators の人口の伸び (SP.POP.GROW。% / 年) の米国・カナダ・ユーロ圏 (EMU)
       → data/raw/hlw/wdi_popgrow.csv.gz (列 iso3, year, value)
 取得日・URL・SHA-256・行数を data/raw/hlw/MANIFEST.json に記録する。
@@ -48,6 +50,7 @@ def main():
     with os.fdopen(fd, 'wb') as f:
         f.write(raw)
     d = pd.read_excel(p, sheet_name='HLW Estimates', header=None)
+    inp = {k: pd.read_excel(p, sheet_name=f'{k} input data') for k in COLS}
     os.remove(p)
     d = d[pd.to_datetime(d[0], errors='coerce', format='mixed').notna()]
     rows = []
@@ -57,9 +60,12 @@ def main():
             if any(pd.isna(x) for x in v):
                 continue
             rows.append([k, pd.to_datetime(r[0]).strftime('%Y-%m-%d'), *(round(float(x), 6) for x in v)])
+    lic = 'Federal Reserve Bank of New York の公開のデータ (Holston, Laubach & Williams 2023, Measuring the Natural Rate of Interest after COVID-19。出典を明記する)'
     m = save('hlw_estimates.csv.gz', ['economy', 'date', 'g', 'z', 'rstar', 'gap'], rows)
-    man.append({**m, 'url': HLW, 'source_sha256': hashlib.sha256(raw).hexdigest(), 'filter': 'HLW Estimates のシートの、値のそろった四半期だけ',
-                'license': 'Federal Reserve Bank of New York の公開のデータ (Holston, Laubach & Williams 2023, Measuring the Natural Rate of Interest after COVID-19。出典を明記する)'})
+    man.append({**m, 'url': HLW, 'source_sha256': hashlib.sha256(raw).hexdigest(), 'filter': 'HLW Estimates のシートの、値のそろった四半期だけ', 'license': lic})
+    rows = [[k, pd.to_datetime(r['date']).strftime('%Y-%m-%d'), round(float(r['gdp.log']), 6)] for k, x in inp.items() for _, r in x.iterrows() if pd.notna(r['gdp.log'])]
+    m = save('hlw_gdp.csv.gz', ['economy', 'date', 'gdp_log'], rows)
+    man.append({**m, 'url': HLW, 'source_sha256': hashlib.sha256(raw).hexdigest(), 'filter': 'US・CA・EA input data のシートの date・gdp.log', 'license': lic})
     meta, got = json.loads(fetch(POP))
     rows = sorted([r['countryiso3code'], int(r['date']), r['value']] for r in got or [] if r['value'] is not None)
     m = save('wdi_popgrow.csv.gz', ['iso3', 'year', 'value'], rows)

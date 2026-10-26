@@ -245,8 +245,8 @@ python3 data/build/build_innovation.py --game ゲームのパネル.csv   # ゲ�
 
 | 段 | 場所 | 中身 |
 |---|---|---|
-| 取得 | `data/fetch/fetch_hlw.py` → `data/raw/hlw/` | Holston, Laubach & Williams (2023) の推計 (ニューヨーク連銀。米国・カナダ・ユーロ圏の四半期の潜在の伸び g・その他の要因 z・自然利子率 r*・需給ギャップ。片側の推計、2026 年 Q2 まで)・WDI の人口の伸び (SP.POP.GROW。米国・カナダ・ユーロ圏)。取得日・URL・SHA-256・行数は `MANIFEST.json` |
-| 加工 | `data/build/build_rstar.py` → `data/derived/rstar.json` | 年平均の r* を、1 人あたりの潜在の伸び (g − 人口の伸び) に当てた最小二乗 (3 つの経済をまとめる): r* = 0.234 + 1.343 × 1 人あたりの伸び [% / 年] (184 の国・年、相関 0.80)。r* の 1%〜99% 点 0.23〜5.67%。中央銀行の中立の金利 (`src/economy/fiscal-consts.js` の `CB.rs`・`CB.rsr`) |
+| 取得 | `data/fetch/fetch_hlw.py` → `data/raw/hlw/` | Holston, Laubach & Williams (2023) の推計 (ニューヨーク連銀。米国・カナダ・ユーロ圏の四半期の潜在の伸び g・その他の要因 z・自然利子率 r*・需給ギャップ。片側の推計、2026 年 Q2 まで。推計に使った実質 GDP の対数も)・WDI の人口の伸び (SP.POP.GROW。米国・カナダ・ユーロ圏)。取得日・URL・SHA-256・行数は `MANIFEST.json` |
+| 加工 | `data/build/build_rstar.py` → `data/derived/rstar.json` | 年平均の r* を、1 人あたりの潜在の伸び (g − 人口の伸び) に当てた最小二乗 (3 つの経済をまとめる): r* = 0.234 + 1.343 × 1 人あたりの伸び [% / 年] (184 の国・年、相関 0.80)。r* の 1%〜99% 点 0.23〜5.67%。HLW の g を実際の GDP の伸びの指数のならしでいちばんよく写す年数 5 年 (trend)。中央銀行の中立の金利 (`src/economy/fiscal-consts.js` の `CB.rs`・`CB.rsr`) |
 
 ## GNI と GDP のデータ (目標 R65。回 KE5・B-114)
 

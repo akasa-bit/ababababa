@@ -2,31 +2,36 @@
   cbOf(root) { return (this.cb[root] ??= { P: 1, x: 0, u: 0, pi: CB.pistar, i: CB.rstar + CB.pistar, m: 1, h: [] }); }
   // 人間の国が中央銀行に任せているか (その星系に届いている財政で)
   cbRule(root, id = root) { return !this.isHuman(root) || this.spectate || (this.fiscalFor(root, id).cb ?? 1) === 1; }
-  // 景気のずれと中立の金利 (回 KE6・B-118。Laubach & Williams 2003・Holston, Laubach & Williams 2023 の形)。毎刻み進める。
-  // ずれ = 国の GDP のこの 1 年の伸び − 潜在の産出の 1 年の伸び (Walsh 2003 の速さの則を、潜在の伸びと比べる形にした)。潜在の産出 = 入植地の人口 × 生産力
-  //   (potentialUSD。物の部門が作れる付加価値を基準の値段で測ったもの。売れ残りと原料の不足を受けない)。前は 1 年の伸び − 5 年でならした伸びで、
-  //   伸びがだんだん遅くなる (学歴が上限に近づく・開拓星系が落ち着く) と、ずれがいつも負になり、政策金利と物価の上がり方が低めに出た
-  // 中立の金利 s.rs = rs[0] + rs[1] × (1 人あたりの潜在の伸びを trend 年でならしたもの) (幅 rsr。始めは rstar から)
-  // 国債の式の「傾向からのずれ」は、入植地の S 字の伸び (始めの年 70% から数十年で 0%) に一方向のならしが遅れて、何十年も幅の端に張りつくので使わない
+  // 景気の速さのずれ (国の GDP の、この 1 年の伸び − speed 年でならした伸び。Walsh 2003 の速さの則) と、国の中立の金利 (回 KE6・B-118。Laubach & Williams 2003・
+  // Holston, Laubach & Williams 2023 の形)。毎刻み進める。
+  // 中立の金利 s.rs = rs[0] + rs[1] × (1 人あたりの潜在の伸びを trend 年でならしたもの) (幅 rsr。始めは rstar から)。潜在の産出 = 入植地の人口 × 生産力
+  //   (potentialUSD。物の部門が作れる付加価値を基準の値段で測ったもの。売れ残りと原料の不足を受けない)
+  // 国債の式の「傾向からのずれ」は、入植地の S 字の伸び (始めの年 70% から数十年で 0%) に一方向のならしが遅れて、何十年も幅の端に張りつくので使わない。
+  //   潜在の産出からのずれ (この 1 年の伸び − 潜在の産出のこの 1 年の伸び) も試したが、試合の始めに市場が立ち上がる 20 年ほどのあいだ GDP が潜在の産出より
+  //   年 15〜20% 速く伸びてずれが幅の上の端に張りつき、R35 (国債の上乗せの債務への傾き) が 0.017 → 0.053 と幅の外になったので使わない (docs/money.md の 5.3)
   // 伸びは、前の刻みにも国にあった星系だけで測る (入植や併合で国が大きくなった分を景気と見ない。前の刻みの値は s.yp・s.pp・s.np)。pot = 星系ごとの [潜在の産出, 人口]
-  potGap(root, s, h, pot) {
+  speedGap(root, s, h, pot) {
     const now = {}, pp = {}, np = {};
     for (const x of this.realmSystems(root)) {
       const y = this.govs[x.id]?.fr?.y, q = pot[x.id];
-      if (y > 0 && q?.[0] > 0 && q[1] > 0) { now[x.id] = y; pp[x.id] = q[0]; np[x.id] = q[1]; }
+      if (y > 0) now[x.id] = y;
+      if (q?.[0] > 0 && q[1] > 0) { pp[x.id] = q[0]; np[x.id] = q[1]; }
     }
     let a = 0, b = 0, pa = 0, pb = 0, na = 0, nb = 0;
-    for (const id of Object.keys(now)) if (s.yp?.[id] > 0 && s.pp?.[id] > 0 && s.np?.[id] > 0) { a += now[id]; b += s.yp[id]; pa += pp[id]; pb += s.pp[id]; na += np[id]; nb += s.np[id]; }
+    for (const [id, y] of Object.entries(now)) if (s.yp?.[id] > 0) { a += y; b += s.yp[id]; }
+    for (const id of Object.keys(pp)) if (s.pp?.[id] > 0 && s.np?.[id] > 0) { pa += pp[id]; pb += s.pp[id]; na += np[id]; nb += s.np[id]; }
     s.yp = now; s.pp = pp; s.np = np;
     if (a > 0 && b > 0) {
-      const g = GM.log(a / b) / h, gp = GM.log(pa / pb) / h, gpc = gp - GM.log(na / nb) / h;
+      const g = GM.log(a / b) / h;
       s.g1 = s.g1 === undefined ? g : s.g1 + (g - s.g1) * Math.min(1, h);
-      s.gp = s.gp === undefined ? gp : s.gp + (gp - s.gp) * Math.min(1, h);
-      const gt = s.gt ?? (CB.rstar - CB.rs[0]) / CB.rs[1]; // 始めは中立の金利が rstar になる伸びから
+      s.gs = s.gs === undefined ? s.g1 : s.gs + (s.g1 - s.gs) * Math.min(1, h / CB.speed);
+    }
+    if (pa > 0 && pb > 0 && na > 0 && nb > 0) {
+      const gpc = GM.log(pa / pb) / h - GM.log(na / nb) / h, gt = s.gt ?? (CB.rstar - CB.rs[0]) / CB.rs[1]; // 始めは中立の金利が rstar になる伸びから
       s.gt = gt + (gpc - gt) * Math.min(1, h / CB.trend);
       s.rs = clamp(CB.rs[0] + CB.rs[1] * s.gt, CB.rsr[0], CB.rsr[1]);
     }
-    return s.g1 === undefined || s.gp === undefined ? 0 : clamp(s.g1 - s.gp, CB.gap[0], CB.gap[1]);
+    return s.g1 === undefined ? 0 : clamp(s.g1 - s.gs, CB.gap[0], CB.gap[1]);
   }
   rstarOf(root) { return this.cb[root]?.rs ?? CB.rstar; } // 国の中立の実質の金利
   // 毎刻み: 国ごとに、物の値段の指数・政策金利・物価の上がり方を進め、政府ごとに長期の利回りと国債の利札を進め、払えない政府は不履行にする
@@ -40,7 +45,7 @@
     const pot = {}; // 星系ごとの [潜在の産出, 人口]
     for (const c of this.colonies) { const o = (pot[c.sys] ??= [0, 0]); o[0] += c.pop * this.potentialUSD(c); o[1] += c.pop; }
     for (const root of roots) {
-      const s = this.cbOf(root), gap = this.potGap(root, s, h, pot), rs = s.rs ?? CB.rstar;
+      const s = this.cbOf(root), gap = this.speedGap(root, s, h, pot), rs = s.rs ?? CB.rstar;
       if (sum[root]?.[1] > 0) s.m = sum[root][0] / sum[root][1];
       const rule = clamp(rs + s.pi + CB.phiPi * (s.pi - CB.pistar) + CB.phiY * gap, RATE_RANGE[0], RATE_RANGE[1]);
       s.i = this.cbRule(root) ? rule : this.fiscalFor(root, root).rate ?? rule;
