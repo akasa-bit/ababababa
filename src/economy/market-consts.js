@@ -136,6 +136,7 @@ saveField('capacity', (game) => (game.capacity.length ? game.capacity : undefine
 // hi = 高付加価値の工業 (回 KE5): 1 人あたりの高付加価値物品 [単位/年]。付加価値は 1 単位 9.6 (値段 12 − 原料 2.4) で、低付加価値の工業 (3 単位 × 2.85) の 1.7 倍
 // (中・高技術の製造業の労働生産性は低技術の 1.5〜2 倍ほど。仮の値)
 const YIELD = { farm: 1, ind: 3, mine: 3, home: 1, hi: 1.5 };
+const FERTILITY = { temperate: 1, ocean: 0.6 }; // 農業の土地の肥えかた (惑星の地表ごと。fertility。ない地表は 0 で、水を消費する)
 // 高付加価値物品 1 単位の原料 (回 KE5): 低付加価値物品 0.5 単位と希少元素 0.05 単位 (機械・電子・船の部品)。質量は原料と同じ (RES_KG.hitech)。
 // ramp: 利ざや (値段 − 原料) が値段のこの割合より薄いと、その分だけ作る量を減らす (market-economy.js の 2b)。どれも仮の値
 const HITECH = { goods: 0.5, rare: 0.05, ramp: 0.5 };

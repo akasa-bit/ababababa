@@ -136,7 +136,7 @@
       });
       this.msgTo = undefined;
     }
-    this.requests = this.requests.filter((q) => !['build', 'tribute', 'order', 'grant'].includes(q.kind) || q.arrive > this.year);
+    this.requests = keepWhere(this.requests, (q) => !ARRIVE_KINDS.has(q.kind) || q.arrive > this.year);
     const done = this.projects.filter((j) => j.ready <= this.year);
     if (done.length) {
       changed = true;

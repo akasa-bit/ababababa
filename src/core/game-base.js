@@ -100,9 +100,10 @@ class Game {
   nationMap() { if (!this.nmap || this.nmap.src !== this.nations) this.nmap = { src: this.nations, m: new Map((this.nations || []).map((n) => [n.cap, n])) }; return this.nmap.m; }
   speciesOfRealm(root) { return this.nationOf(root)?.species || HUMAN; }
   // その星系の国の種族の特性の倍率 (国家選択のない試合では特性なし)
-  modsOf(sys) {
+  modsOf(sys) { return this.nations ? this.modsOfRealm(this.realmOf(sys)) : NO_MODS; }
+  modsOfRealm(root) { // 国 (首都) root の種族の特性の倍率 (国を先に求めてあるとき)
     if (!this.nations) return NO_MODS;
-    const n = this.nationOf(this.realmOf(sys));
+    const n = this.nationOf(root);
     return n ? (n.mods ??= traitMods(n.traits)) : NO_MODS;
   }
   isHome(sys, body) { return this.nations ? this.nations.some((n) => n.cap === sys && n.body === body) : sys === 0 && body === 'earth'; }
@@ -217,9 +218,10 @@ class Game {
   }
   // 星系どうしの距離。銀河ごとの表に覚えておき、2回目からは引くだけにする (値は distance() とまったく同じ)
   sysDist(a, b) {
-    const n = this.galaxy.systems.length;
-    let D = SYS_DIST.get(this.galaxy);
-    if (!D) { D = new Float64Array(n * n).fill(NaN); SYS_DIST.set(this.galaxy, D); }
+    const G = this.galaxy, n = G.systems.length;
+    let D = this._sdG === G ? this._sd : SYS_DIST.get(G); // 表は試合にも覚えておく (1 刻みに何千回も引くので、WeakMap を毎回引かない)
+    if (!D) { D = new Float64Array(n * n).fill(NaN); SYS_DIST.set(G, D); }
+    this._sdG = G; this._sd = D;
     let d = D[a * n + b];
     if (d !== d) { d = distance(this.galaxy.systems[a], this.galaxy.systems[b]); D[a * n + b] = D[b * n + a] = d; }
     return d;
@@ -303,8 +305,15 @@ class Game {
   }
   vassalsOf(id) { return Object.keys(this.govs).map(Number).filter((k) => this.govs[k].lord === id); }
   // 国 = 従属の連鎖の頂点 (首都の星系)。地球の国は 0
+  // 1 刻みに何万回も呼ぶので、ふつうの (短い) 連鎖は Set を作らずにたどる。64 段を超えたとき (輪になった連鎖など) だけ、下の元の数え方でやり直す (結果は同じ)
   realmOf(id) {
     let cur = id;
+    for (let i = 0; i < 64; i++) {
+      const g = this.govs[cur];
+      if (!g || g.lord === null || g.lord === undefined) return cur;
+      cur = g.lord;
+    }
+    cur = id;
     const seen = new Set();
     while (this.govs[cur] && this.govs[cur].lord !== null && this.govs[cur].lord !== undefined && !seen.has(cur)) { seen.add(cur); cur = this.govs[cur].lord; }
     return cur;
@@ -319,6 +328,11 @@ class Game {
   stackRealm(id) { return this.isColonized(id) ? this.realmOf(id) : this.stackOwner[id] ?? 0; }
   setStackOwner(id, realm) { if (realm) this.stackOwner[id] = realm; else delete this.stackOwner[id]; }
   realmSystems(root) { return this.colonizedSystems().filter((x) => this.realmOf(x.id) === root); }
+  systemsByRealm() { // 国 → realmSystems(国) を、全部の国について 1 回で (並びは同じ)
+    const m = new Map();
+    for (const x of this.colonizedSystems()) { const r = this.realmOf(x.id); let l = m.get(r); if (!l) m.set(r, (l = [])); l.push(x); }
+    return m;
+  }
   // 星系 x の政府が、相手の星系 other の国と交戦中だと知っているか (開戦の知らせが光速で x に届いたか)。交易をやめるのはそれから
   // 終戦後も、終戦の知らせが光速で x に届くまでは取引をやめたまま
   tradeBlocked(x, other) { return this.tradeBlockedIn(x, this.realmOf(x), this.realmOf(other)); }

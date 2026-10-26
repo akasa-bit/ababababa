@@ -1,7 +1,14 @@
+  // 戦争の組 key のいちばん新しい講和 (同じ年なら先のもの)。一覧が同じ配列・同じ長さのあいだは、組ごとの索引を使い回す
+  // (講和の記録は足すか丸ごとの置き換えでしか変わらない。war-ai.js の endWar と restore)
   lastPeace(key) {
-    let best = null;
-    for (const r of this.peaces) if (r.key === key && (!best || r.year > best.year)) best = r;
-    return best;
+    const L = this.peaces;
+    let ix = this._peaceIx;
+    if (!ix || ix.list !== L || ix.n !== L.length) {
+      const m = new Map();
+      for (const r of L) { const best = m.get(r.key); if (!best || r.year > best.year) m.set(r.key, r); }
+      ix = this._peaceIx = { list: L, n: L.length, m };
+    }
+    return ix.m.get(key) ?? null;
   }
   // 戦っている (と、その場の軍が思っている) か: 戦争中か、終戦の知らせがまだ届いていない。
   // 知らせは講和の結ばれた星系から owner の主星 (首都) へ光速で届き、そこから星系 x の艦隊へ光速で伝えられる
@@ -13,7 +20,15 @@
     const cap = this.system(owner);
     return this.year < rec.year + distance(this.system(rec.from), cap) + distance(cap, this.system(x));
   }
-  warKey(a, b) { return a < b ? `${a}|${b}` : `${b}|${a}`; }
+  warKey(a, b) { // 番号 (数) どうしなら、作った文字列を覚えて使い回す (1 刻みに何千回も呼ぶ)
+    if (typeof a === 'number' && typeof b === 'number' && a >= 0 && b >= 0 && a < 65536 && b < 65536 && Number.isInteger(a) && Number.isInteger(b)) {
+      const k = a < b ? a * 65536 + b : b * 65536 + a;
+      let s = WAR_KEYS.get(k);
+      if (s === undefined) { s = a < b ? `${a}|${b}` : `${b}|${a}`; WAR_KEYS.set(k, s); }
+      return s;
+    }
+    return a < b ? `${a}|${b}` : `${b}|${a}`;
+  }
   atWar(a, b) { return a !== b && this.realmWars[this.warKey(a, b)] !== undefined; }
   // root の国と交戦中の国 (首都) の一覧
   enemiesOf(root) {

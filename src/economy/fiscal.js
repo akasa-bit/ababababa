@@ -109,10 +109,11 @@
     let paid = 0, held = 0;
     for (const key of Object.keys(this.govs)) {
       const id = Number(key), gv = this.govs[key];
-      if (gv.loan > 0) { const x = gv.loan * this.rateAt(id) * h; debtors.push([{ fm: id }, x]); paid += x; }
-      if (gv.hloan > 0) { const x = gv.hloan * this.rateAt(id) * h; debtors.push([{ hh: id }, x]); paid += x; }
-      if (gv.hm > 0) { const x = gv.hm * this.rateAt(id) * h; debtors.push([{ hh: id }, x]); paid += x; } // 民間の信用 (回 KE3)
-      if (gv.bl > 0) { const x = gv.bl * this.rateAt(id) * h; debtors.push([{ fm: id }, x]); paid += x; }
+      const rate = gv.loan > 0 || gv.hloan > 0 || gv.hm > 0 || gv.bl > 0 ? this.rateAt(id) : 0; // 借りのある星系の利子率 (1 回だけ求める。このあいだ変わらない)
+      if (gv.loan > 0) { const x = gv.loan * rate * h; debtors.push([{ fm: id }, x]); paid += x; }
+      if (gv.hloan > 0) { const x = gv.hloan * rate * h; debtors.push([{ hh: id }, x]); paid += x; }
+      if (gv.hm > 0) { const x = gv.hm * rate * h; debtors.push([{ hh: id }, x]); paid += x; } // 民間の信用 (回 KE3)
+      if (gv.bl > 0) { const x = gv.bl * rate * h; debtors.push([{ fm: id }, x]); paid += x; }
       if (gv.bond > 0) { const x = gv.bond * this.bondRate(id) * h; debtors.push([{ gov: id }, x]); paid += x; gv.bondPaid = (gv.bondPaid || 0) + x; }
       if (gv.credits > 0) { deposits.push([{ gov: id }, gv.credits, id]); held += gv.credits; }
       if (gv.hh > 0) { deposits.push([{ hh: id }, gv.hh]); held += gv.hh; }

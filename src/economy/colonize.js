@@ -36,7 +36,7 @@
     return [80, 80, 800, 4000][grade] * (1 + 0.5 * c.lv.habitat) * m.cap * (m.capBy[b.surface] || 1);
   }
   surfaceOf(c) { return c.kind === 'planet' ? this.target(c.sys, c.body).surface : null; }
-  fertility(c) { return { temperate: 1, ocean: 0.6 }[this.surfaceOf(c)] || 0; }
+  fertility(c) { return FERTILITY[this.surfaceOf(c)] || 0; }
   needsWater(c) { return !this.fertility(c); } // 温暖・海洋の惑星以外は水を消費する
 
   // 入植可否と理由。惑星入植は適性≥1の固体天体のみ、ステーションは任意の天体の周回軌道に建設できる。

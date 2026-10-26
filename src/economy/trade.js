@@ -60,7 +60,7 @@
       q.shipped = (q.shipped || 0) + amt;
     }
     for (const q of this.requests) if (q.kind === 'trade' && q.amt <= 0.001 && q.pre > 0) this.refund(q);
-    this.requests = this.requests.filter((q) => q.kind !== 'trade' || q.amt > 0.001);
+    this.requests = keepWhere(this.requests, (q) => q.kind !== 'trade' || q.amt > 0.001);
     // 未処理の要求の量 (受け手ごと・送り手ごと) と、要求の組 (受け手・送り手・資源。同じ要求を重ねないため)。
     // 何度も引くので、キーは文字列でなく数 (星系の番号と資源の番号から作る)
     const sysRes = (sys, res) => Number(sys) * 8 + RES_INDEX[res];
@@ -223,10 +223,10 @@
     for (const r of this.routes) r.transit = [zeroRes(), zeroRes()];
     this.inbound = {};
     for (const p of this.cargo) {
-      const dest = p.path[p.path.length - 1];
+      const dest = p.path[p.path.length - 1], legs = this.legsOf(p.path); // 区間は荷の資源によらないので 1 回だけ引く
       for (const [res, amt] of Object.entries(p.load)) {
         (this.inbound[dest] ??= zeroRes())[res] += amt;
-        for (const l of this.legsOf(p.path)) l.r.transit[l.dir][res] += amt;
+        for (const l of legs) l.r.transit[l.dir][res] += amt;
       }
     }
   }

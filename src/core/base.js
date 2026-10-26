@@ -37,12 +37,14 @@ const DMath = (() => {
   const buf = new DataView(new ArrayBuffer(8));
   const LN2_HI = 6.93147180369123816490e-01, LN2_LO = 1.90821492927058770002e-10, INV_LN2 = 1.44269504088896338700e+00, LN10 = 2.302585092994046;
   const PIO2_1 = 1.57079632673412561417e+00, PIO2_2 = 6.07710050630396597660e-11, PIO2_3 = 2.02226624871116645580e-21, INV_PIO2 = 6.36619772367581382433e-01;
-  // 2^k (−1022 ≤ k ≤ 1023) をビットで作る
+  // 2^k (−1022 ≤ k ≤ 1023) をビットで作る。毎回作らないよう、始めに全部の k の表 (TWO[k + 1022]) にしておく (値は同じ)
   const two = (k) => { buf.setUint32(0, (k + 1023) << 20); buf.setUint32(4, 0); return buf.getFloat64(0); };
+  const TWO = new Float64Array(2046);
+  for (let k = -1022; k <= 1023; k++) TWO[k + 1022] = two(k);
   const scale = (y, k) => {
-    while (k > 1023) { y *= two(1023); k -= 1023; }
-    while (k < -1022) { y *= two(-1022); k += 1022; }
-    return y * two(k);
+    while (k > 1023) { y *= TWO[1023 + 1022]; k -= 1023; }
+    while (k < -1022) { y *= TWO[0]; k += 1022; }
+    return y * TWO[k + 1022];
   };
   function exp(x) {
     if (x !== x) return NaN;
@@ -68,11 +70,12 @@ const DMath = (() => {
     if (m > 1.4142135623730951) { m *= 0.5; e += 1; }
     return e * LN2_HI + (log1pK(m - 1) + e * LN2_LO);
   }
-  // log(1 + f) (−0.3 ≤ f ≤ 0.42)。log(1 + f) = 2 atanh(s)、s = f / (2 + f)
+  // log(1 + f) (−0.3 ≤ f ≤ 0.42)。log(1 + f) = 2 atanh(s)、s = f / (2 + f)。係数 1 / (2n + 1) は始めに表にしておく (INV_ODD[n]。値は同じ)
+  const INV_ODD = Array.from({ length: 13 }, (_, n) => 1 / (2 * n + 1));
   function log1pK(f) {
     const s = f / (2 + f), z = s * s;
     let R = 0;
-    for (let n = 12; n >= 1; n--) R = z * (1 / (2 * n + 1) + R);
+    for (let n = 12; n >= 1; n--) R = z * (INV_ODD[n] + R);
     return f - s * (f - 2 * R); // = 2s (1 + R)。2s = f − s f を使い、丸めを減らす
   }
   const log1p = (u) => (u >= -0.29 && u <= 0.41 ? log1pK(u) : log(1 + u));
@@ -156,6 +159,16 @@ class Rng {
 }
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+// list.filter(ok) と同じ中身。ただし全部が残るときは、作り直さずに同じ配列を返す (毎刻みの一覧の掃除で、消えるものがないときに配列を作らない。
+// game-loop.js の keepGhosts は、配列が同じなら「消えたものはない」として調べるのを省く)。ok は 1 つにつき 1 回だけ呼ぶ
+function keepWhere(list, ok) {
+  let i = 0;
+  while (i < list.length && ok(list[i])) i++;
+  if (i === list.length) return list;
+  const out = list.slice(0, i);
+  for (i++; i < list.length; i++) if (ok(list[i])) out.push(list[i]);
+  return out;
+}
 
 // セーブの項目を、仕組みごとに、その仕組みのファイルで登録する (回 R3。前は buildSave の 1 行にみんなが書き足して、いちばんぶつかっていた)。
 // key = セーブの項目の名前 (core/save.js の SAVE_LEGACY と同じ名前は使えない)。write(game) = 書く値 (undefined なら書かない)。

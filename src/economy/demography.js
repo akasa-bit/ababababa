@@ -77,13 +77,14 @@
   // (人数の合計は c.age に合わせる)。就学年数と学力を持つのは 25 歳の区分 (SCHOOL.bin) から上だけ。鍵はいまは生まれ (here = ここ生まれ・away = よそ生まれ)。
   // 政治の SE6 が階層と価値観を足せる
   // 就学年数の折れ線の収益 φ(s) と、所得 y [2011 年のドル] の若い世代の曲線 (pct = 予算の教育の支出 ÷ GDP [%])
-  schoolPhi(s) { let v = 0, lo = 0; for (const [hi, r] of SCHOOL.ret) { v += r * clamp(s - lo, 0, hi - lo); lo = hi; } return v; }
+  schoolPhi(s) { const R = SCHOOL.ret; let v = 0, lo = 0; for (let i = 0; i < R.length; i++) { const hi = R[i][0]; v += R[i][1] * clamp(s - lo, 0, hi - lo); lo = hi; } return v; }
   schoolCurve(y, pct = 0) { return SCHOOL.top / (1 + GM.exp(-(SCHOOL.young[0] + SCHOOL.young[1] * GM.log(Math.max(y, 1)) + SCHOOL.spend * pct))); }
   // 始めの年齢ごとの就学年数: 年上の区分ほど、学校を出たころの所得が年 SCHOOL.cohort ずつ低かったとみる (EdStats の年齢の区分の就学年数に当てた値)
   schoolAgeProfile(y) { return Array.from({ length: DEMO.bins }, (_, a) => (a < SCHOOL.bin ? 0 : this.schoolCurve(y * GM.exp(-SCHOOL.cohort * DEMO.width * (a - SCHOOL.bin))))); }
   // 学校を出る世代の学力 (LEARN) と、始めの年齢ごとの学力 (就学年数と同じ所得の読み替え)
   learnCurve(y, pct = 0) { return LEARN.lo + (LEARN.hi - LEARN.lo) / (1 + GM.exp(-(LEARN.a + LEARN.b * GM.log(Math.max(y, 1)) + LEARN.spend * pct))); }
-  learnAgeProfile(y) { return Array.from({ length: DEMO.bins }, (_, a) => (a < SCHOOL.bin ? 0 : this.learnCurve(y * GM.exp(-SCHOOL.cohort * DEMO.width * (a - SCHOOL.bin))))); }
+  learnAgeProfile(y) { return Array.from({ length: DEMO.bins }, (_, a) => this.learnAgeAt(y, a)); }
+  learnAgeAt(y, a) { return a < SCHOOL.bin ? 0 : this.learnCurve(y * GM.exp(-SCHOOL.cohort * DEMO.width * (a - SCHOOL.bin))); } // learnAgeProfile の区分 a だけ
   // 学校を出る世代の学歴と学力を決める所得 (市場で測った所得をならしたもの。SCHOOL の説明) と、始めの形を決める所得 (まだ測れていなければ生産力)
   eduY(c) { return c.incU ?? c.inc ?? STRUCTURE.y0; }
   eduIncome(c) { return c.incU ?? c.inc ?? (MARKET.buy ? this.potentialUSD(c) : STRUCTURE.y0); }
@@ -116,7 +117,13 @@
   schoolOf(c) { return this.schoolMean(c); }
   learnOf(c) { return this.schoolMean(c, (s, q) => q); }
   // 働く人の生産性の倍率 (yieldOf): 25〜64 歳の exp(φ(学力で直した就学年数 s × q ÷ full)) の平均 ÷ exp(φ(ref))
-  schoolK(c) { return this.schoolMean(c, (s, q) => GM.exp(this.schoolPhi((s * q) / LEARN.full)), SCHOOL.bin, DEMO.work[1]) / GM.exp(this.schoolPhi(SCHOOL.ref)) || 1; }
+  schoolK(c) { return this.schoolMean(c, (s, q) => GM.exp(this.schoolPhi((s * q) / LEARN.full)), SCHOOL.bin, DEMO.work[1]) / this.schoolRefK() || 1; }
+  // 基準の就学年数の exp(φ(ref)) (表 SCHOOL が同じあいだは覚えておく)
+  schoolRefK() {
+    const m = this._schoolRefK;
+    if (m && m.ref === SCHOOL.ref && m.ret === SCHOOL.ret) return m.v;
+    return (this._schoolRefK = { ref: SCHOOL.ref, ret: SCHOOL.ret, v: GM.exp(this.schoolPhi(SCHOOL.ref)) }).v;
+  }
   // 予算の教育の支出 ÷ GDP [%] (人間の国だけ。予算の割合 × 払えた割合 × 税収 ÷ 国の所得。光の遅れのある財政の値で)
   eduSpendPct(c) {
     const root = this.realmOf(c.sys), share = this.fiscalFor(root, c.sys).budget?.education || 0;
@@ -136,11 +143,15 @@
       for (let a = n - 2; a >= 0; a--) { const x = g.p[a] * up; g.p[a] -= x; this.eduAdd(g, a + 1, x, a + 1 === b ? sNew : g.s[a], a + 1 === b ? qNew : g.q[a]); }
     }
     (E.here ??= { p: Array(n).fill(0), s: Array(n).fill(0), q: Array(n).fill(0) }).p[0] += births;
-    const s0 = this.schoolAges(c), q0 = this.learnAges(c);
+    // 人のいない区分 (S が 0) に人を置くときは、集団を合わせた平均 (schoolAges・learnAges) の値を使う。人がいないのでその平均は、就学年数は 0、
+    // 学力は所得の形の値 (learnAgeAt)。区分ごとに要るときだけ求める (前は全部の区分を先に求めていた。値は同じ)
+    const G = Object.values(E);
     for (let a = 0; a < n; a++) {
-      const T = c.age.f[a] + c.age.m[a], G = Object.values(E), S = G.reduce((k, g) => k + g.p[a], 0);
+      const T = c.age.f[a] + c.age.m[a];
+      let S = 0;
+      for (const g of G) S += g.p[a];
       if (S > 0) for (const g of G) g.p[a] *= T / S;
-      else if (T > 0) { E.here.p[a] = T; E.here.s[a] = a >= b ? s0[a] || sNew : 0; E.here.q[a] = a >= b ? q0[a] || qNew : 0; }
+      else if (T > 0) { E.here.p[a] = T; E.here.s[a] = a >= b ? sNew : 0; E.here.q[a] = a >= b ? this.learnAgeAt(this.eduIncome(c), a) || qNew : 0; }
     }
     c.hk = this.schoolK(c);
   }

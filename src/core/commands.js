@@ -183,7 +183,10 @@
   // ダイクストラ法: 未確定の星系のうち距離が最小 (同じなら番号の小さい方) を確定し、交易路の並び順に隣を緩和する
   reach(a) {
     a = Number(a);
-    const sig = `${this.routes.length}:${this.routes[this.routes.length - 1]?.id}`;
+    // 交易路の数と最後の番号が前と厳密に同じなら、印 (sig) の文字列も同じなので作らない (作り直すかどうかは、前と同じく印だけで決める)
+    const rc = this.reachCache, n = this.routes.length, last = this.routes[n - 1]?.id;
+    const sig = rc && rc.n === n && rc.last === last ? rc.sig : `${n}:${last}`;
+    if (rc) { rc.n = n; rc.last = last; }
     if (this.reachCache?.sig !== sig) {
       // 隣接リスト (交易路の並び順) と区間の航行年数を、交易路が変わるたびに作り直す
       const adj = new Map();
@@ -193,7 +196,7 @@
         adj.get(r.a).push([r.b, this.shipYears(r.a, r.b)]);
         if (r.b !== r.a) adj.get(r.b).push([r.a, this.shipYears(r.b, r.a)]);
       }
-      this.reachCache = { sig, map: {}, adj };
+      this.reachCache = { sig, map: {}, adj, n, last };
     }
     if (this.reachCache.map[a]) return this.reachCache.map[a];
     const adj = this.reachCache.adj;

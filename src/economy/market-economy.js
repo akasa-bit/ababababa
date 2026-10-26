@@ -46,13 +46,16 @@
   // 交易の代金の受け渡し: 生産物 (在庫) は会社のものなので、星系の会社の帳簿で払う・受け取る (MARKET.buy = 0 なら前の版どおり政府)
   payFrom(kind, v, sys) { if (MARKET.buy) this.cash(kind, v, { fm: sys }); else this.earn(kind, v, sys); }
   // 1 人 (人口の単位) あたりの年の産出。sector = farm (食料)・mine (資源 r)・ind (低付加価値物品)・hi (高付加価値物品。回 KE5)
-  yieldOf(c, sector, r) {
-    const k = (this.productivity || 1) * STRUCTURE.modern * this.techA(c.sys, sector) * this.laborK(c) * (c.hk ?? 1); // 開始時に選ぶ生産性 × 物差しの倍率 × 国の技術の水準 × 働き手の倍率 (回 KE2) × 学歴 (回 KE5)
+  yieldOf(c, sector, r) { return this.yieldBy(this.yieldCtx(c), c, sector, r); }
+  // 1 つの入植地の部門をいくつも続けて引くときは、国・技術・働き手の倍率を 1 回だけ引いておく (yieldCtx)。その入植地の値が変わる前に使い切る
+  yieldCtx(c) { const realm = this.realmOf(c.sys); return { realm, A: this.tech[realm]?.A, k0: (this.productivity || 1) * STRUCTURE.modern, lk: this.laborK(c), hk: c.hk ?? 1, tm: null, forced: null }; }
+  yieldBy(x, c, sector, r) {
+    const k = x.k0 * (x.A ? x.A[sector] ?? 1 : 1) * x.lk * x.hk; // 開始時に選ぶ生産性 × 物差しの倍率 × 国の技術の水準 (techA) × 働き手の倍率 (回 KE2) × 学歴 (回 KE5)
     if (sector === 'farm') return k * YIELD.farm * (1 + this.fertility(c)) * (1 + 0.25 * c.lv.farm);
-    const tm = this.modsOf(c.sys);
+    const tm = (x.tm ??= this.modsOfRealm(x.realm));
     if (sector === 'ind') return k * YIELD.ind * (1 + 0.25 * c.lv.factory) * tm.ind;
     if (sector === 'hi') return k * YIELD.hi * (1 + 0.25 * c.lv.factory) * tm.ind; // 工場の段と種族の工業の特性は、低付加価値の工業と同じく効く
-    const forced = REGIMES[regimeKey(this.govs[c.sys])].mine || 1; // 強制労働の採掘の上乗せ
+    const forced = (x.forced ??= REGIMES[regimeKey(this.govs[c.sys])].mine || 1); // 強制労働の採掘の上乗せ
     return k * YIELD.mine * (this.target(c.sys, c.body).deposits?.[r] || 0) * (1 + 0.25 * c.lv.mine) * tm.mine * forced;
   }
   // 1 単位の付加価値 [cr]: 低付加価値物品 = 値段 − 金属 0.5 − 燃料 0.2、高付加価値物品 = 値段 − 低付加価値物品 0.5 − 希少元素 0.05 (HITECH)。p = 値段 (関数)
@@ -65,11 +68,12 @@
     const p = (r) => this.price(c.sys, r);
     const K = this.util?.[c.sys];
     const sold = (r) => (K ? K[r] ?? 1 : 1);
+    const x = this.yieldCtx(c);
     const w = {
-      farm: p('food') * this.yieldOf(c, 'farm') * sold('food'),
-      mine: MINED.reduce((k, r) => k + p(r) * this.yieldOf(c, 'mine', r) * sold(r), 0),
-      ind: this.vaGoods(p) * this.yieldOf(c, 'ind') * (c.industry ?? 1) * sold('goods'),
-      hi: this.vaHitech(p) * this.yieldOf(c, 'hi') * (c.industryHi ?? 1) * sold('hitech'),
+      farm: p('food') * this.yieldBy(x, c, 'farm') * sold('food'),
+      mine: MINED.reduce((k, r) => k + p(r) * this.yieldBy(x, c, 'mine', r) * sold(r), 0),
+      ind: this.vaGoods(p) * this.yieldBy(x, c, 'ind') * (c.industry ?? 1) * sold('goods'),
+      hi: this.vaHitech(p) * this.yieldBy(x, c, 'hi') * (c.industryHi ?? 1) * sold('hitech'),
       serv: 0, // (下で、物の部門の付加価値から決める)
       home: basePrice('food') * YIELD.home, // 自給: 自分の食べる分の値打ち (基準の値段。留保賃金)
     };
@@ -106,14 +110,14 @@
     const byRealm = {};
     for (const c of this.colonies) {
       const root = this.realmOf(c.sys), R = (byRealm[root] ??= { S: 0, Sc: 0, Sg: 0, va: { farm: 0, mine: 0, ind: 0, hi: 0 }, L: 0, p: 0, cost: 0, priv: 0, y: 0, cr: [] });
-      const n = c.pop * this.researchersOf(c), g = this.gshareOf(c), y = this.incomeOf(c), k = this.rndCost(c); // [人] (人口は 100 万人、研究者は 100 万人あたり)
+      const w = this.wagesOf(c), n = c.pop * this.researchersOf(c), g = this.gshareOf(c), y = this.incomeWith(c, w), k = this.rndCost(c); // [人] (人口は 100 万人、研究者は 100 万人あたり)
       R.Sc += n; R.Sg += g * n; R.y += y;
       R.cost += (n * k * y) / (c.pop * 1e6); // 曲線の研究者の研究開発費 [cr/年] = 人数 × (費用の比 × 1 人あたり所得)
       const pv = ((1 - g) * n * k * y) / (c.pop * 1e6);
       R.priv += pv;
       R.cr.push([c.sys, pv]);
       R.L += c.pop * this.laysOf(c); R.p += c.pop;
-      const sh = c.sh || sharesOf(c.focus), w = this.wagesOf(c);
+      const sh = c.sh || sharesOf(c.focus);
       for (const f of RESEARCH.fields) R.va[f] += c.pop * (sh[f] || 0) * w[f];
     }
     for (const [key, R] of Object.entries(byRealm)) R.S = this.rndRealm(key, R, h);
@@ -258,9 +262,9 @@
   // (生産側の実質 GDP。市場の値段の揺れと売れ残りの値下がりを受けない)、物の部門の人 1 人あたりにしたもの (サービスの人も同じ生産力とみなす)。
   // 市場で測った所得 (incomeUSD) を入れると、値段の揺れが需要に跳ね返って経済が振れた (docs/structure.md の 5 の「試してやめたもの」)
   potentialUSD(c) {
-    const sh = c.sh || sharesOf(c.focus);
-    const v = sh.farm * basePrice('food') * this.yieldOf(c, 'farm') + sh.mine * MINED.reduce((k, r) => k + basePrice(r) * this.yieldOf(c, 'mine', r), 0)
-      + sh.ind * this.vaGoods(basePrice) * this.yieldOf(c, 'ind') + (sh.hi || 0) * this.vaHitech(basePrice) * this.yieldOf(c, 'hi') + sh.home * basePrice('food') * YIELD.home;
+    const sh = c.sh || sharesOf(c.focus), x = this.yieldCtx(c);
+    const v = sh.farm * basePrice('food') * this.yieldBy(x, c, 'farm') + sh.mine * MINED.reduce((k, r) => k + basePrice(r) * this.yieldBy(x, c, 'mine', r), 0)
+      + sh.ind * this.vaGoods(basePrice) * this.yieldBy(x, c, 'ind') + (sh.hi || 0) * this.vaHitech(basePrice) * this.yieldBy(x, c, 'hi') + sh.home * basePrice('food') * YIELD.home;
     return (v / Math.max(1 - sh.serv, 0.05) / basePrice('food')) * STRUCTURE.usdPerT;
   }
   // 入植地の 1 人あたりの実質の所得 [2011 年の国際ドル] (目標 R10 の sim の定義):
@@ -275,10 +279,8 @@
   }
   // 入植地の民間の年の所得 (付加価値) [cr]: 物の産出 × 市場の値段 (工業は投入を引く) + サービス。値段は wagesOf と同じ。
   // 自給 (home) の分は市場を通らないので、税の土台 (incomeOf) には入れない (現実の自給農業も課税されにくい)。GDP に入れるときは incomeAll
-  incomeOf(c) {
-    const sh = c.sh || sharesOf(c.focus), w = this.wagesOf(c);
-    return c.pop * MARKET_SECTORS.reduce((k, x) => k + (sh[x] || 0) * w[x], 0);
-  }
+  incomeOf(c) { return this.incomeWith(c, this.wagesOf(c)); }
+  incomeWith(c, w) { const sh = c.sh || sharesOf(c.focus); return c.pop * MARKET_SECTORS.reduce((k, x) => k + (sh[x] || 0) * w[x], 0); } // w = いまの wagesOf(c) (求めてあるとき)
   incomeAll(c) { const sh = c.sh || sharesOf(c.focus); return this.incomeOf(c) + c.pop * sh.home * basePrice('food') * YIELD.home; }
   // 人の部門の移り: 稼ぎが平均より低い部門から、年に mobility × (平均との差の割合) の人が出て、平均より高い部門に、差の大きさに比べて入る
   // (移るのに費用がかかるので一度に全員は動かない。Artuç, Chaudhuri & McLaren 2010 の形)。入る先は差の大きさで決まり、いまの大きさには比べないので、
@@ -319,14 +321,16 @@
     //    需要で決まる生産 (段 5 の 3): 部門の人が作れる量 (plan) のうち、星系の需要 (市場のふだんの消費 u。消費・工業の投入・建設・輸出・補給と、足りなかった分) と
     //    在庫の目標 (cover) への不足を MARKET.fill 年で埋める分だけ作る (Metzler 1941 の在庫の形。稼働率 util)。売れない物は作らず、その部門の人は稼働率の分しか稼がない (wagesOf)。
     //    鉱業は埋蔵の資源をまとめて掘るので、いちばん需要のある資源の稼働率で掘る (ほかの資源は副産物。余れば倉の上限で捨てる)
-    const plan = {};
+    const plan = {}, yx = []; // yx = 入植地ごとの yieldCtx (下の生産でも同じ値を使う。このあいだ入植地の値は変わらない)
     for (const c of this.colonies) {
       const f = (c.sh ??= sharesOf(c.focus)), P = (plan[c.sys] ??= zeroRes());
       if (!Number.isFinite(f.hi)) f.hi = 0; // 前の版のセーブ (高付加価値の工業がない。回 KE5)
-      P.food += c.pop * f.farm * this.yieldOf(c, 'farm');
-      for (const r of MINED) P[r] += c.pop * f.mine * this.yieldOf(c, 'mine', r);
-      P.goods += c.pop * f.ind * this.yieldOf(c, 'ind');
-      P.hitech += c.pop * f.hi * this.yieldOf(c, 'hi');
+      const x = this.yieldCtx(c);
+      yx.push(x);
+      P.food += c.pop * f.farm * this.yieldBy(x, c, 'farm');
+      for (const r of MINED) P[r] += c.pop * f.mine * this.yieldBy(x, c, 'mine', r);
+      P.goods += c.pop * f.ind * this.yieldBy(x, c, 'ind');
+      P.hitech += c.pop * f.hi * this.yieldBy(x, c, 'hi');
     }
     for (const o of this.outposts) { const P = (plan[o.sys] ??= zeroRes()); for (const [r, v] of Object.entries(this.outpostYield(o))) P[r] += v; }
     for (const k of this.capacity) { const P = (plan[k.sys] ??= zeroRes()); for (const [r, v] of Object.entries(this.capacityYield(k))) P[r] += v; } // 民間の採掘の能力 (回 KE5)
@@ -340,17 +344,17 @@
       }
       K.mine = Math.max(0, ...MINED.filter((r) => P[r] > 1e-9).map((r) => K[r]));
     }
-    for (const c of this.colonies) {
-      const f = c.sh, K = this.util[c.sys];
+    this.colonies.forEach((c, i) => {
+      const f = c.sh, K = this.util[c.sys], x = yx[i];
       const fl = F(c.sys);
       const add = (r, v) => { this.mv(c.sys, r, v * h, 'extract'); fl.prod[r] += v; };
-      add('food', c.pop * f.farm * this.yieldOf(c, 'farm') * K.food);
+      add('food', c.pop * f.farm * this.yieldBy(x, c, 'farm') * K.food);
       add('food', c.pop * (f.home || 0) * YIELD.home); // 自給 (自分で食べる分。消費は下で、ほかの人と同じく備蓄から)
-      for (const r of MINED) add(r, c.pop * f.mine * this.yieldOf(c, 'mine', r) * K.mine);
-      c.plan = c.pop * f.ind * this.yieldOf(c, 'ind') * K.goods;
-      c.planHi = c.pop * f.hi * this.yieldOf(c, 'hi') * K.hitech;
+      for (const r of MINED) add(r, c.pop * f.mine * this.yieldBy(x, c, 'mine', r) * K.mine);
+      c.plan = c.pop * f.ind * this.yieldBy(x, c, 'ind') * K.goods;
+      c.planHi = c.pop * f.hi * this.yieldBy(x, c, 'hi') * K.hitech;
       fl.pop += c.pop;
-    }
+    });
     for (const o of [...this.outposts, ...this.capacity]) {
       const fl = F(o.sys), K = this.util[o.sys];
       for (const [r, v] of Object.entries(o.lv !== undefined ? this.outpostYield(o) : this.capacityYield(o))) { this.mv(o.sys, r, v * K.mine * h, 'extract'); fl.prod[r] += v * K.mine; }
@@ -491,12 +495,12 @@
       } else c.pop = Math.max(0.001, nat);
       c.growth = GM.log(c.pop / Math.max(pop0, 1e-9)) / h; // 年あたりの増え方 (見せる・記録する)
       if (c.pop >= 1) this.watch(c, 'aging', DEMO.alert / Math.max(this.ageShares(c).dep, 1e-9), 'shortage', () => `${c.name} の扶養比が ${Math.round(this.ageShares(c).dep * 100)} に上がった (働き手 100 人で支える子どもと高齢の数。年金と医療が増える)`, `${c.name} の扶養比が下がった`); // 10-5 の知らせ
-      const income = MARKET.buy ? this.incomeOf(c) : 0;
+      const wg = MARKET.buy ? this.wagesOf(c) : null, income = MARKET.buy ? this.incomeWith(c, wg) : 0;
       c.incY = income; // この刻みの所得 (年金と医療で使う。ageSpendStep)
       va[c.sys] = (va[c.sys] || 0) + income * h; // 星系の市場の付加価値 (賃金と配当に分ける。economy の 7)
       if (MARKET.buy) {
         // 家計は買った物とサービスの代金を会社に払う (サービスの売上 = サービスの人の稼ぎの合計)。会社は売上を賃金として家計に払う (刻みの終わり。economy の 7)
-        const S = c.pop * (c.sh || sharesOf(c.focus)).serv * this.wagesOf(c).serv * h;
+        const S = c.pop * (c.sh || sharesOf(c.focus)).serv * wg.serv * h; // wg = 上の所得と同じ wagesOf (このあいだ値段も入植地も変わらない)
         if (spent + S > 0) { this.cash('spend', -(spent + S), { hh: c.sys }); this.cash('spend', spent + S, { fm: c.sys }); }
         if (ct > 0 && spent + S > 0) this.earn('ctax', ct * (spent + S), c.sys, { hh: c.sys }); // 消費税: 物とサービスの買い物の値段 × 税率を、家計が星系の政府に払う
       }

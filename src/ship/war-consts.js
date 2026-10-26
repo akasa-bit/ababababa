@@ -105,3 +105,4 @@ saveField('forts', (game) => game.forts, {
   // 要塞のないセーブ (前の版) だけ、入植した星系に Lv1 を建てる。ある版で建て直すと、年の途中で入植した星系に要塞が早く建ち、保存の前と筋が変わる
   read: (game, d) => { if (d.forts && typeof d.forts === 'object') game.forts = Object.fromEntries(Object.entries(d.forts).filter(([, v]) => Number.isFinite(v))); else { game.forts = {}; game.fortsYearly(); } },
 });
+const WAR_KEYS = new Map(); // 戦争の組の鍵の文字列の使い回し (warKey)

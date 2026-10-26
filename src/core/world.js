@@ -120,4 +120,5 @@ function bankMove(o, f, v, lf = 'loan') {
 }
 const STEP = 0.25; // 経済シミュレーションの刻み[年]
 const GHOST_KINDS = ['cargo', 'fleets', 'requests', 'troopMoves', 'migrants', 'ships', 'projects'];
+const ARRIVE_KINDS = new Set(['build', 'tribute', 'order', 'grant']); // 届いたら一覧から消える要求 (arrivals)
 

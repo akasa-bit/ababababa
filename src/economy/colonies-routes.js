@@ -37,8 +37,11 @@
   // 2つの星系を結ぶ交易路 (最初に見つかるもの)。交易路は追加か丸ごとの置き換えでしか変わらないので、
   // 交易路の数と最後の番号が同じあいだは索引を使い回す
   routeBetween(a, b) {
-    const sig = `${this.routes.length}:${this.routes[this.routes.length - 1]?.id}`;
-    if (this.routeIx?.sig !== sig || this.routeIx.list !== this.routes) {
+    const ix = this.routeIx, n = this.routes.length, last = this.routes[n - 1]?.id;
+    // 配列・数・最後の番号がそのままなら、印 (sig) の文字列も同じなので作らずに済ませる (1 刻みに何千回も呼ぶ)
+    const same = ix && ix.list === this.routes && ix.n === n && ix.last === last;
+    const sig = same ? ix.sig : `${n}:${last}`;
+    if (!same && (this.routeIx?.sig !== sig || this.routeIx.list !== this.routes)) {
       const map = new Map();
       for (const r of this.routes) {
         if (typeof r.a !== 'number' || typeof r.b !== 'number') continue;
@@ -46,8 +49,9 @@
         if (!map.has(k1)) map.set(k1, r);
         if (!map.has(k2)) map.set(k2, r);
       }
-      this.routeIx = { sig, list: this.routes, map };
+      this.routeIx = { sig, list: this.routes, map, n, last };
     }
+    else if (!same) Object.assign(this.routeIx, { n, last }); // 印は同じ (作り直さない)。次から速い道を通れるように覚える
     if (typeof a !== 'number' || typeof b !== 'number') return this.routes.find((r) => (r.a === a && r.b === b) || (r.a === b && r.b === a));
     return this.routeIx.map.get(a * 65536 + b);
   }

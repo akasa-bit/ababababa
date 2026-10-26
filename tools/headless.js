@@ -64,8 +64,8 @@ function load({ src = SRC, params = null, edition = null } = {}) {
     location: { search: '?home=0', href: 'file:///index.html', hash: '', protocol: 'file:', pathname: '/index.html' },
     history: { replaceState() {} },
   };
-  // 知らない名前 (document・canvas・indexedDB など) は代わりの物を返す。JavaScript の組み込みは Node のものを使う
-  const ctx = new Proxy(base, {
+  // 知らない名前 (document・canvas・indexedDB など) は代わりの物を返す。Node にある名前は Node のものを使う
+  const miss = {
     has: () => true,
     get(t, k) {
       if (k in t) return t[k];
@@ -73,11 +73,22 @@ function load({ src = SRC, params = null, edition = null } = {}) {
       if (k in globalThis && !['process', 'require', 'module', 'exports', 'global'].includes(k)) return globalThis[k];
       return (t[k] = stub());
     },
-  });
-  base.window = ctx; base.globalThis = ctx; base.self = ctx;
-  vm.createContext(ctx);
+  };
+  let ctx;
+  if (vm.constants?.DONT_CONTEXTIFY) {
+    // ふつうのグローバルを持つ文脈 (Node 22.8 から): JavaScript の組み込み (Set・Number・Infinity など) とゲームの関数は、文脈のグローバルにじかにあるので
+    // 名前を速く引ける。知らない名前だけ、グローバルの prototype に置いた Proxy で受ける。前の形 (下) はグローバルの名前を引くたびに Proxy を通り、
+    // 試合を回す時間の 6 割ほどがそれだった
+    ctx = vm.createContext(vm.constants.DONT_CONTEXTIFY);
+    Object.assign(ctx, base, { window: ctx, self: ctx });
+    Object.setPrototypeOf(ctx, new Proxy(base, miss));
+  } else {
+    ctx = new Proxy(base, miss);
+    base.window = ctx; base.globalThis = ctx; base.self = ctx;
+    vm.createContext(ctx);
+  }
   vm.runInContext(`${js}\n;globalThis.__nlu = { Game, generateGalaxy, buildSave, GALAXY_GEN, EDITION, distance, tables: { ${names.join(', ')} } };`, ctx, { filename: 'index.html.js' });
-  const N = base.__nlu;
+  const N = ctx.__nlu;
   if (params) overlay(N.tables, params, '値');
   return {
     ...N,

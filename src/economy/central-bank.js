@@ -5,9 +5,9 @@
   // 景気の速さのずれ (国の GDP の、この 1 年の伸び − speed 年でならした伸び。Walsh 2003 の速さの則)。毎刻み進める。
   // 国債の式の「傾向からのずれ」は、入植地の S 字の伸び (始めの年 70% から数十年で 0%) に一方向のならしが遅れて、何十年も幅の端に張りつくので使わない
   // 伸びは、前の刻みにも国にあった星系だけで測る (入植や併合で国が大きくなった分を景気と見ない。前の刻みの値は s.yp)
-  speedGap(root, s, h) {
+  speedGap(root, s, h, systems = this.realmSystems(root)) {
     const now = {};
-    for (const x of this.realmSystems(root)) { const y = this.govs[x.id]?.fr?.y; if (y > 0) now[x.id] = y; }
+    for (const x of systems) { const y = this.govs[x.id]?.fr?.y; if (y > 0) now[x.id] = y; }
     let a = 0, b = 0;
     for (const [id, y] of Object.entries(now)) if (s.yp?.[id] > 0) { a += y; b += s.yp[id]; }
     s.yp = now;
@@ -21,13 +21,14 @@
   // 毎刻み: 国ごとに、物の値段の指数・政策金利・物価の上がり方を進め、政府ごとに長期の利回りと国債の利札を進め、払えない政府は不履行にする
   cbStep(h) {
     const roots = [...new Set(this.colonizedSystems().map((x) => this.realmOf(x.id)))];
+    const bySys = this.systemsByRealm(); // 国ごとの入植星系 (realmSystems と同じ並び。この中で国は変わらないので 1 回だけ分ける)
     for (const key of Object.keys(this.cb)) if (!roots.includes(Number(key))) delete this.cb[key]; // なくなった国
     const keep = GM.pow(CB.ar, h), B = this.basket || {};
     const sum = {};
     for (const [sys, b] of Object.entries(B)) { const r = this.realmOf(Number(sys)), o = (sum[r] ??= [0, 0]); o[0] += b[0]; o[1] += b[1]; }
     this.basket = {};
     for (const root of roots) {
-      const s = this.cbOf(root), gap = this.speedGap(root, s, h);
+      const s = this.cbOf(root), gap = this.speedGap(root, s, h, bySys.get(root) || []);
       if (sum[root]?.[1] > 0) s.m = sum[root][0] / sum[root][1];
       const rule = clamp(CB.rstar + s.pi + CB.phiPi * (s.pi - CB.pistar) + CB.phiY * gap, RATE_RANGE[0], RATE_RANGE[1]);
       s.i = this.cbRule(root) ? rule : this.fiscalFor(root, root).rate ?? rule;
@@ -38,7 +39,7 @@
       // 政策金利の記録 (1 年ごと)。いちばん遠い星系に届くまでの分だけ残す
       const y = Math.floor(this.year);
       if (!s.h.length || s.h[s.h.length - 1][0] < y) s.h.push([y, s.i]); else s.h[s.h.length - 1][1] = s.i;
-      const far = Math.max(0, ...this.realmSystems(root).map((x) => this.sysDist(root, x.id)));
+      const far = Math.max(0, ...(bySys.get(root) || []).map((x) => this.sysDist(root, x.id)));
       while (s.h.length > 1 && s.h[1][0] <= this.year - far - 1) s.h.shift();
     }
     for (const key of Object.keys(this.govs)) {
@@ -58,10 +59,14 @@
     const root = this.realmOf(id), s = this.cb[root];
     if (!this.cbRule(root, id)) return this.fiscalFor(root, id).rate ?? CB.rstar + CB.pistar;
     if (!s) return CB.rstar + CB.pistar;
-    const at = this.year - this.sysDist(root, id);
-    let i = s.h.length ? s.h[0][1] : s.i;
-    for (const [y, v] of s.h) if (y <= at) i = v;
-    return id === root ? s.i : i;
+    if (id === root) return s.i;
+    // 記録は年の順に並んでいるので、at 以前でいちばん新しい記録を二分探索で探す (なければ最初の記録、記録がなければいまの値。頭から見ていくのと同じ結果)
+    const at = this.year - this.sysDist(root, id), H = s.h;
+    if (!H.length) return s.i;
+    if (!(H[0][0] <= at)) return H[0][1];
+    let lo = 0, hi = H.length - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (H[m][0] <= at) lo = m; else hi = m - 1; }
+    return H[lo][1];
   }
   inflOf(id) { return this.cb[this.realmOf(id)]?.pi ?? CB.pistar; } // その星系の国の物価の上がり方
   cpiOf(root) { const s = this.cb[root]; return s ? s.P * s.m : 1; } // 国の物価の指数
