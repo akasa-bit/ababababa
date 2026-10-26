@@ -115,9 +115,11 @@
     const list = this.intel[id];
     if (!list?.length) return null;
     const t = this.year - this.sysDist(viewer, id);
-    let best = list[0];
-    for (const e of list) { if (e[0] <= t) best = e; else break; }
-    return best;
+    // 記録は年の順に並んでいるので、t 以前でいちばん新しい記録を二分探索で探す (なければいちばん古い記録。頭から見ていくのと同じ結果)
+    if (!(list[0][0] <= t)) return list[0];
+    let lo = 0, hi = list.length - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (list[m][0] <= t) lo = m; else hi = m - 1; }
+    return list[lo];
   }
   // 国 root (の首都) が知っている、国 e の艦隊の数: 駐留している分と、出発したのが見えてまだ着いたのが見えていない分・攻囲や艦隊戦の分
   seenShips(root, e) {

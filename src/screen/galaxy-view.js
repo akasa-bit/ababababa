@@ -455,18 +455,26 @@ class GalaxyView {
         // 升目の角 (gw+1)×(gh+1) ごとの a・d1・b・d2
         const cw1 = gw + 1, N = cw1 * (gh + 1);
         const A = new Uint8Array(N), B = new Uint8Array(N), D1 = new Float32Array(N).fill(Infinity), D2 = new Float32Array(N).fill(Infinity);
+        // 箱 (bx, by) のまわり 3×3 の箱の入植星系を、調べる順 (dy・dx・箱の中の順) に並べたもの。同じ箱の角が何十とあるので、箱ごとに 1 回だけ作る
+        const near = new Map();
+        const nearOf = (bx, by) => {
+          const key = bk(bx, by);
+          let l = near.get(key);
+          if (!l) {
+            l = [];
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) for (const o of bins.get(bk(bx + dx, by + dy)) || []) l.push({ x: o.x, y: o.y, v: ri.get(o.realm) });
+            near.set(key, l);
+          }
+          return l;
+        };
         for (let cy = 0; cy <= gh; cy++) {
           const py = y0 + cy * C, by = Math.floor(py / R);
           for (let cx = 0; cx <= gw; cx++) {
             const px = x0 + cx * C, bx = Math.floor(px / R), i = cy * cw1 + cx;
             let d1 = Infinity, a = 0, d2 = Infinity, b = 0;
-            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-              const list = bins.get(bk(bx + dx, by + dy));
-              if (!list) continue;
-              for (const o of list) {
-                const d = Math.hypot(o.x - px, o.y - py), v = ri.get(o.realm);
-                if (d < d1) { if (v !== a) { d2 = d1; b = a; } d1 = d; a = v; } else if (v !== a && d < d2) { d2 = d; b = v; }
-              }
+            for (const o of nearOf(bx, by)) {
+              const d = Math.hypot(o.x - px, o.y - py), v = o.v;
+              if (d < d1) { if (v !== a) { d2 = d1; b = a; } d1 = d; a = v; } else if (v !== a && d < d2) { d2 = d; b = v; }
             }
             A[i] = a; D1[i] = d1; B[i] = b; D2[i] = d2;
           }
@@ -476,10 +484,13 @@ class GalaxyView {
         // 中: 升目の中心がどの国か (中心の値は 4 つの角の平均で見る) を淡く塗る
         const rgb = realms.map((r) => { const c = realmColor(r); return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; });
         const img = new ImageData(gw, gh);
+        const JS = new Int32Array(4); // 升目の 4 つの角 (毎回配列を作らない)
         for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
-          const i = gy * cw1 + gx, js = [i, i + 1, i + cw1, i + cw1 + 1];
+          const i = gy * cw1 + gx;
+          JS[0] = i; JS[1] = i + 1; JS[2] = i + cw1; JS[3] = i + cw1 + 1;
           let v = 0, best = 0;
-          for (const j of js) for (const c of [A[j], B[j]]) {
+          for (let q = 0; q < 8; q++) { // 角の順に A・B を見る
+            const c = q & 1 ? B[JS[q >> 1]] : A[JS[q >> 1]];
             if (!c) continue;
             const g = (field(c, i) + field(c, i + 1) + field(c, i + cw1) + field(c, i + cw1 + 1)) / 4;
             if (g > best) { best = g; v = c; }
@@ -503,13 +514,22 @@ class GalaxyView {
         const paths = realms.map(() => new Path2D());
         const lw = (v) => (realms[v - 1] === game.cap ? 2.4 : 1.8);
         const cross = (ga, gb, t) => (t - ga) / (gb - ga);
+        const g = new Float64Array(4), seen = new Uint8Array(8); // 角ごとの場の値・升目に出てくる国 (出てきた順。毎回作らない)
         for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
-          const i = gy * cw1 + gx, js = [i, i + 1, i + cw1 + 1, i + cw1]; // 左上・右上・右下・左下
-          const seen = new Set();
-          for (const j of js) { if (A[j]) seen.add(A[j]); if (B[j]) seen.add(B[j]); }
-          for (const v of seen) {
+          const i = gy * cw1 + gx; // 角は 左上・右上・右下・左下 の順
+          JS[0] = i; JS[1] = i + 1; JS[2] = i + cw1 + 1; JS[3] = i + cw1;
+          let ns = 0;
+          for (let q = 0; q < 8; q++) {
+            const c = q & 1 ? B[JS[q >> 1]] : A[JS[q >> 1]];
+            if (!c) continue;
+            let dup = false;
+            for (let u = 0; u < ns; u++) if (seen[u] === c) { dup = true; break; }
+            if (!dup) seen[ns++] = c;
+          }
+          for (let u = 0; u < ns; u++) {
+            const v = seen[u];
             const t = lw(v) / 2;
-            const g = js.map((j) => field(v, j) - t);
+            for (let q = 0; q < 4; q++) g[q] = field(v, JS[q]) - t;
             const k = (g[0] > 0 ? 1 : 0) | (g[1] > 0 ? 2 : 0) | (g[2] > 0 ? 4 : 0) | (g[3] > 0 ? 8 : 0);
             if (k === 0 || k === 15) continue;
             const px = x0 + gx * C, py = y0 + gy * C;

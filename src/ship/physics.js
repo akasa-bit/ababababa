@@ -190,6 +190,7 @@ function shieldShape(V, tf, ts) {
   const area = (Math.PI * d * d) / 4; // 前面 [m²]
   return { kg: 10 * (area * (tf + ts) + ((4 * V) / d) * ts), d, area }; // 1 g/cm² = 10 kg/m²
 }
+const SHIELD_MEMO = new Map(); // shieldOf の乗る人のいる船の答え (引数 → 答え)
 // 1 便の遮蔽。m = 積み荷と船の質量 [kg]、ly = 航路の長さ [光年]、phys = その試合の物理の切り替え (Game.physics。古いセーブは物理なし)。
 // 乗る人の限度は、前 (星間の気体) と横 (宇宙線) に、遮蔽が一番軽くなるように割り振る (黄金分割で探す)
 function shieldOf(kind, m, beta, ly, phys = ED.physics) {
@@ -213,13 +214,19 @@ function shieldOf(kind, m, beta, ly, phys = ED.physics) {
     return { ...shieldShape(V, tf, ts), depth: tf, side: ts, fluence, tau, share: f };
   };
   if (SHIELD.frontShare) return at(SHIELD.frontShare);
+  // 黄金分割の探索は重く、入植船の費用は毎年同じ組で何百回も引くので、同じ引数の答えを覚えておいて写しを返す (答えは同じ)
+  const mk = `${kind}|${m}|${beta}|${ly}|${phys.accel ? 1 : 0}`, hit = SHIELD_MEMO.get(mk);
+  if (hit) return { ...hit };
   const R = (Math.sqrt(5) - 1) / 2;
   let lo = 0.01, hi = 0.99, x1 = hi - R * (hi - lo), x2 = lo + R * (hi - lo), f1 = at(x1).kg, f2 = at(x2).kg;
   for (let i = 0; i < 40; i++) {
     if (f1 <= f2) { hi = x2; x2 = x1; f2 = f1; x1 = hi - R * (hi - lo); f1 = at(x1).kg; }
     else { lo = x1; x1 = x2; f1 = f2; x2 = lo + R * (hi - lo); f2 = at(x2).kg; }
   }
-  return at((lo + hi) / 2);
+  const out = at((lo + hi) / 2);
+  if (SHIELD_MEMO.size >= 4096) SHIELD_MEMO.clear();
+  SHIELD_MEMO.set(mk, out);
+  return { ...out };
 }
 // 交易 (S3。docs/trade.md)。荷の値段は、航行の年数 t のあいだの利子で e^(rate × t) 倍になる (Krugman 1978/2010「恒星間の交易の理論」)。
 // 買い手は、交易路でつながった売り手に、売れる量 × 値段^(−σ) に比例して注文を分ける (CES の需要。σ = 代替の弾力性)。

@@ -39,9 +39,10 @@
   }
   // 売り手の星系 S から運ぶ物の値段: 売り手の市場の値段 × 運ぶ年数ぶんの利子 (買い手の利子率) × 売り手の商才 (種族の特性。売り手が高く売れる)。
   // 前の版 (MARKET.buy = 0) は基準価格 × 利子
-  tradePrice(S, r, years, rate, q = 0) {
-    if (!MARKET.buy) return PRICE[r] * tradeCost(years, rate);
-    return (q ? this.bulkPrice(S, r, q) : this.price(S, r)) * tradeCost(years, rate) * (this.nations ? this.modsOf(S).trade : 1);
+  // tc = tradeCost(years, rate) (求めてあるとき。同じ売り手・買い手で資源だけ違う値段を続けて引くとき)
+  tradePrice(S, r, years, rate, q = 0, tc = tradeCost(years, rate)) {
+    if (!MARKET.buy) return PRICE[r] * tc;
+    return (q ? this.bulkPrice(S, r, q) : this.price(S, r)) * tc * (this.nations ? this.modsOf(S).trade : 1);
   }
   // 交易の代金の受け渡し: 生産物 (在庫) は会社のものなので、星系の会社の帳簿で払う・受け取る (MARKET.buy = 0 なら前の版どおり政府)
   payFrom(kind, v, sys) { if (MARKET.buy) this.cash(kind, v, { fm: sys }); else this.earn(kind, v, sys); }
