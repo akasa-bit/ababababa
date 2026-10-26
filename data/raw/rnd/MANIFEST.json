@@ -1,0 +1,16 @@
+[
+ {
+  "file": "oecd_rnd.csv.gz",
+  "url": [
+   "https://sdmx.oecd.org/public/rest/data/OECD.STI.STP,DSD_MSTI@DF_MSTI,1.3/.A.G.PT_B1GQ..?startPeriod=1981",
+   "https://sdmx.oecd.org/public/rest/data/OECD.STI.STP,DSD_MSTI@DF_MSTI,1.3/.A.G_FG.PT_GERD..?startPeriod=1981",
+   "https://sdmx.oecd.org/public/rest/data/OECD.STI.STP,DSD_RDTAX@DF_RDTAX,1.0/.A.RDTAX+DF.PT_B1GQ+PT_BERD...?startPeriod=1981"
+  ],
+  "fetched": "2026-10-25T11:01:57Z",
+  "sha256": "90352103f8e7b58e6e127f92befa1f4e68b84407c0a33e3155f6d46103a92304",
+  "bytes": 53808,
+  "rows": 7959,
+  "filter": "値のある行だけ・1981 年から。RDTAX は会社の大きさと利潤の想定の合計 (_Z・_T) だけ",
+  "license": "CC BY 4.0 (OECD の利用条件)。出典: OECD Main Science and Technology Indicators・OECD R&D Tax Incentives Database"
+ }
+]

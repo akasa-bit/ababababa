@@ -57,6 +57,42 @@ const STRUCTURE = { usdPerT: 356.4, y0: 2000, modern: 6, smooth: 1, // smooth = 
 //   研究者 S = 人口 × 所得と学力で決まる数 (STRUCTURE.research。回 KE6)。国の分野には、部門の付加価値の比で分ける。研究者はサービスの中の人 (目標 R10 の数え方)
 //   alpha は試合の始めに 1 つ決める: 最初のプレイヤーの本星の技術の伸びが g0 (Bloom ほかの TFP の伸びの平均 年 1.67%) になる値。セーブに入れる (alpha)
 const RESEARCH = { beta: 3.045, g0: 0.0167, fields: ['farm', 'mine', 'ind', 'hi'] }; // hi = 高付加価値の工業 (回 KE5。前の版のセーブの国は 1 から)
+// 技術の伝播 (回 KE6・B-121。docs/innovation.md の 2)。ほかの国の技術は、首都どうしの光の年数だけ遅れて見える。国は、分野ごとに見えている前線 (いちばん高い国の値)
+//   の theta 倍まで、年 kappa の割合で追いつく: dA_f/dt += kappa × max(0, theta × F_f − A_f)、F_f = max_j A_j,f(t − τ_ij)。前線の国には働かない ([·]⁺)
+//   theta = min(1, exp(lays × (LAYS − 前線の国の LAYS)))。LAYS = その年に学校を出る世代の、学力で調整した就学年数 (就学年数 × 学力 ÷ 625。人口の重みの平均)。
+//   lays は PWT 11.0 の技術の前線比 (労働増大的な形) の ln を WDI の LAYS に当てた傾き (116 か国。data/derived/innovation.json の game の diffusion)。
+//   前線の国との差にするのは、ゲームの国の LAYS (5〜8 年) がデータの豊かな国 (11〜13 年) より低く、データの切片のままでは前線の国でも theta が 0.4 になるため
+//   kappa は、同じ PWT と LAYS で、1995〜2019 年の技術の伸びを初めの水準と LAYS に当てた、初めの水準の係数の符号を変えたもの (条件つきの収束の速さ。
+//   2000〜2019 年では 0.0325。LAYS の係数 ÷ kappa = 0.17 は上の lays と合う)。どちらも data/derived/innovation.json の game の diffusion
+//   step・keep = 記録の間隔と覚えておく年数 (首都どうしのいちばん遠い光の年数 (400 星系の銀河で 100 光年ほど) より長く)。
+//   国の技術 (tech) に h = [[年, A_farm, A_mine, A_ind, A_hi], …] (6 桁に丸めた値) を持つ。セーブが大きくならないように、間隔を 2 年にした
+const DIFFUSE = { kappa: 0.0247, lays: 0.1824, step: 2, keep: 120 };
+// 研究開発の政策 (回 KE6・B-122。docs/innovation.md の 3)。研究者 (STRUCTURE.research の曲線) を、政府が出す分と会社が出す分に分け、研究者に費用を付ける。
+//   cost   = 研究者 1 人の研究開発費 ÷ 1 人あたり所得 = exp(a + b ln y) (y は 2011 年の国際ドル。WDI の研究開発費 ÷ 研究者、1861 国・年。所得の上の 2 分位で 4.551 倍)
+//   gshare = 研究開発費のうち政府が出す割合 [%] = a + b ln y を range で止めたもの (OECD MSTI の G_FG、1234 国・年。目標 R74)。
+//            曲線の研究者のこの割合は、政府のふだんの支出 (行政サービス) で雇われているとみる (お金の流れは足さない)
+//   会社の研究者 = 曲線の (1 − gshare) × ((1 − 控除の率) ÷ (1 − 既定の率))^(−elastic) × (公の研究者 ÷ 曲線の公の研究者)^crowd。倍率は adjust 年でならす
+//            elastic = 研究開発の税の値段への長期の弾力性 1 (Bloom, Van Reenen & Williams 2019, JEP 33(3) の展望で「1 以上」)、crowd = 政府の研究開発を 10% 増やすと会社の
+//            研究開発が 5〜6% 増える (Moretti, Steinwender & Van Reenen, NBER w26483) の 0.5、adjust = 研究開発の懐妊の平均 1.94 年 (Li & Hall, NBER w22473) の 2 年
+//   予算の「研究」で足した公の研究者は、lag 年 (8〜15 年。公の非防衛の研究開発が TFP を上げるまでの遅れ。Fieldhouse & Mertens 2023, Dallas Fed WP 2305) 前の値の平均で
+//   技術に効く。記録は国の技術の pe に 1 年ごと
+//   税額控除は、会社の研究開発費 × 控除の率を、国の首都の政府がその星系の会社に払う (お金の種類 rdcredit)
+//   max = 効き目の上限 [GDP の %]: 政府が出す研究開発費と、会社が出す研究開発費の、OECD の国・年の 99% 点 (1.114%・3.559%。data/derived/innovation.json の rnd.caps)。
+//         この 2 つと呼び水の弾力性は、現実で見た範囲の中でしか確かめられていないので、予算と控除で押し上げられる研究者はここまでにする (それを超えて払った分は人を雇えない)
+const RND = { cost: [7.1542, -0.5388], gshare: [149.975, -10.816], range: [17.08, 66.31], elastic: 1, crowd: 0.5, adjust: 2, lag: [8, 15], max: [1.114, 3.559] };
+// 汎用技術 (GPT。回 KE6・B-123。docs/innovation.md の 4)。銀河全体で年 rate の割合でばらばらに (ポアソン) 現れ、研究者の数の比で引いた国が発明する (周期の時計は入れない)。
+//   国 i の採用 a_i(t) = 1 / (1 + exp(−sigma (t − 現れた年 − 遅れ_i − m)))、m = ln(1/start − 1) ÷ sigma (遅れのあと、採用が start から始まる)
+//   遅れ_i = 発明した国の首都からの光の年数 + ladder × (いちばん LAYS の高い国の LAYS − 国の LAYS) (年)
+//   効き目: どの分野の ln A にも size × a_i(t − effect) を足し、採用の途中は jdip × da_i/dt を引く (補完の投資に人を回す J カーブ。採用が終われば戻る)。A に畳み込む
+//   rate  = 1/60 年 (蒸気・電気・ICT と、テキストで測った突破の特許の 3 つの波 (Kelly ほか 2021)。報告の C027〜C030 で 1/75〜1/50)
+//   size  = 0.21 (蒸気 0.21・電気 0.17・ICT 0.26 の、成長会計で積み上げた労働生産性への寄与の平均。Crafts 2002・2004 ほか。報告の C034・C035・C038)
+//   sigma = 0.1226/年 (米国の家庭の 43 の技術の普及率の logit の傾きの中央値。data/derived/innovation.json の gpt.adoption_speed)、start = 1%
+//   ladder = 1.84 年 (携帯電話とインターネットが 10% に達した遅れを LAYS に当てた傾き 1.32・2.35 年 ÷ 年の平均。gpt.ladder.lag_per_lays)
+//   effect = 10 年 (採用から生産性に効くまでの遅れ 5〜15 年の中ほど。報告の C030・C040)
+//   jdip  = 3.69 年 (無形の補完投資を測りに入れると ICT の時代の TFP が 11.3% 高い (Brynjolfsson, Rock & Syverson 2021) を、採用の速さの山 sigma ÷ 4 で割った)
+//   phases = 国の採用の段階の名前 (Perez の大きな波の段階。名前だけで、ゲームの数は変えない。報告の問い 13)。cut の採用で区切る: 10% = 立ち上がり (R77 と同じ)、
+//            50% = J カーブの下がりが終わるあたり (ゲームで、10% に達してから約 15 年。docs/innovation.md の 4.3)
+const GPT = { rate: 1 / 60, size: 0.21, sigma: 0.1226, start: 0.01, ladder: 1.84, effect: 10, jdip: 3.69, phases: ['導入期', '転換点', '展開期'], cut: [0.1, 0.5] };
 // 資本の分け前 (回 KE5・B-114。docs/regions.md の 4)。会社は市場の付加価値の 1 − alpha を賃金、残りを配当として払う (economy の 7)。
 //   alpha = 1 − 労働分配率、delta = 資本の減価償却、irr = 資本の実質の収益率。どれも Penn World Table 10.01 の国ごとの中央値
 //   (data/build/build_regions.py の capital の game。目標 R39)。delta と irr は、民間の投資の行き先 (回 KE5 の次の PR) の収益率の基準に使う。

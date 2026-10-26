@@ -1,0 +1,34 @@
+[
+ {
+  "file": "fernald_annual.csv.gz",
+  "sha256": "a2c2e1dc68a837115298a05d74946f833e095e4555370077685a5418242c8633",
+  "bytes": 1185,
+  "rows": 79,
+  "fetched": "2026-10-25T11:34:21Z",
+  "url": "https://www.frbsf.org/wp-content/uploads/quarterly_tfp.xlsx",
+  "source_sha256": "f037e488b536f1dd8b6e59ebbeeae129f2801dda9da761b268ec3173201fbcaa",
+  "filter": "annual のシートの date・dtfp・dtfp_util・alpha の列だけ",
+  "license": "Federal Reserve Bank of San Francisco の公開のデータ (Fernald 2014, A Quarterly, Utilization-Adjusted Series on Total Factor Productivity。出典を明記する)"
+ },
+ {
+  "file": "owid_adoption.csv.gz",
+  "sha256": "04bb110b54d86da6c5eecd2cae29744a3e8cc37df7973b42d051402cf08b74a4",
+  "bytes": 6389,
+  "rows": 1395,
+  "fetched": "2026-10-25T11:34:21Z",
+  "url": "https://ourworldindata.org/grapher/technology-adoption-by-households-in-the-united-states.csv?v=1&csvType=full&useColumnShortNames=true",
+  "source_sha256": "4436d028351dd2e1deae5521db76f77a8b3b6b72a75fb1d2ca88ba9ff518cc5a",
+  "filter": "列 technology_diffusion__comin_and_hobijn__2004__and_others の値のある行",
+  "license": "CC BY 4.0 (Our World in Data。元は Comin & Hobijn 2004 ほか)"
+ },
+ {
+  "file": "wdi_adoption.csv.gz",
+  "sha256": "fae5f725ebc22c024451e26754f2bed06362de65eb50b850a33cf6c29955bd70",
+  "bytes": 147280,
+  "rows": 16808,
+  "fetched": "2026-10-25T11:34:23Z",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{IT.CEL.SETS.P2,IT.NET.USER.ZS}",
+  "filter": "国だけ (地域の集計を除く)・1960〜2024 年",
+  "license": "CC BY 4.0 (世界銀行の利用条件。元は ITU)"
+ }
+]

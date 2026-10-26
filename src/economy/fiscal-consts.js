@@ -36,10 +36,15 @@ const BUDGET = {
   military: { label: '軍事', good: '艦隊の戦力 ×最大 1.25', fleet: 0.25 },
   // 教育 (回 KE5・B-117。ユーザーの依頼 2026-10-24): 効き目は budgetEffect でなく、教育の支出 ÷ GDP で学校を出る世代の就学年数を延ばす (SCHOOL.spend。docs/hcap.md)
   education: { label: '教育', good: '学校を出る世代の就学年数が延び、その世代が働くようになると生産性が上がる (教育の支出 GDP の 1% ごとに、所得 5,000 ドルの入植地で約 0.2 年。効くのは世代が入れ替わる数十年あと)' },
+  // 研究 (回 KE6・B-122): 効き目は budgetEffect でなく、払った額 ÷ 研究者 1 人の費用だけ公の研究者を足す (RND。docs/innovation.md の 3)
+  research: { label: '研究', good: '公の研究者が増え、8〜15 年あとから国の技術の伸びが速くなる (研究者 1 人の費用は 1 人あたり所得の約 4〜5 倍)。民間の研究も呼び込む (弾力性 0.5)' },
 };
 const BUDGET_HALF = 0.1;
 const budgetEffect = (share) => (share > 0 ? share / (share + BUDGET_HALF) : 0);
-const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, budget: { welfare: 0, security: 0, military: 0, education: 0 } };
+// 研究開発の税額控除 (回 KE6・B-122): 会社の研究開発費の rdcredit の割合を、国の政府が会社に返す。幅は OECD の R&D Tax Incentives の、税の優遇 ÷ 会社の研究開発費の
+// 国・年の 1〜99% 点 (0〜27.9%)。既定はその国ごとの平均の中央値 3.90% を刻みに丸めた 4% (data/derived/innovation.json の rnd.credit)
+const RDCREDIT_RANGE = [0, 0.28], RDCREDIT_STEP = 0.005;
+const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 } };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)

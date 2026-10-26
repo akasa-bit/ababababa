@@ -100,22 +100,30 @@
   }
   // 星系 sys の国の、分野 f の技術の水準 (まだなければ 1)
   techA(sys, f) { const A = this.tech[this.realmOf(sys)]?.A; return A ? A[f] ?? 1 : 1; } // 前の版のセーブの国には hi (回 KE5) がない
-  // 研究 (RESEARCH): 国ごとに研究者を数え、分野に分けて技術の水準を伸ばす。試合の始めに alpha を決める
+  // 研究 (RESEARCH): 国ごとに研究者を数え、分野に分けて技術の水準を伸ばす。試合の始めに alpha を決める。
+  // 研究者の曲線の数 (Sc) を、政府が出す分 (Sg) と会社が出す分に分け、会社の分に税額控除と公の研究の呼び水の倍率を掛ける (RND。回 KE6・B-122)
   researchStep(h) {
     const byRealm = {};
     for (const c of this.colonies) {
-      const R = (byRealm[this.realmOf(c.sys)] ??= { S: 0, va: { farm: 0, mine: 0, ind: 0, hi: 0 } });
-      R.S += c.pop * this.researchersOf(c); // [人] (人口は 100 万人、研究者は 100 万人あたり)
+      const root = this.realmOf(c.sys), R = (byRealm[root] ??= { S: 0, Sc: 0, Sg: 0, va: { farm: 0, mine: 0, ind: 0, hi: 0 }, L: 0, p: 0, cost: 0, priv: 0, y: 0, cr: [] });
+      const n = c.pop * this.researchersOf(c), g = this.gshareOf(c), y = this.incomeOf(c), k = this.rndCost(c); // [人] (人口は 100 万人、研究者は 100 万人あたり)
+      R.Sc += n; R.Sg += g * n; R.y += y;
+      R.cost += (n * k * y) / (c.pop * 1e6); // 曲線の研究者の研究開発費 [cr/年] = 人数 × (費用の比 × 1 人あたり所得)
+      const pv = ((1 - g) * n * k * y) / (c.pop * 1e6);
+      R.priv += pv;
+      R.cr.push([c.sys, pv]);
+      R.L += c.pop * this.laysOf(c); R.p += c.pop;
       const sh = c.sh || sharesOf(c.focus), w = this.wagesOf(c);
       for (const f of RESEARCH.fields) R.va[f] += c.pop * (sh[f] || 0) * w[f];
     }
+    for (const [key, R] of Object.entries(byRealm)) R.S = this.rndRealm(key, R, h);
     if (this.alpha === undefined) {
       const S = byRealm[this.players[0]?.cap ?? 0]?.S;
       if (!(S > 0)) return;
       this.alpha = RESEARCH.g0 / S; // 本星の始めの伸びが g0 になるように (A = 1)
     }
     for (const [key, R] of Object.entries(byRealm)) {
-      const T = (this.tech[key] ??= { A: { farm: 1, mine: 1, ind: 1, hi: 1 } });
+      const T = this.tech[key];
       const tot = RESEARCH.fields.reduce((k, f) => k + R.va[f], 0);
       for (const f of RESEARCH.fields) {
         T.A[f] ??= 1; // 前の版のセーブの国 (hi がない)
@@ -125,6 +133,126 @@
       T.S = R.S;
     }
     for (const key of Object.keys(this.tech)) if (!byRealm[key]) delete this.tech[key]; // 入植地のなくなった国
+    this.diffuseStep(h, byRealm);
+    this.gptStep(h, byRealm);
+  }
+  // 研究開発の政策 (RND。回 KE6・B-122)。研究者 1 人の研究開発費 ÷ 1 人あたり所得 (所得は学歴と学力を決める所得 eduY) と、研究開発費のうち政府が出す割合 (0〜1)
+  rndCost(c) { const [a, b] = RND.cost; return GM.exp(a + b * GM.log(Math.max(this.eduY(c), 1))); }
+  gshareOf(c) { const [a, b] = RND.gshare; return clamp(a + b * GM.log(Math.max(this.eduY(c), 1)), RND.range[0], RND.range[1]) / 100; }
+  // 国 key の研究者 [人] (技術の伸びに効く数): 曲線の公の分 + 予算の「研究」で雇った公の研究者 (lag 年前の平均) + 会社の分 × 倍率 (税額控除と呼び水。adjust 年でならす)。
+  // 税額控除 (会社の研究開発費 × 控除の率) を首都の政府が星系の会社に払う。記録: T.rd = 研究開発費・政府が出した分・税額控除 [cr/年] と所得
+  rndRealm(key, R, h) {
+    const T = (this.tech[key] ??= { A: { farm: 1, mine: 1, ind: 1, hi: 1 } });
+    if (!(R.Sc > 0)) { T.rd = { spend: 0, pub: 0, credit: 0, y: R.y }; return 0; }
+    const root = Number(key), w = R.cost / R.Sc; // 研究者 1 人の費用 [cr/年] (国の平均)
+    // 予算の「研究」(人間の国だけ。budgetStep が首都の家計に払う): 払った額 ÷ 1 人の費用だけ公の研究者を足す。効くのは lag 年前の値の平均
+    const share = this.fiscalFor(root, root).budget?.research || 0, gv = this.govs[root];
+    const paid = this.isHuman(root) && share > 0 ? share * (gv?.bpaid ?? 1) * Math.max(0, gv?.ledger?.tax || 0) : 0;
+    const P = (T.pe ??= []);
+    const room = Math.max(0, (RND.max[0] / 100) * R.y - R.Sg * w), hired = Math.min(paid, room); // 政府の研究開発費の上限までに足せる額 [cr/年]
+    const Snow = w > 0 ? hired / w : 0; // いま予算で雇っている公の研究者
+    if (!P.length || this.year - P[P.length - 1][0] >= 1 - 1e-9) P.push([this.year, Snow]);
+    while (P.length > 1 && this.year - P[0][0] > RND.lag[1] + 1) P.shift();
+    const lagged = P.filter(([t]) => this.year - t >= RND.lag[0] - 1e-9 && this.year - t <= RND.lag[1] + 1e-9);
+    const Sx = lagged.length ? lagged.reduce((k, [, x]) => k + x, 0) / lagged.length : 0;
+    // 会社の分の倍率: 税額控除 (首都で効いている率) と、公の研究者の呼び水
+    const s = this.fiscalFor(root, root).rdcredit ?? FISCAL_DEFAULT.rdcredit, s0 = FISCAL_DEFAULT.rdcredit;
+    const want = GM.pow((1 - s) / (1 - s0), -RND.elastic) * (R.Sg > 0 ? GM.pow((R.Sg + Snow) / R.Sg, RND.crowd) : 1); // 呼び水はいまの公の研究者で
+    const cap = R.priv > 0 ? Math.max(1, ((RND.max[1] / 100) * R.y) / R.priv) : 1; // 会社の研究開発費の上限 (曲線の分は超えていてもそのまま)
+    T.m = (T.m ?? 1) + (Math.min(want, cap) - (T.m ?? 1)) * (1 - GM.exp(-h / RND.adjust));
+    // 税額控除: 星系ごとの会社の研究開発費 × その星系で効いている控除の率 (首都の政府が払う)
+    let credit = 0;
+    for (const [sys, pv] of R.cr) {
+      const x = (this.fiscalFor(root, sys).rdcredit ?? s0) * pv * T.m;
+      if (x > 0) { this.earn('rdcredit', -x * h, root, { fm: sys }); credit += x; }
+    }
+    T.rd = { spend: R.Sg * w + hired + R.priv * T.m, pub: R.Sg * w + hired, credit, y: R.y }; // 研究開発費はいま雇っている分 (技術に効くのは遅れて)
+    return R.Sg + Sx + (R.Sc - R.Sg) * T.m;
+  }
+  // 汎用技術 (GPT。回 KE6・B-123)。国 i の GPT g の採用 (0〜1) と、その遅れ [年] (L = 国ごとの LAYS)
+  gptLag(i, g, L) { const top = Math.max(...Object.values(L)); return this.sysDist(g.inv, Number(i)) + GPT.ladder * Math.max(0, top - (L[i] ?? top)); }
+  gptAdopt(t, g, lag) { return 1 / (1 + GM.exp(-GPT.sigma * (t - g.t - lag - GM.log(1 / GPT.start - 1) / GPT.sigma))); }
+  // 画面向け: 国 i に知らせが届いた (発明した国の首都から光の年数がたった) GPT ごとの採用と段階の名前 ([{ k, t: 現れた年, inv: 発明した国の首都, a: 採用 (0〜1), phase }])
+  gptPhases(i, L = this.laysByRealm()) {
+    return (this.gpts ?? []).flatMap((g, k) => {
+      if (this.year < g.t + this.sysDist(g.inv, Number(i))) return [];
+      const a = this.gptAdopt(this.year, g, this.gptLag(i, g, L));
+      return [{ k, t: g.t, inv: g.inv, a, phase: GPT.phases[GPT.cut.filter((c) => a >= c).length] }];
+    });
+  }
+  // 到来: 刻みごとに rate × 刻みの年数 の確率 (シードと刻みのハッシュで引く。試合の乱数の流れを変えない)。発明国は研究者の数の比で引く。
+  // 国ごとに GPT の前の刻みの効き目 (e = 遅れた採用、da = 採用の速さ) を覚え (tech の gp)、増えた分だけ ln A に足す。覚えていない GPT (独立した国が元の国から技術を
+  // 持ってきたときなど) は、いまの値から数え始める
+  gptStep(h, byRealm) {
+    const G = (this.gpts ??= []), keys = Object.keys(byRealm).filter((k) => this.tech[k]), tick = Math.round(this.year * 4);
+    const hash = (tag) => (hashSeed(`${this.galaxy.seed}/gpt/${tick}${tag}`) % 1000000) / 1000000;
+    if (keys.length && hash('') < GPT.rate * h) {
+      const tot = keys.reduce((k, i) => k + (byRealm[i].S || 0), 0);
+      let r = hash('/inv') * tot, inv = keys[keys.length - 1];
+      for (const i of keys) { r -= byRealm[i].S || 0; if (r <= 0) { inv = i; break; } }
+      G.push({ t: this.year, inv: Number(inv) });
+    }
+    if (!G.length) return;
+    const L = Object.fromEntries(keys.map((k) => [k, byRealm[k].p > 0 ? byRealm[k].L / byRealm[k].p : 0]));
+    for (const i of keys) {
+      const T = this.tech[i], st = (T.gp ??= {});
+      let d = 0;
+      G.forEach((g, k) => {
+        const lag = this.gptLag(i, g, L), a = this.gptAdopt(this.year, g, lag), e = this.gptAdopt(this.year - GPT.effect, g, lag), da = GPT.sigma * a * (1 - a);
+        if (st[k]) d += GPT.size * (e - st[k][0]) - GPT.jdip * (da - st[k][1]);
+        st[k] = [e, da];
+      });
+      if (d) for (const f of RESEARCH.fields) T.A[f] *= GM.exp(d);
+    }
+  }
+  // その年に学校を出る世代の、学力で調整した就学年数 [年] (LAYS。DIFFUSE の theta)
+  laysOf(c) { const y = this.eduY(c), pct = this.eduSpendPct(c); return (this.schoolCurve(y, pct) * this.learnCurve(y, pct)) / LEARN.full; }
+  // 国 key の分野 f の技術の、年 at の値 (DIFFUSE.step 年ごとの記録の、at 以前でいちばん新しいもの。記録より前なら 0 = まだ見えない)
+  techSeen(key, f, at) {
+    const H = this.tech[key]?.h;
+    if (!H?.length || at < H[0][0]) return 0;
+    let lo = 0, hi = H.length - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (H[m][0] <= at) lo = m; else hi = m - 1; }
+    return H[lo][1 + RESEARCH.fields.indexOf(f)] ?? 1;
+  }
+  // 国 i から見えている前線 (分野ごとの F = ほかの国の、光の年数だけ前の技術のいちばん高い値、theta = 吸収の上限、top = その国)。L = 国ごとの LAYS (省くと数える)。
+  // 画面にも使える (前線のない分野は F = 0)
+  techFrontier(i, L = this.laysByRealm()) {
+    const yr = this.year, out = {};
+    for (const f of RESEARCH.fields) {
+      let F = 0, top = null;
+      for (const j of Object.keys(this.tech)) {
+        if (j === i || !(j in L)) continue;
+        const a = this.techSeen(j, f, yr - this.sysDist(Number(i), Number(j)));
+        if (a > F) { F = a; top = j; }
+      }
+      out[f] = { F, top, theta: top ? Math.min(1, GM.exp(DIFFUSE.lays * ((L[i] ?? 0) - L[top]))) : 0 }; // 前線の国の LAYS はいまの値 (光の遅れの分は小さい)
+    }
+    return out;
+  }
+  // 国ごとの LAYS (laysOf の人口の重みの平均)
+  laysByRealm() {
+    const s = {};
+    for (const c of this.colonies) { const r = this.realmOf(c.sys), v = (s[r] ??= [0, 0]); v[0] += c.pop * this.laysOf(c); v[1] += c.pop; }
+    return Object.fromEntries(Object.entries(s).map(([k, [a, p]]) => [k, p > 0 ? a / p : 0]));
+  }
+  // 技術の伝播 (DIFFUSE。回 KE6・B-121): 光速で遅れて見える前線の theta 倍まで、年 kappa の割合で追いつく。全部の国の増え分を先に出してから足す (国の順に依らない)
+  diffuseStep(h, byRealm) {
+    const yr = this.year, keys = Object.keys(byRealm).filter((k) => this.tech[k]);
+    for (const k of keys) {
+      const H = (this.tech[k].h ??= []), A = this.tech[k].A;
+      if (!H.length || yr - H[H.length - 1][0] >= DIFFUSE.step - 1e-9) H.push([yr, ...RESEARCH.fields.map((f) => Number((A[f] ?? 1).toPrecision(6)))]);
+      while (H.length > 1 && yr - H[1][0] > DIFFUSE.keep) H.shift();
+    }
+    const L = Object.fromEntries(keys.map((k) => [k, byRealm[k].p > 0 ? byRealm[k].L / byRealm[k].p : 0])), add = [];
+    for (const i of keys) {
+      const A = this.tech[i].A, fr = this.techFrontier(i, L);
+      for (const f of RESEARCH.fields) {
+        const gap = fr[f].theta * fr[f].F - A[f];
+        if (fr[f].top && gap > 0) add.push([A, f, DIFFUSE.kappa * gap * h]);
+      }
+    }
+    for (const [A, f, d] of add) A[f] += d;
   }
   // 入植地の 1 人あたりの生産力 [2011 年の国際ドル] (構造転換の曲線に入れる所得 c.inc): いまの就業の割合で物の部門が作れる付加価値を基準の値段で測り
   // (生産側の実質 GDP。市場の値段の揺れと売れ残りの値下がりを受けない)、物の部門の人 1 人あたりにしたもの (サービスの人も同じ生産力とみなす)。
