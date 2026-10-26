@@ -84,7 +84,8 @@ node tools/playlog-report.js 記録のフォルダ/ --players   # 人ごとの�
 
 ## 画面なしで回せる版 (tools/headless.js)
 
-ブラウザを開かずに、Node だけで試合を回す (6 か国・100 年で約 2 秒)。`src/index.html` の `<script>` をそのまま動かし、画面の部品は何もしない代わりの物で受け流す。
+ブラウザを開かずに、Node だけで試合を回す (6 か国・100 年で約 3 秒、300 年で約 12 秒)。`src/index.html` の `<script>` をそのまま動かし、画面の部品は何もしない代わりの物で受け流す。
+ふつうのグローバルを持つ文脈 (`vm.constants.DONT_CONTEXTIFY`。Node 22.8 から) で動かし、知らない名前 (document など) だけをグローバルの prototype に置いた Proxy で受ける (2026-10-26。前はグローバルの名前を引くたびに Proxy を通り、4 倍ほど遅かった。`docs/perf.md`)。
 
 ```sh
 node tools/headless.js 1 100 6                 # シード 1・100 年・6 か国 → 要約と状態の要約 (hash) を JSON で出す
@@ -209,6 +210,24 @@ python3 tools/gravity-analyze.py gravity.csv      # 実データと同じ data/b
 ```
 
 `KIND=t` で交易だけ、`KIND=b` で建設の資材だけ。`TW='TRADE.rate=0.03'` のように、試合の前に値を変えられる。結果の読み方は `docs/trade.md`。
+
+## 処理の速さを比べる (tools/bench.js)
+
+いまの src と git の参照 (既定は origin/main) を同じシードで回し、時間と、節目ごとの状態の要約 (hash) が 1 ビットも同じかを並べる。処理を速くする変更は、hash が「同じ」のまま速くなったかをこれで確かめる (`docs/perf.md`・`docs/content.md` の 4)。
+
+```sh
+node tools/bench.js                                    # 6 か国・300 年・シード 1,2,3、2 回ずつ回して速いほう
+node tools/bench.js --ref HEAD~3 --seeds 1 --years 150 --reps 1
+```
+
+## コンテンツの一覧と点検 (tools/content.js)
+
+資源・施設・種族の特性・出来事・挑戦・国家方針などの表を、いまのソースから一覧にし (Markdown)、足りない名前・アイコン・対になる表の欠けを点検する。語り手の出来事は、どれも実際に起こして、どの選択肢を選んでも止まらないかまで確かめる。足し方の決まりは `docs/content.md`。
+
+```sh
+node tools/content.js            # 一覧
+node tools/content.js --check    # 点検 (約 20 秒。--quick で出来事を起こすのを省く)
+```
 
 ## 試験 (tools/tests)
 
