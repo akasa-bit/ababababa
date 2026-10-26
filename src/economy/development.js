@@ -71,7 +71,7 @@
       const first = gv.ownY === undefined && !gv.own; // 始めからある星系 (と前の版のセーブ): 2300 年の世界にはもう直接投資があるとみて、目標の持ち分で始める
       const g = gv.ownY > 0 && y > 0 ? clamp(GM.log(y / gv.ownY), 0, OWNER.gmax) : 0;
       gv.ownY = y;
-      if (!this.isColonized(id)) { delete gv.own; continue; }
+      if (!this.isColonized(id)) { gv.own = undefined; continue; }
       const me = this.realmOf(id), rest = tot - (W[me] || 0), T = {};
       if (rest > 0) for (const [r, v] of Object.entries(W)) if (Number(r) !== me) T[r] = (OWNER.fdi * v) / rest;
       const own = (gv.own ??= {}), q = first ? 0 : GM.exp(-(CAPITAL.delta + g));
@@ -80,7 +80,7 @@
         own[o] = (T[o] || 0) + (own[o] - (T[o] || 0)) * q;
         if (own[o] < OWNER.min || !this.isColonized(Number(o))) delete own[o];
       }
-      if (!Object.keys(own).length) delete gv.own;
+      if (!Object.keys(own).length) gv.own = undefined;
     }
   }
   autoDevelop() {

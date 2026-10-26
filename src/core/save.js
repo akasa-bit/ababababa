@@ -90,7 +90,7 @@ const SAVE_LEGACY = [
   ['log', (game) => game.log],
   ['nextShipId', (game) => game.nextShipId],
   ['credits', (game) => game.credits],
-  ['govs', (game) => game.govs],
+  ['govs', (game) => Object.fromEntries(Object.entries(game.govs).map(([k, v]) => [k, newGov(v)]))], // 政府は GOV_FIELDS の並びに入れ直して書く (値を消して付け直した政府があっても、保存→読込→保存が同じになるように)
   ['snaps', (game) => game.snaps],
   ['realmWars', (game) => game.realmWars],
   ['exhaustion', (game) => game.exhaustion],

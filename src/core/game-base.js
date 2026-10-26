@@ -20,7 +20,7 @@ class Game {
     this.log = [];
     this.nextShipId = 1;
     // 星系ごとの政府 (封建領主)。lord は従属先の星系 (太陽系はプレイヤー = 地球政府で null)
-    this.govs = { 0: { lord: null, credits: START_CREDITS, founded: START_YEAR } };
+    this.govs = { 0: newGov({ lord: null, credits: START_CREDITS, founded: START_YEAR }) };
     this.snaps = {}; // 星系ごとの様子の記録 (地球から見えるのは光が届いた分だけ)
     // 戦争は国 (首都の星系) の組ごと。キーは warKey(a, b) = '小さい方|大きい方'
     this.realmWars = {}; // 交戦中の国の組 { [key]: 開戦年 }
@@ -171,7 +171,7 @@ class Game {
       if (n.cap === 0) continue;
       const b = this.target(n.cap, n.body);
       if (b.natives) { this.natives[`${n.cap}|${n.body}`] = { rel: 100, status: 'integrated', pop: 0 }; } // 先住民がそのまま国になる
-      this.govs[n.cap] = { lord: null, independent: true, credits: START_CREDITS, founded: START_YEAR, loyalty: LOYALTY_START };
+      this.govs[n.cap] = newGov({ lord: null, independent: true, credits: START_CREDITS, founded: START_YEAR, loyalty: LOYALTY_START });
       this.addColony(n.cap, n.body, 'planet', b.name, 10000, null, n.species);
       const c = this.colonies[this.colonies.length - 1];
       Object.assign(c.lv, { mine: 1, factory: 2, shipyard: 1, barracks: 1 });
@@ -295,7 +295,7 @@ class Game {
   get ledger() { return this.gov(this.cap).ledger || {}; }
   income(id = this.cap) { return Object.values(this.gov(id).ledger || {}).reduce((s, v) => s + v, 0); }
   gov(id) {
-    if (!this.govs[id]) this.govs[id] = { lord: 0, credits: 0, founded: this.year };
+    if (!this.govs[id]) this.govs[id] = newGov({ lord: 0, credits: 0, founded: this.year });
     return this.govs[id];
   }
   // 従属の連鎖 (自分 → 主人 → その主人 …)

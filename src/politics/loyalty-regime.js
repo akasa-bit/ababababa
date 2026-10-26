@@ -79,10 +79,10 @@
     if (old === regime) return { ok: true };
     const drop = Math.max(0, this.lawRank(gv) - REGIMES[regime].rank);
     const fact = this.bundleOf(gv).fact;
-    delete gv.direct;
-    delete gv.regime;
-    delete gv.law;
-    if (regime === 'direct') delete gv.fact; else gv.fact = fact; // 直轄はすべて宗主が握る
+    gv.direct = undefined;
+    gv.regime = undefined;
+    gv.law = undefined;
+    if (regime === 'direct') gv.fact = undefined; else gv.fact = fact; // 直轄はすべて宗主が握る
     if (regime === 'direct') gv.direct = true; else if (regime !== BASE_REGIME) gv.regime = regime;
     if (drop) gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - Math.round(HAZARD.revoke * drop));
     this.event('politics', id, `${this.system(id).name} の統治体制を${REGIMES[old].label}から${REGIMES[regime].label}に変えた${drop ? ` (自治を狭めたので忠誠度 −${Math.round(HAZARD.revoke * drop)})` : ''}`, true);
@@ -116,7 +116,7 @@
       const stance = L >= BUNDLE.coop ? 'coop' : L < BUNDLE.resist ? 'resist' : 'bargain';
       if (stance !== (gv.elite || 'bargain')) {
         if (stance === 'resist' && this.realmOf(id) === this.cap) this.event('politics', id, `${this.system(id).name} の現地のエリートが、${this.realmName(this.cap)}への協力をやめて抵抗に回った (実態が従属国の側へ寄っていく)`);
-        if (stance === 'bargain') delete gv.elite; else gv.elite = stance;
+        if (stance === 'bargain') gv.elite = undefined; else gv.elite = stance;
       }
       if (stance === 'bargain') continue;
       const b = this.bundleOf(gv);
@@ -150,18 +150,18 @@
       if (key === 'T08') {
         if (!gv.jointSolo && (gv.lord2 === undefined || !this.isColonized(gv.lord2) || this.realmOf(gv.lord2) !== gv.lord2 || gv.lord2 === this.realmOf(id))) {
           const r = this.jointSecond(id);
-          if (r === null) delete gv.lord2; else gv.lord2 = r;
-          delete gv.grudge; // 2 国目が替わった (恨みは前の国のもの)
+          if (r === null) gv.lord2 = undefined; else gv.lord2 = r;
+          gv.grudge = undefined; // 2 国目が替わった (恨みは前の国のもの)
         }
         this.jointYearly(id, gv);
-      } else if (gv.lord2 !== undefined || gv.jointCut || gv.grudge || gv.jointSolo) { delete gv.lord2; delete gv.jointCut; delete gv.grudge; delete gv.jointSolo; }
+      } else if (gv.lord2 !== undefined || gv.jointCut || gv.grudge || gv.jointSolo) { gv.lord2 = undefined; gv.jointCut = undefined; gv.grudge = undefined; gv.jointSolo = undefined; }
       // 傀儡国: 宗主の国が降伏して国でなくなったら、傀儡政権は倒れる (講和会議で負けたときは realmDefeated から)
       if (key === 'T10') {
         const root = this.realmOf(id);
         if (gv.patron !== undefined && gv.patron !== root && this.isColonized(gv.patron) && this.realmOf(gv.patron) !== gv.patron && root === this.realmOf(gv.patron)) this.puppetFalls(id, root);
         else gv.patron = root;
-      } else if (gv.patron !== undefined) delete gv.patron;
-      if (key !== 'T19' && gv.arrears) delete gv.arrears;
+      } else if (gv.patron !== undefined) gv.patron = undefined;
+      if (key !== 'T19' && gv.arrears) gv.arrears = undefined;
       if (key === 'T15' && this.rand() < 1 / GENERATION_YEARS) {
         const succ = this.bundleOf(gv).fact[BUNDLE_ITEMS.indexOf('succ')];
         if (succ === 'V') { gv.unionEnd = true; this.declareIndependence(id); }
@@ -180,7 +180,7 @@
       else if (gv.jointCut && ships(second) >= JOINT.aiBackOdds * Math.max(1, ships(main)) && this.rand() < JOINT.aiBack) this.setJointCut(id, false);
     }
     if (!gv.jointCut) {
-      if (gv.grudge) { gv.grudge = Math.max(0, gv.grudge - JOINT.decay); if (!gv.grudge) delete gv.grudge; }
+      if (gv.grudge) { gv.grudge = Math.max(0, gv.grudge - JOINT.decay); if (!gv.grudge) gv.grudge = undefined; }
       return;
     }
     gv.grudge = (gv.grudge || 0) + JOINT.grudge;
@@ -188,11 +188,11 @@
     if (gv.grudge < JOINT.war || this.atWar(main, second)) return;
     if (!this.isHuman(second) && ships(second) >= JOINT.odds * Math.max(1, ships(main))) {
       this.beginWar(second, main, id);
-      delete gv.grudge; // 恨みは開戦で晴らした (断ち続ければ、またたまる)
+      gv.grudge = undefined; // 恨みは開戦で晴らした (断ち続ければ、またたまる)
       this.event('war', id, `${this.realmName(second)}が、${this.system(id).name} の朝貢の分け前をめぐって${this.realmName(main)}に宣戦した`);
     } else if (gv.grudge >= JOINT.drop) {
       this.event('politics', id, `${this.realmName(second)}は ${this.system(id).name} から手を引いた。${this.realmName(main)}が、ただ 1 国の宗主になった`, this.isHuman(main));
-      delete gv.lord2; delete gv.jointCut; delete gv.grudge;
+      gv.lord2 = undefined; gv.jointCut = undefined; gv.grudge = undefined;
       gv.jointSolo = true; // もう 2 国目を探さない
     }
   }
@@ -209,7 +209,7 @@
   puppetFalls(id, winner) {
     const gv = this.govs[id];
     const old = this.realmOf(id);
-    for (const f of ['direct', 'regime', 'law', 'fact', 'elite', 'lord2', 'jointCut', 'grudge', 'jointSolo', 'arrears', 'patron']) delete gv[f];
+    for (const f of ['direct', 'regime', 'law', 'fact', 'elite', 'lord2', 'jointCut', 'grudge', 'jointSolo', 'arrears', 'patron']) gv[f] = undefined;
     Object.assign(gv, { lord: winner, independent: false, loyalty: PUPPET.loyalty, friend: 0, fear: 0, orders: 0, attended: this.year, unrest: { stage: 0 } });
     const reg = this.defaultRegime(winner, id);
     if (reg === 'direct') gv.direct = true; else if (reg !== BASE_REGIME) gv.regime = reg;
@@ -221,7 +221,7 @@
     const gv = this.govs[id];
     if (!gv || regimeKey(gv) !== 'T08' || gv.lord2 === undefined) return fail('2 国目の宗主がいない (共同統治の家臣だけ)');
     if (!!gv.jointCut === !!cut) return { ok: true };
-    if (cut) { gv.jointCut = true; gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - H33.jointCut); } else delete gv.jointCut;
+    if (cut) { gv.jointCut = true; gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - H33.jointCut); } else gv.jointCut = undefined;
     this.event('politics', id, `${this.system(id).name} の朝貢の${cut ? `うち${this.realmName(gv.lord2)}への分け前を断った (忠誠度 −${H33.jointCut})` : `${this.realmName(gv.lord2)}への分け前を戻した`}`, true);
     return { ok: true };
   }
@@ -234,7 +234,7 @@
     gv.fact = b.law;
     gv.elite = 'coop';
     gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - H33.depose);
-    delete gv.unrest;
+    gv.unrest = undefined;
     this.event('politics', id, `${this.system(id).name} の統治者を替えた (改易・廃位)。実態は約定どおりに戻ったが、忠誠度 −${H33.depose}`, true);
     return { ok: true };
   }
@@ -242,7 +242,7 @@
   regimeYearly() {
     for (const gv of Object.values(this.govs)) {
       if (regimeKey(gv) === 'encomienda' && gv.lord !== null && gv.lord !== undefined) gv.scar = Math.min(1, (gv.scar || 0) + FORCED.scarRate);
-      else if (gv.scar) { gv.scar *= FORCED.scarKeep; if (gv.scar < 0.01) delete gv.scar; }
+      else if (gv.scar) { gv.scar *= FORCED.scarKeep; if (gv.scar < 0.01) gv.scar = undefined; }
     }
   }
   // 星系に駐留している地球の国の艦隊 (命令で駐留している分と威圧の分。太陽系はすべて)
@@ -393,7 +393,7 @@
   }
   grantDemand(id, gv) {
     const u = gv.unrest || {};
-    if (u.kind === 'autonomy') { gv.autonomy = this.year + CONCESSION_YEARS; delete gv.direct; } else gv.taxFree = this.year + CONCESSION_YEARS;
+    if (u.kind === 'autonomy') { gv.autonomy = this.year + CONCESSION_YEARS; gv.direct = undefined; } else gv.taxFree = this.year + CONCESSION_YEARS;
     gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 20);
     gv.unrest = { stage: 0 };
     this.attend(id);
@@ -414,7 +414,7 @@
     const why = (this.loyaltyTerms(id) || []).filter((t) => t.v < -0.5).sort((a, b) => a.v - b.v).slice(0, 2)
       .map((t) => `${t.label} −${(-t.v).toFixed(0)}`).join('・');
     const unionEnd = !!gv.unionEnd;
-    delete gv.unionEnd;
+    gv.unionEnd = undefined;
     const cause = unionEnd ? '。継承の危機で同君連合が解けた (継承は従属国が握っていた)' : `。忠誠度 ${Math.round(gv.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(gv.fear || 0)}・友好度 ${Math.round(gv.friend || 0)}${why ? ` (主な原因: ${why})` : ''}`;
     gv.lord = null;
     gv.independent = true;
@@ -426,14 +426,14 @@
     if (!this.isHuman(id)) (this.aif ??= {})[id] = { ...this.fiscalFor(formerRealm, id) }; // 財政 (税率など) も元の国のものを引き継ぐ (制度は続く)
     const reg = REGIMES[regimeKey(gv)];
     const peaceful = !!reg.peaceful || unionEnd;
-    delete gv.direct;
-    delete gv.regime;
-    delete gv.law;
-    delete gv.fact;
-    delete gv.elite;
-    delete gv.lord2;
-    delete gv.jointCut;
-    delete gv.arrears;
+    gv.direct = undefined;
+    gv.regime = undefined;
+    gv.law = undefined;
+    gv.fact = undefined;
+    gv.elite = undefined;
+    gv.lord2 = undefined;
+    gv.jointCut = undefined;
+    gv.arrears = undefined;
     for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
     this.asRealm(formerRealm, () => {
       this.stats.indepFromEarth++;

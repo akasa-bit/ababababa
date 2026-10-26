@@ -50,7 +50,7 @@
         if (b > b0) gv.cpn = (gv.cpn * b0 + yl * (b - b0)) / b; // 新しく出した分は、いまの利回りで
         gv.cpn += (yl - gv.cpn) * Math.min(1, h / CB.roll); // 借り換え
         if (gv.fr?.y > 0 && this.isColonized(id) && b / gv.fr.y > CB.dmax) this.sovDefault(id);
-      } else delete gv.cpn;
+      } else gv.cpn = undefined;
       gv.b0 = gv.bond || 0;
     }
   }

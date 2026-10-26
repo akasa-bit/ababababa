@@ -46,3 +46,23 @@ const GAME_LATE_FIELDS = [
   'alpha', 'gpts', '_pinT', 'routeIx', '_peaceIx', 'travelCache', 'reachCache', 'msgTo', 'snapVer', 'pinc', '_remit', 'lastIndependence', 'pirateRaids',
   'endShown', '_eduY', 'colIdx',
 ];
+// 星系の政府の物の値の名前と並び。政府はいつも newGov で、この並びの物として作る (読み込みのときも同じ並びに入れ直す。restore)。
+// 政府ごとに値の付く順が違うと物の形が 1 つずつ違い (5 つの試合で 885 通り)、値を消す (delete) と遅い辞書の形になって、政府の値を読むたびに遅い道に落ちていた。
+// まだない値は undefined (セーブには書かれない)。値を消すときも delete せずに undefined を入れる。セーブの JSON の鍵の並びはこの並びになる (中身は同じ)。
+// 政府に新しい値を足したら、ここにも名前を足す (tools/tests/shape.js が足し忘れを見つける)
+const GOV_FIELDS = [
+  // 主従と統治体制
+  'lord', 'credits', 'founded', 'loyalty', 'independent', 'regime', 'direct', 'law', 'fact', 'elite', 'patron', 'lord2', 'jointCut', 'jointSolo', 'grudge', 'unionEnd',
+  'arrears', 'mandate', 'governor',
+  // 政治 (忠誠・恐怖・友好・関与・不満・要求)
+  'fear', 'friend', 'orders', 'attended', 'dep', 'aid', 'aidYear', 'lordTrade', 'lordTradeYear', 'unrest', 'taxFree', 'autonomy', 'scar', 'did', 'lastColony',
+  'lastStation', 'far',
+  // お金 (家計・会社・銀行・国債・財政の反応・遠くの持ち主)
+  'hh', 'hloan', 'fm', 'loan', 'hm', 'bl', 'bond', 'b0', 'cpn', 'bondPaid', 'due', 'c0', 'bw', 'bpaid', 'apaid', 'dflt', 'nd', 'inc', 'fr', 'own', 'ownY', 'pinY',
+  'pv', // 前の版の「民間」(読み込みで家計に移す)
+  // 収支の帳簿 (この刻みの分・ならした年あたりの値) とエネルギー
+  'led', 'ledger', 'eled', 'eledger', 'E', 'sw', 'pvd',
+];
+const GOV_BLANK = Object.fromEntries(GOV_FIELDS.map((k) => [k, undefined]));
+// 政府の物を作る (init の値を入れる。GOV_FIELDS にない名前は後ろに足される)
+const newGov = (init) => Object.assign({ ...GOV_BLANK }, init);

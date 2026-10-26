@@ -25,13 +25,13 @@
     }
     if (obj(d.govs)) {
       this.govs = {};
-      for (const [k, v] of Object.entries(d.govs)) if (sysOk(Number(k)) && obj(v)) this.govs[k] = v;
-      for (const v of Object.values(this.govs)) if (v.pv !== undefined) { v.hh = (v.hh || 0) + v.pv; delete v.pv; } // 前の版の「民間」は家計に (借りは会社の借りのまま)
+      for (const [k, v] of Object.entries(d.govs)) if (sysOk(Number(k)) && obj(v)) this.govs[k] = newGov(v); // 作ったときと同じ並びの物に入れ直す (GOV_FIELDS)
+      for (const v of Object.values(this.govs)) if (v.pv !== undefined) { v.hh = (v.hh || 0) + v.pv; v.pv = undefined; } // 前の版の「民間」は家計に (借りは会社の借りのまま)
       // 前の版の収支の項目 (余剰の売却 export など) は消す (収入の合計に入らないように)
       for (const v of Object.values(this.govs)) if (obj(v.ledger)) for (const k of Object.keys(v.ledger)) if (!LEDGER_LABEL[k]) delete v.ledger[k];
     } else if (Number.isFinite(d.credits)) this.credits = d.credits;
     // 旧セーブの入植星系は地球 (太陽系) に従属させる
-    for (const c of this.colonies) if (!this.govs[c.sys]) this.govs[c.sys] = { lord: c.sys === 0 ? null : 0, credits: 0, founded: c.founded ?? this.year };
+    for (const c of this.colonies) if (!this.govs[c.sys]) this.govs[c.sys] = newGov({ lord: c.sys === 0 ? null : 0, credits: 0, founded: c.founded ?? this.year });
     this.govs[0].lord = null;
     if (obj(d.snaps)) this.snaps = d.snaps;
     if (obj(d.realmWars)) this.realmWars = d.realmWars;

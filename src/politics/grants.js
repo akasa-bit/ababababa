@@ -32,7 +32,7 @@
       const rate = (gv.taxFree || 0) > this.year ? 0 : REGIMES[vt].tribute * (vt === 'T09' ? 1 - H33.companyCut : 1); // 減税中は免除。ほかは統治体制ごと。特許会社領は会社が一部を取る
       let owed = Math.max(0, inc) * rate + (vt === 'T19' ? gv.arrears || 0 : 0); // 関税受領官: 滞納を先に取る
       const amt = Math.min(Math.max(0, gv.credits), owed);
-      if (vt === 'T19') { const left = owed - amt; if (left > 0.01) gv.arrears = left; else delete gv.arrears; }
+      if (vt === 'T19') { const left = owed - amt; if (left > 0.01) gv.arrears = left; else gv.arrears = undefined; }
       if (amt < 0.01) continue;
       // 共同統治: 2 国目の宗主へ朝貢の一部 (主な宗主が断っていなければ)
       const second = vt === 'T08' && gv.lord2 !== undefined && !gv.jointCut && this.isColonized(gv.lord2) && this.realmOf(gv.lord2) === gv.lord2 ? gv.lord2 : null;

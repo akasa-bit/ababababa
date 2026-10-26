@@ -2,7 +2,7 @@
     // 新しく入植した星系には政府ができ、入植船を送った星系に従属する
     const fresh = !this.isColonized(sysId);
     if (!this.govs[sysId]) {
-      this.govs[sysId] = { lord: sysId === 0 ? null : lord, credits: 0, founded: this.year, loyalty: LOYALTY_START };
+      this.govs[sysId] = newGov({ lord: sysId === 0 ? null : lord, credits: 0, founded: this.year, loyalty: LOYALTY_START });
       const reg = sysId === 0 ? BASE_REGIME : this.defaultRegime(this.realmOf(lord), sysId);
       if (reg !== BASE_REGIME) this.govs[sysId].regime = reg;
       if (sysId !== 0 && lord !== sysId && this.isColonized(lord)) this.govs[sysId].own = { [lord]: OWNER.colony }; // 会社は送り手の家計が持って始まる (OWNER。回 KE5)
