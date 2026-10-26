@@ -254,6 +254,35 @@
     }
     for (const [A, f, d] of add) A[f] += d;
   }
+  // 会社の資本と投資 (KSTOCK。回 KE6・B-119 の 1)。y = この刻みの市場の付加価値 [cr/年]。政府が民間から買った分は、前の刻みからの this._buy
+  capitalStep(gv, id, y, h) {
+    if (!(y > 0) || !this.isColonized(id)) return;
+    const a = Math.min(1, h / KSTOCK.smooth), b = y + (this._buy?.[id] || 0) / h, y0 = gv.kY ?? b;
+    gv.kY = y0 + (b - y0) * a;
+    gv.kG = (gv.kG ?? 0) + (clamp(GM.log(gv.kY / y0) / h, 0, KSTOCK.gmax) - (gv.kG ?? 0)) * a;
+    const ky = this.kyOf(id), Ks = (ky * gv.kY) / (1 - CAPITAL.delta * ky);
+    if (gv.K === undefined) { gv.K = Ks; return; } // 始めの資本
+    gv.K *= 1 - CAPITAL.delta * h;
+    const I = clamp(CAPITAL.delta * gv.K + gv.kG * Ks + (Ks - gv.K) * KSTOCK.speed, 0, CAPITAL.alpha * y) * h;
+    if (I > 0) { this.cash('build', -I, { fm: id }); this.cash('build', I, { hh: id }); this._buy[id] -= I; gv.K += I; this.invNote(id, I); } // 自分の投資は目当ての土台に入れない
+  }
+  // 星系の目当ての資本 ÷ 付加価値 (KSTOCK.ky を、星系の 1 人あたりの実質の所得の ln で直線で埋める)
+  kyOf(id) {
+    let n = 0, w = 0;
+    for (const c of this.coloniesIn(id)) { n += c.pop; w += c.pop * (c.incU ?? c.inc ?? STRUCTURE.y0); }
+    const y = GM.log(Math.max(n > 0 ? w / n : STRUCTURE.y0, 1)), P = KSTOCK.ky;
+    if (y <= GM.log(P[0][0])) return P[0][1];
+    for (let k = 1; k < P.length; k++) if (y <= GM.log(P[k][0])) { const x0 = GM.log(P[k - 1][0]), x1 = GM.log(P[k][0]); return P[k - 1][1] + ((y - x0) / (x1 - x0)) * (P[k][1] - P[k - 1][1]); }
+    return P[P.length - 1][1];
+  }
+  // 星系の投資 (政府の建設・会社の資本の投資・民間の採掘の能力。測るため。回 KE6): invNote で刻みの額を足し、invStep で 1 年でならす (gv.inv [cr/年])
+  invNote(id, v) { if (v > 0 && this.govs[id]) (this._inv ??= {})[id] = (this._inv[id] || 0) + v; }
+  invStep(h) {
+    const a = Math.min(1, h);
+    for (const [key, gv] of Object.entries(this.govs)) { const x = (this._inv?.[key] || 0) / h; if (x > 0 || gv.inv) gv.inv = (gv.inv || 0) + (x - (gv.inv || 0)) * a; }
+    this._inv = {};
+    this._buy = {};
+  }
   // 入植地の 1 人あたりの生産力 [2011 年の国際ドル] (構造転換の曲線に入れる所得 c.inc): いまの就業の割合で物の部門が作れる付加価値を基準の値段で測り
   // (生産側の実質 GDP。市場の値段の揺れと売れ残りの値下がりを受けない)、物の部門の人 1 人あたりにしたもの (サービスの人も同じ生産力とみなす)。
   // 市場で測った所得 (incomeUSD) を入れると、値段の揺れが需要に跳ね返って経済が振れた (docs/structure.md の 5 の「試してやめたもの」)
@@ -553,6 +582,7 @@
     if (MARKET.buy) for (const key of Object.keys(this.govs)) {
       const gv = this.govs[key], id = Number(key), W = (1 - CAPITAL.alpha) * (va[id] || 0);
       if (W > 0) { this.cash('wages', -W, { fm: id }); this.cash('wages', W, { hh: id }); }
+      this.capitalStep(gv, id, (va[id] || 0) / h, h); // 会社の資本と投資 (配当の前に。回 KE6)
       if (gv.fm > 0) {
         const v = gv.fm;
         let here = v;
@@ -564,6 +594,7 @@
         this.cash('dividend', here, { hh: id });
       }
     }
+    this.invStep(h);
     // 7. 軍の維持費
     // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)。受け取るのは払う星系の民間 (兵の給料と補給の買い付け)
     const payer = (id) => (this.isColonized(id) ? id : 0);

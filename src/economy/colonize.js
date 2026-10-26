@@ -97,6 +97,7 @@
     if (cost.credits) { this.cash('build', -cost.credits, { gov: payer }); this.cash('build', cost.credits, { hh: sysId ?? payer }); } // 建てる星系の家計が受け取る (賃金)
     const bill = this.materialBill(cost, sysId);
     if (bill) { this.cash('build', -bill, { gov: payer }); this.cash('build', bill, { fm: sysId }); } // 資材は、その星系の会社から市場の値段で買う
+    this.invNote(sysId ?? payer, (cost.credits || 0) + (bill || 0)); // 投資に数える (回 KE6)
     if (cost.energy) this.bookE('build', -cost.energy, payer);
     for (const r of RES) if (cost[r]) this.mv(sysId, r, -cost[r], 'build');
     return { ok: true };
@@ -182,6 +183,7 @@
     const seed = job.type === 'ship' ? SEED_FUNDS[job.kind] || 0 : 0;
     if (cost.credits) { this.cash('build', -cost.credits, payer); this.cash('build', cost.credits - seed, { hh: sysId }); } // 賃金は家計へ
     if (seed) this.cash('build', seed, { way: job, f: 'seed' });
+    this.invNote(sysId, (cost.credits || 0) - seed); // 投資に数える (回 KE6。入植船の開拓資金は除く)
     if (job.flight && SIM_ONLY && job.flight.path) this.bookPath('settler', job.flight.m, job.flight.path, 'free', { payer: sysId });
     else if (job.flight) this.bookShip('settler', job.flight.m, job.flight.beta, 'free', sysId, sysId, job.flight.ly ?? 0);
     else if (cost.energy) this.bookE('build', -cost.energy, sysId);
@@ -195,6 +197,7 @@
       if (MARKET.buy) {
         // 資材は売り手の星系の会社から買う。主人の支援なら、主人の政府が代わりに払う
         const v = x.amt * (x.price || 0);
+        this.invNote(sysId, v);
         if (v > 0 && p.aid && x.from !== sysId) { this.cash('grant', -v, { gov: x.from }); this.cash('grant', v, { fm: x.from }); }
         else if (v > 0 && x.from !== sysId) { if (firm) { this.cash('import', -v, payer); this.cash('import', v, { fm: x.from }); } else this.earn('import', -v, payer.gov, { fm: x.from }); }
         else if (v > 0 && payer.fm !== sysId) { this.cash('build', -v, payer); this.cash('build', v, { fm: sysId }); } // 会社が自分の在庫を使うときは払わない
