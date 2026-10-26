@@ -197,7 +197,10 @@ class GalaxyView {
         const [rx, ry] = [...pts.values()][0];
         this.drag = { x: rx, y: ry, cx: this.cam.x, cy: this.cam.y, moved: true, rot: this.app.rotateMode, yaw: this.cam.yaw, pitch: this.cam.pitch };
       }
-      if (this.drag && !this.drag.moved && !wasPinch && e.type === 'pointerup') this.tap(this.pick(x, y), e, this.pickFleet(x, y));
+      if (this.drag && !this.drag.moved && !wasPinch && e.type === 'pointerup') {
+        const touch = e.pointerType !== 'mouse';
+        this.tap(this.pick(x, y), e, this.pickFleet(x, y, false, touch ? 16 : 9), this.pickStack(x, y, touch ? 10 : 4), this.pickFleet(x, y, true, touch ? 16 : 9));
+      }
       if (pts.size === 0) this.drag = null;
     };
     c.addEventListener('pointerup', end);
@@ -217,16 +220,17 @@ class GalaxyView {
     }, { passive: false });
   }
 
-  // クリック・タップ。地球の艦隊がいる星系なら艦隊を選ぶ (Shift で追加・解除)。
+  // クリック・タップ。艦隊は、艦隊の印 (移動中の三角・駐留の ▲n) を押したときだけ選ぶ (Shift で追加・解除)。星を押したときは星系の欄を出すだけ (GA-3)。
+  // よその国の艦隊を押すと、その艦隊の「ありうる今」の雲を出す。
   // タッチ操作では、艦隊を選んでいるときに別の星系をタップすると移動命令になる (マウスは右クリック)
   // 長押し (右ドラッグ) で経由地の線を引く。何も選んでいなければ、押した所の艦隊を選んで始める。
   // 指が触れた星系を触れた順に経由地にし、離したときに選んだ艦隊へその順で回る指令を出す
   startPath(x, y) {
     if (!hasFleetSelection()) {
-      const fd = this.pickFleet(x, y);
-      const s = this.pick(x, y, 18);
+      const fd = this.pickFleet(x, y, false, 16);
+      const st = this.pickStack(x, y, 10);
       if (fd) this.app.fleetMove.add(fd.id);
-      else if (s && isOwnStack(this.app.game, s.id)) this.app.fleetSel.add(s.id);
+      else if (st !== null) this.app.fleetSel.add(st);
       else return;
     }
     this.drag = null;
@@ -244,21 +248,42 @@ class GalaxyView {
     if (!p.ids.length && this.app.fleetSel.has(s.id)) return; // 出発地の上はまだ経由地にしない
     p.ids.push(s.id);
   }
-  // 移動中の地球の艦隊 (画面上の三角) を選ぶ
-  pickFleet(sx, sy) {
+  // 駐留している自艦隊の印 (▲n) を押したか。指は大きいので、印のまわり 10 ピクセルまで
+  pickStack(sx, sy, pad = 6) {
+    const d = (this.stackDots || []).find((b) => sx >= b.x - pad && sx <= b.x + b.w + pad && sy >= b.y - pad && sy <= b.y + b.h + pad);
+    return d ? d.sys : null;
+  }
+  // 移動中の地球の艦隊 (画面上の三角) を選ぶ。others = よその国の艦隊から選ぶ
+  pickFleet(sx, sy, others = false, rad = 9) {
     let best = null;
-    let bd = 9;
-    for (const d of this.fleetDots || []) {
+    let bd = rad;
+    for (const d of (others ? this.otherFleetDots : this.fleetDots) || []) {
       const k = Math.hypot(d.x - sx, d.y - sy);
       if (k < bd) { bd = k; best = d; }
     }
     return best;
   }
-  tap(s, e, fd = null) {
+  tap(s, e, fd = null, stack = null, other = null) {
     const app = this.app;
     const sel = app.fleetSel;
     const mv = app.fleetMove;
     const touch = e.pointerType !== 'mouse';
+    const focus0 = app.fleetFocus;
+    app.fleetFocus = null;
+    if (focus0 !== null && focus0 !== undefined) app.dirty = true;
+    if (stack !== null && !fd) {
+      if (e.shiftKey || (touch && hasFleetSelection())) { if (sel.has(stack)) sel.delete(stack); else sel.add(stack); }
+      else { sel.clear(); mv.clear(); sel.add(stack); }
+      app.fleetConfirm = null;
+      app.selectSystem(stack);
+      renderFleetBar();
+      return;
+    }
+    if (other && !fd && !(touch && hasFleetSelection())) {
+      app.fleetFocus = focus0 === other.id ? null : other.id; // もう一度押すと消す
+      app.dirty = true;
+      return;
+    }
     if (fd) {
       if (e.shiftKey || (touch && hasFleetSelection())) { if (mv.has(fd.id)) mv.delete(fd.id); else mv.add(fd.id); }
       else { sel.clear(); mv.clear(); mv.add(fd.id); }
@@ -272,11 +297,7 @@ class GalaxyView {
       app.fleetConfirm = null; renderFleetBar(); return;
     }
     if (touch && hasFleetSelection() && !sel.has(s.id)) { orderFleets(s.id); return; }
-    if (isOwnStack(app.game, s.id)) {
-      if (e.shiftKey) { if (sel.has(s.id)) sel.delete(s.id); else sel.add(s.id); }
-      else if (touch && sel.has(s.id)) sel.delete(s.id);
-      else { sel.clear(); mv.clear(); sel.add(s.id); }
-    } else if (!e.shiftKey) { sel.clear(); mv.clear(); }
+    if (!e.shiftKey && !(touch && sel.has(s.id))) { sel.clear(); mv.clear(); }
     app.fleetConfirm = null;
     app.selectSystem(s.id);
     renderFleetBar();
@@ -534,13 +555,21 @@ class GalaxyView {
 
     // 艦隊 (地球の艦隊は選べるように画面上の位置を覚える)
     this.fleetDots = [];
+    this.otherFleetDots = []; // よその国の艦隊 (押すと「ありうる今」の雲を出す。GA-3)
     for (const f of [...game.fleets, ...game.ghosts.fleets]) {
       const p = seenAt((t) => game.fleetPosition(f, t), f.start ?? f.depart, f.arrive);
       if (!p) continue;
       const [px, py] = this.toScreen(p.x, p.y, p.z);
-      const fcolor = FLEET_COLOR[realmFleetKind(game, f.owner ?? 0)];
+      const fkind = realmFleetKind(game, f.owner ?? 0), fcolor = FLEET_COLOR[fkind];
       // 「ありうる今」(B-053): よその国の艦隊は、見えているのは光が出たときの姿。いまはそこから (いちばん速い船の速さ × 光が来るのにかかった年) の内のどこかにいる
-      if ((f.owner ?? 0) !== game.cap) this.drawMaybeNow(p, px, py, distance(p, game.system(game.cap)), fcolor);
+      // 中立の艦隊の雲は描かない (遠い艦隊ほど雲が大きく、何隻も重なって地図を塗りつぶしていた。2026-10-25 の依頼 GA-2)。
+      // 押して選んだ艦隊は、中立でも大きくても雲を塗る (GA-3)
+      if ((f.owner ?? 0) !== game.cap) {
+        const focus = this.app.fleetFocus === f.id;
+        this.otherFleetDots.push({ id: f.id, x: px, y: py });
+        if (focus || fkind !== 'neutral') this.drawMaybeNow(p, px, py, distance(p, game.system(game.cap)), fcolor, focus);
+        if (focus) { ctx.strokeStyle = fcolor; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1; }
+      }
       if ((f.owner ?? 0) === game.cap) {
         this.fleetDots.push({ id: f.id, x: px, y: py });
         if (this.app.fleetMove.has(f.id)) {
@@ -598,6 +627,7 @@ class GalaxyView {
         ctx.setLineDash([]);
       }
     }
+    this.stackDots = []; // 駐留している自艦隊の印 (▲n) の場所
     this.labels = []; // 地図の札: 星のまわりの名前・警告・交戦などと指令の文字は、あとで大事な順に重ならないように置く (QD-59 の M1)
     this.drawLightSpheres(game);
 
@@ -722,6 +752,7 @@ class GalaxyView {
       }
       const ships = k ? k.garrison || 0 : 0;
       if (ships) {
+        const own0 = isOwnStack(game, s.id);
         // 駐留艦隊を持ち主の色で: 地球の国の星系は、命令で駐留している分・威圧の分 (と太陽系・無人の星系) が自艦隊、残りは従属艦隊
         const colonized = k.cols && k.cols.length;
         const realm = colonized ? k.realm ?? game.cap : game.cap;
@@ -740,6 +771,7 @@ class GalaxyView {
           ctx.fillStyle = FLEET_COLOR[kind];
           ctx.fillText(t, lx, y + 4);
           this.labels.push({ fixed: true, box: { x: lx, y: y - 8, w: ctx.measureText(t).width, h: 14 } }); // 札がよける
+          if (kind === 'own' && own0) this.stackDots.push({ sys: s.id, x: lx, y: y - 8, w: ctx.measureText(t).width, h: 14 }); // 押すと駐留艦隊を選ぶ (GA-3)
           lx -= 3;
         }
       }
@@ -1002,12 +1034,20 @@ class GalaxyView {
     ctx.restore();
   }
   // 「ありうる今」の雲: (px, py) は最後に見えた位置、age は光が来るのにかかった年。半径 = いちばん速い船の速さ × age
-  drawMaybeNow(p, px, py, age, color) {
+  drawMaybeNow(p, px, py, age, color, focus = false) {
     if (age < 0.5) return;
     const { ctx } = this;
     const R = Math.max(SHIP_SPEED, OFFROUTE_SPEED) * age * this.cam.zoom;
     if (R < 6) return;
     ctx.save();
+    // 画面の 1/4 より大きい雲は塗らず、縁の破線だけにする (塗ると重なって地図が見えなくなる。GA-2)
+    if (!focus && R > Math.min(this.w, this.h) / 4) {
+      ctx.strokeStyle = `${color}30`;
+      ctx.setLineDash([2, 6]);
+      ctx.beginPath(); ctx.arc(px, py, R, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      return;
+    }
     const g = ctx.createRadialGradient(px, py, 0, px, py, R);
     g.addColorStop(0, `${color}33`);
     g.addColorStop(1, `${color}00`);

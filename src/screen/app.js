@@ -7,6 +7,7 @@ const app = {
   fleetOrigin: undefined,
   fleetSel: new Set(), // 星間マップで選んだ地球の艦隊 (駐留している星系の id)
   fleetMove: new Set(), // 星間マップで選んだ移動中の地球の艦隊 (艦隊の id)
+  fleetFocus: null, // 星間マップで押したよその国の艦隊 (艦隊の id)。その艦隊の「ありうる今」の雲を出す
   fleetAmount: 'all', // 送る数: all / half / one
   fleetConfirm: null, // 奇襲攻撃の確認待ちの行き先
   dirty: true,
