@@ -241,6 +241,13 @@ python3 data/build/build_innovation.py --game ゲームのパネル.csv   # ゲ�
 - **汎用技術 (R76・R77)**: 前線の技術の伸びの 10 年の移動平均の標準偏差 0.9244 ポイント (労働増大的な形)。普及の logit の傾きの中央値 0.1226/年。採用の遅れは所得の 4 番目の分位から 3〜16 年
 - 調べもの (536 件の目録) と、このあとの目標の案は `docs/research/innovation.md`
 
+## 中立の利子率のデータ (回 KE6・B-118。ゲームの係数で、目標ではない)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_hlw.py` → `data/raw/hlw/` | Holston, Laubach & Williams (2023) の推計 (ニューヨーク連銀。米国・カナダ・ユーロ圏の四半期の潜在の伸び g・その他の要因 z・自然利子率 r*・需給ギャップ。片側の推計、2026 年 Q2 まで)・WDI の人口の伸び (SP.POP.GROW。米国・カナダ・ユーロ圏)。取得日・URL・SHA-256・行数は `MANIFEST.json` |
+| 加工 | `data/build/build_rstar.py` → `data/derived/rstar.json` | 年平均の r* を、1 人あたりの潜在の伸び (g − 人口の伸び) に当てた最小二乗 (3 つの経済をまとめる): r* = 0.234 + 1.343 × 1 人あたりの伸び [% / 年] (184 の国・年、相関 0.80)。r* の 1%〜99% 点 0.23〜5.67%。中央銀行の中立の金利 (`src/economy/fiscal-consts.js` の `CB.rs`・`CB.rsr`) |
+
 ## GNI と GDP のデータ (目標 R65。回 KE5・B-114)
 
 | 段 | 場所 | 中身 |
