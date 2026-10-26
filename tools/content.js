@@ -37,6 +37,8 @@ const bad = (kind, text, known) => { if (known && KNOWN[known]) notes.push(`${ki
 const isStr = (v) => typeof v === 'string' && v.length > 0;
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isIcon = (v) => Array.isArray(v) && isStr(v[0]) && isStr(v[1]); // ICONS の 1 つ: [viewBox, SVG の中身]
+// 名前つきの数の並び (src/core/world.js の namedVec。資源ごとの量・収支の表) の名前は、配列の持ち物 (length・map など) と重ねられない
+const vecNameOk = (kind, list, what) => { for (const k of list) if (k in [] || k === 'names' || k === 'mine') bad(kind, `${what}の「${k}」は名前に使えない (配列の持ち物と重なる。src/core/world.js の namedVec)`); };
 const sameKeys = (kind, a, an, b, bn) => {
   for (const k of Object.keys(a)) if (!(k in b)) bad(kind, `${an} の「${k}」が ${bn} にない`);
   for (const k of Object.keys(b)) if (!(k in a)) bad(kind, `${bn} の「${k}」が ${an} にない`);
@@ -59,6 +61,7 @@ const KINDS = [
         if (RES_INDEX && RES_INDEX[r] !== i) bad('資源', `「${r}」の番号 (RES_INDEX) が並びと違う`);
       });
       for (const r of MINED) if (!RES.includes(r)) bad('資源', `掘る資源 (MINED) の「${r}」が RES にない`);
+      vecNameOk('資源', RES, '資源 (RES) ');
     },
   },
   {
@@ -127,6 +130,7 @@ const KINDS = [
     check() {
       for (const [k, v] of Object.entries(T.LEDGER_LABEL)) if (!isStr(v)) bad('収支の帳簿', `「${k}」の名前がない`);
       for (const [k, ic] of Object.entries(T.LEDGER_ICON)) { if (!(k in T.LEDGER_LABEL)) bad('収支の帳簿', `LEDGER_ICON の「${k}」が LEDGER_LABEL にない`); if (!isIcon(T.ICONS[ic])) bad('収支の帳簿', `「${k}」のアイコン「${ic}」が ICONS にない`); }
+      vecNameOk('収支の帳簿', [...Object.keys(T.LEDGER_LABEL), ...Object.keys(T.E_LABEL)], '帳簿 (LEDGER_LABEL・E_LABEL) ');
       for (const [k, v] of Object.entries(T.E_LABEL)) if (!isStr(v)) bad('収支の帳簿', `エネルギーの帳簿 (E_LABEL) の「${k}」の名前がない`);
     },
   },

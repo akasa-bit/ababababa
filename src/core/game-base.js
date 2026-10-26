@@ -274,10 +274,12 @@ class Game {
   }
   // 備蓄の出入りはすべてここを通す (kind: extract = 採掘・収穫など自然から、make = 工業の産出、use = 工業の投入、burn = 燃やした燃料、
   // consume = 人の消費、build = 建設に使った、ship / arrive = 船で出した・着いた、supply = 艦隊の補給、waste = 捨てた、pirate = 海賊に奪われた)。試験で保存則を確かめる (目標 R03)
+  // 資源 res は名前 ('metal') でも番号 (RES_INDEX.metal) でもよい (資源を番号で回す重い所は番号で渡す。world.js の ResVec)
   mv(sysId, res, amt, kind) {
-    this.stockOf(sysId)[res] += amt;
-    if (amt < 0 && ABSORB.has(kind)) { const a = (this.absorb[sysId] ??= zeroRes()); a[res] -= amt; }
-    if (MASS_AUDIT) { const f = (MASS_AUDIT.flows[sysId] ??= {}); const g = (f[res] ??= {}); g[kind] = (g[kind] || 0) + amt; }
+    const i = typeof res === 'number' ? res : RES_INDEX[res];
+    this.stockOf(sysId)[i] += amt;
+    if (amt < 0 && ABSORB.has(kind)) { const a = (this.absorb[sysId] ??= zeroRes()); a[i] -= amt; }
+    if (MASS_AUDIT) { const f = (MASS_AUDIT.flows[sysId] ??= {}); const g = (f[RES[i]] ??= {}); g[kind] = (g[kind] || 0) + amt; }
   }
   totalPop() { return this.colonies.reduce((s, c) => s + c.pop, 0); }
   warships() { return Object.values(this.garrison).reduce((s, n) => s + n, 0) + this.fleets.reduce((s, f) => s + f.n, 0); }
@@ -292,8 +294,8 @@ class Game {
   // いま操作しているプレイヤーの政府の資金と収支
   get credits() { return this.gov(this.cap).credits; }
   set credits(v) { this.gov(this.cap).credits = v; }
-  get ledger() { return this.gov(this.cap).ledger || {}; }
-  income(id = this.cap) { return Object.values(this.gov(id).ledger || {}).reduce((s, v) => s + v, 0); }
+  get ledger() { return this.gov(this.cap).ledger || {}; } // 名前で引く (LedgerVec)
+  income(id = this.cap) { let s = 0; for (const v of this.gov(id).ledger || []) if (v !== undefined) s += v; return s; } // 収支の表の合計 (値のない種類は足さない。表の順に)
   gov(id) {
     if (!this.govs[id]) this.govs[id] = newGov({ lord: 0, credits: 0, founded: this.year });
     return this.govs[id];

@@ -174,7 +174,7 @@
   // 政府の年金と医療 (10-3 の c)。星系の政府が、その星系の家計に年金を、会社に医療の代金を払う。人間が動かす首都は、手元の資金の分だけ払う (払えた割合 apaid)
   ageSpendStep(h) {
     for (const key of Object.keys(this.govs)) {
-      const id = Number(key), gv = this.govs[key];
+      const id = Number(key), gv = this.govs[id];
       if (!this.isColonized(id)) continue;
       let pen = 0, med = 0;
       for (const c of this.coloniesIn(id)) {

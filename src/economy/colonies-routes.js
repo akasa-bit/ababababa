@@ -7,10 +7,10 @@
       if (reg !== BASE_REGIME) this.govs[sysId].regime = reg;
       if (sysId !== 0 && lord !== sysId && this.isColonized(lord)) this.govs[sysId].own = { [lord]: OWNER.colony }; // 会社は送り手の家計が持って始まる (OWNER。回 KE5)
     }
-    this.colonies.push({
+    this.colonies.push(newCol({
       sys: sysId, body: bodyId, kind, founded: this.year, name, pop, focus: 'balanced',
       lv: LV0(), troops: 0, slaveTroops: 0, races: { [species]: 1 },
-    });
+    }));
     // 入植者は、送り出した星系のいちばん大きい入植地の、年齢の区分ごとの就学年数と学力を持って来る (よそ生まれ。回 KE5)。送り出した星系がなければ、所得の曲線で決める (schoolBy)
     const from = lord !== null && lord !== undefined && lord !== sysId ? this.coloniesIn(lord).reduce((m, x) => (!m || x.pop > m.pop ? x : m), null) : null;
     if (from) { const c = this.colonies[this.colonies.length - 1], e = this.eduAges(from); c.edu = { away: this.eduGroup(c, e.s, e.q) }; }

@@ -21,6 +21,7 @@ const outpostRes = (b) => (b && !b.label && OUTPOST_RES[b.type]) || [];
 const PIRATE_START = 2320;
 const LEDGER_ICON = { tax: 'tax', ctax: 'tax', tariff: 'import', trade: 'export', import: 'import', interest: 'credits', welfare: 'pop', security: 'loyalty', military: 'fleet', natives: 'natives', tribute: 'tribute', grant: 'grant', upkeep: 'fleet' };
 const LEDGER_LABEL = { tax: '税収', ctax: '消費税', tariff: '関税', trade: '輸出', import: '輸入', interest: '利子 (貯えの利子 − 国債の利子)', public: '行政サービス', welfare: '福祉の予算', security: '治安の予算', military: '軍事の予算', natives: '先住民', tribute: '朝貢', grant: '資金援助', upkeep: '軍の維持費', pension: '年金', health: '医療' };
+const LedgerVec = namedVec(Object.keys(LEDGER_LABEL)); // 政府の収支の表 (gv.ledger。年あたりにならした値) の並び (world.js の namedVec)。この刻みの分 (gv.led) は名前の物のまま
 const LOYALTY_START = 70; // 新しい政府の忠誠度
 const FRIEND_SAFE = 50; // 主人との友好度がこれ以上なら、威圧の艦隊を送らない
 const FRIEND_DAMP = 0.6; // 友好度100で、最後通牒の期限に独立を宣言する確率が 1 − FRIEND_DAMP 倍になる
@@ -66,3 +67,18 @@ const GOV_FIELDS = [
 const GOV_BLANK = Object.fromEntries(GOV_FIELDS.map((k) => [k, undefined]));
 // 政府の物を作る (init の値を入れる。GOV_FIELDS にない名前は後ろに足される)
 const newGov = (init) => Object.assign({ ...GOV_BLANK }, init);
+// 入植地の物の値の名前と並び (政府の GOV_FIELDS と同じ決まり)。入植地は newCol で、この並びの物として作る (読み込みのときも同じ並びに入れ直す。restore)。
+// 値の付く順が入植地ごとに違うと物の形が分かれ (4 つの試合で 12 通り)、c.pop・c.sys などの読み出しが遅い道に落ちていた (docs/perf.md)。
+// セーブには undefined の値は書かないので、セーブの中身は変わらない (JSON の鍵の並びはこの順になる)。入植地に新しい値を足したら、ここにも名前を足す (tools/tests/shape.js)
+const COL_FIELDS = [
+  // 作ったときの値 (addColony)
+  'sys', 'body', 'kind', 'founded', 'name', 'pop', 'focus', 'lv', 'troops', 'slaveTroops', 'races',
+  // 経済
+  'sh', 'plan', 'planHi', 'industry', 'industryHi', 'sat', 'alerts', 'avg', 'alertSince',
+  // 年齢と教育・所得
+  'age', 'tfr', 'ws', 'edu', 'hk', 'growth', 'incY', 'inc', 'wexp', 'wage', 'incU',
+  // 移民・奴隷労働・疫病
+  'crowdLogged', 'migOut', 'slaveWork', 'migIn', 'plague',
+];
+const COL_BLANK = Object.fromEntries(COL_FIELDS.map((k) => [k, undefined]));
+const newCol = (init) => Object.assign({ ...COL_BLANK }, init);

@@ -27,7 +27,7 @@
     const war = new Set(Object.keys(this.realmWars).flatMap((k) => k.split('|').map(Number)));
     const keep = GM.pow(DEBT.ar, h), out = 1 - GM.exp(-h / DEBT.spend), fade = GM.exp(-h);
     for (const key of Object.keys(this.govs)) {
-      const id = Number(key), gv = this.govs[key];
+      const id = Number(key), gv = this.govs[id];
       const paid = gv.bondPaid || 0;
       gv.bondPaid = 0;
       if (!this.isColonized(id)) continue;
@@ -80,7 +80,7 @@
   // 家計が借りた分で住宅を買う代金 (housing) だけが、家計から会社への出入り
   creditStep(h) {
     for (const key of Object.keys(this.govs)) {
-      const id = Number(key), gv = this.govs[key], y = gv.fr?.y || 0;
+      const id = Number(key), gv = this.govs[id], y = gv.fr?.y || 0;
       if (!this.isColonized(id) || !(y > 0)) continue;
       const nh = (LOANS.hh.stock / LOANS.hh.years) * y * h, rh = (gv.hm || 0) * Math.min(1, h / LOANS.hh.years);
       bankMove(gv, 'hh', nh - rh, 'hloan');
@@ -108,7 +108,7 @@
     const debtors = [], deposits = [];
     let paid = 0, held = 0;
     for (const key of Object.keys(this.govs)) {
-      const id = Number(key), gv = this.govs[key];
+      const id = Number(key), gv = this.govs[id];
       const rate = gv.loan > 0 || gv.hloan > 0 || gv.hm > 0 || gv.bl > 0 ? this.rateAt(id) : 0; // 借りのある星系の利子率 (1 回だけ求める。このあいだ変わらない)
       if (gv.loan > 0) { const x = gv.loan * rate * h; debtors.push([{ fm: id }, x]); paid += x; }
       if (gv.hloan > 0) { const x = gv.hloan * rate * h; debtors.push([{ hh: id }, x]); paid += x; }

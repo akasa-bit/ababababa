@@ -43,7 +43,7 @@
       while (s.h.length > 1 && s.h[1][0] <= this.year - far - 1) s.h.shift();
     }
     for (const key of Object.keys(this.govs)) {
-      const id = Number(key), gv = this.govs[key], b = gv.bond || 0, b0 = gv.b0 || 0;
+      const id = Number(key), gv = this.govs[id], b = gv.bond || 0, b0 = gv.b0 || 0;
       if (b > 0) {
         const yl = this.longYield(id);
         if (!(gv.cpn >= -1)) gv.cpn = yl;

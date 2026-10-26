@@ -154,6 +154,10 @@ const HITECH = { goods: 0.5, rare: 0.05, ramp: 0.5 };
 const SHIPPING = { payload: 50, hull: 0.002, hitech: 0.1, life: 30, port: 0.1, load: 0.5, base: 200, idle: 0.3 };
 // 市場の基準の値段 [cr] (値段の水準をかけたもの。開始時の生産性の物差し modern で割る)
 const basePrice = (r) => PRICE[r] * (MARKET.buy ? MARKET.level / STRUCTURE.modern : 1);
+// 番号で引く版 (資源を番号で回す重い所。world.js の ResVec)。表は MARKET・PRICE から作る (値を変えるときは MARKET・PRICE の方を変える)
+const PRICE_I = RES.map((r) => PRICE[r]), COVER_I = RES.map((r) => MARKET.cover[r]), ELASTIC_I = RES.map((r) => MARKET.elastic[r]);
+const basePriceI = (i) => PRICE_I[i] * (MARKET.buy ? MARKET.level / STRUCTURE.modern : 1);
+const basePrices = () => { const v = new ResVec(); for (let i = 0; i < NRES; i++) v[i] = basePriceI(i); return v; }; // 資源ごとの基準の値段 (新しい市場)
 // 発展段階の名前 (所得 y [ドル/人] から)
 const stageName = (y) => (STRUCTURE.stages.find(([edge]) => (y || 0) < edge) || STRUCTURE.stages[STRUCTURE.stages.length - 1])[1];
 const SECTORS = ['farm', 'mine', 'ind', 'hi', 'serv', 'home']; // home = 自給 (YIELD の説明)。hi = 高付加価値の工業 (回 KE5)
@@ -161,7 +165,7 @@ const MARKET_SECTORS = ['farm', 'mine', 'ind', 'hi', 'serv'];
 const ABSORB = new Set(['consume', 'use', 'burn', 'build', 'ship', 'supply']); // 市場の需要に数える出入り (捨てた・奪われたは数えない)
 // 方針 (前の版の FOCUS) から、始めの就業の割合を作る
 const sharesOf = (focus) => { const f = FOCUS[focus] || FOCUS.balanced; return { farm: f.farm, mine: f.mine, ind: f.ind, hi: 0, serv: 0, home: 0 }; };
-const zeroRes = () => { const o = {}; for (const r of RES) o[r] = 0; return o; };
+const zeroRes = () => new ResVec(); // 資源ごとの量を 0 で (world.js の ResVec)
 const colKey = (c) => `${c.sys}|${c.body}|${c.kind}`;
 // 経済の記録 (回 KE3・B-170。docs/structure.md の 8): 星系ごとに 1 年に 1 回、資源ごとの余り (在庫 − 2 年分の消費) と、入植地ごとの移民の受け入れ (食べ物と水が足りているか・空き) を記録する。
 // 交易の買い手・移民の送り手は、光の遅れのぶん古い記録で相手を選ぶ (econSeen)。前は遠い星系のいまの在庫や空きを見ていた (光より速い。docs/research/game-physics-audit.md の 2.8 e)。

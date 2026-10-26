@@ -11,12 +11,13 @@ const path = require('path');
 const H = require(path.resolve(__dirname, '..', 'headless'));
 const [seed = '3', years = '80'] = process.argv.slice(2);
 const sim = H.load({});
-const { PRICE, MARKET, STRUCTURE } = sim.tables;
+const { PRICE, MARKET, STRUCTURE, RES } = sim.tables;
 const g = sim.run(sim.newGame(seed, { nations: 6 }), Number(years));
 const res = {};
 let bad = 0, n = 0;
 const base = (r) => PRICE[r] * MARKET.level / STRUCTURE.modern; // 基準の値段 (basePrice)
-for (const m of Object.values(g.market)) for (const [r, p] of Object.entries(m.p)) { n++; if (!(p >= base(r) * MARKET.min * 0.999 && p <= base(r) * MARKET.max * 1.001)) bad++; }
+// 値段は資源ごとの並び (名前でも引ける。world.js の ResVec)
+for (const m of Object.values(g.market)) for (const r of RES) { const p = m.p[r]; n++; if (!(p >= base(r) * MARKET.min * 0.999 && p <= base(r) * MARKET.max * 1.001)) bad++; }
 res.pricesInRange = !bad && n > 0;
 // 在庫が少ないほど高い (同じふだんの消費で、在庫を半分にした値段)
 res.scarceIsDear = g.priceAt('food', 50, 100) > g.priceAt('food', 100, 100);

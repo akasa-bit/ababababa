@@ -8,7 +8,7 @@
     const r3 = (v) => Number(v.toPrecision(3));
     for (const x of this.colonizedSystems()) {
       const id = x.id, st = this.stockOf(id);
-      const spare = RES.map((r) => r3(st[r] - 2 * (flow[id]?.cons[r] || 0)));
+      const spare = RES.map((r, i) => r3(st[i] - 2 * (flow[id]?.cons[i] || 0))); // 在庫と消費は資源の番号で (world.js の ResVec)
       const cols = {};
       for (const c of this.coloniesIn(id)) cols[colKey(c)] = [(c.sat?.food ?? 1) >= 0.99 && (!this.needsWater(c) || (c.sat?.water ?? 1) >= 0.99) ? 1 : 0, r3(this.capOf(c) * 0.8 - c.pop)];
       (E.s[id] ??= []).push([y, spare, cols]);

@@ -215,9 +215,10 @@
         const inb = (this.inbound[dest] ??= zeroRes());
         const legs = this.legsOf(p.path);
         for (const [res, amt] of Object.entries(p.load)) {
-          this.mv(dest, res, amt, 'arrive');
-          inb[res] = Math.max(0, inb[res] - amt);
-          for (const l of legs) l.r.transit[l.dir][res] = Math.max(0, l.r.transit[l.dir][res] - amt);
+          const i = RI[res]; // 荷は資源の名前で持つ。在庫と運ぶ途中の量は番号で (world.js の ResVec)
+          this.mv(dest, i, amt, 'arrive');
+          inb[i] = Math.max(0, inb[i] - amt);
+          for (const l of legs) l.r.transit[l.dir][i] = Math.max(0, l.r.transit[l.dir][i] - amt);
         }
       }
     }

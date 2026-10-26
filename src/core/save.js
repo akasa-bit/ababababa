@@ -68,6 +68,7 @@ function saveMeta(d) {
 // 2026-10-21 (回 R3) までのセーブの項目。前の buildSave と同じ順に並べてある。並びの順がそのままセーブの JSON の並びになり、
 // 状態の要約 (Net.hash・tools/headless.js の hash) もこの順で作るので、この一覧は足さない・並べ替えない・消さない。
 // 新しい項目は、その仕組みのファイルで saveField(…) を呼んで足す (SAVE_FIELDS。core/base.js)。値が undefined の項目は書かない (前の { …(条件 ? { k: v } : {}) } と同じ)
+const plainVecs = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, plain(v)])); // { [星系]: 並び } → { [星系]: 名前の物 }
 const SAVE_LEGACY = [
   ['v', (game) => 2],
   ['seed', (game) => game.galaxy.seed],
@@ -90,7 +91,7 @@ const SAVE_LEGACY = [
   ['log', (game) => game.log],
   ['nextShipId', (game) => game.nextShipId],
   ['credits', (game) => game.credits],
-  ['govs', (game) => Object.fromEntries(Object.entries(game.govs).map(([k, v]) => [k, newGov(v)]))], // 政府は GOV_FIELDS の並びに入れ直して書く (値を消して付け直した政府があっても、保存→読込→保存が同じになるように)
+  ['govs', (game) => Object.fromEntries(Object.entries(game.govs).map(([k, v]) => [k, newGov({ ...v, ledger: plain(v.ledger), eledger: plain(v.eledger) })]))], // 政府は GOV_FIELDS の並びに入れ直して書く (値を消して付け直した政府があっても、保存→読込→保存が同じになるように)
   ['snaps', (game) => game.snaps],
   ['realmWars', (game) => game.realmWars],
   ['exhaustion', (game) => game.exhaustion],
@@ -106,16 +107,16 @@ const SAVE_LEGACY = [
   ['held', (game) => game.held],
   ['sieges', (game) => game.sieges],
   ['battles', (game) => game.battles],
-  ['stock', (game) => game.stock],
-  ['market', (game) => game.market],
-  ['absorb', (game) => game.absorb],
-  ['unmet', (game) => game.unmet],
-  ['util', (game) => game.util],
+  ['stock', (game) => plainVecs(game.stock)], // 資源ごとの量の並び (world.js の ResVec) は、前と同じ名前の物で書く
+  ['market', (game) => Object.fromEntries(Object.entries(game.market).map(([k, m]) => [k, m && typeof m === 'object' ? { u: plain(m.u), p: plain(m.p), L: plain(m.L) } : m]))],
+  ['absorb', (game) => plainVecs(game.absorb)],
+  ['unmet', (game) => plainVecs(game.unmet)],
+  ['util', (game) => plainVecs(game.util)],
   ['tech', (game) => game.tech],
   ['alpha', (game) => (game.alpha !== undefined ? game.alpha : undefined)],
   ['gpts', (game) => (game.gpts?.length ? game.gpts : undefined)], // 汎用技術 (GPT。回 KE6。経済の gptStep)
   ['aif', (game) => (game.aif ? game.aif : undefined)],
-  ['routes', (game) => game.routes],
+  ['routes', (game) => game.routes.map((r) => (Array.isArray(r.transit) ? { ...r, transit: r.transit.map(plain) } : r))],
   ['cargo', (game) => game.cargo],
   ['projects', (game) => game.projects],
   ['requests', (game) => game.requests],

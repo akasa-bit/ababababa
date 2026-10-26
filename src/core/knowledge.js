@@ -66,8 +66,8 @@
         sat: c.sat ? { ...c.sat } : null, focus: c.focus, sh: c.sh ? { ...c.sh } : null, inc: c.inc, lv: { ...c.lv }, troops: c.troops, slaveTroops: c.slaveTroops,
         races: { ...(c.races || {}) }, alerts: { ...(c.alerts || {}) }, industry: c.industry, slaveWork: c.slaveWork, ages: c.age ? this.ageShares(c) : null,
       })),
-      stock: { ...this.stockOf(id) },
-      prod: fl ? { ...fl.prod } : zeroRes(), cons: fl ? { ...fl.cons } : zeroRes(),
+      stock: resObj(this.stockOf(id)), // 記録は名前の物 (world.js の ResVec の写し)
+      prod: resObj(fl ? fl.prod : zeroRes()), cons: resObj(fl ? fl.cons : zeroRes()),
       garrison: this.garrison[id] || 0, fort: this.forts?.[id] || 0, held: this.held[id] || 0, awe: this.awe[id] || 0, supply: this.supplied[id]?.k,
       projects: this.projects.filter((j) => j.sys === id).map((j) => ({ type: j.type, n: j.n, col: j.col, fac: j.fac, body: j.body, to: j.to, kind: j.kind, start: j.start, ready: j.ready, label: j.label })),
       credits: gv ? gv.credits : 0, bond: gv?.bond || 0, hh: gv?.hh || 0, loan: gv?.loan || 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null, energy: gv?.E || 0, power: this.power(id),

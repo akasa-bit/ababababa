@@ -8,6 +8,7 @@ const L_SUN_W = 3.828e26; // 太陽の光度 [W] (IAU 2015 決議 B3)
 const UNIT_KG = 1e9; // 資源の 1 単位 = 100 万 t (食料 1 単位 = 100 万人の 1 年分 = 1 人 1 t/年)
 // 資源ごとの 1 単位の質量 [kg]。工業品は、作るのに使う金属 0.5 単位と同じ質量 (工業で質量が保存される。燃料は燃やして出ていく)
 const RES_KG = { food: UNIT_KG, water: UNIT_KG, metal: UNIT_KG, fuel: UNIT_KG, rare: UNIT_KG, goods: 0.5 * UNIT_KG, slaves: UNIT_KG, hitech: 0.3 * UNIT_KG }; // hitech = 原料の低付加価値物品 0.5 単位 + 希少元素 0.05 単位の質量 (経済。回 KE5)
+const RES_KG_I = RES.map((r) => RES_KG[r]); // 番号で引く版 (world.js の ResVec)
 const PROP = {
   pv: 0.3, // ダイソン・スウォームの発電効率 (光 → 電気)
   laser: 0.5, // レーザーの電気 → 光
@@ -28,6 +29,7 @@ const FLEET_KE = (1 / Math.sqrt(1 - OFFROUTE_SPEED ** 2) - 1) * FLEET_KG * C2; /
 const TROOP_KG = 10 * RES_KG.goods; // 歩兵 1 連隊の質量 (訓練に使う工業品)
 const MIGRANT_KG = (100 * RES_KG.goods) / 2e5; // 移民 1 人あたりの船の質量 [kg] (入植船と同じ: 工業品 100 単位 ÷ 20 万人 = 250 t)
 const E_LABEL = { swarm: 'スウォームの発電', settler: '入植船', cargo: '貨物船', build: '資材輸送船', fleet: '艦隊', troop: '歩兵', migrant: '移民船', pirate: '海賊の船出 (盗まれた)', waste: '蓄えきれず捨てた' };
+const ELedgerVec = namedVec(Object.keys(E_LABEL)); // エネルギーの収支の表 (gv.eledger) の並び (world.js の namedVec)。この刻みの分 (gv.eled) は名前の物のまま
 // 帆に光の運ぶエネルギーが移る割合を、止まった状態から速さ beta までの加速で通したもの。
 // その瞬間の割合 2β/(1+β) (完全な反射の帆) を、運動量の式で積分した: 必要な光 = mc² (γβ + γ − 1) / 2
 const sailEff = (beta) => { const g = 1 / Math.sqrt(1 - beta * beta); return (2 * (g - 1)) / (g * beta + g - 1); };

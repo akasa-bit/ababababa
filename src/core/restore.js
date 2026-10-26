@@ -8,7 +8,7 @@
     this.year = d.year;
     // 物理の切り替え (2026-10-21 から)。ないセーブ (物理を入れる前) は物理なしのまま続ける。flare は銀河を作るときに効くので版の値のまま
     this.physics = obj(d.physics) ? { ...PHYSICS_OFF, ...d.physics, flare: ED.physics.flare } : { ...PHYSICS_OFF, flare: ED.physics.flare };
-    this.colonies = d.colonies;
+    this.colonies = d.colonies.map((c) => newCol(c)); // 作ったときと同じ並びの物に入れ直す (COL_FIELDS)
     this.ships = d.ships;
     this.log = Array.isArray(d.log) ? d.log : [];
     this.nextShipId = d.nextShipId || 1;
@@ -29,6 +29,7 @@
       for (const v of Object.values(this.govs)) if (v.pv !== undefined) { v.hh = (v.hh || 0) + v.pv; v.pv = undefined; } // 前の版の「民間」は家計に (借りは会社の借りのまま)
       // 前の版の収支の項目 (余剰の売却 export など) は消す (収入の合計に入らないように)
       for (const v of Object.values(this.govs)) if (obj(v.ledger)) for (const k of Object.keys(v.ledger)) if (!LEDGER_LABEL[k]) delete v.ledger[k];
+      for (const v of Object.values(this.govs)) { v.ledger = resFrom(v.ledger, LedgerVec); v.eledger = resFrom(v.eledger, ELedgerVec); } // 収支の表は並びに (world.js の namedVec)
     } else if (Number.isFinite(d.credits)) this.credits = d.credits;
     // 旧セーブの入植星系は地球 (太陽系) に従属させる
     for (const c of this.colonies) if (!this.govs[c.sys]) this.govs[c.sys] = newGov({ lord: c.sys === 0 ? null : 0, credits: 0, founded: c.founded ?? this.year });
@@ -72,11 +73,13 @@
       if (humanCaps.every((c) => c === sx.id) || this.snaps[sx.id]?.length) continue;
       this.snaps[sx.id] = [{ ...this.snapshot(sx.id), year: this.year - this.lightDelay(sx.id) }];
     }
-    if (obj(d.stock)) this.stock = { ...this.stock, ...d.stock };
-    if (obj(d.market)) this.market = d.market;
-    if (obj(d.absorb)) this.absorb = d.absorb; // 次の市場の刻みまでに溜まった需要と受注残
-    if (obj(d.unmet)) this.unmet = d.unmet;
-    if (obj(d.util)) this.util = d.util;
+    // 資源ごとの量は、セーブの名前の物から入れ物 (world.js の ResVec) に入れ直す (セーブにない資源は undefined のまま。前の版のセーブは前と同じに動く)
+    const vecs = (o, C) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, resFrom(v, C)]));
+    if (obj(d.stock)) this.stock = { ...this.stock, ...vecs(d.stock) };
+    if (obj(d.market)) this.market = Object.fromEntries(Object.entries(d.market).map(([k, m]) => [k, m && typeof m === 'object' ? { u: resFrom(m.u), p: resFrom(m.p), L: resFrom(m.L) } : m]));
+    if (obj(d.absorb)) this.absorb = vecs(d.absorb); // 次の市場の刻みまでに溜まった需要と受注残
+    if (obj(d.unmet)) this.unmet = vecs(d.unmet);
+    if (obj(d.util)) this.util = vecs(d.util, UtilVec);
     for (const st of Object.values(this.stock)) for (const r of RES) if (!Number.isFinite(st[r])) st[r] = 0;
     for (const c of this.colonies) this.stockOf(c.sys);
     if (Array.isArray(d.routes)) this.routes = d.routes.filter((r) => sysOk(r.a) && sysOk(r.b) && Array.isArray(r.transit));
@@ -93,7 +96,7 @@
     // 輸送中の量はセーブのものを使う (向かってくる荷の量 inbound は保存しないので、それだけ数え直す)
     const transit = this.routes.map((r) => r.transit);
     this.rebuildTransit();
-    this.routes.forEach((r, i) => { if (Array.isArray(transit[i]) && transit[i].length === 2) r.transit = transit[i]; });
+    this.routes.forEach((r, i) => { if (Array.isArray(transit[i]) && transit[i].length === 2) r.transit = transit[i].map((t) => resFrom(t)); });
     if (obj(d.supplied)) this.supplied = d.supplied;
     if (obj(d.garrison)) this.garrison = d.garrison;
     if (Array.isArray(d.fleets)) this.fleets = d.fleets.filter((f) => sysOk(f.from) && sysOk(f.to));

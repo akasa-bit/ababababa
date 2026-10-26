@@ -13,7 +13,7 @@
     for (const r of this.routes) { const c = this.routeCap(r) * h; room.set(r.id * 2, c); room.set(r.id * 2 + 1, c); }
     const sent = new Map();
     const fRate = MARKET.buy ? this.freightRate() : 0;
-    const spareOf = (id, res) => this.stockOf(id)[res] - 2 * (flow[id]?.cons[res] || 0); // 送り手が自分の在庫を見るとき
+    const spareOf = (id, res) => { const i = RI[res]; return this.stockOf(id)[i] - 2 * (flow[id]?.cons[i] || 0); }; // 送り手が自分の在庫を見るとき
     // 届いた要求を処理する
     for (const q of this.requests) {
       if (q.kind !== 'trade' || q.arrive > this.year) continue;
@@ -63,8 +63,8 @@
     this.requests = keepWhere(this.requests, (q) => q.kind !== 'trade' || q.amt > 0.001);
     // 未処理の要求の量 (受け手ごと・送り手ごと) と、要求の組 (受け手・送り手・資源。同じ要求を重ねないため)。
     // 何度も引くので、キーは文字列でなく数 (星系の番号と資源の番号から作る)
-    const sysRes = (sys, res) => Number(sys) * 8 + RES_INDEX[res];
-    const pairKey = (from, to, res) => (Number(from) * 65536 + Number(to)) * 8 + RES_INDEX[res];
+    const sysRes = (sys, res) => sysResI(sys, RES_INDEX[res]), sysResI = (sys, i) => Number(sys) * 8 + i;
+    const pairKey = (from, to, res) => pairKeyI(from, to, RES_INDEX[res]), pairKeyI = (from, to, i) => (Number(from) * 65536 + Number(to)) * 8 + i;
     const asked = new Map();
     const promised = new Map();
     const pendingPair = new Set();
@@ -92,8 +92,9 @@
     for (const T of [...new Set(this.routes.flatMap((r) => [r.a, r.b]))]) {
       const ft = flow[T];
       if (!ft) continue;
-      const use = (res) => ft.cons[res] + (ft.short?.[res] || 0); // 使った量 + 原料が足りずに使えなかった量 (docs/regions.md の 2。使った量だけを見ると、燃料のない星の工場は止まったまま輸入も始まらなかった)
-      const needs = RES.filter((res) => ft.prod[res] < use(res));
+      const use = (i) => ft.cons[i] + (ft.short?.[i] || 0); // 使った量 + 原料が足りずに使えなかった量 (docs/regions.md の 2。使った量だけを見ると、燃料のない星の工場は止まったまま輸入も始まらなかった)。資源は番号で
+      const needs = [];
+      for (let i = 0; i < NRES; i++) if (ft.prod[i] < use(i)) needs.push(i);
       if (!needs.length) continue;
       const { dist } = this.reach(T);
       const rate = this.rateAt(T); // 買い手の国の利子率
@@ -105,32 +106,32 @@
       // 関税は前と同じく、余りのある候補になったときに初めて求める (AI の国の財政 aif はセーブに入るので、引く時を変えない)
       const perS = new Map();
       const sOf = (S) => { let o = perS.get(S); if (!o) perS.set(S, (o = { seen: this.econSeen(T, S), tc: tradeCost(dist[S], rate), duty: undefined })); return o; };
-      for (const res of needs) {
-        const min = Math.max(0.5, 0.05 * use(res));
+      for (const i of needs) {
+        const res = RES[i], min = Math.max(0.5, 0.05 * use(i));
         // 代金は買い手の星系の民間が払う (払えない分は銀行から借りる)。前の版 (MARKET.buy = 0) は政府が払い、払えない星系は主人にだけ支援を求める
-        const broke = !MARKET.buy && this.gov(T).credits < min * PRICE[res];
-        const ka = sysRes(T, res);
+        const broke = !MARKET.buy && this.gov(T).credits < min * PRICE_I[i];
+        const ka = sysResI(T, i);
         // 売り手の候補 (交易路網で近い順に TRADE.sources まで)。重み = 売れる量 × (輸送中の利子)^(−σ) (Krugman 1978/2010 と CES の需要)
         const cands = [];
         let W = 0, WL = 0;
         for (const S of broke ? sources.filter((x) => x === lord) : sources) {
           if (cands.length >= TRADE.sources) break;
-          const kpair = pairKey(T, S, res);
+          const kpair = pairKeyI(T, S, i);
           if (pendingPair.has(kpair)) continue;
           if (blocked(T, S)) continue; // 交戦中の国どうしでは取引しない (開戦を知ってから)
-          const kp = sysRes(S, res), o = sOf(S);
-          const avail = (o.seen?.[1][RES_INDEX[res]] ?? 0) - (promised.get(kp) || 0); // 買い手に届いている売り手の余り (spareSeen。回 KE3。前はいまの余り)
+          const kp = sysResI(S, i), o = sOf(S);
+          const avail = (o.seen?.[1][i] ?? 0) - (promised.get(kp) || 0); // 買い手に届いている売り手の余り (spareSeen。回 KE3。前はいまの余り)
           if (avail <= min) continue;
-          const fr = (fRate * RES_KG[res] * dist[S] * SHIP_SPEED) / UNIT_KG; // 運賃の見込み (航行の年数 × 速さ = 光年)
-          const price = this.tradePrice(S, res, dist[S], rate, 0, o.tc);
-          const w = avail * GM.pow((price * (1 + (o.duty ??= this.tariffFor(T, S))) + fr) / PRICE[res], -TRADE.sigma); // 値段の安い売り手ほど多く買う。関税のぶん、ほかの国の売り手は高く見え、遠いほど運賃が乗る
+          const fr = (fRate * RES_KG_I[i] * dist[S] * SHIP_SPEED) / UNIT_KG; // 運賃の見込み (航行の年数 × 速さ = 光年)
+          const price = this.tradePrice(S, i, dist[S], rate, 0, o.tc);
+          const w = avail * GM.pow((price * (1 + (o.duty ??= this.tariffFor(T, S))) + fr) / PRICE_I[i], -TRADE.sigma); // 値段の安い売り手ほど多く買う。関税のぶん、ほかの国の売り手は高く見え、遠いほど運賃が乗る
           const lead = dist[S] + this.travelYears(T, S);
           cands.push({ S, kpair, kp, avail, w, price });
           W += w; WL += w * lead;
         }
         if (!cands.length) continue;
         // 受け手の目標 = 需要 × (在庫の厚さ + 要求の往復と航行の年数の重み付きの平均)。在庫の厚さは現実の値 (MARKET.cover。前の版は 2 年)
-        const want = Math.min(((MARKET.buy ? MARKET.cover[res] : 2) + WL / W) * use(res), 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked.get(ka) || 0);
+        const want = Math.min(((MARKET.buy ? COVER_I[i] : 2) + WL / W) * use(i), 0.8 * stockCap(ft.pop)) - sto[i] - inb[i] - (asked.get(ka) || 0);
         if (want <= min) continue;
         // 市場のある版は、代金は送り出すときに払う (信用状: 買い手の銀行が注文の時点で払うと約束するので、売り手は光速の送金を待たずに送れる。回 KE4・B-016。
         // 前は注文のときに先に払い、入荷待ちの注文 (平均 16 年) のぶん、試合の始めに GDP の約 1% が運ぶ途中に寝ていた)。
@@ -197,9 +198,10 @@
   shipCargo(from, legs, res, amt) {
     const path = [from, ...legs.map((l) => l.next)];
     const dest = path[path.length - 1];
-    this.mv(from, res, -amt, 'ship');
-    (this.inbound[dest] ??= zeroRes())[res] += amt;
-    for (const l of legs) l.r.transit[l.dir][res] += amt;
+    const ri = RI[res]; // res = 資源の名前 (荷 p.load の鍵)
+    this.mv(from, ri, -amt, 'ship');
+    (this.inbound[dest] ??= zeroRes())[ri] += amt;
+    for (const l of legs) l.r.transit[l.dir][ri] += amt;
     let times = [this.year], cly = 0;
     for (let i = 1; i < path.length; i++) { times.push(times[i - 1] + this.shipYears(path[i - 1], path[i])); cly += this.sysDist(path[i - 1], path[i]); }
     times = SIM_ONLY ? this.stopTimes(path, times, () => SHIP_SPEED, ACCEL.cargo) : withAccel(times, accelExtra(cly, SHIP_SPEED, ACCEL.cargo, this.physics)); // 荷は 10g
@@ -233,8 +235,9 @@
       let legs = typeof p.key === 'string' ? legsBy.get(p.key) : null; // 鍵は道のりの星系を > でつないだもの (shipCargo)
       if (!legs) { legs = this.legsOf(p.path); if (typeof p.key === 'string') legsBy.set(p.key, legs); }
       for (const [res, amt] of Object.entries(p.load)) {
-        (this.inbound[dest] ??= zeroRes())[res] += amt;
-        for (const l of legs) l.r.transit[l.dir][res] += amt;
+        const i = RI[res];
+        (this.inbound[dest] ??= zeroRes())[i] += amt;
+        for (const l of legs) l.r.transit[l.dir][i] += amt;
       }
     }
   }

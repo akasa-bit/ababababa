@@ -1,6 +1,32 @@
 const RES = ['food', 'water', 'metal', 'fuel', 'rare', 'goods', 'slaves', 'hitech']; // goods = 低付加価値物品、hitech = 高付加価値物品 (回 KE5。前の版のセーブと番号をずらさないように末尾に足した)
 const MINED = ['water', 'metal', 'fuel', 'rare'];
 const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番号 (計算用のキーに使う)
+const RI = RES_INDEX; // 短い名前 (RI.metal = 金属の番号)
+const NRES = RES.length;
+const MINED_I = MINED.map((r) => RES_INDEX[r]);
+// 名前つきの数の並び: names の順の配列で、名前でも引ける (v.food と v[RES_INDEX.food] は同じ)。資源ごとの量 (ResVec) と、政府の収支の表 (LedgerVec など) に使う。
+// 重い所は番号で回す (for (let i = 0; i < NRES; i++) v[i])。名前を変えながら同じ所で引く (v[r]) と JavaScript の遅い道 (megamorphic) になる (docs/perf.md)。
+// 名前で引く所 (v[r]・v.metal) もそのまま動く。セーブ (JSON) には前と同じ名前の物で書く (toJSON)。値のない名前 (前の版のセーブ) は undefined のまま持つ
+// (前の名前の物と同じふるまい)。名前は Array のメソッドの名前 (length・map など) と重ねない (tools/content.js --check が確かめる)
+const namedVec = (names) => {
+  const zeros = names.map(() => 0);
+  class V extends Array {
+    constructor() { if (zeros.length > 1) super(...zeros); else { super(zeros.length); this.fill(0); } } // 0 で埋めた詰まった配列 (引数が 2 つ以上なら長さでなく中身になる)
+    static get [Symbol.species]() { return Array; } // map・filter などは、ふつうの配列を返す
+    toJSON() { const o = {}; names.forEach((r, i) => { o[r] = this[i]; }); return o; }
+  }
+  V.prototype.names = names;
+  names.forEach((r, i) => Object.defineProperty(V.prototype, r, { get() { return this[i]; }, set(v) { this[i] = v; } }));
+  return V;
+};
+// 資源ごとの量 (星系の在庫・市場の値段・生産と消費・運ぶ途中の荷など)。稼働率 (game.util) は、資源ごと + 鉱業の稼働率 mine (末尾)
+const ResVec = namedVec(RES), UtilVec = namedVec([...RES, 'mine']);
+// 名前の物 (セーブ・前の形) から並びを作る (ない名前は undefined)。o が物でなければそのまま返す
+const resFrom = (o, C = ResVec) => { if (!o || typeof o !== 'object') return o; const v = new C(); v.names.forEach((r, i) => { v[i] = o[r]; }); return v; };
+// 写し・名前の物にした写し (画面と記録とセーブへ)。plain は並びでなければそのまま返す
+const resCopy = (v) => { const w = new v.constructor(); for (let i = 0; i < v.length; i++) w[i] = v[i]; return w; };
+const resObj = (v) => v.toJSON();
+const plain = (v) => (v instanceof Array && v.names ? v.toJSON() : v);
 // 忠誠度の目標の内訳。目標 = 先頭から順に足した値 (0〜100 に収める)
 // 忠誠度の目標の内訳。距離は直接には小さく効き、主人の関与 (指令・援助・艦隊・視察) が途絶えた年数が大きく効く
 // (遠い星系ほど関与が届くのに時間と政治力がかかるので、距離は間接的に効く)
