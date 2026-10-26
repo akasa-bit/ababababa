@@ -37,3 +37,12 @@ const SEED_FUNDS = { planet: 200, station: 80 }; // 入植船が新しい政府�
 const BASE_TAX = { planet: 5, station: 2 }; // 入植地ごとの基本の税収 [cr/年] (小さな入植地の政府を回すため) // 従属する星系が主人に納める、年間収入の割合
 
 const stockCap = (pop) => 500 + 5 * pop; // 星系の備蓄上限 (資源ごと)
+// 試合 (Game) の物に、作ったあと (刻みの途中や読み込みのとき) に初めて書き込む値の名前。constructor の始めに undefined として置き、試合の物の形を始めから固定する。
+// JavaScript の JIT は物の形 (値の名前と並び) ごとに速いコードを作るので、途中で値が増えて形が変わるたびに、this.… の読み出しやメソッドの呼び出しが遅い道
+// (megamorphic) に落ちて戻らない (この一覧を置いただけで、試合を回す時間が 2 割ほど減った)。値は undefined なので、??= や === undefined の判定は前と同じ。
+// 試合の物に新しく途中で書き込む値を足したら、ここにも名前を足す (tools/tests/shape.js が足し忘れを見つける)。セーブには入らない (セーブは SAVE_LEGACY と saveField の項目だけ)
+const GAME_LATE_FIELDS = [
+  '_sdG', '_sd', 'nmap', 'live', 'ksCache', 'stepping', 'stepH', 'aif', 'basket', '_demoLn', '_demoCache', '_schoolRefK', '_servMemo', 'intelSpan', 'flowPop',
+  'alpha', 'gpts', '_pinT', 'routeIx', '_peaceIx', 'travelCache', 'reachCache', 'msgTo', 'snapVer', 'pinc', '_remit', 'lastIndependence', 'pirateRaids',
+  'endShown', '_eduY', 'colIdx',
+];

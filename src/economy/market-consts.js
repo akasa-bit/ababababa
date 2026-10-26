@@ -173,8 +173,8 @@ saveField('econIntel', (game) => (Object.keys(game.econIntel.s).length ? game.ec
 });
 // 光速で届く途中の返金 (回 KE3。trade.js の refund): [{ to: 受け手, from: 送り手, v: 額, at: 届く年 }]。hh: 1 は遠くの持ち主への配当 (受け手の家計へ。回 KE5。remit)。なければ書かない
 saveField('refunds', (game) => (game.refunds.length ? game.refunds : undefined), {
-  init: (game) => { game.refunds = []; delete game._remit; },
-  read: (game, d) => { delete game._remit; game.refunds = Array.isArray(d.refunds) ? d.refunds.filter((r) => r && Number.isFinite(r.v) && Number.isFinite(r.at)) : []; },
+  init: (game) => { game.refunds = []; game._remit = undefined; }, // 消さずに undefined にする (消すと試合の物が遅い辞書の形になる。GAME_LATE_FIELDS)
+  read: (game, d) => { game._remit = undefined; game.refunds = Array.isArray(d.refunds) ? d.refunds.filter((r) => r && Number.isFinite(r.v) && Number.isFinite(r.at)) : []; },
 });
 // 先住民と接触した年 { [星系]: 年 } (回 KE3。colonize.js の isSurveyed。接触の知らせは光速で広がる)。前の版のセーブ (項目がない) は、接触ずみの星系をずっと前から知っていたとして読む
 saveField('surveyAt', (game) => (game.surveyAt && Object.keys(game.surveyAt).length ? game.surveyAt : undefined), {

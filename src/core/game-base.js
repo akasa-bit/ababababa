@@ -1,5 +1,6 @@
 class Game {
   constructor(galaxy) {
+    for (const k of GAME_LATE_FIELDS) this[k] = undefined; // 途中で書き込む値も始めから置いて、物の形を固定する (GAME_LATE_FIELDS の説明)
     this.galaxy = galaxy;
     this.rs = hashSeed(`${galaxy.seed}/sim`); // 試合の乱数の状態 (mulberry32)。セーブに含める
     SIM = this;
