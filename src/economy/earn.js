@@ -35,6 +35,7 @@
     else if (acct.nat !== undefined) { bankMove(this.natives[acct.nat], 'cr', v); t = 'nat'; }
     else { acct.way[acct.f] = (acct.way[acct.f] || 0) + v; t = 'way'; }
     if (MONEY_AUDIT) { const f = (MONEY_AUDIT[kind] ??= {}); f[t] = (f[t] || 0) + v; }
+    if (v > 0 && (t === 'hh' || t === 'fm') && GOV_BUY.has(kind)) { const gv = this.govs[acct.hh ?? acct.pv ?? acct.fm]; if (gv) gv.kB = (gv.kB || 0) + v; } // 政府が民間から買った分 (GDP。会社の資本の目当て。回 KE6。保存に入るよう星系の政府に持つ)
   }
   // 運ぶ途中の額を受け手へ渡す (受け手の政府がなければ送り手へ返す)。渡した額を返す
   release(kind, q, f, to, back) {

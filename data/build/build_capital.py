@@ -6,6 +6,8 @@
        (data/raw/gni/wdi_gni.csv.gz と data/raw/tech/wdi_tech.csv.gz。1990〜2024 年の国・年。R73 と同じ形)
   R79: 同じ所得の 5 分位ごとの、資本ストック ÷ 産出 (Penn World Table 11.0 の cn ÷ rgdpo。どちらも 2017 年の購買力平価の百万ドル) の 25%〜75% 点
        (data/raw/tfp/pwt110.csv.gz。cn は時価の購買力平価、rgdpo は 2017 年の購買力平価の連鎖なので、基準の年に近い 2015〜2019 年だけを使う)
+  ゲームの係数 (目標ではない。回 KE6・B-119 の実装): game.ky = R79 の 5 分位ごとの [所得の中央値 (2011 年のドル)、資本 ÷ 産出の中央値] の 5 点
+       (src/economy/market-consts.js の KSTOCK.ky。会社の目当ての資本 ÷ 付加価値を、星系の所得の ln で 5 点の間を直線で埋めて決める。端より外は端の値)
 使い方: python3 data/build/build_capital.py → data/derived/capital.json
         python3 data/build/build_capital.py --game ゲームのパネル.csv → ゲームの R78・R79
             (列 country, galaxy, year, pop (百万人), income (1 人あたりの実質の所得。2011 年の国際ドル), inv (投資 ÷ GDP [%]), ky (資本 ÷ 年の GDP)。
@@ -57,6 +59,7 @@ def compute():
                 'bands': quintiles(a, 'inv', 2), 'median_all': round(float(a['inv'].median()), 2)},
         'R79': {'rows': int(len(b)), 'countries': int(b['iso3'].nunique()), 'years': list(KY_YEARS),
                 'bands': quintiles(b, 'ky', 3), 'median_all': round(float(b['ky'].median()), 3)},
+        'game': {'ky': [[round(float(x['y'].median()) / TO2011), round(float(x['ky'].median()), 3)] for _, x in b.groupby(pd.qcut(b['y'], 5, labels=False))]},
     }
 
 
@@ -95,6 +98,7 @@ def main():
     for k in ('R78', 'R79'):
         r = res[k]
         print(k, r['rows'], '行', r['countries'], 'か国', '中央値', [b['median'] for b in r['bands']])
+    print('game.ky', res['game']['ky'])
 
 
 if __name__ == '__main__':

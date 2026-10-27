@@ -18,7 +18,7 @@ if (require.main !== module) return;
 const path = require('path');
 const H = require(path.resolve(__dirname, '..', 'headless'));
 const [seed = '5', years = '150', nations = '0'] = process.argv.slice(2);
-const KINDS = ['tax', 'natives', 'upkeep', 'build', 'trade', 'import', 'tribute', 'grant', 'treaty', 'interest', 'welfare', 'security', 'military', 'education', 'public', 'wages', 'spend', 'ctax', 'tariff', 'default', 'pension', 'health', 'housing', 'dividend', 'freight', 'research', 'rdcredit'];
+const KINDS = ['tax', 'natives', 'upkeep', 'build', 'trade', 'import', 'tribute', 'grant', 'treaty', 'interest', 'welfare', 'security', 'military', 'education', 'public', 'wages', 'spend', 'ctax', 'tariff', 'default', 'pension', 'health', 'housing', 'dividend', 'freight', 'research', 'rdcredit', 'invest'];
 const sim = H.load(process.env.HTML ? { src: process.env.HTML } : {});
 const g = sim.newGame(seed, { nations: Number(nations) });
 const holdings = () => {
