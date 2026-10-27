@@ -248,6 +248,20 @@ python3 data/build/build_innovation.py --game ゲームのパネル.csv   # ゲ�
 | 取得 | `data/fetch/fetch_hlw.py` → `data/raw/hlw/` | Holston, Laubach & Williams (2023) の推計 (ニューヨーク連銀。米国・カナダ・ユーロ圏の四半期の潜在の伸び g・その他の要因 z・自然利子率 r*・需給ギャップ。片側の推計、2026 年 Q2 まで。推計に使った実質 GDP の対数も)・WDI の人口の伸び (SP.POP.GROW。米国・カナダ・ユーロ圏)。取得日・URL・SHA-256・行数は `MANIFEST.json` |
 | 加工 | `data/build/build_rstar.py` → `data/derived/rstar.json` | 年平均の r* を、1 人あたりの潜在の伸び (g − 人口の伸び) に当てた最小二乗 (3 つの経済をまとめる): r* = 0.234 + 1.343 × 1 人あたりの伸び [% / 年] (184 の国・年、相関 0.80)。r* の 1%〜99% 点 0.23〜5.67%。HLW の g を実際の GDP の伸びの指数のならしでいちばんよく写す年数 5 年 (trend)。中央銀行の中立の金利 (`src/economy/fiscal-consts.js` の `CB.rs`・`CB.rsr`) |
 
+## 投資と資本のデータ (目標 R78・R79。回 KE6・B-119)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | 前からある `data/raw/gni/` (WDI の総固定資本形成 ÷ GDP NE.GDI.FTOT.ZS)・`data/raw/tfp/` (Penn World Table 11.0 の cn・rgdpo)・`data/raw/tech/` (所得 NY.GDP.PCAP.PP.KD) | |
+| 加工 | `data/build/build_capital.py` → `data/derived/capital.json` | 1 人あたり所得の 5 分位ごとの、投資 ÷ GDP の 25%〜75% 点 (R78。173 か国・5,378 国・年) と、資本 ÷ 産出 (cn ÷ rgdpo。2015〜2019 年) の 25%〜75% 点 (R79。174 か国) |
+
+```sh
+python3 data/build/build_capital.py                      # 計算する
+python3 data/build/build_capital.py --game ゲームのパネル.csv   # ゲームの R78・R79 (tools/capital-panel.js。B-119 の実装で足す)
+```
+
+- **結果**: 投資 ÷ GDP の中央値は所得の低い分位から 19.22・23.06・21.64・22.83・22.18% (所得によらず約 20%)。資本 ÷ 産出の中央値は 2.37・3.51・4.32・4.49・4.71 (豊かな国ほど高い)
+
 ## GNI と GDP のデータ (目標 R65。回 KE5・B-114)
 
 | 段 | 場所 | 中身 |
