@@ -115,7 +115,7 @@ function surpriseHtml(g, w) {
 function eventsHtml(app) {
   const g = app.game;
   const f = app.eventFilter || 'all';
-  const ALERT = { food: ['famine', '飢餓'], water: ['famine', '水不足'], goods: ['shortage', '工業品不足'], industry: ['shortage', '原料不足'], crowd: ['migration', '人口過密'] };
+  const ALERT = { food: ['famine', '飢餓'], water: ['famine', '水不足'], goods: ['shortage', '物品不足'], industry: ['shortage', '原料不足'], crowd: ['migration', '人口過密'], aging: ['shortage', '高齢化 (扶養比 70 超)'] };
   const kc = g.knownOwnSystems().flatMap((x) => g.knownColonies(x.id));
   const now = kc.flatMap((c) => Object.entries(c.alerts || {}).filter(([k, on]) => on && ALERT[k]).map(([k]) => ({ c, k })));
   const kwars = g.knownSystems().flatMap((x) => g.knownWars(x.id));

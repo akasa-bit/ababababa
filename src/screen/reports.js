@@ -11,7 +11,7 @@ function govSummary(k) {
   const lv = cols.reduce((a, c) => a + Object.values(c.lv || {}).reduce((x, y) => x + (y || 0), 0), 0);
   return { year: k.year, pop: cols.reduce((a, c) => a + (c.pop || 0), 0), cols: cols.length, lv, credits: k.credits || 0, loyalty: k.loyalty ?? null, mandate: k.mandate || 'balanced', unrest: k.unrest?.stage || 0, garrison: k.garrison || 0 };
 }
-function govReportText(g, id, a, b) {
+function govReportText(g, id, a, b, did = []) {
   const name = g.system(id).name;
   const parts = [];
   if (Math.abs(b.pop - a.pop) >= 0.5) parts.push(`人口 ${fmtPop(a.pop)} → ${fmtPop(b.pop)}`);
@@ -21,8 +21,9 @@ function govReportText(g, id, a, b) {
   parts.push(`資金 ${fmtAmt(a.credits)} → ${fmtAmt(b.credits)} cr`);
   const loy = a.loyalty !== null && b.loyalty !== null ? `忠誠度 ${Math.round(a.loyalty)} → ${Math.round(b.loyalty)}` : '';
   const why = `委任方針「${MANDATES[b.mandate] || MANDATES.balanced}」に従い、${MANDATE_WHY[b.mandate] || MANDATE_WHY.balanced}`;
+  const decided = did.length ? `。決めたこと: ${did.slice(-3).map((d) => `${d.what}${d.why ? ` (${d.why})` : ''}`).join('・')}` : '';
   const mood = b.unrest >= 2 ? '。住民の不満が強く、地球の判断を待っている' : b.unrest >= 1 ? '。住民に不満の兆しがある' : '';
-  return `${name} 総督より: ${why}。この ${Math.round(b.year - a.year)} 年で ${parts.join('・')}${loy ? `・${loy}` : ''}${mood}`; // 帯では 2 行で切れるので「なぜ」を先に
+  return `${name} 総督より: ${why}${decided}。この ${Math.round(b.year - a.year)} 年で ${parts.join('・')}${loy ? `・${loy}` : ''}${mood}`; // 帯では 2 行で切れるので「なぜ」を先に
 }
 // 0.5 秒ごと (知らせの帯を作るとき) に呼ぶ。新しい 10 年の記録が届いた星系の報告を作る
 function govReportsTick(g) {
@@ -37,7 +38,7 @@ function govReportsTick(g) {
     if (k.year < base.year + GOV_REPORT_YEARS) continue;
     const now = govSummary(k);
     GovReports.hist[s.id] = now;
-    GovReports.list.unshift({ id: `${s.id}-${Math.floor(k.year)}`, sys: s.id, written: k.year, arrived: g.year, text: govReportText(g, s.id, base, now), at: performance.now() });
+    GovReports.list.unshift({ id: `${s.id}-${Math.floor(k.year)}`, sys: s.id, written: k.year, arrived: g.year, text: govReportText(g, s.id, base, now, (k.did || []).filter((d) => d.year > base.year)), at: performance.now() });
     if (GovReports.list.length > 40) GovReports.list.pop();
   }
 }
