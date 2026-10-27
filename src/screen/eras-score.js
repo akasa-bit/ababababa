@@ -112,7 +112,7 @@
       let ok = null;
       if (c.id === 'sixty' && this.realmSystems(this.cap).length >= 60) ok = true;
       if (c.id === 'far' && this.realmSystems(this.cap).some((x) => distance(x, sol) > 40)) ok = true;
-      if (end && ok === null) ok = c.id === 'loyal' ? true : c.id === 'unify' ? this.independentRealms() === 0 : false;
+      if (end && ok === null) ok = c.id === 'loyal' ? true : c.id === 'unify' ? this.independentRealms() === 0 && this.realmSystems(this.cap).length >= (CHALLENGES.unify.min || 0) : false;
       if (ok === null) continue;
       c.status = ok ? 'done' : 'failed';
       c.at = this.year;

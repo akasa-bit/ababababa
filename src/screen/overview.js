@@ -35,7 +35,7 @@ function empireOverview(app) {
   }).join('');
   const bulk = '';
   const popTable = `<h3>人口と入植地</h3>${bulk}<div class="scroll"><table class="tbl">
-    <tr><th>入植地</th><th>星系</th><th>種類</th><th>人口</th><th>上限</th><th>増加/年</th><th>生活物資</th><th>工業品</th><th>就業</th><th>段階 (所得)</th><th>種族 (この惑星)</th><th>情報</th></tr>${colonies}</table></div>`;
+    <tr><th>入植地</th><th>星系</th><th>種類</th><th>人口</th><th>上限</th><th>増加/年</th><th>生活物資</th><th>物品</th><th>就業</th><th>段階 (所得)</th><th>種族 (この惑星)</th><th>情報</th></tr>${colonies}</table></div>`;
 
   const totals = zeroRes();
   const totalNet = zeroRes();

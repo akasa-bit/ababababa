@@ -30,10 +30,20 @@ function fmtJ(v) {
 function researchHtml(g) {
   const T = g.tech[g.cap];
   if (!T) return '';
-  const label = { farm: '農業', mine: '鉱業', ind: '工業', hi: '高付加価値の工業' }; // hi は回 KE5 で足した分野 (前は「undefinedの技術」と出ていた。回 KE6 で 1 行だけ直した)
-  const rows = RESEARCH.fields.map((f) => `<tr><th>${label[f]}の技術</th><td>×${T.A[f].toFixed(3)}</td></tr>`).join('');
-  return `<h3>${ME.gov}の研究</h3><table class="tbl">${rows}<tr><th>研究者</th><td>${fmtAmt(T.S || 0)} 人</td></tr></table>
-    <p class="note">技術の水準は 1 人あたりの産出に掛かる。研究者の数は人口と所得で決まり、分野には付加価値の比で分かれる。研究者 1 人あたりの研究の生産性は、技術が進むほど下がる (アイデアは見つけにくくなる)。</p>`;
+  const label = { farm: '農業', mine: '鉱業', ind: '工業', hi: '高付加価値の工業' };
+  // ほかの国の技術は首都どうしの光の年数だけ遅れて見え、学校が進んだ国ほど多くを取り込める (回 KE6・B-121)
+  const fr = g.techFrontier?.(String(g.cap)) || {};
+  const rows = RESEARCH.fields.map((f) => {
+    const x = fr[f], A = T.A[f];
+    const front = !x?.top ? '<span class="muted">ほかの国が見えていない</span>' : x.F <= A ? '<span class="muted">自国が前線</span>'
+      : `×${x.F.toFixed(3)} <span class="muted">(${esc(g.realmName(Number(x.top)))}・自国は ${pct(A / x.F)})</span>`;
+    return `<tr><th>${label[f]}の技術</th><td>×${A.toFixed(3)}</td><td>${front}</td><td>${x?.top ? pct(x.theta) : '—'}</td></tr>`;
+  }).join('');
+  // 汎用技術 (GPT。回 KE6・B-123): 自国に知らせが届いたものだけ
+  const gpts = (g.gptPhases?.(String(g.cap)) || []).map((p) => `<tr><th>第 ${p.k + 1} の汎用技術</th><td colspan="3">${esc(g.realmName(p.inv))}・${Math.floor(p.t)}年 — <b>${esc(p.phase)}</b> <span class="muted">(採用 ${pct(p.a)})</span></td></tr>`).join('');
+  return `<h3>${ME.gov}の研究</h3><table class="tbl"><tr><th>分野</th><th>技術</th><th>見えている前線</th><th>取り込める上限</th></tr>${rows}<tr><th>研究者</th><td colspan="3">${fmtAmt(T.S || 0)} 人</td></tr>${gpts}</table>
+    <p class="note">技術の水準は 1 人あたりの産出に掛かる。研究者の数は人口と所得と学力で決まり、分野には付加価値の比で分かれる。研究者 1 人あたりの研究の生産性は、技術が進むほど下がる (アイデアは見つけにくくなる)。予算の「教育」で学力を上げると、研究者が増えて技術も伸びる。</p>
+    <p class="note">ほかの国の技術は、首都どうしの光の年数だけ遅れて伝わる (見えている前線)。学校 (就学年数と学力) が進んだ国ほど、前線の多くを取り込める (取り込める上限)。汎用技術は、採り入れはじめは補完の投資に人を回すので伸びが一度下がり (転換点)、そのあと大きく上がる (展開期)。</p>`;
 }
 // 1 人あたりの実質の所得 (2011 年の国際ドル。構造転換の物差し)
 const incomeText = (y) => `${Math.round(y || 0).toLocaleString('en-US')} ドル/人`;
@@ -104,7 +114,7 @@ function sysFlags(g, sys, k, cols) {
   const famine = cols.filter((c) => c.alerts?.food || c.alerts?.water).length;
   const short = cols.filter((c) => c.alerts?.goods || c.alerts?.industry).length;
   if (famine) flags.push(['enemy', `飢餓・水不足 (${famine} か所)`]);
-  else if (short) flags.push(['warn', `工業品・原料の不足 (${short} か所)`]);
+  else if (short) flags.push(['warn', `物品・原料の不足 (${short} か所)`]);
   const wars = k?.wars?.length || 0;
   if (wars) flags.push(['warn', `先住民との征服戦争 (${wars})`]);
   return flags;
@@ -228,7 +238,7 @@ function railHtml(g) {
       <div class="opts"><button data-act="treatyopen" data-id="${c.id}">${ico('peace')}条件を選ぶ</button></div></div>`),
     ...g.peaceOffers.filter((o) => o.to === g.cap).map((o) => `<div class="dec"><div class="m">講和の申し入れ・${Math.floor(o.until)}年まで</div>
       <div class="t">${esc(g.realmName(o.from))}が講和を申し入れている (戦勝点 ${g.warScore(g.cap, o.from)}。勝っている側が講和会議で条件を選ぶ)</div>
-      <div class="opts"><button data-act="acceptpeace" data-key="${o.key}">${ico('peace')}講和に応じる</button></div></div>`),
+      <div class="opts"><button data-act="acceptpeace" data-key="${o.key}">${ico('peace')}${o.surrender ? '降伏する' : '講和に応じる'}</button></div></div>`),
   ];
   const guide = guideHtml(g);
   const surprise = surpriseWarnings(g);

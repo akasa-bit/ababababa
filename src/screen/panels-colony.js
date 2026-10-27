@@ -98,7 +98,8 @@ function colonyBox(g, c) {
     <table class="tbl kv">
       ${row('人口', `${fmtPop(c.pop)} / 上限 ${fmtPop(cap)}`)}
       ${row('人口増加', `<span class="${(c.growth || 0) < 0 ? 'bad' : 'hz'}">${((c.growth || 0) * 100).toFixed(1)}%/年</span>`)}
-      ${row('充足率', `食料 ${pct(s.food)}${g.needsWater(c) ? `・水 ${pct(s.water)}` : ''}・工業品 ${pct(s.goods)}`)}
+      ${c.ages ? row('年齢', ageBarHtml(c.ages)) : ''}
+      ${row('充足率', `食料 ${pct(s.food)}${g.needsWater(c) ? `・水 ${pct(s.water)}` : ''}・物品 ${pct(s.goods)}`)}
       ${row('工場の稼働', pct(c.industry ?? 1))}
       ${c.lv.slaveworks ? row('奴隷工房', `稼働 ${pct(c.slaveWork ?? 0)} (奴隷 ${fmtAmt(SLAVEWORKS_USE * c.lv.slaveworks)}人/年を使い、工業品 ${fmtAmt(SLAVEWORKS_OUT * c.lv.slaveworks)}/年)`) : ''}
       ${row('種族', raceText(c))}
