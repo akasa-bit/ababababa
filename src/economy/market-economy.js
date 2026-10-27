@@ -260,11 +260,11 @@
     const a = Math.min(1, h / KSTOCK.smooth), b = y + (this._buy?.[id] || 0) / h, y0 = gv.kY ?? b;
     gv.kY = y0 + (b - y0) * a;
     gv.kG = (gv.kG ?? 0) + (clamp(GM.log(gv.kY / y0) / h, 0, KSTOCK.gmax) - (gv.kG ?? 0)) * a;
-    const ky = this.kyOf(id), Ks = (ky * gv.kY) / (1 - CAPITAL.delta * ky);
+    const Ks = this.kyOf(id) * gv.kY;
     if (gv.K === undefined) { gv.K = Ks; return; } // 始めの資本
     gv.K *= 1 - CAPITAL.delta * h;
     const I = clamp(CAPITAL.delta * gv.K + gv.kG * Ks + (Ks - gv.K) * KSTOCK.speed, 0, CAPITAL.alpha * y) * h;
-    if (I > 0) { this.cash('build', -I, { fm: id }); this.cash('build', I, { hh: id }); this._buy[id] -= I; gv.K += I; this.invNote(id, I); } // 自分の投資は目当ての土台に入れない
+    if (I > 0) { this.cash('invest', -I, { fm: id }); this.cash('invest', I, { hh: id }); gv.K += I; this.invNote(id, I); }
   }
   // 星系の目当ての資本 ÷ 付加価値 (KSTOCK.ky を、星系の 1 人あたりの実質の所得の ln で直線で埋める)
   kyOf(id) {

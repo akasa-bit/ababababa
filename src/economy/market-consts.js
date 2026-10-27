@@ -122,12 +122,13 @@ const INVEST = { ky: CAPITAL.alpha / (CAPITAL.irr + CAPITAL.delta), margin: 0.5,
 //   持ち主の星系に入植地がなくなったら、その分は地元のものになる。min より小さい持ち分は消す
 const OWNER = { colony: 1, fdi: 0.1103, out: 1.0445, min: 1e-3, gmax: 0.2 };
 // 会社の資本と投資 (回 KE6・B-119 の 1。ユーザーの決定 2026-10-26「資本を生産に効かせる」。docs/regions.md の 7)。星系の会社が資本 gv.K [cr] を持ち、年 CAPITAL.delta ずつ古くなる。
-//   目当ての資本 K* = ky(y) × gv.kY ÷ (1 − delta × ky(y))。gv.kY = ならした (smooth 年) 市場の付加価値 + 政府が民間から買った分 (GOV_BUY。建設・維持費・予算。
-//   会社の自分の投資は除く)。÷ (1 − delta × ky) で、古くなった分の投資を足した GDP に対して資本 ÷ GDP が ky になる (目標 R79 は資本 ÷ GDP)。ky(y) は星系の 1 人あたりの実質の所得 y (学歴と同じ c.incU。2011 年のドル) の ln で、
+//   目当ての資本 K* = ky(y) × gv.kY。gv.kY = ならした (smooth 年) GDP (市場の付加価値 + 政府が民間から買った分 GOV_BUY。建設・維持費・予算。tools/fiscal-panel.js の GDP と同じ。
+//   目標 R79 は資本 ÷ GDP)。ky(y) は星系の 1 人あたりの実質の所得 y (学歴と同じ c.incU。2011 年のドル) の ln で、
 //   ky の 5 点 [所得, 資本 ÷ 産出] の間を直線で埋める (端より外は端の値)。5 点は Penn World Table 11.0 の資本 ÷ 産出 (cn ÷ rgdpo、2015〜2019 年) の、
 //   所得の 5 分位ごとの所得と比の中央値 (目標 R79 と同じデータ。data/derived/capital.json の game.ky)。豊かな国ほど資本が多い。
 //   会社は配当の前に、古くなった分 + 伸びの分 (ならした付加価値の伸び gv.kG × K*。0〜gmax) + 目当てとの差 × speed を投資する。払えるのは
-//   その刻みの利潤 (付加価値の CAPITAL.alpha) まで (設備は手持ちの利潤で建てる。借りない)。建設の賃金として家計に払う (お金の種類 build)。
+//   その刻みの利潤 (付加価値の CAPITAL.alpha) まで (設備は手持ちの利潤で建てる。借りない)。建設の賃金として家計に払う (お金の種類 invest。利潤の使い道なので、
+//   政府の買い物 (build) と違って GDP には足さない。足すと、付加価値に入っている利潤を二度数えて税収 ÷ GDP (R19) が 0.134 → 0.105 に下がった)。
 //   始めの資本は、初めて付加価値を測った刻みの K*。この段では資本は産出に効かない (B-119 の 2 で効かせる)。smooth・speed は仮の値
 const GOV_BUY = new Set(['build', 'upkeep', 'welfare', 'security', 'military', 'education', 'public', 'health']); // 政府が民間から買う出入り (GDP に入る。tools/fiscal-panel.js と同じ)
 const KSTOCK = { ky: [[2343, 2.37], [7106, 3.513], [13518, 4.315], [26436, 4.485], [50989, 4.706]], smooth: 5, speed: 0.5, gmax: OWNER.gmax };
