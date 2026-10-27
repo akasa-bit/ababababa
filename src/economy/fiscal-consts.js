@@ -57,25 +57,30 @@ const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算�
 const DEBT = { a: -0.0023, rho: 0.0336, beta: 0.056, war: -0.0171, sd: 0.0269, ar: 0.6971, trend: 10, gap: [-0.1756, 0.1451], cash: 0.1613, spend: 1, limit: 0.4687, repay: 0 };
 // 中央銀行・国の物価・利回り・国債の信用の危険 (回 KE1・B-001。docs/money.md の 5)。帳簿は前のまま基準の値段 (実質の cr) で持ち、物価の水準 P は国ごとの数として持つ。
 // 利子の受け払いは実質の利子率 (名目 − 物価の上がり方。Fisher) で行うので、思ったより物価が上がれば国債の重さが減り、預金が目減りする (インフレ税の入口)。
-//   政策金利 i: 人間でない国 (と、任せた人間の国) の中央銀行は Taylor (1993) の則 i = rstar + π + phiPi (π − pistar) + phiY × 景気のずれ。幅は RATE_RANGE。
-//     景気のずれは、国の GDP のこの 1 年の伸び (前の刻みにもあった星系だけで) − speed 年でならした伸び (Walsh 2003 の速さの則)。幅 gap は JST R6 の 18 か国の、実質 GDP の伸び − HP フィルター
-//     (λ = 100) の傾向の伸び の 1%〜99% 点 (data/build/analyze_fiscal.py の params)
-//     rstar = 自然な実質の利子率 (前の利子率の既定 年 1%。R01 の較正がこれで行われている)、pistar = 物価の目標 (先進国の中央銀行の 2%)、phiPi・phiY は Taylor (1993) の値
-//   物価の上がり方 π = pistar + x + kappa × 景気のずれ − lambda × (実質の政策金利 − rstar) + u。x は人々の見込みの目標からのずれで、
+//   政策金利 i: 人間でない国 (と、任せた人間の国) の中央銀行は Taylor (1993) の則 i = r* + π + phiPi (π − pistar) + phiY × 景気のずれ。幅は RATE_RANGE。
+//     景気のずれは、国の GDP のこの 1 年の伸び (前の刻みにもあった星系だけで) − speed 年でならした伸び (Walsh 2003 の速さの則)。幅 gap は JST R6 の 18 か国の、実質 GDP の伸び − HP フィルター (λ = 100) の傾向の伸び の 1%〜99% 点 (data/build/analyze_fiscal.py の params)
+//     r* = 国の中立の実質の金利 = rs[0] + rs[1] × (1 人あたりの潜在の伸びを trend 年でならしたもの)、幅 rsr (回 KE6・B-118)。Holston, Laubach & Williams (2023) の
+//     米国・カナダ・ユーロ圏の r* を、WDI の人口の伸びを引いた 1 人あたりの潜在の伸びに当てた最小二乗 (184 の国・年、相関 0.80) と、r* の 1%〜99% 点 (data/build/build_rstar.py)。
+//     潜在の産出 = 入植地の人口 × 生産力 potentialUSD (基準の値段。売れ残りと原料の不足を受けない)。
+//     HLW は総額の伸びで r* = g + z と置くが、ゲームの国は入植と移民で人口が年に何十 % も増えるので、1 人あたりに当て直した (ラムゼーの式の形)。
+//     trend = 5 年 (HLW の潜在の伸び g を、実際の GDP の伸びの指数のならしでいちばんよく写す年数。3 つの経済とも 5 年前後。data/derived/rstar.json の game.trend)。rstar = 始めの中立の金利と、中央銀行のない所の既定 (前の利子率の既定 年 1%。R01 の較正がこれで行われている)
+//     pistar = 物価の目標 (先進国の中央銀行の 2%)、phiPi・phiY は Taylor (1993) の値
+//   物価の上がり方 π = pistar + x + kappa × 景気のずれ − lambda × (実質の政策金利 − r*) + u。x は人々の見込みの目標からのずれで、
 //     実際の上がり方に theta の速さで寄り、anchor の速さで目標に戻る (中央銀行への信認)。u は 1 年の自己相関 ar・ばらつき sd のゆらぎ。
 //     政策金利を物価より低いまま止めておくと、見込みが上がって物価の上がり方が高いまま続く。
 //     見込みの寄り方 theta ÷ (theta + anchor) と lambda の和が 1 に近いと、ずれが何十倍にもふくらむ (anchor なし、または 0.71 + 0.25 では、政策金利の下限 −1% で
 //     デフレが自分で深まり、試しのシード 7 で 2315 年から π が −20% に張りついた)。いまは 0.5 + 0.1 で、ずれは 2.5 倍まで。pi は π の幅
 //   国の物価の指数 (cpi) = P × 家計が買った物の値段の指数 (物の量を、いまの値段と基準の値段で比べた Paasche 指数。サービスは入れない)
-//   長期の国債の利回り = 期待の仮説 (いまの政策金利が persist 年でならしの値 rstar + pistar に戻ると見て、mat 年の平均) + 期間の上乗せ tp + 信用の上乗せ credit × 国債 ÷ GDP。
+//   長期の国債の利回り = 期待の仮説 (いまの政策金利が persist 年でならしの値 r* + pistar に戻ると見て、mat 年の平均) + 期間の上乗せ tp + 信用の上乗せ credit × 国債 ÷ GDP。
 //     tp と credit は JST R6 の 18 か国で (長期 − 短期) を債務 ÷ GDP に当てた国ごとの切片と傾きの中央値 (目標 R34・R35。data/build/analyze_fiscal.py の params)
 //   国債の利子: 政府ごとの国債の利札 cpn (出した年の長期の利回りの、額で重みをつけた平均)。毎年 1 ÷ roll ずつ、いまの利回りで借り換える
 //   不履行: 国債 ÷ GDP が dmax (JST の 18 か国の、国ごとの債務 ÷ GDP の最大の中央値) を超えた政府は、国債の haircut (Cruces & Trebesch 2013 の 180 件の平均 37%) を払わない。
 //     銀行の損は、利子と同じく預金の額に比べて預金から引く (銀行の純資産は 0 のまま)
 // kappa・lambda・theta・anchor・sd・ar・persist・roll・speed は仮の値 (現実の政策の反応と比べるのは回 KE3・B-006)
-const CB = { rstar: 0.01, pistar: 0.02, phiPi: 0.5, phiY: 0.5, speed: 5, gap: [-0.1355, 0.1175], kappa: 0.1, lambda: 0.1, theta: 0.3, anchor: 0.3, sd: 0.01, ar: 0.5, pi: [-0.2, 1], persist: 3, mat: 10, roll: 7, tp: -0.0004, credit: 0.0175, dmax: 1.3821, haircut: 0.37 };
+const CB = { rstar: 0.01, rs: [0.00234, 1.343], rsr: [0.0023, 0.0567], trend: 5, pistar: 0.02, phiPi: 0.5, phiY: 0.5, speed: 5, gap: [-0.1355, 0.1175], kappa: 0.1, lambda: 0.1, theta: 0.3, anchor: 0.3, sd: 0.01, ar: 0.5, pi: [-0.2, 1], persist: 3, mat: 10, roll: 7, tp: -0.0004, credit: 0.0175, dmax: 1.3821, haircut: 0.37 };
 // 中央銀行の状態 (国ごと。国 = 首都の星系): P = 物価の水準 (基準の値段 = 1)、x = 見込みの目標からのずれ、u = ゆらぎ、pi = 物価の上がり方、i = 政策金利、m = 物の値段の指数、
-// yp・g1・gs = 前の刻みの星系ごとの GDP・1 年でならした伸び・speed 年でならした伸び、h = 政策金利の 1 年ごとの記録 [[年, i]] (遠い星系には、知らせが光速で届いた分の政策金利が効く)
+// yp・pp・np = 前の刻みの星系ごとの GDP・潜在の産出・人口、g1・gs = 1 年でならした伸び・speed 年でならした伸び、gt = 1 人あたりの潜在の伸びを trend 年でならしたもの、
+// rs = 中立の実質の金利 (回 KE6。前の版のセーブにはなく、rstar から始まる)、h = 政策金利の 1 年ごとの記録 [[年, i]] (遠い星系には、知らせが光速で届いた分の政策金利が効く)
 saveField('cb', (game) => (Object.keys(game.cb).length ? game.cb : undefined), {
   init: (game) => { game.cb = {}; },
   read: (game, d) => { game.cb = d.cb && typeof d.cb === 'object' ? Object.fromEntries(Object.entries(d.cb).filter(([, s]) => s && Number.isFinite(s.P) && Number.isFinite(s.i) && Array.isArray(s.h))) : {}; },
