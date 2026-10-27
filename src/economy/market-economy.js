@@ -254,10 +254,10 @@
     }
     for (const [A, f, d] of add) A[f] += d;
   }
-  // 会社の資本と投資 (KSTOCK。回 KE6・B-119 の 1)。y = この刻みの市場の付加価値 [cr/年]。政府が民間から買った分は、前の刻みからの this._buy
+  // 会社の資本と投資 (KSTOCK。回 KE6・B-119 の 1)。y = この刻みの市場の付加価値 [cr/年]。政府が民間から買った分は、前の刻みからの gv.kB
   capitalStep(gv, id, y, h) {
     if (!(y > 0) || !this.isColonized(id)) return;
-    const a = Math.min(1, h / KSTOCK.smooth), b = y + (this._buy?.[id] || 0) / h, y0 = gv.kY ?? b;
+    const a = Math.min(1, h / KSTOCK.smooth), b = y + (gv.kB || 0) / h, y0 = gv.kY ?? b;
     gv.kY = y0 + (b - y0) * a;
     gv.kG = (gv.kG ?? 0) + (clamp(GM.log(gv.kY / y0) / h, 0, KSTOCK.gmax) - (gv.kG ?? 0)) * a;
     const ky = this.kyOf(id), Ks = (ky * gv.kY) / (1 - CAPITAL.delta * ky);
@@ -276,12 +276,10 @@
     return P[P.length - 1][1];
   }
   // 星系の投資 (政府の建設・会社の資本の投資・民間の採掘の能力。測るため。回 KE6): invNote で刻みの額を足し、invStep で 1 年でならす (gv.inv [cr/年])
-  invNote(id, v) { if (v > 0 && this.govs[id]) (this._inv ??= {})[id] = (this._inv[id] || 0) + v; }
+  invNote(id, v) { const gv = this.govs[id]; if (v > 0 && gv) gv.kI = (gv.kI || 0) + v; }
   invStep(h) {
     const a = Math.min(1, h);
-    for (const [key, gv] of Object.entries(this.govs)) { const x = (this._inv?.[key] || 0) / h; if (x > 0 || gv.inv) gv.inv = (gv.inv || 0) + (x - (gv.inv || 0)) * a; }
-    this._inv = {};
-    this._buy = {};
+    for (const gv of Object.values(this.govs)) { const x = (gv.kI || 0) / h; if (x > 0 || gv.inv) gv.inv = (gv.inv || 0) + (x - (gv.inv || 0)) * a; delete gv.kI; delete gv.kB; }
   }
   // 入植地の 1 人あたりの生産力 [2011 年の国際ドル] (構造転換の曲線に入れる所得 c.inc): いまの就業の割合で物の部門が作れる付加価値を基準の値段で測り
   // (生産側の実質 GDP。市場の値段の揺れと売れ残りの値下がりを受けない)、物の部門の人 1 人あたりにしたもの (サービスの人も同じ生産力とみなす)。
