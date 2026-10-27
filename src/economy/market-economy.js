@@ -260,7 +260,7 @@
     const a = Math.min(1, h / KSTOCK.smooth), b = y + (this._buy?.[id] || 0) / h, y0 = gv.kY ?? b;
     gv.kY = y0 + (b - y0) * a;
     gv.kG = (gv.kG ?? 0) + (clamp(GM.log(gv.kY / y0) / h, 0, KSTOCK.gmax) - (gv.kG ?? 0)) * a;
-    const Ks = this.kyOf(id) * gv.kY;
+    const ky = this.kyOf(id), Ks = (ky * gv.kY) / (1 - CAPITAL.delta * ky);
     if (gv.K === undefined) { gv.K = Ks; return; } // 始めの資本
     gv.K *= 1 - CAPITAL.delta * h;
     const I = clamp(CAPITAL.delta * gv.K + gv.kG * Ks + (Ks - gv.K) * KSTOCK.speed, 0, CAPITAL.alpha * y) * h;

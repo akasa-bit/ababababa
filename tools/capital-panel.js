@@ -2,9 +2,10 @@
 // ゲームの中身は変えない (出入りの関数を道具の側で包んで数えるだけ)。国 (首都とその従属星系) ごと・年ごとに 1 行:
 //   pop    = 国の人口 [100 万人]
 //   income = 国の 1 人あたりの実質の所得 [2011 年の国際ドル] (incomeUSD の、人口の重みの、その年の刻みの平均。R65 と同じ)
-//   gdp    = 民間の付加価値 (その年の刻みごとの所得 c.incY × 刻みの年数の合計) + 政府が民間から買った分 (tools/fiscal-panel.js と同じ定義。建設はここに入る)
+//   gdp    = 民間の付加価値 (その年の刻みごとの所得 c.incY × 刻みの年数の合計) + 政府が民間から買った分 (ここまで tools/fiscal-panel.js と同じ。政府の建設はここに入る)
+//            + 会社の資本の投資 (お金の種類 invest。国民経済計算の GDP = 消費 + 投資 + 政府 のとおり、投資の建設を産出に数える)
 //   inv    = 投資 ÷ gdp [%]。投資 = その年に家計と会社が受け取った建設の代金 (お金の種類 build: 政府の建設の賃金と資材・民間の採掘の能力。入植船が運んで着いた
-//            開拓資金は除く) + 会社の資本の投資 (お金の種類 invest。利潤の使い道なので gdp には足さない)
+//            開拓資金は除く) + 会社の資本の投資 (お金の種類 invest)
 //   ky     = 国の会社の資本の合計 (年の終わりの gv.K) ÷ gdp
 // 使い方: node tools/capital-panel.js <出力.csv> [銀河の数=30] [年数=150] [国の数=6]   (HTML=… で版を選ぶ)
 const fs = require('fs');
@@ -27,7 +28,7 @@ function play(seed) {
       const id = acct.hh ?? acct.fm;
       if (GOV_BUY.has(kind) && v > 0) A(id).buy += v;
       if (kind === 'build' && v > 0) { if (seedMove) seedMove = false; else A(id).inv += v; }
-      if (kind === 'invest' && v > 0 && acct.hh !== undefined) A(id).inv += v;
+      if (kind === 'invest' && v > 0 && acct.hh !== undefined) { A(id).inv += v; A(id).buy += v; }
     }
     return cash(kind, v, acct);
   };
