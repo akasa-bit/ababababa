@@ -140,7 +140,7 @@
     if (why) this.message(`議会の支持 ${v > 0 ? '+' : ''}${v} (${why})`);
   }
   councilYearly() {
-    this.council = clamp(this.council - 0.25 - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20) + TAX_COUNCIL * (burdenK(this.fiscal || FISCAL_DEFAULT) - 1), 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる。重い税も落とす
+    this.council = clamp(this.council - 0.25 - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20) + TAX_COUNCIL * (burdenK(this.fiscal || this.fiscalFor(this.cap, this.cap)) - 1), 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる。重い税も落とす
     if (this.council < 15) {
       this.event('goal', this.cap, `議会の支持が ${Math.round(this.council)} まで落ち、政権が交代した。国家方針は白紙に戻り、貯めていた政治力を失った`);
       this.policy = null;

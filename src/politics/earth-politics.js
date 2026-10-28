@@ -3,7 +3,7 @@
     for (const [k, gv] of Object.entries(this.govs)) {
       const id = Number(k);
       const lord = gv.lord;
-      if (lord === null || lord === undefined || this.isHuman(lord) || !this.isColonized(id) || this.neglectOf(gv) < 20) continue;
+      if (lord === null || lord === undefined || this.isSeat(lord) || !this.isColonized(id) || this.neglectOf(gv) < 20) continue; // 席の国は自分で関与する (視察など。earthPoliticsYearly)
       if (this.gov(lord).credits < 300 || this.rand() < 0.5) continue;
       this.sendGrant(lord, id, 50, true);
     }

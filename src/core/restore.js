@@ -121,6 +121,7 @@
       this.players = d.players;
       this.pi = Number.isInteger(d.pi) && d.pi >= 0 && d.pi < d.players.length ? d.pi : 0;
     }
+    this.addAiSeats(); // AI の国の席のない前のセーブ (回 SE5 より前) は、読み込みで席を足す
     if (typeof d.autoRoutes === 'boolean') this.autoRoutes = d.autoRoutes;
     if (Array.isArray(d.wars)) this.wars = d.wars.filter((w) => w && ok(w.sys, w.body));
     if (Number.isFinite(d.warThreshold)) this.warThreshold = d.warThreshold;

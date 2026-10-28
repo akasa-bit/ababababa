@@ -59,24 +59,24 @@
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
       this.keepGhosts(before);
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.eachPlayer(() => { this.autoDefend(); this.aweYearly(); }); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.routesYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.regimeYearly(); this.bundleYearly(); this.vassalTypesYearly(); this.aiOrdersYearly(); this.realmsYearly(); if (this.spectate) this.eachPlayer(() => this.earthWarYearly()); this.siegesYearly(); this.exhaustionYearly(); this.conferencesYearly(); this.politicsYearly(); this.recordSnapshots(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.eachSeat(() => { this.autoDefend(); this.aweYearly(); }); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.routesYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.regimeYearly(); this.bundleYearly(); this.vassalTypesYearly(); this.aiOrdersYearly(); this.realmsYearly(); if (this.spectate) this.eachPlayer(() => this.earthWarYearly()); this.siegesYearly(); this.exhaustionYearly(); this.conferencesYearly(); this.politicsYearly(); this.recordSnapshots(); }
     }
     this.stepping = false;
     return changed;
   }
 
-  // 政治力・議会・時代の課題・挑戦・語り手・決めること・終わりの年 (年1回)
+  // 政治力・議会・時代の課題・挑戦・語り手・決めること・終わりの年 (年1回)。AI が動かす席 (国家選択の AI の国) も同じ仕組みで動き、観戦モードと同じ AI が決める (回 SE5)
   politicsYearly() {
     this.lordsAttendYearly();
     this.diplomacyYearly(); // 遅れて届く外交 (政治。politics/diplomacy.js)
-    this.eachPlayer(() => {
+    this.eachSeat(() => {
       this.pcYearly();
       this.councilYearly();
       this.erasYearly();
       this.challengesYearly();
       this.storyYearly();
       this.decisionsYearly();
-      if (this.spectate) this.earthPoliticsYearly();
+      if (this.spectate || this.aiSeat()) this.earthPoliticsYearly();
     });
     this.endYearly();
   }

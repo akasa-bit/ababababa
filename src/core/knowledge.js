@@ -4,15 +4,16 @@
   lightDelay(sys) { return sys === undefined || sys === null || sys === this.cap ? 0 : this.sysDist(this.cap, sys); }
   event(kind, sys, text, good = false) {
     if (STORY_RESET.has(kind) && this.story) this.story.last = this.year; // 語り手は、何かが起きた年から数え直す
-    this.events.unshift({ id: this.nextShipId++, year: this.year, seen: this.year + this.lightDelay(sys), kind, sys, text, good });
+    this.events.unshift({ id: this.nextShipId++, year: this.year, seen: this.year + this.lightDelay(sys), kind, sys, text, good, ...(this.players[this.pi]?.ai ? { p: this.pi } : {}) }); // AI の席の出来事は、その席だけに見せる
     this.events.length = Math.min(this.events.length, 300);
     this.message(text, sys, kind);
   }
   // 知らせが届く年: 出来事の星系からいまのプレイヤーの首都まで光が届く年 (地球が首都なら記録した seen のまま)
   seenOf(e) { return e.sys === undefined || e.sys === null ? e.seen ?? e.year : e.year + this.lightDelay(e.sys); }
   knownEvents() {
-    if (this.spectate) return this.events.filter((e) => e.year <= this.year).sort((a, b) => b.year - a.year);
-    if (this.cap !== 0 || this.players.length > 1) return this.events.map((e) => ({ ...e, seen: this.seenOf(e) })).filter((e) => e.seen <= this.year).sort((a, b) => b.seen - a.seen);
+    const mine = (e) => e.p === undefined || e.p === this.pi; // ほかの席 (AI の国) だけの出来事は出さない
+    if (this.spectate) return this.events.filter((e) => e.year <= this.year && mine(e)).sort((a, b) => b.year - a.year);
+    if (this.cap !== 0 || this.players.length > 1) return this.events.filter(mine).map((e) => ({ ...e, seen: this.seenOf(e) })).filter((e) => e.seen <= this.year).sort((a, b) => b.seen - a.seen);
     return this.events.filter((e) => (e.seen ?? e.year) <= this.year).sort((a, b) => (b.seen ?? b.year) - (a.seen ?? a.year));
   }
   // 充足率などの悪化と回復を見張る (ばたつかないよう 93% 未満で発生、99% 以上で解消)。
@@ -41,7 +42,8 @@
 
   // msgTo: 人間が複数いるとき、そのプレイヤーだけに見せる記録 (命令の結果など) の宛先
   message(text, sys, kind) {
-    this.log.unshift({ year: this.year, seen: this.year + this.lightDelay(sys), text, ...(kind ? { kind } : {}), ...(sys !== undefined && sys !== null ? { sys } : {}), ...(this.msgTo !== undefined ? { p: this.msgTo } : {}) });
+    const to = this.msgTo ?? (this.players[this.pi]?.ai ? this.pi : undefined); // AI の席の記録は、その席だけに見せる
+    this.log.unshift({ year: this.year, seen: this.year + this.lightDelay(sys), text, ...(kind ? { kind } : {}), ...(sys !== undefined && sys !== null ? { sys } : {}), ...(to !== undefined ? { p: to } : {}) });
     this.log.length = Math.min(this.log.length, 120);
   }
   knownLog() {
@@ -161,12 +163,12 @@
     if (BARGAIN.on) this.recordShips();
     this.snapVer = (this.snapVer || 0) + 1; // 記録が変わった (knownSystems の使い回しをやめる)
     const ids = new Set([...this.colonizedSystems().map((x) => x.id), ...Object.keys(this.garrison).filter((k) => this.garrison[k] > 0).map(Number)]);
-    const caps = this.players.filter((p) => p.human).map((p) => p.cap);
+    const caps = this.players.map((p) => p.cap); // AI の席も、光の遅れのぶん古い記録で判断する
     for (const id of ids) {
-      if (caps.every((c) => c === id)) continue; // 人間のプレイヤーの首都はいつも最新が見える
+      if (caps.every((c) => c === id)) continue; // 席の首都はいつも最新が見える
       const list = (this.snaps[id] ??= []);
       list.push(this.snapshot(id));
-      // どの人間のプレイヤーからも見えなくなった古い記録は捨てる (いちばん遠いプレイヤーの分まで残す)
+      // どの席からも見えなくなった古い記録は捨てる (いちばん遠い席の分まで残す)
       const seenYear = this.year - Math.max(...caps.map((c) => (c === id ? 0 : this.sysDist(c, id))));
       let i = 0;
       while (i + 1 < list.length && list[i + 1].year <= seenYear) i++;
