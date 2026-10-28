@@ -1,0 +1,54 @@
+{
+ "sources": {
+  "EPR-2021.csv": "Vogt, Bormann, Rüegger, Cederman, Hunziker & Girardin 2015. Integrating Data on Ethnicity, Geography, and Conflict: The Ethnic Power Relations Data Set Family. JCR 59(7), 1327-1342 (引用して使う)",
+  "ACD2EPR-2021.csv": "同じ (EPR の家族。Wucherpfennig ほか 2012 の ACD2EPR の 2021 年版)",
+  "ucdp-dyadic-211.csv": "UCDP Dyadic Dataset 21.1 (Harbom, Melander & Wallensteen 2008・Davies, Pettersson & Öberg 2021)。CC BY 4.0",
+  "wdi_quintiles.csv": "World Bank, World Development Indicators (SI.DST.*)。CC BY 4.0",
+  "qog_wvs.csv": "Teorell ほか. The Quality of Government Standard Dataset, version Jan25 (WVS の国の平均の項目は Haerpfer ほか の World Values Survey から)"
+ },
+ "files": [
+  {
+   "file": "EPR-2021.csv",
+   "sha256": "98e2d56431f55355d5d69deaa28c9063a49e859722bbb6d777a541ee831bcfe0",
+   "bytes": 331121,
+   "rows": 4339,
+   "url": "https://icr.ethz.ch/data/epr/core/EPR-2021.csv",
+   "fetched": "2026-10-28T08:22:43Z"
+  },
+  {
+   "file": "ACD2EPR-2021.csv",
+   "sha256": "12543bccf38137ab3cf07ae11982a3a899add87a03f15c4f1f9fc76db9bdda77",
+   "bytes": 55929,
+   "rows": 656,
+   "url": "https://icr.ethz.ch/data/epr/acd2epr/ACD2EPR-2021.csv",
+   "fetched": "2026-10-28T08:22:44Z"
+  },
+  {
+   "file": "ucdp-dyadic-211.csv",
+   "sha256": "9e2ebfc0b684f24510ff14812a21b90884d17bc6ae4631f20579a239e99f61af",
+   "bytes": 632177,
+   "rows": 3140,
+   "url": "https://ucdp.uu.se/downloads/dyadic/ucdp-dyadic-211-csv.zip",
+   "from": "ucdp-dyadic-211.csv",
+   "fetched": "2026-10-28T08:22:44Z"
+  },
+  {
+   "file": "wdi_quintiles.csv",
+   "sha256": "7873ed0ca655fcaf6df1cd46f516b4ed7d25736c53716ddb6f75bf9d34a3efb6",
+   "bytes": 100580,
+   "rows": 2434,
+   "url": "https://api.worldbank.org/v2/country/all/indicator/SI.DST.FRST.20,SI.DST.02ND.20,SI.DST.03RD.20,SI.DST.04TH.20,SI.DST.05TH.20?format=json&per_page=20000&date=1960:2025",
+   "fetched": "2026-10-28T08:22:50Z",
+   "filter": "5 つの分位がそろう国・年だけ"
+  },
+  {
+   "file": "qog_wvs.csv",
+   "sha256": "df46888db6ea2f87f72fb56f8aed7342f7bec9bcde554f2248010c4028aabcf9",
+   "bytes": 13330,
+   "rows": 194,
+   "url": "https://www.qogdata.pol.gu.se/data/qog_std_cs_jan25.csv",
+   "fetched": "2026-10-28T08:22:51Z",
+   "filter": "列 cname, ccodealp, wvs_godimp, wvs_auton, wvs_pmi4, wvs_hap, wvs_trust, wdi_gdpcappppcon2021 だけ"
+  }
+ ]
+}
