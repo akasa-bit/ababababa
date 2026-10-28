@@ -49,6 +49,7 @@
 | `core/facilities.js` | 共通 (世話役: 道具と検証) | 18 | 施設・奴隷・歩兵の定数 |
 | `politics/nations.js` | 政治 | 56 | 国と種族 (特性・生産性) |
 | `ship/war-consts.js` | 船と戦争 | 30 | 難易度・戦争疲弊・戦勝点・条約・交渉 (BARGAIN)・講和 (PEACE) |
+| `ship/colonists.js` | 船と戦争 | 133 | 入植集団が続くかのモンテカルロ (HERITAGE・COLONY_RISK・COLONY_FAIL)・入植船の設計の値とひな形 (SHIP_DESIGN・SHIP_TEMPLATES)・セーブの項目 designs。回 FU3 で足した (`docs/colony.md`) |
 | `politics/names.js` | 政治 | 27 | 国の名前・母星の選び方・国の数 |
 | `core/game-consts.js` | 共通 (世話役: 道具と検証) | 40 | 船と施設の費用・入植・海賊の始まり・帳簿の名前・忠誠と友好の定数・色・指令の名前 |
 | `economy/market-consts.js` | 経済 | 72 | 市場 (MARKET)・産業構造 (STRUCTURE)・研究 (RESEARCH)・部門 |
@@ -72,7 +73,7 @@
 | `ship/strike.js` | 船と戦争 | 95 | Game: 光速に近い艦隊の一撃 (突入・焼く・知らせと報復・AI の一撃)。回 FU2 で足した |
 | `ship/fort.js` | 船と戦争 | 35 | Game: 宇宙要塞 (星系ごとの段・自動の Lv1・手動の強化・地球に届いている段)。2026-10-22 の依頼で足した |
 | `economy/colonize.js` | 経済 | 271 | Game: 調査と先住民・入植の向き不向き・資材の手配・建設の注文 |
-| `ship/settler.js` | 船と戦争 | 46 | Game: 入植船の費用と便・入植の打ち上げ |
+| `ship/settler.js` | 船と戦争 | 100 | Game: 入植船の設計 (designOf・setDesign)・費用と便・入植の打ち上げ・入植団が降りる (settlersLand) |
 | `economy/colonies-routes.js` | 経済 | 90 | Game: 入植地を足す・施設の強化・交易路 |
 | `economy/trade.js` | 経済 | 191 | Game: 交易網の自動輸送・荷 |
 | `ship/fleets.js` | 船と戦争 | 141 | Game: 造船・艦隊の補給・艦隊を出す・進路変更 |

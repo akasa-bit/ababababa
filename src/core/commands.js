@@ -9,7 +9,7 @@
       case 'uproute': return this.routes.find((r) => r.id === Number(d.route))?.a;
       case 'upgrade': case 'train': case 'focus': return colSys(d.col);
       case 'peace': return Number(d.sys);
-      case 'policy': case 'fiscal': return this.cap;
+      case 'policy': case 'fiscal': case 'design': return this.cap;
       case 'rule': case 'bundle': case 'jointcut': case 'depose': case 'mandate': case 'governor': case 'inspect': case 'decide': case 'pvdesign': return Number(d.sys);
       default: return d.sys;
     }
@@ -68,6 +68,7 @@
     }
     if (act === 'declarewar') return this.declareWar(Number(d.sys));
     if (act === 'pact') return this.proposePact(d); // 遅れて届く外交 (政治。politics/diplomacy.js)
+    if (act === 'design') return this.setDesign(d); // 入植船の設計 (船と戦争。ship/settler.js。B-033)
     if (act === 'policy') return this.setPolicy(d.value);
     if (act === 'fiscal') return this.setFiscal(d);
     if (act === 'grant') {

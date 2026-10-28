@@ -82,5 +82,10 @@
     if (e === undefined) return;
     // 狙うのは相手の首都 (首都に届いた記録で、まだ相手の国のもの)。AI の国は、ほかの攻め方と同じく人間の国の星系は狙わない
     if (this.seenBy(root, e)?.[1] !== e || this.isHuman(e)) return;
+    // 同じ戦争で同じ相手に撃つのは 1 回まで (追い詰められた国の一度きりの手。回 FU3: 入植船が安くなって資源に余裕ができ、負けている戦争のあいだ毎年撃ち続けて、
+    // 同じ相手の首都に 26 回撃つ国が出た。6 銀河 × 300 年で 6 回 → 81 回になり、戦死者の裾 R15 が壊れた)
+    const st = this.warStats[this.warKey(root, e)];
+    if (st?.struck?.includes(root)) return;
     this.launchStrike(root, e, 1);
+    if (st) (st.struck ??= []).push(root);
   }

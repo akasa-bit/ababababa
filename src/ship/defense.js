@@ -3,7 +3,7 @@
   pirateMax() { return Math.max(1, Math.round(1.5 * this.pirateBase())); }
   // 自動防衛配備で目指す駐留数。太陽系は海賊に狙われないので1艦隊、他の入植星系は海賊の最大戦力ぶん (海賊が現れる前は1艦隊)
   defenseGoal(id) { return this.isHuman(id) || this.year < PIRATE_START ? 1 : this.pirateMax(); } // 人間の国の首都は海賊に狙われない
-  incoming(id) { return this.fleets.filter((f) => f.to === id && !f.awe).reduce((k, f) => k + f.n, 0); }
+  incoming(id) { return this.fleets.filter((f) => f.to === id && !f.awe && (f.owner ?? 0) === this.cap).reduce((k, f) => k + f.n, 0); } // 自国が送った艦隊だけ (敵の艦隊を守りに数えない。B-169・監査の 2.8 の g)
   knownAwe(id) { return id === this.cap ? 0 : Math.min(this.knownGarrison(id), this.known(id)?.awe || 0); }
   defenseGap(id) { return Math.max(0, this.defenseGoal(id) - (this.knownGarrison(id) - this.knownAwe(id)) - this.incoming(id)); } // 地球から見た不足 (威圧の駐留は数えない)
 

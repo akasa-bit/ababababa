@@ -21,7 +21,23 @@ function dispatchBox(app, sys, b) {
       const warn = n && g.hostileNatives(sys.id, b.id) ? `<b class="bad">到着すると${esc(n.def.species)}との征服戦争になる (抵抗力 ${need})。</b>` : '';
       return `<p class="note">惑星入植地の入植船には${ME.capName}の歩兵が同行する: ${Math.min(need, have)} / ${need} 連隊 (${ME.capName}の駐留 ${have})。${warn}</p>`;
     })()}
+    ${designBox(g)}
     <div class="btns">${btn('station')}${btn('planet')}</div>`;
+}
+// 入植船団の設計 (B-033。決まった案 12-1 b・12-3 a・FU-1): ひな形・船の数 (1 隻 500 人 × 1〜400 隻)・速さ・積み荷・乗る人の年齢と、続く見込みを幅のまま
+function designBox(g) {
+  const des = g.designOf(g.cap);
+  const sel = (k, vals, label) => `<label class="field">${label}<select data-act="design" data-k="${k}">${vals.map(([v, t]) => `<option value="${v}" ${String(v) === String(des[k]) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
+  const tpl = Object.entries(SHIP_TEMPLATES).map(([k, t]) => `<button data-act="design" data-tpl="${k}">${esc(t.label)}<small>${t.ships} 隻・${fmtPeople(t.ships * SHIP_DESIGN.perShip)}</small></button>`).join('');
+  const ships = `<label class="field">船の数 (1 隻 ${fmtPeople(SHIP_DESIGN.perShip)}・${SHIP_DESIGN.ships[0]}〜${SHIP_DESIGN.ships[1]} 隻。入植のたびに変えてよい)<input type="number" id="design-ships" data-act="design" data-k="ships" min="${SHIP_DESIGN.ships[0]}" max="${SHIP_DESIGN.ships[1]}" step="1" value="${des.ships}"> <span class="muted">= ${fmtPeople(des.crew)}</span></label>`;
+  const fail = colonyFailP(des.crew);
+  return `<h4>入植船団 (${ME.realm}の次の入植から)</h4>
+    <div class="btns">${tpl}</div>
+    ${ships}${sel('speed', Object.entries(SHIP_DESIGN.speeds), '速さ')}${sel('cargo', SHIP_DESIGN.cargos.map((n) => [n, `工業品 ${n}`]), '積み荷')}${sel('ages', Object.entries(SHIP_DESIGN.ages), '乗る人の年齢')}
+    <p class="note">住む場所は 1 人 ${SHIP_DESIGN.habitatKg / 1000} t (1 隻 ${((SHIP_DESIGN.perShip * SHIP_DESIGN.habitatKg) / 1e7).toFixed(1)} 万 t)。船を減らすほど安く軽いが、入植地は小さく始まる (移民船で育つ)。積み荷は船団でまとめて積む。遅い船はエネルギーが少なくて済むが、着くのが遅い。</p>
+    <p class="note">続く見込み (前提ごとの幅のまま): 入植地として降りてから増えていくなら <b>${pctH(1 - fail)}</b>。
+      船の上で人数を保つ前提なら、HERITAGE (Marin & Beluffi 2018。定員 500 の船で 6,300 年・近親婚なし) では 98 人で足り、25 組 (50 人) では半分ほどが絶える。
+      Smith (2014。150 年・遺伝の多様性を保つ・大きな災害 1 回) では ${fmtPeople(SMITH.min)}〜${fmtPeople(SMITH.max)}が要る (${des.crew >= SMITH.min ? '足りる' : '足りない'})。</p>`;
 }
 
 // 建設中ならボタンに添える文言 (例: 建設中 あと 3.2 年)

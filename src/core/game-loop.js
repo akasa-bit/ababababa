@@ -162,7 +162,7 @@
         const seedTo = (acct) => { if (s.seed) { const v = s.seed; this.cash('build', -v, { way: s, f: 'seed' }); this.cash('build', v, acct); } };
         if (this.colonyAt(s.to, s.body, kind)) { joinEscort(this.colonyAt(s.to, s.body, kind)); seedTo({ pv: s.to }); continue; }
         const fresh = !this.govs[s.to];
-        this.addColony(s.to, s.body, kind, t.name, SETTLERS[kind], s.from);
+        if (!this.settlersLand(s, kind, t.name)) { seedTo({ gov: s.from }); continue; } // 乗ってきた人数と年齢で入植地を作る。始まりのうちに絶えたら作らない (船と戦争の ship/settler.js。B-033)
         seedTo(fresh ? { gov: s.to } : { pv: s.to });
         joinEscort(this.colonyAt(s.to, s.body, kind));
         if (kind === 'planet' && this.hostileNatives(s.to, s.body)) this.startWar(s.to, s.body);
