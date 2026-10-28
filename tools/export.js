@@ -95,7 +95,7 @@ function play(sim, seed, years, nations, emit, onYear = null) {
     if (onYear) onYear(g, y);
     sim.run(g, 1);
     const year = Math.round(g.year);
-    const live = realms();
+    const live = [...new Set([...realms(), ...[...trade.values()].flatMap((t) => [t.i, t.j])])].sort((a, b) => a - b); // 年の途中で交易してから消えた国 (降伏など) の行も書く (輸出と輸入の合計を合わせる)
     // 付加価値 (fiscal-panel.js と同じ: 民間の所得) と人口
     const va = {}, pop = {};
     for (const s of g.colonizedSystems()) {
