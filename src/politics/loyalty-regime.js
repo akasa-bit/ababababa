@@ -259,10 +259,10 @@
   rebelFleet(id) { return this.rebelFleetOf(this.coloniesIn(id), this.gov(id).credits); }
   knownRebelFleet(id) { const k = this.known(id); return this.rebelFleetOf(this.knownColonies(id), k?.credits); }
   // 恐怖度 (0〜100): 忠誠度とは別のパラメータ。その星系に駐留する地球の艦隊 (命令で駐留している分と威圧の分) が多いほど高い。
-  // 目標 = 50 × 地球の艦隊 / 反乱したときの推定艦隊 (同数で50、2倍で100)。年に最大10ずつ目標へ動く。地球の国の星系だけ
+  // 目標 = 50 × 地球の艦隊 / 反乱したときの推定艦隊 (同数で50、2倍で100)。年に最大10ずつ目標へ動く。席を持つ国の星系だけ (AI の国も。回 SE5)
   fearTarget(id) {
     const root = this.realmOf(id);
-    if (id === root || !this.isHuman(root)) return 0;
+    if (id === root || !this.isSeat(root)) return 0;
     return Math.min(100, 50 * this.earthFleetAt(id, root) / this.rebelFleet(id) * (this.policyAt(id) === 'military' ? 1.5 : 1));
   }
   // 恐怖度が高いほど独立を宣言しにくい (恐怖度100で確率が1/10)
@@ -362,8 +362,8 @@
     const what = this.demandText(kind);
     const name = this.system(id).name;
     gv.unrest = { stage: 2, since: this.year, kind };
-    if (!this.isHuman(gv.lord)) {
-      // 主人が人間のプレイヤーでなければ、主人の政府が判断する (要求と返事が光速で往復する)
+    if (!this.isSeat(gv.lord)) {
+      // 主人が席を持つ国 (人間の国と AI の国) の首都でなければ、主人の政府が判断する (要求と返事が光速で往復する)。席の国は「決めること」で答える (AI の国は観戦と同じ AI が。回 SE5)
       gv.unrest.aiAt = this.year + 2 * this.travelYears(id, gv.lord);
       this.event('demand', id, `${name} が${this.system(gv.lord).name}に${what}を求めた`);
       return;
@@ -406,6 +406,12 @@
     // 拒むことは関与にならない (放っておかれた年数は戻らない。最後通牒を収めるには、別に関与を届けて忠誠度を戻す)
     this.event('politics', id, `${this.system(id).name}: ${why}。最後通牒を突きつけた — ${Math.round(this.year + ULTIMATUM_YEARS)}年までに態度が変わらなければ独立を宣言する`);
   }
+  // 国 r に請求権を持つ国 (RECLAIM。r が独立する前に属していた国で、まだ国として残り、1 世代たっていない)。なければ null
+  claimBy(r) {
+    const c = this.govs[r]?.claim;
+    return c && c.until > this.year && this.isColonized(c.by) && this.realmOf(c.by) === c.by ? c.by : null;
+  }
+  claimBonus(root, r) { return this.claimBy(r) === root ? RECLAIM.bonus : 0; }
   declareIndependence(id) {
     const gv = this.gov(id);
     const formerRealm = this.realmOf(id);
@@ -422,6 +428,7 @@
     gv.fear = 0;
     gv.friend = 0;
     gv.unrest = { stage: 0 };
+    if (formerRealm !== id) gv.claim = { by: formerRealm, until: this.year + GENERATION_YEARS }; // 元の国の請求権 (RECLAIM)
     if (this.tech[formerRealm] && !this.tech[id]) this.tech[id] = { A: { ...this.tech[formerRealm].A } }; // 技術は元の国のものを持っていく
     if (!this.isHuman(id)) (this.aif ??= {})[id] = { ...this.fiscalFor(formerRealm, id) }; // 財政 (税率など) も元の国のものを引き継ぐ (制度は続く)
     const reg = REGIMES[regimeKey(gv)];
@@ -442,12 +449,12 @@
     });
     const members = this.colonizedSystems().filter((x) => this.realmOf(x.id) === id);
     const followers = members.length - 1;
-    // 地球の国からの独立は、半々の確率で、また地球の艦隊が駐留していれば必ず、そのまま戦争 (独立戦争) になる
-    const human = this.isHuman(formerRealm);
-    const present = human && members.some((x) => this.earthFleetAt(x.id, formerRealm) >= 1);
-    // 戦争になる確率は統治体制ごとの歴史の割合 (ICOW)。ゲーム版は艦隊が駐留していればかならず戦争になる。自治領は戦争なしで独立する
-    const war = human && !peaceful && ((ED.garrisonWar && present) || this.rand() < (reg.war ?? VIOLENT_SHARE));
-    this.lastIndependence = { id, war, p: peaceful ? 0 : reg.war ?? VIOLENT_SHARE, regime: reg.id || null }; // 測る道具 (tools/secession.js) のため。AI の国どうしの独立は戦争の判定をしないので、確率 p も残す
+    // 独立は、統治体制ごとの歴史の割合 (ICOW) で、そのまま戦争 (独立戦争) になる。元の国が AI の国でも同じ (回 SE5・B-028。前は地球の国からの独立だけ)
+    const seat = this.isSeat(formerRealm); // 席を持つ国 (人間の国と AI の国。回 SE5)
+    const present = seat && members.some((x) => this.earthFleetAt(x.id, formerRealm) >= 1);
+    // ゲーム版は、元の国の艦隊が駐留していればかならず戦争になる。自治領は戦争なしで独立する
+    const war = !peaceful && ((seat && ED.garrisonWar && present) || this.rand() < (reg.war ?? VIOLENT_SHARE));
+    this.lastIndependence = { id, war, p: peaceful ? 0 : reg.war ?? VIOLENT_SHARE, regime: reg.id || null }; // 測る道具 (tools/secession.js) のため。確率 p も残す
     let raised = 0;
     const clashes = [];
     if (war) {

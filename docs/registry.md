@@ -122,6 +122,8 @@
 ### 政治
 
 - saveField: diplo (政治。src/politics/diplomacy-consts.js。協定・届く途中の申し入れ・破約の年。回 SE2)
+- 星系の政府の項目 gv.claim (元の国の請求権 { by, until }。セーブの govs にそのまま入る。回 SE5・B-028)
+- 席の項目 players[i].ai (AI が動かす席。セーブの players にそのまま入る。席の値は PLAYER_KEYS と同じ。回 SE5。`docs/handoff.md` の 11)
 
 ### 船と戦争
 

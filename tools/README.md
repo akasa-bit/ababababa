@@ -27,6 +27,15 @@ PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメ
 
 手元で同じものを回すときは `CHROMIUM=/opt/pw-browsers/chromium node tools/ci-tests.js` (3 分ほど)。
 
+## 銀河の取り合い (tools/galaxy-race.js)
+
+目標 R40・R41 (回 SE5・B-028)。国家選択 6 か国の観戦で、2500 年 (開始から 200 年) の入植された星系の割合と、残っている AI の国 (プレイヤーの国でない国家選択の国) の星系の数の中央値を出す。50 年ごとの国の大きさと、国家選択にない独立国の星系も並べる。CI では回さない (30 銀河 × 300 年で 4 CPU 約 5 分)。
+
+```sh
+node tools/galaxy-race.js 30 300 6                       # R40・R41 の合否と 50 年ごとの表 (Markdown。--json で JSON)
+node tools/galaxy-race.js 16 200 6 src/index.html 値.json # 値のファイルで EDITIONS などを差し替えて測る
+```
+
 ## 戦略と必勝法を探す AI (tools/strategy.js・tools/search.js)
 
 画面なしの版の国家選択のある試合で、プレイヤーの国 (観戦の AI が動かす) の判断だけを、道具の側で「戦略の値」に差し替える。ゲーム本体には手を入れない。試合は CPU の数だけ並べて回す (`THREADS=2` で数を絞れる)。

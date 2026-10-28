@@ -86,7 +86,7 @@
   pactBreach(r, why) {
     (this.diplo.breach[r] ??= []).push(this.year);
     this.diplo.breach[r] = this.diplo.breach[r].filter((y) => this.year - y < PACT.distrustYears);
-    if (this.isHuman(r)) this.asRealm(r, () => this.councilAdd(-PACT.breachCouncil, why));
+    this.asRealm(r, () => this.councilAdd(-PACT.breachCouncil, why)); // 席の国 (AI の国も) は議会の支持が下がる
   }
   // AI の国 (と観戦の地球) が、届いた申し入れに答える
   pactAnswerAi(o) {
@@ -131,7 +131,7 @@
       D.sent = D.sent.filter((o) => !due.includes(o));
       for (const o of due) {
         if (!this.realmAlive(o.from) || !this.realmAlive(o.to) || this.atWar(o.from, o.to) || this.pactBetween(o.from, o.to, o.kind)) continue;
-        if (this.isHuman(o.to)) this.pactOfferDecision(o); else this.pactAnswerAi(o);
+        if (this.isSeat(o.to)) this.pactOfferDecision(o); else this.pactAnswerAi(o); // 席の国は「決めること」で答える (AI の国は観戦と同じ AI が)
       }
     }
     // 国でなくなった・期限が切れた協定を外す
@@ -162,7 +162,7 @@
           const news = this.warNews[key];
           if (news && this.year < news.year + this.sysDist(news.from, x) - 1e-9) continue; // 開戦の知らせがまだ届いていない
           p.called.push(`${x}|${key}`);
-          if (this.isHuman(x)) {
+          if (this.isSeat(x)) {
             this.asRealm(x, () => this.addDecision({ kind: 'pact', type: 'call', sys: x, pact: p.id, ally: y, enemy: e, deadline: this.year + 3, def: 'join',
               text: `同盟国の${this.realmName(y)}が${this.realmName(e)}に宣戦された。防衛同盟に従って参戦するか。`,
               opts: [{ k: 'join', label: '参戦する', note: `${this.realmName(e)}と戦争になる` }, { k: 'refuse', label: '断る', note: `同盟は切れ、破約になる (議会の支持 −${PACT.breachCouncil}・ほかの国が協定を受けにくくなる)` }] }));

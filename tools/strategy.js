@@ -61,6 +61,7 @@ function apply(g, s, sim) {
   // 何もしない (bots.js の none): 観戦モードを切り、首都の自動 (開発・防衛・造船・威圧・資金援助・居住区) もすべて切る。判断もしない
   if (s.idle) { g.spectate = false; g.live = null; g.autoDefense = false; g.autoBuild = false; g.autoAwe = false; g.autoGrant = false; g.autoHabitat = false; g.auto[g.cap] = false; return; }
   const D = !!s.delay, every = Math.max(1, s.every || 1), y0 = g.year;
+  const me = g.cap; // 戦略を当てるのはプレイヤーの席だけ (AI の国の席も earthPoliticsYearly を呼ぶ。回 SE5 から)
   if (s.policy !== 'auto') g.aiPolicy = s.policy;
   if (s.regime && s.regime !== 'auto') g.command('set', { key: 'regime', value: s.regime });
   // 判断のあいだだけ、光が届いた分で見る
@@ -125,7 +126,7 @@ function apply(g, s, sim) {
   if (s.colWait !== undefined && s.colWait !== 'auto') {
     const orig = g.canColonize;
     g.canColonize = function (id) {
-      if (id !== this.cap) return orig.call(this, id);
+      if (id !== me) return orig.call(this, id);
       if (s.colWait === 'never') return false;
       const gv = this.gov(id);
       const pop = this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
@@ -137,7 +138,7 @@ function apply(g, s, sim) {
     const orig = g.colonyTarget, W = { grade: 10, near: 2, best: 100 }[s.colPick || 'grade'], range = s.colRange ?? 20;
     // ゲームの colonyTarget と同じ形で、範囲 (nearSystems は 25 光年まで) と適性の重みだけを変える。ステーションは適性 1 の惑星より 6 光年ぶん近いときだけ (重みに合わせる)
     g.colonyTarget = function (id) {
-      if (id !== this.cap) return orig.call(this, id);
+      if (id !== me) return orig.call(this, id);
       let best = null;
       for (const [tid, d] of this.nearSystems(id)) {
         if (d > range || tid === id || this.isColonized(tid)) continue;
@@ -159,7 +160,7 @@ function apply(g, s, sim) {
   let routing = false;
   if (ownRoutes) {
     const orig = g.openRoute;
-    g.openRoute = function (a, b) { if (a === this.cap && !routing) return { ok: false, reason: '戦略で止めた' }; return orig.call(this, a, b); };
+    g.openRoute = function (a, b) { if (a === me && !routing) return { ok: false, reason: '戦略で止めた' }; return orig.call(this, a, b); };
   }
   const capRoutes = function () {
     const id = this.cap, here = this.system(id);
@@ -177,7 +178,7 @@ function apply(g, s, sim) {
   // 政治の判断に、委任方針・資金援助・直轄・交易路を足す。D なら国家方針も知っていることで選ぶ
   const origPol = g.earthPoliticsYearly;
   const sent = {}; // 送った委任方針 (指令が届いて、その知らせが戻るまでのあいだに送り直さない)
-  g.earthPoliticsYearly = seeing(function () {
+  const polStrategy = seeing(function () {
     if (!awake()) return;
     if (D && s.policy === 'auto') {
       const keep = this.aiPolicy;
@@ -201,6 +202,7 @@ function apply(g, s, sim) {
     }
     if (ownRoutes) capRoutes.call(this);
   });
+  g.earthPoliticsYearly = function () { return this.cap === me ? polStrategy.call(this) : origPol.call(this); };
 }
 
 // 1 試合を回し、成績と面白さの代わりの数を返す
@@ -212,7 +214,7 @@ function play(sim, { seed, years = 150, nations = 6, strategy = null, rankYear =
   let asks = 0;
   const origAdd = g.addDecision.bind(g);
   const stories = {}; // 語り手の出来事の種類ごとの回数 (F19)
-  g.addDecision = (dec) => { asks++; if (dec.kind === 'story') stories[dec.type] = (stories[dec.type] || 0) + 1; return origAdd(dec); };
+  g.addDecision = (dec) => { if (g.cap === cap) { asks++; if (dec.kind === 'story') stories[dec.type] = (stories[dec.type] || 0) + 1; } return origAdd(dec); }; // AI の国の席への決めることは数えない
   const origConf = g.startConference.bind(g);
   g.startConference = (loser, winners, from) => { const n = g.conferences.length; const r = origConf(loser, winners, from); if (g.conferences.length > n && g.conferences[g.conferences.length - 1].bids.some((b) => b.realm === cap && !b.picks)) asks++; return r; };
   // 会議の知らせが光速で首都に届いてから開く会議 (B-030。届く途中は confSent。前の版にはない)

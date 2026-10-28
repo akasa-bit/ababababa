@@ -180,6 +180,11 @@
   - かならずセーブに入れる。入れないと、読み込んだあとに結果がずれ、決定性の試験とネット対戦の要約が合わなくなる (前に `ghosts.fleets` で起きた)。
   - プレイヤーごとに違う値は `PLAYER_KEYS` に入れる。ネット対戦の要約 (`Net.hash`) は `pi`・`savedAt`・`endShown`・`spectate`・`credits`・`PLAYER_KEYS` を除いて計算する。
   - 年 1 回の処理は、どの端末でも 1 人目のプレイヤーの立場で進む。「いま操作しているプレイヤー」によって結果が変わる処理を入れない。
+- **AI の国も席を持つ** (2026-10-28 のユーザーの依頼「AI 国家にも、恐怖度や政治力などの、人間国家が持つすべての機能を」。回 SE5。`docs/requests/2026-10-28-SE.md` の SE-1)。
+  - 国家選択の国は、どれも `players` に席 (政治力・議会・国家方針・決めること・時代の課題・威圧の設定など `PLAYER_KEYS` の値) を持つ。人が動かす席は `human: true`、AI が動かす席は `human: false, ai: true` (`addAiSeats`。前のセーブは読み込みで足す)。
+  - `isHuman(cap)` = 人が動かす国、`isSeat(cap)` = 席を持つ国 (人の国と AI の国)、`playerOf(cap)` と `asRealm` はどの席でも引く。`eachPlayer` は人の席だけ、`eachSeat` はすべての席。
+  - 人間の国だけにあった仕組みを足すとき・直すときは、「人が動かすから」なのか「席を持つ国の仕組みだから」なのかで `isHuman` と `isSeat` を選ぶ。年ごとの政治 (`politicsYearly`) と威圧・自動防衛は `eachSeat` で回り、AI の席は観戦モードと同じ AI (`earthPoliticsYearly`) が決める。戦争の判断は前のまま `realmsYearly` (AI の国の型)。
+  - AI の席の出来事と記録は、その席だけに見せる (`events` と `log` の `p`)。光の遅れの記録 (`snaps`) は、いちばん遠い席の分まで残す。
 
 ## 12. 進め方 (ユーザーの頼みの 1〜8) の状態
 

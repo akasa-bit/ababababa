@@ -220,7 +220,7 @@
   treatyTerms(c) {
     const l = c.loser;
     const out = [];
-    if (c.bids.length === 1) out.push({ id: 'v', label: `${this.realmName(l)}を従属させる (配下の星系ごと)`, cost: TREATY.vassal });
+    if (c.bids.length === 1) { const claim = this.claimBy(l) === c.bids[0].realm; out.push({ id: 'v', label: `${this.realmName(l)}を${claim ? '取り戻す' : '従属させる'} (配下の星系ごと)`, cost: claim ? RECLAIM.vassal : TREATY.vassal }); } // 自分から独立した国は請求権のぶん安く (政治の RECLAIM。回 SE5・B-028)
     const systems = c.sys ? c.sys.map((id) => this.system(id)) : this.realmSystems(l).filter((x) => x.id !== l); // 前の版の会議は、いまの様子で
     for (const x of systems) {
       const pop = this.coloniesIn(x.id).reduce((k, col) => k + col.pop, 0);
@@ -234,7 +234,8 @@
   aiTreatyPicks(c, b) {
     const terms = this.treatyTerms(c);
     const picks = [];
-    if (b.pts >= TREATY.vassal && terms.some((t) => t.id === 'v') && this.sysDist(b.realm, c.loser) <= 30) picks.push('v');
+    const v = terms.find((t) => t.id === 'v');
+    if (v && b.pts >= v.cost && this.sysDist(b.realm, c.loser) <= 30) picks.push('v'); // 値段は表から (請求権のある国は安い)
     picks.push(...terms.filter((t) => t.sys !== undefined).sort((x, y) => this.sysDist(b.realm, x.sys) - this.sysDist(b.realm, y.sys)).map((t) => t.id));
     picks.push(...terms.filter((t) => t.id[0] === 'c').map((t) => t.id));
     return picks;

@@ -83,6 +83,11 @@ const regimeKey = (gv) => (gv ? (gv.direct ? 'direct' : regimeNorm(gv.regime) ||
 const GENERATION_YEARS = ED.generation;
 const HAZARD = { delayRef: 0.00577, delayMin: 0.25, pop: 0.3, loyalty: 0.03, loyaltyRef: 50, revoke: 8 };
 const VIOLENT_SHARE = 0.31; // 植民地の独立のうち暴力を伴った割合 (ICOW の 128 件)
+// 取り返し (回 SE5・B-028。ユーザーの決定 2026-10-23 の SE-6「AI の国が抜けた独立国を取り返しに来る」): 独立した星系の国には、元の国の請求権 (gv.claim = { by, until }) が
+// 1 世代 (GENERATION_YEARS) のあいだ残る (失ったことを覚えている世代)。元の国は、請求権のある国があれば年 chance の確率で宣戦を考え (ふつうは BARGAIN.declareChance)、
+// その相手への見込み (交渉の型の reservation) に bonus 点を足す。講和会議ではその国を vassal 点で従属させられる (ふつうは TREATY.vassal)。
+// 3 つとも仮の値 (請求権のある組の紛争の多さの文献で決め直す。docs/status/SE.md)
+const RECLAIM = { bonus: 20, vassal: 30, chance: 0.1 };
 // 強制労働の後遺症 (0〜1): 続けた年ごとに scarRate ずつ増え、やめたあとは年に ×scarKeep ずつ消える (半減に約 140 年)。税収 × (1 − scarTax × 後遺症)
 const FORCED = { scarRate: 0.02, scarKeep: 0.995, scarTax: 0.25 };
 function secessionTermsOf({ regime, delay, popRatio, loyalty, security = 0, gap = null }) {

@@ -16,7 +16,7 @@
       const id = Number(key);
       const lord = gv.lord;
       if (lord === null || lord === undefined || !this.isColonized(id) || this.year - (gv.founded ?? this.year) > GRANT_YEARS) continue;
-      if (this.isHuman(lord) && this.asRealm(lord, () => !this.autoGrant || (!this.spectate && !this.known(id)?.cols.length))) continue; // 地球は入植を知ってから送る
+      if (this.isSeat(lord) && this.asRealm(lord, () => !this.autoGrant || (!this.spectate && !this.known(id)?.cols.length))) continue; // 席の国 (人間の国と AI の国) は入植を知ってから送る
       if (this.realmOf(id) !== this.realmOf(lord)) continue;
       const amt = Math.min(GRANT_MAX, 0.03 * this.gov(lord).credits);
       if (amt >= 1) this.sendGrant(lord, id, amt, true);
