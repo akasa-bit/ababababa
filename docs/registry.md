@@ -70,6 +70,8 @@
 - B-140: 語り手の選択肢の片寄り (回 SE4)
 - B-141: 「内政」の一強 (回 SE5。放っておかれても下がらなくしたあと)
 - QD-40: 従属国の型の差が朝貢の割合だけになっている (回 SE5。DO4 の B-070 から)
+- C20: AI の国の星系の政府の入植の急ぎ方 (回 SE5・B-028)
+- QD-41: AI の国の要求への返事の仕方 (回 SE5。AI の国の席のあと)
 
 ### 船と戦争
 
@@ -122,6 +124,7 @@
 ### 政治
 
 - saveField: diplo (政治。src/politics/diplomacy-consts.js。協定・届く途中の申し入れ・破約の年。回 SE2)
+- EDITIONS.game.aiColonize (AI の国の星系の政府の入植の急ぎ方 { ships, pop, range }。台帳の C20。回 SE5)
 - 星系の政府の項目 gv.claim (元の国の請求権 { by, until }。セーブの govs にそのまま入る。回 SE5・B-028)
 - 席の項目 players[i].ai (AI が動かす席。セーブの players にそのまま入る。席の値は PLAYER_KEYS と同じ。回 SE5。`docs/handoff.md` の 11)
 
