@@ -17,7 +17,7 @@
     "crew_max": 44000
    },
    "where": "要旨と結論",
-   "checked": "書誌は Crossref で確かめた。数は要旨が Crossref にないので未照合 (セッション 12 で本文と照らす)"
+   "checked": "書誌は Crossref で確かめた。数は要旨が Crossref になく、本文 (有料) もこの環境から読めない。14,000〜44,000 人は Marin & Beluffi 2018 の 3.1 節の引用と合う (そこでは「モンテカルロでなく統計の掛け合わせで出した」とある)。計算のやり方は未照合"
   },
   {
    "id": "marin2018",
@@ -26,9 +26,44 @@
    "kind": "人口学のモンテカルロ (HERITAGE)",
    "assumptions": {
     "voyage_years": 6300,
-    "breeding": "近親婚を避ける規則と、出産の年齢の制限",
+    "breeding": "近親婚を許さない (許す近親の度合い 0%。2.4 節)、出産は 32〜40 歳 (2.4 節。表 1 は 35〜40)",
     "frozen_gametes": false,
-    "catastrophe": "なし (基本の場合)"
+    "catastrophe": "2,500 年目に乗員の 30% を失う (表 1)",
+    "table1": {
+     "note": "本文の表 1 (Input parameters of the simulation) を写した。単位は表のまま",
+     "number_of_space_voyages": 100,
+     "duration_years": 6300,
+     "ship_capacity": 500,
+     "initial_women": 75,
+     "initial_men": 75,
+     "initial_age_mean": 20,
+     "initial_age_sd": 1,
+     "infertility_women": 0.1,
+     "infertility_men": 0.15,
+     "children_per_woman_mean": 2,
+     "children_per_woman_sd": 0.5,
+     "adaptive": "人数が定員の security (0.9) を下回る間は 1 人あたり 3 ± 1 人 (2.2 節)",
+     "twins": 0.015,
+     "life_expectancy_women": [
+      85,
+      15
+     ],
+     "life_expectancy_men": [
+      79,
+      15
+     ],
+     "menopause": 45,
+     "procreation_window": [
+      35,
+      40
+     ],
+     "pregnancy_per_year": 0.75,
+     "consanguinity_allowed": 0,
+     "life_reduction_inbred": 0.5,
+     "chaotic_element": 0.001,
+     "disaster_year": 2500,
+     "disaster_share": 0.3
+    }
    },
    "result": {
     "crew_min": 98,
@@ -36,10 +71,16 @@
     "extinction_25_pairs_no_inbreeding": [
      0.35,
      0.65
-    ]
+    ],
+    "success_34_pairs": [
+     0.94,
+     0.98
+    ],
+    "runs_per_crew": 100,
+    "extinction_98": "100 回の旅のうち 0 回 (3σ で 100% 続く)"
    },
-   "where": "要旨",
-   "checked": "arXiv の要旨 (marin2018-arxiv.html) と照らした"
+   "where": "要旨・表 1・2.2〜2.4 節・図 6・3 節 (arXiv v1 の本文)",
+   "checked": "arXiv の要旨 (marin2018-arxiv.html) と照らした。2026-10-28 に arXiv の本文 (PDF。v1) を読み、表 1・2.4 節 (出産 32〜40 歳・近親 0%)・図 6 (34 組から 94〜98% 続く)・3 節 (25 組で 50 ± 15%、98 人で 100%)・3.1 節 (Smith の数は統計の掛け合わせ) と照らした"
   },
   {
    "id": "traill2007",
