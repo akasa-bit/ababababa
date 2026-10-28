@@ -487,6 +487,8 @@ Hearts of Iron 風に、星間マップから直接動かせる。
   - 同君連合: `game-icons:king` — game-icons.net (Lorc)、CC-BY-3.0
   - 不平等条約の半主権国: `fa7-solid:scale-unbalanced` — Font Awesome Solid (Dave Gandy)、CC-BY-4.0
   - 貢納公国: `mdi:coins` — Material Design Icons (Pictogrammers)、Apache-2.0
+  - 自治領: `mdi:vote` — Material Design Icons (Pictogrammers)、Apache-2.0
+  - 緩衝国: `material-symbols:compress` — Material Symbols (Google)、Apache-2.0
   - 財政保護と介入権 (プラット型): `fluent-emoji-high-contrast:eagle` — Fluent Emoji High Contrast (Microsoft Corporation)、MIT
   - 型の家族 儀礼の宗主権: `fa7-solid:pray` — Font Awesome Solid (Dave Gandy)、CC-BY-4.0
   - 型の家族 条約の保護: `mdi:contract` — Material Design Icons (Pictogrammers)、Apache-2.0
