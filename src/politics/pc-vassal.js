@@ -90,7 +90,7 @@ const VIOLENT_SHARE = 0.31; // 植民地の独立のうち暴力を伴った割�
 const RECLAIM = { bonus: 20, vassal: 30, chance: 0.1 };
 // 強制労働の後遺症 (0〜1): 続けた年ごとに scarRate ずつ増え、やめたあとは年に ×scarKeep ずつ消える (半減に約 140 年)。税収 × (1 − scarTax × 後遺症)
 const FORCED = { scarRate: 0.02, scarKeep: 0.995, scarTax: 0.25 };
-function secessionTermsOf({ regime, delay, popRatio, loyalty, security = 0, gap = null }) {
+function secessionTermsOf({ regime, delay, popRatio, loyalty, security = 0, gap = null, excl = null }) {
   const r = REGIMES[regimeNorm(regime) || BASE_REGIME];
   const ratio = clamp(popRatio || 0, 0.01, 100);
   return [
@@ -101,6 +101,8 @@ function secessionTermsOf({ regime, delay, popRatio, loyalty, security = 0, gap 
     { label: '主人との人口の比', f: GM.pow(ratio, HAZARD.pop), note: `${ratio < 1 ? ratio.toFixed(2) : ratio.toFixed(1)} 倍` },
     { label: '忠誠度', f: GM.exp(HAZARD.loyalty * (HAZARD.loyaltyRef - loyalty)), note: `${Math.round(loyalty)}` },
     ...(security ? [{ label: '治安の予算', f: 1 - BUDGET.security.hazard * security }] : []),
+    // 政治から締め出された集団の人口の割合 (回 SE6・B-020。11-2 c。EPR と UCDP の国・年のロジットの係数。目標 R42。politics/groups-consts.js)
+    ...(excl !== null ? [{ label: '政治から締め出された人口', f: GM.exp(GROUPS.exclBeta * (excl - GROUPS.exclRef)), note: `${Math.round(excl * 100)}%` }] : []),
   ];
 }
 const hazardOf = (terms) => terms.reduce((k, t) => k * t.f, 1);

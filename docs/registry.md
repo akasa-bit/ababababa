@@ -132,6 +132,9 @@
 
 - saveField: diplo (政治。src/politics/diplomacy-consts.js。協定・届く途中の申し入れ・破約の年。回 SE2)
 - EDITIONS.game.aiColonize (AI の国の星系の政府の入植の急ぎ方 { ships, pop, range }。台帳の C20。回 SE5)
+- 星系の政府の項目 gv.include (直轄の星系の民族の権力への近さの上書き { local, other }。セーブの govs にそのまま入る。回 SE6・B-020。`docs/groups.md`)
+- R42 の測る道具 tools/groups-panel.js (回 SE6)
+- QD-42: (任意) WVS の個票の利用登録 (価値観の正しい 2 軸と集団ごとの差。回 SE6)
 - 星系の政府の項目 gv.claim (元の国の請求権 { by, until }。セーブの govs にそのまま入る。回 SE5・B-028)
 - 席の項目 players[i].ai (AI が動かす席。セーブの players にそのまま入る。席の値は PLAYER_KEYS と同じ。回 SE5。`docs/handoff.md` の 11)
 

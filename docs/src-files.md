@@ -59,9 +59,11 @@
 | `politics/policy-consts.js` | 政治 | 29 | 国家方針の費用・不満と要求・放置・議会・時代・終わりの年・挑戦 |
 | `politics/story.js` | 政治 | 115 | 語り手の出来事 (STORY) |
 | `politics/diplomacy-consts.js` | 政治 | 25 | 遅れて届く外交の協定 (PACT・PACT_KINDS・セーブの項目 diplo。回 SE2) |
+| `politics/groups-consts.js` | 政治 | 22 | 星系の中の集団の値 (GROUPS・GROUP_STATUS・所得の分位と価値観の式)。回 SE6 で足した (`docs/groups.md`) |
 | `core/game-base.js` | 共通 (世話役: 道具と検証) | 333 | Game: 作り方 (constructor)・国の割り当て・星系と入植地の引き方・家臣の連なり |
 | `ship/war-peace.js` | 船と戦争 | 236 | Game: 戦争の状態・戦争疲弊・戦勝点・講和・講和会議 |
 | `politics/loyalty-regime.js` | 政治 | 468 | Game: 忠誠・統治体制・主権の束・共同統治・任免・不満と要求・独立・直轄・政治力 |
+| `politics/groups.js` | 政治 | 89 | Game: 星系の中の集団 (民族の権力への近さ・締め出された人口・集団の忠誠度の差・現地のエリート・直轄の上書き include)。回 SE6 で足した |
 | `economy/fiscal.js` | 経済 | 169 | Game: 予算・国債・利子・財政の値 |
 | `economy/demography-consts.js` | 経済 | 48 | 年齢つきの人口の率と値 (DEMO。回 KE2) |
 | `economy/demography.js` | 経済 | 83 | Game: 年齢つきの人口 (コーホート・率の補間・年金と医療。回 KE2) |

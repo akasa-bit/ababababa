@@ -13,7 +13,11 @@
    (脱物質主義・幸福・人への信頼) の平均。それぞれを ln 1 人あたり GDP (2021 年の購買力平価) で回帰した切片・傾き・決定係数
 書き出し: data/derived/groups.json
 
+ゲームの側 (--game): tools/groups-panel.js が書き出した家臣の星系・年に、1 と同じ形のロジット (始まり ~ 締め出された割合 + ln 1 人あたりの所得 + ln 人口 + 平和の年数の 3 次式) をかけ、
+締め出された割合の係数が目標 R42 の幅 (targets/targets.json) の中かを出す
+
 使い方: python3 data/build/analyze_groups.py
+        python3 data/build/analyze_groups.py --game groups-panel.csv
 """
 import csv, gzip, json, math, os, statistics, sys
 import numpy as np
@@ -71,7 +75,23 @@ def peace_terms(t):
     return [t / 10, (t / 10) ** 2, (t / 10) ** 3]
 
 
+def game(path):
+    with open(path, encoding='utf-8') as f:
+        rs = list(csv.DictReader(f))
+    X = [[1, float(r['excl']), math.log(max(1.0, float(r['inc']))), math.log(max(1.0, float(r['pop']))), *peace_terms(float(r['peace']))] for r in rs]
+    Y = [int(r['onset']) for r in rs]
+    b, se = logit(Y, X)
+    c = coef(b, se, 1, '締め出された人口の割合 (0〜1)', exp=True)
+    with open(os.path.join(HERE, '..', '..', 'targets', 'targets.json'), encoding='utf-8') as f:
+        band = next(t for t in json.load(f)['realism'] if t['id'] == 'R42')['band']
+    ok = band[0] <= c['coef'] <= band[1]
+    print(json.dumps({'R42_game': c, 'rows': len(Y), 'onsets': sum(Y), 'band': band, 'pass': ok}, ensure_ascii=False, indent=1))
+    print(f"R42 {'合格' if ok else '不合格'}: ゲームの係数 {c['coef']} (95% 信頼区間 {c['ci95'][0]}〜{c['ci95'][1]})・実データの幅 {band[0]}〜{band[1]}")
+
+
 def main():
+    if len(sys.argv) > 2 and sys.argv[1] == '--game':
+        return game(sys.argv[2])
     epr = rows('EPR-2021.csv')
     acd = rows('ACD2EPR-2021.csv')
     dy = rows('ucdp-dyadic-211.csv')
