@@ -1,21 +1,19 @@
   // --- 入植船団の設計 (回 FU3・B-033・FU-1。SHIP_DESIGN・SHIP_TEMPLATES は ship/colonists.js) ---
-  // 国 realm の設計 (なければひな形の「小」)。値は選べる幅に収める。crew = 船の数 × 1 隻の人数 (前の版の { crew } は船の数に直す)
+  // 国 realm の設計 (なければひな形の「標準」)。値は選べる幅に収める。船団は 400 隻 × 1 隻の人数に固定 (FU-2。前の版の船の数 ships・人数 crew は読み捨てる)
   designOf(realm) {
-    const d = this.designs?.[realm] || SHIP_TEMPLATES.small;
-    const ships = clamp(Math.round(Number(d.ships ?? Number(d.crew) / SHIP_DESIGN.perShip)) || SHIP_TEMPLATES.small.ships, ...SHIP_DESIGN.ships);
-    return { ships, crew: ships * SHIP_DESIGN.perShip, speed: SHIP_DESIGN.speeds[d.speed] ? String(d.speed) : 'std',
+    const d = this.designs?.[realm] || SHIP_TEMPLATES.std;
+    return { ships: SHIP_DESIGN.ships, crew: SHIP_DESIGN.ships * SHIP_DESIGN.perShip, speed: SHIP_DESIGN.speeds[d.speed] ? String(d.speed) : 'std',
       cargo: Math.max(0, Number(d.cargo) || 0), ages: SHIP_DESIGN.ages[d.ages] ? d.ages : 'migrant' };
   }
   settlerDesign(fromId) { return this.designOf(this.realmOf(fromId)); }
-  // 設計を変える (命令 design)。船を造る首都で決めるので、光速の指令にならず政治力も要らない。tpl = ひな形、ほかは値ごとに (ships = 次の入植から送る船の数)
+  // 設計を変える (命令 design)。船を造る首都で決めるので、光速の指令にならず政治力も要らない。tpl = ひな形、ほかは値ごとに
   setDesign(d) {
     const next = d.tpl && SHIP_TEMPLATES[d.tpl] ? { ...SHIP_TEMPLATES[d.tpl] } : { ...this.designOf(this.cap) };
-    delete next.crew;
-    for (const k of ['ships', 'speed', 'cargo', 'ages']) if (d[k] !== undefined) next[k] = d[k];
+    for (const k of ['speed', 'cargo', 'ages']) if (d[k] !== undefined) next[k] = d[k];
     this.designs[this.cap] = next;
-    const { crew, ...v } = this.designOf(this.cap); // 選べる幅に収めて覚える (人数は船の数から出すので覚えない)
+    const { ships, crew, ...v } = this.designOf(this.cap); // 選べる幅に収めて覚える (船の数と人数は決まっているので覚えない)
     this.designs[this.cap] = v;
-    return { ok: true, msg: `入植船団を ${v.ships} 隻 (${fmtPeople(crew)})・${SHIP_DESIGN.speeds[v.speed]}・積み荷の工業品 ${v.cargo}・${SHIP_DESIGN.ages[v.ages]} にした` };
+    return { ok: true, msg: `入植船団 (${ships} 隻・${fmtPeople(crew)}) を ${SHIP_DESIGN.speeds[v.speed]}・積み荷の工業品 ${v.cargo}・${SHIP_DESIGN.ages[v.ages]} にした` };
   }
   // 住む場所 (船の構造) の工業品 [単位]
   habitatGoods(des) { return (des.crew * SHIP_DESIGN.habitatKg) / RES_KG.goods; }

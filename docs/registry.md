@@ -73,6 +73,7 @@
 - QD-40: 従属国の型の差が朝貢の割合だけになっている (回 SE5。DO4 の B-070 から)
 - C20: AI の国の星系の政府の入植の急ぎ方 (回 SE5・B-028)
 - QD-41: AI の国の要求への返事の仕方 (回 SE5。AI の国の席のあと)
+- B-142: AI の国の要求への新しい判断 (QD-41 = c。2 波目の終わりの返事)
 
 ### 船と戦争
 
@@ -147,7 +148,7 @@
 - saveField: forts (船と戦争。src/ship/war-consts.js。宇宙要塞の段。2026-10-22 の依頼)
 - saveField: exhaustSent・bargainSent (船と戦争。src/ship/war-consts.js。届く途中の損失の知らせと AI どうしの講和の申し入れ。回 FU4)
 - EDITIONS.game.battle (pos・luck。艦隊戦の補正。台帳の C27・C28。回 FU2)。EDITIONS.sim.battle も同じ名前で CDB90 の値
-- saveField: designs (船と戦争。src/ship/colonists.js。国ごとの入植船団の設計 { ships (1 隻 500 人の船の数), speed, cargo, ages }。回 FU3・B-033。`docs/colony.md`)
+- saveField: designs (船と戦争。src/ship/colonists.js。国ごとの入植船団の設計 { speed, cargo, ages } (船団は 400 隻 × 500 人に固定。FU-1 の版の ships は読み捨てる)。回 FU3・B-033・FU-2。`docs/colony.md`)
 
 ### 画面と最初の体験
 
