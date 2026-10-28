@@ -45,7 +45,7 @@ function fiscalHtml(g) {
     const sh = f.budget?.[k] || 0;
     const T = g.tech[g.cap], w = T?.rd && T.S > 0 ? T.rd.spend / T.S : 0; // 研究は、払った額 ÷ 研究者 1 人の費用だけ公の研究者を足す (回 KE6)
     const eff = k === 'education' ? `教育の支出 GDP の ${g.eduSpendPct({ sys: g.cap }).toFixed(1)}%` : k === 'research' ? `公の研究者 +${fmtAmt(w > 0 ? (sh * paid * tax) / w : 0)} 人 (効くのは ${RND.lag[0]}〜${RND.lag[1]} 年あと)` : `効き目 ${pct(budgetEffect(sh * paid))}`; // 教育は budgetEffect でなく教育の支出 ÷ GDP で効く (回 KE5)
-    return `<tr><td>${b.label}</td><td>${slider(k, BUDGET_RANGE, BUDGET_STEP, sh, 'pct0', b.label)}</td><td>${sh ? `${fmtAmt(sh * tax)} cr/年・${eff}` : '<span class="muted">使わない</span>'}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
+    return `<tr><td>${ico(BUDGET_ICON[k])}${b.label}</td><td>${slider(k, BUDGET_RANGE, BUDGET_STEP, sh, 'pct0', b.label)}</td><td>${sh ? `${fmtAmt(sh * tax)} cr/年・${eff}` : '<span class="muted">使わない</span>'}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
   }).join('');
   return `<h3>${ico('credits')}財政</h3>
     <p class="note">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・政策金利・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く${pend ? ` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>

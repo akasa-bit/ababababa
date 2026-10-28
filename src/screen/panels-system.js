@@ -133,7 +133,7 @@ function sysHead(g, sys, k, cols) {
   if (cols.length) tiles.push([id === g.cap ? `${ico('credits')}収入/年` : `${ico('credits')}資金`, id === g.cap ? fmtAmt(g.income()) : fmtAmt(k?.credits || 0)]);
   const dot = starIcon(sys.stars, 'big');
   const realmDot = cols.length ? `<span class="dot" style="background:${realmColor(realm)}"></span>` : '';
-  return `<div class="syshead"><h2>${dot}${esc(sys.name)}<button class="x" data-act="deselect" title="選択を外す (Esc・地図の何もないところを押しても外れる)" aria-label="選択を外す">✕</button></h2>
+  return `<div class="syshead"><h2>${dot}${esc(sys.name)}<button class="x" data-act="deselect" title="選択を外す (Esc・地図の何もないところを押しても外れる)" aria-label="選択を外す">${ico('close')}</button></h2>
     <div class="meta"><span>${realmDot}${esc(owner)}</span><span>${ME.capName}から ${distance(g.system(g.cap), sys).toFixed(1)} ly</span>${ageBadge(g, id)}${sys.cat ? `<span class="muted" title="実在の恒星 (CNS5)。銀河面からの高さ ${fmt(sys.z, 1)} 光年">実在 ${esc(sys.cat)}</span>` : ''}</div>
     <div class="stats">${tiles.map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join('')}</div>
     ${flags.length ? `<ul class="flags">${flags.map(([c, a, b]) => `<li class="${c}">${esc(a)}${b ? `<small>${esc(b)}</small>` : ''}</li>`).join('')}</ul>` : ''}</div>`;
@@ -148,8 +148,8 @@ function systemPanel(app) {
   const colonized = cols.length > 0;
   const realm = id === g.cap ? g.realmOf(id) : k?.realm ?? null;
   // よく使う操作: 星系マップ、この艦隊を選ぶ、他国なら講和・宣戦
-  const acts = [`<button data-act="open">星系マップを開く</button>`];
-  if (isOwnStack(g, id)) acts.push(`<button data-act="fleetsel" data-sys="${id}">この艦隊を選ぶ<small>地図で移動先を右クリック/タップ</small></button>`);
+  const acts = [`<button data-act="open">${ico('openmap')}星系マップを開く</button>`];
+  if (isOwnStack(g, id)) acts.push(`<button data-act="fleetsel" data-sys="${id}">${ico('fleetsel')}この艦隊を選ぶ<small>地図で移動先を右クリック/タップ</small></button>`);
   if (colonized && realm !== g.cap && realm !== null) {
     acts.push(g.knownAtWar(g.cap, realm) ? `<button data-act="peace" data-sys="${realm}">${ico('peace')}講和を申し入れる<small>届くまで ${g.lightDelay(realm).toFixed(1)} 年・政治力 ${PC_DIPLOMACY}</small></button>`
       : `<button data-act="declarewar" data-sys="${realm}">${ico('war')}${esc(g.system(realm).name)} の国に宣戦<small>政治力 ${PC_DIPLOMACY}</small></button>`);
@@ -260,7 +260,7 @@ function railHtml(g) {
     const more = ids.length > 1 ? ` (同じ星系の続報 ほか ${ids.length - 1} 件)` : '';
     return `<div class="ri ${e.good ? 'good' : EVENT_TONE[e.kind] || ''}" style="opacity:${fade.toFixed(2)}">
       <button data-act="fly" data-sys="${e.sys ?? 0}" title="${esc(e.text)}"><span class="t">${tagIco(e.kind)}${esc(e.text)}</span><span class="m">${esc(when(e) + more)}</span></button>
-      ${major ? `<button class="ack" data-act="ack" data-id="${ids.join(',')}" aria-label="確かめた">✓</button>` : '<span></span>'}</div>`;
+      ${major ? `<button class="ack" data-act="ack" data-id="${ids.join(',')}" aria-label="確かめた">${ico('ack')}</button>` : '<span></span>'}</div>`;
   };
   const dec = (d) => `<div class="dec"><div class="m">${d.kind === 'demand' ? '要求' : '出来事'}・${esc(place(d.sys))}${d.kind === 'demand' ? '' : `・${Math.round(d.deadline)}年までに返事`}${d.sys === g.cap ? '' : `・返事は ${g.lightDelay(d.sys).toFixed(0)} 年で届く`}</div>
     <div class="t clamp3">${esc(d.text)}</div>
@@ -273,7 +273,7 @@ function railHtml(g) {
   const shownMajors = majors.slice(0, 2);
   const moreN = majors.slice(shownMajors.length).reduce((k, x) => k + x.ids.length, 0) + news.over;
   // 隠す・すべて確かめたのボタンは、帯がスクロールしても押せるように一番上に置く
-  return `<div class="railbar">${majors.length > 1 ? '<button data-act="ackall">重大な知らせをすべて確かめた</button>' : ''}<button data-act="railtoggle">隠す</button></div>
+  return `<div class="railbar">${majors.length > 1 ? '<button data-act="ackall">重大な知らせをすべて確かめた</button>' : ''}<button data-act="railtoggle">${ico('hide')}隠す</button></div>
     ${consent}${surprise.slice(0, 2).map((w) => surpriseHtml(g, w)).join('')}${guide}${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? `<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
     ${hungry ? `<button class="state" data-act="view" data-v="events">${tagIco('famine')}飢餓・水不足の星系 ${hungry} — 地図の赤い「!」</button>` : ''}
     ${shownMajors.map((x) => item(x.e, true, x.ids)).join('')}${moreN ? `<button class="more" data-act="view" data-v="events">ほかに重大な知らせ ${moreN} 件 (イベントのタブ)</button>` : ''}

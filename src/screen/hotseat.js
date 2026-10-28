@@ -218,6 +218,14 @@ $('memobtn').innerHTML = `${ico('memo')}メモ`;
 // HTML に直接書いてある見出しとタブにもアイコンを付ける
 for (const [id, k, t] of [['tab-galaxy', 'galaxy', '星間'], ['tab-system', 'system', '星系'], ['tab-empire', 'empire', '帝国'], ['tab-cands', 'cands', '候補地']]) $(id).innerHTML = `${ico(k)}${t}`;
 for (const [id, k, t] of [['sec-ledger', 'credits', `${ME.gov}の収支`], ['sec-ships', 'ships', '航行中の船'], ['sec-log', 'log', 'ログ']]) $(id).querySelector('summary').innerHTML = `${ico(k)}${t}`;
+// 回 GA8 (QD-61): 記号だけだったボタンと地図の操作にもアイコン (記号は画面読み上げの名前 aria-label に残す)
+$('speed').querySelector('[data-speed="0"]').innerHTML = ico('pause');
+$('skipbtn').innerHTML = ico('skip');
+$('menubtn').innerHTML = ico('menu');
+$('zoom-in').innerHTML = ico('zoomin');
+$('zoom-out').innerHTML = ico('zoomout');
+for (const [id, k, t] of [['zoom-fit', 'fit', '全体'], ['rotbtn', 'rotate', '回す'], ['vassalbtn', 'vassal', '従属']]) $(id).innerHTML = `${ico(k)}<small>${t}</small>`;
+$('legend').querySelector('summary').innerHTML = `${ico('legend')}凡例`;
 $('memobtn').onclick = () => ($('memobox').hidden ? openMemo() : closeMemo());
 $('memoclose').onclick = closeMemo;
 $('memosave').onclick = saveMemo;

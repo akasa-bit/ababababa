@@ -9,6 +9,7 @@ function saveInfo(m) {
 }
 // ホームは全画面のページで進む (B-194): 最初のメニュー → シングルプレイの設定 → (国が 2 つ以上なら) 国家選択 → 地図。
 // 銀河の番号つきの URL で開いたときは、その番号が見えるように設定のページから (試験が銀河の番号の欄を使う)
+const HOME_ICON = { single: 'single', load: 'load', multi: 'multi', nations: 'nations', credits: 'copyright' };
 const HOME_PAGES = { single: 'シングルプレイ', load: 'ロード', multi: 'マルチプレイ', nations: '国家制作', credits: '著作権関連', account: 'アカウント' };
 function homePage() {
   if (app.homeTab === undefined) app.homeTab = params.get('seed') !== null ? 'single' : 'menu';
@@ -22,7 +23,7 @@ function homeHtml() {
     return `<div class="hmenu"><h1>${brandHtml()}</h1><p class="tag">光速の壁の向こうへ広がる恒星間植民</p>${note}
       <div class="items">
         ${going ? `<button class="resume" data-home="resume">${app.started ? 'ゲームに戻る' : '続きから'}<small>${saveInfo(saveMeta(buildSave(app.game)))}</small></button>` : ''}
-        ${Object.entries(HOME_PAGES).filter(([k]) => k !== 'account').map(([k, l]) => `<button data-home="tab" data-t="${k}">${l}${k === 'nations' && NationLib.list.length ? ` (${NationLib.list.length})` : ''}</button>`).join('')}
+        ${Object.entries(HOME_PAGES).filter(([k]) => k !== 'account').map(([k, l]) => `<button data-home="tab" data-t="${k}">${ico(HOME_ICON[k])}${l}${k === 'nations' && NationLib.list.length ? ` (${NationLib.list.length})` : ''}</button>`).join('')}
       </div></div>`;
   }
   const head = `<div class="phead"><button class="ghost" data-home="tab" data-t="${page === 'account' ? app.homeFrom || 'menu' : 'menu'}">戻る</button><h2>${HOME_PAGES[page]}</h2></div>${note}`;
@@ -60,7 +61,7 @@ function loadHtml() {
   const slots = SLOT_KEYS.map((k, i) => {
     const d = Store.meta[k];
     return `<div class="row"><div class="info"><b>スロット ${i + 1}</b><br>${saveInfo(d)}</div>
-      <button data-home="slotsave" data-i="${i}">${armed(`save${i}`) ? '上書きする?' : 'ここにセーブ'}</button>
+      <button data-home="slotsave" data-i="${i}">${armed(`save${i}`) ? '上書きする?' : `${ico('save')}ここにセーブ`}</button>
       <button data-home="slotload" data-i="${i}" ${d ? '' : 'disabled'}>ロード</button>
       <button class="ghost" data-home="slotdel" data-i="${i}" ${d ? '' : 'disabled'}>${armed(`del${i}`) ? '本当に削除?' : '削除'}</button></div>`;
   }).join('');
