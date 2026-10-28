@@ -238,7 +238,7 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 - **右の欄**: 選んだ星系の名前・持ち主・情報の古さ、人口・忠誠度・艦隊・資金の4つの数字、いま起きていること (戦争・攻囲・不満の段階・飢餓など) を上にまとめ、よく使う操作 (星系マップ・艦隊を選ぶ・講和/宣戦・視察団) をその下に置く。詳しい内容 (政府と資金・忠誠と統治・入植地・備蓄・交易路・軍事・先住民・恒星・地球政府の収支・航行中の船・ログ) は畳める欄にまとめ、右端に要約を出す。開いた欄は覚えておく
 - **連打できるボタン**: 右の欄や帝国の表のボタンを押したあと書き換わっても、押したボタンは同じ場所に残る (上の中身が増えたら中身のほうが上へ逃げる)。交易路の「拡張」などを指を動かさずに続けて押せる。位置合わせは押してから3秒たつか、自分で欄をスクロールすると止まる。交易路の「拡張」ボタンは文章の下に欄いっぱいの幅で置き、数字の桁が変わっても横に動かない
 - **説明**: 長い説明文は「説明」ボタンの中にしまってある (押すと開く)
-- **アイコン**: 資源・施設・艦隊・歩兵・資金・政治力などの名前の頭に白一色のアイコンを添える (ボタンの費用、備蓄、採掘基地の産出、交易路の荷、知らせの帯と出来事の種類の札、節の見出しなど)。人口・忠誠度・恐怖度・友好度・議会・時代の課題・交易路・移民・兵站・海賊・先住民・講和・視察団・威圧・情報の古さ・メモにもある。タブ・収支・候補地の表の列にもある。一時停止・次の知らせまで進む・メニュー・地図の拡大縮小などのボタン、ホーム画面のメニューと帝国の中のタブ、セーブ、「地図」で見るボタンにもある。恒星は星の数と色 (連星なら2つの丸)、惑星は種類ごとの形のアイコンで、星系名・天体の一覧・候補地に出る。星系マップでは、惑星入植地・宇宙ステーション・採掘基地・征服戦争の印もアイコンで描く → [アイコンの出典](#アイコンの出典)
+- **アイコン**: 資源・施設・艦隊・歩兵・資金・政治力などの名前の頭に白一色のアイコンを添える (ボタンの費用、備蓄、採掘基地の産出、交易路の荷、知らせの帯と出来事の種類の札、節の見出しなど)。人口・忠誠度・恐怖度・友好度・議会・時代の課題・交易路・移民・兵站・海賊・先住民・講和・視察団・威圧・情報の古さ・メモにもある。タブ・収支・候補地の表の列にもある。一時停止・次の知らせまで進む・メニュー・地図の拡大縮小などのボタン、ホーム画面のメニューと帝国の中のタブ、セーブ、「地図」で見るボタンにもある。従属の型 (星系の札・家臣の内訳)・国家方針・挑戦・種族の特性・予算の研究にもある。恒星は星の数と色 (連星なら2つの丸)、惑星は種類ごとの形のアイコンで、星系名・天体の一覧・候補地に出る。星系マップでは、惑星入植地・宇宙ステーション・採掘基地・征服戦争の印もアイコンで描く → [アイコンの出典](#アイコンの出典)
 - **選択を外す**: 右の欄の星系名の横の ✕、Esc、または星間マップの何もないところを押すと、星系の選択が外れる (艦隊を選んでいるときは、まず艦隊の選択が外れる)。何も選んでいないときは右 (狭い画面では下) の欄そのものが隠れ、地図が広がる。星を押すと欄が戻る。「星系」タブを押すと、最後に選んだ星系が開く
 - **見た目**: 黒鉛色の地に白と赤橙 (NASA の 1975 年のグラフィック標準書にならう)。ボタンとタブの縁は絵画の額縁 (面取りの光と影、玉縁の粒、四隅の花形の飾り。選んでいるものは明るい銀の額)。見出しと数字はタイプライター体 (Special Elite) と古い活字の明朝 (Zen Antique) で少し掠れさせ、本文は Courier Prime と Zen Old Mincho。書体は Google Fonts から読み、通信できないときは端末の明朝に戻る
 - **宇宙の背景**: 星間マップの後ろには実際の天の川の全天星図 (銀河の中心のあたり)、星系マップの後ろには、太陽系ならスピッツァー宇宙望遠鏡の北アメリカ星雲、ほかの星系なら NASA の星雲・銀河・星団の写真 17 枚から星系ごとに決まった1枚を置く (どれも色を抑えて暗くしたもの)。星間マップでは視点の動きにわずかに遅れて動き、奥行きが出る。画像は `assets/` (合わせて約 9 MB。星系マップの背景は開いた星系の1枚だけ読む) → [画像の出典](#画像の出典)
@@ -385,7 +385,7 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 
 ### アイコンの出典
 
-ゲームの中のアイコン (白一色で表示) は、Iconify (https://iconify.design) を通して次のアイコン集から取った。game-icons.net のアイコンは https://game-icons.net の作者 (Lorc, Delapouite) による CC BY 3.0。
+ゲームの中のアイコン (白一色で表示) は、Iconify (https://iconify.design) を通して次のアイコン集から取った。game-icons.net のアイコンは https://game-icons.net の作者 (Lorc, Delapouite, Skoll, DarkZaitzev, Lord Berandas) による CC BY 3.0。
 
   - 食料: `game-icons:grain` — game-icons.net (Delapouite)、CC-BY-3.0
   - 水: `iconoven:droplet` — IconOven (Appic Marketing)、MIT
@@ -469,6 +469,55 @@ Hearts of Iron 風に、星間マップから直接動かせる。
   - セーブ: `mdi:content-save` — Material Design Icons (Pictogrammers)、Apache-2.0
   - 高付加価値物品: `boxicons:chip` — Boxicons (Boxicons)、MIT
   - 教育: `material-symbols:school` — Material Symbols (Google)、Apache-2.0
+  - 従属の型 直接統治: `mdi:crown` — Material Design Icons (Pictogrammers)、Apache-2.0
+  - 従属の型 エンコミエンダ制: `memory:whip` — Memory Icons (Pictogrammers)、Apache-2.0
+  - 冊封朝貢国: `game-icons:tied-scroll` — game-icons.net (Lorc)、CC-BY-3.0
+  - 藩部: `ri:tent-fill` — Remix Icon (Remix Design)、Apache-2.0
+  - 保護国: `game-icons:umbrella` — game-icons.net (Lorc)、CC-BY-3.0
+  - 藩王国・土侯国: `boxicons:mosque` — Boxicons (Boxicons)、MIT
+  - 委任統治領 A: `solar:clipboard-check-bold` — Solar (480 Design)、CC-BY-4.0
+  - 委任統治領 B・C と信託統治: `material-symbols:key` — Material Symbols (Google)、Apache-2.0
+  - 共同統治: `game-icons:split-body` — game-icons.net (Lorc)、CC-BY-3.0
+  - 特許会社領: `iconoven:briefcase` — IconOven (Appic Marketing)、MIT
+  - 傀儡国 (型の家族「傀儡と衛星」も): `game-icons:puppet` — game-icons.net (Lorc)、CC-BY-3.0
+  - 衛星国: `material-symbols:orbit` — Material Symbols (Google)、Apache-2.0
+  - 自由連合: `fa6-solid:hands` — Font Awesome 6 Solid (Dave Gandy)、CC-BY-4.0
+  - 封臣: `game-icons:chess-knight` — game-icons.net (Skoll)、CC-BY-3.0
+  - 幕藩制の藩: `game-icons:samurai-helmet` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 同君連合: `game-icons:king` — game-icons.net (Lorc)、CC-BY-3.0
+  - 不平等条約の半主権国: `fa7-solid:scale-unbalanced` — Font Awesome Solid (Dave Gandy)、CC-BY-4.0
+  - 貢納公国: `mdi:coins` — Material Design Icons (Pictogrammers)、Apache-2.0
+  - 自治領: `mdi:vote` — Material Design Icons (Pictogrammers)、Apache-2.0
+  - 緩衝国: `material-symbols:compress` — Material Symbols (Google)、Apache-2.0
+  - 財政保護と介入権 (プラット型): `fluent-emoji-high-contrast:eagle` — Fluent Emoji High Contrast (Microsoft Corporation)、MIT
+  - 型の家族 儀礼の宗主権: `fa7-solid:pray` — Font Awesome Solid (Dave Gandy)、CC-BY-4.0
+  - 型の家族 条約の保護: `mdi:contract` — Material Design Icons (Pictogrammers)、Apache-2.0
+  - 型の家族 法と交易だけ: `reicon:trade` — Reicon (REICON)、MIT
+  - 型の家族 入植者の自治: `game-icons:old-wagon` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 型の家族 直轄: `ri:flag-fill` — Remix Icon (Remix Design)、Apache-2.0
+  - 型の家族 君主と封の網: `vadivam:network` — Vadivam (Praveen Juge)、MIT
+  - 国家方針 拡張期: `roentgen:rocket-on-launch-pad` — Röntgen (Sergey Vartanov)、CC-BY-4.0
+  - 国家方針 整備期: `material-symbols:construction` — Material Symbols (Google)、Apache-2.0
+  - 国家方針 軍拡期: `at-icons:missile` — @icons (Valentin Fossati)、MIT
+  - 委任方針 均衡: `material-symbols:balance` — Material Symbols (Google)、Apache-2.0
+  - 委任方針 拡張: `game-icons:expand` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 特性 多産: `iconoir:stroller` — Iconoir (Luca Burgio)、MIT
+  - 特性 長命: `game-icons:hourglass` — game-icons.net (Lorc)、CC-BY-3.0
+  - 特性 適応力: `game-icons:chameleon-glyph` — game-icons.net (DarkZaitzev)、CC-BY-3.0
+  - 特性 水棲: `mdi:wave` — Material Design Icons (Pictogrammers)、Apache-2.0
+  - 特性 寒冷適応: `game-icons:ice-bolt` — game-icons.net (Lorc)、CC-BY-3.0
+  - 特性 乾燥適応: `andrsrxn:desert` — andrsrxn/icons (Andrés Raxón)、MIT
+  - 特性 好戦的: `game-icons:axe-sword` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 特性 勤勉: `f7:ant` — Framework7 Icons (Vladimir Kharlampidi)、MIT
+  - 特性 鉱夫: `game-icons:mining` — game-icons.net (Lorc)、CC-BY-3.0
+  - 特性 商才: `mdi:handshake` — Material Design Icons (Pictogrammers)、Apache-2.0
+  - 特性 賢明: `iconoir:brain` — Iconoir (Luca Burgio)、MIT
+  - 挑戦 60星系: `hugeicons:constellation` — Huge Icons (Hugeicons)、MIT
+  - 挑戦 独立を許さない: `material-symbols:lock` — Material Symbols (Google)、Apache-2.0
+  - 挑戦 統一: `game-icons:puzzle` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 挑戦 遠征: `mdi:compass` — Material Design Icons (Pictogrammers)、Apache-2.0
+  - 予算の研究: `game-icons:microscope` — game-icons.net (Lord Berandas)、CC-BY-3.0
+  - 委任方針の内政・軍備は開発・防衛配備の、協定の不可侵・防衛同盟・交易は講和・友好度・交易路のアイコンを使い回す
   - 星系 (タブ)、恒星・惑星のアイコンはこのゲームで描いたもの。恒星は星の数 (単独・連星・三重星) と色、惑星は種類 (岩石惑星 = クレーター、ガス巨星 = 大きく縞、氷巨星 = 環、ミニ・ネプチューン = 縞1本、矮小天体 = 小さな丸、小惑星帯 = 粒の弧) で描き分ける
 
 ### 星のデータの出典
