@@ -34,7 +34,7 @@ function politicsSheet(app) {
     const loyal = k.lord === null || k.lord === undefined ? '—' : `<span class="${k.loyalty < UNREST_AT ? 'bad' : k.loyalty < 50 ? '' : 'hz'}">${Math.round(k.loyalty ?? LOYALTY_START)}</span>`;
     const vassal = k.lord !== null && k.lord !== undefined;
     const neglect = vassal ? Math.max(0, g.year - (k.attended ?? k.founded ?? k.year)) : 0;
-    const rule = !vassal || realm !== g.cap ? '—' : k.direct ? '<b>直接統治</b>' : `${REGIMES[g.knownRegime(k)].label} (${MANDATES[k.mandate || 'balanced']})`;
+    const rule = !vassal || realm !== g.cap ? '—' : k.direct ? `<b>${ico('rg-direct')}直接統治</b>` : `${ico(`rg-${g.knownRegime(k)}`)}${REGIMES[g.knownRegime(k)].label} (${ico(MANDATE_ICON[k.mandate || 'balanced'])}${MANDATES[k.mandate || 'balanced']})`;
     return `<tr><td><span class="dot" style="background:${realmColor(realm)}"></span>${goto(x)}</td><td>${k.lord === null || k.lord === undefined ? '—' : esc(g.system(k.lord).name)}</td>
       <td>${rule}</td>${NEGLECT_MAX ? `<td>${vassal ? `<span class="${neglect > NEGLECT_GRACE ? 'bad' : 'muted'}">${Math.floor(neglect)} 年</span>` : '—'}</td>` : ''}
       <td>${k.unrest?.stage ? `<b class="bad">${UNREST_LABEL[k.unrest.stage]}</b>` : vassal ? '<span class="muted">—</span>' : '—'}</td>
@@ -96,10 +96,10 @@ function diplomacyHtml(g, roots) {
   const mine = g.diplo.pacts.filter((p) => p.a === g.cap || p.b === g.cap).map((p) => {
     const other = p.a === g.cap ? p.b : p.a;
     const meOn = p.a === g.cap ? p.onA : p.onB, themOn = p.a === g.cap ? p.onB : p.onA;
-    return `<tr><td><span class="dot" style="background:${realmColor(other)}"></span>${esc(g.realmName(other))}</td><td>${PACT_KINDS[p.kind].label}</td><td>${Math.round(p.until)}年まで</td>
+    return `<tr><td><span class="dot" style="background:${realmColor(other)}"></span>${esc(g.realmName(other))}</td><td>${ico(PACT_ICON[p.kind])}${PACT_KINDS[p.kind].label}</td><td>${Math.round(p.until)}年まで</td>
       <td>${meOn > g.year ? `<span class="muted">${ME.realm}は ${meOn.toFixed(0)} 年から (返事が届いてから)</span>` : `${ME.realm}も縛られている`}<br><span class="muted">相手は ${themOn.toFixed(0)} 年から</span></td></tr>`;
   }).join('');
-  const sent = g.diplo.sent.filter((o) => o.from === g.cap).map((o) => `<tr><td>${esc(g.realmName(o.to))}</td><td>${PACT_KINDS[o.kind].label}</td><td>${o.at > g.year ? `光速で送信中 あと ${(o.at - g.year).toFixed(1)} 年` : '相手が考えている'}${o.gift ? ` (贈り物 ${fmtAmt(o.gift)} cr)` : ''}</td></tr>`).join('');
+  const sent = g.diplo.sent.filter((o) => o.from === g.cap).map((o) => `<tr><td>${esc(g.realmName(o.to))}</td><td>${ico(PACT_ICON[o.kind])}${PACT_KINDS[o.kind].label}</td><td>${o.at > g.year ? `光速で送信中 あと ${(o.at - g.year).toFixed(1)} 年` : '相手が考えている'}${o.gift ? ` (贈り物 ${fmtAmt(o.gift)} cr)` : ''}</td></tr>`).join('');
   const kinds = Object.keys(PACT_KINDS);
   const rows = roots.filter((r) => !g.knownAtWar(g.cap, r) && g.realmAlive(r)).flatMap((r) => kinds.map((kind, i) => {
     const head = i === 0 ? `<td rowspan="${kinds.length}"><span class="dot" style="background:${realmColor(r)}"></span>${esc(g.realmName(r))}<br><span class="muted">${g.sysDist(g.cap, r).toFixed(1)} 光年</span></td>` : '';
@@ -111,7 +111,7 @@ function diplomacyHtml(g, roots) {
       cell = `<span class="${o.s >= 0.15 ? 'hz' : o.s >= 0 ? '' : 'bad'}">${o.label}</span><br><span class="muted">${esc(o.why)}${o.s < 0 ? `。${o.need.ships ? `こちらの艦隊があと ${o.need.ships} 見えるか、` : ''}贈り物 ${fmtAmt(o.need.gift)} cr なら受けそう` : ''}</span>`;
       act = `<button data-act="pact" data-sys="${r}" data-pact="${kind}" data-gift="0">申し入れる<small>政治力 ${PC_DIPLOMACY}</small></button>${o.s < 0 ? `<button data-act="pact" data-sys="${r}" data-pact="${kind}" data-gift="${o.need.gift}">贈り物つき<small>${fmtAmt(o.need.gift)} cr (受けたら払う)</small></button>` : ''}`;
     }
-    return `<tr>${head}<td>${PACT_KINDS[kind].label}</td><td class="wrap">${cell}${act ? `<div class="btns">${act}</div>` : ''}</td></tr>`;
+    return `<tr>${head}<td>${ico(PACT_ICON[kind])}${PACT_KINDS[kind].label}</td><td class="wrap">${cell}${act ? `<div class="btns">${act}</div>` : ''}</td></tr>`;
   })).join('');
   const breaches = g.pactBreaches(g.cap);
   return `<h3>外交</h3>

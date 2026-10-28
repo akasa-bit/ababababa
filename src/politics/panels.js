@@ -65,7 +65,7 @@ function ruleBox(g, id, k) {
   const concession = [(k.taxFree || 0) > g.year ? `朝貢の免除 (${Math.round(k.taxFree)}年まで)` : '', autonomy ? `自治 (${Math.round(k.autonomy)}年まで。指令を受けない)` : ''].filter(Boolean).join('・');
   return `<h3>統治</h3>
     <p class="note">${direct ? `<b>直接統治 (直轄)</b>: 星系政府は自分では開発・入植・交易路の開設をせず、${ME.home}の指令をかならず実行する (指令の政治力は半分・朝貢50%・忠誠度の目標 +10・年に政治力 1)。`
-      : `<b>${REGIMES[regime].label}</b> (委任方針「${MANDATES[k.mandate || 'balanced']}」): 星系政府が自分の資金で動く。${esc(REGIMES[regime].note)}。`}${k.scar ? ` 強制労働の後遺症 <b class="bad">${pct(k.scar)}</b> (税収 −${pct(FORCED.scarTax * k.scar)})。` : ''}
+      : `<b>${ico(`rg-${regime}`)}${REGIMES[regime].label}</b> (委任方針「${ico(MANDATE_ICON[k.mandate || 'balanced'])}${MANDATES[k.mandate || 'balanced']}」): 星系政府が自分の資金で動く。${esc(REGIMES[regime].note)}。`}${k.scar ? ` 強制労働の後遺症 <b class="bad">${pct(k.scar)}</b> (税収 −${pct(FORCED.scarTax * k.scar)})。` : ''}
       ${NEGLECT_MAX ? `主人の関与 (指令・資金援助・${ME.home}が命じた艦隊の来訪・視察) が途絶えて <b class="${neglect > NEGLECT_GRACE ? 'bad' : ''}">${Math.floor(neglect)} 年</b> (${ME.home}の知る限り。${NEGLECT_GRACE}年を過ぎると忠誠度の目標が年${NEGLECT_RATE}ずつ下がる)。` : ''}${concession ? `認めている要求: ${concession}。` : ''}</p>
     ${ruleBtn}
     ${direct ? '' : `<label class="field">委任方針${pending('mandate') ? ' (変更の指令を送信中)' : ''} — 変えると指令 (政治力 ${g.pcCost('mandate', { sys: id })})${sel('mandate', MANDATES, k.mandate || 'balanced', MANDATE_NOTE)}</label>`}
@@ -86,7 +86,7 @@ function histBox(g, cur) {
   const cases = t.caseList.map((c) => `${esc(c.name)} (${c.years}・${END_LABEL[c.end] || c.end}${c.violent ? '・暴力' : ''})`).join('、');
   return `<details class="note hist" data-h="hist" ${app.helpOpen?.has('hist') ? 'open' : ''}><summary>史料 — ${esc(R.label)}</summary>
     <label class="field">型<select data-act="histtype">${opts}</select></label>
-    <p class="muted">${VASSAL_FAMILIES[t.family]}の家族。束 (事例の最頻) 法 ${bundleText(t.law)}・実態 ${bundleText(t.fact)}。事例 ${t.n} 件の存続の中央値 ${t.median ? `${Math.round(t.median)} 年` : '続いている'}</p>
+    <p class="muted">${ico(`fam-${t.family}`)}${VASSAL_FAMILIES[t.family]}の家族。束 (事例の最頻) 法 ${bundleText(t.law)}・実態 ${bundleText(t.fact)}。事例 ${t.n} 件の存続の中央値 ${t.median ? `${Math.round(t.median)} 年` : '続いている'}</p>
     ${row('当時の言葉', d.terms)}${row('法と実態の差', d.gap)}<p><b>事例 (事例のデータ)</b> ${cases}</p>${row('一次史料の出典', d.sources)}${row('研究者の論争', d.debates)}${row('ゲームで省いたこと', d.omit)}
     <p class="muted">符号化は 2 人が別々に行い (一致 α = 0.754)、食い違いを裁定した。条文の番号は本文がデジタル化されている 17 件だけ原文で確かめた。出典の一覧は data/raw/vassal/ (README・sources_checked.md)</p></details>`;
 }
@@ -114,7 +114,7 @@ function regimeBox(g, id, k, cur, sending, autonomy) {
     const drop = Math.max(0, REGIMES[cur].rank - R.rank);
     const why = r === cur ? '選択中' : sending ? '送信中' : c > g.pc ? '政治力不足' : r === 'direct' && autonomy ? '自治中' : r === 'direct' && full ? `上限 ${g.directMax()}` : '';
     const loy = `${R.loyalty > 0 ? '+' : R.loyalty < 0 ? '−' : '±'}${Math.abs(R.loyalty)}`;
-    return `<div class="rg"><div class="rh"><div><b>${esc(R.label)}</b><br><span>離反 年${pctH(hp)}・朝貢 ${pct(R.tribute)}・忠誠度 ${loy}</span>${drop ? `<br><span class="bad">変えると忠誠度 −${Math.round(HAZARD.revoke * drop)} (自治を狭める)</span>` : ''}</div>
+    return `<div class="rg"><div class="rh"><div><b>${ico(`rg-${r}`)}${esc(R.label)}</b><br><span>離反 年${pctH(hp)}・朝貢 ${pct(R.tribute)}・忠誠度 ${loy}</span>${drop ? `<br><span class="bad">変えると忠誠度 −${Math.round(HAZARD.revoke * drop)} (自治を狭める)</span>` : ''}</div>
       <button data-act="rule" data-sys="${id}" data-value="${r}" ${why ? 'disabled' : ''}>${why || '変える'}</button></div><p>${esc(R.note)}</p></div>`;
   };
   const C = REGIMES[cur];
@@ -123,13 +123,13 @@ function regimeBox(g, id, k, cur, sending, autonomy) {
   const pick = (it, i) => `<select data-act="bundle" data-sys="${id}" data-item="${it}" ${talk && g.pcCost('bundle', { sys: id }) <= g.pc ? '' : 'disabled'}>${['S', 'M', 'V'].map((x) => `<option value="${x}" ${x === B.law[i] ? 'selected' : ''}>${BUNDLE_CODES[x]}</option>`).join('')}</select>`;
   const gap = bundleGap(B.law, B.fact);
   const bundle = `<div class="scroll"><table class="tbl"><tr><th>主権の束</th><th>法 (約定)</th><th>実態</th></tr>${BUNDLE_ITEMS.map((it, i) => `<tr><td>${BUNDLE_LABELS[it]}</td><td>${k.direct ? BUNDLE_CODES[B.law[i]] : pick(it, i)}</td><td class="${B.law[i] !== B.fact[i] ? 'bad' : ''}">${BUNDLE_CODES[B.fact[i]]}</td></tr>`).join('')}</table></div>
-    <p class="muted">宗 = 宗主が握る・分 = 分け合う・従 = 従属国が握る。法 = 約定の文、実態 = 実際の力関係。法と実態の差 <b class="${gap > C.gap ? 'bad' : ''}">${gap} 項目</b> (この型の歴史の平均 ${C.gap.toFixed(1)})。差 1 項目ごとに離反が ${GAP_HR.toFixed(2)} 倍起きやすい (事例 131 件)。
+    <p class="muted">宗 = 宗主が握る・分 = 分け合う・従 = 従属国が握る。法 = 約定の文、実態 = 実際の力関係。法と実態の差 <b class="${gap > C.gap0 ? 'bad' : ''}">${gap} 項目</b> (この型の始め ${C.gap0}・歴史の平均 ${C.gap.toFixed(1)})。型の始めより 1 項目増えるごとに離反が ${GAP_HR.toFixed(2)} 倍起きやすい (事例 131 件)。
     ${k.direct ? '' : typeExtras(g, id, k, cur, B)}
     ${k.direct ? '' : `現地のエリート: <b class="${k.elite === 'resist' ? 'bad' : ''}">${ELITE_LABEL[k.elite || 'bargain']}</b> (忠誠度 ${BUNDLE.coop} 以上で協力して実態が約定へ寄り、${BUNDLE.resist} 未満で抵抗して従属国の側へ寄る)。約定の項目を変えるのは光速の指令 (政治力 ${g.pcCost('bundle', { sys: id })})`}</p>`;
-  const groups = [['いまの型と直轄', ['direct', 'encomienda', cur].filter((r, i, a) => a.indexOf(r) === i)], ...Object.entries(VASSAL_FAMILIES).map(([f, label]) => [label, REGIME_ORDER.filter((r) => /^T\d\d$/.test(r) && REGIMES[r].family === f && r !== cur)])].filter(([, rs]) => rs.length);
-  const rows = groups.map(([label, rs], i) => (i === 0 ? rs.map(row).join('') : `<details class="note" data-h="fam-${esc(label)}" ${app.helpOpen?.has(`fam-${label}`) ? 'open' : ''}><summary>${esc(label)} (${rs.length})</summary>${rs.map(row).join('')}</details>`)).join('');
+  const groups = [['いまの型と直轄', ['direct', 'encomienda', cur].filter((r, i, a) => a.indexOf(r) === i)], ...Object.entries(VASSAL_FAMILIES).map(([f, label]) => [label, REGIME_ORDER.filter((r) => /^T\d\d$/.test(r) && REGIMES[r].family === f && r !== cur), f])].filter(([, rs]) => rs.length);
+  const rows = groups.map(([label, rs, f], i) => (i === 0 ? rs.map(row).join('') : `<details class="note" data-h="fam-${esc(label)}" ${app.helpOpen?.has(`fam-${label}`) ? 'open' : ''}><summary>${ico(`fam-${f}`)}${esc(label)} (${rs.length})</summary>${rs.map(row).join('')}</details>`)).join('');
   return `${histBox(g, cur)}<div class="regimes"><p class="muted">統治体制 (従属国の型) — いまは <b>${esc(C.label)}</b>。変えるのは光速の指令 (政治力 ${c}・届くまで ${g.lightDelay(id).toFixed(1)} 年)。離反は、いま変えたときの見込み</p>${bundle}${rows}</div>
-    <details class="note"><summary>数値の根拠</summary>${REGIME_ORDER.map((r) => `<p><b>${esc(REGIMES[r].label)}</b>: ${esc(REGIMES[r].why)}</p>`).join('')}<p class="muted">離反の起きやすさ = 基準 × 型の倍率 × 通信の遅れ ÷ 1 世代 (${GENERATION_YEARS} 年) × 人口の比 × 忠誠度。型の倍率は法と実態の差から (植民地は COLDAT の推定)。自治を狭める変更は、法の束の点が下がった分だけ忠誠度が下がる (2 点で −${HAZARD.revoke})。</p></details>`;
+    <details class="note"><summary>数値の根拠</summary>${REGIME_ORDER.map((r) => `<p><b>${ico(`rg-${r}`)}${esc(REGIMES[r].label)}</b>: ${esc(REGIMES[r].why)}</p>`).join('')}<p class="muted">離反の起きやすさ = 基準 × 型の倍率 × 通信の遅れ ÷ 1 世代 (${GENERATION_YEARS} 年) × 人口の比 × 忠誠度。型の倍率は法と実態の差から (植民地は COLDAT の推定)。自治を狭める変更は、法の束の点が下がった分だけ忠誠度が下がる (2 点で −${HAZARD.revoke})。</p></details>`;
 }
 // 情報の古さの表示
 function ageBadge(g, id) {
