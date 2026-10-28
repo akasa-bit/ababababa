@@ -118,7 +118,7 @@ function militaryBox(app, sys) {
   const send = origins.length
     ? `${surprise ? `<p class="note bad">⚠ ${esc(g.realmName(destRealm))}の星系。ここへ艦隊を送ると奇襲攻撃になり、到着した時点で${esc(g.realmName(destRealm))}との戦争状態に突入し、そのまま艦隊戦になります。</p>` : ''}<label class="field">艦隊の出発地
         <select data-act="forigin">${origins.map((o) => `<option value="${o.s.id}" ${o.s.id === from ? 'selected' : ''}>${esc(o.s.name)} (${o.k}艦隊・${g.fleetYears(o.s.id, sys.id).toFixed(1)} 年)</option>`).join('')}</select></label>
-       <div class="btns"><button data-act="fleet" data-from="${from}" data-n="1">${surprise ? '奇襲攻撃 (1艦隊)' : '1艦隊をここへ'}</button><button data-act="fleet" data-from="${from}" data-n="all">${surprise ? '奇襲攻撃 (全艦隊)' : '全艦隊をここへ'}</button></div>
+       <div class="btns"><button data-act="fleet" data-from="${from}" data-n="1">${ico(surprise ? 'war' : 'rally')}${surprise ? '奇襲攻撃 (1艦隊)' : '1艦隊をここへ'}</button><button data-act="fleet" data-from="${from}" data-n="all">${ico(surprise ? 'war' : 'rally')}${surprise ? '奇襲攻撃 (全艦隊)' : '全艦隊をここへ'}</button></div>
        ${strikeBox(g, sys, destRealm, from)}`
     : '';
   const queued = queuedWarships(g.knownProjects(), sys.id);

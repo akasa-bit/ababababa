@@ -125,7 +125,7 @@ function eventsHtml(app) {
     .sort((a, b) => b.o.stage - a.o.stage || a.o.loyalty - b.o.loyalty);
   const riskHtml = risks.map(({ x, o }) => `<div class="ev major"><span class="tag politics">${esc(UNREST_LABEL[o.stage] || '不満の兆し')}</span><span class="txt">${esc(x.name)}
       <span class="muted">${esc(outlookText(o, true))}・忠誠度 ${Math.round(o.loyalty)} → 目標 ${Math.round(o.target)} ${ageBadge(g, x.id)}</span></span>
-      <button data-act="goto" data-sys="${x.id}">地図</button></div>`).join('');
+      <button data-act="goto" data-sys="${x.id}">${ico('goto')}地図</button></div>`).join('');
   const wars = kwars.map((w) => {
     const n = g.nativeOf(w.sys, w.body);
     return `<div class="ev"><span class="tag war">${tagIco('war')}征服戦争</span><span class="txt">${esc(g.target(w.sys, w.body).name)} 対 ${esc(n?.def.species || '?')}
@@ -140,7 +140,7 @@ function eventsHtml(app) {
     const worst = list.some(({ k }) => ALERT[k][0] === 'famine') ? 'famine' : list.some(({ k }) => ALERT[k][0] === 'shortage') ? 'shortage' : 'migration';
     return `<div class="ev"><span class="tag ${worst}">${tagIco(worst)}${esc(kinds.join('・'))}</span><span class="txt">${esc(g.system(sys).name)}
         <span class="muted">${list.map(({ c, k }) => `${esc(c.name)} (${ALERT[k][1]})`).join('・')} ${ageBadge(g, sys)}</span></span>
-        <button data-act="goto" data-sys="${sys}">地図</button></div>`;
+        <button data-act="goto" data-sys="${sys}">${ico('goto')}地図</button></div>`;
   };
   // 飢餓・水不足のある星系は1件ずつ、工業品・原料の不足と人口過密だけの星系はまとめてたたむ
   const groups = [...bySys.entries()];
@@ -158,7 +158,7 @@ function eventsHtml(app) {
   const evs = g.knownEvents().filter((e) => (f === 'all' ? evShown(e.kind) : e.kind === f));
   const evRow = (e, more = 0) => `<div class="ev ${e.good ? 'good' : ''} ${evTier(e.kind) >= 3 && !e.good ? 'major' : ''}">
       <span class="yr">${e.year.toFixed(1)}${(e.seen ?? e.year) - e.year > 0.05 ? `<br><small>${((e.seen ?? e.year) - e.year).toFixed(1)}年遅れ</small>` : ''}</span><span class="tag ${e.kind}">${tagIco(e.kind)}${EVENT_KIND[e.kind] || e.kind}</span>
-      <span class="txt">${esc(e.text)}${more ? ` <span class="muted">(同じ星系で ほか ${more} 件)</span>` : ''}</span>${e.sys !== undefined && g.system(e.sys) ? `<button data-act="goto" data-sys="${e.sys}">地図</button>` : ''}</div>`;
+      <span class="txt">${esc(e.text)}${more ? ` <span class="muted">(同じ星系で ほか ${more} 件)</span>` : ''}</span>${e.sys !== undefined && g.system(e.sys) ? `<button data-act="goto" data-sys="${e.sys}">${ico('goto')}地図</button>` : ''}</div>`;
   let list = '';
   if (EvPrefs.mode === 'year') {
     // 年ごとの報告: 重大な出来事は1件ずつ、ほかは種類ごとの件数にまとめ、開くと中身が見える
