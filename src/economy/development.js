@@ -161,19 +161,27 @@
   canColonize(id) {
     const gv = this.gov(id);
     const pop = this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
-    const busy = this.projects.some((j) => j.type === 'ship' && j.sys === id) || this.ships.some((x) => x.from === id);
+    const ai = this.aiColonize(id);
+    const busy = this.projects.some((j) => j.type === 'ship' && j.sys === id) || this.ships.filter((x) => x.from === id).length >= ai.ships;
     const pol = this.policyAt(id);
     const wait = Math.max(3, (this.isHuman(id) || this.nationOf(id) ? 5 : gv.mandate === 'expand' ? 6 : 10) + (pol === 'expand' ? -4 : pol === 'consolidate' ? 5 : 0));
-    return pop >= 3 && !busy && this.year - (gv.lastColony ?? gv.founded) >= wait;
+    return pop >= ai.pop && !busy && this.year - (gv.lastColony ?? gv.founded) >= wait;
+  }
+  // 入植を急ぐか (ゲーム性の補正。台帳の C20。回 SE5・B-028。政治のレーンが足した): AI の国の星系の政府は、入植船を同時に ships 隻まで飛ばし、人口 pop 百万人から、
+  // range 倍の光年まで入植先を探す。人間の国の星系の政府 (と補正なし) は、前のまま 1 隻ずつ・300 万人から・ふだん 10 光年
+  aiColonize(id) {
+    const a = ED.aiColonize;
+    return a && !this.isHuman(this.realmOf(id)) ? a : { ships: 1, pop: 3, range: 1 };
   }
   // 入植先: 未入植で入植できる惑星のうち、適性が高く近いところ。ふだんは10光年以内 (観戦モードの地球政府は20)、
   // 星系内に手の届く建設がなくなった政府 (far) は25光年まで探す。
   // 住める惑星のない星系も、主星を回る宇宙ステーションで押さえる (適性1の惑星より6光年ぶん近いときだけ選ぶ)
   colonyTarget(id) {
-    const range = this.isHuman(id) || this.nationOf(id) ? 20 : this.gov(id).far ? 25 : this.gov(id).mandate === 'expand' ? 15 : 10;
+    const range = (this.isHuman(id) || this.nationOf(id) ? 20 : this.gov(id).far ? 25 : this.gov(id).mandate === 'expand' ? 15 : 10) * this.aiColonize(id).range; // 探すのは 25 光年まで (nearSystems)
     let best = null;
+    const many = this.aiColonize(id).ships > 1; // 何隻も飛ばすときは、入植船が向かっている星系を外す (C20)
     for (const [tid, d] of this.nearSystems(id)) {
-      if (d > range || tid === id || this.isColonized(tid)) continue;
+      if (d > range || tid === id || this.isColonized(tid) || (many && this.ships.some((x) => x.to === tid))) continue;
       const t = this.system(tid);
       for (const b of t.bodies) {
         const grade = b.settle?.grade || 0;
