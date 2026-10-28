@@ -92,7 +92,7 @@ function heritageRate(n, P = HERITAGE, runs = 100, seed = 1) {
   for (let r = 0; r < runs; r++) if (heritageRun(n, P, rng).alive <= 0) extinct++;
   return extinct / runs;
 }
-// 入植地が始まりのうちに絶える確率。設計で選べる人数 (98 人から) は、上の式 (heritageRate(n, COLONY_RISK, 200)) で計算した表 COLONY_FAIL を使う
+// 入植地が始まりのうちに絶える確率。船団で送る人数 (500 人から) は、上の式 (heritageRate(n, COLONY_RISK, 200)) で計算した表 COLONY_FAIL を使う
 // (1 つの人数に数秒かかるので画面では計算しない。tools/tests/colony.js が表と式を照らす)。表より少ない人数 (前の版の船など) だけ、その場で計算して覚える
 const COLONY_FAIL = { 98: 0, 200: 0, 500: 0, 1000: 0 }; // 2026-10-28 に計算。20 人で 0.01・50 人で 0
 const COLONY_RISK_MEMO = new Map();
@@ -105,12 +105,13 @@ function colonyFailP(n) {
   return COLONY_RISK_MEMO.get(k);
 }
 
-// 入植船の設計 (B-033。決まった案 12-1 b・12-2 b・12-4 a・10-4 b。docs/proposals/12-ship.md・docs/colony.md)。速さ・乗る人数・積み荷・乗る人の年齢を国ごとに選ぶ。
+// 入植船団の設計 (B-033。決まった案 12-1 b・12-2 b・12-4 a・10-4 b。docs/proposals/12-ship.md・docs/colony.md)。入植船は 1 隻 500 人で、1 回の入植で 1〜400 隻の船団を送る
+// (ユーザーの依頼 2026-10-28 FU-1)。船の数・速さ・積み荷・乗る人の年齢を国ごとに選ぶ (船の数は入植のたびに変えてよい。送ったときの設計を船団が持って飛ぶ)。
 // 船の質量 = 住む場所 (乗る人 × habitatKg の工業品) + 積み荷 + 食料と水 + 乗る人。遮蔽は物理の形 (shieldOf) で足し、推進は前と同じく bookShip で記帳する。
-// 費用の資金 = 住む場所の工業品 1 単位あたり credits + 開拓資金 (SEED_FUNDS)。AI の国はひな形の「小」のまま
+// 費用の資金 = 住む場所の工業品 1 単位あたり credits + 開拓資金 (SEED_FUNDS)。AI の国はひな形の「小」(1 隻) のまま
 const SHIP_DESIGN = {
-  crew: [98, 44000], // 乗る人 [人]: HERITAGE (Marin & Beluffi 2018) の 98 人 〜 Smith 2014 の上端 44,000 人
-  crews: [98, 200, 500, 1000, 2000, 5000, 10000, 20000, 40000, 44000], // 画面で選べる人数
+  perShip: 500, // 入植船 1 隻に乗る人 [人] (FU-1。HERITAGE の 98 人より多い。Smith 2014 の 14,000〜44,000 人は 28〜88 隻)
+  ships: [1, 400], // 1 回の入植で送る船の数 (FU-1。400 隻 = 20 万人は前の入植船の人数)
   habitatKg: 2.5e5, // 1 人あたりの住む場所 (船の構造) [kg]。前の入植船と同じ 250 t (仮の値。docs/energy.md の 3)
   credits: 3, // 住む場所の工業品 1 単位あたりの費用 [cr] (前の入植船の 300 cr ÷ 工業品 100 単位)
   speeds: { std: '標準 (交易路 0.95c・外 0.9c)', 0.7: '0.7c', 0.5: '0.5c' },
@@ -120,13 +121,13 @@ const SHIP_DESIGN = {
 const POP_FLOOR = 1e-5; // 入植地の人口の下限 [百万人] = 10 人 (前は 0.001 = 1,000 人で、設計の 500 人の入植地が 1,000 人に持ち上がった)
 const fmtPeople = (n) => `${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} 人`; // 人数 (端末によらない書式。記録に入るので toLocaleString は使わない)
 const SHIP_TEMPLATES = {
-  small: { label: '小 (標準)', crew: 500, speed: 'std', cargo: 0, ages: 'migrant' },
-  mid: { label: '中', crew: 10000, speed: 'std', cargo: 5, ages: 'migrant' },
-  large: { label: '大', crew: 40000, speed: 0.7, cargo: 10, ages: 'migrant' },
+  small: { label: '小 (標準)', ships: 1, speed: 'std', cargo: 0, ages: 'migrant' },
+  mid: { label: '中', ships: 20, speed: 'std', cargo: 5, ages: 'migrant' },
+  large: { label: '大', ships: 80, speed: 0.7, cargo: 10, ages: 'migrant' },
 };
 // 乗る人の年齢の形 (5 歳きざみの区分ごとの割合。DEMO はこのファイルより後で決まるので、使うときに作る)。young = 国際移民の形のうち、子ども (0〜14 歳) と働き盛り (20〜39 歳) だけ
 const ageShape = (k) => (k === 'young' ? DEMO.migrant.map((v, a) => (a <= 2 || (a >= 4 && a <= 7) ? v : 0)) : DEMO.migrant);
-// 国ごとの設計 { [国の首都]: { crew, speed, cargo, ages } } (ないときはひな形の「小」)
+// 国ごとの設計 { [国の首都]: { ships, speed, cargo, ages } } (ないときはひな形の「小」。前の版の { crew, … } は designOf が船の数に直す)
 saveField('designs', (game) => (Object.keys(game.designs).length ? game.designs : undefined), {
   init: (game) => { game.designs = {}; },
   read: (game, d) => { game.designs = d.designs && typeof d.designs === 'object' ? d.designs : {}; },

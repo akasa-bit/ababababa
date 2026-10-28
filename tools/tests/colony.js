@@ -2,7 +2,8 @@
 // 1. HERITAGE (Marin & Beluffi 2018) の表 1 の前提で 100 回の旅ずつ回すと、論文の結論が出る: 98 人 (49 組) は絶える割合 3% 以下 (論文: 100 回とも続く)、
 //    25 組 (50 人) は 35〜65% (論文: 50 ± 15%)
 // 2. 入植地の前提 (COLONY_RISK) の表 COLONY_FAIL が式 (heritageRate) と合う (98 人・500 人。差 0.03 以内)
-// 3. 設計: 住む場所の工業品は 人 × 250 t、船の質量と推進のエネルギーは人数で増え、遅い船はエネルギーが少し少なく (止まる所の反物質は速さによらない) 着くのが遅い
+// 3. 設計: 入植船団は 1 隻 500 人 × 1〜400 隻 (幅の外は収める。前の版の { crew } は船の数に直す)。住む場所の工業品は 人 × 250 t、船の質量と推進のエネルギーは人数で増え、
+//    遅い船はエネルギーが少し少なく (止まる所の反物質は速さによらない) 着くのが遅い
 // 4. 試合で設計の人数と年齢の形の入植地ができ、セーブで設計が残る (保存して読み直しても同じ筋)
 // 使い方: node tools/tests/colony.js
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
@@ -34,9 +35,10 @@ g.setSpectate(false);
 const cap = g.cap;
 const t = g.nearSystems(cap).find(([id, d]) => id !== cap && d > 4 && !g.isColonized(id) && g.system(id).bodies.some((b) => (b.settle?.grade || 0) >= 1))?.[0];
 const body = g.system(t).bodies.find((b) => (b.settle?.grade || 0) >= 1);
-const cost = (crew, speed = 'std') => { g.designs[cap] = { crew, speed, cargo: 0, ages: 'migrant' }; return { c: g.shipCost('planet', cap, t), f: g.settlerFlight('planet', cap, t), v: g.settlerVoyage(cap, t, g.designOf(cap)) }; };
-const a = cost(500), b = cost(40000), s = cost(40000, '0.5');
-console.log(`500 人: 工業品 ${a.c.goods}・質量 ${a.f.m.toExponential(2)} kg・エネルギー ${a.c.energy.toExponential(2)} J / 40,000 人: ${b.c.goods}・${b.f.m.toExponential(2)}・${b.c.energy.toExponential(2)} / 40,000 人 0.5c: ${s.c.energy.toExponential(2)} J・${s.v.years.toFixed(1)} 年 (標準 ${b.v.years.toFixed(1)} 年)`);
+const cost = (ships, speed = 'std') => { g.designs[cap] = { ships, speed, cargo: 0, ages: 'migrant' }; return { c: g.shipCost('planet', cap, t), f: g.settlerFlight('planet', cap, t), v: g.settlerVoyage(cap, t, g.designOf(cap)) }; };
+const a = cost(1), b = cost(80), s = cost(80, '0.5');
+for (const [d, w] of [[{ ships: 0 }, 1], [{ ships: 999 }, 400], [{ ships: 400 }, 400], [{ crew: 10000 }, 20]]) { g.designs[cap] = d; const x = g.designOf(cap); check(x.ships === w && x.crew === w * 500, `船の数 ${JSON.stringify(d)} → ${x.ships} 隻・${x.crew} 人 (${w} 隻のはず)`); }
+console.log(`1 隻 (500 人): 工業品 ${a.c.goods}・質量 ${a.f.m.toExponential(2)} kg・エネルギー ${a.c.energy.toExponential(2)} J / 80 隻 (40,000 人): ${b.c.goods}・${b.f.m.toExponential(2)}・${b.c.energy.toExponential(2)} / 40,000 人 0.5c: ${s.c.energy.toExponential(2)} J・${s.v.years.toFixed(1)} 年 (標準 ${b.v.years.toFixed(1)} 年)`);
 check(Math.abs(a.c.goods - (500 * 2.5e5) / 5e8) < 1e-3, `500 人の住む場所の工業品が ${a.c.goods} (250 t × 500 人 = 0.25 単位)`);
 check(b.f.m > 50 * a.f.m && b.c.energy > 50 * a.c.energy, '人数を増やしても船の質量とエネルギーが増えない');
 check(s.c.energy < b.c.energy && s.v.years > 1.5 * b.v.years, '遅い船のエネルギーが減らないか、着くのが遅くならない');
@@ -44,7 +46,9 @@ check(s.c.energy < b.c.energy && s.v.years > 1.5 * b.v.years, '遅い船のエ�
 // 4. 試合で設計どおりの入植地ができる
 g.designs[cap] = null;
 const r1 = g.command('design', { tpl: 'small' }), r2 = g.command('design', { ages: 'young' });
-check(r1.ok && r2.ok && g.designOf(cap).crew === 500 && g.designOf(cap).ages === 'young', `設計の命令が効かない (${JSON.stringify(g.designs[cap])})`);
+const r3 = g.command('design', { ships: '3' });
+check(r1.ok && r2.ok && r3.ok && g.designOf(cap).ships === 3 && g.designOf(cap).crew === 1500 && g.designOf(cap).ages === 'young' && g.designs[cap].crew === undefined, `設計の命令が効かない (${JSON.stringify(g.designs[cap])})`);
+g.command('design', { ships: 1 });
 g.credits = 1e6;
 g.gov(cap).E = 1e40;
 Object.assign(g.stockOf(cap), { goods: 1e4, food: 1e4, water: 1e4 });

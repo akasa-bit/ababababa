@@ -1,18 +1,21 @@
-  // --- 入植船の設計 (回 FU3・B-033。SHIP_DESIGN・SHIP_TEMPLATES は ship/colonists.js) ---
-  // 国 realm の設計 (なければひな形の「小」)。値は選べる幅に収める
+  // --- 入植船団の設計 (回 FU3・B-033・FU-1。SHIP_DESIGN・SHIP_TEMPLATES は ship/colonists.js) ---
+  // 国 realm の設計 (なければひな形の「小」)。値は選べる幅に収める。crew = 船の数 × 1 隻の人数 (前の版の { crew } は船の数に直す)
   designOf(realm) {
     const d = this.designs?.[realm] || SHIP_TEMPLATES.small;
-    return { crew: clamp(Math.round(Number(d.crew)) || SHIP_TEMPLATES.small.crew, ...SHIP_DESIGN.crew), speed: SHIP_DESIGN.speeds[d.speed] ? String(d.speed) : 'std',
+    const ships = clamp(Math.round(Number(d.ships ?? Number(d.crew) / SHIP_DESIGN.perShip)) || SHIP_TEMPLATES.small.ships, ...SHIP_DESIGN.ships);
+    return { ships, crew: ships * SHIP_DESIGN.perShip, speed: SHIP_DESIGN.speeds[d.speed] ? String(d.speed) : 'std',
       cargo: Math.max(0, Number(d.cargo) || 0), ages: SHIP_DESIGN.ages[d.ages] ? d.ages : 'migrant' };
   }
   settlerDesign(fromId) { return this.designOf(this.realmOf(fromId)); }
-  // 設計を変える (命令 design)。船を造る首都で決めるので、光速の指令にならず政治力も要らない。tpl = ひな形、ほかは値ごとに
+  // 設計を変える (命令 design)。船を造る首都で決めるので、光速の指令にならず政治力も要らない。tpl = ひな形、ほかは値ごとに (ships = 次の入植から送る船の数)
   setDesign(d) {
     const next = d.tpl && SHIP_TEMPLATES[d.tpl] ? { ...SHIP_TEMPLATES[d.tpl] } : { ...this.designOf(this.cap) };
-    for (const k of ['crew', 'speed', 'cargo', 'ages']) if (d[k] !== undefined) next[k] = d[k];
+    delete next.crew;
+    for (const k of ['ships', 'speed', 'cargo', 'ages']) if (d[k] !== undefined) next[k] = d[k];
     this.designs[this.cap] = next;
-    const v = (this.designs[this.cap] = this.designOf(this.cap)); // 選べる幅に収めて覚える
-    return { ok: true, msg: `入植船の設計を ${fmtPeople(v.crew)}・${SHIP_DESIGN.speeds[v.speed]}・積み荷の工業品 ${v.cargo}・${SHIP_DESIGN.ages[v.ages]} にした` };
+    const { crew, ...v } = this.designOf(this.cap); // 選べる幅に収めて覚える (人数は船の数から出すので覚えない)
+    this.designs[this.cap] = v;
+    return { ok: true, msg: `入植船団を ${v.ships} 隻 (${fmtPeople(crew)})・${SHIP_DESIGN.speeds[v.speed]}・積み荷の工業品 ${v.cargo}・${SHIP_DESIGN.ages[v.ages]} にした` };
   }
   // 住む場所 (船の構造) の工業品 [単位]
   habitatGoods(des) { return (des.crew * SHIP_DESIGN.habitatKg) / RES_KG.goods; }
@@ -65,11 +68,11 @@
     const ship = {
       id: this.nextShipId++, from: fromId, to: toId, body: bodyId, kind,
       path: v.path, times: v.times.map((t) => this.year + t), supplies, escort,
-      depart: this.year, arrive: this.year + years, crew: des.crew, ages: des.ages,
+      depart: this.year, arrive: this.year + years, crew: des.crew, ships: des.ships, ages: des.ages,
     };
     this.ships.push(ship);
     if (job?.seed) { const v = job.seed; this.cash('build', -v, { way: job, f: 'seed' }); this.cash('build', v, { way: ship, f: 'seed' }); }
-    this.message(`${this.system(fromId).name} → ${this.system(toId).name} へ入植船が出発 (${KIND_LABEL[kind]}・${fmtPeople(des.crew)}、${v.path.length > 2 ? `交易路経由、` : ''}到着まで ${years.toFixed(2)} 年${escort.troops + escort.slave ? `、歩兵 ${escort.troops + escort.slave} 連隊が同行` : ''})`, fromId);
+    this.message(`${this.system(fromId).name} → ${this.system(toId).name} へ入植船団が出発 (${KIND_LABEL[kind]}・${des.ships} 隻・${fmtPeople(des.crew)}、${v.path.length > 2 ? `交易路経由、` : ''}到着まで ${years.toFixed(2)} 年${escort.troops + escort.slave ? `、歩兵 ${escort.troops + escort.slave} 連隊が同行` : ''})`, fromId);
     return { ok: true, ship };
   }
   // 入植団が降りる (着いた船。core の到着から呼ぶ)。乗ってきた人数と年齢の形で入植地を作る。

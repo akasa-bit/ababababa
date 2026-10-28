@@ -144,7 +144,7 @@
 - saveField: forts (船と戦争。src/ship/war-consts.js。宇宙要塞の段。2026-10-22 の依頼)
 - saveField: exhaustSent・bargainSent (船と戦争。src/ship/war-consts.js。届く途中の損失の知らせと AI どうしの講和の申し入れ。回 FU4)
 - EDITIONS.game.battle (pos・luck。艦隊戦の補正。台帳の C27・C28。回 FU2)。EDITIONS.sim.battle も同じ名前で CDB90 の値
-- saveField: designs (船と戦争。src/ship/colonists.js。国ごとの入植船の設計 { crew, speed, cargo, ages }。回 FU3・B-033。`docs/colony.md`)
+- saveField: designs (船と戦争。src/ship/colonists.js。国ごとの入植船団の設計 { ships (1 隻 500 人の船の数), speed, cargo, ages }。回 FU3・B-033。`docs/colony.md`)
 
 ### 画面と最初の体験
 
