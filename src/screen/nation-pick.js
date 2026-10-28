@@ -11,7 +11,7 @@ function nationCard(g, n) {
   return `<div class="nat ${app.picking.cap === n.cap ? 'on' : ''}" data-pick="${n.cap}">
     <span class="dot" style="background:${realmColor(n.cap)}"></span> <b class="nm">${esc(n.name)}</b> <span class="muted">首都 ${esc(home)} (${esc(g.system(n.cap).name)})</span><br>
     ${ico('pop')}人口 ${fmtPop(cols.reduce((a, c) => a + c.pop, 0))}・${ico('colony')}星系 ${g.realmSystems(n.cap).length}・種族 ${esc(n.species)}<br>
-    ${n.traits.map((t) => `<span class="tr" title="${esc(SPECIES_TRAITS[t].desc)}">${SPECIES_TRAITS[t].label}</span>`).join('')}
+    ${n.traits.map((t) => `<span class="tr" title="${esc(SPECIES_TRAITS[t].desc)}">${ico(`tr-${t}`)}${SPECIES_TRAITS[t].label}</span>`).join('')}
     <div class="muted">${n.traits.map((t) => SPECIES_TRAITS[t].desc).join('・')}</div>
     <div>難しさの目安 <b>${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</b> <span class="muted">${near ? `いちばん近い国: ${esc(near.m.name)} ${fmt(near.d, 1)} 光年・25 光年以内に ${crowd} か国` : ''}${n.cap === 0 ? '・議会と時代の課題が道案内をする' : ''}</span></div>
     <div class="nb"><button class="hm ${hm ? 'on' : ''}" data-human="${n.cap}" title="人間が動かす国にする (2つ以上でホットシート・ネット対戦)">${hm ? '✓ 人間が動かす' : '＋人間'}</button>${app.picking.edit === n.cap ? '' : `<button class="edit" data-ed="open" data-cap="${n.cap}">アレンジする</button>`}</div>
@@ -43,7 +43,7 @@ function nationEditor(g, n) {
     <label>国の名前 <input data-ed="name" maxlength="20" value="${esc(n.name)}"></label>
     <label>種族の名前 <input data-ed="species" maxlength="12" value="${esc(n.species)}" ${n.cap === 0 ? 'disabled title="人類の名前は変えられない"' : ''}></label>
     <p>特性 (${NATION_TRAITS_MAX} つまで。食い違うものは同時に選べない)</p>
-    <div class="trs">${Object.entries(SPECIES_TRAITS).map(([k, t]) => `<label title="${esc(t.desc)}"><input type="checkbox" data-tr="${k}" ${n.traits.includes(k) ? 'checked' : ''} ${!n.traits.includes(k) && (n.traits.length >= NATION_TRAITS_MAX || clash(k)) ? 'disabled' : ''}> ${t.label}</label>`).join('')}</div>
+    <div class="trs">${Object.entries(SPECIES_TRAITS).map(([k, t]) => `<label title="${esc(t.desc)}"><input type="checkbox" data-tr="${k}" ${n.traits.includes(k) ? 'checked' : ''} ${!n.traits.includes(k) && (n.traits.length >= NATION_TRAITS_MAX || clash(k)) ? 'disabled' : ''}> ${ico(`tr-${k}`)}${t.label}</label>`).join('')}</div>
     ${home}
     <button data-ed="close">閉じる</button>
   </div>`;

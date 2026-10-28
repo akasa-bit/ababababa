@@ -300,7 +300,7 @@ const ENDINGS = {
 function showEnd() {
   const g = app.game;
   const sc = g.finalScore || g.score();
-  const ch = g.challenges.map((c) => `<li>${CHALLENGES[c.id].label}: ${c.status === 'done' ? '<span class="hz">果たした</span>' : '<span class="bad">果たせなかった</span>'}</li>`).join('');
+  const ch = g.challenges.map((c) => `<li>${ico(`ch-${c.id}`)}${CHALLENGES[c.id].label}: ${c.status === 'done' ? '<span class="hz">果たした</span>' : '<span class="bad">果たせなかった</span>'}</li>`).join('');
   const en = g.ending(); // 結末の型と原因の内訳 (B-058)。終わったので、光の遅れのない本当の銀河で決める
   $('endbox').innerHTML = `<div class="card"><h2>${Math.round(g.endYear)}年 — このゲームの終わり</h2>
     <p class="ending"><span class="muted">結末</span><b>${esc(en.label)}</b></p>

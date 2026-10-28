@@ -16,7 +16,7 @@ function suffixOf(name, species) { const stem = species.replace(/人$/, ''); ret
 function nationsTabHtml() {
   const ed = app.natEdit;
   const card = (n) => `<div class="natc"><div class="info"><b class="nm">${esc(n.name)}</b> <span class="muted">種族 ${esc(n.species)}</span><br>
-      ${n.traits.map((t) => `<span class="tr" title="${esc(SPECIES_TRAITS[t].desc)}">${SPECIES_TRAITS[t].label}</span>`).join('') || '<span class="muted">特性なし</span>'}
+      ${n.traits.map((t) => `<span class="tr" title="${esc(SPECIES_TRAITS[t].desc)}">${ico(`tr-${t}`)}${SPECIES_TRAITS[t].label}</span>`).join('') || '<span class="muted">特性なし</span>'}
       <div class="muted">母星: ${HOME_ENV[n.env || 'any']}・${HOME_DIST[n.dist || 'any']}</div></div>
     <div class="btns"><button data-home="natedit" data-id="${n.id}">直す</button><button data-home="natcopy" data-id="${n.id}">複製</button><button class="ghost" data-home="natdel" data-id="${n.id}">${app.homeArmed === `nd${n.id}` ? '本当に消す?' : '消す'}</button></div></div>`;
   const editor = ed ? `<div class="nated">
@@ -25,7 +25,7 @@ function nationsTabHtml() {
       <label>国の名前 <input id="ne-name" maxlength="20" value="${esc(ed.name)}" placeholder="例: ミナーラ独立国"></label>
       <label>接尾辞から選ぶ <select id="ne-suffix"><option value="">(自分で書く)</option>${NATION_SUFFIX.map((x) => `<option value="${esc(x.s)}" ${suffixOf(ed.name, ed.species) === x.s ? 'selected' : ''}>${esc(x.s)} — ${esc(x.ex)}</option>`).join('')}</select></label>
       <p>特性 (${NATION_TRAITS_MAX} つまで。食い違うものは同時に選べない)</p>
-      <div class="trs">${Object.entries(SPECIES_TRAITS).map(([k, t]) => `<label title="${esc(t.desc)}"><input type="checkbox" class="ne-tr" value="${k}" ${ed.traits.includes(k) ? 'checked' : ''} ${traitBlocked(ed.traits, k) ? 'disabled' : ''}><span><b>${t.label}</b><small>${esc(t.desc)}</small></span></label>`).join('')}</div>
+      <div class="trs">${Object.entries(SPECIES_TRAITS).map(([k, t]) => `<label title="${esc(t.desc)}"><input type="checkbox" class="ne-tr" value="${k}" ${ed.traits.includes(k) ? 'checked' : ''} ${traitBlocked(ed.traits, k) ? 'disabled' : ''}><span><b>${ico(`tr-${k}`)}${t.label}</b><small>${esc(t.desc)}</small></span></label>`).join('')}</div>
       <label>母星の環境 <select id="ne-env">${Object.entries(HOME_ENV).map(([k, l]) => `<option value="${k}" ${ed.env === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label>太陽系からの距離 <select id="ne-dist">${Object.entries(HOME_DIST).map(([k, l]) => `<option value="${k}" ${ed.dist === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <p class="note">母星は、銀河ができたときに、この好みに合う住みやすい岩石惑星から選ぶ (合う星がなければ条件をゆるめる)。銀河ができたあと、国家選択の画面の「アレンジする」で選び直すこともできる。</p>

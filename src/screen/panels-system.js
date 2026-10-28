@@ -108,8 +108,8 @@ function sysFlags(g, sys, k, cols) {
     if (NEGLECT_MAX && neglect > NEGLECT_GRACE) flags.push(['warn', `放っておかれて ${Math.floor(neglect)} 年`, '視察団・指令・資金援助で戻る']);
     if ((k.autonomy || 0) > g.year) flags.push(['info', `自治を認めている (${Math.round(k.autonomy)}年まで)`]);
     else if ((k.taxFree || 0) > g.year) flags.push(['info', `朝貢を免除している (${Math.round(k.taxFree)}年まで)`]);
-    if (k.direct) flags.push(['own', '直轄']);
-    else if (k.regime) flags.push([REGIMES[regimeNorm(k.regime)]?.forced ? 'warn' : 'info', REGIMES[regimeNorm(k.regime)]?.label || k.regime]);
+    if (k.direct) flags.push(['own', '直轄', '', 'rg-direct']);
+    else if (k.regime) flags.push([REGIMES[regimeNorm(k.regime)]?.forced ? 'warn' : 'info', REGIMES[regimeNorm(k.regime)]?.label || k.regime, '', `rg-${regimeNorm(k.regime)}`]);
   }
   const famine = cols.filter((c) => c.alerts?.food || c.alerts?.water).length;
   const short = cols.filter((c) => c.alerts?.goods || c.alerts?.industry).length;
@@ -136,7 +136,7 @@ function sysHead(g, sys, k, cols) {
   return `<div class="syshead"><h2>${dot}${esc(sys.name)}<button class="x" data-act="deselect" title="選択を外す (Esc・地図の何もないところを押しても外れる)" aria-label="選択を外す">${ico('close')}</button></h2>
     <div class="meta"><span>${realmDot}${esc(owner)}</span><span>${ME.capName}から ${distance(g.system(g.cap), sys).toFixed(1)} ly</span>${ageBadge(g, id)}${sys.cat ? `<span class="muted" title="実在の恒星 (CNS5)。銀河面からの高さ ${fmt(sys.z, 1)} 光年">実在 ${esc(sys.cat)}</span>` : ''}</div>
     <div class="stats">${tiles.map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join('')}</div>
-    ${flags.length ? `<ul class="flags">${flags.map(([c, a, b]) => `<li class="${c}">${esc(a)}${b ? `<small>${esc(b)}</small>` : ''}</li>`).join('')}</ul>` : ''}</div>`;
+    ${flags.length ? `<ul class="flags">${flags.map(([c, a, b, i]) => `<li class="${c}">${i ? ico(i) : ''}${esc(a)}${b ? `<small>${esc(b)}</small>` : ''}</li>`).join('')}</ul>` : ''}</div>`;
 }
 function systemPanel(app) {
   if (app.sel.sys === null) return ''; // 選んでいないときは欄ごと隠れている

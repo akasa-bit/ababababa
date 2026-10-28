@@ -7,7 +7,7 @@ function goalsSheet(app) {
   const polBtns = Object.entries(POLICIES).map(([id, p]) => {
     const cur = pol?.id === id;
     const why = cur ? 'いまの方針' : !canChange ? `${Math.ceil(pol.since + POLICY_YEARS - g.year)}年後から変えられる` : g.pc < POLICY_COST ? `政治力が足りない (${POLICY_COST} 必要)` : '';
-    return `<button data-act="policy" data-value="${id}" class="${cur ? 'on' : ''}" ${why && !cur ? 'disabled' : ''}>${p.label}<small>${esc(p.good)}<br>代わりに: ${esc(p.bad)}${why ? `<br>${esc(why)}` : `<br>政治力 ${POLICY_COST}`}</small></button>`;
+    return `<button data-act="policy" data-value="${id}" class="${cur ? 'on' : ''}" ${why && !cur ? 'disabled' : ''}>${ico(`pol-${id}`)}${p.label}<small>${esc(p.good)}<br>代わりに: ${esc(p.bad)}${why ? `<br>${esc(why)}` : `<br>政治力 ${POLICY_COST}`}</small></button>`;
   }).join('');
   const sc = g.ended && g.finalScore ? g.finalScore : g.score();
   const era = g.era;
@@ -18,7 +18,7 @@ function goalsSheet(app) {
     const st = tk.status === 'done' ? '<span class="hz">果たした</span>' : tk.status === 'failed' ? '<span class="bad">果たせなかった</span>' : `あと ${Math.max(0, Math.ceil(tk.deadline - g.year))} 年`;
     return `<tr><td>${esc(tk.label)}</td><td>${prog}</td><td>${st}</td></tr>`;
   }).join('');
-  const chRows = g.challenges.map((c) => `<tr><td><b>${CHALLENGES[c.id].label}</b></td><td>${esc(CHALLENGES[c.id].desc)}</td><td>${c.status === 'done' ? '<span class="hz">果たした</span>' : c.status === 'failed' ? '<span class="bad">果たせなかった</span>' : '挑戦中'}</td></tr>`).join('');
+  const chRows = g.challenges.map((c) => `<tr><td><b>${ico(`ch-${c.id}`)}${CHALLENGES[c.id].label}</b></td><td>${esc(CHALLENGES[c.id].desc)}</td><td>${c.status === 'done' ? '<span class="hz">果たした</span>' : c.status === 'failed' ? '<span class="bad">果たせなかった</span>' : '挑戦中'}</td></tr>`).join('');
   const direct = g.knownSystems().filter((s) => s.id !== g.cap && g.known(s.id)?.direct).map((s) => `<button data-act="goto" data-sys="${s.id}">${esc(s.name)}</button>`).join(' ');
   const councilNote = g.council < 25 ? '<span class="bad">15を割ると政権交代</span>' : g.council >= 70 ? '<span class="hz">政治力が増えやすい</span>' : '';
   return `<div class="kpi">
@@ -69,7 +69,7 @@ function regimeCounts(g) {
     const r = g.knownRegime(k);
     n[r] = (n[r] || 0) + 1;
   }
-  const parts = REGIME_ORDER.filter((r) => n[r]).map((r) => `${REGIMES[r].label} ${n[r]}`);
+  const parts = REGIME_ORDER.filter((r) => n[r]).map((r) => `${ico(`rg-${r}`)}${REGIMES[r].label} ${n[r]}`);
   return `<p class="note">いまの家臣の星系: ${parts.length ? parts.join('・') : 'なし'}</p>`;
 }
 
