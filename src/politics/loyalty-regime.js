@@ -54,7 +54,7 @@
     if (!gv || gv.lord === null || gv.lord === undefined) return null;
     const pop = (x) => this.coloniesIn(x).reduce((k, c) => k + c.pop, 0);
     const b = this.bundleOf(gv);
-    return secessionTermsOf({ regime: regimeKey(gv), delay: this.sysDist(id, this.realmOf(id)), popRatio: pop(id) / Math.max(1e-3, pop(gv.lord)), loyalty: gv.loyalty ?? LOYALTY_START, security: this.budgetAt(this.realmOf(id), id, 'security'), gap: bundleGap(b.law, b.fact) });
+    return secessionTermsOf({ regime: regimeKey(gv), delay: this.sysDist(id, this.realmOf(id)), popRatio: pop(id) / Math.max(1e-3, pop(gv.lord)), loyalty: gv.loyalty ?? LOYALTY_START, security: this.budgetAt(this.realmOf(id), id, 'security'), gap: bundleGap(b.law, b.fact), excl: this.groupsOf(id)?.excl ?? null });
   }
   // 地球の知る限りの内訳 (表示用)。regime を渡すと、その統治体制にしたときの値 (比べる用。忠誠度の目標の差も入れる)
   knownSecessionTerms(id, regime = null) {
@@ -67,7 +67,10 @@
     const loyalty = clamp((k.loyalty ?? LOYALTY_START) + (REGIMES[r].loyalty - REGIMES[cur].loyalty) - Math.round(HAZARD.revoke * Math.max(0, this.lawRank(k) - REGIMES[r].rank)), 0, 100);
     const b = this.bundleOf(k);
     const law = r === cur ? b.law : REGIMES[r].law;
-    return secessionTermsOf({ regime: r, delay: this.sysDist(id, capital), popRatio: pop(id) / Math.max(1e-3, pop(k.lord)), loyalty, security: k.security || 0, gap: bundleGap(law, b.fact) });
+    // 締め出された人口: 記録の民族の構成を、その統治体制の実態で数え直す (直轄にすると実態はすべて宗。ほかの型は実態を引き継ぐ。setRegime)
+    const fact = r === 'direct' ? REGIMES.direct.fact : b.fact;
+    const excl = k.groups ? k.groups.eth.reduce((a, e) => a + (GROUP_STATUS[this.groupStatusOf(e.k === 'home' || e.k === 'local' ? e.k : 'other', { fact, regime: r, include: r === 'direct' ? k.include : null })].incl ? 0 : e.share), 0) : null;
+    return secessionTermsOf({ regime: r, delay: this.sysDist(id, capital), popRatio: pop(id) / Math.max(1e-3, pop(k.lord)), loyalty, security: k.security || 0, gap: bundleGap(law, b.fact), excl });
   }
   // 統治体制を変える (指令が届いたとき)。自治の度合いを下げると、下げた段ごとに忠誠度 −HAZARD.revoke
   setRegime(id, regime) {
@@ -107,12 +110,13 @@
     this.event('politics', id, `${this.system(id).name} との約定で「${BUNDLE_LABELS[item]}」を${BUNDLE_CODES[b.law[i]]}から${BUNDLE_CODES[value]}にした${drop ? ` (自治を狭めたので忠誠度 −${Math.round(HAZARD.revoke * drop)})` : ''}`, true);
     return { ok: true };
   }
-  // 現地のエリートと実態の層 (年1回): 協力なら実態が法へ、抵抗なら「従」へ、項目ごとに年 BUNDLE.p の確率で半段ずつ寄る。直轄は動かない
+  // 現地のエリートと実態の層 (年1回): 協力なら実態が法へ、抵抗なら「従」へ、項目ごとに年 BUNDLE.p の確率で半段ずつ寄る。直轄は動かない。
+  // 協力か抵抗かは、現地のエリートの集団 (支配する種族のここ生まれのいちばん上の分位。B-021) の忠誠度で決まる (前は星系の忠誠度)
   bundleYearly() {
     for (const [k, gv] of Object.entries(this.govs)) {
       const id = Number(k);
       if (gv.lord === null || gv.lord === undefined || gv.direct || !this.isColonized(id)) continue;
-      const L = gv.loyalty ?? LOYALTY_START;
+      const L = this.eliteLoyalty(id, gv); // 現地のエリートの集団の忠誠度 (B-021。politics/groups.js)
       const stance = L >= BUNDLE.coop ? 'coop' : L < BUNDLE.resist ? 'resist' : 'bargain';
       if (stance !== (gv.elite || 'bargain')) {
         if (stance === 'resist' && this.realmOf(id) === this.cap) this.event('politics', id, `${this.system(id).name} の現地のエリートが、${this.realmName(this.cap)}への協力をやめて抵抗に回った (実態が従属国の側へ寄っていく)`);
@@ -209,7 +213,7 @@
   puppetFalls(id, winner) {
     const gv = this.govs[id];
     const old = this.realmOf(id);
-    for (const f of ['direct', 'regime', 'law', 'fact', 'elite', 'lord2', 'jointCut', 'grudge', 'jointSolo', 'arrears', 'patron']) delete gv[f];
+    for (const f of ['direct', 'regime', 'law', 'fact', 'elite', 'lord2', 'jointCut', 'grudge', 'jointSolo', 'arrears', 'patron', 'include']) delete gv[f];
     Object.assign(gv, { lord: winner, independent: false, loyalty: PUPPET.loyalty, friend: 0, fear: 0, orders: 0, attended: this.year, unrest: { stage: 0 } });
     const reg = this.defaultRegime(winner, id);
     if (reg === 'direct') gv.direct = true; else if (reg !== BASE_REGIME) gv.regime = reg;

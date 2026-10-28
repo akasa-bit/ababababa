@@ -27,6 +27,15 @@ PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメ
 
 手元で同じものを回すときは `CHROMIUM=/opt/pw-browsers/chromium node tools/ci-tests.js` (3 分ほど)。
 
+## 締め出された人口と離反 (tools/groups-panel.js)
+
+回 SE6 (B-020)。目標 R42 のゲームの側。観戦で回し、年の始めに独立を求める動きがない家臣の星系・年ごとに、その年に動きが始まったか・政治から締め出された人口の割合・1 人あたりの所得・人口・平和の年数を CSV に書き出す。合否は実データと同じ台本でかける。
+
+```sh
+node tools/groups-panel.js 30 300 6 groups-panel.csv                  # 30 銀河 × 300 年 × 6 か国
+python3 data/build/analyze_groups.py --game groups-panel.csv          # 実データと同じロジット。係数が R42 の幅の中なら合格
+```
+
 ## 銀河の取り合い (tools/galaxy-race.js)
 
 目標 R40・R41 (回 SE5・B-028)。国家選択 6 か国の観戦で、2500 年 (開始から 200 年) の入植された星系の割合と、残っている AI の国 (プレイヤーの国でない国家選択の国) の星系の数の中央値を出す。50 年ごとの国の大きさと、国家選択にない独立国の星系も並べる。CI では回さない (30 銀河 × 300 年で 4 CPU 約 5 分)。

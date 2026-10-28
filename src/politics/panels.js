@@ -44,7 +44,33 @@ function loyaltyBox(g, id) {
     ${o.hazard ? `<h3>離反の起きやすさ</h3>
     <div class="scroll"><table class="tbl"><tr><th>内訳 (掛け合わせる)</th><th></th></tr>${o.hazard.map((t, i) => `<tr><td>${esc(t.label)}${t.note ? ` <span class="muted">${esc(t.note)}</span>` : ''}</td><td class="${i && t.f > 1.05 ? 'bad' : ''}">${i ? `×${t.f.toFixed(2)}` : t.f.toFixed(4)}</td></tr>`).join('')}<tr><th>年あたり</th><th>${pctH(o.hp)}</th></tr></table></div>
     <p class="note muted">係数は仮の値。歴史の植民地の独立までの時間 (目標 R08) から推定し直す。</p>` : ''}
-    <p class="note ${o.warn ? 'bad' : ''}">${esc(outlookText(o))}</p>${ruleBox(g, id, k)}`;
+    <p class="note ${o.warn ? 'bad' : ''}">${esc(outlookText(o))}</p>${groupsBox(g, id, k, o)}${ruleBox(g, id, k)}`;
+}
+// 星系の中の集団 (回 SE6・B-020。11-4 b): 不満の大きい 1〜2 集団を 1 行で出し、「説明」を開くと民族と所得の分位の表。地球に届いている記録 (k.groups) で
+function groupsBox(g, id, k, o) {
+  const G = k.groups;
+  if (!G) return '';
+  const sp = g.speciesOfRealm(k.realm ?? g.cap);
+  const eth = (key) => (key === 'home' ? `${sp} (よそ生まれ)` : key === 'local' ? `${sp} (ここ生まれ)` : key);
+  const list = g.groupList(G, o.loyalty, o.terms);
+  const flat = list.length && list[list.length - 1].loyalty - list[0].loyalty < 1; // 集団の間に差がない (締め出しも税と福祉の差もない)
+  const worst = flat ? '' : list.filter((x) => x.share >= 0.01).slice(0, 2).map((x) => `<b>${esc(eth(x.k))}・所得${GROUP_QUINT_LABEL[x.q]}の分位</b> (忠誠度 ${Math.round(x.loyalty)}・人口の ${pct(x.share)})`).join('、');
+  const cell = (key, q) => Math.round(clamp(o.loyalty + g.groupDev(G, key, q, o.terms), 0, 100));
+  const rows = G.eth.map((e) => `<tr><td>${esc(eth(e.k))}</td><td>${pct(e.share)}</td><td class="${GROUP_STATUS[e.st].incl ? '' : 'bad'}">${GROUP_STATUS[e.st].label}</td>${[0, 1, 2, 3, 4].map((q) => `<td>${cell(e.k, q)}</td>`).join('')}</tr>`).join('');
+  const lean = (x, hi, lo) => (x > 0.25 ? `${hi}寄り` : x < -0.25 ? `${lo}寄り` : 'ほぼ平均');
+  const own = k.lord === g.cap && (k.realm ?? g.cap) === g.cap && k.direct;
+  const sending = g.requests.some((q) => q.kind === 'order' && q.act === 'include' && Number(q.d.sys) === id);
+  const inc = (key, label) => G.eth.some((e) => (key === 'local' ? e.k === 'local' : e.k !== 'home' && e.k !== 'local'))
+    ? `<label class="field">${label}の権力への近さ${sending ? ' (指令を送信中)' : ''} — 変えると指令 (政治力 ${g.pcCost('include', { sys: id })})<select data-act="include" data-sys="${id}" data-key="${key}">${Object.entries(GROUP_INCLUDE).map(([x, l]) => `<option value="${x}" ${x === (k.include?.[key] || 'auto') ? 'selected' : ''}>${l}</option>`).join('')}</select></label>` : '';
+  return `<h3>集団</h3>
+    <p class="note">不満の大きい集団: ${worst || 'なし (集団の間に忠誠度の差がない)'}。政治から締め出された人口 <b class="${G.excl > 0.25 ? 'bad' : ''}">${pct(G.excl)}</b> (離反の起きやすさ ×${GM.exp(GROUPS.exclBeta * (G.excl - GROUPS.exclRef)).toFixed(2)})</p>
+    <details class="note" data-h="groups" ${app.helpOpen?.has('groups') ? 'open' : ''}><summary>説明 — 民族と所得の分位</summary>
+      <div class="scroll"><table class="tbl"><tr><th>民族</th><th>人口</th><th>権力への近さ</th>${GROUP_QUINT_LABEL.map((l) => `<th>${l}</th>`).join('')}</tr>${rows}</table></div>
+      <p class="muted">表の右の 5 列は、所得の分位ごとの忠誠度 (分位の所得の分け前は ${GROUPS.quint.map((x) => `${Math.round(x * 100)}%`).join('・')}。世界銀行の 2,434 国・年の中央値)。締め出された集団 (無力・差別) は、権力に加わっている集団より ${GROUPS.exclLoy} 点低い (人口で平均すると星系の忠誠度)。税は所得の多い分位ほど重く、福祉の予算は下の分位に厚い。
+      権力への近さは統治体制の実態の「統治者の任免」で決まる: 宗主が任じるなら よそ生まれが優位でここ生まれは締め出され、分け合うなら両方が加わり、従属国が任じるなら ここ生まれが優位。ほかの種族は締め出される (強制労働か「宗教と文化」を宗主が握るなら差別)。直轄の星系だけ手で変えられる。
+      締め出された人口の割合が 10 ポイント増えると、離反の起きやすさは ${GM.exp(GROUPS.exclBeta * 0.1).toFixed(2)} 倍 (EPR と UCDP の 159 か国 8,937 国・年。目標 R42)。</p>
+      <p class="muted">価値観 (世界価値観調査の 2 軸の近い形。国の平均を 0 として標準化。この星系の 1 人あたりの所得から): 伝統 ↔ 世俗 ${G.values.secular.toFixed(2)} (${lean(G.values.secular, '世俗', '伝統')})・生存 ↔ 自己表現 ${G.values.selfexp.toFixed(2)} (${lean(G.values.selfexp, '自己表現', '生存')})。集団ごとの差は、調査の個票がないので持たない。</p></details>
+    ${own ? `${inc('local', `${sp} (ここ生まれ)`)}${inc('other', 'ほかの種族')}` : ''}`;
 }
 // 統治: 直轄・委任と委任方針、総督の方針、視察団 (地球の国の家臣)
 function ruleBox(g, id, k) {

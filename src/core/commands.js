@@ -10,7 +10,7 @@
       case 'upgrade': case 'train': case 'focus': return colSys(d.col);
       case 'peace': return Number(d.sys);
       case 'policy': case 'fiscal': case 'design': return this.cap;
-      case 'rule': case 'bundle': case 'jointcut': case 'depose': case 'mandate': case 'governor': case 'inspect': case 'decide': case 'pvdesign': return Number(d.sys);
+      case 'rule': case 'bundle': case 'jointcut': case 'depose': case 'mandate': case 'governor': case 'inspect': case 'decide': case 'pvdesign': case 'include': return Number(d.sys);
       default: return d.sys;
     }
   }
@@ -95,6 +95,11 @@
       if (!BUNDLE_ITEMS.includes(d.item) || !BUNDLE_CODES[d.value]) return fail('不明な項目');
       if (this.known(id)?.lord !== this.cap || (this.known(id)?.realm ?? this.cap) !== this.cap || this.known(id)?.direct) return fail('直属の従属星系 (直轄でないもの) とだけ約定を交わせる');
     }
+    if (act === 'include') { // 直轄の星系の集団の権力への近さ (政治。politics/groups.js。B-020)
+      const id = Number(d.sys);
+      if (!['local', 'other'].includes(d.key) || !GROUP_INCLUDE[d.value]) return fail('不明な集団');
+      if (this.known(id)?.lord !== this.cap || (this.known(id)?.realm ?? this.cap) !== this.cap || !this.known(id)?.direct) return fail('直属の直轄の星系だけ');
+    }
     if (act === 'rule' && d.value === 'direct') {
       const id = Number(d.sys);
       if (this.known(id)?.lord !== this.cap || (this.known(id)?.realm ?? this.cap) !== this.cap) return fail('直属の従属星系だけを直轄にできる');
@@ -168,6 +173,7 @@
       case 'peace': return this.offerPeace(sys);
       case 'rule': return this.setRule(sys, d.value);
       case 'bundle': return this.setBundleItem(sys, d.item, d.value);
+      case 'include': return this.setInclude(sys, d.key, d.value);
       case 'jointcut': return this.setJointCut(sys, !!d.value);
       case 'depose': return this.depose(sys);
       case 'mandate': { const gv = this.govs[sys]; if (!gv || !MANDATES[d.value]) return fail('政府がない'); gv.mandate = d.value; return { ok: true }; }
