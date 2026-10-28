@@ -83,6 +83,11 @@
 - C27: 艦隊戦の数の効き (回 FU2)
 - C28: 艦隊戦の勝ち負けの偶然 (回 FU2)
 - QD-44: 負けた側はどこまで失ったら退くか → HOI4 の海戦を元にした艦隊戦を作る (回 FU2)
+- QD-45: 入植団の失敗に遺伝の多様性 (Smith 2014 の前提) を効かせるか (回 FU3)
+- QD-46: 艦隊 1 つの乗員 (戦死者に数える `BATTLE.crew`) を船の設計からどう決めるか (回 FU3)
+- B-173: 交易路の受け手の減速のエネルギーを、着いたときに払う (経済からの頼み。回 FU3 で載せた)
+- QD-47: AI の国の光速の一撃の使い方 (回 FU3 で首都への一撃が増え、R15 が外れた)
+- B-174: R15 (戦死者の裾。確認用) の外れ (回 FU3)
 
 ### 画面と最初の体験
 
@@ -139,6 +144,7 @@
 - saveField: forts (船と戦争。src/ship/war-consts.js。宇宙要塞の段。2026-10-22 の依頼)
 - saveField: exhaustSent・bargainSent (船と戦争。src/ship/war-consts.js。届く途中の損失の知らせと AI どうしの講和の申し入れ。回 FU4)
 - EDITIONS.game.battle (pos・luck。艦隊戦の補正。台帳の C27・C28。回 FU2)。EDITIONS.sim.battle も同じ名前で CDB90 の値
+- saveField: designs (船と戦争。src/ship/colonists.js。国ごとの入植船の設計 { crew, speed, cargo, ages }。回 FU3・B-033。`docs/colony.md`)
 
 ### 画面と最初の体験
 

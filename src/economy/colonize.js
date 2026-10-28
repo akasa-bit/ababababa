@@ -246,7 +246,7 @@
       const c = this.colonyByKey(job.col);
       if (!c) return;
       c.troops += 1;
-      c.pop = Math.max(0.001, c.pop - TROOP_DRAFT);
+      c.pop = Math.max(POP_FLOOR, c.pop - TROOP_DRAFT);
       if (!job.quiet) this.message(`${c.name} で歩兵連隊を訓練した (駐留 ${c.troops} 連隊)`, c.sys);
     } else if (job.type === 'capacity') { // 民間の採掘の能力 (回 KE5)
       const k = this.capacityAt(job.sys, job.body);
@@ -282,14 +282,16 @@
     if (!c.ok) return c;
     if (!this.isColonized(fromId)) return fail('出発地に入植地がない');
     const label = `${this.target(toId, bodyId).name} への入植船 (${KIND_LABEL[kind]})`;
-    const cost = this.shipCost(kind, fromId, toId);
-    return this.order(cost, fromId, { type: 'ship', to: toId, body: bodyId, kind, label, supplies: { food: cost.food, water: cost.water }, flight: this.settlerFlight(kind, fromId, toId) });
+    const des = this.settlerDesign(fromId); // 入植船の設計 (船と戦争。B-033)。注文したときのものを船に持たせる
+    const cost = this.shipCost(kind, fromId, toId, des);
+    return this.order(cost, fromId, { type: 'ship', to: toId, body: bodyId, kind, label, design: des, supplies: { food: cost.food, water: cost.water, ...(des.cargo ? { goods: des.cargo } : {}) }, flight: this.settlerFlight(kind, fromId, toId) });
   }
   // 入植船に積む食料と水。交易路を結んで物資移送要求の往復が回り出すまで (5年 + 出発地との往復の年数) を、
   // 人口の伸びも見込んで2倍ぶん積む。到着すると入植先の備蓄になる
   supplyYears(fromId, toId) { return 5 + 2 * this.travelYears(fromId, toId); }
-  shipSupplies(kind, fromId, toId) {
+  shipSupplies(kind, fromId, toId, des = this.settlerDesign(fromId)) {
     const y = this.supplyYears(fromId, toId);
-    const n = SETTLERS[kind];
-    return { food: Math.ceil(n * y * 2), water: Math.ceil(n * 0.1 * y * 2) };
+    const n = des.crew / 1e6; // 入植船の設計の人数 [百万人] (船と戦争。B-033)
+    const up = (x) => Math.ceil(x * 1000) / 1000;
+    return { food: up(n * y * 2), water: up(n * 0.1 * y * 2) };
   }

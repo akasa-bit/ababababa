@@ -97,7 +97,7 @@
     const owner = f.owner ?? 0;
     const onRoute = !!this.routeBetween(f.from, f.to);
     const mine = (id) => this.isColonized(id) && this.realmOf(id) === owner;
-    const payer = mine(f.from) ? f.from : owner;
+    const payer = f.laser ?? (mine(f.from) ? f.from : owner); // 押すレーザーの星系 (sendFleet の laserBase)
     const mode = onRoute && mine(f.from) && mine(f.to) ? 'route' : 'free';
     this.bookShip('fleet', f.n * FLEET_KG, onRoute ? SHIP_SPEED : OFFROUTE_SPEED, mode, payer, f.to, this.sysDist(f.from, f.to));
     this.fleets.push(f);

@@ -191,7 +191,7 @@
       w.loss = Math.min(before, (w.loss || 0) + 0.15 * e);
       const lose = Math.floor(w.loss);
       if (lose > 0) { this.loseTroops(w.sys, lose); w.loss -= lose; w.lost = (w.lost || 0) + lose; }
-      c.pop = Math.max(0.001, c.pop * 0.97);
+      c.pop = Math.max(POP_FLOOR, c.pop * 0.97);
       n.st.pop *= 0.97;
       w.progress = clamp(1 - w.enemy / w.def0, 0, 1);
       if (w.enemy < 0.5) { win(); continue; }

@@ -89,11 +89,13 @@
     };
   }
   // --- AI の国の知っていること (光の遅れ) ---
+  // 知らせが銀河の端まで届く年数 (いちばん遠い 2 つの星系の光年)。セーブに入れず、初めて要るときに計算する (読み込みの直後でも同じ値。回 FU3 で 4 か所の式をまとめた)
+  intelSpanYears() { return (this.intelSpan ??= Math.ceil(Math.max(...this.galaxy.systems.map((a) => Math.max(...this.galaxy.systems.map((b) => distance(a, b))))))); }
   // 年ごとに、入植星系と艦隊のいる星系の [年, 国, 駐留艦隊, よその艦隊] を記録する (前と同じなら足さない)。
   // よその艦隊 = { [国]: n }: その星系を出発してまだ移動中の艦隊 (出発は見えるが、着いたかはまだ見えない)・その星系を攻囲している艦隊・攻めている艦隊。
   // いちばん遠い 2 つの星系の距離より古い記録は、もうどこからも見えないので、その時点の 1 つだけ残して捨てる
   recordIntel() {
-    const span = (this.intelSpan ??= Math.ceil(Math.max(...this.galaxy.systems.map((a) => Math.max(...this.galaxy.systems.map((b) => distance(a, b))))))) + 1;
+    const span = this.intelSpanYears() + 1;
     const away = {};
     const add = (id, r, n) => { if (n > 0) { const a = (away[id] ??= {}); a[r] = (a[r] || 0) + n; } };
     for (const f of this.fleets) add(f.from, f.owner ?? 0, f.n);

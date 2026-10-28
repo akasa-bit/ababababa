@@ -127,6 +127,7 @@ function onPanelChange(e) {
     save();
   }
   else if (act === 'pvdesign') { issue('pvdesign', { sys: Number(e.target.dataset.sys), value: v }); save(); }
+  else if (act === 'design') { issue('design', { [e.target.dataset.k]: v }); save(); } // 入植船の設計 (船と戦争の ship/ships-ui.js。B-033)
   else if (act === 'bundle') {
     // 約定の 1 項目の交渉は光速の指令 (政治力を使う)
     issue('bundle', { sys: Number(e.target.dataset.sys), item: e.target.dataset.item, value: v });
