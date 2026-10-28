@@ -105,29 +105,29 @@ function colonyFailP(n) {
   return COLONY_RISK_MEMO.get(k);
 }
 
-// 入植船団の設計 (B-033。決まった案 12-1 b・12-2 b・12-4 a・10-4 b。docs/proposals/12-ship.md・docs/colony.md)。入植船は 1 隻 500 人で、1 回の入植で 1〜400 隻の船団を送る
-// (ユーザーの依頼 2026-10-28 FU-1)。船の数・速さ・積み荷・乗る人の年齢を国ごとに選ぶ (船の数は入植のたびに変えてよい。送ったときの設計を船団が持って飛ぶ)。
+// 入植船団の設計 (B-033。決まった案 12-1 b・12-2 b・12-4 a・10-4 b。docs/proposals/12-ship.md・docs/colony.md)。入植船は 1 隻 500 人で、1 回の入植で 400 隻 (20 万人) の船団を送る
+// (ユーザーの依頼 2026-10-28 の FU-1 で 1〜400 隻を選べるようにし、FU-2 で 20 万人に固めた)。速さ・積み荷・乗る人の年齢を国ごとに選ぶ (送ったときの設計を船団が持って飛ぶ)。
 // 船の質量 = 住む場所 (乗る人 × habitatKg の工業品) + 積み荷 + 食料と水 + 乗る人。遮蔽は物理の形 (shieldOf) で足し、推進は前と同じく bookShip で記帳する。
-// 費用の資金 = 住む場所の工業品 1 単位あたり credits + 開拓資金 (SEED_FUNDS)。AI の国はひな形の「小」(1 隻) のまま
+// 費用の資金 = 住む場所の工業品 1 単位あたり credits + 開拓資金 (SEED_FUNDS)。AI の国はひな形の「標準」のまま
 const SHIP_DESIGN = {
-  perShip: 500, // 入植船 1 隻に乗る人 [人] (FU-1。HERITAGE の 98 人より多い。Smith 2014 の 14,000〜44,000 人は 28〜88 隻)
-  ships: [1, 400], // 1 回の入植で送る船の数 (FU-1。400 隻 = 20 万人は前の入植船の人数)
+  perShip: 500, // 入植船 1 隻に乗る人 [人] (FU-1)
+  ships: 400, // 1 回の入植で送る船の数 (FU-2 で固定。400 隻 = 20 万人は FU3 の前の入植船の人数。Smith 2014 の上端 44,000 人の 4.5 倍)
   habitatKg: 2.5e5, // 1 人あたりの住む場所 (船の構造) [kg]。前の入植船と同じ 250 t (仮の値。docs/energy.md の 3)
   credits: 3, // 住む場所の工業品 1 単位あたりの費用 [cr] (前の入植船の 300 cr ÷ 工業品 100 単位)
   speeds: { std: '標準 (交易路 0.95c・外 0.9c)', 0.7: '0.7c', 0.5: '0.5c' },
   cargos: [0, 1, 5, 10, 30], // 積んでいく工業品 [単位] (着いたら入植地の備蓄になる)
   ages: { migrant: '国連の国際移民の年齢 (標準)', young: '働き手と子ども', home: '送り出す星系と同じ' },
 };
-const POP_FLOOR = 1e-5; // 入植地の人口の下限 [百万人] = 10 人 (前は 0.001 = 1,000 人で、設計の 500 人の入植地が 1,000 人に持ち上がった)
+const POP_FLOOR = 1e-5; // 入植地の人口の下限 [百万人] = 10 人 (前は 0.001 = 1,000 人。FU3 で 500 人の入植地を持ち上げないように下げた)
 const fmtPeople = (n) => `${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} 人`; // 人数 (端末によらない書式。記録に入るので toLocaleString は使わない)
 const SHIP_TEMPLATES = {
-  small: { label: '小 (標準)', ships: 1, speed: 'std', cargo: 0, ages: 'migrant' },
-  mid: { label: '中', ships: 20, speed: 'std', cargo: 5, ages: 'migrant' },
-  large: { label: '大', ships: 80, speed: 0.7, cargo: 10, ages: 'migrant' },
+  std: { label: '標準', speed: 'std', cargo: 0, ages: 'migrant' },
+  cargo: { label: '積み荷つき', speed: 'std', cargo: 10, ages: 'migrant' },
+  slow: { label: '遅く安く', speed: 0.5, cargo: 0, ages: 'migrant' },
 };
 // 乗る人の年齢の形 (5 歳きざみの区分ごとの割合。DEMO はこのファイルより後で決まるので、使うときに作る)。young = 国際移民の形のうち、子ども (0〜14 歳) と働き盛り (20〜39 歳) だけ
 const ageShape = (k) => (k === 'young' ? DEMO.migrant.map((v, a) => (a <= 2 || (a >= 4 && a <= 7) ? v : 0)) : DEMO.migrant);
-// 国ごとの設計 { [国の首都]: { ships, speed, cargo, ages } } (ないときはひな形の「小」。前の版の { crew, … } は designOf が船の数に直す)
+// 国ごとの設計 { [国の首都]: { speed, cargo, ages } } (ないときはひな形の「標準」。前の版の船の数 ships・人数 crew は designOf が読み捨てる)
 saveField('designs', (game) => (Object.keys(game.designs).length ? game.designs : undefined), {
   init: (game) => { game.designs = {}; },
   read: (game, d) => { game.designs = d.designs && typeof d.designs === 'object' ? d.designs : {}; },
