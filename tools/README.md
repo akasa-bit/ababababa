@@ -36,6 +36,15 @@ node tools/groups-panel.js 30 300 6 groups-panel.csv                  # 30 銀�
 python3 data/build/analyze_groups.py --game groups-panel.csv          # 実データと同じロジット。係数が R42 の幅の中なら合格
 ```
 
+## 家臣の要求への AI の返事 (tools/demands-panel.js)
+
+QD-41 = c (B-142。`docs/demands.md`)。観戦で回し、AI の主人が家臣の要求をのむかを決めるたびに、人口の割合・主人からの距離 ÷ 国の広がり・拒んだら独立する見込み・のむ見込み・のんだかを CSV に書き出す。終わりに材料の平均 (`DEMAND_AI.ref` を決めた値) とのんだ割合を出す。
+
+```sh
+node tools/demands-panel.js 12 300 6 demands-panel.csv                # 12 銀河 × 300 年 × 6 か国
+python3 data/build/analyze_demands.py --game demands-panel.csv        # ゲームの判断に実データと同じロジットをかけ、傾きを比べる
+```
+
 ## 銀河の取り合い (tools/galaxy-race.js)
 
 目標 R40・R41 (回 SE5・B-028)。国家選択 6 か国の観戦で、2500 年 (開始から 200 年) の入植された星系の割合と、残っている AI の国 (プレイヤーの国でない国家選択の国) の星系の数の中央値を出す。50 年ごとの国の大きさと、国家選択にない独立国の星系も並べる。CI では回さない (30 銀河 × 300 年で 4 CPU 約 5 分)。

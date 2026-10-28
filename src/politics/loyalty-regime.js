@@ -334,8 +334,8 @@
     if (u.stage === 1) { if (this.year - u.since >= UNREST_YEARS) this.raiseDemand(id, gv); return; }
     if (u.stage === 2) {
       if (u.aiAt !== undefined && this.year >= u.aiAt) {
-        // 主人の政府の判断 (半々)
-        if (this.rand() < 0.5) this.grantDemand(id, gv); else this.refuseDemand(id, gv, `${this.system(gv.lord).name} に要求を拒まれた`);
+        // 主人の政府の判断: 席の国の AI と同じく、のむ見込み (家臣の大きさ・遠さ・拒んだら独立する見込み。QD-41 = c) でのむ
+        if (this.rand() < this.demandAcceptP(id)) this.grantDemand(id, gv); else this.refuseDemand(id, gv, `${this.system(gv.lord).name} に要求を拒まれた`);
       } else if (this.year >= (u.timeout ?? Infinity)) this.refuseDemand(id, gv, '返事が届かないので、要求は拒まれたとみなした');
       return;
     }

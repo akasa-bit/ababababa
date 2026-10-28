@@ -1,0 +1,36 @@
+{
+ "sources": {
+  "gs_sdm_groups.csv": "Germann, M. & Sambanis, N. 2021. Political Exclusion, Lost Autonomy, and Escalating Conflict over Self-Determination. International Organization 75(1), 178-203。再現データ (Harvard Dataverse doi:10.7910/DVN/EI1JMG。CC0)。運動は Sambanis, Germann & Schädel 2018 (JCR 62(3)) の SDM、集団は EPR Core (Vogt ほか 2015)",
+  "geoepr_centroids.csv": "Vogt, Bormann, Rüegger, Cederman, Hunziker & Girardin 2015. Integrating Data on Ethnicity, Geography, and Conflict: The Ethnic Power Relations Data Set Family. JCR 59(7)。GeoEPR 2021 (CC BY-NC-SA 4.0。研究のための抜き出しで、ゲームには係数だけを入れる)",
+  "cshapes_capitals.csv": "Schvitz, Girardin, Rüegger, Weidmann, Cederman & Gleditsch 2022. Mapping the International System, 1886-2019: The CShapes 2.0 Dataset. JCR 66(1)。CC BY-NC-SA 4.0 (研究のための抜き出しで、ゲームには係数だけを入れる)"
+ },
+ "files": [
+  {
+   "file": "gs_sdm_groups.csv",
+   "bytes": 1079551,
+   "rows": 16185,
+   "url": "https://dataverse.harvard.edu/api/access/datafile/3861598",
+   "sha256_source": "64b13c10175a7b0a030697e91994b0ee60edb241775f06485b25f456894ce0fc",
+   "fetched": "2026-10-28T12:47:05Z",
+   "filter": "一度でも sdm = 1 の集団 (279) の行。列 gwgroupid, year, countries_gwid, countryname, groupname, sdm, regaut, status_excl, status_pwrrank, groupsize, violsd だけ"
+  },
+  {
+   "file": "geoepr_centroids.csv",
+   "bytes": 41687,
+   "rows": 654,
+   "url": "https://icr.ethz.ch/data/epr/geoepr/GeoEPR-2021.geojson",
+   "sha256_source": "346e9329a136b2a1d3fbe4334d3dc8ae7775c84bf2ec6d91cdcc81935d763964",
+   "fetched": "2026-10-28T12:47:08Z",
+   "filter": "上の集団の地域ごとに、多角形 (外側の輪) の面積で重みを付けた重心 (経度・緯度の平面)。多角形そのものは置かない"
+  },
+  {
+   "file": "cshapes_capitals.csv",
+   "bytes": 20576,
+   "rows": 360,
+   "url": "https://icr.ethz.ch/data/cshapes/CShapes-2.0.csv",
+   "sha256_source": "e78d0b3a40605631f5a136c6155e0dd5290996c59765999e159385fdeaf7b157",
+   "fetched": "2026-10-28T12:47:12Z",
+   "filter": "上の集団の国 (94) の行。列 gwcode, cntry_name, gwsyear, gweyear, capname, caplat, caplong, area だけ (国の形は置かない)"
+  }
+ ]
+}
