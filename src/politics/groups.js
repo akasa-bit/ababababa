@@ -46,6 +46,13 @@
     const y = inc / P;
     return { eth, excl, inc: y, values: groupValues(y) };
   }
+  // 集団の価値観 (QD-42): 星系の値 + よそ生まれの差 + 所得の分位の差 (q = 0〜4。省くと民族だけ)。よそ生まれの差は、星系の民族の割合で平均すると 0 (星系の値はそのまま)。
+  // よそ生まれ = 支配する種族のよそ生まれ (home)。ここ生まれとほかの種族は、ここで生まれた人として数える
+  groupValuesOf(G, k, q) {
+    const V = GROUPS.values, a = (k === 'home' ? 1 : 0) - (G.eth.find((e) => e.k === 'home')?.share || 0);
+    const f = (x) => G.values[x] + V.away[x] * a + (q === undefined ? 0 : V.quint[x][q]);
+    return { secular: f('secular'), selfexp: f('selfexp') };
+  }
   // 集団の忠誠度の、星系の忠誠度からの差 (11-2 c)。G = groupsOf の値、k = 民族、q = 所得の分位 (0〜4。省くと民族だけ)、terms = 忠誠度の目標の内訳 (税と福祉の予算を読む)
   // 民族: 締め出された集団は権力に加わっている集団より GROUPS.exclLoy 点低い (人口で平均すると 0)。
   // 分位: 税の項は所得の分け前に比例して重く、福祉の予算の項は下の分位に厚い (どちらも平均すると 0)

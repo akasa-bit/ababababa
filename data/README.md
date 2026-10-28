@@ -303,3 +303,12 @@ python3 data/build/build_hcap.py ゲームのパネル.csv   # ゲームの R62�
 | 加工 | `data/build/analyze_demands.py` → `data/derived/demands.json` | 運動が続いている集団・年 (263 集団・7,774 集団・年・1947〜2012) に、その年に政府が譲ったか (自治を新しく与えた・締め出しをやめた。139 年 = 1.8%) を、ln 人口の割合・ln 首都までの距離 ÷ 国の半径・前の年の武力の紛争でロジット回帰: 0.246・0.363・0.712。AI の主人の判断 (`src/politics/policy-consts.js` の `DEMAND_AI`) |
 
 - **限界**: 運動の年ごとの譲歩で、ゲームの「要求 1 回への返事」とは単位が違う。水準 (のむ割合の平均) は実データから出さず、前の AI の半々にそろえた (`docs/demands.md` の 3)。遠さの割り方 (国の半径か、集団の距離の中央値か) で遠さの係数が 0.36 と 0.21 に分かれる
+
+## 星系の中の集団の価値観のデータ (QD-42。回 SE6 の続き。ゲームの係数で、目標ではない)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_values.py` → `data/raw/values/` | Global Flourishing Study の 1・2 年目の全世界の個票 (Gallup・Center for Open Science。CC BY 4.0) から、国・1 年目の重み・世帯の所得の区分・この国で生まれたか・9 項目の 1 年目だけを gzip で (`gfs_wave1_values.csv.gz`。207,919 人・2.3 MB)。世界銀行 WDI の 1 人あたり GDP (購買力平価の 2021 年のドル。2022 年)。取ってきたままのファイルの SHA-256 は `MANIFEST.json` |
+| 加工 | `data/build/analyze_values.py` → `data/derived/values.json` | 伝統 ↔ 世俗 (宗教の大切さ・集まり・法に従う) と生存 ↔ 自己表現の近い形 (信頼・暮らしの心配のなさ・幸福) の国の平均を ln 1 人あたり GDP に当てた切片と傾き (23 の国と地域。相関 0.88・0.28)、国の中の所得の 5 分位ごとの差とよそ生まれの差 (国の固定効果つき)。`src/politics/groups-consts.js` の `GROUPS.values` |
+
+- **限界**: 22 か国と香港だけ。生存 ↔ 自己表現は WVS の目印の項目 (脱物質主義・寛容・署名) がなく、暮らしの安心と信頼・幸福で作る近い形。所得の区分は国ごとに粗く、分位の境は区分の境に寄る。世界価値観調査の個票は「非営利に限る・再配布しない」が条件なので使っていない (前の近い形は QoG の WVS の国の平均。`data/raw/groups/qog_wvs.csv` は比べるために残す)
