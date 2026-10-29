@@ -17,7 +17,7 @@
   command(act, d) {
     // 政治力: 足りなければ送れない。送れたら払う
     const pc = this.pcCost(act, d);
-    if (pc > this.pc + 1e-9) return fail(`政治力が足りない (${pc} 必要、いま ${Math.floor(this.pc)})`);
+    if (pc > this.pc + 1e-9) return fail(JA`政治力が足りない (${pc} 必要、いま ${Math.floor(this.pc)})`);
     const old = this.msgTo;
     if (this.players.length > 1) this.msgTo = this.pi;
     try {
@@ -31,20 +31,20 @@
     const v = d.value;
     if (d.key === 'auto') {
       const id = Number(d.sys);
-      if (!this.isColonized(id) || this.realmOf(id) !== this.cap) return fail(`${this.realmName(this.cap)}の星系だけ`);
+      if (!this.isColonized(id) || this.realmOf(id) !== this.cap) return fail(JA`${this.realmName(this.cap)}の星系だけ`);
       this.auto[id] = !!v;
-      return { ok: true, msg: `${this.system(id).name} の自動開発を${v ? 'オン' : 'オフ'}にした` };
+      return { ok: true, msg: JA`${this.system(id).name} の自動開発を${v ? 'オン' : 'オフ'}にした` };
     }
     if (d.key === 'acked') { this.acked = [...new Set([...(this.acked || []), ...(v || []).map(Number)])].slice(-300); return { ok: true }; }
     const SET = {
-      warThreshold: (x) => `戦争方針を「${(WAR_POLICIES.find(([y]) => y === x) || [0, x])[1]}」にした`,
-      autoHabitat: (x) => `過密時の居住区の自動拡張を${x ? 'オン' : 'オフ'}にした`,
-      autoRoutes: (x) => `混んだ交易路の自動拡張を${x ? 'オン' : 'オフ'}にした`,
-      migration: (x) => `恒星間移民を${x ? '許可' : '停止'}した`,
+      warThreshold: (x) => JA`戦争方針を「${(WAR_POLICIES.find(([y]) => y === x) || [0, x])[1]}」にした`,
+      autoHabitat: (x) => JA`過密時の居住区の自動拡張を${x ? 'オン' : 'オフ'}にした`,
+      autoRoutes: (x) => JA`混んだ交易路の自動拡張を${x ? 'オン' : 'オフ'}にした`,
+      migration: (x) => JA`恒星間移民を${x ? '許可' : '停止'}した`,
       autoGrant: () => '', autoBuild: () => '',
-      autoAwe: (x) => `反乱防止のための威圧を${x ? 'オン' : 'オフ'}にした`,
-      autoDefense: (x) => `自動防衛配備を${x ? 'オン' : 'オフ'}にした`,
-      regime: (x) => `新しい入植地の統治体制を「${REGIMES[regimeNorm(x)].label}」にした`,
+      autoAwe: (x) => JA`反乱防止のための威圧を${x ? 'オン' : 'オフ'}にした`,
+      autoDefense: (x) => JA`自動防衛配備を${x ? 'オン' : 'オフ'}にした`,
+      regime: (x) => JA`新しい入植地の統治体制を「${REGIMES[regimeNorm(x)].label}」にした`,
     };
     if (d.key === 'regime' && (!regimeNorm(v) || regimeNorm(v) === 'direct')) return fail('選べない統治体制');
     if (!SET[d.key]) return fail('設定がない');
@@ -73,7 +73,7 @@
     if (act === 'fiscal') return this.setFiscal(d);
     if (act === 'grant') {
       const to = Number(d.sys);
-      if (to === this.cap || !this.isColonized(to) || this.realmOf(to) !== this.cap) return fail(`${this.realmName(this.cap)}の星系にだけ送れる`);
+      if (to === this.cap || !this.isColonized(to) || this.realmOf(to) !== this.cap) return fail(JA`${this.realmName(this.cap)}の星系にだけ送れる`);
       return this.sendGrant(this.cap, to, Number(d.amt));
     }
     if (act === 'decide') {
@@ -103,7 +103,7 @@
     if (act === 'rule' && d.value === 'direct') {
       const id = Number(d.sys);
       if (this.known(id)?.lord !== this.cap || (this.known(id)?.realm ?? this.cap) !== this.cap) return fail('直属の従属星系だけを直轄にできる');
-      if (!this.isDirect(id) && this.directPlanned() >= this.directMax()) return fail(`直轄は ${this.directMax()} 星系まで`);
+      if (!this.isDirect(id) && this.directPlanned() >= this.directMax()) return fail(JA`直轄は ${this.directMax()} 星系まで`);
     }
     // 集結は、それぞれの出発地への指令に分ける
     if (act === 'rally') {
@@ -123,7 +123,7 @@
     if (target === undefined || target === null || target === this.cap) return this.exec(act, d);
     const arrive = this.year + this.orderYears(act, d, target); // 人を送る指令は船で (politics/policy-decisions.js)
     this.requests.push({ id: this.nextShipId++, kind: 'order', from: this.cap, ...(this.cap !== 0 ? { by: this.cap } : {}), to: target, act, d: { ...d }, label: CMD_LABEL[act] || act, sent: this.year, arrive, state: 'sending' });
-    this.message(`${this.system(target).name} へ指令「${CMD_LABEL[act] || act}」を送った (届くまで ${(arrive - this.year).toFixed(1)} 年)`);
+    this.message(JA`${this.system(target).name} へ指令「${CMD_LABEL[act] || act}」を送った (届くまで ${(arrive - this.year).toFixed(1)} 年)`);
     return { ok: true, queued: true };
   }
   exec(act, d) {

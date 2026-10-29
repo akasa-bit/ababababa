@@ -36,7 +36,7 @@
     } else if (c.alerts[key] && c.alertSince[key] !== null && this.year - (c.alertSince[key] ??= this.year) >= (WATCH_LOG_YEARS[kind] ?? 0)) {
       const years = this.year - c.alertSince[key];
       c.alertSince[key] = null; // 記録した印
-      this.event(kind, c.sys, `${onText()}${years >= 1.5 ? ` — ${Math.round(years)}年続いている` : ''}`);
+      this.event(kind, c.sys, `${onText()}${years >= 1.5 ? JA` — ${Math.round(years)}年続いている` : ''}`);
     }
   }
 

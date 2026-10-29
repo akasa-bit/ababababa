@@ -12,15 +12,15 @@
     const ly = this.travelYears(from, to);
     const years = ly / OFFROUTE_SPEED + accelExtra(ly, OFFROUTE_SPEED, ACCEL.crew, this.physics) / 2;
     this.pushFleet({ id: this.nextShipId++, from, to, n, owner, start: this.year, depart: this.year, arrive: this.year + years, auto: false, strike: true });
-    this.message(`${this.system(from).name} の ${n} 艦隊が ${this.system(to).name} (${this.realmName(this.realmOf(to))}) へ、減速せずに突入する (着くまで ${years.toFixed(1)} 年。止められない)`, from);
+    this.message(JA`${this.system(from).name} の ${n} 艦隊が ${this.system(to).name} (${this.realmName(this.realmOf(to))}) へ、減速せずに突入する (着くまで ${years.toFixed(1)} 年。止められない)`, from);
     return { ok: true };
   }
   // 突入した艦隊が着いた: 人口の多い天体から順に、1 艦隊で 1 つの天体の入植地を焼く。艦隊は残らない
   strikeArrives(f) {
     const owner = f.owner ?? 0;
-    if (!this.isColonized(f.to)) { this.message(`${f.n} 艦隊は ${this.system(f.to).name} に突入したが、焼くものはなかった`, f.to); return; }
+    if (!this.isColonized(f.to)) { this.message(JA`${f.n} 艦隊は ${this.system(f.to).name} に突入したが、焼くものはなかった`, f.to); return; }
     const hit = this.realmOf(f.to);
-    if (hit === owner) { this.message(`${f.n} 艦隊は自国になった ${this.system(f.to).name} に突入した`, f.to); return; }
+    if (hit === owner) { this.message(JA`${f.n} 艦隊は自国になった ${this.system(f.to).name} に突入した`, f.to); return; }
     if (!this.atWar(owner, hit)) this.beginWar(owner, hit, f.to);
     const bodies = [...new Set(this.coloniesIn(f.to).map((c) => c.body))]
       .map((body) => ({ body, pop: this.coloniesIn(f.to).filter((c) => c.body === body).reduce((k, c) => k + c.pop, 0) }))
@@ -44,7 +44,7 @@
     this.exhaustAt(hit, EXHAUST.system, f.to);
     if (this.isHuman(owner)) this.infamy += STRIKE.infamy;
     this.strikes.push({ id: this.nextShipId++, year: this.year, sys: f.to, by: owner, hit, dead, told: [] });
-    this.event('battle', f.to, `${this.realmName(owner)}の ${f.n} 艦隊が光速に近い速さのまま ${this.system(f.to).name} に突入し、${bodies.length} つの天体の地表を焼いた (死者 ${fmtDead(dead)})`, false);
+    this.event('battle', f.to, JA`${this.realmName(owner)}の ${f.n} 艦隊が光速に近い速さのまま ${this.system(f.to).name} に突入し、${bodies.length} つの天体の地表を焼いた (死者 ${fmtDead(dead)})`, false);
   }
   // 年 1 回: 光速の一撃の知らせが届いた国と星系が応じる (exhaustionYearly の始めから呼ぶ)
   strikesYearly() {
@@ -70,7 +70,7 @@
         const p = r === s.hit ? STRIKE.retaliateHit : this.sysDist(r, s.sys) <= STRIKE.reach ? STRIKE.retaliate : 0;
         if (p > 0 && this.rand() < p) {
           this.beginWar(r, by, r);
-          this.event('politics', r, `${this.realmName(r)}が、${this.system(s.sys).name} を焼いた${this.realmName(by)}に宣戦した`, this.isHuman(by));
+          this.event('politics', r, JA`${this.realmName(r)}が、${this.system(s.sys).name} を焼いた${this.realmName(by)}に宣戦した`, this.isHuman(by));
         }
       }
     }

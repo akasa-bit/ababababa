@@ -35,8 +35,8 @@ const REGIMES = (() => {
     const key = id === 'T20' ? 'direct' : id;
     R[key] = { id, label: id === 'T20' ? '直接統治 (植民地)' : t.label, family: t.family, law: t.law, fact: t.fact, gap: t.gap, gap0: [...t.law].reduce((k, c, i) => k + (c !== t.fact[i] ? 1 : 0), 0), hr: t.hr, delay: t.delay, tribute: t.tribute,
       loyalty: id === 'T20' ? 10 : t.loyalty, rank: t.rank, war: t.war, ...(t.noOrders ? { noOrders: true } : {}), refuseAt: t.refuseAt, ...(t.war < 0.05 ? { peaceful: true } : {}),
-      note: `法 ${bundleText(t.law)}・実態 ${bundleText(t.fact)}。離反 ×${t.hr.toFixed(2)}・朝貢 ${Math.round(t.tribute * 100)}%・独立の ${Math.round(t.war * 100)}% が戦争${t.noOrders ? '・指令を受けない' : ''}${id === 'T20' ? '・指令にかならず従い、指令の政治力は半分 (上限あり・年に政治力 1)' : ''}`,
-      why: `事例 ${t.n} 件 (${t.cases.join('・')} など)。存続の中央値 ${t.median ? `${Math.round(t.median)} 年` : '続いている'}・法と実態の差 ${t.gap.toFixed(1)} 項目。${VASSAL_FAMILIES[t.family]}の家族` };
+      note: JA`法 ${bundleText(t.law)}・実態 ${bundleText(t.fact)}。離反 ×${t.hr.toFixed(2)}・朝貢 ${Math.round(t.tribute * 100)}%・独立の ${Math.round(t.war * 100)}% が戦争${t.noOrders ? '・指令を受けない' : ''}${id === 'T20' ? '・指令にかならず従い、指令の政治力は半分 (上限あり・年に政治力 1)' : ''}`,
+      why: JA`事例 ${t.n} 件 (${t.cases.join('・')} など)。存続の中央値 ${t.median ? JA`${Math.round(t.median)} 年` : '続いている'}・法と実態の差 ${t.gap.toFixed(1)} 項目。${VASSAL_FAMILIES[t.family]}の家族` };
   }
   // 強制労働 (エンコミエンダ制) は統治の型ではなく労働の制度。植民地 (直轄) の束に強制労働を足したもの (Dell 2010・ICOW のスペインの植民地)
   R.encomienda = { ...R.direct, id: 'T20', label: '植民地 + 強制労働 (エンコミエンダ制)', hr: 1.6, delay: 1, tribute: 0.4, loyalty: -10, rank: 0, mine: 1.3, growth: 0.7, forced: true, war: 0.89, refuseAt: 50,
@@ -95,10 +95,10 @@ function secessionTermsOf({ regime, delay, popRatio, loyalty, security = 0, gap 
   const ratio = clamp(popRatio || 0, 0.01, 100);
   return [
     { label: '基準', f: ED.hazardBase, note: '年あたり' },
-    { label: `統治体制 (${r.label})`, f: r.hr },
-    ...(gap !== null && gap !== r.gap0 ? [{ label: '法と実態の差', f: GM.pow(GAP_HR, gap - r.gap0), note: `${gap} 項目 (型の始め ${r.gap0})` }] : []), // 型の始めの差から数える (QD-40 = a。前は事例の平均 r.gap からで、型の倍率 hr をほぼ打ち消していた)
-    { label: '通信の遅れ ÷ 1 世代', f: GM.pow(Math.max(HAZARD.delayMin, delay / GENERATION_YEARS / HAZARD.delayRef), (ED.delayExp * (ED.regimeDelay ? r.delay : 1))), note: `${delay.toFixed(0)} 年 ÷ ${GENERATION_YEARS} 年` },
-    { label: '主人との人口の比', f: GM.pow(ratio, HAZARD.pop), note: `${ratio < 1 ? ratio.toFixed(2) : ratio.toFixed(1)} 倍` },
+    { label: JA`統治体制 (${r.label})`, f: r.hr },
+    ...(gap !== null && gap !== r.gap0 ? [{ label: '法と実態の差', f: GM.pow(GAP_HR, gap - r.gap0), note: JA`${gap} 項目 (型の始め ${r.gap0})` }] : []), // 型の始めの差から数える (QD-40 = a。前は事例の平均 r.gap からで、型の倍率 hr をほぼ打ち消していた)
+    { label: '通信の遅れ ÷ 1 世代', f: GM.pow(Math.max(HAZARD.delayMin, delay / GENERATION_YEARS / HAZARD.delayRef), (ED.delayExp * (ED.regimeDelay ? r.delay : 1))), note: JA`${delay.toFixed(0)} 年 ÷ ${GENERATION_YEARS} 年` },
+    { label: '主人との人口の比', f: GM.pow(ratio, HAZARD.pop), note: JA`${ratio < 1 ? ratio.toFixed(2) : ratio.toFixed(1)} 倍` },
     { label: '忠誠度', f: GM.exp(HAZARD.loyalty * (HAZARD.loyaltyRef - loyalty)), note: `${Math.round(loyalty)}` },
     ...(security ? [{ label: '治安の予算', f: 1 - BUDGET.security.hazard * security }] : []),
     // 政治から締め出された集団の人口の割合 (回 SE6・B-020。11-2 c。EPR と UCDP の国・年のロジットの係数。目標 R42。politics/groups-consts.js)

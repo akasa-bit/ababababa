@@ -9,7 +9,7 @@
     if (this.pending((j) => j.type === 'upgrade' && j.col === col && j.fac === 'habitat')) return;
     const cost = this.upgradeCost(c, 'habitat');
     if (this.funds(c.sys) < 2 * cost.credits || this.procure(cost, c.sys).why) return;
-    this.order(cost, c.sys, { type: 'upgrade', col, fac: 'habitat', label: `[過密] ${c.name} の居住区 Lv${c.lv.habitat + 1}` });
+    this.order(cost, c.sys, { type: 'upgrade', col, fac: 'habitat', label: JA`[過密] ${c.name} の居住区 Lv${c.lv.habitat + 1}` });
   }
   // 恒星間移民を許すか: 人間の国はそのプレイヤーの設定、AI の国はいつも許す
   migrationOn(sys) { const i = this.playerOf(this.realmOf(sys)); return i < 0 ? true : this.players[i].migration; }
@@ -25,7 +25,7 @@
       // 人口過密は状態として持ち (イベントタブの「いま起きている問題」に出る)、記録には入植地ごとに最初の1回だけ書く
       if (!c.alerts.crowd && ratio >= 0.9) {
         c.alerts.crowd = true;
-        if (!c.crowdLogged) { c.crowdLogged = true; this.event('migration', c.sys, `${c.name} が初めて人口過密になった (上限の ${pct(ratio)})${this.migrationOn(c.sys) ? '。恒星間移民が始まる' : ''}`); }
+        if (!c.crowdLogged) { c.crowdLogged = true; this.event('migration', c.sys, JA`${c.name} が初めて人口過密になった (上限の ${pct(ratio)})${this.migrationOn(c.sys) ? '。恒星間移民が始まる' : ''}`); }
       } else if (c.alerts.crowd && ratio < 0.85) {
         c.alerts.crowd = false;
       }
@@ -67,7 +67,7 @@
     if (MARKET.buy) return fail('方針はなくなった (就業は値段で決まる)');
     if (!FOCUS[focus]) return fail('方針が不正');
     for (const c of this.colonies) c.focus = focus;
-    this.message(`全入植地の方針を「${FOCUS[focus].label}」にした`);
+    this.message(JA`全入植地の方針を「${FOCUS[focus].label}」にした`);
     return { ok: true };
   }
 

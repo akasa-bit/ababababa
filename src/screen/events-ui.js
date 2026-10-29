@@ -106,16 +106,16 @@ function surpriseWarnings(g) {
 }
 function surpriseHtml(g, w) {
   const name = g.system(w.sys).name;
-  return `<div class="dec warn"><div class="m">${tagIco('war')}奇襲のおそれ・${esc(g.realmName(w.f.owner ?? 0))}の艦隊 ${Math.round(w.f.n || 0)}</div>
+  return TR`<div class="dec warn"><div class="m">${tagIco('war')}奇襲のおそれ・${esc(g.realmName(w.f.owner ?? 0))}の艦隊 ${Math.round(w.f.n || 0)}</div>
     <div class="t">${esc(w.from.name)}を出た艦隊が見えた (出発の光は ${w.seenLag.toFixed(1)} 年かかって届いた)。${esc(name)}に向かっているなら、着くのは ${w.at.toFixed(1)} 年 — <b>あと ${Math.max(0, w.at - g.year).toFixed(1)} 年</b></div>
-    <div class="opts"><button data-act="fly" data-sys="${w.sys}">${esc(name)}の守りを見る</button>${g.knownGarrison(g.cap) >= 1 && w.sys !== g.cap ? `<button data-act="fleetsel" data-sys="${g.cap}">首都の艦隊を選ぶ</button>` : ''}<button class="ghost" data-act="surpriseack" data-id="${w.f.id}">確かめた</button></div></div>`;
+    <div class="opts"><button data-act="fly" data-sys="${w.sys}">${esc(name)}の守りを見る</button>${g.knownGarrison(g.cap) >= 1 && w.sys !== g.cap ? TR`<button data-act="fleetsel" data-sys="${g.cap}">首都の艦隊を選ぶ</button>` : ''}<button class="ghost" data-act="surpriseack" data-id="${w.f.id}">確かめた</button></div></div>`;
 }
 
 // イベントタブ: 決めること、いま起きている問題、重要なイベントの履歴
 function eventsHtml(app) {
   const g = app.game;
   const f = app.eventFilter || 'all';
-  const ALERT = { food: ['famine', '飢餓'], water: ['famine', '水不足'], goods: ['shortage', '物品不足'], industry: ['shortage', '原料不足'], crowd: ['migration', '人口過密'], aging: ['shortage', '高齢化 (扶養比 70 超)'] };
+  const ALERT = { food: ['famine', TR('飢餓')], water: ['famine', TR('水不足')], goods: ['shortage', TR('物品不足')], industry: ['shortage', TR('原料不足')], crowd: ['migration', TR('人口過密')], aging: ['shortage', TR('高齢化 (扶養比 70 超)')] };
   const kc = g.knownOwnSystems().flatMap((x) => g.knownColonies(x.id));
   const now = kc.flatMap((c) => Object.entries(c.alerts || {}).filter(([k, on]) => on && ALERT[k]).map(([k]) => ({ c, k })));
   const kwars = g.knownSystems().flatMap((x) => g.knownWars(x.id));
@@ -123,12 +123,12 @@ function eventsHtml(app) {
   const risks = g.knownSystems().filter((x) => x.id !== g.cap && (g.known(x.id)?.realm ?? g.cap) === g.cap)
     .map((x) => ({ x, o: independenceOutlook(g, x.id) })).filter(({ o }) => o && o.warn)
     .sort((a, b) => b.o.stage - a.o.stage || a.o.loyalty - b.o.loyalty);
-  const riskHtml = risks.map(({ x, o }) => `<div class="ev major"><span class="tag politics">${esc(UNREST_LABEL[o.stage] || '不満の兆し')}</span><span class="txt">${esc(x.name)}
+  const riskHtml = risks.map(({ x, o }) => TR`<div class="ev major"><span class="tag politics">${esc(UNREST_LABEL[o.stage] || TR('不満の兆し'))}</span><span class="txt">${esc(x.name)}
       <span class="muted">${esc(outlookText(o, true))}・忠誠度 ${Math.round(o.loyalty)} → 目標 ${Math.round(o.target)} ${ageBadge(g, x.id)}</span></span>
       <button data-act="goto" data-sys="${x.id}">${ico('goto')}地図</button></div>`).join('');
   const wars = kwars.map((w) => {
     const n = g.nativeOf(w.sys, w.body);
-    return `<div class="ev"><span class="tag war">${tagIco('war')}征服戦争</span><span class="txt">${esc(g.target(w.sys, w.body).name)} 対 ${esc(n?.def.species || '?')}
+    return TR`<div class="ev"><span class="tag war">${tagIco('war')}征服戦争</span><span class="txt">${esc(g.target(w.sys, w.body).name)} 対 ${esc(n?.def.species || '?')}
       <span class="muted">進捗 ${pct(w.progress)} ${ageBadge(g, w.sys)}</span></span>
       <button data-act="gobody" data-sys="${w.sys}" data-body="${esc(w.body)}">表示</button></div>`;
   }).join('');
@@ -138,27 +138,27 @@ function eventsHtml(app) {
   const alertRow = ([sys, list]) => {
     const kinds = [...new Set(list.map(({ k }) => ALERT[k][1]))];
     const worst = list.some(({ k }) => ALERT[k][0] === 'famine') ? 'famine' : list.some(({ k }) => ALERT[k][0] === 'shortage') ? 'shortage' : 'migration';
-    return `<div class="ev"><span class="tag ${worst}">${tagIco(worst)}${esc(kinds.join('・'))}</span><span class="txt">${esc(g.system(sys).name)}
-        <span class="muted">${list.map(({ c, k }) => `${esc(c.name)} (${ALERT[k][1]})`).join('・')} ${ageBadge(g, sys)}</span></span>
+    return TR`<div class="ev"><span class="tag ${worst}">${tagIco(worst)}${esc(kinds.join(TR('・')))}</span><span class="txt">${esc(g.system(sys).name)}
+        <span class="muted">${list.map(({ c, k }) => `${esc(c.name)} (${ALERT[k][1]})`).join(TR('・'))} ${ageBadge(g, sys)}</span></span>
         <button data-act="goto" data-sys="${sys}">${ico('goto')}地図</button></div>`;
   };
   // 飢餓・水不足のある星系は1件ずつ、工業品・原料の不足と人口過密だけの星系はまとめてたたむ
   const groups = [...bySys.entries()];
   const famine = groups.filter(([, list]) => list.some(({ k }) => ALERT[k][0] === 'famine'));
   const minor = groups.filter((x) => !famine.includes(x));
-  const alertHtml = famine.map(alertRow).join('') + (minor.length ? `<details><summary class="muted">資源不足・人口過密 (${minor.length} 星系。地図では星の右上の「!」)</summary>${minor.map(alertRow).join('')}</details>` : '');
-  const nowHtml = (now.length || wars || riskHtml) ? riskHtml + wars + alertHtml : '<p class="note">いま問題が起きている入植地はない。</p>';
-  const chips = ['all', ...Object.keys(EVENT_KIND)].map((k) => `<button data-act="evfilter" data-f="${k}" class="${k === f ? 'on' : ''}">${k === 'all' ? 'すべて' : `${tagIco(k)}${EVENT_KIND[k]}`}</button>`).join('');
+  const alertHtml = famine.map(alertRow).join('') + (minor.length ? TR`<details><summary class="muted">資源不足・人口過密 (${minor.length} 星系。地図では星の右上の「!」)</summary>${minor.map(alertRow).join('')}</details>` : '');
+  const nowHtml = (now.length || wars || riskHtml) ? riskHtml + wars + alertHtml : TR('<p class="note">いま問題が起きている入植地はない。</p>');
+  const chips = ['all', ...Object.keys(EVENT_KIND)].map((k) => `<button data-act="evfilter" data-f="${k}" class="${k === f ? 'on' : ''}">${k === 'all' ? TR('すべて') : `${tagIco(k)}${EVENT_KIND[k]}`}</button>`).join('');
   const tiers = [3, 2, 1].map((t) => {
     const ks = Object.keys(EVENT_KIND).filter((k) => evTier(k) === t);
     const on = ks.every(evShown), some = ks.some(evShown);
-    return `<button data-act="evtier" data-tier="${t}" class="${on ? 'on' : ''}">${TIER_LABEL[t]}${!on && some ? ' (一部)' : ''}</button>`;
+    return `<button data-act="evtier" data-tier="${t}" class="${on ? 'on' : ''}">${TIER_LABEL[t]}${!on && some ? TR(' (一部)') : ''}</button>`;
   }).join('');
   const kindBoxes = Object.keys(EVENT_KIND).map((k) => `<label class="check"><input type="checkbox" data-act="evkind" data-k="${k}" ${evShown(k) ? 'checked' : ''}> ${EVENT_KIND[k]} <span class="muted">(${TIER_LABEL[evTier(k)]})</span></label>`).join(' ');
   const evs = g.knownEvents().filter((e) => (f === 'all' ? evShown(e.kind) : e.kind === f));
   const evRow = (e, more = 0) => `<div class="ev ${e.good ? 'good' : ''} ${evTier(e.kind) >= 3 && !e.good ? 'major' : ''}">
-      <span class="yr">${e.year.toFixed(1)}${(e.seen ?? e.year) - e.year > 0.05 ? `<br><small>${((e.seen ?? e.year) - e.year).toFixed(1)}年遅れ</small>` : ''}</span><span class="tag ${e.kind}">${tagIco(e.kind)}${EVENT_KIND[e.kind] || e.kind}</span>
-      <span class="txt">${esc(e.text)}${more ? ` <span class="muted">(同じ星系で ほか ${more} 件)</span>` : ''}</span>${e.sys !== undefined && g.system(e.sys) ? `<button data-act="goto" data-sys="${e.sys}">${ico('goto')}地図</button>` : ''}</div>`;
+      <span class="yr">${e.year.toFixed(1)}${(e.seen ?? e.year) - e.year > 0.05 ? TR`<br><small>${((e.seen ?? e.year) - e.year).toFixed(1)}年遅れ</small>` : ''}</span><span class="tag ${e.kind}">${tagIco(e.kind)}${EVENT_KIND[e.kind] || e.kind}</span>
+      <span class="txt">${esc(e.text)}${more ? TR` <span class="muted">(同じ星系で ほか ${more} 件)</span>` : ''}</span>${e.sys !== undefined && g.system(e.sys) ? TR`<button data-act="goto" data-sys="${e.sys}">${ico('goto')}地図</button>` : ''}</div>`;
   let list = '';
   if (EvPrefs.mode === 'year') {
     // 年ごとの報告: 重大な出来事は1件ずつ、ほかは種類ごとの件数にまとめ、開くと中身が見える
@@ -169,8 +169,8 @@ function eventsHtml(app) {
       const rest = es.filter((e) => !major.includes(e));
       const counts = {};
       for (const e of rest) counts[e.kind] = (counts[e.kind] || 0) + 1;
-      const sum = Object.entries(counts).map(([k, n]) => `${EVENT_KIND[k] || k} ${n}`).join('・');
-      return `<div class="yearrep"><div class="yh">${y}年の報告</div>${major.map((e) => evRow(e)).join('')}
+      const sum = Object.entries(counts).map(([k, n]) => `${EVENT_KIND[k] || k} ${n}`).join(TR('・'));
+      return TR`<div class="yearrep"><div class="yh">${y}年の報告</div>${major.map((e) => evRow(e)).join('')}
         ${rest.length ? `<details><summary>${esc(sum)}</summary>${rest.map((e) => evRow(e)).join('')}</details>` : ''}</div>`;
     }).join('');
   } else {
@@ -188,7 +188,7 @@ function eventsHtml(app) {
     list = rows.map((r) => evRow(r.e, r.more)).join('');
   }
   // 見出しは報告書の題にする (QD-59 の A4)。頭の説明は「説明」に畳む (A5)
-  return `<h2>${ME.gov} 出来事の記録 <span class="muted">${Math.floor(g.year)}年 ${Math.floor((g.year % 1) * 12) + 1}月</span></h2>
+  return TR`<h2>${ME.gov} 出来事の記録 <span class="muted">${Math.floor(g.year)}年 ${Math.floor((g.year % 1) * 12) + 1}月</span></h2>
     <details class="help" data-h="evhead" ${app.helpOpen?.has('evhead') ? 'open' : ''}><summary>説明</summary><p class="note">遠い星系の出来事は、光が${ME.home}に届いてから表示される (年は起きた年)。</p></details>
     ${decisionsHtml(g)}
     <h3>いま起きている問題 (把握分 ${now.length + kwars.length + risks.length})</h3>${nowHtml}
@@ -196,7 +196,7 @@ function eventsHtml(app) {
     <h3>履歴</h3>
     <div class="chips"><span class="muted">表示する段</span>${tiers}<span class="muted">表示</span><button data-act="evmode" data-m="list" class="${EvPrefs.mode === 'list' ? 'on' : ''}">一覧</button><button data-act="evmode" data-m="year" class="${EvPrefs.mode === 'year' ? 'on' : ''}">年ごと</button></div>
     <details class="evkinds"><summary class="muted">種類ごとに選ぶ</summary><div class="bulk">${kindBoxes}</div></details>
-    <div class="chips">${chips}</div>${list || '<p class="note">まだ記録はない。</p>'}
+    <div class="chips">${chips}</div>${list || TR('<p class="note">まだ記録はない。</p>')}
     <p class="note">「すべて」には選んだ段・種類だけを出す (既定では細事 = 資源不足・移民を隠す)。種類のボタンで絞り込めば、隠した種類も見える。資源不足は10年以上続いたものだけを記録し、いまの不足は上の「いま起きている問題」と地図の印で見る。</p>`;
 }
 
@@ -207,18 +207,18 @@ function decisionsHtml(g) {
   const rows = list.map((d) => {
     const btns = d.opts.map((o) => {
       const pc = g.pcCost('decide', { sys: d.sys, id: d.id, opt: o.k });
-      const why = (o.cr || 0) > g.funds(g.cap) ? `資金が足りない (${o.cr} cr)` : pc > g.pc ? `政治力が足りない (${pc} 必要)` : '';
-      const sub = [o.cr ? `${o.cr} cr` : '', pc ? `政治力 ${pc}` : '', o.note].filter(Boolean).join('・');
+      const why = (o.cr || 0) > g.funds(g.cap) ? TR`資金が足りない (${o.cr} cr)` : pc > g.pc ? TR`政治力が足りない (${pc} 必要)` : '';
+      const sub = [o.cr ? `${o.cr} cr` : '', pc ? TR`政治力 ${pc}` : '', o.note].filter(Boolean).join(TR('・'));
       return `<button data-act="decide" data-sys="${d.sys}" data-id="${d.id}" data-opt="${o.k}" ${why ? 'disabled' : ''}>${esc(o.label)}<small>${esc(why || sub)}</small></button>`;
     }).join('');
     const def = d.opts.find((o) => o.k === d.def);
-    const limit = d.kind === 'demand' ? '' : `・${Math.round(d.deadline)}年までに返事がなければ「${def ? def.label : '?'}」`;
-    return `<div class="decide"><div><span class="tag ${d.kind === 'demand' ? 'demand' : 'story'}">${d.kind === 'demand' ? '要求' : '出来事'}</span> <b>${esc(g.system(d.sys).name)}</b>
-      <span class="muted">${d.year.toFixed(0)}年に起きた・${d.sys === g.cap ? '返事はすぐ届く' : `返事が届くまで ${g.lightDelay(d.sys).toFixed(1)} 年`}${limit}</span></div>
+    const limit = d.kind === 'demand' ? '' : TR`・${Math.round(d.deadline)}年までに返事がなければ「${def ? def.label : '?'}」`;
+    return TR`<div class="decide"><div><span class="tag ${d.kind === 'demand' ? 'demand' : 'story'}">${d.kind === 'demand' ? TR('要求') : TR('出来事')}</span> <b>${esc(g.system(d.sys).name)}</b>
+      <span class="muted">${d.year.toFixed(0)}年に起きた・${d.sys === g.cap ? TR('返事はすぐ届く') : TR`返事が届くまで ${g.lightDelay(d.sys).toFixed(1)} 年`}${limit}</span></div>
       <p class="note">${esc(d.text)}</p><div class="btns wrap">${btns}</div></div>`;
   }).join('');
-  const sentRows = sent.map((d) => `<p class="note muted">${esc(g.system(d.sys).name)} へ「${esc(d.opts.find((o) => o.k === d.reply)?.label || d.reply)}」と返事を送った (届くのは ${(d.sentAt + g.lightDelay(d.sys)).toFixed(1)}年)</p>`).join('');
-  return `<h3>決めること (${list.length})</h3>${rows || '<p class="note">いま決めることはない。</p>'}${sentRows}`;
+  const sentRows = sent.map((d) => TR`<p class="note muted">${esc(g.system(d.sys).name)} へ「${esc(d.opts.find((o) => o.k === d.reply)?.label || d.reply)}」と返事を送った (届くのは ${(d.sentAt + g.lightDelay(d.sys)).toFixed(1)}年)</p>`).join('');
+  return TR`<h3>決めること (${list.length})</h3>${rows || TR('<p class="note">いま決めることはない。</p>')}${sentRows}`;
 }
 
 // 議会の議席図 (政治でよく見る扇形)。100 議席を同心の半円に並べ、支持の数だけ左から白 (地球の色)、残りを赤橙で塗る。

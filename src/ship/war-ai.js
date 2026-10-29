@@ -2,7 +2,7 @@
   declareWar(root) {
     if (root === this.cap || this.realmOf(root) !== root || this.atWar(this.cap, root)) return fail('宣戦できない');
     this.beginWar(this.cap, root, this.cap);
-    this.event('politics', this.cap, `${this.realmName(root)}に宣戦した (相手は攻め落とされるまで降伏しない)`);
+    this.event('politics', this.cap, JA`${this.realmName(root)}に宣戦した (相手は攻め落とされるまで降伏しない)`);
     return { ok: true };
   }
   // 講和の申し入れ (光速の指令として相手の首都へ届く)。相手の艦隊が地球の国より少なければ受け入れ、そうでなくても30%
@@ -13,14 +13,14 @@
     const key = this.warKey(this.cap, root);
     if (this.isHuman(root)) {
       this.postPeaceOffer(key, this.cap, root, this.year); // 指令として相手の首都に届いてから申し入れるので、もう届いている
-      this.event('politics', root, `${this.realmName(this.cap)}が${this.realmName(root)}に講和を申し入れた (戦勝点 ${this.warScore(this.cap, root)})`, true);
+      this.event('politics', root, JA`${this.realmName(this.cap)}が${this.realmName(root)}に講和を申し入れた (戦勝点 ${this.warScore(this.cap, root)})`, true);
       return { ok: true };
     }
     if (this.rand() < this.peaceChance(root, this.cap)) {
       this.makePeace(this.cap, root, root); // 講和の申し入れを受けた相手の首都で結ばれる
       return { ok: true };
     }
-    return fail(`講和を拒否された (戦勝点 ${this.warScore(this.cap, root)}・相手の戦争疲弊 ${Math.round(this.exhaustion[root] || 0)})`);
+    return fail(JA`講和を拒否された (戦勝点 ${this.warScore(this.cap, root)}・相手の戦争疲弊 ${Math.round(this.exhaustion[root] || 0)})`);
   }
   // AI の国 r が、敵 e からの講和に応じる確率
   peaceChance(r, e) {
@@ -55,7 +55,7 @@
       const other = this.stackRealm(f.to);
       if (!this.atWar(owner, other)) {
         this.pushFleet({ ...f, id: this.nextShipId++, from: f.to, to: f.from, depart: this.year, arrive: this.year + this.fleetYears(f.to, f.from), surprise: false, route: undefined });
-        this.message(`${f.n} 艦隊は ${name} に${this.realmName(other)}の艦隊がいるので引き返した`, f.to);
+        this.message(JA`${f.n} 艦隊は ${name} に${this.realmName(other)}の艦隊がいるので引き返した`, f.to);
         return;
       }
       // 入植していない星系での艦隊戦は、着いた時点で一度に解く (同じ撃ち合い。退く先は、それぞれの国のいちばん近い入植星系)
@@ -75,7 +75,7 @@
       const rep = this.battleReport(b, win, other);
       this.garrison[f.to] = left;
       if (win) this.setStackOwner(f.to, owner);
-      this.event('battle', f.to, `${name} で${this.realmName(owner)}の ${f.n} 艦隊と${this.realmName(other)}の艦隊が戦い、${this.realmName(win ? owner : other)}が勝った (${rep.text}、残り ${left} 艦隊)`, this.isHuman(owner) || this.isHuman(other));
+      this.event('battle', f.to, JA`${name} で${this.realmName(owner)}の ${f.n} 艦隊と${this.realmName(other)}の艦隊が戦い、${this.realmName(win ? owner : other)}が勝った (${rep.text}、残り ${left} 艦隊)`, this.isHuman(owner) || this.isHuman(other));
       if (!win || left < 1) return;
       this.held[f.to] = left;
       this.continueRoute(f.to, left, f.route, f.chain ?? f.id);
@@ -85,7 +85,7 @@
     const destRealm = this.isColonized(f.to) ? this.realmOf(f.to) : owner;
     const b = this.battleAt(f.to);
     if (destRealm === owner) {
-      if (b && b.realm !== owner) { b.d += f.n; b.d0 += f.n; this.message(`${f.n} 艦隊が ${name} の艦隊戦に防衛側で加わった`, f.to); return; }
+      if (b && b.realm !== owner) { b.d += f.n; b.d0 += f.n; this.message(JA`${f.n} 艦隊が ${name} の艦隊戦に防衛側で加わった`, f.to); return; }
       const sg = this.sieges.find((g) => g.sys === f.to && g.realm === owner);
       if (sg) { sg.ships += f.n; if (f.route?.length) sg.route ??= f.route; return; }
       this.garrison[f.to] = (this.garrison[f.to] || 0) + f.n;
@@ -93,21 +93,21 @@
       if (this.isSeat(owner) && !f.auto && !f.awe && !f.aweBack && this.isColonized(f.to)) this.attend(f.to);
       if (f.awe) this.awe[f.to] = (this.awe[f.to] || 0) + f.n;
       else if (!f.auto) this.held[f.to] = (this.held[f.to] || 0) + f.n;
-      this.message(`${f.n} 艦隊が ${name} に到着した${f.route?.length ? ` (経由地。次は ${this.system(f.route[0]).name})` : ''}`, f.to);
+      this.message(JA`${f.n} 艦隊が ${name} に到着した${f.route?.length ? JA` (経由地。次は ${this.system(f.route[0]).name})` : ''}`, f.to);
       this.continueRoute(f.to, f.n, f.route, f.chain ?? f.id);
       return;
     }
     if (!this.fightingAt(owner, destRealm, f.to) && f.surprise) {
       // 奇襲攻撃: 着いた時点で戦争を始め、そのまま艦隊戦 (守りがいなければ攻囲) に入る。開戦の知らせはこの星系から広がる
       this.beginWar(owner, destRealm, f.to);
-      this.event('battle', f.to, `${this.realmName(owner)}の ${f.n} 艦隊が ${name} に奇襲攻撃をかけた。${this.realmName(destRealm)}との戦争が始まった`, false);
+      this.event('battle', f.to, JA`${this.realmName(owner)}の ${f.n} 艦隊が ${name} に奇襲攻撃をかけた。${this.realmName(destRealm)}との戦争が始まった`, false);
     }
     if (!this.fightingAt(owner, destRealm, f.to)) {
       this.pushFleet({ ...f, id: this.nextShipId++, from: f.to, to: f.from, depart: this.year, arrive: this.year + this.fleetYears(f.to, f.from), surprise: false, route: undefined });
-      this.message(`${f.n} 艦隊は ${name} (${this.realmName(destRealm)}) と交戦中ではないので入れず、引き返した (攻め込むには先に宣戦する)`, f.to);
+      this.message(JA`${f.n} 艦隊は ${name} (${this.realmName(destRealm)}) と交戦中ではないので入れず、引き返した (攻め込むには先に宣戦する)`, f.to);
       return;
     }
-    if (b && b.realm === owner) { b.a += f.n; b.a0 += f.n; if (f.route?.length) b.route ??= f.route; this.message(`${f.n} 艦隊が ${name} の艦隊戦に攻撃側で加わった`, f.to); return; }
+    if (b && b.realm === owner) { b.a += f.n; b.a0 += f.n; if (f.route?.length) b.route ??= f.route; this.message(JA`${f.n} 艦隊が ${name} の艦隊戦に攻撃側で加わった`, f.to); return; }
     const sg = this.sieges.find((g) => g.sys === f.to && g.realm === owner);
     // 経由地の指令 (route) は艦隊戦・攻囲のあいだも保たれ、攻め落としたら次の経由地へ向かう
     const route = f.route?.length ? f.route : sg?.route;
@@ -117,7 +117,7 @@
     } else if (sg) { sg.ships += f.n; if (route) sg.route = route; }
     else {
       this.sieges.push({ sys: f.to, realm: owner, ships: f.n, progress: 0, start: this.year, route });
-      this.event('battle', f.to, `${name} に守りの艦隊はなく、${this.realmName(owner)}の ${f.n} 艦隊が攻囲を始めた`, this.isHuman(owner) || this.isHuman(destRealm));
+      this.event('battle', f.to, JA`${name} に守りの艦隊はなく、${this.realmName(owner)}の ${f.n} 艦隊が攻囲を始めた`, this.isHuman(owner) || this.isHuman(destRealm));
     }
   }
   // 艦隊戦 (B-034。BATTLE の説明は ship/war-consts.js): 両軍の艦を 1 つずつ動かす撃ち合いを、時間をかけて解く。
@@ -131,7 +131,7 @@
     const fl = this.fortLevel(sys);
     const p = this.battleOdds(ships, d, this.battleEff(b, 0), this.battleEff(b, 1), fl);
     b.odds = p;
-    this.event('battle', sys, `${this.system(sys).name} で艦隊戦が始まった (攻撃 ${this.realmName(realm)} ${ships} 艦隊 対 防衛 ${d} 艦隊${fl ? `・宇宙要塞 Lv${fl}` : ''}。攻撃側の勝つ見込み ${Math.round(p * 100)}%)`, this.isHuman(realm) || this.isHuman(this.realmOf(sys)));
+    this.event('battle', sys, JA`${this.system(sys).name} で艦隊戦が始まった (攻撃 ${this.realmName(realm)} ${ships} 艦隊 対 防衛 ${d} 艦隊${fl ? JA`・宇宙要塞 Lv${fl}` : ''}。攻撃側の勝つ見込み ${Math.round(p * 100)}%)`, this.isHuman(realm) || this.isHuman(this.realmOf(sys)));
   }
   battleLuck(w) { return GM.exp(w * this.randNormal()); }
   // 側 s (0 = 攻撃・1 = 防衛) の兵站と国の補正 (攻撃側は補給線の長さと補給の充足率、防衛側は補給の充足率)
@@ -200,7 +200,7 @@
   battlesStep(dt) {
     for (const b of [...this.battles]) {
       if (!this.fightingAt(b.realm, this.realmOf(b.sys), b.sys)) { // 終戦の知らせが届いた: 防衛側は駐留に戻り、攻撃側は引き揚げる
-        this.event('battle', b.sys, `${this.system(b.sys).name} の艦隊戦は、終戦の知らせが届いて終わった`, this.isHuman(b.realm) || this.isHuman(this.realmOf(b.sys)));
+        this.event('battle', b.sys, JA`${this.system(b.sys).name} の艦隊戦は、終戦の知らせが届いて終わった`, this.isHuman(b.realm) || this.isHuman(this.realmOf(b.sys)));
         this.battles = this.battles.filter((x) => x !== b);
         this.garrison[b.sys] = (this.garrison[b.sys] || 0) + Math.round(b.d);
         this.withdraw({ sys: b.sys, realm: b.realm, ships: Math.round(b.a) });
@@ -249,10 +249,10 @@
     const mine = this.isHuman(b.realm) || this.isHuman(defender);
     if (win) {
       this.sieges.push({ sys: b.sys, realm: b.realm, ships: left, progress: b.progress || 0, start: this.year, route: b.route });
-      this.event('battle', b.sys, `${name} の艦隊戦で攻撃側 (${this.realmName(b.realm)}) が勝った (${rep.text}、${left} 艦隊が残る)。攻囲が始まる`, mine);
+      this.event('battle', b.sys, JA`${name} の艦隊戦で攻撃側 (${this.realmName(b.realm)}) が勝った (${rep.text}、${left} 艦隊が残る)。攻囲が始まる`, mine);
     } else {
       this.garrison[b.sys] = (this.garrison[b.sys] || 0) + left;
-      this.event('battle', b.sys, `${name} の艦隊戦で攻撃側 (${this.realmName(b.realm)}) が退いた (${rep.text}、防衛側は ${left} 艦隊が残る)`, mine);
+      this.event('battle', b.sys, JA`${name} の艦隊戦で攻撃側 (${this.realmName(b.realm)}) が退いた (${rep.text}、防衛側は ${left} 艦隊が残る)`, mine);
     }
   }
   // 戦いの報告 (勝つ見込みと損害の内訳)。新しい順に残す
@@ -278,7 +278,7 @@
   siegesYearly() {
     for (const g of [...this.sieges]) {
       if (!this.fightingAt(g.realm, this.realmOf(g.sys), g.sys) || g.ships < 1) {
-        if (g.ships >= 1) this.event('battle', g.sys, `終戦の知らせが届き、${this.system(g.sys).name} の攻囲を解いて引き揚げた`, this.isHuman(g.realm) || this.isHuman(this.realmOf(g.sys)));
+        if (g.ships >= 1) this.event('battle', g.sys, JA`終戦の知らせが届き、${this.system(g.sys).name} の攻囲を解いて引き揚げた`, this.isHuman(g.realm) || this.isHuman(this.realmOf(g.sys)));
         this.withdraw(g);
         continue;
       }
@@ -292,7 +292,7 @@
         g.wear = (g.wear || 0) + 0.05 * g.ships;
         while (g.wear >= 1 && g.ships >= 1) { g.wear -= 1; g.ships -= 1; }
         if (g.ships < 1) {
-          this.event('battle', g.sys, `補給が続かず、${this.system(g.sys).name} を攻囲していた ${this.realmName(g.realm)}の艦隊が崩れた`, this.isHuman(g.realm) || this.isHuman(this.realmOf(g.sys)));
+          this.event('battle', g.sys, JA`補給が続かず、${this.system(g.sys).name} を攻囲していた ${this.realmName(g.realm)}の艦隊が崩れた`, this.isHuman(g.realm) || this.isHuman(this.realmOf(g.sys)));
           this.sieges = this.sieges.filter((x) => x !== g);
           continue;
         }
@@ -314,7 +314,7 @@
       this.garrison[g.sys] = g.ships;
       this.held[g.sys] = (this.held[g.sys] || 0) + g.ships; // 攻め落とした艦隊はそのまま駐留する
       this.sieges = this.sieges.filter((x) => x !== g);
-      this.event('battle', g.sys, `${this.system(g.sys).name} が降伏し、${this.realmName(g.realm)}に従属した`, this.isHuman(g.realm));
+      this.event('battle', g.sys, JA`${this.system(g.sys).name} が降伏し、${this.realmName(g.realm)}に従属した`, this.isHuman(g.realm));
       // 経由地の指令が残っていれば次へ。攻め落とした星系には守りとして2割 (最低1艦隊) を残す
       if (g.route?.length) {
         const keep = g.ships >= 2 ? Math.max(1, Math.round(g.ships * 0.2)) : 0;
@@ -376,7 +376,7 @@
     gv.unrest = { stage: 0 };
     this.asRealm(winner, () => { this.stats.subjugated++; this.councilAdd(10); });
     this.cleanWars();
-    this.event('politics', root, `${this.realmName(root)}が降伏し、${this.realmName(winner)}に従属した${n > 1 ? ` (配下の ${n - 1} 星系も従う)` : ''}`, this.isHuman(winner));
+    this.event('politics', root, JA`${this.realmName(root)}が降伏し、${this.realmName(winner)}に従属した${n > 1 ? JA` (配下の ${n - 1} 星系も従う)` : ''}`, this.isHuman(winner));
   }
   // 独立国の戦争の判断 (年1回)
   // - 交戦中の国の手薄な星系 (20光年以内) を、いちばん艦隊の多い星系から攻める (年1回)
@@ -445,7 +445,7 @@
     const [w, l] = x >= 0 ? [r, e] : [e, r];
     if (Math.abs(x) < TREATY.white) {
       this.endWar(r, e, from);
-      this.event('politics', from, `${this.realmName(r)}と${this.realmName(e)}が白紙講和を結んだ`);
+      this.event('politics', from, JA`${this.realmName(r)}と${this.realmName(e)}が白紙講和を結んだ`);
     } else this.startConference(l, [{ realm: w, pts: Math.abs(x) >= BARGAIN.capitulate ? 100 : Math.abs(x) }], from);
     return true;
   }
@@ -499,10 +499,10 @@
             const res = this.reservation(root, e);
             if (res >= 100 && !this.peaceOfferedRecently(key)) {
               this.postPeaceOffer(key, root, e, undefined, true);
-              this.event('politics', root, `${this.realmName(root)}が降伏を求めてきた (応じると、${this.realmName(root)}が持ち点 100 で条件を選ぶ講和会議になる)`, true);
+              this.event('politics', root, JA`${this.realmName(root)}が降伏を求めてきた (応じると、${this.realmName(root)}が持ち点 100 で条件を選ぶ講和会議になる)`, true);
             } else if (this.warScore(root, e) >= res && !this.peaceOfferedRecently(key)) {
               this.postPeaceOffer(key, root, e); // 光速で相手の首都に届いてから見える
-              this.event('politics', root, `${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScoreAt(root, e, root)}・相手の戦争疲弊 ${Math.round(this.exhaustion[root] || 0)})`, true);
+              this.event('politics', root, JA`${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScoreAt(root, e, root)}・相手の戦争疲弊 ${Math.round(this.exhaustion[root] || 0)})`, true);
             }
           } else if (this.aiKnowsWar(e, key)) this.sendBargain(root, e, key); // 相手も開戦を知っていれば、申し入れを送る (届いてから相手が答える)
           continue;
@@ -518,7 +518,7 @@
         if (this.isHuman(e)) {
           if (!this.peaceOfferedRecently(key)) {
             this.postPeaceOffer(key, root, e);
-            this.event('politics', root, `${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScoreAt(root, e, root)}・相手の戦争疲弊 ${Math.round(ex)})`, true);
+            this.event('politics', root, JA`${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScoreAt(root, e, root)}・相手の戦争疲弊 ${Math.round(ex)})`, true);
           }
         } else if (this.rand() < this.peaceChance(e, root)) this.makePeace(root, e, root);
       }
@@ -534,7 +534,7 @@
         }
         if (best) {
           this.beginWar(root, best.r, root);
-          this.event('politics', root, `${this.realmName(root)}が${this.realmName(best.r)}に宣戦した`);
+          this.event('politics', root, JA`${this.realmName(root)}が${this.realmName(best.r)}に宣戦した`);
         }
         continue;
       }
@@ -544,7 +544,7 @@
           .sort((a, b) => this.sysDist(a, root) - this.sysDist(b, root))[0];
         if (prey !== undefined) {
           this.beginWar(root, prey, root);
-          this.event('politics', root, `${this.realmName(root)}が${this.realmName(prey)}に宣戦した`);
+          this.event('politics', root, JA`${this.realmName(root)}が${this.realmName(prey)}に宣戦した`);
         }
       }
     }

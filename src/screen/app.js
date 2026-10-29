@@ -108,7 +108,7 @@ function updateMapButtons() {
   const real = app.game?.galaxy?.kind === 'real';
   $('rotbtn').hidden = $('topbtn').hidden = !real || app.view !== 'galaxy';
   $('rotbtn').classList.toggle('on', !!app.rotateMode);
-  setHtml($('topbtn'), galaxyView.cam.pitch < 0.01 ? '斜め' : '真上');
+  setHtml($('topbtn'), galaxyView.cam.pitch < 0.01 ? TR('斜め') : TR('真上'));
 }
 $('rotbtn').onclick = () => { app.rotateMode = !app.rotateMode; updateMapButtons(); };
 $('topbtn').onclick = () => {

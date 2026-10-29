@@ -4,7 +4,7 @@ function isHotseat() { return app.game.humans().length > 1 && !(Net.on); }
 function updateTurnBtn() {
   const on = isHotseat();
   $('turnbtn').hidden = !on;
-  if (on) setHtml($('turnbtn'), `交代<small>${esc(ME.realm)}</small>`);
+  if (on) setHtml($('turnbtn'), TR`交代<small>${esc(ME.realm)}</small>`);
 }
 function nextTurn(auto) {
   const g = app.game;
@@ -22,10 +22,10 @@ function showCurtain(pi, auto) {
   app.turnStart = g.year;
   lastTickYear = NaN;
   PlayLog.add('ui', { act: 'turn', pi });
-  $('curtain').innerHTML = `<div class="card"><h2>${esc(ME.realm)}の番</h2>
-    <p>${auto ? `${app.turnEvery} 年たったので交代。` : ''}ほかの人は画面から目を離してください。</p>
+  $('curtain').innerHTML = TR`<div class="card"><h2>${esc(ME.realm)}の番</h2>
+    <p>${auto ? TR`${app.turnEvery} 年たったので交代。` : ''}ほかの人は画面から目を離してください。</p>
     <p class="muted">西暦 ${Math.floor(g.year)}年・${esc(ME.species)}・首都 ${esc(g.system(g.cap).name)}</p>
-    <label>自動で交代 <select id="turnevery">${[0, 1, 5, 10, 25].map((y) => `<option value="${y}" ${y === (app.turnEvery || 0) ? 'selected' : ''}>${y ? `${y} 年ごと` : 'しない (「交代」ボタンで)'}</option>`).join('')}</select></label>
+    <label>自動で交代 <select id="turnevery">${[0, 1, 5, 10, 25].map((y) => `<option value="${y}" ${y === (app.turnEvery || 0) ? 'selected' : ''}>${y ? TR`${y} 年ごと` : TR('しない (「交代」ボタンで)')}</option>`).join('')}</select></label>
     <button class="big" id="turngo">はじめる</button></div>`;
   $('curtain').hidden = false;
   $('turngo').onclick = () => {
@@ -81,16 +81,17 @@ $('home').onclick = (e) => {
     return renderHome();
   }
   if (act === 'memoload') {
-    app.homeNote = 'ロード中…';
+    app.homeNote = TR('ロード中…');
     Store.get(b.dataset.k).then((t) => {
       const d = t ? parseSave(t) : null;
       if (d && loadSave(d)) { save(); app.game.message('メモの時点をロードした (一時停止中)。'); closeHome(); return setSpeed(0); }
-      app.homeNote = 'ロードできなかった';
+      app.homeNote = TR('ロードできなかった');
       if (app.homeOpen) renderHome();
     });
     return;
   }
   if (act === 'resume') return closeHome();
+  if (act === 'lang') { save(); return setLang(b.dataset.l); } // 表示の言語 (読み込み直す。回 T1)
   if (act === 'tab') { readNatForm(); app.homeTab = b.dataset.t; if (b.dataset.from) app.homeFrom = b.dataset.from; Cloud.status = ''; app.homeArmed = null; renderHome(); $('home').scrollTop = 0; return; }
   if (act.startsWith('acct')) return accountAction(act, b.dataset.id);
   if (act.startsWith('nat')) return natAction(act, b.dataset.id);
@@ -124,17 +125,17 @@ $('home').onclick = (e) => {
     if (Store.meta[k] && !confirm2(`save${i}`)) return;
     const text = saveJSON(app.game, { speed: app.homeSpeed });
     const meta = saveMeta(buildSave(app.game));
-    app.homeNote = 'セーブ中…';
+    app.homeNote = TR('セーブ中…');
     Store.put(k, text).then((ok) => {
-      if (ok) { Store.meta[k] = meta; app.homeNote = `スロット ${i + 1} にセーブした`; } else app.homeNote = 'セーブできなかった (保存容量が足りないか、この環境では保存できない)';
+      if (ok) { Store.meta[k] = meta; app.homeNote = TR`スロット ${i + 1} にセーブした`; } else app.homeNote = TR('セーブできなかった (保存容量が足りないか、この環境では保存できない)');
       if (app.homeOpen) renderHome();
     });
   } else if (act === 'slotload') {
-    app.homeNote = 'ロード中…';
+    app.homeNote = TR('ロード中…');
     Store.get(k).then((t) => {
       const d = t ? parseSave(t) : null;
-      if (d && loadSave(d)) { save(); app.game.message(`スロット ${i + 1} をロードした。`); return closeHome(d.speed); }
-      app.homeNote = 'ロードできなかった';
+      if (d && loadSave(d)) { save(); app.game.message(JA`スロット ${i + 1} をロードした。`); return closeHome(d.speed); }
+      app.homeNote = TR('ロードできなかった');
       if (app.homeOpen) renderHome();
     });
   } else if (act === 'slotdel') {
@@ -159,7 +160,7 @@ $('home').addEventListener('change', (e) => {
 const SIGNAL_MODES = { off: '表示しない', dots: '光の点' };
 try { const m = localStorage.getItem(`${STORE}-signals`); if (SIGNAL_MODES[m]) app.signalMode = m; } catch { /* 保存できない環境では既定値 */ }
 app.signalMode ??= 'off';
-function updateSigBtn() { $('sigbtn').textContent = `通信: ${SIGNAL_MODES[app.signalMode]}`; $('sigbtn').classList.toggle('on', app.signalMode !== 'off'); }
+function updateSigBtn() { $('sigbtn').textContent = TR`通信: ${SIGNAL_MODES[app.signalMode]}`; $('sigbtn').classList.toggle('on', app.signalMode !== 'off'); }
 $('sigbtn').onclick = () => {
   const keys = Object.keys(SIGNAL_MODES);
   app.signalMode = keys[(keys.indexOf(app.signalMode) + 1) % keys.length];
@@ -178,13 +179,17 @@ updateSigBtn();
 // 画面の動き (信号の模様と文字のぶれ)。見る人ごとの好みなのでブラウザに覚えておく。
 // 既定は「切」(QD-08 = a。読みやすさと Steam Deck の文字の基準のため)。前に「入」を選んだ人は「入」のまま
 try { app.fx = localStorage.getItem(`${STORE}-fx`) === 'on'; } catch { app.fx = false; }
-function updateFxBtn() { document.body.classList.toggle('fx', app.fx); $('fxbtn').textContent = `画面の動き: ${app.fx ? '入' : '切'}`; $('fxbtn').classList.toggle('on', app.fx); }
+function updateFxBtn() { document.body.classList.toggle('fx', app.fx); $('fxbtn').textContent = TR`画面の動き: ${app.fx ? TR('入') : TR('切')}`; $('fxbtn').classList.toggle('on', app.fx); }
 $('fxbtn').onclick = () => {
   app.fx = !app.fx;
   PlayLog.add('ui', { act: 'fx', v: app.fx });
   try { localStorage.setItem(`${STORE}-fx`, app.fx ? 'on' : 'off'); } catch { /* 保存できない環境では無視 */ }
   updateFxBtn();
 };
+// 表示の言語 (回 T1・docs/i18n.md)。切り替えると、いまの試合をセーブして読み込み直す
+$('langbtn').textContent = Object.entries(LANGS).filter(([k]) => k !== LANG).map(([, l]) => `🌐 ${l}`).join(' / ');
+$('langbtn').title = TR('表示の言語 (切り替えると、セーブして読み込み直す)');
+$('langbtn').onclick = () => { save(); setLang(LANG === 'ja' ? 'en' : 'ja'); };
 // 文字のぶれ: 0.26秒ごとに、見えている文字のどれか1つ (ときどき2〜3つ) を短くぶらす
 const FX_JIT = 'button, th, .stats b, .kpi b, #treasury .v, #date, #rail .t, .syshead h2';
 const fxReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -206,7 +211,7 @@ setInterval(() => {
 updateFxBtn();
 function updateSpectateBtn() { $('spectatebtn').classList.toggle('on', !!app.game.spectate); }
 $('spectatebtn').onclick = () => {
-  if (app.game.humans().length > 1) return uiNote('人間が複数いる試合では観戦モードは使えない'); app.game.setSpectate(!app.game.spectate); PlayLog.add('ui', { act: 'spectate', v: app.game.spectate }); updateSpectateBtn(); app.dirty = true; };
+  if (app.game.humans().length > 1) return uiNote(TR('人間が複数いる試合では観戦モードは使えない')); app.game.setSpectate(!app.game.spectate); PlayLog.add('ui', { act: 'spectate', v: app.game.spectate }); updateSpectateBtn(); app.dirty = true; };
 setInterval(save, 5000);
 setInterval(() => PlayLog.persist(), 30000);
 window.addEventListener('pagehide', () => { save(); PlayLog.persist(); });
@@ -214,10 +219,10 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { sav
 // プレイ記録: 操作の有無 (操作のない時間を測る)
 for (const ev of ['pointerdown', 'keydown', 'wheel']) window.addEventListener(ev, () => PlayLog.input(), { passive: true, capture: true });
 // メモ
-$('memobtn').innerHTML = `${ico('memo')}メモ`;
+$('memobtn').innerHTML = TR`${ico('memo')}メモ`;
 // HTML に直接書いてある見出しとタブにもアイコンを付ける
 for (const [id, k, t] of [['tab-galaxy', 'galaxy', '星間'], ['tab-system', 'system', '星系'], ['tab-empire', 'empire', '帝国'], ['tab-cands', 'cands', '候補地']]) $(id).innerHTML = `${ico(k)}${t}`;
-for (const [id, k, t] of [['sec-ledger', 'credits', `${ME.gov}の収支`], ['sec-ships', 'ships', '航行中の船'], ['sec-log', 'log', 'ログ']]) $(id).querySelector('summary').innerHTML = `${ico(k)}${t}`;
+for (const [id, k, t] of [['sec-ledger', 'credits', TR`${ME.gov}の収支`], ['sec-ships', 'ships', '航行中の船'], ['sec-log', 'log', 'ログ']]) $(id).querySelector('summary').innerHTML = `${ico(k)}${t}`;
 // 回 GA8 (QD-61): 記号だけだったボタンと地図の操作にもアイコン (記号は画面読み上げの名前 aria-label に残す)
 $('speed').querySelector('[data-speed="0"]').innerHTML = ico('pause');
 $('skipbtn').innerHTML = ico('skip');
@@ -225,7 +230,7 @@ $('menubtn').innerHTML = ico('menu');
 $('zoom-in').innerHTML = ico('zoomin');
 $('zoom-out').innerHTML = ico('zoomout');
 for (const [id, k, t] of [['zoom-fit', 'fit', '全体'], ['rotbtn', 'rotate', '回す'], ['vassalbtn', 'vassal', '従属']]) $(id).innerHTML = `${ico(k)}<small>${t}</small>`;
-$('legend').querySelector('summary').innerHTML = `${ico('legend')}凡例`;
+$('legend').querySelector('summary').innerHTML = TR`${ico('legend')}凡例`;
 $('memobtn').onclick = () => ($('memobox').hidden ? openMemo() : closeMemo());
 $('memoclose').onclick = closeMemo;
 $('memosave').onclick = saveMemo;
@@ -250,12 +255,12 @@ function pauseForFirstMove() {
   for (let i = 0; i < 30 && p && g.procure(g.shipCost(p.kind, g.cap, p.sys), g.cap).why; i++) g.advance(1 / 365);
   app.awaitFirst = true;
   setSpeed(0);
-  firstMoveNote('時間は止まっている。最初の入植船を送ると動きはじめる (候補地のタブから送れる)');
+  firstMoveNote(TR('時間は止まっている。最初の入植船を送ると動きはじめる (候補地のタブから送れる)'));
 }
 function firstMoveDone() {
   if (!app.awaitFirst) return;
   setSpeed(1);
-  firstMoveNote('入植船を送った。時間が動きはじめた (速さは上のボタンで変えられる。スペースで止まる)');
+  firstMoveNote(TR('入植船を送った。時間が動きはじめた (速さは上のボタンで変えられる。スペースで止まる)'));
 }
 // ログに残し、画面の下にも 4 秒出す
 function firstMoveNote(text) { uiNote(text); Net.toast(text); }
@@ -280,7 +285,7 @@ function checkSkip() {
   const from = app.skip.from;
   setSpeed(0);
   Sound.play('stop');
-  uiNote(news ? `知らせが届いたので止めた (${(g.year - from).toFixed(1)} 年進めた)` : '100年進めたので止めた');
+  uiNote(news ? TR`知らせが届いたので止めた (${(g.year - from).toFixed(1)} 年進めた)` : TR('100年進めたので止めた'));
   app.dirty = true;
 }
 $('skipbtn').onclick = () => (app.skip ? setSpeed(0) : startSkip());
@@ -300,15 +305,15 @@ const ENDINGS = {
 function showEnd() {
   const g = app.game;
   const sc = g.finalScore || g.score();
-  const ch = g.challenges.map((c) => `<li>${ico(`ch-${c.id}`)}${CHALLENGES[c.id].label}: ${c.status === 'done' ? '<span class="hz">果たした</span>' : '<span class="bad">果たせなかった</span>'}</li>`).join('');
+  const ch = g.challenges.map((c) => `<li>${ico(`ch-${c.id}`)}${CHALLENGES[c.id].label}: ${c.status === 'done' ? TR('<span class="hz">果たした</span>') : TR('<span class="bad">果たせなかった</span>')}</li>`).join('');
   const en = g.ending(); // 結末の型と原因の内訳 (B-058)。終わったので、光の遅れのない本当の銀河で決める
-  $('endbox').innerHTML = `<div class="card"><h2>${Math.round(g.endYear)}年 — このゲームの終わり</h2>
+  $('endbox').innerHTML = TR`<div class="card"><h2>${Math.round(g.endYear)}年 — このゲームの終わり</h2>
     <p class="ending"><span class="muted">結末</span><b>${esc(en.label)}</b></p>
     <p>${esc(en.line)}。</p>
     <table class="tbl">${en.causes.map(([l, v]) => `<tr><td>${esc(l)}</td><td>${esc(v)}</td></tr>`).join('')}</table>
     <p class="muted">${Math.round(g.endYear - START_YEAR)}年の歩みの点数</p>
     <table class="tbl">${sc.parts.map(([l, v]) => `<tr><td>${esc(l)}</td><td class="${v < 0 ? 'bad' : ''}">${v}</td></tr>`).join('')}<tr class="total"><td><b>合計</b></td><td><b>${sc.total}</b></td></tr></table>
-    ${ch ? `<h3>挑戦</h3><ul>${ch}</ul>` : ''}
+    ${ch ? TR`<h3>挑戦</h3><ul>${ch}</ul>` : ''}
     <p class="note">このまま続けて遊べる (点数はこの時点で確定)。</p>
     <div class="btns"><button id="endgo">続けて遊ぶ</button><button id="endhome" class="ghost">ホームへ</button></div></div>`;
   $('endbox').hidden = false;

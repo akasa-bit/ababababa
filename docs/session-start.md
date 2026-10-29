@@ -33,6 +33,7 @@
 ■ いつもの約束
 - 変更ごとに、コミット → プッシュ → PR → CI のコメントの表がすべて合格なのを見る → スカッシュマージ。マージはユーザーの許可を待たずに毎回行う (2026-10-20 のユーザーの指示)。マージの前は docs/parallel.md の 4 に従い、main を取り込んで CI を回し直す。マージのあとは作業ブランチを main に合わせ直す。
 - 機能を壊さない (node tools/ci-tests.js の試験をすべて通す)。
+- 画面の文字は TR (画面だけ)・JA (試合の状態に入る文) で包み、node tools/i18n.js --sync のあと src/outward/lang-en.js に英語を足す (docs/i18n.md・docs/parallel.md の 7)。
 - 画面は Xiaomi Pad 8 Pro (CSS で横 1280×780・縦 854×1200) で確かめる。配色はスキン 6 だけ。
 - リポジトリに入れるもの (コミット・PR・コード・文書) に、AI のモデルの名前を書かない。
 - src/ は場所ごとのファイルに分けてある (docs/src-files.md)。自分のレーンのフォルダの中だけを直す。組み立てた index.html はコミットしない (公開のときに組み立てる。手元で試すときは node tools/build.mjs)。番号とセーブの項目は使う前に docs/registry.md で取る。

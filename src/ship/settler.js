@@ -13,7 +13,7 @@
     this.designs[this.cap] = next;
     const { ships, crew, ...v } = this.designOf(this.cap); // 選べる幅に収めて覚える (船の数と人数は決まっているので覚えない)
     this.designs[this.cap] = v;
-    return { ok: true, msg: `入植船団 (${ships} 隻・${fmtPeople(crew)}) を ${SHIP_DESIGN.speeds[v.speed]}・積み荷の工業品 ${v.cargo}・${SHIP_DESIGN.ages[v.ages]} にした` };
+    return { ok: true, msg: JA`入植船団 (${ships} 隻・${fmtPeople(crew)}) を ${SHIP_DESIGN.speeds[v.speed]}・積み荷の工業品 ${v.cargo}・${SHIP_DESIGN.ages[v.ages]} にした` };
   }
   // 住む場所 (船の構造) の工業品 [単位]
   habitatGoods(des) { return (des.crew * SHIP_DESIGN.habitatKg) / RES_KG.goods; }
@@ -70,7 +70,7 @@
     };
     this.ships.push(ship);
     if (job?.seed) { const v = job.seed; this.cash('build', -v, { way: job, f: 'seed' }); this.cash('build', v, { way: ship, f: 'seed' }); }
-    this.message(`${this.system(fromId).name} → ${this.system(toId).name} へ入植船団が出発 (${KIND_LABEL[kind]}・${des.ships} 隻・${fmtPeople(des.crew)}、${v.path.length > 2 ? `交易路経由、` : ''}到着まで ${years.toFixed(2)} 年${escort.troops + escort.slave ? `、歩兵 ${escort.troops + escort.slave} 連隊が同行` : ''})`, fromId);
+    this.message(JA`${this.system(fromId).name} → ${this.system(toId).name} へ入植船団が出発 (${KIND_LABEL[kind]}・${des.ships} 隻・${fmtPeople(des.crew)}、${v.path.length > 2 ? JA`交易路経由、` : ''}到着まで ${years.toFixed(2)} 年${escort.troops + escort.slave ? JA`、歩兵 ${escort.troops + escort.slave} 連隊が同行` : ''})`, fromId);
     return { ok: true, ship };
   }
   // 入植団が降りる (着いた船。core の到着から呼ぶ)。乗ってきた人数と年齢の形で入植地を作る。
@@ -80,7 +80,7 @@
     if (s.crew !== undefined) {
       const p = colonyFailP(n);
       if (p > 0 && this.rand() < p) {
-        this.event('colony', s.to, `${name} (${this.system(s.to).name}) に降りた ${fmtPeople(n)} の入植団は、増える前に絶えた (この人数で始まりのうちに絶える見込み ${pct(p)})`);
+        this.event('colony', s.to, JA`${name} (${this.system(s.to).name}) に降りた ${fmtPeople(n)} の入植団は、増える前に絶えた (この人数で始まりのうちに絶える見込み ${pct(p)})`);
         return false;
       }
     }

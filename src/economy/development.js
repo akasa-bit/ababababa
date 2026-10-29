@@ -30,7 +30,7 @@
         if (!b) continue; // 掘れる天体がなければ取り寄せる
         const q = INVEST.speed * short, y1 = this.capacityYield({ sys: id, body: b.id, k: 1 })[r];
         if (!(y1 > 0)) continue;
-        this.order({ credits: INVEST.ky * q * basePrice(r) }, id, { type: 'capacity', body: b.id, k: q / y1, pay: { fm: id }, delay: INVEST.build, label: `${b.name} の民間の採掘` });
+        this.order({ credits: INVEST.ky * q * basePrice(r) }, id, { type: 'capacity', body: b.id, k: q / y1, pay: { fm: id }, delay: INVEST.build, label: JA`${b.name} の民間の採掘` });
       }
     }
   }
@@ -49,7 +49,7 @@
     const c = this.outpostCheck(sysId, bodyId);
     if (!c.ok) return c;
     const o = this.outpostAt(sysId, bodyId);
-    const label = `${prefix}${this.target(sysId, bodyId).name} の採掘基地 ${o ? `Lv${o.lv + 1}` : '建設'}`;
+    const label = JA`${prefix}${this.target(sysId, bodyId).name} の採掘基地 ${o ? `Lv${o.lv + 1}` : '建設'}`;
     return this.order(this.outpostCost(o), sysId, { type: 'outpost', body: bodyId, label });
   }
 
@@ -97,14 +97,14 @@
         .filter((x) => x.gap > 1e-6)
         .sort((a, b) => b.gap * PRICE[b.r] - a.gap * PRICE[a.r]);
       const cols = this.coloniesIn(id).sort((a, b) => b.pop - a.pop);
-      const tag = `[自動] `;
+      const tag = JA`[自動] `;
       const tryOrder = (cost, run) => (cost && this.funds(id) >= 2 * (cost.credits || 0) && !this.procure(cost, id).why ? run() : null);
       for (const { r } of short) {
         let done = null;
         if (r === 'food' || r === 'goods' || r === 'hitech') { // 高付加価値物品も工場で (回 KE5)
           const fac = r === 'food' ? 'farm' : 'factory';
           const c = cols.find((x) => x.lv[fac] < FACILITY_MAX[fac] && !this.pending((j) => j.type === 'upgrade' && j.col === colKey(x) && j.fac === fac));
-          if (c) done = tryOrder(this.upgradeCost(c, fac), () => this.order(this.upgradeCost(c, fac), c.sys, { type: 'upgrade', col: colKey(c), fac, label: `${tag}${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` }));
+          if (c) done = tryOrder(this.upgradeCost(c, fac), () => this.order(this.upgradeCost(c, fac), c.sys, { type: 'upgrade', col: colKey(c), fac, label: JA`${tag}${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` }));
         } else {
           const bodies = sys.bodies.filter((b) => outpostRes(b).includes(r) && (b.deposits?.[r] || 0) > 0.05 && this.outpostCheck(id, b.id).ok)
             .sort((a, b) => b.deposits[r] - a.deposits[r]);
@@ -113,7 +113,7 @@
           } else {
             const c = cols.filter((x) => (this.target(x.sys, x.body).deposits?.[r] || 0) > 0.05 && x.lv.mine < FACILITY_MAX.mine
               && !this.pending((j) => j.type === 'upgrade' && j.col === colKey(x) && j.fac === 'mine'))[0];
-            if (c) done = tryOrder(this.upgradeCost(c, 'mine'), () => this.order(this.upgradeCost(c, 'mine'), c.sys, { type: 'upgrade', col: colKey(c), fac: 'mine', label: `${tag}${c.name} の鉱山 Lv${c.lv.mine + 1}` }));
+            if (c) done = tryOrder(this.upgradeCost(c, 'mine'), () => this.order(this.upgradeCost(c, 'mine'), c.sys, { type: 'upgrade', col: colKey(c), fac: 'mine', label: JA`${tag}${c.name} の鉱山 Lv${c.lv.mine + 1}` }));
           }
         }
         if (done?.ok) break;
@@ -143,8 +143,8 @@
           .sort((a, b) => a.d - b.d)[0];
         if (near) {
           const cost = this.routeCost(id, near.o.id), name = this.system(near.o.id).name;
-          if (this.funds(id) >= 1.5 * cost.credits) { if (this.openRoute(id, near.o.id).ok) this.govDidOnce(id, `${name} へ交易路を引いた`, `交易路が ${mine.length} 本で、3 本より少なかった`); }
-          else this.govDidOnce(id, `${name} への交易路を見送った`, '資金が費用の 1.5 倍に届かなかった');
+          if (this.funds(id) >= 1.5 * cost.credits) { if (this.openRoute(id, near.o.id).ok) this.govDidOnce(id, JA`${name} へ交易路を引いた`, JA`交易路が ${mine.length} 本で、3 本より少なかった`); }
+          else this.govDidOnce(id, JA`${name} への交易路を見送った`, '資金が費用の 1.5 倍に届かなかった');
         }
       }
       if (!this.canColonize(id) || gv.mandate === 'develop') continue;
@@ -152,8 +152,8 @@
       if (!best) continue;
       const cost = this.shipCost(best.kind, id, best.t.id);
       const why = gv.mandate === 'expand' ? '委任方針「拡張」に従った' : '入植できる時期になり、資金があった';
-      if (this.funds(id) < (gv.mandate === 'expand' ? 1 : 1.2) * cost.credits || this.procure(cost, id).why) { this.govDidOnce(id, `${best.t.name} への入植船を見送った`, '資金か資材が足りなかった'); continue; }
-      if (this.dispatch(id, best.t.id, best.b.id, best.kind).ok) { gv.lastColony = this.year; this.govDid(id, `${best.t.name} へ入植船を出した`, why); }
+      if (this.funds(id) < (gv.mandate === 'expand' ? 1 : 1.2) * cost.credits || this.procure(cost, id).why) { this.govDidOnce(id, JA`${best.t.name} への入植船を見送った`, '資金か資材が足りなかった'); continue; }
+      if (this.dispatch(id, best.t.id, best.b.id, best.kind).ok) { gv.lastColony = this.year; this.govDid(id, JA`${best.t.name} へ入植船を出した`, why); }
     }
   }
   // 入植できる状態か: 人口300万以上、入植船を準備・航行中でなく、前の入植から10年 (観戦モードの地球政府は5年) たっている。
@@ -226,7 +226,7 @@
           // 奴隷工房は、自分の星系か交易路でつながった星系に、使い道のない奴隷 (生産 − 需要) がもう1工房ぶんあるときだけ
           if (fac === 'slaveworks' && this.slaveSurplus(id) < SLAVEWORKS_USE) continue;
           const cost = this.upgradeCost(c, fac);
-          cands.push({ cost, w: fac === 'slaveworks' ? 0.5 : 1, what: `${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}`, run: () => this.order(cost, id, { type: 'upgrade', col: colKey(c), fac, label: `${tag}${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` }) });
+          cands.push({ cost, w: fac === 'slaveworks' ? 0.5 : 1, what: JA`${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}`, run: () => this.order(cost, id, { type: 'upgrade', col: colKey(c), fac, label: JA`${tag}${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` }) });
         }
       }
       // 採掘基地は施設より高くつくが産出も大きいので、費用を割り引いて比べる (新設はさらに優先)
@@ -234,21 +234,21 @@
         if (!this.outpostCheck(id, b.id).ok) continue;
         const o = this.outpostAt(id, b.id);
         const cost = this.outpostCost(o);
-        cands.push({ cost, w: o ? 0.5 : 0.3, what: `${b.name || '天体'} の採掘基地${o ? 'の拡張' : ''}`, run: () => this.buildOutpost(id, b.id, tag) });
+        cands.push({ cost, w: o ? 0.5 : 0.3, what: JA`${b.name || '天体'} の採掘基地${o ? 'の拡張' : ''}`, run: () => this.buildOutpost(id, b.id, tag) });
       }
       cands.sort((a, b) => a.cost.credits * a.w - b.cost.credits * b.w);
       const cheapest = cands[0];
       gv.far = !cheapest || cheapest.cost.credits > 15 * Math.max(10, this.income(id));
       if (!gv.far) {
-        if (this.funds(id) >= reserve + (gv.mandate === 'develop' ? 1.2 : 1.5) * cheapest.cost.credits && !this.procure(cheapest.cost, id).why) { cheapest.run(); this.govDid(id, `${cheapest.what}を建て始めた`, '手の届く建設のうち、いちばん安かった'); }
-        else if (reserve) this.govDidOnce(id, `${cheapest.what}を見送った`, '入植船の費用を取り置いた');
+        if (this.funds(id) >= reserve + (gv.mandate === 'develop' ? 1.2 : 1.5) * cheapest.cost.credits && !this.procure(cheapest.cost, id).why) { cheapest.run(); this.govDid(id, JA`${cheapest.what}を建て始めた`, '手の届く建設のうち、いちばん安かった'); }
+        else if (reserve) this.govDidOnce(id, JA`${cheapest.what}を見送った`, '入植船の費用を取り置いた');
         continue;
       }
       const vassals = Object.entries(this.govs)
         .filter(([k, v]) => v.lord === id && this.isColonized(Number(k)) && this.realmOf(Number(k)) === this.realmOf(id) && (v.loyalty ?? LOYALTY_START) < 85)
         .sort((a, b) => (a[1].loyalty ?? LOYALTY_START) - (b[1].loyalty ?? LOYALTY_START));
       const spare = gv.credits - reserve;
-      if (vassals.length && spare > 100) { this.sendGrant(id, Number(vassals[0][0]), Math.min(500, 0.2 * spare)); this.govDidOnce(id, `家臣の ${this.system(Number(vassals[0][0])).name} へ資金援助を送った`, '星系の中に手の届く建設がなく、忠誠度の低い家臣がいた'); }
+      if (vassals.length && spare > 100) { this.sendGrant(id, Number(vassals[0][0]), Math.min(500, 0.2 * spare)); this.govDidOnce(id, JA`家臣の ${this.system(Number(vassals[0][0])).name} へ資金援助を送った`, '星系の中に手の届く建設がなく、忠誠度の低い家臣がいた'); }
     }
   }
   // 星系内の拡張: 人口が2百万人以上で資金に余裕 (費用の2倍) のある星系の政府は、自分の星系の空いている天体や恒星

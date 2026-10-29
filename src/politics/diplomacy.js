@@ -35,14 +35,14 @@
     const mine = ships(r);
     const seen = ships(p) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(r, p)));
     let s, why;
-    if (kind === 'nap') { s = PACT.napBase + (seen - mine) / (seen + mine + 1); why = `${this.realmName(p)}の艦隊を ${Math.round(seen)}、自分を ${Math.round(mine)} と見ている`; }
+    if (kind === 'nap') { s = PACT.napBase + (seen - mine) / (seen + mine + 1); why = JA`${this.realmName(p)}の艦隊を ${Math.round(seen)}、自分を ${Math.round(mine)} と見ている`; }
     else if (kind === 'ally') {
       const th = this.pactThreat(r, p, ships);
       s = PACT.allyBase + th.v + PACT.allyHelp * seen / (seen + mine + 1);
-      why = th.t === null ? '共通の脅威が見えない' : `${this.realmName(th.t)}を脅威と見ている`;
+      why = th.t === null ? '共通の脅威が見えない' : JA`${this.realmName(th.t)}を脅威と見ている`;
     } else { s = PACT.tradeBase; why = '交易の得を見ている'; }
     const b = this.pactBreaches(p);
-    if (b) { s -= PACT.distrust * b; why += `。${this.realmName(p)}の破約 ${b} 回`; }
+    if (b) { s -= PACT.distrust * b; why += JA`。${this.realmName(p)}の破約 ${b} 回`; }
     s += gift / PACT.giftScale;
     return { s, why, seen, mine };
   }
@@ -64,13 +64,13 @@
     const to = Number(d.sys), kind = d.pact, gift = Math.max(0, Math.round(Number(d.gift) || 0));
     if (!PACT_KINDS[kind]) return fail('不明な協定');
     if (to === from || !this.realmAlive(to) || !this.realmAlive(from)) return fail('相手の国がない');
-    if (this.pactBetween(from, to, kind)) return fail(`${PACT_KINDS[kind].label}の協定をもう結んでいる`);
+    if (this.pactBetween(from, to, kind)) return fail(JA`${PACT_KINDS[kind].label}の協定をもう結んでいる`);
     if (this.diplo.sent.some((o) => o.from === from && o.to === to && o.kind === kind)) return fail('同じ申し入れが届く途中');
     if (this.isHuman(from) ? this.knownAtWar(from, to) : this.atWar(from, to)) return fail('交戦中の国とは結べない (講和が先)');
-    if (gift > Math.max(0, this.gov(from).credits)) return fail(`贈り物の資金が足りない (${gift} cr)`);
+    if (gift > Math.max(0, this.gov(from).credits)) return fail(JA`贈り物の資金が足りない (${gift} cr)`);
     const at = this.year + this.sysDist(from, to);
     this.diplo.sent.push({ id: this.nextShipId++, kind, from, to, gift, sent: this.year, at });
-    if (this.isHuman(from)) this.event('politics', from, `${this.realmName(to)}に${PACT_KINDS[kind].label}の協定を申し入れた (届くまで ${(at - this.year).toFixed(1)} 年${gift ? `・受けたら贈り物 ${gift} cr` : ''})`, true);
+    if (this.isHuman(from)) this.event('politics', from, JA`${this.realmName(to)}に${PACT_KINDS[kind].label}の協定を申し入れた (届くまで ${(at - this.year).toFixed(1)} 年${gift ? JA`・受けたら贈り物 ${gift} cr` : ''})`, true);
     return { ok: true };
   }
   // 協定を結ぶ。a が申し入れた国、b が受けた国。b は今から、a は返事が届いてから縛られる。贈り物は a から b へ (払えるだけ)
@@ -79,7 +79,7 @@
     this.diplo.pacts.push(p);
     const g = Math.min(gift, Math.max(0, this.gov(a).credits));
     if (g > 0) { this.cash('treaty', -g, { gov: a }); this.cash('treaty', g, { gov: b }); }
-    if (this.isHuman(a) || this.isHuman(b)) this.event('politics', b, `${this.realmName(b)}が${this.realmName(a)}との${PACT_KINDS[kind].label}の協定を受けた (${Math.round(p.until)}年まで。${this.realmName(a)}は返事が届く ${p.onA.toFixed(0)} 年から縛られる${g ? `・贈り物 ${fmtAmt(g)} cr` : ''})`, true);
+    if (this.isHuman(a) || this.isHuman(b)) this.event('politics', b, JA`${this.realmName(b)}が${this.realmName(a)}との${PACT_KINDS[kind].label}の協定を受けた (${Math.round(p.until)}年まで。${this.realmName(a)}は返事が届く ${p.onA.toFixed(0)} 年から縛られる${g ? JA`・贈り物 ${fmtAmt(g)} cr` : ''})`, true);
     return p;
   }
   // 国 r が協定を破った (協定の相手に宣戦した・同盟の参戦を断った)
@@ -94,7 +94,7 @@
     if (sc.s >= 0) return this.makePact(o.from, o.to, o.kind, o.gift);
     if (this.isHuman(o.from)) {
       const need = Math.ceil((-sc.s * PACT.giftScale) / 100) * 100;
-      this.event('politics', o.to, `${this.realmName(o.to)}は${PACT_KINDS[o.kind].label}の協定を断った (${sc.why}。贈り物があと ${fmtAmt(need)} cr ほどあれば受けたかもしれない)`);
+      this.event('politics', o.to, JA`${this.realmName(o.to)}は${PACT_KINDS[o.kind].label}の協定を断った (${sc.why}。贈り物があと ${fmtAmt(need)} cr ほどあれば受けたかもしれない)`);
     }
     return null;
   }
@@ -102,18 +102,18 @@
   pactOfferDecision(o) {
     const { label, note } = PACT_KINDS[o.kind];
     this.asRealm(o.to, () => this.addDecision({ kind: 'pact', type: o.kind, sys: o.to, from: o.from, gift: o.gift, deadline: this.year + PACT.replyYears, def: 'refuse',
-      text: `${this.realmName(o.from)}が${label}の協定を申し入れてきた (${note}。${PACT.years} 年${o.gift ? `。受ければ贈り物 ${fmtAmt(o.gift)} cr` : ''})。返事は光速で ${this.sysDist(o.to, o.from).toFixed(1)} 年かけて届き、届いた時点から相手が縛られる。`,
-      opts: [{ k: 'accept', label: '受ける', note: `いまから${this.realmName(o.to)}が縛られる` }, { k: 'refuse', label: '断る', note: '何も起きない' }] }));
+      text: JA`${this.realmName(o.from)}が${label}の協定を申し入れてきた (${note}。${PACT.years} 年${o.gift ? JA`。受ければ贈り物 ${fmtAmt(o.gift)} cr` : ''})。返事は光速で ${this.sysDist(o.to, o.from).toFixed(1)} 年かけて届き、届いた時点から相手が縛られる。`,
+      opts: [{ k: 'accept', label: '受ける', note: JA`いまから${this.realmName(o.to)}が縛られる` }, { k: 'refuse', label: '断る', note: '何も起きない' }] }));
   }
   // 決めること (協定) の返事: resolveDecision から
   resolvePact(dec, k) {
     if (dec.type === 'call') {
       const p = this.diplo.pacts.find((x) => x.id === dec.pact);
-      if (k === 'join') { if (this.realmAlive(dec.enemy) && !this.atWar(this.cap, dec.enemy)) { this.beginWar(this.cap, dec.enemy, this.cap); this.event('war', this.cap, `同盟に従い、${this.realmName(dec.enemy)}に宣戦した (${this.realmName(dec.ally)}を守る)`); } }
-      else if (p) { this.diplo.pacts = this.diplo.pacts.filter((x) => x !== p); this.pactBreach(this.cap, '同盟の参戦を断った'); this.event('politics', this.cap, `${this.realmName(dec.ally)}との防衛同盟の参戦を断り、同盟は切れた (破約)`); }
+      if (k === 'join') { if (this.realmAlive(dec.enemy) && !this.atWar(this.cap, dec.enemy)) { this.beginWar(this.cap, dec.enemy, this.cap); this.event('war', this.cap, JA`同盟に従い、${this.realmName(dec.enemy)}に宣戦した (${this.realmName(dec.ally)}を守る)`); } }
+      else if (p) { this.diplo.pacts = this.diplo.pacts.filter((x) => x !== p); this.pactBreach(this.cap, '同盟の参戦を断った'); this.event('politics', this.cap, JA`${this.realmName(dec.ally)}との防衛同盟の参戦を断り、同盟は切れた (破約)`); }
       return;
     }
-    if (k !== 'accept') { this.event('politics', this.cap, `${this.realmName(dec.from)}からの${PACT_KINDS[dec.type].label}の協定を断った`); return; }
+    if (k !== 'accept') { this.event('politics', this.cap, JA`${this.realmName(dec.from)}からの${PACT_KINDS[dec.type].label}の協定を断った`); return; }
     if (!this.realmAlive(dec.from) || this.atWar(this.cap, dec.from) || this.pactBetween(dec.from, this.cap, dec.type)) return;
     this.makePact(dec.from, this.cap, dec.type, dec.gift || 0);
   }
@@ -138,7 +138,7 @@
     D.pacts = D.pacts.filter((p) => {
       if (!this.realmAlive(p.a) || !this.realmAlive(p.b)) return false;
       if (p.until > this.year) return true;
-      if (this.isHuman(p.a) || this.isHuman(p.b)) this.event('politics', this.isHuman(p.a) ? p.b : p.a, `${this.realmName(p.a)}と${this.realmName(p.b)}の${PACT_KINDS[p.kind].label}の協定が期限を迎えた`);
+      if (this.isHuman(p.a) || this.isHuman(p.b)) this.event('politics', this.isHuman(p.a) ? p.b : p.a, JA`${this.realmName(p.a)}と${this.realmName(p.b)}の${PACT_KINDS[p.kind].label}の協定が期限を迎えた`);
       return false;
     });
     // 破約: 協定の相手と戦争になった。仕掛けた国が、協定に縛られたあとで宣戦していれば破約
@@ -147,8 +147,8 @@
       const by = this.warBy[this.warKey(p.a, p.b)];
       D.pacts = D.pacts.filter((x) => !((x.a === p.a && x.b === p.b) || (x.a === p.b && x.b === p.a)));
       if ((by === p.a || by === p.b) && this.pactBound(p, by) && (this.realmWars[this.warKey(p.a, p.b)] ?? 0) >= Math.min(p.onA, p.onB) - 1e-9) {
-        this.pactBreach(by, `${this.realmName(by === p.a ? p.b : p.a)}との協定を破って宣戦した`);
-        if (this.isHuman(p.a) || this.isHuman(p.b)) this.event('politics', by === p.a ? p.b : p.a, `${this.realmName(by)}が${PACT_KINDS[p.kind].label}の協定を破って宣戦した (破約。ほかの国も協定を受けにくくなる)`);
+        this.pactBreach(by, JA`${this.realmName(by === p.a ? p.b : p.a)}との協定を破って宣戦した`);
+        if (this.isHuman(p.a) || this.isHuman(p.b)) this.event('politics', by === p.a ? p.b : p.a, JA`${this.realmName(by)}が${PACT_KINDS[p.kind].label}の協定を破って宣戦した (破約。ほかの国も協定を受けにくくなる)`);
       }
     }
     // 防衛同盟: 相手が宣戦されたら、その知らせが首都に届いた年に参戦する
@@ -164,11 +164,11 @@
           p.called.push(`${x}|${key}`);
           if (this.isSeat(x)) {
             this.asRealm(x, () => this.addDecision({ kind: 'pact', type: 'call', sys: x, pact: p.id, ally: y, enemy: e, deadline: this.year + 3, def: 'join',
-              text: `同盟国の${this.realmName(y)}が${this.realmName(e)}に宣戦された。防衛同盟に従って参戦するか。`,
-              opts: [{ k: 'join', label: '参戦する', note: `${this.realmName(e)}と戦争になる` }, { k: 'refuse', label: '断る', note: `同盟は切れ、破約になる (議会の支持 −${PACT.breachCouncil}・ほかの国が協定を受けにくくなる)` }] }));
+              text: JA`同盟国の${this.realmName(y)}が${this.realmName(e)}に宣戦された。防衛同盟に従って参戦するか。`,
+              opts: [{ k: 'join', label: '参戦する', note: JA`${this.realmName(e)}と戦争になる` }, { k: 'refuse', label: '断る', note: JA`同盟は切れ、破約になる (議会の支持 −${PACT.breachCouncil}・ほかの国が協定を受けにくくなる)` }] }));
           } else {
             this.beginWar(x, e, x);
-            this.event('war', x, `${this.realmName(x)}が、同盟国の${this.realmName(y)}を守るため${this.realmName(e)}に宣戦した`);
+            this.event('war', x, JA`${this.realmName(x)}が、同盟国の${this.realmName(y)}を守るため${this.realmName(e)}に宣戦した`);
           }
         }
       }

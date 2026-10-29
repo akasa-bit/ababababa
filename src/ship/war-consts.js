@@ -68,10 +68,10 @@ const FORT = { max: 10, auto: 1, hp: 3, cost: { credits: 200, metal: 100 }, grow
 // 艦隊を集めてから攻める形も試したが、艦隊戦は増えなかったので入れていない (32 の銀河 × 300 年で 11.1 回、入れないと 11.3 回 / 100 年・1 つの銀河)
 const AI_WAR = { relief: 0.5, attack: 0.5, tries: 3, range: 20, minFleet: 3 };
 // 戦死者の数の書き方 (人)
-function fmtDead(n) { return n >= 1e8 ? `${(n / 1e8).toFixed(1)} 億人` : n >= 1e4 ? `${Math.round(n / 1e4)} 万人` : `${Math.round(n)} 人`; } // 出来事の文にも入るので、端末ごとに違う toLocaleString は使わない
+function fmtDead(n) { return n >= 1e8 ? JA`${(n / 1e8).toFixed(1)} 億人` : n >= 1e4 ? JA`${Math.round(n / 1e4)} 万人` : JA`${Math.round(n)} 人`; } // 出来事の文にも入るので、端末ごとに違う toLocaleString は使わない
 // 艦隊戦の報告の 1 行 (battleReports の 1 つから)
 function battleText(r) {
-  return `${(r.end - r.start).toFixed(1)} 年、攻撃 ${r.a0} 艦隊 (沈没 ${r.sunk[0]}・退却 ${r.esc[0]}) 対 防衛 ${r.d0} 艦隊 (沈没 ${r.sunk[1]}・退却 ${r.esc[1]})、戦死 ${fmtDead(r.dead)}${r.odds !== null && r.odds !== undefined ? `。始まる前の攻撃側の見込み ${Math.round(r.odds * 100)}%` : ''}`;
+  return JA`${(r.end - r.start).toFixed(1)} 年、攻撃 ${r.a0} 艦隊 (沈没 ${r.sunk[0]}・退却 ${r.esc[0]}) 対 防衛 ${r.d0} 艦隊 (沈没 ${r.sunk[1]}・退却 ${r.esc[1]})、戦死 ${fmtDead(r.dead)}${r.odds !== null && r.odds !== undefined ? JA`。始まる前の攻撃側の見込み ${Math.round(r.odds * 100)}%` : ''}`;
 }
 // 光速で届く途中の講和の申し入れ・講和会議の知らせ (B-030。届いたら peaceOffers・conferences へ移す)。なければ書かない
 saveField('peaceSent', (game) => (game.peaceSent.length ? game.peaceSent : undefined), {

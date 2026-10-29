@@ -110,7 +110,7 @@
     for (const [acct, v] of dep) this.cash('default', -x * (v / held), acct);
     gv.dflt = this.year;
     gv.nd = (gv.nd || 0) + 1; // 不履行の回数
-    if (this.realmOf(id) === this.cap && !this.spectate) this.event('goal', id, `国の星系の政府が国債の ${Math.round(CB.haircut * 100)}% (${Math.round(x)} cr) を払えなくなった (不履行)。預金がそのぶん目減りした`, true);
+    if (this.realmOf(id) === this.cap && !this.spectate) this.event('goal', id, JA`国の星系の政府が国債の ${Math.round(CB.haircut * 100)}% (${Math.round(x)} cr) を払えなくなった (不履行)。預金がそのぶん目減りした`, true);
   }
   // 国債の残高を動かす (v > 0 で増える)。お金の試験 (MONEY_AUDIT) に、政府の純額 (資金 − 国債) の変化として載せる
   bondMove(kind, v, id) {

@@ -417,7 +417,7 @@
         c.slaveWork = ks;
       }
       if (c.pop >= 1 && c.plan > 0) {
-        this.watch(c, 'industry', k, 'shortage', () => `${c.name} の工場が原料 (金属・燃料) 不足で減産 (稼働 ${pct(k)})`, `${c.name} の工場の原料不足が解消した`);
+        this.watch(c, 'industry', k, 'shortage', () => JA`${c.name} の工場が原料 (金属・燃料) 不足で減産 (稼働 ${pct(k)})`, JA`${c.name} の工場の原料不足が解消した`);
       }
     }
     // 2b. 高付加価値の工業 (回 KE5): 高付加価値物品 1 につき低付加価値物品 0.5 と希少元素 0.05 を使う (HITECH)。原料が足りなければ減産。質量は原料と同じ
@@ -490,9 +490,9 @@
       const low = use('goods', gNeed * (1 - sH)), high = sH > 0 ? use('hitech', (gNeed * sH * PRICE.goods) / PRICE.hitech) : 1;
       const goods = (1 - sH) * low + sH * high;
       c.sat = { food, water, goods, hitech: high };
-      if (lead) this.watch(c, 'food', food, 'famine', () => `${c.name} で飢餓が発生 (食料の充足率 ${pct(food)})`, `${c.name} の飢餓が解消した`);
-      if (this.needsWater(c) && (lead || !this.needsWater(head[c.sys]))) this.watch(c, 'water', water, 'famine', () => `${c.name} で水不足が発生 (充足率 ${pct(water)})`, `${c.name} の水不足が解消した`);
-      if (lead && c.pop >= 1) this.watch(c, 'goods', goods, 'shortage', () => `${c.name} で工業品が不足 (充足率 ${pct(goods)})`, `${c.name} の工業品不足が解消した`);
+      if (lead) this.watch(c, 'food', food, 'famine', () => JA`${c.name} で飢餓が発生 (食料の充足率 ${pct(food)})`, JA`${c.name} の飢餓が解消した`);
+      if (this.needsWater(c) && (lead || !this.needsWater(head[c.sys]))) this.watch(c, 'water', water, 'famine', () => JA`${c.name} で水不足が発生 (充足率 ${pct(water)})`, JA`${c.name} の水不足が解消した`);
+      if (lead && c.pop >= 1) this.watch(c, 'goods', goods, 'shortage', () => JA`${c.name} で工業品が不足 (充足率 ${pct(goods)})`, JA`${c.name} の工業品不足が解消した`);
       const life = Math.min(food, water);
       const n = c.kind === 'planet' ? this.nativeOf(c.sys, c.body) : null;
       const unrest = n && n.st.status !== 'integrated' && n.st.rel < -20 ? 0.02 : 0;
@@ -517,7 +517,7 @@
         } else { const k = nat > 0 ? c.pop / nat : 1; for (let a = 0; a < DEMO.bins; a++) { c.age.f[a] *= k; c.age.m[a] *= k; } }
       } else c.pop = Math.max(POP_FLOOR, nat);
       c.growth = GM.log(c.pop / Math.max(pop0, 1e-9)) / h; // 年あたりの増え方 (見せる・記録する)
-      if (c.pop >= 1) this.watch(c, 'aging', DEMO.alert / Math.max(this.ageShares(c).dep, 1e-9), 'shortage', () => `${c.name} の扶養比が ${Math.round(this.ageShares(c).dep * 100)} に上がった (働き手 100 人で支える子どもと高齢の数。年金と医療が増える)`, `${c.name} の扶養比が下がった`); // 10-5 の知らせ
+      if (c.pop >= 1) this.watch(c, 'aging', DEMO.alert / Math.max(this.ageShares(c).dep, 1e-9), 'shortage', () => JA`${c.name} の扶養比が ${Math.round(this.ageShares(c).dep * 100)} に上がった (働き手 100 人で支える子どもと高齢の数。年金と医療が増える)`, JA`${c.name} の扶養比が下がった`); // 10-5 の知らせ
       const income = MARKET.buy ? this.incomeOf(c) : 0;
       c.incY = income; // この刻みの所得 (年金と医療で使う。ageSpendStep)
       va[c.sys] = (va[c.sys] || 0) + income * h; // 星系の市場の付加価値 (賃金と配当に分ける。economy の 7)
