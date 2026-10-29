@@ -1,5 +1,5 @@
 {
-  "note": "回の順番 (docs/sessions.md の 3)。after = 始める前に済んでいる必要がある回。済んだかは docs/status/<レーン>.md の「## 済んだ回」で見る (tools/session-check.js)。回を足すときは、ここと docs/sessions.md の両方に足す。2 波目の後半 (SE6・FU3) は、KE2 と GA8 の両方を待つ (src に同時に触るのを 3 レーンまでにするため)",
+  "note": "回の順番 (docs/sessions.md の 3)。after = 始める前に済んでいる必要がある回。済んだかは docs/status/<レーン>.md の「## 済んだ回」で見る (tools/session-check.js)。回を足すときは、ここと docs/sessions.md の両方に足す。2 波目の後半 (SE6・FU3) は、KE2 と GA8 の両方を待つ (src に同時に触るのを 3 レーンまでにするため)。3 波目は通しのセッション 1 本 (回 W2 の W2-Q1 = a) なので、DO7 → … → W3 を 1 本の鎖にしてある (--next が出す回はいつも 1 つ)",
   "lanes": {"GA": "画面と最初の体験", "SE": "政治", "FU": "船と戦争", "DO": "道具と検証", "SO": "外向き", "KE": "経済", "W": "common", "T": "外向き"},
   "status": {"GA": "GA", "SE": "SE", "FU": "FU", "DO": "DO", "SO": "SO", "KE": "KE", "W": "common", "T": "SO"},
   "sessions": {
@@ -39,6 +39,15 @@
     "DO6": ["DO5", "KE1"],
     "SO3": ["SO2", "W1"],
     "T1": ["KE4", "SE6", "FU3", "DO6", "SO3"],
-    "W2": ["T1"]
+    "W2": ["T1"],
+    "DO7": ["W2"],
+    "KE7": ["DO7"],
+    "KE8": ["KE7"],
+    "SE7": ["KE8"],
+    "SE8": ["SE7"],
+    "KE9": ["SE8"],
+    "GA9": ["KE9"],
+    "GA10": ["GA9"],
+    "W3": ["GA10"]
   }
 }

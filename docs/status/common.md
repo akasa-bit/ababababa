@@ -16,7 +16,8 @@
 - 2026-10-23 (回 W1): 1 波目の見直し。数は下の「1 波目の数」。組み方の直す案と 2 波目の案を、返事待ちと一緒に 1 つの Artifact (https://claude.ai/artifact/AHGDJCqRqgGyYycX8GYYGD) で見せて決めてもらった (`docs/requests/2026-10-23-common.md` の common-1): Q1〜Q4 はおすすめ (知らせは `docs/notices/` に 1 件 1 ファイル・同じファイルを触る PR だけ 1 本ずつ・ほかのレーンのフォルダは core と同じ扱い・返事を待つあいだは止まらない仕事を進める。`docs/parallel.md`)、**翻訳の本番 (T1) は 2 波目のあと**、2 波目は前半 = 経済・画面・政治、後半 = 経済・政治 (集団)・船と戦争 (船の設計) (`docs/sessions.md` の 3・`tools/sessions.json`)、音の素材はあとで。
 - 2 波目 (`docs/sessions.md` の 3) は 2026-10-28 に済んだ (#214〜#282)。後半の残り (SE5〜SE6・FU3) は、ユーザーの依頼で 1 つのセッションで順に進めた (`docs/requests/2026-10-28-common.md` の common-1)。2 波目の終わりの返事待ちは Artifact「第二波の決めること」(https://claude.ai/artifact/XWJ86Nh6nEowHr8efTUgNL) で聞いた。
 - 2026-10-29 (回 T1、#283): 翻訳の本番。画面の文字列を訳せる形にして英語を入れた (`docs/i18n.md`)。中国語は QD-17 のあと。
-- 2026-10-29 (回 W2): 2 波目の見直し。数は下の「2 波目の数」。組み方の直す案と 3 波目の案を、返事待ちと一緒に 1 つの Artifact で見せて決めてもらう (返事待ち)。
+- 2026-10-29 (回 W2、#284): 2 波目の見直し。数は下の「2 波目の数」。組み方の直す案と 3 波目の案を、返事待ちと一緒に 1 つの Artifact「第三波の組み方」(https://claude.ai/artifact/YPD1VpgwJRkAyuKXjXX3p7) で見せて決めてもらった (`docs/requests/2026-10-29-common.md` の common-3): **W2-Q1 = a** (3 波目は通しのセッション 1 本で回の順番どおりに)・**W2-Q2 = b** (中身は現実の段の続き: 経済の政策・利益集団・国ごとに規則が違う開始。`docs/sessions.md` の 3・`tools/sessions.json`)・**W2-Q3 = b** (経済の返事待ち QD-26・QD-27・QD-28・QD-32 は KE7 の始めに 1 つずつ聞く)。聞かずにおすすめで決めたこと (前の PR のブランチは `git merge -s ours` で取り込む・目標の PR と本体の PR を並べるときの文書の行・ほかのレーンのフォルダは数行まで・知らせの片付け・地図の自動生成 B-195 は GA10) は `docs/parallel.md`・`docs/handoff.md` の 1 に書いた。
+- 次: 3 波目 (通しのセッション。最初は DO7。`docs/sessions.md` の 4 の「3 波目 (通しのセッション)」の文を送る)。
 
 ## 2 波目の数 (回 W2、2026-10-29)
 
@@ -206,6 +207,7 @@
 回が済んだら (その回の最後の PR で)、ここに 1 行足す (例: `- W1 (#200)`)。`node tools/session-check.js` が、次の回を始めてよいかをこれで決める。
 
 - W1 (#213)
+- W2 (#284)
 
 ## handoff.md から移したもの (2026-10-20、並行に移るときの後片付け。`docs/parallel.md` の 5)
 
