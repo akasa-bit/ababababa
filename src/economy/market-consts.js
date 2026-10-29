@@ -131,6 +131,8 @@ const OWNER = { colony: 1, fdi: 0.1103, out: 1.0445, min: 1e-3, gmax: 0.2 };
 //   政府の買い物 (build) とは分ける。財政の目標の GDP (tools/fiscal-panel.js。付加価値 + 政府の買い物) に入れると、建設の賃金には税が掛からないので
 //   税収 ÷ GDP (R19) が 0.134 → 0.105 に下がった。投資の目標の GDP (tools/capital-panel.js) には、国民経済計算のとおり投資として入れる)。
 //   始めの資本は、初めて付加価値を測った刻みの K*。この段では資本は産出に効かない (B-119 の 2 で効かせる)。smooth・speed は仮の値
+// 軍の維持費のうち主人の政府が払う割合 (約定の束の「軍事」の法ごと。QD-31 = c。回 SE6 の政治の返事: 宗 = 保護国・委任統治領・直轄など、分 = 藩部・自治領・封臣など、従 = 冊封・緩衝国など)
+const UPKEEP_LORD = { S: 1, M: 0.5, V: 0 };
 const GOV_BUY = new Set(['build', 'upkeep', 'welfare', 'security', 'military', 'education', 'public', 'health']); // 政府が民間から買う出入り (GDP に入る。tools/fiscal-panel.js と同じ)
 const KSTOCK = { ky: [[2343, 2.37], [7106, 3.513], [13518, 4.315], [26436, 4.485], [50989, 4.706]], smooth: 5, speed: 0.5, gmax: OWNER.gmax };
 saveField('capacity', (game) => (game.capacity.length ? game.capacity : undefined), {

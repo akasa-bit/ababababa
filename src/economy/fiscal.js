@@ -43,7 +43,7 @@
       if (this.isHuman(id) && !this.spectate) {
         const deficit = this.fiscalFor(id, id).deficit || 0;
         gv.bw = (gv.bw || 0) * fade;
-        if (gv.credits < 0 && deficit > 0) { const x = -gv.credits; gv.credits = 0; gv.bond = (gv.bond || 0) + x; gv.bw += x; }
+        if (gv.credits < 0 && deficit > 0 && !this.dfltOut(gv)) { const x = -gv.credits; gv.credits = 0; gv.bond = (gv.bond || 0) + x; gv.bw += x; }
         const extra = gv.credits - keepCash;
         if (extra > 0 && gv.bond > 0) { const x = Math.min(gv.bond, extra * out); gv.credits -= x; gv.bond -= x; }
         continue;
@@ -62,7 +62,8 @@
         gv.due = Math.min(-x - pay, (gv.bond || 0) - pay);
         x = -pay;
       }
-      if (gv.credits + x < 0) x = -gv.credits;
+      if (this.dfltOut(gv)) x = Math.min(x, 0); // 不履行のあとは新しく出せない (資金のマイナスは、戻るまで残る。QD-26)
+      else if (gv.credits + x < 0) x = -gv.credits;
       if (x) { gv.credits += x; gv.bond = Math.max(0, (gv.bond || 0) + x); }
       const T = Math.max(0, (gv.ledger?.tax || 0) + (gv.ledger?.natives || 0));
       const pub = Math.min(Math.max(0, gv.credits), Math.max(0, T - s * fr.y - (fr.d ?? 0)) * h);
@@ -97,7 +98,7 @@
     const gv = this.govs[id];
     if (!gv) return 0;
     const y = gv.fr?.y || 0;
-    let room = Math.max(0, DEBT.limit * y - (gv.bond || 0) - (gv.due || 0));
+    let room = this.dfltOut(gv) ? 0 : Math.max(0, DEBT.limit * y - (gv.bond || 0) - (gv.due || 0)); // 不履行のあとは借りられない (QD-26)
     if (this.isHuman(id) && !this.spectate) room = Math.min(room, Math.max(0, (this.fiscalFor(id, id).deficit || 0) * y - (gv.bw || 0)));
     return gv.credits + room;
   }
