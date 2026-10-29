@@ -115,6 +115,8 @@
 
 ### common
 
+- QD-80: 非営利の条件のデータから出した係数を、売る版に入れてよいか (QD-42 で WVS の条件を確かめて気づいた。2026-10-28)
+
 ## 4. セーブの項目と EDITIONS.game の値
 
 `saveField` で足すセーブの項目の名前と、`EDITIONS.game` に足す値の名前を、使う前に書く (例: `- saveField: ageCohorts (経済。src/economy/age.js)`)。

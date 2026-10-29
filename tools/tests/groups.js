@@ -1,7 +1,8 @@
 // 星系の中の集団 (回 SE6・B-020・B-021。docs/groups.md) の試験。画面なしの版で回す
 // 1. 権力への近さが統治体制の実態 (統治者の任免) から決まる: 宗 → よそ生まれが優位・ここ生まれは無力、分 → 上級と下級の分担、従 → ここ生まれが優位。
 //    ほかの種族は無力 (強制労働の型は差別)。主人のいない首都は支配する種族がみな優位
-// 2. 試合の星系の民族の割合の和が 1、締め出された割合が 0〜1、集団の忠誠度を人口で平均すると星系の忠誠度 (民族も分位も)
+// 2. 試合の星系の民族の割合の和が 1、締め出された割合が 0〜1、集団の忠誠度を人口で平均すると星系の忠誠度 (民族も分位も)。
+//    集団の価値観 (QD-42) も人口で平均すると星系の値で、上の分位ほど自己表現寄り、よそ生まれは伝統寄り
 // 3. 離反の起きやすさに「政治から締め出された人口」の項が入り、倍率が exp(β × (割合 − 基準))
 // 4. 直轄の星系だけ、命令 include で権力への近さを変えられる (光速の指令)。地球に届く記録に集団が入る。セーブで残り、読み直しても同じ筋
 // 5. 現地のエリート (B-021) は、ここ生まれのいちばん上の分位の集団の忠誠度で動く
@@ -40,6 +41,13 @@ for (const id of Object.keys(g.govs).map(Number)) {
   const eth = G.eth.reduce((a, e) => a + e.share * g.groupDev(G, e.k, undefined, terms), 0);
   const all = G.eth.reduce((a, e) => a + e.share * [0, 1, 2, 3, 4].reduce((b, q) => b + 0.2 * g.groupDev(G, e.k, q, terms), 0), 0);
   check(Math.abs(eth) < 1e-9 && Math.abs(all) < 1e-9, `星系 ${id} の集団の忠誠度の平均が星系の忠誠度からずれる (${eth}・${all})`);
+  // 価値観 (QD-42): 集団の値を人口で平均すると星系の値、上の分位ほど自己表現寄り、よそ生まれはここ生まれより伝統寄り
+  for (const x of ['secular', 'selfexp']) {
+    const m = G.eth.reduce((a, e) => a + e.share * [0, 1, 2, 3, 4].reduce((b, q) => b + 0.2 * g.groupValuesOf(G, e.k, q)[x], 0), 0);
+    check(Math.abs(m - G.values[x]) < 1e-9, `星系 ${id} の集団の価値観 (${x}) の平均 ${m} が星系の値 ${G.values[x]} とずれる`);
+  }
+  check(g.groupValuesOf(G, 'local', 4).selfexp > g.groupValuesOf(G, 'local', 0).selfexp, `星系 ${id} の上の分位が自己表現寄りでない`);
+  if (G.eth.some((e) => e.k === 'home') && G.eth.some((e) => e.k === 'local')) check(g.groupValuesOf(G, 'home').secular < g.groupValuesOf(G, 'local').secular, `星系 ${id} のよそ生まれが伝統寄りでない`);
   // 3. 離反の起きやすさの項
   const T = g.secessionTerms(id);
   if (T) {

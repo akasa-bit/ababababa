@@ -9,6 +9,13 @@ const UNREST_CALM = 40; // 不満が収まる忠誠度の下限 (calmAtOf)
 const UNREST_YEARS = 10;
 const ULTIMATUM_YEARS = 10;
 const CONCESSION_YEARS = 30; // 要求をのんだときの減税・自治の期間
+// AI の主人が家臣の要求をのむか (QD-41 = c・B-142。docs/demands.md)。のむ見込み = 1 ÷ (1 + exp(−z))、
+// z = size × (ln 人口の割合 − ref.size) + dist × (ln (主人からの距離 ÷ 国の広がり) − ref.dist) + risk × (拒んだら独立を宣言する見込み − ref.risk)。
+// 3 つの傾きは、自決を求める運動が続いている集団・年に、政府が自治か権力の分け前を譲った年を当てたロジット (Germann & Sambanis 2021 の再現データ・GeoEPR 2021・
+// CShapes 2.0。263 集団・7,774 集団・年・譲った年 139。data/build/analyze_demands.py)。実データの「見込み」は前の年に武力の紛争があったか (0 か 1) で、ゲームは見込み (0〜1) を入れる。
+// 基準 ref はゲームの AI の要求の材料の平均 (のむ割合の平均を、席を持つ前の AI の国の半々にそろえる。12 銀河 × 300 年で 2 回合わせた。tools/demands-panel.js・docs/demands.md の 3)
+const DEMAND_AI = { size: 0.246, dist: 0.363, risk: 0.712, ref: { size: -8.57, dist: -0.568, risk: 0.475 } };
+const demandAcceptOf = ({ share, rel, risk }) => 1 / (1 + GM.exp(-(DEMAND_AI.size * (GM.log(share) - DEMAND_AI.ref.size) + DEMAND_AI.dist * (GM.log(rel) - DEMAND_AI.ref.dist) + DEMAND_AI.risk * (risk - DEMAND_AI.ref.risk))));
 const NEGLECT_GRACE = 10; // 主人の関与 (指令・援助・艦隊・視察) が途絶えてこの年数を過ぎると、忠誠度の目標が年 NEGLECT_RATE ずつ下がる (最大 −NEGLECT_MAX)
 const NEGLECT_RATE = 1.5;
 const NEGLECT_MAX = 0; // 2026-10-23 のユーザーの決定で、放っておかれても忠誠度は下がらない (前は 60。この値を戻せば元に戻る)

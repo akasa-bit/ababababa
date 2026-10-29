@@ -1,0 +1,89 @@
+{
+ "note": "Global Flourishing Study の 1 年目 (CC BY 4.0) から。単位は国の平均の国の間の標準偏差 (0 が国の平均)。docs/groups.md の 1",
+ "people": 207919,
+ "countries": [
+  "ARG",
+  "AUS",
+  "BRA",
+  "CHN",
+  "DEU",
+  "EGY",
+  "ESP",
+  "GBR",
+  "HKG",
+  "IDN",
+  "IND",
+  "ISR",
+  "JPN",
+  "KEN",
+  "MEX",
+  "NGA",
+  "PHL",
+  "POL",
+  "SWE",
+  "TUR",
+  "TZA",
+  "USA",
+  "ZAF"
+ ],
+ "secular": {
+  "items": [
+   "−rel",
+   "−attend",
+   "−obey"
+  ],
+  "countries": 23,
+  "sd_between": 0.4938,
+  "intercept": -10.2031,
+  "slope_ln_gdppc": 1.0101,
+  "r": 0.879,
+  "quint": [
+   -0.0247,
+   -0.0444,
+   -0.0164,
+   0.016,
+   0.0695
+  ],
+  "quint_se_vs_q3": [
+   0.0215,
+   0.0114,
+   0.0,
+   0.0141,
+   0.0263
+  ],
+  "away": -0.1139,
+  "away_se": 0.0628,
+  "n": 184393,
+  "away_share": 0.0472
+ },
+ "selfexp": {
+  "items": [
+   "trust",
+   "secure",
+   "happy"
+  ],
+  "countries": 23,
+  "sd_between": 0.2333,
+  "intercept": -3.2396,
+  "slope_ln_gdppc": 0.3207,
+  "r": 0.279,
+  "quint": [
+   -0.7634,
+   -0.2404,
+   0.0159,
+   0.2927,
+   0.6952
+  ],
+  "quint_se_vs_q3": [
+   0.1583,
+   0.0558,
+   0.0,
+   0.0411,
+   0.0465
+  ],
+  "away": -0.0329,
+  "away_se": 0.1069,
+  "n": 186219,
+  "away_share": 0.0476
+ }
+}

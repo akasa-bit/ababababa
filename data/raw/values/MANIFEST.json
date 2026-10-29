@@ -1,0 +1,57 @@
+{
+ "sources": {
+  "gfs_wave1_values.csv.gz": "Global Flourishing Study, Waves 1 and 2 Global Data (VanderWeele, Johnson, Bialowolski ほか。Gallup・Center for Open Science。https://osf.io/c8hbk/)。CC BY 4.0",
+  "wdi_gdppc_2022.csv": "World Bank, World Development Indicators (NY.GDP.PCAP.PP.KD)。CC BY 4.0"
+ },
+ "country_codes": {
+  "1": "ARG",
+  "2": "AUS",
+  "3": "BRA",
+  "4": "EGY",
+  "5": "DEU",
+  "6": "IND",
+  "7": "IDN",
+  "8": "ISR",
+  "9": "JPN",
+  "10": "KEN",
+  "11": "MEX",
+  "12": "NGA",
+  "13": "PHL",
+  "14": "POL",
+  "16": "ZAF",
+  "17": "ESP",
+  "18": "TZA",
+  "19": "TUR",
+  "20": "GBR",
+  "22": "USA",
+  "23": "SWE",
+  "24": "HKG",
+  "25": "CHN"
+ },
+ "files": [
+  {
+   "file": "gfs_wave1_values.csv.gz",
+   "bytes": 2328475,
+   "rows": 207919,
+   "url": "https://osf.io/download/vrejf/",
+   "sha256_source": "3d2533f99e55fe3f73e3bfed6648304196a003494ed4f5fed36cee2ef0abee47",
+   "fetched": "2026-10-28T22:32:19Z",
+   "filter": "列 COUNTRY, ANNUAL_WEIGHT_C1, INCOME_Y1, BORN_COUNTRY_Y1, REL_IMPORTANT_Y1, ATTEND_SVCS_Y1, OBEY_LAW_Y1, BELONGING_Y1, HAPPY_Y1, TRUST_PEOPLE_Y1, FREEDOM_Y1, SAY_IN_GOVT_Y1, WORRY_SAFETY_Y1 だけ (1 年目の項目と重み)"
+  },
+  {
+   "file": "(置かない) GFS_codebook_wave2.pdf",
+   "url": "https://osf.io/download/285w7/",
+   "sha256_source": "7e672dec9ed49a0b606f3429bf86069df8dfe1429cc702bc554bc988952d041f",
+   "fetched": "2026-10-28T22:33:04Z",
+   "note": "国の番号・所得の区分・項目の言い回しを読んだ"
+  },
+  {
+   "file": "wdi_gdppc_2022.csv",
+   "bytes": 852,
+   "rows": 23,
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;EGY;DEU;IND;IDN;ISR;JPN;KEN;MEX;NGA;PHL;POL;ZAF;ESP;TZA;TUR;GBR;USA;SWE;HKG;CHN/indicator/NY.GDP.PCAP.PP.KD?format=json&date=2022&per_page=200",
+   "sha256_source": "9b1cf632067aa1d43ce001d24105918197adf10b4e028fc60dc25daf6ebfed0d",
+   "fetched": "2026-10-28T22:33:04Z"
+  }
+ ]
+}
