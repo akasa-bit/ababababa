@@ -187,6 +187,10 @@ saveField('refunds', (game) => (game.refunds.length ? game.refunds : undefined),
   init: (game) => { game.refunds = []; delete game._remit; },
   read: (game, d) => { delete game._remit; game.refunds = Array.isArray(d.refunds) ? d.refunds.filter((r) => r && Number.isFinite(r.v) && Number.isFinite(r.at)) : []; },
 });
+// 銀河の汎用技術 (GPT。回 KE6。market-economy.js の gptStep): [{ t: 現れた年, inv: 発明した国の首都 }]。なければ書かない (回 DO7 で core/save.js の一覧からここへ移した)
+saveField('gpts', (game) => (game.gpts?.length ? game.gpts : undefined), {
+  read: (game, d) => { if (Array.isArray(d.gpts)) game.gpts = d.gpts; },
+});
 // 先住民と接触した年 { [星系]: 年 } (回 KE3。colonize.js の isSurveyed。接触の知らせは光速で広がる)。前の版のセーブ (項目がない) は、接触ずみの星系をずっと前から知っていたとして読む
 saveField('surveyAt', (game) => (game.surveyAt && Object.keys(game.surveyAt).length ? game.surveyAt : undefined), {
   init: (game) => { game.surveyAt = {}; },

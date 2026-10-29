@@ -28,8 +28,8 @@ const seedList = (s) => (Array.isArray(s) ? s.map(String) : String(s).includes('
 
 // 列 (CSV の見出しの順)
 const COLS = {
-  sna: ['galaxy', 'year', 'country', 'name', 'POP', 'B1GQ', 'P3_S14', 'P3_S13', 'P51G_S13', 'P6', 'P7', 'D1', 'D2', 'D5', 'B9_S13'],
-  gfs: ['galaxy', 'year', 'country', 'GR', 'GR11', 'GR111', 'GR114', 'GR115', 'GR13', 'GR14', 'GR141', 'GE', 'GF01', 'GF0107', 'GF02', 'GF03', 'GF04', 'GF09', 'GF10', 'GE_TR', 'GNLB'],
+  sna: ['galaxy', 'year', 'country', 'name', 'POP', 'B1GQ', 'P3_S14', 'P3_S13', 'P51G_S13', 'P51G_S11', 'P6', 'P7', 'D1', 'D2', 'D5', 'B9_S13'],
+  gfs: ['galaxy', 'year', 'country', 'GR', 'GR11', 'GR111', 'GR114', 'GR115', 'GR13', 'GR14', 'GR141', 'GE', 'GF01', 'GF0107', 'GF02', 'GF03', 'GF04', 'GF07', 'GF09', 'GF10', 'GE_TR', 'GNLB'],
   balance: ['galaxy', 'year', 'country', 'S14_F2_A', 'S14_F4_L', 'S11_F2_A', 'S11_F4_L', 'S13_F2_A', 'S13_F4_L', 'S13_F3_L', 'S1N_F2_A', 'S1N_F4_L', 'S122_F2_L', 'S122_F4_A', 'S122_F3_A', 'S122_RES_A'],
   rates: ['galaxy', 'year', 'country', 'CPI', 'INFL', 'IRS', 'IRL', 'CB_RULE'],
   prices: null, // 資源の名前が列になるので、あとで決める
@@ -38,7 +38,10 @@ const COLS = {
   wars_part: ['galaxy', 'WarNum', 'ccode', 'StateName', 'Side', 'StartYear', 'EndYear', 'Initiator'],
   policy: ['galaxy', 'year', 'country', 'policy', 'from', 'to'],
 };
-const GOV_BUY = { public: 'GF01', upkeep: 'GF02', military: 'GF02', security: 'GF03', build: 'GF04', education: 'GF09', welfare: 'GF10' };
+// 政府が民間から買う出入り (GDP に入る。tools/fiscal-panel.js の GOV_BUY と同じ) と、その目的 (COFOG)
+const GOV_BUY = { public: 'GF01', upkeep: 'GF02', military: 'GF02', security: 'GF03', build: 'GF04', health: 'GF07', education: 'GF09', welfare: 'GF10' };
+// 政府の支出のうち、民間から買うのでないもの (GDP に入れない。fiscal-panel.js と同じ): 年金 (家計への移転。回 KE2)・研究の予算 (首都の家計へ。回 KE6。COFOG の基礎研究 GF0105)
+const GOV_FN = { pension: 'GF10', research: 'GF01' };
 
 // onYear(g, y) = 年の始めに呼ぶ (試験でわざと政策を変えるため)
 function play(sim, seed, years, nations, emit, onYear = null) {
@@ -122,17 +125,18 @@ function play(sim, seed, years, nations, emit, onYear = null) {
       const P51G = Math.max(0, -G('build'));
       const P3_S13 = buy - P51G;
       const B1GQ = (va[r] || 0) + buy;
-      const tax = Math.max(0, G('tax')), ctax = Math.max(0, G('ctax')), tariff = Math.max(0, G('tariff'));
+      // 研究開発の税額控除 (種類 rdcredit。回 KE6) は、会社の研究開発費の割合を政府が返すもの。税の減りとして所得への税から引く (GFS 2014 の 5 章の税額控除)
+      const tax = Math.max(0, G('tax')) - Math.max(0, -G('rdcredit')), ctax = Math.max(0, G('ctax')), tariff = Math.max(0, G('tariff'));
       const grants = Math.max(0, G('grant')) + Math.max(0, G('tribute'));
       const intIn = Math.max(0, G('interest')), intOut = Math.max(0, -G('interest'));
       const other = Math.max(0, G('natives'));
       const GR11 = tax + ctax + tariff, GR14 = intIn + other, GR = GR11 + grants + GR14;
-      const cof = { GF01: 0, GF02: 0, GF03: 0, GF04: 0, GF09: 0, GF10: 0 };
-      for (const [kind, code] of Object.entries(GOV_BUY)) cof[code] += Math.max(0, -G(kind));
+      const cof = { GF01: 0, GF02: 0, GF03: 0, GF04: 0, GF07: 0, GF09: 0, GF10: 0 };
+      for (const [kind, code] of [...Object.entries(GOV_BUY), ...Object.entries(GOV_FN)]) cof[code] += Math.max(0, -G(kind));
       const GE_TR = Math.max(0, -G('grant')) + Math.max(0, -G('tribute'));
       const GE = Object.values(cof).reduce((a, v) => a + v, 0) + intOut + GE_TR;
       const B9 = Object.entries(f).filter(([k]) => !k.startsWith('bond:')).reduce((a, [, by]) => a + (by.gov || 0), 0);
-      emit('sna', { galaxy: seed, year, country: r, name: name(r), POP: r6(pop[r] || 0), B1GQ: r6(B1GQ), P3_S14: r6(-S('spend', 'hh')), P3_S13: r6(P3_S13), P51G_S13: r6(P51G), P6: r6(P6[r] || 0), P7: r6(P7[r] || 0), D1: r6(S('wages', 'hh')), D2: r6(ctax + tariff), D5: r6(tax), B9_S13: r6(B9) });
+      emit('sna', { galaxy: seed, year, country: r, name: name(r), POP: r6(pop[r] || 0), B1GQ: r6(B1GQ), P3_S14: r6(-S('spend', 'hh')), P3_S13: r6(P3_S13), P51G_S13: r6(P51G), P51G_S11: r6(Math.max(0, -S('invest', 'fm'))), P6: r6(P6[r] || 0), P7: r6(P7[r] || 0), D1: r6(S('wages', 'hh')), D2: r6(ctax + tariff), D5: r6(tax), B9_S13: r6(B9) });
       emit('gfs', { galaxy: seed, year, country: r, GR: r6(GR), GR11: r6(GR11), GR111: r6(tax), GR114: r6(ctax), GR115: r6(tariff), GR13: r6(grants), GR14: r6(GR14), GR141: r6(intIn), GE: r6(GE), ...Object.fromEntries(Object.entries(cof).map(([k, v]) => [k, r6(v)])), GF0107: r6(intOut), GE_TR: r6(GE_TR), GNLB: r6(GR - GE) });
       const b = B(r), dep = b.hh[0] + b.fm[0] + b.gov[0] + b.nat[0], loan = b.hh[1] + b.fm[1] + b.gov[1] + b.nat[1];
       emit('balance', { galaxy: seed, year, country: r, S14_F2_A: r6(b.hh[0]), S14_F4_L: r6(b.hh[1]), S11_F2_A: r6(b.fm[0]), S11_F4_L: r6(b.fm[1]), S13_F2_A: r6(b.gov[0]), S13_F4_L: r6(b.gov[1]), S13_F3_L: r6(b.gov[2]), S1N_F2_A: r6(b.nat[0]), S1N_F4_L: r6(b.nat[1]), S122_F2_L: r6(dep), S122_F4_A: r6(loan), S122_F3_A: r6(b.gov[2]), S122_RES_A: r6(dep - loan - b.gov[2]) });

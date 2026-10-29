@@ -34,13 +34,7 @@
 
 ## 知らせ
 
-(2026-10-23 から、新しい知らせは `docs/notices/DO/` に 1 件 1 ファイルで来る (`docs/notices/README.md`)。下は前からの知らせ。片付けたら消す)
-
-- 2026-10-22 画面と最初の体験 (回 GA5・B-060) から: プレイ記録の形 (DO3 の道具が読むもの)。ホームの「記録を書き出す」のファイル = `{ app: 'nolongerubiquitous', edition, kind: 'playlog', exportedAt, sessions: [...] }`。セッションは `{ id, startedAt, seed, y0, y1, visibleMs, runningMs, pausedMs, idleMs, views: { 画面: ms }, vw, vh, ed, firsts: { colony, route, regime } (開いてからの秒), entries: [{ t: 開いてからの秒, y: ゲームの年, k, ... }], summary }`。`k` は act・set・fleet・fleetclear (命令)・speed・view・ui・home・idle (30 秒以上の操作なし。s = 秒)・memo (tag・text・snap・at・view)・first (what)。F04 は `firsts` の最小、F05 は止めていない間の命令の間隔、F03 は memo の confused と idle、F01・F02 は startedAt と visibleMs。同意 (QD-55 = a) した人だけが記録される。古い記録 (GA5 より前) には vw・vh・ed・firsts がない。
-- 2026-10-22 画面と最初の体験 (回 GA4・B-058) から: 評論家の 2-6 の「結末の型の分布 (自動対戦)」を測るときは、`g.ending()` (`src/screen/eras-score.js`。状態を読むだけ) が `{ type: 'empire' | 'federation' | 'balance' | 'decline', label, causes, share, indep, loose }` を返す。手元の 10 試合 (300 年): 地球だけの銀河 4 つはどれも帝国の維持、6 か国の銀河 6 つは均衡 5・衰え 1、連邦への移行は 0 (AI の家臣の既定の型が自治の家族でないため)。
-
-- 2026-10-22 画面と最初の体験 (回 GA2・B-048) から: 評論家の 0-7 の「1 時間あたりの重大な知らせの数を CI の表に出す」を道具の側でするときは、`src/screen/events-ui.js` の `railNews(g, g.knownEvents(), new Set(g.acked), () => false)` が、知らせの帯で目立たせる知らせ (自国に関わる・飢餓と不足は除く・同じ星系と種類の続報は束ねる・40 年に 12 件まで) をそのまま返す (`majors` と、予算を超えた件数 `over`)。40 年 ≈ 遊んで 1 時間。GA2 の手元の測り (銀河 1・4・9・11 × 300 年 × 6 か国): 前は 40 年あたり平均 78・最大 192 件、後は平均約 9・最大 12 件。
-- 2026-10-22 政治 (回 SE1・#185) から: `tools/tests/save.js` の 1 を直した (ユーザーの許可あり。`docs/requests/2026-10-22-SE.md` の SE-2)。前は「回 R1 の前のゲームのセーブを読んで 40 年進めた筋が、前のゲームで続けた筋と同じ」を見ていたので、遊びを変えて乱数の並びが変わる PR は、どのレーンでもかならず落ちた。いまは「前のゲームのセーブがいまのゲームで読める」と「読んだものを保存して読み直しても、続けた筋が同じ (保存で何も落ちない)」を見る。前のゲームの筋との比べは外した。
+新しい知らせは `docs/notices/DO/` に 1 件 1 ファイルで来る (`docs/notices/README.md`)。前からの知らせ (回 GA2・GA4・GA5・SE1) は回 DO7 で片付けた: 結末の型の分布と 1 時間あたりの重大な知らせの数は `docs/backlog.md` の B-222・B-223 に移し、プレイ記録の形は `docs/fun.md` の 8、セーブの試験の直しは `tools/tests/save.js` の先頭にある。
 
 ## 気をつけること
 

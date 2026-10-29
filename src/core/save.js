@@ -113,7 +113,6 @@ const SAVE_LEGACY = [
   ['util', (game) => game.util],
   ['tech', (game) => game.tech],
   ['alpha', (game) => (game.alpha !== undefined ? game.alpha : undefined)],
-  ['gpts', (game) => (game.gpts?.length ? game.gpts : undefined)], // 汎用技術 (GPT。回 KE6。経済の gptStep)
   ['aif', (game) => (game.aif ? game.aif : undefined)],
   ['routes', (game) => game.routes],
   ['cargo', (game) => game.cargo],

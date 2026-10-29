@@ -10,7 +10,7 @@
 
 ## CI (GitHub Actions)
 
-PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメント (1 つを書き直す) とジョブの要約に出す。
+PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメント (1 つを書き直す) とジョブの要約に出す。試験 (`tests`)・自動対戦 (`battle`)・面白さの代わりの数 (`fun`) は別の実行機で同時に回し、最後のジョブ `test` が 3 つの表をまとめて PR に書き、合否 (落ちた試験・止まったジョブ・面白さの数の止める線) を出す (回 DO7。前は 1 つのジョブで順に回して、遅い日に 40 分の上限に当たった)。途中で止まったジョブの表は「表がない」と出る。
 
 - `node tools/ci-tests.js`: 組み立て → 目標のファイルの固定の確認 → `tools/tests` の試験 (置いたファイルを自動で拾う。回 DO4・B-221。回し方と合否は各ファイルの先頭の `exports.ci` に書く。書き方は `docs/parallel.md` の 7 の道具と検証)。出力から合否を決め (`docs/handoff.md` の 14 と同じ見方)、Markdown の表を出す。1 つでも落ちたら失敗。名前を渡すとその試験だけ (`node tools/ci-tests.js det net`)
 - `node tools/ci-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数]`: 画面なしの版で、main と PR を同じシードで回し、入植地・人口・戦争・独立・資金などの平均と 10〜90% を並べる。合否は付けない (釣り合いが知らないうちに動いていないかを見る)
@@ -292,3 +292,19 @@ node tools/session-check.js --check # tools/sessions.json と docs/sessions.md �
 ```
 
 回の順番 (どの回の前にどの回が済んでいる必要があるか) は `tools/sessions.json`。済んだかは、main の `docs/status/<レーン>.md` の「## 済んだ回」の行 (`- GA1 (#180)`) で決まる (`git fetch origin main` してから読む。`SESSION_CHECK_LOCAL=1` で手元のファイル)。
+
+## ほかの道具 (一覧。回 DO7 で足した)
+
+上の節に書いていない道具。使い方は各ファイルの先頭のコメント。
+
+- `tools/src.js`: `src/index.html` の `//#include` を中身に置き換えて 1 枚に組み立てる (`--ref <git の参照>`・`--out`・`--check`)。組み立て・画面なしの版・CI はこれを通して読む
+- `tools/check-targets.js`: 合わせる目標 (`targets/targets.json`) の形とハッシュ (`targets.lock`) を確かめる。`--lock` で固定し直す (「目標の変更」の PR だけ)
+- `tools/ci-judge.js`: CI の試験の合否の小道具 (`tools/tests` の各ファイルの `exports.ci` から使う)
+- `tools/i18n.js`: 画面の文字列を集めて言語ごとの表 (`src/outward/lang-en.js`) とそろえる (`--sync`・`--todo`・`--stats`。`docs/i18n.md`)。`tools/i18n-scan.js` は英語の画面に残った日本語を探す
+- `tools/battles-headless.js`: 艦隊戦の法則 (R16) を CDB90 と同じ回帰で測る
+- `tools/demography-panel.js`: 年齢つきの人口のパネル (R36・R37)。`data/build/build_demography.py` で測る
+- `tools/innovation-panel.js`・`tools/gpt-panel.js`: 技術革新の国・年のパネル (R66〜) と汎用技術の採用の表 (R77)。`data/build/build_innovation.py` で測る
+- `tools/capital-panel.js`: 投資と資本の国・年のパネル (R78・R79)。`data/build/build_capital.py --game` で測る
+- `tools/secession-analyze.js`: 離反の自動対戦 (`tools/secession.js`) の結果を集計する (存続年数の中央値・統治体制ごとの独立の起きやすさ)
+- `tools/p0-measure.js`: P0 監査の実測 (`docs/P0-audit.md`。Chromium で開く)
+- `tools/unlzma.js`: LZMA の展開器 (ほかの道具から使う)
