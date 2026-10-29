@@ -174,18 +174,18 @@
     const budget = {};
     for (const k of Object.keys(BUDGET)) budget[k] = Number(d[k] ?? cur.budget?.[k] ?? 0);
     // 幅と刻みは docs/policy-ranges.md (前の段階の名前 (重税など) は刻みに乗らなくてもよい)
-    if ((typeof rawTax === 'number' && !onStep(tax, TAX_RANGE, TAX_STEP)) || tax < TAX_RANGE[0] - 1e-9 || tax > TAX_RANGE[1] + 1e-9) return fail(`税率は ${TAX_RANGE[0] * 100}〜${TAX_RANGE[1] * 100}% (刻み ${TAX_STEP * 100}%)`);
-    if (!onStep(rate, RATE_RANGE, RATE_STEP)) return fail(`政策金利は年 ${RATE_RANGE[0] * 100}〜${RATE_RANGE[1] * 100}% (刻み ${RATE_STEP * 100}%)`);
-    if (!onStep(deficit, DEFICIT_RANGE, DEFICIT_STEP)) return fail(`赤字の上限は GDP の 0〜${DEFICIT_RANGE[1] * 100}% (刻み ${DEFICIT_STEP * 100}%)`);
-    if (!onStep(ctax, CTAX_RANGE, CTAX_STEP)) return fail(`消費税は 0〜${CTAX_RANGE[1] * 100}% (刻み ${CTAX_STEP * 100}%)`);
-    if (!onStep(tariff, TARIFF_RANGE, TARIFF_STEP)) return fail(`関税は 0〜${TARIFF_RANGE[1] * 100}% (刻み ${TARIFF_STEP * 100}%)`);
-    if (!onStep(rdcredit, RDCREDIT_RANGE, RDCREDIT_STEP)) return fail(`研究開発の税額控除は 0〜${RDCREDIT_RANGE[1] * 100}% (刻み ${RDCREDIT_STEP * 100}%)`);
-    if (Object.values(budget).some((v) => !onStep(v, BUDGET_RANGE, BUDGET_STEP))) return fail(`予算は機能ごとに 0〜${BUDGET_RANGE[1] * 100}% (刻み ${BUDGET_STEP * 100}%)`);
+    if ((typeof rawTax === 'number' && !onStep(tax, TAX_RANGE, TAX_STEP)) || tax < TAX_RANGE[0] - 1e-9 || tax > TAX_RANGE[1] + 1e-9) return fail(JA`税率は ${TAX_RANGE[0] * 100}〜${TAX_RANGE[1] * 100}% (刻み ${TAX_STEP * 100}%)`);
+    if (!onStep(rate, RATE_RANGE, RATE_STEP)) return fail(JA`政策金利は年 ${RATE_RANGE[0] * 100}〜${RATE_RANGE[1] * 100}% (刻み ${RATE_STEP * 100}%)`);
+    if (!onStep(deficit, DEFICIT_RANGE, DEFICIT_STEP)) return fail(JA`赤字の上限は GDP の 0〜${DEFICIT_RANGE[1] * 100}% (刻み ${DEFICIT_STEP * 100}%)`);
+    if (!onStep(ctax, CTAX_RANGE, CTAX_STEP)) return fail(JA`消費税は 0〜${CTAX_RANGE[1] * 100}% (刻み ${CTAX_STEP * 100}%)`);
+    if (!onStep(tariff, TARIFF_RANGE, TARIFF_STEP)) return fail(JA`関税は 0〜${TARIFF_RANGE[1] * 100}% (刻み ${TARIFF_STEP * 100}%)`);
+    if (!onStep(rdcredit, RDCREDIT_RANGE, RDCREDIT_STEP)) return fail(JA`研究開発の税額控除は 0〜${RDCREDIT_RANGE[1] * 100}% (刻み ${RDCREDIT_STEP * 100}%)`);
+    if (Object.values(budget).some((v) => !onStep(v, BUDGET_RANGE, BUDGET_STEP))) return fail(JA`予算は機能ごとに 0〜${BUDGET_RANGE[1] * 100}% (刻み ${BUDGET_STEP * 100}%)`);
     const total = Object.values(budget).reduce((a, v) => a + v, 0);
-    if (total > BUDGET_TOTAL + 1e-9) return fail(`予算は合わせて税収の ${BUDGET_TOTAL * 100}% まで`);
+    if (total > BUDGET_TOTAL + 1e-9) return fail(JA`予算は合わせて税収の ${BUDGET_TOTAL * 100}% まで`);
     if (Math.abs(tax - taxRateOf(cur.tax)) < 1e-9 && ctax === (cur.ctax || 0) && tariff === (cur.tariff || 0) && rate === cur.rate && cb === cb0 && deficit === (cur.deficit || 0) && rdcredit === (cur.rdcredit ?? FISCAL_DEFAULT.rdcredit) && Object.keys(BUDGET).every((k) => budget[k] === (cur.budget?.[k] || 0))) return fail('いまと同じ');
     this.fiscal = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, since: this.year, prev: { tax: taxRateOf(cur.tax), ctax: cur.ctax || 0, tariff: cur.tariff || 0, rate: cur.rate, cb: cb0, deficit: cur.deficit || 0, rdcredit: cur.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...(cur.budget || FISCAL_DEFAULT.budget) } } };
-    const parts = [`税率は ${(tax * 100).toFixed(1)}%`, `消費税は ${(ctax * 100).toFixed(1)}%`, `関税は ${(tariff * 100).toFixed(1)}%`, cb ? '政策金利は中央銀行に任せる' : `政策金利は年 ${(rate * 100).toFixed(2)}%`, `赤字の上限は ${deficit ? `GDP の ${(deficit * 100).toFixed(1)}%` : 'なし (国債を出さない)'}`, `研究開発の税額控除は ${(rdcredit * 100).toFixed(1)}%`, `予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
-    this.event('goal', this.cap, `財政を変えた (${parts.join('、')})。遠い星系には知らせが光速で届いてから効く`, true);
+    const parts = [JA`税率は ${(tax * 100).toFixed(1)}%`, JA`消費税は ${(ctax * 100).toFixed(1)}%`, JA`関税は ${(tariff * 100).toFixed(1)}%`, cb ? '政策金利は中央銀行に任せる' : JA`政策金利は年 ${(rate * 100).toFixed(2)}%`, JA`赤字の上限は ${deficit ? JA`GDP の ${(deficit * 100).toFixed(1)}%` : 'なし (国債を出さない)'}`, JA`研究開発の税額控除は ${(rdcredit * 100).toFixed(1)}%`, JA`予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
+    this.event('goal', this.cap, JA`財政を変えた (${parts.join('、')})。遠い星系には知らせが光速で届いてから効く`, true);
     return { ok: true };
   }

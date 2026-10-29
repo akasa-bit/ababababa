@@ -39,6 +39,8 @@
 
 | ファイル | 持ち主 | 行 | 中身 |
 |---|---|---|---|
+| `outward/lang-en.js` | 外向き (鍵の行は、足したレーンが書いてよい) | 2,414 | 英語の表 (I18N_EN。日本語の文 → 英語。`node tools/i18n.js --sync` がそろえる。回 T1・`docs/i18n.md`) |
+| `outward/i18n.js` | 外向き | 330 | 言語 (LANG)・翻訳の関数 (TR・JA・TX)・名前と数の書き方・画面の骨組みと安全網の訳 (回 T1) |
 | `screen/page.html` | 画面と最初の体験 | 532 | CSS (配色・額縁・書体) と、画面の骨組みの HTML |
 | `core/base.js` | 共通 (世話役: 道具と検証) | 167 | 版 (EDITION・EDITIONS)・決まった計算 (DMath)・乱数 (Rng)・セーブの項目の登録 (saveField) |
 | `core/galaxy.js` | 共通 (世話役: 道具と検証) | 478 | 恒星・惑星・実在の星の表 (STARS の区切り)・銀河の作り方 |

@@ -14,15 +14,15 @@ function eraReview(g, n) {
   const unseen = all.filter((e) => seenOf(e) >= y1);
   const late = known.reduce((m, e) => (!m || seenOf(e) - e.year > seenOf(m) - m.year ? e : m), null);
   const points = [];
-  if (late && seenOf(late) - late.year >= 1) points.push(`いちばん遅れて届いた知らせ: ${late.text} — ${Math.floor(late.year)}年に起き、地球が知ったのは ${Math.floor(seenOf(late))}年 (${(seenOf(late) - late.year).toFixed(0)} 年遅れ)`);
+  if (late && seenOf(late) - late.year >= 1) points.push(TR`いちばん遅れて届いた知らせ: ${late.text} — ${Math.floor(late.year)}年に起き、地球が知ったのは ${Math.floor(seenOf(late))}年 (${(seenOf(late) - late.year).toFixed(0)} 年遅れ)`);
   // 講和を結んだあとも、遠い前線では戦いが続いていた (講和の知らせが届くまで)
   const peace = all.filter((e) => e.kind === 'politics' && e.good && /白紙講和を結んだ|講和条約が結ばれた/.test(e.text)).pop();
   if (peace) {
     const after = all.filter((e) => e.kind === 'battle' && e.year > peace.year);
-    if (after.length) points.push(`${Math.floor(peace.year)}年に講和を結んだあとも、艦隊戦が ${after.length} 回起きていた (最後は ${Math.floor(after[after.length - 1].year)}年・${g.system(after[after.length - 1].sys)?.name || ''})`);
+    if (after.length) points.push(TR`${Math.floor(peace.year)}年に講和を結んだあとも、艦隊戦が ${after.length} 回起きていた (最後は ${Math.floor(after[after.length - 1].year)}年・${g.system(after[after.length - 1].sys)?.name || ''})`);
   }
-  if (unseen.length) points.push(`この時代に起きたのに、まだ地球に届いていない出来事が ${unseen.length} 件ある (例: ${unseen[0].text})`);
-  if (!points.length) points.push('この時代、地球に届いた知らせと本当の歴史は、ほとんど同じ順だった (近い星系が多かった)');
+  if (unseen.length) points.push(TR`この時代に起きたのに、まだ地球に届いていない出来事が ${unseen.length} 件ある (例: ${unseen[0].text})`);
+  if (!points.length) points.push(TR('この時代、地球に届いた知らせと本当の歴史は、ほとんど同じ順だった (近い星系が多かった)'));
   // 並べる行: 遅れの大きい出来事から REVIEW_ROWS 個 (同じ出来事を、左は届いた順・右は起きた順に並べるので、順の入れ替わりが見える)
   const rows = new Set([...all].sort((a, b) => seenOf(b) - b.year - (seenOf(a) - a.year) || b.year - a.year).slice(0, REVIEW_ROWS));
   return { n, y0, y1, known: known.filter((e) => rows.has(e)), truth: truth.filter((e) => rows.has(e)), points, seenOf };
@@ -30,12 +30,12 @@ function eraReview(g, n) {
 function showEraReview(g, n) {
   const r = eraReview(g, n);
   setSpeed(0);
-  const row = (e, t, side) => `<li data-t="${t.toFixed(3)}" data-side="${side}"><span class="yr">${Math.floor(t)}</span> ${esc(e.text)}${side === 'k' && r.seenOf(e) - e.year >= 1 ? ` <span class="muted">(${Math.floor(e.year)}年の出来事)</span>` : ''}${side === 't' && r.seenOf(e) >= r.y1 ? ' <span class="bad">まだ届いていない</span>' : ''}</li>`;
-  $('endbox').innerHTML = `<div class="card review"><h2>${r.y0}〜${r.y1}年の答え合わせ</h2>
+  const row = (e, t, side) => `<li data-t="${t.toFixed(3)}" data-side="${side}"><span class="yr">${Math.floor(t)}</span> ${esc(e.text)}${side === 'k' && r.seenOf(e) - e.year >= 1 ? TR` <span class="muted">(${Math.floor(e.year)}年の出来事)</span>` : ''}${side === 't' && r.seenOf(e) >= r.y1 ? TR(' <span class="bad">まだ届いていない</span>') : ''}</li>`;
+  $('endbox').innerHTML = TR`<div class="card review"><h2>${r.y0}〜${r.y1}年の答え合わせ</h2>
     <p class="muted">地球が見ていた歴史と、本当の歴史。<span id="rv-year">${r.y0}</span>年</p>
     <ul class="points">${r.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
-    <div class="cols"><div><h3>地球が見ていた歴史 (届いた順)</h3><ol>${r.known.map((e) => row(e, r.seenOf(e), 'k')).join('') || '<li class="muted">なし</li>'}</ol></div>
-      <div><h3>本当の歴史 (起きた順)</h3><ol>${r.truth.map((e) => row(e, e.year, 't')).join('') || '<li class="muted">なし</li>'}</ol></div></div>
+    <div class="cols"><div><h3>地球が見ていた歴史 (届いた順)</h3><ol>${r.known.map((e) => row(e, r.seenOf(e), 'k')).join('') || TR('<li class="muted">なし</li>')}</ol></div>
+      <div><h3>本当の歴史 (起きた順)</h3><ol>${r.truth.map((e) => row(e, e.year, 't')).join('') || TR('<li class="muted">なし</li>')}</ol></div></div>
     <div class="btns"><button id="rvgo">次の時代へ</button><button id="rvagain" class="ghost">もう一度早回し</button></div></div>`;
   $('endbox').hidden = false;
   $('rvgo').onclick = () => { $('endbox').hidden = true; app.reviewAnim = null; };

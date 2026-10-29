@@ -210,7 +210,7 @@ function finalizeBody(body, star) {
   if (rad) {
     body.rad = rad;
     if (ED.physics.flare === true && rad.surf > RADIATION.limitSv && body.settle.grade === 3) { // 地表で暮らせないので、地下の街 (適性 2) の扱い (ゲーム版は表示だけで、適性は変えない)
-      body.settle = { ...body.settle, grade: 2, notes: [...body.settle.notes, `地表の被曝 ${(rad.surf * 1000).toFixed(0)} mSv/年`] };
+      body.settle = { ...body.settle, grade: 2, notes: [...body.settle.notes, JA`地表の被曝 ${(rad.surf * 1000).toFixed(0)} mSv/年`] };
     }
   }
   return body;
@@ -243,7 +243,7 @@ function generatePlanets(rng, star, sysName, maxA) {
   bodies.forEach((b) => {
     if (b.type === 'belt') {
       b.id = `belt${b.a.toFixed(2)}`;
-      b.name = `${sysName} 小惑星帯`;
+      b.name = JA`${sysName} 小惑星帯`;
     } else {
       const l = String.fromCharCode(letter++);
       b.id = l;
@@ -318,6 +318,7 @@ function makeNamer(rng) {
       let name = k(a, SYL_A, KANA_A) + k(a2, SYL_A, KANA_A) + k(b, SYL_B, KANA_B) + KANA_C[SYL_C.indexOf(c)];
       for (let i = 2; kana.has(name); i++) name = `${name.replace(/ \d+$/, '')} ${i}`;
       kana.add(name);
+      nameAlias(name, n); // 英語の画面では英字の形で出す (outward/i18n.js。用語集の names.systems)
       return name;
     }
   };

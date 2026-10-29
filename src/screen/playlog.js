@@ -129,7 +129,7 @@ async function saveMemo() {
     for (const c of PlayLog.all()) for (const e of c.entries) if (e.snap === k) e.snap = null;
   }
   PlayLog.persist();
-  uiNote(`メモを記録した${tag ? ` (${MEMO_TAGS[tag]})` : ''}`);
+  uiNote(TR`メモを記録した${tag ? ` (${MEMO_TAGS[tag]})` : ''}`);
 }
 function exportPlayLog() {
   const sessions = PlayLog.all().map((c) => ({ ...c, summary: PlayLog.summary(c) }));
@@ -142,24 +142,24 @@ function exportPlayLog() {
 }
 // ホーム画面の「プレイ記録」
 function playLogHtml() {
-  const fmtMin = (m) => (m >= 60 ? `${(m / 60).toFixed(1)} 時間` : `${m.toFixed(0)} 分`);
-  const VIEW_LABEL = { galaxy: '星間マップ', system: '星系マップ', events: 'イベント', cands: '候補地', home: 'ホーム', 'empire/overview': '帝国・概要', 'empire/routes': '帝国・交易路', 'empire/migration': '帝国・移民', 'empire/military': '帝国・軍事', 'empire/politics': '帝国・政治' };
+  const fmtMin = (m) => (m >= 60 ? TR`${(m / 60).toFixed(1)} 時間` : TR`${m.toFixed(0)} 分`);
+  const VIEW_LABEL = { galaxy: TR('星間マップ'), system: TR('星系マップ'), events: TR('イベント'), cands: TR('候補地'), home: TR('ホーム'), 'empire/overview': TR('帝国・概要'), 'empire/routes': TR('帝国・交易路'), 'empire/migration': TR('帝国・移民'), 'empire/military': TR('帝国・軍事'), 'empire/politics': TR('帝国・政治') };
   const rows = PlayLog.all().slice(-8).reverse().map((c) => {
     const m = PlayLog.summary(c);
-    return `<tr><td>${esc(new Date(m.startedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}</td><td>${fmtMin(m.minutes)}</td><td>${m.years.toFixed(0)} 年</td>
+    return TR`<tr><td>${esc(new Date(m.startedAt).toLocaleString(LOCALE, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}</td><td>${fmtMin(m.minutes)}</td><td>${m.years.toFixed(0)} 年</td>
       <td>${Math.round(m.pausedShare * 100)}%</td><td>${m.actsPerMin.toFixed(1)}</td><td>${fmtMin(m.idleMin)}</td>
-      <td>${m.topViews.map(([v, f]) => `${esc(VIEW_LABEL[v] || v)} ${Math.round(f * 100)}%`).join('・')}</td><td>${m.memos}${Object.keys(m.tags).length ? ` (${Object.entries(m.tags).map(([t, n]) => `${MEMO_TAGS[t]}${n}`).join('・')})` : ''}</td></tr>`;
+      <td>${m.topViews.map(([v, f]) => `${esc(VIEW_LABEL[v] || v)} ${Math.round(f * 100)}%`).join(TR('・'))}</td><td>${m.memos}${Object.keys(m.tags).length ? ` (${Object.entries(m.tags).map(([t, n]) => `${MEMO_TAGS[t]}${n}`).join(TR('・'))})` : ''}</td></tr>`;
   }).join('');
-  const memos = PlayLog.memos().slice(-10).reverse().map((e) => `<div class="row"><div class="info">${e.tag ? `<b>${MEMO_TAGS[e.tag]}</b> ` : ''}${esc(e.text || '')}<br><span class="muted">西暦 ${Math.floor(e.at ?? e.y)}年</span></div>
-    ${e.snap ? `<button data-home="memoload" data-k="${esc(e.snap)}">この時点をロード</button>` : '<span class="muted">状態は残っていない</span>'}</div>`).join('');
+  const memos = PlayLog.memos().slice(-10).reverse().map((e) => TR`<div class="row"><div class="info">${e.tag ? `<b>${MEMO_TAGS[e.tag]}</b> ` : ''}${esc(e.text || '')}<br><span class="muted">西暦 ${Math.floor(e.at ?? e.y)}年</span></div>
+    ${e.snap ? TR`<button data-home="memoload" data-k="${esc(e.snap)}">この時点をロード</button>` : TR('<span class="muted">状態は残っていない</span>')}</div>`).join('');
   const ask = app.homeArmed === 'logstop'; // 記録を止めるとき: すべて消すかを聞く
-  return `<section><h3>プレイ記録</h3>
-    <p class="muted">自分がどう遊んだかを記録する (このブラウザの中だけ。開発者に届くのは「記録を書き出す」で作ったファイルを自分で送ったときだけ)。${PlayLog.consent === 'yes' ? '記録してよいと答えている。' : PlayLog.consent === 'no' ? '記録しないと答えている。' : 'まだ答えていない。'}ヘッダーの「メモ」で、退屈・分からない・迷う・面白いと感じた瞬間を、その時点の状態と一緒に残せる。</p>
-    <div class="row">${ask ? '<span>記録を止める。これまでの記録は:</span><button data-home="logstoperase">すべて消す</button><button data-home="logstopkeep">残す</button><button class="ghost" data-home="logcancel">やめる</button>'
-      : `<button data-home="logtoggle">${PlayLog.on ? '記録を止める' : '記録をはじめる'}</button><button data-home="logexport">記録を書き出す</button><button class="ghost" data-home="logclear">${app.homeArmed === 'logclear' ? '本当に消す?' : '記録をすべて消す'}</button>`}</div>
+  return TR`<section><h3>プレイ記録</h3>
+    <p class="muted">自分がどう遊んだかを記録する (このブラウザの中だけ。開発者に届くのは「記録を書き出す」で作ったファイルを自分で送ったときだけ)。${PlayLog.consent === 'yes' ? TR('記録してよいと答えている。') : PlayLog.consent === 'no' ? TR('記録しないと答えている。') : TR('まだ答えていない。')}ヘッダーの「メモ」で、退屈・分からない・迷う・面白いと感じた瞬間を、その時点の状態と一緒に残せる。</p>
+    <div class="row">${ask ? TR('<span>記録を止める。これまでの記録は:</span><button data-home="logstoperase">すべて消す</button><button data-home="logstopkeep">残す</button><button class="ghost" data-home="logcancel">やめる</button>')
+      : TR`<button data-home="logtoggle">${PlayLog.on ? TR('記録を止める') : TR('記録をはじめる')}</button><button data-home="logexport">記録を書き出す</button><button class="ghost" data-home="logclear">${app.homeArmed === 'logclear' ? TR('本当に消す?') : TR('記録をすべて消す')}</button>`}</div>
     <details class="help"><summary>同意の文</summary><p><b>${esc(CONSENT_TEXT.title)}</b><br>${esc(CONSENT_TEXT.lead)}</p><ul>${CONSENT_TEXT.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>
-    ${rows ? `<div class="scroll"><table class="log"><tr><th>開始</th><th>遊んだ時間</th><th>進めた</th><th>止めていた</th><th>操作/分</th><th>操作なし</th><th>よく見た画面</th><th>メモ</th></tr>${rows}</table></div>` : ''}
-    ${memos ? `<h4 style="margin:8px 0 2px">最近のメモ</h4>${memos}` : ''}
+    ${rows ? TR`<div class="scroll"><table class="log"><tr><th>開始</th><th>遊んだ時間</th><th>進めた</th><th>止めていた</th><th>操作/分</th><th>操作なし</th><th>よく見た画面</th><th>メモ</th></tr>${rows}</table></div>` : ''}
+    ${memos ? TR`<h4 style="margin:8px 0 2px">最近のメモ</h4>${memos}` : ''}
   </section>`;
 }
 // セーブデータを読み込んで現在のゲームに反映する。失敗時は現在の状態を保つ。
@@ -178,10 +178,10 @@ function loadSave(d) {
 function save() {
   if (!Store.ready) return;
   const ok = writeSave(app.game, { speed: app.speed });
-  $('savestat').textContent = ok ? `自動セーブ済み ${app.game.year.toFixed(1)}年` : 'セーブできなかった (保存容量が足りないか、この環境では保存できない)';
+  $('savestat').textContent = ok ? TR`自動セーブ済み ${app.game.year.toFixed(1)}年` : TR('セーブできなかった (保存容量が足りないか、この環境では保存できない)');
 }
 
-$('savenow').onclick = () => { save(); PlayLog.add('ui', { act: 'savenow' }); uiNote('セーブした。'); };
+$('savenow').onclick = () => { save(); PlayLog.add('ui', { act: 'savenow' }); uiNote(TR('セーブした。')); };
 function exportSave() {
   const blob = new Blob([saveJSON(app.game, { speed: app.speed })], { type: 'application/json' });
   const a = document.createElement('a');
@@ -196,12 +196,12 @@ $('importfile').onchange = async (e) => {
   if (!f) return;
   const d = parseSave(await f.text());
   if (d && loadSave(d)) { save(); app.game.message('セーブデータを読み込んだ。'); closeHome(d.speed); }
-  else { app.homeNote = 'セーブデータを読み込めなかった。'; renderHome(); }
+  else { app.homeNote = TR('セーブデータを読み込めなかった。'); renderHome(); }
 };
 
 // 同意の画面 (B-060・QD-58): 「はじめる」から始めたときは画面の真ん中に出す。答えるまで記録はしない
 function consentCardHtml(cls = '') {
-  return `<div class="card consent ${cls}"><h2>${esc(CONSENT_TEXT.title)}</h2><p>${esc(CONSENT_TEXT.lead)}</p>
+  return TR`<div class="card consent ${cls}"><h2>${esc(CONSENT_TEXT.title)}</h2><p>${esc(CONSENT_TEXT.lead)}</p>
     <ul>${CONSENT_TEXT.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
     <div class="btns"><button data-consent="yes">記録してよい</button><button class="ghost" data-consent="no">記録しない</button></div></div>`;
 }
@@ -213,7 +213,7 @@ function showConsent() {
 // 帯の一番上 (まだ答えていないとき。国家選択などほかの始め方の人にも出す)
 function consentRailHtml() {
   if (PlayLog.consent || Net.on || app.homeOpen) return '';
-  return `<div class="dec consent"><div class="m">${esc(CONSENT_TEXT.title)}</div><div class="t">${esc(CONSENT_TEXT.lead)} 記録はこの端末の中だけ。いつでも止めて消せる。</div>
+  return TR`<div class="dec consent"><div class="m">${esc(CONSENT_TEXT.title)}</div><div class="t">${esc(CONSENT_TEXT.lead)} 記録はこの端末の中だけ。いつでも止めて消せる。</div>
     <div class="opts"><button data-consent="yes">記録してよい</button><button class="ghost" data-consent="no">記録しない</button><button class="ghost" data-consent="more">くわしく</button></div></div>`;
 }
 document.addEventListener('click', (e) => {
@@ -223,5 +223,5 @@ document.addEventListener('click', (e) => {
   PlayLog.setConsent(b.dataset.consent);
   if (b.closest('#endbox')) $('endbox').hidden = true;
   setHtml($('rail'), railHtml(app.game));
-  uiNote(b.dataset.consent === 'yes' ? '遊び方の記録をはじめた (ホーム画面の「プレイ記録」から止められる)' : '遊び方は記録しない (ホーム画面の「プレイ記録」から変えられる)');
+  uiNote(b.dataset.consent === 'yes' ? TR('遊び方の記録をはじめた (ホーム画面の「プレイ記録」から止められる)') : TR('遊び方は記録しない (ホーム画面の「プレイ記録」から変えられる)'));
 });

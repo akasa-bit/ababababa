@@ -15,7 +15,7 @@ function runCmd(g, pi, act, d) {
     if (r && (!r.ok || r.msg)) {
       const old = g.msgTo;
       if (g.players.length > 1) g.msgTo = pi;
-      g.message(r.ok ? r.msg : `できない: ${r.reason}`);
+      g.message(r.ok ? r.msg : JA`できない: ${r.reason}`);
       g.msgTo = old;
     }
     g.live = null; // 観戦モードの「いまの様子」を取り直す

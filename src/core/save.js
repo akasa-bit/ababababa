@@ -199,7 +199,7 @@ function writeSave(game, extra) {
     lastSaved = cmp;
     Store.put(SAVE_KEY, cmp.replace(/"savedAt":0(?=[,}])/, () => `"savedAt":${Date.now()}`)).then((ok) => {
       saveFailed = !ok;
-      if (!ok) { lastSaved = null; $('savestat').textContent = 'セーブできなかった (保存容量が足りないか、この環境では保存できない)'; }
+      if (!ok) { lastSaved = null; $('savestat').textContent = TR('セーブできなかった (保存容量が足りないか、この環境では保存できない)'); }
     });
     return !saveFailed;
   } catch { lastSaved = null; return false; }

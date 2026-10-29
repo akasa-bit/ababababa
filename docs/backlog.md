@@ -127,9 +127,9 @@
 
 | 番号 | 中身 | 触るコードの場所 | 依存 | 大きさ | 新しいレーン案 | 出どころ |
 |---|---|---|---|---|---|---|
-| B-073 | 画面の文字列を 1 か所に集めて、訳せる形にする (ほかが止まっている時期に 1 本だけで) | `src/index.html` の全体・新しい (文字列の表) | Q2 | XL | 外向き | `sessions.md` の 18・`game-plan.md` の段 13・`critique/04-plan.md` の 3-4・7 の G6・`restart.md` の 4 |
+| B-073 | **済み (回 T1・#283。`docs/i18n.md`)** 画面の文字列を 1 か所に集めて、訳せる形にする (ほかが止まっている時期に 1 本だけで) | `src/index.html` の全体・新しい (文字列の表) | Q2 | XL | 外向き | `sessions.md` の 18・`game-plan.md` の段 13・`critique/04-plan.md` の 3-4・7 の G6・`restart.md` の 4 |
 | B-074 | **済み (#183。回 SO1。`docs/glossary/`)** 固有名詞の一覧と用語集を先に作る (訳の質で叩かれないように) | 新しい (`docs/`) | — | S | 外向き | `critique/04-plan.md` の 3 の 12 |
-| B-075 | 英語を入れる | 新しい (文字列の表) | B-073・B-074 | M | 外向き | `sessions.md` の 18・`critique/04-plan.md` の 4-4 |
+| B-075 | **済み (回 T1・#283。`src/outward/lang-en.js`。校正は QD-73)** 英語を入れる | 新しい (文字列の表) | B-073・B-074 | M | 外向き | `sessions.md` の 18・`critique/04-plan.md` の 4-4 |
 | B-076 | 簡体中国語を入れる | 新しい (文字列の表) | B-073・B-074・Q11 | M | 外向き | `sessions.md` の 18・`critique/04-plan.md` の 4-4・6 の Q11 |
 | B-077 | ストアの文を英語と中国語に | `store/` | B-075・B-076 | S | 外向き | `status/S.md`・`store/steamworks.md` の 10 |
 | B-078 | **済み (#183。回 SO1。`store/page-ja.md` の 8)** ストアの下書きを今のゲームと突き合わせる (物理はゲーム版にも入った・第三次産業と研究が入った・従属国の型が入った) | `store/page-ja.md` | — | S | 外向き | `store/README.md`・`store/page-ja.md` の 7 |

@@ -7,7 +7,7 @@
     this.requests.push(q);
     this.earn('grant', -amt, from);
     this.cash('grant', amt, { way: q, f: 'amt' });
-    if (!auto) this.message(`${this.system(to).name} へ資金援助 ${fmtAmt(amt)} cr を送った (届くまで ${this.travelYears(from, to).toFixed(1)} 年)`, from);
+    if (!auto) this.message(JA`${this.system(to).name} へ資金援助 ${fmtAmt(amt)} cr を送った (届くまで ${this.travelYears(from, to).toFixed(1)} 年)`, from);
     return { ok: true };
   }
   // 入植後 GRANT_YEARS 年のあいだ、主人の星系は年に1回、資金の3% (最大 GRANT_MAX cr) を自動で送る (地球は設定で止められる)

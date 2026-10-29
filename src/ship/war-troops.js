@@ -36,7 +36,7 @@
     if (g * this.fleetEff(this.supplied[sys.id]?.k) * this.fleetMul(sys.id, sys.id) >= power) {
       const loss = Math.floor((power / 3) * this.rand());
       this.garrison[sys.id] = g - loss;
-      this.event('pirate', sys.id, `${sys.name} で宇宙海賊 (戦力${power}) を撃退した${loss ? ` (${loss} 艦隊を喪失)` : ''}`, true);
+      this.event('pirate', sys.id, JA`${sys.name} で宇宙海賊 (戦力${power}) を撃退した${loss ? JA` (${loss} 艦隊を喪失)` : ''}`, true);
     } else {
       // 地上では歩兵が抵抗し、歩兵が多いほど被害が小さくなる
       this.garrison[sys.id] = 0;
@@ -47,7 +47,7 @@
       for (const c of this.coloniesIn(sys.id)) c.pop *= 1 - 0.1 * f;
       const lost = Math.min(Math.ceil(power / 2), Math.ceil(tp));
       if (tp) this.loseTroops(sys.id, lost);
-      this.event('pirate', sys.id, `${sys.name} が宇宙海賊 (戦力${power}) に略奪された${g ? ` (駐留 ${g} 艦隊は全滅)` : ''}${tp ? ` — 歩兵の抵抗で被害は ${pct(f)} に (歩兵 ${lost} 連隊を喪失)` : ''}`);
+      this.event('pirate', sys.id, JA`${sys.name} が宇宙海賊 (戦力${power}) に略奪された${g ? JA` (駐留 ${g} 艦隊は全滅)` : ''}${tp ? JA` — 歩兵の抵抗で被害は ${pct(f)} に (歩兵 ${lost} 連隊を喪失)` : ''}`);
     }
   }
 
@@ -59,7 +59,7 @@
     const paid = this.pay(GIFT_COST, undefined, sysId);
     if (!paid.ok) return paid;
     n.st.rel = Math.min(100, n.st.rel + 10);
-    this.message(`${n.def.species}に贈り物をした (友好度 ${Math.round(n.st.rel)})`, sysId);
+    this.message(JA`${n.def.species}に贈り物をした (友好度 ${Math.round(n.st.rel)})`, sysId);
     return { ok: true };
   }
   integrate(sysId, bodyId) {
@@ -71,7 +71,7 @@
     this.addPeople(c, n.st.pop, { [n.def.species]: 1 });
     n.st.status = 'integrated';
     this.asRealm(this.realmOf(sysId), () => this.stats.integrated++);
-    this.event('natives', sysId, `${n.def.species} ${fmtPop(n.st.pop)}が ${c.name} の市民になった`, true);
+    this.event('natives', sysId, JA`${n.def.species} ${fmtPop(n.st.pop)}が ${c.name} の市民になった`, true);
     return { ok: true };
   }
   conquer(sysId, bodyId) {
@@ -81,7 +81,7 @@
     const g = this.garrison[sysId] || 0;
     const power = g + this.troopPower(sysId);
     if (g < 1) return fail('制宙権のための艦隊が1つ以上必要');
-    if (power < need) return fail(`戦力不足 (艦隊+歩兵で ${need} 以上が必要)`);
+    if (power < need) return fail(JA`戦力不足 (艦隊+歩兵で ${need} 以上が必要)`);
     // 損害は歩兵から先に受ける
     const tp = this.troopPower(sysId);
     const troopLoss = Math.min(Math.ceil(need / 3), Math.floor(tp));
@@ -90,7 +90,7 @@
     this.garrison[sysId] = g - loss;
     this.subjugate(n);
     this.wars = this.wars.filter((w) => !(w.sys === sysId && w.body === bodyId));
-    this.event('natives', sysId, `${n.def.species}を制圧した (${loss} 艦隊・歩兵 ${troopLoss} 連隊を喪失)。他の先住民の友好度が下がった`);
+    this.event('natives', sysId, JA`${n.def.species}を制圧した (${loss} 艦隊・歩兵 ${troopLoss} 連隊を喪失)。他の先住民の友好度が下がった`);
     return { ok: true };
   }
 
@@ -111,7 +111,7 @@
     n.st.slave = 'market';
     n.st.rel = -100;
     this.blame(n, 15);
-    this.event('natives', sysId, `${n.def.species}を奴隷化した (市場奴隷)。他の先住民の友好度が 15 下がった`);
+    this.event('natives', sysId, JA`${n.def.species}を奴隷化した (市場奴隷)。他の先住民の友好度が 15 下がった`);
     return { ok: true };
   }
   setSlaveType(sysId, bodyId, type) {
@@ -123,7 +123,7 @@
       n.st.wasLivestock = true;
       this.blame(n, 15);
     }
-    this.event('natives', sysId, `${n.def.species}の扱いを「${SLAVE_TYPES[type]}」にした`);
+    this.event('natives', sysId, JA`${n.def.species}の扱いを「${SLAVE_TYPES[type]}」にした`);
     return { ok: true };
   }
   liberate(sysId, bodyId) {
@@ -133,7 +133,7 @@
     n.st.rel = -40;
     this.infamy = Math.max(0, this.infamy - 10);
     for (const st of Object.values(this.natives)) if (st !== n.st && st.status === 'independent') st.rel = Math.min(100, st.rel + 5);
-    this.event('natives', sysId, `${n.def.species}を解放した。他の先住民の友好度が少し上がった`, true);
+    this.event('natives', sysId, JA`${n.def.species}を解放した。他の先住民の友好度が少し上がった`, true);
     return { ok: true };
   }
   // --- 征服戦争 ---
@@ -147,7 +147,7 @@
     n.st.rel = Math.min(n.st.rel, -60);
     const def = this.nativeDefense(n);
     this.wars.push({ sys: sysId, body: bodyId, start: this.year, progress: 0, def0: def, enemy: def, lost: 0 });
-    this.event('war', sysId, `${this.target(sysId, bodyId).name} で${n.def.species} (${TECH_LABEL[n.def.tech]}) との征服戦争が始まった`);
+    this.event('war', sysId, JA`${this.target(sysId, bodyId).name} で${n.def.species} (${TECH_LABEL[n.def.tech]}) との征服戦争が始まった`);
     this.warsYearly(true);
   }
   militia(c) { return c ? 0.3 + 0.5 * GM.log10(1 + c.pop) : 0; }
@@ -174,7 +174,7 @@
       const win = () => {
         this.subjugate(n);
         this.wars = this.wars.filter((x) => x !== w);
-        this.event('war', w.sys, `${c.name} の征服戦争に勝利し、${n.def.species}を支配下に置いた (${(this.year - w.start).toFixed(0)} 年、歩兵 ${w.lost} 連隊を喪失)`, true);
+        this.event('war', w.sys, JA`${c.name} の征服戦争に勝利し、${n.def.species}を支配下に置いた (${(this.year - w.start).toFixed(0)} 年、歩兵 ${w.lost} 連隊を喪失)`, true);
       };
       if (first) {
         // 同行した歩兵だけで圧倒できれば、すぐに決着する
@@ -216,7 +216,7 @@
     const n = Math.min(avail, Math.ceil(gap) + 1);
     if (this.sendTroops(colKey(src), key, n, true).ok) {
       w.reinforced = this.year;
-      this.event('war', w.sys, `${c.name} の征服戦争が劣勢のため、${this.system(lord).name} が歩兵 ${n} 連隊を送り込んだ`);
+      this.event('war', w.sys, JA`${c.name} の征服戦争が劣勢のため、${this.system(lord).name} が歩兵 ${n} 連隊を送り込んだ`);
     }
   }
   // 支配下に置く (制圧・征服戦争の共通処理)
@@ -254,7 +254,7 @@
         st.rel = -100;
         for (const c of this.coloniesIn(sys)) c.pop *= 0.9;
         this.garrison[sys] = Math.max(0, (this.garrison[sys] || 0) - 1);
-        this.event('natives', sys, `${n.def.species}の奴隷が反乱を起こし、独立を取り戻した (入植地の人口が1割減少)`);
+        this.event('natives', sys, JA`${n.def.species}の奴隷が反乱を起こし、独立を取り戻した (入植地の人口が1割減少)`);
       }
     }
   }
@@ -287,7 +287,7 @@
     if (c.lv.barracks < 1) return fail('軍事教練所がない');
     if (c.pop < TROOP_DRAFT * 4) return fail('人口が少なすぎる');
     if (this.pending((j) => j.type === 'troop' && j.col === colKey(c))) return fail('訓練中');
-    return this.order(TROOP_COST, c.sys, { type: 'troop', col: colKey(c), quiet, label: `${c.name} の歩兵連隊` });
+    return this.order(TROOP_COST, c.sys, { type: 'troop', col: colKey(c), quiet, label: JA`${c.name} の歩兵連隊` });
   }
   // 軍事教練所は年に Lv 連隊まで自動で訓練し、Lv×5 連隊を保つ (資金が費用の2倍以上あるとき)
   barracksYearly() {
@@ -334,7 +334,7 @@
     if (SIM_ONLY && !route.direct) this.bookPath('troop', (troops + slave) * TROOP_KG, route.path, 'route');
     else this.bookShip('troop', (troops + slave) * TROOP_KG, route.direct ? OFFROUTE_SPEED : SHIP_SPEED, route.direct ? 'free' : 'route', from.sys, to.sys);
     this.troopMoves.push({ id: this.nextShipId++, from: fromKey, to: toKey, path: route.path, times, arrive: times[times.length - 1], troops, slave });
-    this.message(`${from.name} → ${to.name} へ歩兵 ${troops + slave} 連隊が出発 (${route.direct ? '直行 0.9c' : '交易路経由'}、到着まで ${route.years.toFixed(1)} 年)`, from.sys);
+    this.message(JA`${from.name} → ${to.name} へ歩兵 ${troops + slave} 連隊が出発 (${route.direct ? '直行 0.9c' : '交易路経由'}、到着まで ${route.years.toFixed(1)} 年)`, from.sys);
     return { ok: true };
   }
   // 交易路でつながる全入植地の歩兵をこの入植地へ集める

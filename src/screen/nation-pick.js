@@ -8,13 +8,13 @@ function nationCard(g, n) {
   const stars = clamp((n.cap === 0 ? 1 : 2) + (near && near.d < 18 ? 1 : 0) + (crowd >= 2 ? 1 : 0), 1, 3);
   const home = g.target(n.cap, n.body)?.name || g.system(n.cap).name;
   const hm = app.picking.humans.includes(n.cap);
-  return `<div class="nat ${app.picking.cap === n.cap ? 'on' : ''}" data-pick="${n.cap}">
+  return TR`<div class="nat ${app.picking.cap === n.cap ? 'on' : ''}" data-pick="${n.cap}">
     <span class="dot" style="background:${realmColor(n.cap)}"></span> <b class="nm">${esc(n.name)}</b> <span class="muted">首都 ${esc(home)} (${esc(g.system(n.cap).name)})</span><br>
     ${ico('pop')}人口 ${fmtPop(cols.reduce((a, c) => a + c.pop, 0))}・${ico('colony')}星系 ${g.realmSystems(n.cap).length}・種族 ${esc(n.species)}<br>
     ${n.traits.map((t) => `<span class="tr" title="${esc(SPECIES_TRAITS[t].desc)}">${ico(`tr-${t}`)}${SPECIES_TRAITS[t].label}</span>`).join('')}
-    <div class="muted">${n.traits.map((t) => SPECIES_TRAITS[t].desc).join('・')}</div>
-    <div>難しさの目安 <b>${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</b> <span class="muted">${near ? `いちばん近い国: ${esc(near.m.name)} ${fmt(near.d, 1)} 光年・25 光年以内に ${crowd} か国` : ''}${n.cap === 0 ? '・議会と時代の課題が道案内をする' : ''}</span></div>
-    <div class="nb"><button class="hm ${hm ? 'on' : ''}" data-human="${n.cap}" title="人間が動かす国にする (2つ以上でホットシート・ネット対戦)">${hm ? '✓ 人間が動かす' : '＋人間'}</button>${app.picking.edit === n.cap ? '' : `<button class="edit" data-ed="open" data-cap="${n.cap}">アレンジする</button>`}</div>
+    <div class="muted">${n.traits.map((t) => TX(SPECIES_TRAITS[t].desc)).join(TR('・'))}</div>
+    <div>難しさの目安 <b>${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</b> <span class="muted">${near ? TR`いちばん近い国: ${esc(near.m.name)} ${fmt(near.d, 1)} 光年・25 光年以内に ${crowd} か国` : ''}${n.cap === 0 ? TR('・議会と時代の課題が道案内をする') : ''}</span></div>
+    <div class="nb"><button class="hm ${hm ? 'on' : ''}" data-human="${n.cap}" title="人間が動かす国にする (2つ以上でホットシート・ネット対戦)">${hm ? TR('✓ 人間が動かす') : TR('＋人間')}</button>${app.picking.edit === n.cap ? '' : TR`<button class="edit" data-ed="open" data-cap="${n.cap}">アレンジする</button>`}</div>
     ${app.picking.edit === n.cap ? nationEditor(g, n) : ''}
   </div>`;
 }
@@ -23,25 +23,25 @@ const NATION_TRAITS_MAX = 3;
 function nationEditor(g, n) {
   const pk = app.picking;
   const clash = (t) => n.traits.some((x) => x !== t && TRAIT_CLASH.some((c) => c.includes(x) && c.includes(t)));
-  let home = `<p>母星: <b>${esc(g.target(n.cap, n.body)?.name || '')}</b> (${esc(g.system(n.cap).name)}・太陽系から ${fmt(g.sysDist(0, n.cap), 1)} 光年)
-    ${n.cap === 0 ? '<span class="muted">地球の国の母星は変えられない</span>' : `<button data-ed="home">${pk.homeFor === n.cap ? '選び直すのをやめる' : '母星を選び直す'}</button>`}</p>`;
+  let home = TR`<p>母星: <b>${esc(g.target(n.cap, n.body)?.name || '')}</b> (${esc(g.system(n.cap).name)}・太陽系から ${fmt(g.sysDist(0, n.cap), 1)} 光年)
+    ${n.cap === 0 ? TR('<span class="muted">地球の国の母星は変えられない</span>') : `<button data-ed="home">${pk.homeFor === n.cap ? TR('選び直すのをやめる') : TR('母星を選び直す')}</button>`}</p>`;
   // 国家選択は地図を出す前の全画面なので、星系は一覧から選ぶ (太陽系から近い順。母星にできる星系だけ)
   if (pk.homeFor === n.cap) {
     const opts = g.galaxy.systems.filter((x) => x.bodies.some((b) => b.type === 'rocky') && !homeworldProblem(g, n.cap, x.id))
       .map((x) => ({ x, d: g.sysDist(0, x.id) })).sort((a, b) => a.d - b.d);
-    home += `<label>星系 <select data-ed="homesys"><option value="">選ぶ</option>${opts.map(({ x, d }) => `<option value="${x.id}" ${pk.homeSys === x.id ? 'selected' : ''}>${esc(x.name)} (太陽系から ${fmt(d, 1)} 光年)</option>`).join('')}</select></label>`;
+    home += TR`<label>星系 <select data-ed="homesys"><option value="">選ぶ</option>${opts.map(({ x, d }) => TR`<option value="${x.id}" ${pk.homeSys === x.id ? 'selected' : ''}>${esc(x.name)} (太陽系から ${fmt(d, 1)} 光年)</option>`).join('')}</select></label>`;
   }
   if (pk.homeFor === n.cap && pk.homeSys !== undefined) {
     const sys = g.system(pk.homeSys);
     const why = homeworldProblem(g, n.cap, pk.homeSys);
     const bodies = sys.bodies.filter((b) => b.type === 'rocky');
     home += why ? `<p class="bad">${esc(sys.name)}: ${esc(why)}</p>`
-      : bodies.length ? `<p>${esc(sys.name)} の岩石惑星から選ぶ:</p><div class="btns">${bodies.map((b) => `<button data-ed="body" data-sys="${sys.id}" data-body="${b.id}">${esc(b.name)} <small>住みやすさ ${b.settle?.grade || 0}${b.natives ? `・先住民 ${esc(b.natives.species)}` : ''}</small></button>`).join('')}</div>`
-        : `<p class="bad">${esc(sys.name)} には岩石惑星がない</p>`;
+      : bodies.length ? TR`<p>${esc(sys.name)} の岩石惑星から選ぶ:</p><div class="btns">${bodies.map((b) => TR`<button data-ed="body" data-sys="${sys.id}" data-body="${b.id}">${esc(b.name)} <small>住みやすさ ${b.settle?.grade || 0}${b.natives ? TR`・先住民 ${esc(b.natives.species)}` : ''}</small></button>`).join('')}</div>`
+        : TR`<p class="bad">${esc(sys.name)} には岩石惑星がない</p>`;
   }
-  return `<div class="ed">
+  return TR`<div class="ed">
     <label>国の名前 <input data-ed="name" maxlength="20" value="${esc(n.name)}"></label>
-    <label>種族の名前 <input data-ed="species" maxlength="12" value="${esc(n.species)}" ${n.cap === 0 ? 'disabled title="人類の名前は変えられない"' : ''}></label>
+    <label>種族の名前 <input data-ed="species" maxlength="12" value="${esc(n.species)}" ${n.cap === 0 ? TR('disabled title="人類の名前は変えられない"') : ''}></label>
     <p>特性 (${NATION_TRAITS_MAX} つまで。食い違うものは同時に選べない)</p>
     <div class="trs">${Object.entries(SPECIES_TRAITS).map(([k, t]) => `<label title="${esc(t.desc)}"><input type="checkbox" data-tr="${k}" ${n.traits.includes(k) ? 'checked' : ''} ${!n.traits.includes(k) && (n.traits.length >= NATION_TRAITS_MAX || clash(k)) ? 'disabled' : ''}> ${ico(`tr-${k}`)}${t.label}</label>`).join('')}</div>
     ${home}
@@ -50,9 +50,9 @@ function nationEditor(g, n) {
 }
 // 母星にできない理由 (なければ空)
 function homeworldProblem(g, cap, sys) {
-  if (sys === 0) return '太陽系は地球の国の母星';
+  if (sys === 0) return TR('太陽系は地球の国の母星');
   const near = g.nations.find((m) => m.cap !== cap && g.sysDist(m.cap, sys) < 6);
-  if (near) return `${near.name}の首都に近すぎる (6 光年以上離す)`;
+  if (near) return TR`${near.name}の首都に近すぎる (6 光年以上離す)`;
   return '';
 }
 // 国の一覧を書き換えて、開始時の状態を作り直す (国家選択のあいだは、まだ何も進んでいない)
@@ -80,7 +80,7 @@ function pickEdit(e) {
     rebuildNations((defs) => { const n = defs[idx(defs)]; n.name = t.value.trim() || nationName(n.species, n.traits); });
   } else if (t.dataset.ed === 'species' && e.type === 'change') {
     const v = t.value.trim();
-    if (!v || g.nations.some((m) => m.cap !== cap && m.species === v)) { uiNote(v ? 'ほかの国と同じ種族の名前は使えない' : '種族の名前が空'); return renderPick(); }
+    if (!v || g.nations.some((m) => m.cap !== cap && m.species === v)) { uiNote(v ? TR('ほかの国と同じ種族の名前は使えない') : TR('種族の名前が空')); return renderPick(); }
     rebuildNations((defs) => { const n = defs[idx(defs)]; const suf = suffixOf(n.name, n.species); if (suf) n.name = `${v.replace(/人$/, '')}${suf}`; n.species = v; });
   } else if (t.dataset.tr && e.type === 'change') {
     rebuildNations((defs) => {
@@ -109,12 +109,12 @@ function pickEdit(e) {
 function renderPick() {
   const g = app.game;
   const hs = app.picking.humans;
-  $('pick').innerHTML = `<div class="phead"><button class="ghost" data-pick="back">戻る</button><h2>国家選択</h2></div>
+  $('pick').innerHTML = TR`<div class="phead"><button class="ghost" data-pick="back">戻る</button><h2>国家選択</h2></div>
     <p class="muted">カードを押して国を選ぶ。「アレンジする」で国の名前・種族・特性・母星を変えられる。「＋人間」で人間の国を増やすと、ホットシート (1 台を交代で使う) かネット対戦で遊べる。選ばなかった国は AI が動かす。難易度: <b>${HANDICAP[g.handicap].label}</b></p>
     <div class="nats">${g.nations.map((n) => nationCard(g, n)).join('')}</div>
     <div class="go">${hs.length > 1
-    ? `<button class="big" data-pick="go">人間 ${hs.length} 人・交代で遊ぶ</button><button class="big" data-pick="net">人間 ${hs.length} 人・ネット対戦</button>`
-    : `<button class="big" data-pick="go">${esc(g.nationOf(hs[0]).name)}ではじめる</button>`}</div>`;
+    ? TR`<button class="big" data-pick="go">人間 ${hs.length} 人・交代で遊ぶ</button><button class="big" data-pick="net">人間 ${hs.length} 人・ネット対戦</button>`
+    : TR`<button class="big" data-pick="go">${esc(g.nationOf(hs[0]).name)}ではじめる</button>`}</div>`;
 }
 // 首都を地図の真ん中に出す (国家選択は全画面なので、はじめたときに見える)
 function centerPick(sys) { galaxyView.centerOn(sys); }
@@ -156,7 +156,7 @@ $('pick').onclick = (e) => {
     app.picking = null;
     $('pick').hidden = true;
     PlayLog.add('home', { act: 'nation', caps });
-    for (let i = 0; i < caps.length; i++) if (caps[i] !== 0) g.asPlayer(i, () => { if (caps.length > 1) g.msgTo = i; g.message(`${g.nationOf(caps[i]).name}として歩みはじめた。首都は ${g.system(caps[i]).name}。`); g.msgTo = undefined; });
+    for (let i = 0; i < caps.length; i++) if (caps[i] !== 0) g.asPlayer(i, () => { if (caps.length > 1) g.msgTo = i; g.message(JA`${g.nationOf(caps[i]).name}として歩みはじめた。首都は ${g.system(caps[i]).name}。`); g.msgTo = undefined; });
     app.selectSystem(g.cap);
     galaxyView.centerOn(g.system(g.cap));
     save();

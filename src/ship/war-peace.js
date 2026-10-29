@@ -164,7 +164,7 @@
       if (this.year - Math.max(known, st?.lastEv ?? -Infinity) < WAREND.lapse) continue;
       const from = this.warNews[key]?.from ?? a;
       this.endWar(a, b, from);
-      this.event('politics', from, `${this.realmName(a)}と${this.realmName(b)}の戦争は、${WAREND.lapse} 年のあいだ戦いがなく、立ち消えになった`, this.isHuman(a) || this.isHuman(b));
+      this.event('politics', from, JA`${this.realmName(a)}と${this.realmName(b)}の戦争は、${WAREND.lapse} 年のあいだ戦いがなく、立ち消えになった`, this.isHuman(a) || this.isHuman(b));
     }
   }
   // 講和の申し入れを送る。人間の国へは、送った首都 from から相手の首都 to へ光速で届いてから見える (at = 届く年)。
@@ -182,7 +182,7 @@
     const ws = this.warScoreAt(from, a, b); // 講和の結ばれた星系に届いている戦果で
     if (Math.abs(ws) < TREATY.white) {
       this.endWar(a, b, from);
-      this.event('politics', from, `${this.realmName(a)}と${this.realmName(b)}が白紙講和を結んだ (戦勝点 ${ws})`, this.isHuman(a) || this.isHuman(b));
+      this.event('politics', from, JA`${this.realmName(a)}と${this.realmName(b)}が白紙講和を結んだ (戦勝点 ${ws})`, this.isHuman(a) || this.isHuman(b));
       return;
     }
     const [w, l] = ws > 0 ? [a, b] : [b, a];
@@ -201,7 +201,7 @@
     c.sys = this.galaxy.systems.filter((x) => x.id !== loser && this.seenBy(from, x.id)?.[1] === loser).map((x) => x.id);
     c.cash = Math.min(TREATY.cashMax, Math.floor(Math.max(0, this.gov(loser).credits) / TREATY.cash));
     for (const b of c.bids) if (!this.isHuman(b.realm)) b.picks = this.aiTreatyPicks(c, b);
-    this.event('politics', from, `${this.realmName(loser)}との講和会議が開かれた (${c.bids.map((b) => `${this.realmName(b.realm)} 持ち点 ${b.pts}`).join('・')})`, c.bids.some((b) => this.isHuman(b.realm)) || this.isHuman(loser));
+    this.event('politics', from, JA`${this.realmName(loser)}との講和会議が開かれた (${c.bids.map((b) => JA`${this.realmName(b.realm)} 持ち点 ${b.pts}`).join('・')})`, c.bids.some((b) => this.isHuman(b.realm)) || this.isHuman(loser));
     if (c.bids.every((b) => b.picks)) return this.resolveConference(c);
     // 人間の国が条件を選べるのは、会議の知らせが光速でその首都に届いてから (B-030)。期限はそこから数える
     const at = this.year + Math.max(0, ...c.bids.filter((b) => !b.picks).map((b) => this.sysDist(from, b.realm)));
@@ -220,14 +220,14 @@
   treatyTerms(c) {
     const l = c.loser;
     const out = [];
-    if (c.bids.length === 1) { const claim = this.claimBy(l) === c.bids[0].realm; out.push({ id: 'v', label: `${this.realmName(l)}を${claim ? '取り戻す' : '従属させる'} (配下の星系ごと)`, cost: claim ? RECLAIM.vassal : TREATY.vassal }); } // 自分から独立した国は請求権のぶん安く (政治の RECLAIM。回 SE5・B-028)
+    if (c.bids.length === 1) { const claim = this.claimBy(l) === c.bids[0].realm; out.push({ id: 'v', label: JA`${this.realmName(l)}を${claim ? '取り戻す' : '従属させる'} (配下の星系ごと)`, cost: claim ? RECLAIM.vassal : TREATY.vassal }); } // 自分から独立した国は請求権のぶん安く (政治の RECLAIM。回 SE5・B-028)
     const systems = c.sys ? c.sys.map((id) => this.system(id)) : this.realmSystems(l).filter((x) => x.id !== l); // 前の版の会議は、いまの様子で
     for (const x of systems) {
       const pop = this.coloniesIn(x.id).reduce((k, col) => k + col.pop, 0);
-      out.push({ id: `s${x.id}`, sys: x.id, label: `${x.name} を割譲させる`, cost: 5 + Math.min(25, Math.round(Math.sqrt(pop) / 4)) });
+      out.push({ id: `s${x.id}`, sys: x.id, label: JA`${x.name} を割譲させる`, cost: 5 + Math.min(25, Math.round(Math.sqrt(pop) / 4)) });
     }
     const cash = c.cash ?? Math.min(TREATY.cashMax, Math.floor(Math.max(0, this.gov(l).credits) / TREATY.cash));
-    for (let i = 1; i <= cash; i++) out.push({ id: `c${i}`, label: `賠償金 ${fmtAmt(TREATY.cash)} cr (${i} 口目)`, cost: TREATY.cashPts });
+    for (let i = 1; i <= cash; i++) out.push({ id: `c${i}`, label: JA`賠償金 ${fmtAmt(TREATY.cash)} cr (${i} 口目)`, cost: TREATY.cashPts });
     return out;
   }
   // AI の選び方: 近くて持ち点が足りれば従属、そうでなければ自分の首都に近い星系から、残りは賠償金
@@ -299,12 +299,12 @@
           const amt = Math.min(TREATY.cash, Math.max(0, this.gov(l).credits));
           this.cash('treaty', -amt, { gov: l });
           this.cash('treaty', amt, { gov: b.realm });
-          got.push(`賠償金 ${fmtAmt(amt)} cr`);
+          got.push(JA`賠償金 ${fmtAmt(amt)} cr`);
         }
       }
       lines.push(`${this.realmName(b.realm)}: ${got.length ? got.join('・') : 'なし'}`);
     });
-    this.event('politics', c.from, `${this.realmName(l)}との講和条約が結ばれた (${lines.join(' / ')})`, c.bids.some((b) => this.isHuman(b.realm)) || this.isHuman(l));
+    this.event('politics', c.from, JA`${this.realmName(l)}との講和条約が結ばれた (${lines.join(' / ')})`, c.bids.some((b) => this.isHuman(b.realm)) || this.isHuman(l));
   }
   // 人間の国への講和の申し入れに応じる (命令 acceptpeace)
   acceptPeace(d) {

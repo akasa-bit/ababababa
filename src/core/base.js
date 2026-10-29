@@ -163,7 +163,7 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 // 書く順は、前からの項目 (SAVE_LEGACY) の後ろに、登録した順。番号の予約と同じく、足す項目の名前は docs/registry.md に書く
 const SAVE_FIELDS = [];
 function saveField(key, write, { init = null, read = null } = {}) {
-  if (SAVE_FIELDS.some((f) => f.key === key)) throw new Error(`セーブの項目 ${key} が 2 回登録された`);
+  if (SAVE_FIELDS.some((f) => f.key === key)) throw new Error(JA`セーブの項目 ${key} が 2 回登録された`);
   SAVE_FIELDS.push({ key, write, init, read });
 }
 

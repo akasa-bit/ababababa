@@ -151,7 +151,7 @@ class Game {
       else {
         const nat = body.natives || body.nativesSpare;
         species = nat && !used.has(nat.species) ? nat.species : '';
-        while (!species || used.has(species)) species = `${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`;
+        while (!species || used.has(species)) species = JA`${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`;
         traits = speciesTraits(species);
         name = nationName(species, traits, rng);
       }

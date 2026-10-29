@@ -91,6 +91,6 @@
     gv.include = { ...(gv.include || {}) };
     if (value === 'auto') delete gv.include[key]; else gv.include[key] = value;
     if (!Object.keys(gv.include).length) delete gv.include;
-    this.event('politics', id, `${this.system(id).name} で${key === 'local' ? 'ここ生まれ' : 'ほかの種族'}を${GROUP_INCLUDE[value]}ことにした`, true);
+    this.event('politics', id, JA`${this.system(id).name} で${key === 'local' ? 'ここ生まれ' : 'ほかの種族'}を${GROUP_INCLUDE[value]}ことにした`, true);
     return { ok: true };
   }

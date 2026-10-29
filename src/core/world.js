@@ -14,13 +14,13 @@ function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, negle
     { label: '最近の指令', v: -(2 * orders) },
     { label: '主人の星系の艦隊', v: Math.min(15, 2 * lordShips) },
     { label: '支援で深まった従属', v: Math.min(40, dep) },
-    ...(NEGLECT_MAX ? [{ label: '放っておかれた年数', v: -Math.min(NEGLECT_MAX, NEGLECT_RATE * Math.max(0, neglect - NEGLECT_GRACE)), note: `${Math.floor(neglect)} 年` }] : []), // NEGLECT_MAX = 0 なら効かない
-    { label: `統治体制 (${REGIMES[regime].label})`, v: REGIMES[regime].loyalty },
+    ...(NEGLECT_MAX ? [{ label: '放っておかれた年数', v: -Math.min(NEGLECT_MAX, NEGLECT_RATE * Math.max(0, neglect - NEGLECT_GRACE)), note: JA`${Math.floor(neglect)} 年` }] : []), // NEGLECT_MAX = 0 なら効かない
+    { label: JA`統治体制 (${REGIMES[regime].label})`, v: REGIMES[regime].loyalty },
     { label: '減税・自治', v: concession ? 15 : 0 },
     ...(arrears ? [{ label: '関税受領官 (滞納)', v: -H33.arrears }] : []),
-    { label: `国家方針${policy ? ` (${POLICIES[policy].label})` : ''}`, v: POLICY_LOYALTY[policy] || 0 },
+    { label: JA`国家方針${policy ? ` (${POLICIES[policy].label})` : ''}`, v: POLICY_LOYALTY[policy] || 0 },
     ...(exhaustion ? [{ label: '国の戦争疲弊', v: -EXHAUST.loyalty * exhaustion, note: `${Math.round(exhaustion)}` }] : []),
-    ...(Math.abs(taxK - 1) > 1e-9 ? [{ label: `税 (${(taxRateOf(tax) * 100).toFixed(1)}%${ctax ? ` + 消費税 ${(ctax * 100).toFixed(1)}%` : ''})`, v: TAX_LOYALTY * (taxK - 1) }] : []),
+    ...(Math.abs(taxK - 1) > 1e-9 ? [{ label: JA`税 (${(taxRateOf(tax) * 100).toFixed(1)}%${ctax ? JA` + 消費税 ${(ctax * 100).toFixed(1)}%` : ''})`, v: TAX_LOYALTY * (taxK - 1) }] : []),
     ...(welfare ? [{ label: '福祉の予算', v: BUDGET.welfare.loyalty * welfare }] : []),
   ];
 }
@@ -60,7 +60,7 @@ function makeNatives(rng, b) {
   if (!lush || !b.settle || b.settle.grade < 2 || !rng.chance(b.settle.grade === 3 ? 0.55 : 0.3)) return null;
   const tech = rng.weighted([0, 1, 2, 3], (t) => [0.4, 0.35, 0.18, 0.07][t]);
   return {
-    species: `${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`,
+    species: JA`${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`,
     pop: rng.logUniform(1, 300) * GM.pow((1 + tech), 1.5),
     tech,
     mood: Math.round(rng.range(-40, 30)),
@@ -77,7 +77,7 @@ function makeMoreNatives(rng, b) {
   if (!p || !rng.chance(p)) return null;
   const tech = rng.weighted([0, 1, 2, 3], (t) => (lush ? [0.4, 0.35, 0.18, 0.07] : [0.6, 0.3, 0.08, 0.02])[t]);
   return {
-    species: `${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`,
+    species: JA`${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`,
     pop: rng.logUniform(1, lush ? 300 : 40) * GM.pow((1 + tech), 1.5),
     tech,
     mood: Math.round(rng.range(-40, 30)),

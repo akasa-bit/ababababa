@@ -18,8 +18,8 @@
     const end = START_YEAR + ERA_YEARS * (n + 1);
     if (n === 0) {
       return [
-        { id: 'systems', target: 3, check: 'reach', deadline: START_YEAR + 50, label: `${START_YEAR + 50}年までに、${this.realmName(this.cap)}の星系を3つにする` },
-        { id: 'routes', target: 3, check: 'reach', deadline: end, label: `${end}年までに、${this.realmName(this.cap)}の中の交易路を3本にする` },
+        { id: 'systems', target: 3, check: 'reach', deadline: START_YEAR + 50, label: JA`${START_YEAR + 50}年までに、${this.realmName(this.cap)}の星系を3つにする` },
+        { id: 'routes', target: 3, check: 'reach', deadline: end, label: JA`${end}年までに、${this.realmName(this.cap)}の中の交易路を3本にする` },
       ];
     }
     const sys = this.realmSystems(this.cap).length;
@@ -36,9 +36,9 @@
     for (const tk of out) {
       tk.deadline = end;
       tk.label = {
-        systems: `${end}年までに、${this.realmName(this.cap)}を${tk.target}星系にする`, routes: `${end}年までに、${this.realmName(this.cap)}の中の交易路を${tk.target}本にする`,
-        pop: `${end}年までに、${this.realmName(this.cap)}の人口を${fmtPop(tk.target)}にする`, calm: `${end}年の時点で、不満を抱える家臣を0にする`,
-        integrate: `${end}年までに、先住民を1つ市民として迎える`, subjugate: `${end}年までに、独立国を1つ従属させる`,
+        systems: JA`${end}年までに、${this.realmName(this.cap)}を${tk.target}星系にする`, routes: JA`${end}年までに、${this.realmName(this.cap)}の中の交易路を${tk.target}本にする`,
+        pop: JA`${end}年までに、${this.realmName(this.cap)}の人口を${fmtPop(tk.target)}にする`, calm: JA`${end}年の時点で、不満を抱える家臣を0にする`,
+        integrate: JA`${end}年までに、先住民を1つ市民として迎える`, subjugate: JA`${end}年までに、独立国を1つ従属させる`,
       }[tk.id];
     }
     return out;
@@ -48,21 +48,21 @@
     if (!this.era || this.era.n !== n) {
       let done = 0;
       for (const tk of this.era?.tasks || []) {
-        if (tk.status === 'active') { tk.status = 'failed'; this.councilAdd(-10); this.event('goal', this.cap, `時代の課題を果たせなかった: ${tk.label} (議会の支持 −10)`); }
+        if (tk.status === 'active') { tk.status = 'failed'; this.councilAdd(-10); this.event('goal', this.cap, JA`時代の課題を果たせなかった: ${tk.label} (議会の支持 −10)`); }
         if (tk.status === 'done') done++;
       }
       this.era = { n, tasks: this.eraTasks(n).map((tk) => ({ ...tk, status: 'active' })), bonus: this.era ? done : 0 };
-      this.event('goal', this.cap, `${START_YEAR + ERA_YEARS * n}年、新しい時代が始まった。課題: ${this.era.tasks.map((tk) => tk.label).join(' / ')}${this.era.bonus ? `。前の時代の課題を ${this.era.bonus} つ果たしたので、この時代は政治力が年 +${2 * this.era.bonus}` : ''}`, true);
+      this.event('goal', this.cap, JA`${START_YEAR + ERA_YEARS * n}年、新しい時代が始まった。課題: ${this.era.tasks.map((tk) => tk.label).join(' / ')}${this.era.bonus ? JA`。前の時代の課題を ${this.era.bonus} つ果たしたので、この時代は政治力が年 +${2 * this.era.bonus}` : ''}`, true);
     }
     for (const tk of this.era.tasks) {
       if (tk.status !== 'active') continue;
       if (tk.check === 'reach' && this.taskMet(tk)) {
         tk.status = 'done'; tk.at = this.year; this.stats.tasksDone++;
         this.councilAdd(15);
-        this.event('goal', this.cap, `時代の課題を果たした: ${tk.label} (議会の支持 +15)`, true);
+        this.event('goal', this.cap, JA`時代の課題を果たした: ${tk.label} (議会の支持 +15)`, true);
       } else if (this.year >= tk.deadline) {
-        if (tk.check === 'end' && this.taskMet(tk)) { tk.status = 'done'; tk.at = this.year; this.stats.tasksDone++; this.councilAdd(15); this.event('goal', this.cap, `時代の課題を果たした: ${tk.label} (議会の支持 +15)`, true); }
-        else { tk.status = 'failed'; tk.at = this.year; this.councilAdd(-10); this.event('goal', this.cap, `時代の課題を果たせなかった: ${tk.label} (議会の支持 −10)`); }
+        if (tk.check === 'end' && this.taskMet(tk)) { tk.status = 'done'; tk.at = this.year; this.stats.tasksDone++; this.councilAdd(15); this.event('goal', this.cap, JA`時代の課題を果たした: ${tk.label} (議会の支持 +15)`, true); }
+        else { tk.status = 'failed'; tk.at = this.year; this.councilAdd(-10); this.event('goal', this.cap, JA`時代の課題を果たせなかった: ${tk.label} (議会の支持 −10)`); }
       }
     }
   }
@@ -80,9 +80,9 @@
     const dec = this.visibleDecisions()[0];
     const went = this.ships.find((s) => s.body !== undefined && this.realmOf(s.from) === cap) || this.knownProjects().find((j) => j.type === 'ship');
     const steps = [
-      { done: sent, label: pick ? `${distance(this.system(cap), this.system(pick.sys)).toFixed(1)} 光年の${pick.name}に入植船を送る` : went ? `${this.target(went.to, went.body).name}へ入植船を送った` : own.length ? `${own[0].name}に入植した` : '候補地のタブから、入植船を送る', pick },
-      { done: routed, label: col ? `${col.name}と${this.system(cap).name}を交易路で結ぶ (星系の欄の「交易路」から)` : `入植船が着いたら、${this.system(cap).name}と交易路で結ぶ`, sys: col?.id },
-      { done: answered, label: dec ? `届いた要求に返事をする (${this.system(dec.sys).name}。知らせの帯で答えを選ぶ)` : '星系から要求が届いたら、返事をする', sys: dec?.sys },
+      { done: sent, label: pick ? JA`${distance(this.system(cap), this.system(pick.sys)).toFixed(1)} 光年の${pick.name}に入植船を送る` : went ? JA`${this.target(went.to, went.body).name}へ入植船を送った` : own.length ? JA`${own[0].name}に入植した` : '候補地のタブから、入植船を送る', pick },
+      { done: routed, label: col ? JA`${col.name}と${this.system(cap).name}を交易路で結ぶ (星系の欄の「交易路」から)` : JA`入植船が着いたら、${this.system(cap).name}と交易路で結ぶ`, sys: col?.id },
+      { done: answered, label: dec ? JA`届いた要求に返事をする (${this.system(dec.sys).name}。知らせの帯で答えを選ぶ)` : '星系から要求が届いたら、返事をする', sys: dec?.sys },
     ];
     if (steps.every((x) => x.done)) return null;
     return { steps, now: steps.findIndex((x) => !x.done), tasks: this.era?.tasks ?? this.eraTasks(0) };
@@ -116,7 +116,7 @@
       if (ok === null) continue;
       c.status = ok ? 'done' : 'failed';
       c.at = this.year;
-      this.event('goal', this.cap, `挑戦「${CHALLENGES[c.id].label}」を${ok ? '果たした' : '果たせなかった'}`, ok);
+      this.event('goal', this.cap, JA`挑戦「${CHALLENGES[c.id].label}」を${ok ? '果たした' : '果たせなかった'}`, ok);
     }
   }
   // 点数 (いつでも見られる。終わりの年に確定する)
@@ -125,7 +125,7 @@
     const vass = Object.entries(this.govs).filter(([k, v]) => Number(k) !== this.cap && v.lord !== null && v.lord !== undefined && this.isColonized(Number(k)) && this.realmOf(Number(k)) === this.cap).map(([, v]) => v);
     const avg = vass.length ? vass.reduce((k, v) => k + (v.loyalty ?? LOYALTY_START), 0) / vass.length : 0;
     const parts = [
-      [`${this.realmName(this.cap)}の星系 (×10)`, 10 * sys.length],
+      [JA`${this.realmName(this.cap)}の星系 (×10)`, 10 * sys.length],
       ['人口 (200百万人ごとに1)', Math.round(this.realmPop(this.cap) / 200)],
       ['家臣の平均の忠誠度 (×2)', Math.round(2 * avg)],
       ['果たした時代の課題 (×40)', 40 * this.stats.tasksDone],
@@ -155,12 +155,12 @@
     const big = [...sizes.values()].filter((n) => n / total >= 0.1).length;
     const type = rivalN >= 1.5 * own || share < 0.1 ? 'decline' : vass.length >= 3 && loose >= 0.5 ? 'federation' : own >= 1.5 * rivalN && indep <= 3 ? 'empire' : 'balance';
     const causes = [
-      [`${this.realmName(cap)}の星系`, `${own} / ${total} (${Math.round(share * 100)}%)`],
-      ['いちばん大きいほかの国', rival === null ? 'なし' : `${this.realmName(rival)} ${rivalN} 星系`],
-      ['銀河の 1 割以上を持つ国', `${big} か国`],
-      ['独立を許した回数', `${indep} 回`],
+      [JA`${this.realmName(cap)}の星系`, `${own} / ${total} (${Math.round(share * 100)}%)`],
+      ['いちばん大きいほかの国', rival === null ? 'なし' : JA`${this.realmName(rival)} ${rivalN} 星系`],
+      ['銀河の 1 割以上を持つ国', JA`${big} か国`],
+      ['独立を許した回数', JA`${indep} 回`],
       ['家臣の平均の忠誠度', loyal === null ? '家臣なし' : `${Math.round(loyal)}`],
-      ['家臣までの平均の距離 (通信の遅れ)', vass.length ? `${far.toFixed(1)} 光年 (指令の往復 ${(2 * far).toFixed(0)} 年)` : '—'],
+      ['家臣までの平均の距離 (通信の遅れ)', vass.length ? JA`${far.toFixed(1)} 光年 (指令の往復 ${(2 * far).toFixed(0)} 年)` : '—'],
       ['家臣の統治の型', Object.entries(fam).map(([f, n]) => `${VASSAL_FAMILIES[f] || f} ${n}`).join('・') || '—'],
     ];
     return { type, ...ENDINGS[type], share, own, total, indep, loose, causes };
@@ -171,6 +171,6 @@
     this.eachPlayer(() => {
     this.challengesYearly();
     this.finalScore = this.score();
-    this.event('goal', this.cap, `${Math.round(this.endYear)}年、このゲームの終わりの年になった。点数 ${this.finalScore.total} (このまま続けて遊べる)`, true);
+    this.event('goal', this.cap, JA`${Math.round(this.endYear)}年、このゲームの終わりの年になった。点数 ${this.finalScore.total} (このまま続けて遊べる)`, true);
     });
   }

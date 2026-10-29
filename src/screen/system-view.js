@@ -124,7 +124,7 @@ class SystemView {
       ctx.fill();
       ctx.fillStyle = 'rgba(110,220,150,0.7)';
       ctx.font = '12px sans-serif';
-      ctx.fillText('ハビタブルゾーン', cx + R(hz.outer) * 0.7 + 4, cy - R(hz.outer) * 0.7);
+      ctx.fillText(TR('ハビタブルゾーン'), cx + R(hz.outer) * 0.7 + 4, cy - R(hz.outer) * 0.7);
     }
     const fl = frostLine(primary);
     if (R(fl) < rMax) {
@@ -134,7 +134,7 @@ class SystemView {
       ctx.setLineDash([]);
       ctx.fillStyle = 'rgba(140,200,255,0.55)';
       ctx.font = '12px sans-serif';
-      ctx.fillText('雪線', cx - R(fl) * 0.7 - 24, cy - R(fl) * 0.7);
+      ctx.fillText(TR('雪線'), cx - R(fl) * 0.7 - 24, cy - R(fl) * 0.7);
     }
 
     // 軌道リング

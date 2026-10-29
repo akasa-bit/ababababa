@@ -11,10 +11,10 @@ function renderTreaty() {
   const picks = app.treaty.picks;
   const used = picks.reduce((k, id) => k + (terms.find((t) => t.id === id)?.cost || 0), 0);
   const others = c.bids.filter((b) => b !== bid);
-  box.innerHTML = `<div class="card"><h2>${ico('peace')}講和会議: ${esc(g.realmName(c.loser))}</h2>
-    <p>持ち点 <b>${bid.pts}</b>・選んだ条件 <b class="${used > bid.pts ? 'bad' : ''}">${used}</b>${others.length ? `<br><span class="muted">ほかの勝った国: ${others.map((b) => `${esc(g.realmName(b.realm))} (持ち点 ${b.pts})`).join('・')}。同じ条件を選んだら、残りの持ち点の多い国が取る</span>` : ''}</p>
+  box.innerHTML = TR`<div class="card"><h2>${ico('peace')}講和会議: ${esc(g.realmName(c.loser))}</h2>
+    <p>持ち点 <b>${bid.pts}</b>・選んだ条件 <b class="${used > bid.pts ? 'bad' : ''}">${used}</b>${others.length ? TR`<br><span class="muted">ほかの勝った国: ${others.map((b) => TR`${esc(g.realmName(b.realm))} (持ち点 ${b.pts})`).join(TR('・'))}。同じ条件を選んだら、残りの持ち点の多い国が取る</span>` : ''}</p>
     <p class="note">押した順に入札する。持ち点を超えた分は取れない。${Math.floor(c.until)}年までに選ばなければ自動で選ぶ。</p>
-    <div class="terms">${terms.map((t) => { const i = picks.indexOf(t.id); return `<button data-tr="${t.id}" class="${i >= 0 ? 'on' : ''}">${i >= 0 ? `<b>${i + 1}.</b> ` : ''}${esc(t.label)} <small>${t.cost} 点</small></button>`; }).join('')}</div>
+    <div class="terms">${terms.map((t) => { const i = picks.indexOf(t.id); return TR`<button data-tr="${t.id}" class="${i >= 0 ? 'on' : ''}">${i >= 0 ? `<b>${i + 1}.</b> ` : ''}${esc(t.label)} <small>${t.cost} 点</small></button>`; }).join('')}</div>
     <div class="row"><button class="big" data-tr="send">この条件で講和する</button><button data-tr="auto">おまかせで選ぶ</button><button data-tr="close" class="ghost">あとで</button></div></div>`;
   box.hidden = false;
 }

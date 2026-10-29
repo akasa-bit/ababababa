@@ -119,7 +119,7 @@ const SHIP_DESIGN = {
   ages: { migrant: '国連の国際移民の年齢 (標準)', young: '働き手と子ども', home: '送り出す星系と同じ' },
 };
 const POP_FLOOR = 1e-5; // 入植地の人口の下限 [百万人] = 10 人 (前は 0.001 = 1,000 人。FU3 で 500 人の入植地を持ち上げないように下げた)
-const fmtPeople = (n) => `${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} 人`; // 人数 (端末によらない書式。記録に入るので toLocaleString は使わない)
+const fmtPeople = (n) => JA`${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} 人`; // 人数 (端末によらない書式。記録に入るので toLocaleString は使わない)
 const SHIP_TEMPLATES = {
   std: { label: '標準', speed: 'std', cargo: 0, ages: 'migrant' },
   cargo: { label: '積み荷つき', speed: 'std', cargo: 10, ages: 'migrant' },
