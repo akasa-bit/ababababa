@@ -1,0 +1,1009 @@
+diff --git a/docs/backlog.md b/docs/backlog.md
+index 4685ba8..7d1ccc8 100644
+--- a/docs/backlog.md
++++ b/docs/backlog.md
+@@ -23,7 +23,7 @@
+ | B-014 | **済み (#235。回 KE4。R01 −1.006 で合格)** 物理 (P6) で交易路の輸送量が半分になった理由を確かめる (蓄えで `routeRoom` が絞られた見込み)。R01 は物理ありの版で測り直す | `routeRoom`・`TRADE`・`E_UNIT`・`shieldOf` | — | S | 経済 | `status/C.md` の気をつけること・`physics.md` の 11 |
+ | B-015 | **済み (#236。回 KE4。1% のまま、QD-32)** 利子率の既定 (年 1%) を、Schmelzing の現代の値 (約 2%) にするか決めて直す。R01 の較正とまとめて | `FISCAL_DEFAULT`・`TRADE.rate`・`RATE_RANGE` | B-014 | S | 経済 | `status/C.md` のまだ決めていない仮の値 |
+ | B-016 | **済み (#234。回 KE4)** 交易の注文の先払いが大きい件を調べる | `TRADE`・`prepaid` | — | S | 経済 | `status/C.md` の気をつけること |
+-| B-017 | **調べた (#237。回 KE4)。QD-31 = c に決まった (2026-10-28)** 小さな政府の軍の維持費: 従属の型で払い手を分ける (約定の束の「軍事」の法が宗なら主人、分なら半分ずつ、従なら自分。`notices/KE/2026-10-28-SE-upkeep.md`)。経済の次の回で入れる | `WARSHIP_UPKEEP`・`TROOP_UPKEEP`・`funds`・`bundleOf` | — | S | 経済 | `status/C.md` の気をつけること |
++| B-017 | **済み (回 KE7)。駐留する艦隊と兵は約定の束の「軍事」の法で分け、動いている艦隊は持ち主の国の首都が払う (`docs/money.md` の 5.6)。** 調べた (#237。回 KE4)。QD-31 = c に決まった (2026-10-28)。小さな政府の軍の維持費: 従属の型で払い手を分ける (約定の束の「軍事」の法が宗なら主人、分なら半分ずつ、従なら自分。`notices/KE/2026-10-28-SE-upkeep.md`)。経済の次の回で入れる | `WARSHIP_UPKEEP`・`TROOP_UPKEEP`・`funds`・`bundleOf` | — | S | 経済 | `status/C.md` の気をつけること |
+ | B-018 | 仮の値を生データで決め直す: 税の段階と予算の効き目、研究の g0、自給の値打ち、食料の弾力性の所得の傾き、人の移る速さ | `BUDGET`・`TAX_LOYALTY`・`RESEARCH.g0`・`STRUCTURE`・`laborStep` | — | M | 経済 | `status/C.md` のまだ決めていない仮の値・`fiscal.md` の 5 |
+ | B-019 | **済み (#233。回 KE4)** 飢餓と不足の知らせが 1 試合で約 110 件・80 件ある理由を調べる (経済の壊れか、表示の段の問題か)。経済が大きく変わったので、いまの main で測り直してから | `MARKET`・`marketStep`・`EVENT_TIER` | — | S | 経済 | `critique/04-plan.md` の 0-7 と 2.3 の 7 |
+ | B-113 | **済み (#238)** 開拓星系に工業の原料が届くようにする (A): 足りなかった原料と、地元で作れば儲かる工業品の原料を交易の需要に | `market-economy.js` の 2・`trade.js` の `use` | — | S | 経済 | `regions.md` の 2 |
+@@ -70,6 +70,7 @@
+ | B-169 | 光より速い残り (船): 防衛の穴を数えるときに敵の艦隊も「向かっている」に入る (2.8 g)・宇宙の途中や入植していない星系から出る艦隊を首都のレーザーが一瞬で押す (2.8 m) | `incoming`・`pushFleet`・`bookShip` | B-167 | S | 船と戦争 | `research/game-physics-audit.md` の 2.8 の g・m。**済み (回 FU3。#278。どちらも直した: 敵の艦隊は防衛の穴に入らない・入植していない所から出る艦隊はいちばん近い自国の星系のレーザーの光が届いてから出る)** |
+ | B-173 | 交易路の受け手の減速のエネルギー: 受け手 (to) のいまの蓄えを見て出発の時点で払わせている (`routeRoom`・`routeMode`)。受け手の蓄えは光の遅れのぶん古い値で見て、減速の分は着いたときに受け手が払う (足りなければ交易路の外の遅い航行) | `routeRoom`・`routeMode`・`bookShip`・`econSeen` | — | M | 船と戦争 | 経済からの知らせ (回 KE3。`notices/FU/2026-10-24-KE-energy-ftl.md`。回 FU3 でここに移した)・監査の 2.8 の e |
+ | B-174 | **済み (FU-2。R15 1.35 で幅の中に戻った。QD-47 = a)** R15 (戦争の規模の分布。確認用) の外れ: 回 FU3 のあと、AI の国の光速の一撃がどれも相手の首都 (約 100 億人) に当たり、戦死者の裾のべき指数が 1.35 → 1.24 (32 銀河 × 300 年。幅 1.25〜1.85 をわずかに下回る。12 銀河では首都への一撃の塊を裾と見て 3.95)。一撃の使い方 (QD-47) が決まったら測り直す。確認用なので、合わせるための調整はしない | `aiStrike`・`STRIKE` | QD-47 | S | 船と戦争 | `status/FU.md` の回 FU3 |
++| B-175 | 小さな国と家臣の政府が、税収の何十倍もの艦隊と兵を駐留させ、維持費の赤字を国債で埋めて 6 年ごとに不履行を繰り返す (回 KE7 で、不履行のあとの借りられない年 (QD-26) と維持費の払い手 (B-017) を入れたあとも、8 銀河 × 150 年で 2,546 回。艦隊 1 つの維持費 年 5 cr・兵 1 つ 年 2 cr に対して、GDP 年 0.01〜0.3 cr の星系に艦隊 2〜8 か兵 1。生まれたての入植地 (20 万人) の所得が小さいため)。AI の防衛の配備 (`garrison`)・兵の置き方が払える額を見ていない。「不履行のあとで借りられない政府は駐留の艦隊を年に 1 つ解く」は試して、2,546 → 2,391 回と効きが小さいのでやめた (残りは兵の維持費の半分を払う家臣) | `ship/` の防衛の配備・`WARSHIP_UPKEEP`・`funds` | B-017 | M | 船と戦争 | `money.md` の 5.6 (回 KE7) |
+ | B-170 | **済み (#232。回 KE3。減速のエネルギーの分は船と戦争に頼んだ)** 光より速い残り (経済): 交易と資材の手配・移民が相手のいまの在庫や空きを見る、受け手が出発の時点で減速のエネルギーを払う (2.8 e)・取り消した要求の返金がすぐ (2.8 h)・先住民が接触の前から分かる (2.8 k) | `spareOf`・`procureFrom`・`migrate`・`isSurveyed` | — | M | 経済 | `research/game-physics-audit.md` の 2.8 の e・h・k |
+ | B-171 | 光より速い残り (政治と画面): 視察団・医療団が光速で届く (2.8 j。人は光より遅い)・星系の画面の惑星の位置がいまの位相 (2.8 l)・政治の表の相手の戦争疲弊がいまの値 | `inspect`・`SystemView`・`politics-ui.js` | — | S | 政治・画面と最初の体験 | `research/game-physics-audit.md` の 2.8 の j・l・回 FU4。**政治の分は済み (#226)。星系の画面の位相は GA へ** |
+ | B-172 | R14 (戦争の終わり方。確認用) の測り直し: 回 SE5 で AI の国にも席を持たせて国が大きくなり、降伏が減って、いちばん多い終わり方が条約 (36%) になった (現実は勝利 39%。差はどれも 15 点以内)。確認用のまま見るか、構造で直すか | `WAREND`・`TREATY`・`aiTreatyPicks` | — | S | 船と戦争 | `status/SE.md` の回 SE5・`negotiation.md` の 4.5 |
+diff --git a/docs/decisions.md b/docs/decisions.md
+index 8abaa30..d4e7f33 100644
+--- a/docs/decisions.md
++++ b/docs/decisions.md
+@@ -12,11 +12,8 @@
+ | 番号 | 何を決めるか | 選択肢 | いつ決めるか | 何を止めているか | 出どころ |
+ |---|---|---|---|---|---|
+ | QD-06 | ゲーム版の太陽電池の劣化 (P10) | a. 入れない。b. 入れて、素子は自動。c. 入れて、星系ごとに選ぶ。d. 開始の画面で「物理の厳しさ」を選ぶ | 保留。必勝法を探す AI (#174) で b と c を測ってから | B-036 | `docs/physics.md` の 10 |
+-| QD-28 | 財政の反応 (R28) を幅に戻すと、入植地が減る (回 KE1・B-003) | **a. この回のまま** (余った資金で国債を先に返さない。R28 0.088 → 0.045 で合格、R21 0.18 → 0.48。債務が借りられる上限 0.469 の近くになり、AI が国債で買える余地が減って、8 銀河で入植地 −8%。中央銀行と物価を合わせて −16%)。b. 前の返し方に戻す (`DEBT.repay = 1`。R28 は 0.08 で不合格のまま、入植地 −8%)。c. a のまま、借りられる上限 `DEBT.limit` を上げる (JST の国ごとの 90% 点 0.914 では前に R21 が 1.13 で幅を超えた) | **回 KE7 の始めに 1 つずつ聞く** (W2-Q3 = b) | なし (いまは a で動く。1 つの値で b に戻せる) | `docs/debt.md` の 6 |
+-| QD-32 | 利子率の既定 (中央銀行の自然な実質の利子率 `CB.rstar` と、中央銀行のない所の `TRADE.rate`) を、Schmelzing (2020) の現代の値 (1950〜2018 年の平均 2.2%・1990〜2018 年の中央値 1.85%) に上げるか (回 KE4・B-015) | **a. 年 1% のまま** (おすすめ。いまのゲーム版で R01 (交易と距離) が −1.006 で合格 (幅 −1.174〜−0.574)。財政の目標 R19〜R22・R27・R28・R33〜R35 も合格)。b. 年 2% にする (R01 が −0.21 で外れる: 利子で遠い輸入が高くなるはずが、逆に遠さが効かなくなる。財政の目標は合格のまま (R21 0.57 → 0.64・R20 0.27 → 0.21)。30 銀河 × 300 年・30 銀河 × 150 年) | **回 KE7 の始めに 1 つずつ聞く** (W2-Q3 = b) | なし (いまは a) | `docs/trade.md` の 8・`docs/fiscal.md` の 3.6 |
++| QD-34 | 財政の目標 (R19〜R22・R27・R28・R33〜R35) を測る国を、小さな国を除いて選ぶか (回 KE7。`docs/money.md` の 5.6) | **a. いまのまま (すべての国)**。小さな国の維持費 (B-175) を先に直して測り直す (おすすめ。測る国の選び方を結果を見たあとで変えないため)。b. 人口 100 万人以上の国だけ (R79 と同じ。実データの JST は 18 の大きな国)。結果を見たあとの変更なので、PR に両方の数を書く | 急がない (止めていない) | なし (いまは a。R21 は回 KE7 のあと 0.813 で幅の外) | `docs/money.md` の 5.6 |
+ | QD-15 | 早期アクセス (Q8) | (a) 早期アクセスで出す。(b) 正式に出す | フェーズ 0〜1 と英語・中国語が済んでから | 発売の形 | `docs/critique/04-plan.md` の 6 |
+-| QD-26 | 国債の不履行のあと、何年借りられないか (回 KE1) | a. 借りられなくしない (いま。haircut 37% だけ)。b. 現実の調べ (Cruces & Trebesch 2013 など) で、不履行の大きさに比べた年数だけ新しく国債を出せない。c. 信用の上乗せを、不履行のあと何年か高くする | **回 KE7 の始めに 1 つずつ聞く** (W2-Q3 = b) | なし (いまは a で動く) | `docs/money.md` の 5.5 |
+-| QD-27 | 物価が上がりすぎた (下がりすぎた) ときの政治の損 (回 KE1) | a. 入れない (いま。物価は利子の重さと預金の目減りだけに効く)。b. 物価の上がり方が目標から離れるほど議会の支持と忠誠度が下がる (政治のレーンに 1 行頼む)。c. b に加えて、超インフレ (年 50% 以上) で政権交代の危険 | **回 KE7 の始めに 1 つずつ聞く** (W2-Q3 = b。b・c は政治と相談) | なし (いまは a で動く) | `docs/money.md` の 5.5 |
+ | QD-16 | 値段 (Q10) | (a) 24.99 ドル帯。(b) 29.99 ドル帯。(c) 39.99 ドル帯 | 試遊の継続率を見てから。円の値段を入れ忘れない | Steamworks の手順の 3 | `docs/critique/04-plan.md` の 6・`store/steamworks.md` の 5・9 |
+ | QD-17 | 中国語の訳し方 (Q11) | (b) 専門の訳者。(c) 販売元に任せる (回 R2 で a は外した) | 見積もりを比べてから | 翻訳の本番 (B-076) | `docs/critique/04-plan.md` の 6 |
+ | QD-71 | 作った星系・種族の名前を簡体中国語でどう書くか | (a) 英字のまま (Celis)。(b) 漢字で音訳する (訳者が音訳の表を作る)。おすすめは、訳者 (QD-17) に任せ、決まるまでは (a) | QD-17 が決まったとき | 翻訳の本番 (B-076) の名前の作り方 | `docs/glossary/README.md` の 4、`docs/glossary/terms.json` の `rules` |
+@@ -230,6 +227,17 @@
+ | W2-Q3 | 経済の返事待ち 4 つ (QD-26・QD-27・QD-28・QD-32) を、いまのままで閉じるか | **b. 1 つずつ決める** (回 KE7 の始めに、それぞれの選択肢を並べて聞く) | 上の 1 の表の 4 行 |
+ | (聞かずにおすすめ) | 小さな決まり | 前の PR のブランチは `git merge -s ours` で取り込む・同じレーンで目標の PR と本体の PR を並べるときは `docs/registry.md` と `data/README.md` の行を先の PR だけに書く・合格した PR はセッションを終える前にマージする・ほかのレーンのフォルダは持ち主が止まっていれば数行まで・残っている知らせはそのレーンの 3 波目の最初の回で片付ける・地図の自動生成 (B-195) は画面のレーンの回 GA10 | `docs/parallel.md` の 2〜4・`docs/handoff.md` の 1・`docs/backlog.md` の B-195 |
+ 
++### 決まったもの (2026-10-29、回 KE7 の始め)
++
++W2-Q3 = b のとおり、回 KE7 の始めに 1 つずつ聞いた (回 DO7 の測りを回しているあいだ)。返事は `docs/requests/2026-10-29-KE.md` の KE-1 にそのまま残した。どれもおすすめ。
++
++| 番号 | 何を決めたか | 答え | 効く所 |
++|---|---|---|---|
++| QD-26 | 国債の不履行のあと、何年借りられないか (回 KE1) | **b と c の両方**: 不履行のあと 6.1 年は新しく国債を出せず、その間は不履行もしない。戻ったあとも長期の利回りに上乗せ (37% の削りで 1 年目 +2.5 点 → 4〜5 年目 +1.2 点、7 年で消える)。どちらも Cruces & Trebesch (2013) の 180 件 (削りが 30% を超えた不履行から市場に戻るまで平均 6.1 年・削り 1 点あたりの上乗せ 6.75bp → 3.16bp)。聞いたときの今の版: 小さな入植地の政府が不履行を 1 年に 4 回ずつ繰り返し、8 銀河 × 150 年で 66,568 回 | `CB.exclude`・`CB.spread` (`fiscal-consts.js`)・`dfltOut`・`dfltSpread` (`central-bank.js`)。`docs/money.md` の 5.6 |
++| QD-27 | 物価が外れたときの政治の損 (回 KE1) | **a のまま、回 KE9 で入れる** (今の版では物価の上がり方の 99% が年 5.1% 以下・年 10% を超えた国 × 年は 0 で、入れてもほとんど効かない。回 KE9 でインフレ税・量的緩和を入れるときに b の形 (目標から離れるほど議会の支持と忠誠度が下がる) を入れ、その回の数で強さを決める) | 回 KE9 (B-009) |
++| QD-28 | 財政の反応 (R28) を幅に戻すと入植地が減る (回 KE1・B-003) | **a. このまま** (余った資金で国債を先に返さない。R28 は合格のまま) | なし (`DEBT.repay = 0` のまま) |
++| QD-32 | 利子率の既定 (`CB.rstar`・`TRADE.rate`) を年 2% に上げるか (回 KE4・B-015) | **c. 今の版で年 1% と 2% の両方で R01 と財政の目標 (R19〜R22・R27・R28・R33〜R35) を測り、合格の多いほう。同じなら現実に近い 2%** (前に 1% にした理由の R01 の合格が、回 KE5〜KE6 のあいだに 1% でも外れていたため) | 回 KE7 で測る (`docs/fiscal.md` の 3.6) |
++
+ ### 決まったもの (2026-10-28、2 波目の終わり)
+ 
+ 返事は `docs/requests/2026-10-28-common.md` の common-2 にそのまま残した。聞いたページは Artifact「第二波の決めること」(https://claude.ai/artifact/XWJ86Nh6nEowHr8efTUgNL)。
+diff --git a/docs/money.md b/docs/money.md
+index 1bbd21d..734672a 100644
+--- a/docs/money.md
++++ b/docs/money.md
+@@ -169,14 +169,59 @@
+ 
+ ### 5.5 まだ決めていないこと
+ 
+-- 不履行のあと借りられない年 (QD-26) と、物価が外れたときの政治の損 (QD-27)。いまはどちらも入れていない。
++- ~~不履行のあと借りられない年 (QD-26)~~ → 回 KE7 で入れた (下の 5.6)。物価が外れたときの政治の損 (QD-27) は、回 KE9 で物価を大きく動かす政策を入れるときに入れる (2026-10-29 の決定)。
+ - 前の版のセーブの財政 (中央銀行の項目がない) は「任せる」として読む (前の利子率の既定 1% のまま止めると、物価より低い金利で物価の上がり方が上がり続けるので)。
+ - 物価の式の値 (kappa・lambda・theta・anchor・ゆらぎ)・期待の戻り方 (3 年)・借り換え (7 年) は仮の値。KE3 (B-006) で、局所射影で現実の政策の反応と比べて決め直す。
+ 
++### 5.6 不履行のあとと、軍の維持費の払い手 (回 KE7。QD-26 = b と c・B-017 = QD-31 の c)
++
++**見つけたこと**: 今の版 (main = #285) を 8 銀河 × 150 年 × 6 か国で回すと、星系の政府の不履行が **66,568 回** あった (人の国の中だけでも 150 年で 105〜1,072 回。そのたびに知らせ)。人口 20〜150 万人の小さな入植地と小さな国の首都が、不履行で国債の 37% を消した次の刻みにまた借り、債務 ÷ GDP が線 (138%) の上に残るので、1 年に 4 回ずつ不履行を繰り返していた。赤字の元は軍の維持費で、GDP 0.1 cr ほどの星系が年 5〜50 cr を払っていた。そのうえ、動いている艦隊の維持費を行き先の星系が払っていて、攻め込まれた小さな国の首都が敵の艦隊 25 隻分を払っていた。
++
++**入れたもの**:
++
++| | 前 | 後 | 根拠 |
++|---|---|---|---|
++| 不履行のあと (QD-26 = b) | すぐ借りられる | `CB.exclude` = 6.1 年は新しく国債を出せず (資金のマイナスは戻るまで残る)、その間は不履行もしない | Cruces & Trebesch (2013) の 180 件: 市場に戻るまで平均 5.1 年・中央 3 年、削りが 30% を超えた不履行は平均 6.1 年 (37% はこちら) |
++| 戻ったあとの上乗せ (QD-26 = c) | なし | 長期の利回りに haircut × 6.75% (1 年目) → haircut × 3.16% (4〜5 年目) へ指数で下がる上乗せ、7 年で消える。37% で +2.5 点 → +1.2 点 (`CB.spread`・`dfltSpread`) | 同じ論文の表 4 の 2 列 (削り 1 点あたり 6.75bp・3.16bp。7 年目まで有意) |
++| 駐留する艦隊と兵の維持費 (B-017・QD-31 = c) | 駐留する星系の政府がすべて | 駐留する星系の約定の束の「軍事」の法が宗なら主人、分なら半分ずつ、従なら自分 (`UPKEEP_LORD`)。主人のいない首都は自分 | 回 SE6 の政治の返事 (19 の型の歴史の符号化から) |
++| 動いている艦隊の維持費 | 行き先の星系の政府 (敵の艦隊も) | 持ち主の国の首都 | 艦隊は国のもの |
++
++主人が払う分は、主人の星系の民間が受け取る (駐留する星系へ送ると、お金が光より速く動くので)。
++
++**不履行の回数** (8 銀河 × 150 年 × 6 か国):
++
++| | 不履行 | 10 年以内の再不履行 | 不履行のときの債務 ÷ GDP の中央値 |
++|---|---|---|---|
++| 前 (main) | 66,568 | 66,088 | 5.84 |
++| + 不履行のあと 6.1 年 (QD-26) | 3,816 | 3,356 | 4.36 |
++| + 駐留する分を従属の型で分ける (B-017) | 2,753 | 2,327 | 3.15 |
++| + 動いている艦隊は持ち主が払う | 2,546 | 2,102 | 2.67 |
++
++**財政の目標** (30 銀河 × 150 年 × 6 か国。`tools/fiscal-panel.js` → `data/build/analyze_fiscal.py`。どちらもこの回の手元の測り):
++
++| 目標 | 幅 | main (#285) | 回 KE7 |
++|---|---|---|---|
++| R19 税収 ÷ GDP | 0.105〜0.263 | 0.042 **不合格** | 0.126 合格 |
++| R20 黒字の年の割合 | 0.125〜0.561 | 0.145 合格 | 0.211 合格 |
++| R21 政府債務 ÷ GDP | 0.202〜0.730 | 0.684 合格 | 0.813 **不合格** |
++| R22 民間の信用 ÷ GDP | 0.294〜0.785 | 0.439 合格 | 0.583 合格 |
++| R27 政府支出 ÷ GDP | 0.114〜0.255 | 0.201 合格 | 0.189 合格 |
++| R28 財政の反応 | −0.020〜0.062 | 0.044 合格 | 0.061 合格 |
++| R33 物価の上がり方 | 0.0183〜0.0274 | 0.0163 **不合格** | 0.0183 合格 |
++| R34 期間の上乗せ | −0.0003〜0.0134 | 0.0161 **不合格** | 0.0277 **不合格** |
++| R35 国債の上乗せの債務への傾き | −0.002〜0.034 | 0.006 合格 | 0.000 合格 |
++
++- **main で R19・R33・R34 が外れていた** (回 KE6 の終わりには R19〜R22・R27・R28・R33〜R35 が合格)。4 銀河ずつで 2 波目の後半の PR を順に測ると、回 SE5 (#274 AI の国の席・#275 AI の入植を急がせる補正) から債務と期間の上乗せが上がり、#281 (QD-41 c。家臣がまた割れる) で税収 ÷ GDP が下がった。どれも小さな国と生まれたての入植地が増えた形。財政の目標は国ごとの中央値なので、小さな国の重みが大きい。
++- 回 KE7 で R19・R33 が戻ったのは、小さな政府が自分の税収の何十倍もの維持費 (政府の買い付けとして GDP に入る) を払わなくなったため。R21 が上がったのは、前は 3 か月ごとの不履行で消えていた小さな国の債務が、不履行のあとの 6.1 年は消えずに残るため (人口の下から 4 分の 1 の国の債務 ÷ GDP の中央値 0.83 → 5.40。ほかの 4 分の 3 は 0.48〜0.79 で変わらない)。小さな国の維持費 (B-175) が直れば下がる見込み。測る国を小さな国を除いて選ぶかは返事待ち (`docs/decisions.md` の QD-34)。
++- R34 は main でも外れている。不履行のあとの上乗せ (QD-26 の c) が小さな国の利回りを上げて、さらに上がった。
++
++- **残り**: 小さな国と家臣の政府が、税収の何十倍もの艦隊と兵を駐留させたまま (GDP 0.1 cr ほどの星系に 2〜8 艦隊)、維持費の赤字を 6 年ごとの不履行で消している。AI の防衛の配備が払える額を見ていないので、船と戦争の B-175 に載せた。
++- 資金がマイナスの政府には利子がつかない (前から)。不履行のあとの 6.1 年は、その形で赤字が残る。
++
+ ## 出典
+ 
+ - Godley, W. & Lavoie, M. (2007). *Monetary Economics: An Integrated Approach to Credit, Money, Income, Production and Wealth*. Palgrave Macmillan.
+-- Cruces, J. J. & Trebesch, C. (2013). Sovereign Defaults: The Price of Haircuts. *American Economic Journal: Macroeconomics* 5(3), 85–117.
++- Cruces, J. J. & Trebesch, C. (2013). Sovereign Defaults: The Price of Haircuts. *American Economic Journal: Macroeconomics* 5(3), 85–117 (5.6 の数は CESifo Working Paper 3604 の版の 6.2 節・表 4・表 5)。
+ - Laubach, T. (2009). New Evidence on the Interest Rate Effects of Budget Deficits and Debt. *Journal of the European Economic Association* 7(4), 858–885.
+ - Taylor, J. B. (1993). Discretion versus policy rules in practice. *Carnegie-Rochester Conference Series on Public Policy* 39, 195–214.
+ - Holston, K., Laubach, T. & Williams, J. C. (2023). Measuring the Natural Rate of Interest after COVID-19. Federal Reserve Bank of New York Staff Reports 1063 (推計はニューヨーク連銀の 2026 年 Q2 までの版)。
+diff --git a/docs/notices/KE/2026-10-28-FU-colony.md b/docs/notices/KE/2026-10-28-FU-colony.md
+deleted file mode 100644
+index fa22832..0000000
+--- a/docs/notices/KE/2026-10-28-FU-colony.md
++++ /dev/null
+@@ -1,11 +0,0 @@
+-# 船と戦争 (回 FU3) から: 入植船の設計で経済のファイルを少し触った
+-
+-入植船を 1 隻 500 人の船団にした (`docs/colony.md`)。FU-1 で入植のたびに 1〜400 隻を選べるようにし、そのあと FU-2 (2026-10-28) で 400 隻 = 20 万人 (前の入植船と同じ人数) に固めた。入植地の始めの人口・費用は前と同じに戻った (基地も 20 万人。前は 2 万人)。経済のファイルに触ったのは次だけ (持ち主が止まっているときの 1 行の直し。`docs/parallel.md` の 2):
+-
+-1. `economy/colonize.js` の `dispatch`: 注文に設計 (`design`) を持たせ、積み荷の工業品を `supplies.goods` に足す。`shipSupplies` の人数を設計から (`des.crew / 1e6`。食料と水は 1,000 分の 1 単位で切り上げ)。
+-2. 入植地の人口の下限 `POP_FLOOR` (10 人。`ship/colonists.js`): `market-economy.js` の 2 か所と `colonize.js` の徴兵の `Math.max(0.001, …)` を置き換えた (前の 1,000 人の下限で、500 人の入植地が 1,000 人に持ち上がった)。
+-3. `economy/econ-intel.js` の `recordEconIntel`: `intelSpan` の式を `this.intelSpanYears()` (`core/knowledge.js`) に (4 か所の同じ式を 1 つにした。経済の知らせ `notices/FU/2026-10-25-KE-intelspan.md` の頼み)。
+-
+-着いた入植団は、乗ってきた年齢の形で `c.age` を作る (`settlersLand`。`ageSync` は表があれば作り直さない、の知らせのとおり)。交易路の受け手の減速のエネルギー (`notices/FU/2026-10-24-KE-energy-ftl.md`) は、この回では入れず B-173 に載せた。
+-
+-読んだら消してよい。
+diff --git a/docs/notices/KE/2026-10-28-GA-icons.md b/docs/notices/KE/2026-10-28-GA-icons.md
+deleted file mode 100644
+index f917f8e..0000000
+--- a/docs/notices/KE/2026-10-28-GA-icons.md
++++ /dev/null
+@@ -1,10 +0,0 @@
+-# 画面と最初の体験 (回 GA8) から: 帝国の中のタブと予算の行にアイコンをつけた
+-
+-回 GA8 (B-041) でユーザーに選んでもらったアイコン (QD-61) を入れた。経済のファイルに触ったのは次の 2 行だけ (持ち主が止まっているときの 1 行の直し。`docs/parallel.md` の 2):
+-
+-1. `src/economy/empire-ui.js`: 帝国の中のタブ (概要・目標・交易路・移民・軍事・政治) の札の頭に `ico(EMPIRE_TAB_ICON[k])`。対応の表 `EMPIRE_TAB_ICON` は `src/screen/icons.js` にある (タブを足したら、ここに 1 つ足すか、足さなければアイコンなしで出る)
+-2. `src/economy/fiscal-ui.js`: 予算の表の項目の頭に `ico(BUDGET_ICON[k])` (福祉 = 人口・治安 = 忠誠度・軍事 = 艦隊・教育 = 新しい `education`)。表 `BUDGET_ICON` も `src/screen/icons.js`
+-
+-2 つ目の候補 (QD-89) で予算の「研究」のアイコン (`research`) も選んでもらい、`BUDGET_ICON` に足した (経済のファイルは触っていない)。高付加価値物品 (`hitech`) のアイコンも入った (QD-33 はこれで決まった)。備蓄の欄では横・縦 (幅 400px) とも名前は折り返していない。
+-
+-片付けたら、このファイルを消してください。
+diff --git a/docs/notices/KE/2026-10-28-SE-groups.md b/docs/notices/KE/2026-10-28-SE-groups.md
+deleted file mode 100644
+index ad4e4fa..0000000
+--- a/docs/notices/KE/2026-10-28-SE-groups.md
++++ /dev/null
+@@ -1,11 +0,0 @@
+-# 政治 (回 SE6) から: 星系の中の集団で、経済の値を読むようにした
+-
+-経済のファイルは触っていない。読んでいるのは次 (`politics/groups.js`):
+-
+-- 入植地の生まれ: 学歴の表 `c.edu` の鍵 `here` と、それ以外 (`away`) の人数の和 (`hereShare`)。支配する種族の「ここ生まれ」と「よそ生まれ」に分ける。
+-- 1 人あたりの所得 `c.inc` (2011 年のドル) と `DEMO.usd2021`: 価値観の 2 軸の近い形と、集団の所得。
+-- 所得の 5 分位は、世界銀行の国・年の中央値の分け前で、星系の所得を分けるだけ (経済の表は変えない)。
+-
+-`c.edu` の鍵を細かくしたら (知らせ KE-school の「SE6 で集団を細かくするとき」)、`hereShare` を合わせる。年齢の知らせ (KE-age) と学歴の知らせ (KE-school) は使ったので消した。
+-
+-読んだら消してよい。
+diff --git a/docs/notices/KE/2026-10-28-SE-upkeep.md b/docs/notices/KE/2026-10-28-SE-upkeep.md
+deleted file mode 100644
+index 2c0043f..0000000
+--- a/docs/notices/KE/2026-10-28-SE-upkeep.md
++++ /dev/null
+@@ -1,11 +0,0 @@
+-# 政治 (回 SE6) から: 軍の維持費の払い手 (QD-31) への返事
+-
+-頼まれていた「型の表に、軍の維持費を主人が払うかの 1 列」は、新しい列を作らずに、約定の束の「軍事」(`BUNDLE_ITEMS` の `mil`。`politics/pc-vassal.js`) の **法** (`this.bundleOf(gv).law[1]`) で決められます。
+-
+-- 宗 (`S`) = 主人の政府が払う: 保護国・委任統治領 A/B・C・共同統治・特許会社領・自由連合・直轄・強制労働
+-- 分 (`M`) = 半分ずつ: 藩部・藩王国・自治領・傀儡国・衛星国・封臣・幕藩制の藩・同君連合・貢納公国・プラット型
+-- 従 (`V`) = 自分で払う: 冊封・緩衝国・不平等条約の半主権国
+-
+-19 の型の歴史の符号化 (`VASSAL_DATA`) からそのまま出るので、値を増やしません。約定の交渉で軍事の法を変えれば払い手も変わります。主人のいない星系 (国の首都) は自分で払います。
+-
+-ユーザーの答え (QD-31) は **c** でした (2026-10-28。`docs/requests/2026-10-28-common.md` の common-2)。経済の次の回で、この形で入れてください (B-017)。`docs/decisions.md` の QD-31 にも書きました。読んだら消してよい。
+diff --git a/docs/registry.md b/docs/registry.md
+index dc3e98b..5589e81 100644
+--- a/docs/registry.md
++++ b/docs/registry.md
+@@ -25,7 +25,7 @@
+ 
+ | レーン | 目標 R | 目標 F | 台帳 C | 返事待ち QD | 残りの作業 B |
+ |---|---|---|---|---|---|
+-| 経済 | R33〜R39・R61〜R67 (2026-10-24)・R68〜R79 (2026-10-25) | — | C13〜C19 | QD-26〜QD-34 | B-113〜B-139 |
++| 経済 | R33〜R39・R61〜R67 (2026-10-24)・R68〜R79 (2026-10-25)・R80〜R89 (2026-10-29。回 KE7) | — | C13〜C19 | QD-26〜QD-34 | B-113〜B-139 |
+ | 政治 | R40〜R46 | — | C20〜C26 | QD-35〜QD-43 | B-140〜B-166 |
+ | 船と戦争 | R47〜R53 | — | C27〜C33 | QD-44〜QD-52 | B-167〜B-193 |
+ | 画面と最初の体験 | — | F10〜F15 | C34〜C40 | QD-53〜QD-61 | B-194〜B-220 |
+@@ -53,6 +53,8 @@
+ - R61: 製造業の中の高付加価値の割合と所得。R01 の品ごとの工業品を低付加価値物品と高付加価値物品に分けた。目標の版 17 (回 KE5・B-115。ユーザーの依頼 2026-10-24)
+ - B-115〜B-117: 工業品を 2 つに分ける (#244)・輸送船 (#245)・学歴と生産性 (回 KE5。ユーザーの依頼 2026-10-24)
+ - QD-33: 高付加価値物品のアイコン (回 KE5)
++- QD-34: 財政の目標を測る国を小さな国を除いて選ぶか (回 KE7)
++- R80〜R83: 政策の反応 (金融の引き締めと GDP・物価、税の引き上げと GDP、政府支出の乗数)。目標の版 27 (回 KE7・B-006。`docs/research/policy-irf.md`)
+ - R62・R63: 就学年数と所得・就学年数の伸び。目標の版 18 (回 KE5・B-117。ユーザーの依頼 2026-10-24。`docs/hcap.md`)
+ - R64: 学力と所得。目標の版 19 (回 KE5・B-117。ユーザーの決定 2026-10-24「学力も効く形を足す」。`docs/hcap.md`)
+ - R65: GNI ÷ GDP と所得。目標の版 20 (回 KE5・B-114。遠くの持ち主と GNI。`docs/regions.md`)
+@@ -89,6 +91,7 @@
+ - B-173: 交易路の受け手の減速のエネルギーを、着いたときに払う (経済からの頼み。回 FU3 で載せた)
+ - QD-47: AI の国の光速の一撃の使い方 (回 FU3 で首都への一撃が増え、R15 が外れた)
+ - B-174: R15 (戦死者の裾。確認用) の外れ (回 FU3)
++- B-175: 小さな国と家臣の政府の艦隊の配備が維持費を払えない (回 KE7 で経済が船と戦争の範囲から取った)
+ 
+ ### 画面と最初の体験
+ 
+diff --git a/docs/requests/2026-10-29-KE.md b/docs/requests/2026-10-29-KE.md
+new file mode 100644
+index 0000000..2f3f551
+--- /dev/null
++++ b/docs/requests/2026-10-29-KE.md
+@@ -0,0 +1,14 @@
++# 2026-10-29 の依頼 (経済)
++
++### KE-1.
++
++(回 KE7 の始めに、経済の返事待ち 4 つを 1 つずつ聞いた (W2-Q3 = b)。聞いたのは回 DO7 の測りを回しているあいだ。答えはどれも選んだ選択肢のラベル)
++
++```text
++QD-26: b と c の両方 (おすすめ)
++QD-27: a のまま、KE9 で入れる (おすすめ)
++QD-28: a. このまま (おすすめ)
++QD-32: c. 測って良いほう (おすすめ)
++```
++
++(QD-26 = 国債の不履行のあと 6 年は新しく国債を出せず、戻ったあとも利回りの上乗せが 1 年目 +2.5 点から 5 年で +1.2 点へ下がる (Cruces & Trebesch 2013)。聞いたときに見せた今の版の数: 小さな入植地の政府が不履行を 1 年に 4 回ずつ繰り返し、8 銀河 × 150 年で 66,568 回。QD-27 = いまは入れず、回 KE9 で物価を大きく動かす政策を入れるときに b の形を入れる (今の版では物価の上がり方の 99% が年 5.1% 以下)。QD-28 = a のまま (R28 合格)。QD-32 = 今の版で年 1% と 2% の両方で R01 と財政の目標を測り、合格の多いほう (同じなら 2%))
+diff --git a/docs/research/policy-irf.md b/docs/research/policy-irf.md
+new file mode 100644
+index 0000000..314197b
+--- /dev/null
++++ b/docs/research/policy-irf.md
+@@ -0,0 +1,277 @@
++# 政策の反応の目標 (回 KE7・B-006 の調べもの)
++
++目標 R80〜R83 (`targets/targets.json` の版 27) の元にした数の記録。論文の PDF を読んで表と図から取り出したもの (図は PDF の線の座標から読んだ)。本文の数と照らして合っていることを確かめた。英語のまま残す。PDF そのものはリポジトリに入れていない (文中のファイル名は調べたときの作業場所のもの)。Ramey & Zubairy の JPE の版の数は、論文から読めなかったので作者の公開したデータとコードで推定し直した値で、**[NOT FROM PAPER]** と書いてある。目標には、論文から読んだ 2014 年の NBER の版の表 1 の数を使った。
++
++---
++
++
++Compiled 2026-10-29. Every number below was read from a PDF downloaded into this folder (one subfolder per paper), unless it is marked **[NOT FROM PAPER]** or **[UNVERIFIED]**.
++
++**How to read the tags**
++- **[TABLE]**: copied from a printed table.
++- **[TEXT]**: stated in the paper's prose.
++- **[DIGITIZED-VECTOR]**: read from the figure's vector drawing coordinates in the PDF (`pdftocairo -svg`), then mapped to the axis tick coordinates. Precision is about ±0.01 to 0.02 in plotted units. Every case I could check against a number in the text matched it (checks are listed per paper).
++- **[DIGITIZED-RASTER]**: read from a 300-dpi bitmap figure by pixel tracing (RR 2004 only). Precision is about ±0.05 pp, and every check against the text matched.
++- **SE from a figure** is the half-width of the plotted ±1 SE band, or the 90% band divided by 1.645 where stated.
++
++**Annual conversion conventions.** These follow the timing used in each paper; check that they match your simulation.
++- Quarterly papers: quarter 4 is year 1, quarter 8 is year 2, and quarter 12 is year 3. These are point-in-time values h quarters after the shock quarter. I also give annual averages, for example year 0 = mean of quarters 0–3 and year 1 = mean of quarters 4–7. The averages come from the digitized point estimates, so **they have no SEs**: the cross-horizon covariances are not reported.
++- Monthly paper: month 12 is year 1, 24 is year 2, 36 is year 3 and 48 is year 4. Annual averages: year 0 = mean of months 0–11, year 1 = mean of months 12–23, and so on.
++- Annual papers: horizons are as printed.
++
++---
++
++## 1. Jordà, Schularick & Taylor: monetary policy, trilemma LP-IV (annual panel)
++
++**Citation.** Jordà, Òscar, Moritz Schularick, and Alan M. Taylor. 2020. "The effects of quasi-random monetary experiments." *Journal of Monetary Economics* 112: 22–40. doi:10.1016/j.jmoneco.2019.01.021.
++
++**Version read.** FRBSF Working Paper 2017-02, revised May 2018 (`jst2020/frbsf2017-02.pdf`). I cross-checked it against NBER WP 23074, "January 2017, Revised May 2018" (`jst2020/nber_w23074.pdf`), and the numbers are identical.
++- **[UNVERIFIED]** I could not access the published JME version, which is paywalled. Table and figure numbers or values may differ slightly in print.
++
++**Setup.**
++- Sample: 17 countries, 1870–2013, excluding 1914–1919 and 1939–1947.
++- Outcome: 100 × log change of real GDP per capita and of CPI, relative to the year-0 baseline.
++- Shock: the one-year change in the short rate in year 0, normalized to +100 bp.
++- Estimation: the LP-IV estimates are for the "pegs" subpopulation (the trilemma instrument).
++- SEs are cluster-robust.
++
++**Source: Table 5, "LP-OLS vs. LP-IV. Attenuation bias…", matched samples (p. 18) [TABLE].** Cells show coefficient (SE).
++
++| Year h | GDP LP-OLS, full | GDP **LP-IV, full** | CPI LP-OLS, full | CPI **LP-IV, full** | GDP LP-IV, post-WW2 | CPI LP-IV, post-WW2 |
++|---|---|---|---|---|---|---|
++| 0 | 0.11 (0.03) | **−0.21 (0.11)** | 0.10 (0.05) | **−0.21 (0.19)** | −0.02 (0.07) | 0.17 (0.14) |
++| 1 | −0.18 (0.10) | **−0.99 (0.23)** | 0.17 (0.11) | **−0.68 (0.33)** | −0.75 (0.25) | 0.08 (0.26) |
++| 2 | −0.22 (0.16) | **−1.88 (0.33)** | 0.02 (0.18) | **−1.57 (0.43)** | −1.58 (0.35) | −0.46 (0.32) |
++| 3 | −0.26 (0.21) | **−2.20 (0.42)** | −0.22 (0.30) | **−2.84 (0.70)** | −1.70 (0.37) | −1.21 (0.42) |
++| 4 | −0.18 (0.25) | **−2.87 (0.54)** | −0.39 (0.43) | **−3.83 (0.92)** | −2.20 (0.50) | −1.78 (0.54) |
++
++- Full sample: N = 667, Kleibergen-Paap (KP) weak-IV statistic = 87.83 for GDP and 70.57 for CPI.
++- Post-WW2 (1948–2013): N = 522.
++- Post-WW2 LP-OLS, GDP: 0.06 (0.02), −0.13 (0.09), −0.22 (0.13), −0.24 (0.16), −0.17 (0.20).
++- Post-WW2 LP-OLS, CPI: 0.05 (0.05), 0.11 (0.08), −0.03 (0.13), −0.27 (0.22), −0.47 (0.34).
++
++**Other estimates in the same paper.**
++- **Table 4 [TABLE]**: unmatched LP-OLS over all observations (N = 1253), by regime. GDP h=4: pegs −0.33 (0.20), floats −0.84 (0.31), bases −0.34 (0.13).
++- **Table 6 [TABLE]**: LP-IV for the US and UK using the Romer-Romer / Cloyne-Hürtgen instrument (N = 71, KP = 4.25, weak). GDP: 0.05 (0.40), −0.59 (0.74), −1.71 (1.20), −2.19 (1.44), −1.88 (1.41). CPI: −0.17 (0.31), 0.32 (0.47), 0.24 (0.80), −1.00 (1.44), −3.05 (2.42).
++- **Figure 2 "Full baseline results", full sample, LP-IV with the full variable set (p. 24) [DIGITIZED-VECTOR].** SE is the half-width of the "1 S.D." band.
++  - Real GDP per capita, h=0…4: −0.24 (0.13), −0.79 (0.28), −1.50 (0.37), −1.82 (0.40), −2.03 (0.57).
++  - Price level, h=0…4: −0.05 (0.17), −0.54 (0.35), −1.21 (0.58), −2.25 (0.81), −3.28 (1.06).
++  - The paper's text gives about 2% for GDP and 3% for prices (see the quote below), which matches.
++  - The sample behind Figure 2 is not stated. It gives a smaller GDP effect than Table 5.
++- **Policy-rate path** (needed because the shock is temporary), Figure 2 text [TEXT]: "short-term interest rates increase by +150 bps in year 1, drop back to +75 bps in year 2, and then decline to effectively zero in both years 3 and 4."
++- **Spillover-corrected bounds**, Figure 1 [TEXT]: the output response is "about 0.5 to 1 percentage points less negative by year 4" than plain LP-IV.
++
++**Quotes.**
++- pp. 17–19: "Using LP-OLS estimates (column 1) and the full sample, output would be estimated to be about 0.18% lower four years after an increase in interest rates of 1%. In contrast, the LP-IV effect is measured to be nearly a 2.9% decline, or about a 0.5% annualized rate of lower growth."
++- p. 23 (Figure 2): "a +100 bps increase in the short rate causally leads to a 2% decline in real GDP per capita (or about −0.5% per annum), a 1.5% decline in real consumption per capita, a 3.5% decline in real investment per capita, and a 3% decline in the price level."
++
++**Caveat.** p. 9 defines y(h) as "100 times the log difference between real GDP in t+h relative to t", but h=0 responses are non-zero and the controls include contemporaneous variables. Treat h=0 as the impact-year response.
++
++---
++
++## 2. Romer & Romer (2010): tax shocks (US quarterly, 1950:I–2007:IV)
++
++**Citation.** Romer, Christina D., and David H. Romer. 2010. "The Macroeconomic Effects of Tax Changes: Estimates Based on a New Measure of Fiscal Shocks." *American Economic Review* 100(3): 763–801.
++- Read: the published AER PDF (`rr2010/rr2010_aer.pdf`).
++
++**Experiment.**
++- Shock: an exogenous legislated tax increase of 1% of GDP, ΔT = 1 in quarter 0. This is a permanent step in tax liabilities.
++- Outcome: log real GDP, in percent.
++- Bands are ±1 SE.
++- The baseline regresses ΔY on ΔT at lags 0–12, so values exist only up to quarter 12 (equation 6).
++
++**Source: Figure 4 (single equation, no controls, p. 782) [DIGITIZED-VECTOR].**
++- Check against the text: the peak digitizes as −3.082 at Q10 with SE 0.874, giving t = −3.53. The text says "−3.08 percent after ten quarters (t = −3.53)".
++
++| Quarter | 0 | 1 | 2 | 3 | **4 (yr 1)** | 5 | 6 | 7 | **8 (yr 2)** | 9 | **10 (peak)** | 11 | **12 (yr 3)** |
++|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
++| Estimate | −0.09 | −0.39 | −0.23 | −0.75 | **−1.12** | −1.36 | −1.67 | −2.43 | **−2.73** | −2.99 | **−3.08** | −2.72 | **−2.52** |
++| SE | 0.29 | 0.41 | 0.51 | 0.58 | **0.63** | 0.68 | 0.72 | 0.76 | **0.80** | 0.84 | **0.87** | 0.92 | **0.96** |
++
++- Annual averages of the Figure 4 path (no SE): year 0 (Q0–3) −0.36, year 1 (Q4–7) −1.65, year 2 (Q8–11) −2.88.
++
++**Two-variable VAR: Figure 6, panel C (innovation of 1% of GDP to the tax series, p. 783) [DIGITIZED-VECTOR].**
++- Check against the text: the peak digitizes as −2.933 at Q10 with SE 1.046, giving t = −2.80. The text says "2.93 percent after ten quarters (t = −2.80)".
++- Values, estimate (SE):
++  - Q4: −0.99 (0.76)
++  - Q8: −2.68 (0.96)
++  - Q10: −2.93 (1.05)
++  - Q12: −2.24 (1.15)
++  - Q16: −1.86 (1.15)
++  - Q20: −1.82 (1.07)
++- Bands are slightly asymmetric; the SE given is the band half-width.
++- Annual averages: year 0 −0.24, year 1 −1.57, year 2 −2.74, year 3 −2.05, year 4 −1.84.
++
++**Controlling for lagged GDP growth: Figure 5 [TEXT].**
++- Peak −3.02 at Q10 (t = −2.90, so SE ≈ 1.04).
++- Footnote 16: "the estimated effect diminishes from −3.02 percent in quarter 10 to −2.41 percent in quarter 12, and then fluctuates between −2.3 and −2.5 percent" out to Q24.
++- **[NOT EXTRACTED]** Q4 and Q8 for this specification. Its dashed lines are drawn as filled shapes; the paper says it tracks Figure 4 "very closely at all horizons".
++
++**Subtypes: Figure 9 [TEXT].**
++- Long-run-motivated tax changes: peak −2.99 at Q10 (t = −2.92).
++- Deficit-driven tax changes: much smaller and imprecise.
++
++**Quotes.**
++- p. 764: "Our estimates suggest that a tax increase of 1 percent of GDP reduces output over the next three years by nearly three percent."
++- p. 781: "The maximum effect is a fall in output of 3.08 percent after ten quarters (t = −3.53)."
++
++---
++
++## 3. Ramey & Zubairy (2018): government spending multipliers (US quarterly, 1889–2015)
++
++**Citation.** Ramey, Valerie A., and Sarah Zubairy. 2018. "Government Spending Multipliers in Good Times and in Bad: Evidence from US Historical Data." *Journal of Political Economy* 126(2): 850–901.
++
++**[UNVERIFIED] I could not read the JPE PDF.**
++- The only free copy is on econweb.ucsd.edu. Its TLS chain ends in an emSign root that is not in this machine's CA bundles (I did not disable verification), and WebFetch returned HTTP 503.
++- The publisher (journals.uchicago.edu) and archive.org were blocked.
++
++### 3a. From a paper I could read: NBER WP 20719 (November 2014), Table 1 [TABLE] (`rz2018/nber_w20719.pdf`)
++
++This is an earlier draft whose sample ends in 2013, so the published numbers differ. Multipliers are cumulative ("integral") ΔY/ΔG, in dollars.
++
++| Military news, 1889–2013 | Linear | High unemployment | Low unemployment |
++|---|---|---|---|
++| 2-year integral | **0.76 (0.102)** | 0.69 (0.094) | 0.78 (0.187) |
++| 4-year integral | **0.84 (0.092)** | 0.76 (0.060) | 0.96 (0.218) |
++
++- Table 2 of the same WP gives point estimates only, no SEs:
++  - Blanchard-Perotti: 2-year **0.54**, 4-year **0.78**.
++  - Subsample 1947–2013 (news): 2-year 0.89, 4-year 0.47.
++  - Excluding WWII: 2-year 1.01 (0.376), 4-year 1.26 (0.365).
++- Quote (WP p. 12): "the implied multipliers are below one and range from 0.7 to 0.96."
++
++### 3b. JPE-consistent numbers [NOT FROM PAPER: my replication from the authors' data and code]
++
++**Inputs.**
++- Data: `RZDAT.xlsx`, Ramey's posted dataset (revised November 2016).
++- Code: the authors' `jordagk.do` (dated 24 February 2018).
++- Both were taken from a public replication repository, github.com/amalzmv-013/ramey-zubairy-2018-lp, cloned to `rz2018/repl_repo/`.
++
++**Method.** I re-implemented the do-file's one-step LP-IV in Python (`../irf_scripts/rz_repl.py`):
++- Regression: Σ_{j=0..h} y_{t+j} on Σ_{j=0..h} g_{t+j}, with g instrumented by news (or, for Blanchard-Perotti, by current g).
++- Controls: 4 lags of news, y and g. Variables are divided by potential GDP (6th-degree trend). No time trends.
++- 2-year = h=7, i.e. quarters 0–7; 4-year = h=15.
++
++**Validation.** A search-engine snippet of JPE Table 1 shows military news, 2-year: linear .66, high unemployment .60, low unemployment .59. My replication gives .664, .603 and .595 at h=7, which matches.
++- The point estimates should equal the JPE's.
++- **The SEs are approximate.** They come from my implementation of ivreg2's Bartlett `bw(auto)` HAC, and they change by about ±0.01 to 0.03 across bandwidth choices.
++
++| Shock, sample | 2-year integral | 4-year integral |
++|---|---|---|
++| Military news, 1889–2015 | **0.66 (≈0.07)** | **0.71 (≈0.04)** |
++| Blanchard-Perotti, 1889–2015 | **0.38 (≈0.09)** | **0.47 (≈0.10)** |
++| Military news, 1947–2015 | 0.75 (≈0.16) | 0.51 (≈0.15) |
++| Blanchard-Perotti, 1947–2015 | 0.32 (≈0.20) | 0.32 (≈0.24) |
++
++- Post-WWII news is a weak instrument; the paper discusses this.
++- **[UNVERIFIED]** that the JPE prints the post-WWII and Blanchard-Perotti rows in Table 1. A search snippet says the JPE's second panel (Blanchard-Perotti) gives "0.4–0.5 in the linear case", which is consistent with 0.38 and 0.47.
++
++---
++
++## 4. Romer & Romer (2004): monetary shocks (US monthly, 1970:1–1996:12)
++
++**Citation.** Romer, Christina D., and David H. Romer. 2004. "A New Measure of Monetary Shocks: Derivation and Implications." *American Economic Review* 94(4): 1055–1084.
++- Read: the published AER PDF (`rr2004/rr2004_aer.pdf`).
++
++**Experiment.**
++- Shock: a one-time realization of 1 pp of the new shock series (intended federal funds rate purged of Greenbook forecasts).
++- The actual funds rate is transitory [TEXT, fn. 19]: it "rises more than one-for-one with our measure for the first few months following a shock, but quickly falls to zero (and then below)."
++- Outcomes are in log levels, in percent: industrial production (IP, Figure 2) and the PPI for finished goods (Figure 4, the baseline price index).
++- Bands are ±1 SE (Monte Carlo).
++- Figures are raster images, so values are **[DIGITIZED-RASTER]**. Bold entries are exact values from the text.
++
++| Month (year) | IP estimate (SE) | PPI estimate (SE) |
++|---|---|---|
++| 12 (yr 1) | −2.10 (≈0.86) | +0.05 (≈0.40) |
++| 22–27 (IP trough) | **−4.3**; m22 2-SE CI **(−7.0, −1.4)**, so SE ≈ 1.4 | — |
++| 24 (yr 2) | −4.32 (≈1.48) | −0.45 (≈0.64) |
++| 30 | −3.76 (≈1.70) | **−1.9** [TEXT] (≈0.79) |
++| 36 (yr 3) | −2.35 (≈1.97) | −3.30 (≈0.78) |
++| 48 (yr 4) | **−1.7**; 2-SE CI **(−6.4, +3.0)**, so SE ≈ 2.35 | **−5.9**; 2-SE CI **(−8.0, −3.7)**, so SE ≈ 1.08 (t = 5.5) |
++
++**Peaks and timing.**
++- IP: −4.3% at months 22–27 [TEXT]. IP is slightly positive in months 1–4 (+0.6 at month 2).
++- PPI: at most +0.3 within the first 8 months (not significant), then falling until month 48 with no trough inside 48 months. |t| reaches 2 at month 29 and 4 at month 37 [TEXT].
++
++**Alternative price indices: Figure 5 [TEXT].**
++- CPI excluding shelter at month 48: **−3.6 (t = 4.3, so SE ≈ 0.84)**. PCE price index: −3.6 (t = 5.0).
++- Digitized CPI excluding shelter (no bands plotted): m12 +0.17, m24 −0.03, m36 −1.80.
++
++**Annual averages of the digitized paths (no SE).**
++- IP: year 0 (m0–11) −0.30, year 1 −3.13, year 2 −3.72, year 3 −1.98.
++- PPI: year 0 +0.15, year 1 +0.02, year 2 −1.74, year 3 −4.52.
++
++**Robustness [TEXT].**
++- Omitting October 1979 to May 1981: IP peak −3.4.
++- With 48 lags: IP at month 48 is −0.8.
++- VAR (Figure 9): IP peak −2.9; price level −5.0 at month 48.
++
++**Quote (p. 1069).** "The estimated effect is essentially flat at −4.3 percent in months 22 through 27. This means that a one-percentage-point rise in the Federal Reserve's intentions for the funds rate, not taken in response to information about future economic developments, reduces industrial production by over 4 percent."
++
++---
++
++## 5. Annual cross-country fiscal panels
++
++### 5a. Guajardo, Leigh & Pescatori: narrative fiscal consolidations
++
++**Citation.** Guajardo, Jaime, Daniel Leigh, and Andrea Pescatori. 2014. "Expansionary Austerity? International Evidence." *Journal of the European Economic Association* 12(4): 949–968.
++- Read: IMF WP/11/158 (2011), "Expansionary Austerity: New International Evidence" (`panel/glp2014/imf_wp11158.pdf`).
++- **[UNVERIFIED]** I did not access the JEEA print version.
++
++**Setup.**
++- Sample: 17 OECD countries, 1978–2009.
++- Shock: a permanent deficit-driven (action-based) consolidation of 1% of GDP.
++- Estimation: OLS distributed lag with 2 lags, country and year fixed effects, delta-method SEs.
++- Timing: **t = 1 is the year of consolidation**.
++
++**Source: Figure 2, GDP panel (p. 14) [DIGITIZED-VECTOR] and Table 1 "Baseline" (p. 18) [TABLE].**
++
++| t (year) | 1 (impact year) | **2 (one year after)** | 3 |
++|---|---|---|---|
++| Real GDP, % | −0.32 (≈0.11) | **−0.62 (0.16)** [TABLE] | −0.52 (≈0.19) |
++
++- Table 1 alternatives for GDP at t=2:
++  - TSLS: −0.80 (0.31)
++  - Two-variable VAR: −0.73 (0.19)
++  - Static model: −0.65 (0.14)
++- Private consumption at t=2: −0.75 (0.17). Unemployment rate: +0.32 (0.09).
++- Using the change in the cyclically adjusted primary balance (CAPB) instead gives GDP +0.29 (t = 3.69), which is biased.
++
++**Quote (p. 6).** "Our estimates imply that a 1 percent of GDP fiscal consolidation reduces real private consumption over the next two years by 0.75 percent, while real GDP declines by 0.62 percent."
++
++### 5b. Jordà & Taylor: LP-IV with the GLP narrative instrument
++
++**Citation.** Jordà, Òscar, and Alan M. Taylor. 2016. "The Time for Austerity: Estimating the Average Treatment Effect of Fiscal Policy." *Economic Journal* 126(590): 219–255.
++- Read: NBER WP 19414 (September 2013) (`panel/jt2016/nber_w19414.pdf`).
++- **[UNVERIFIED]** I did not access the EJ print version.
++
++**Setup.**
++- Data: the combined Alesina-Ardagna and GLP panel (17 OECD countries).
++- Shock: change in CAPB of +1% of GDP, instrumented by the IMF narrative consolidation dummy.
++- Outcome: 100 × log real GDP relative to year 0. Year 1 is the first year of fiscal impact, the same timing as GLP's t = 1.
++- SEs are clustered by country.
++
++**Source: Table 3 [TABLE].** Cells show estimate (SE).
++
++| Year | 1 | 2 | 3 | 4 | 5 | Sum |
++|---|---|---|---|---|---|---|
++| IV, binary treatment | −0.34 (0.12) | **−0.72 (0.23)** | −0.76 (0.25) | −0.78 (0.23) | −0.88 (0.28) | −2.94 (0.84) |
++| IV, continuous total | −0.46 (0.13) | −0.81 (0.23) | −0.69 (0.31) | −0.58 (0.28) | −0.68 (0.30) | −2.77 (0.97) |
++| OLS, Table 1 (biased) | 0.11 (0.04) | 0.12 (0.05) | −0.04 (0.04) | −0.21 (0.07) | −0.32 (0.12) | −0.42 (0.16) |
++
++- First-stage F is about 27 to 54. N = 457 at year 1 and 389 at year 5.
++- Table 4 (binary IV) by state:
++  - Slump: −0.25 (0.15), −0.76 (0.25), −0.95 (0.31), −0.79 (0.33), −0.93 (0.45).
++  - Boom: −0.34 (0.33), −0.32 (0.50), −0.13 (0.51), −0.59 (0.52), −0.81 (0.59).
++
++**Quote (p. 10).** "for every 1% in fiscal consolidation, the path of real GDP is pushed down by over 0.57 percent each year on average over the five subsequent years."
++
++---
++
++### Files
++- PDFs and text extracts: `jst2020/`, `rr2010/`, `rr2004/`, `rz2018/`, `panel/glp2014/`, `panel/jt2016/`.
++- Rendered figure pages and digitization intermediates: `*/fig/`.
++- Scripts (kept outside the download folders):
++  - `../irf_scripts/svgpaths.py`, `../irf_scripts/digitize.py`, `../irf_scripts/svgall.py`: vector digitizing.
++  - `../irf_scripts/rasterlines3.py`: raster digitizing.
++  - `../irf_scripts/rz_repl.py`: Ramey-Zubairy replication.
+diff --git a/docs/status/KE.md b/docs/status/KE.md
+index 5c134b9..63e5942 100644
+--- a/docs/status/KE.md
++++ b/docs/status/KE.md
+@@ -2,7 +2,12 @@
+ 
+ 2026-10-21 の再出発 (`docs/restart.md`。回 R4) で作ったレーン。持つ場所は `src/economy/` (`docs/parallel.md` の 1・`docs/src-files.md` の 5)。前のレーンの状態は `docs/archive/status/`。
+ 
+-- いま: 回 KE1 (B-001・B-003) が済んだ (2026-10-23)。全部門の帳簿 (国ごとの貸借の表と取引の表の試験 `tools/tests/ledger.js`)・中央銀行 (テイラー則。人間の国は任せるか自分で決めるか)・国の物価の指数とインフレ・長期の国債の利回り (期待 + 期間の上乗せ + 信用の上乗せ)・国債の不履行を入れた。帳簿は実質のまま、利子は実質の利子率で受け払いする。中身は `docs/money.md` の 5、R28 は `docs/debt.md` の 6。
++- いま: **回 KE7 (3 波目) を進めている** (2026-10-29)。始めに返事待ち 4 つを聞いた (QD-26 = b と c・QD-27 = a のまま回 KE9 で・QD-28 = a・QD-32 = c 測って良いほう。`docs/requests/2026-10-29-KE.md`)。
++  - 不履行のあと (QD-26): 6.1 年は新しく国債を出せず、その間は不履行もしない・戻ったあと 7 年の上乗せ (Cruces & Trebesch 2013)。前は小さな政府が 1 年に 4 回ずつ不履行を繰り返していた (8 銀河 × 150 年で 66,568 回 → 2,546 回)。
++  - 軍の維持費 (B-017・QD-31 = c): 駐留する艦隊と兵は約定の束の「軍事」の法で主人と分け、動いている艦隊は持ち主の国の首都が払う (前は行き先の星系で、敵の艦隊の分まで払っていた)。
++  - 財政の目標 (30 銀河): main で外れていた R19・R33 が戻り、R21 (0.813) が外れた。小さな国の債務が不履行で消えなくなったため。根は小さな国の維持費 (B-175) と、2 波目の後半で小さな国が増えたこと (`docs/money.md` の 5.6)。QD-34 (測る国の選び方) を返事待ちに。
++  - B-006: 目標 R80〜R83 (政策の反応) を論文から固定し (`docs/research/policy-irf.md`)、双子の試合の道具 `tools/policy-irf.js` を作った。測りと QD-32 (利子率 1% と 2%) の測りはこのあと。
++- 回 KE1 (B-001・B-003) が済んだ (2026-10-23)。全部門の帳簿 (国ごとの貸借の表と取引の表の試験 `tools/tests/ledger.js`)・中央銀行 (テイラー則。人間の国は任せるか自分で決めるか)・国の物価の指数とインフレ・長期の国債の利回り (期待 + 期間の上乗せ + 信用の上乗せ)・国債の不履行を入れた。帳簿は実質のまま、利子は実質の利子率で受け払いする。中身は `docs/money.md` の 5、R28 は `docs/debt.md` の 6。
+ - 回 KE2 (B-010) が済んだ (2026-10-23)。年齢つきの人口 (5 歳きざみ × 性別、WPP の率を所得で補間、働き手を生産に、年金と医療を政府の支出に、移民の年齢、財政の画面の帯と扶養比)。人口の合計は前の増え方のまま (補正 C13・QD-29 = d)、年金と医療は政府の大きさに合わせて縮める (QD-30)。R37 合格、R36 不合格 (65 歳以上が多すぎる。理由は `docs/demography.md` の 4)。
+ - 回 KE3 (B-002・B-170) が済んだ (2026-10-24)。民間の信用 (家計の借り hm・会社の借り bl。R22 0.347 で合格)・経済の記録 (econIntel。交易の買い手・移民・資材の取り寄せが光の遅れのぶん古い記録を見る)・返金を光速で・先住民は接触の知らせが届いてから分かる。`docs/debt.md` の 7・`docs/structure.md` の 8。減速のエネルギーの分は船と戦争に頼んだ (`docs/notices/FU/2026-10-24-KE-energy-ftl.md`)。
+ - 回 KE4 (B-014〜B-017・B-019) が済んだ (2026-10-24)。飢餓の知らせを星系で 1 つに・新しい市場の立ち上がり (#233)、交易の代金を出荷のときに払う (#234)、物理と交易路・R01 をいまの版で測り直して合格 (−1.006。#235)、利子率は 1% のまま (QD-32。#236)、軍の維持費の払い手は政治と相談 (QD-31・`docs/notices/SE/2026-10-24-KE-upkeep.md`。#237)。
+@@ -18,7 +23,7 @@
+ - 前の数 (30 銀河 × 150 年 × 6 か国。回 KE3。R01 は 30 銀河 × 300 年、回 KE4): R19〜R22・R27・R28・R33〜R35・R37 合格、R36 不合格。R01 は KE4 で合格 (−1.006) のあと、開拓星系に原料が届く直し (`docs/regions.md` の 2) で −0.225 の不合格 (回 KE5 で見直す。ユーザーの決定 2026-10-24)。R10・R11・R25・R26 は測っていない。
+ - 前の数 (回 KE1): R19〜R21・R27・R28・R33〜R35 合格、R22 不合格 (B-002)。R10・R11・R25・R26 は測っていない (前は不合格)。
+ - 回 SE4 からの頼み (星系の政府の判断を `govDid` で覚える) を片付けた (`development.js`。知らせは `docs/notices/SE/2026-10-23-KE-gov-did.md`)。
+-- 返事待ち: QD-26 (不履行のあと借りられない年)・QD-27 (物価が外れたときの政治の損)・QD-28 (R28 を幅に戻すと入植地が減る。いまは R28 が合格する方で、`DEBT.repay = 1` で戻せる)・QD-31 (軍の維持費を誰が払うか。政治の返事待ち)・QD-32 (利子率の既定を 2% に上げるか。いまは 1%)。どれも作業は止めていない。
++- 返事待ち: QD-34 (財政の目標を測る国の選び方)。QD-26〜QD-28・QD-31・QD-32 は回 KE7 の始めに決まった。
+ - 前のレーン C は 2026-10-21 にセッション 20 で止めた。コミットしていない変更と `docs/wip/` の KE のものはない。
+ 
+ ## 済んだ回
+@@ -39,7 +44,6 @@
+ 1. 長期の利回りの作り (B-006): 期待の仮説で政策金利のずれが 3 年 (persist) で戻ると見るので、長期と短期の差が景気に敏感すぎる (実データでは、物価と景気のずれを入れても債務の傾きはほとんど変わらない)。景気のずれを潜在の産出から測る形 (B-118 で試してやめた) は、これを直してから試し直す。R34 は試合の始め (市場の立ち上がり) に中立の金利が高く政策金利が下限にあるので、0.0149 で幅の外 (`docs/money.md` の 5.3・5.3.1)。
+ 1. 資本を産出に効かせる (B-119 の残り): 試作は `docs/wip/KE-capital-output.patch`。対称の形も上限つきの形も、市場が崩れた小さな入植地の揺れを資本が大きくした (`docs/regions.md` の 7.3)。入植地の市場が落ち着いたら試し直す。R78 は貧しい 2 つの分位の投資が 1.0%・7.9% で 2/5 (7.2)。遠くの持ち主の持ち分 (`gv.own`) は、いまは投資のお金と結びついていない (持ち分が目標に近づく動きだけ)。R01 (距離の弾力性) は KE5 の間に −0.565 → −0.392 と弱まった (開拓星系が自分で掘るようになり、近い交易が減った)。R10・R61 と一緒に見る (`docs/regions.md` の 5.3・6.3)。
+ 1. 賃金の粘り (B-114 の残り): 試作は `docs/wip/KE-wage.patch` (立ち上がりで崩れやすい。`docs/structure.md` の 9)。
+-1. QD-31 の答えと政治の返事が来たら、軍の維持費の払い手 (`market-economy.js` の「7. 軍の維持費」の `payer`) を直す (B-017 の残り)。
+ 2. KE1 の残り: 物価の式の値 (kappa・lambda・theta・anchor・ゆらぎ)・期待の戻り方・借り換えの年数は仮の値。B-006 (政策の反応を現実と比べる) で決め直す。政策金利は下限 (−1%) の年が 23% と多く、R33 (0.0184) が幅の下の端に近い。
+ 3. KE3 の残り: 資材の取り寄せは注文が届くまでの遅れがまだない (送れる量はいまの在庫が上限)。家計と会社の借りの返す年数 (15 年・5 年) は仮の値。
+ 4. KE2 の残り: R36 (65 歳以上が多すぎる・いちばん貧しい分位の子どもが多すぎる)。年金・医療・移民の年齢の値は文献の丸めた値。B-102 で生データ (HMD・HFD・国連の移民の年齢の表) と一緒に決め直す。
+diff --git a/docs/targets.md b/docs/targets.md
+index 7cf7090..923c94e 100644
+--- a/docs/targets.md
++++ b/docs/targets.md
+@@ -13,7 +13,7 @@
+ 5. **1 試合では判定しない。** シミュレーションの統計量は、別々の銀河 (シード) を 30 以上回した分布で評価します。
+ 6. **楽しさは見知らぬ人で測る。** 楽しさの目標は、作者とこの会話の参加者以外の試遊者のデータでだけ判定します。ただし、データが自動対戦の目標 (F06・F16〜F19) は、そこに書いたボットと銀河の数で判定します (版 12)。
+ 
+-## 現実の目標 (42)
++## 現実の目標 (63)
+ 
+ 版 2 (2026-10-18): R06・R08・R09・R13〜R16 の幅を、取得スクリプト (`data/fetch/fetch_history.py`) で取った生データから、`data/build/analyze_history.py` で計算した値だけで決めました。結果は `data/derived/history.json` にあります。
+ 
+@@ -117,6 +117,10 @@
+ - どの数も論文から写しただけで、ゲームの計算の結果は幅に使っていません。
+ - 同じ版で、星系の中の集団 (回 SE6・B-020。決まった案 11-2 c「政治から締め出された集団の割合もハザードに効かせる (EPR、Cederman ほか 2010)」) のため、政治から締め出された人口と分離の紛争 (R42) を足しました。`data/fetch/fetch_groups.py` で取った EPR Core 2021・ACD2EPR 2021・UCDP 二者間 21.1 と、前からある Maddison 2023 から、`data/build/analyze_groups.py` で国・年のロジット (民族の領土の紛争の始まり ~ 締め出された人口の割合 + ln 1 人あたり GDP + ln 人口 + 平和の年数の 3 次式) を計算し、締め出された割合の係数 2.089 の 95% 信頼区間 (1.265〜2.913) を幅にしました (159 か国 8,937 国・年・始まり 123 件)。集団・年の形 (Cederman, Wimmer & Min 2010 と同じ形) の、締め出された集団のオッズ比 3.72 (2.16〜6.43) も同じ台本が出します (目標にはせず、集団の忠誠度の差の元にする)。ゲームにはまだ集団がないので、ゲームの結果は見ていません。結果は `data/derived/groups.json` にあります。
+ 
++版 27 (2026-10-29): 政策の反応を現実と比べるため (回 KE7・B-006)、金融の引き締めと GDP (R80)・物価 (R81)、税の引き上げと GDP (R82)、政府支出の乗数 (R83) を足しました。
++- 幅はどれも論文の推定 ± 2 標準誤差で、論文の表と図の数だけから決めました (`docs/research/policy-irf.md`。図は PDF の線の座標から読み、本文の数と合うことを確かめた)。R80・R81: Jordà, Schularick & Taylor (2020) の表 5 (17 か国 1870〜2013 年の年次・為替の三すくみの操作変数) の 2 年目の GDP −1.88 (0.33)・4 年目の物価 −3.83 (0.92)。R82: Romer & Romer (2010) の図 4 の 8 期目 −2.73 (0.80)。R83: Ramey & Zubairy (2014、NBER WP 20719) の表 1 の軍事支出のニュースの 2 年の乗数 0.76 (0.10)。
++- ゲームの側は、途中の年のセーブから同じ試合を分けて片方の国だけ政策を変える双子の試合 (`tools/policy-irf.js`) の、実験ごとの値の中央値です。道具が動くかを 1 銀河 × 5 か国で試しましたが、幅にはゲームの値を使っていません。
++
+ 「使い方」の意味: 較正 = パラメータを合わせるのに使う / 確認 = 合わせ終わったあとの確認だけに使う / テスト = 常に自動テストで確かめる。
+ 
+ | ID | 分野 | 目標 | 実データ | 比べる統計量 | 合格 | 幅 | 使い方 |
+@@ -180,6 +184,10 @@
+ | R77 | 経済 | 新しい技術の採用の遅れと所得 | WDI の携帯電話とインターネット × 所得 (192 か国) | 10% に達した年の、所得のいちばん上の分位からの遅れ (分位ごと) | 比べられる分位 (3 つ以上) の 3 分の 2 以上で、中央値が幅の中 | 分位ごと (4 番目 1.25〜3.75 年、いちばん下 9.0〜17.75 年) | 較正 |
+ | R78 | 経済 | 投資と所得 | WDI の総固定資本形成 ÷ GDP × 所得 (173 か国 1990〜2024 年) | 所得の 5 分位ごとの、投資 ÷ GDP | 比べられる分位 (3 つ以上) の 3 分の 2 以上で、中央値が幅の中 | 分位ごと (中央値 19〜23%) | 較正 |
+ | R79 | 経済 | 資本 ÷ 産出と所得 | Penn World Table 11.0 の cn ÷ rgdpo × 所得 (174 か国 2015〜2019 年) | 所得の 5 分位ごとの、資本 ÷ 産出 | 比べられる分位 (3 つ以上) の 3 分の 2 以上で、中央値が幅の中 | 分位ごと (中央値 2.4〜4.7) | 較正 |
++| R80 | 経済 | 金融の引き締めと GDP | Jordà, Schularick & Taylor (2020) の表 5 (LP-IV) | 短期金利 1 点の引き上げのあと 2 年目の実質 GDP の差 | 双子の試合の中央値が幅の中 | −2.54〜−1.22 (推定 −1.88 ± 2 × 0.33) | 較正 |
++| R81 | 経済 | 金融の引き締めと物価 | 同じ | 4 年目の物価の水準の差 | 同じ | −5.67〜−1.99 (−3.83 ± 2 × 0.92) | 較正 |
++| R82 | 経済 | 税の引き上げと GDP | Romer & Romer (2010) の図 4 | GDP の 1% の税の引き上げのあと 2 年目の実質 GDP の差 | 同じ | −4.33〜−1.13 (−2.73 ± 2 × 0.80) | 較正 |
++| R83 | 経済 | 政府支出の乗数 | Ramey & Zubairy (2014) の表 1 (軍事支出のニュース) | 2 年の累積の乗数 | 同じ | 0.556〜0.964 (0.76 ± 2 × 0.10) | 較正 |
+ 
+ R10 の分位ごとの四分位範囲 (GGDC × Maddison。所得は 2011 年の国際ドル):
+ 
+diff --git a/src/economy/central-bank.js b/src/economy/central-bank.js
+index 8a75420..dc43e65 100644
+--- a/src/economy/central-bank.js
++++ b/src/economy/central-bank.js
+@@ -47,7 +47,8 @@
+     for (const root of roots) {
+       const s = this.cbOf(root), gap = this.speedGap(root, s, h, pot), rs = s.rs ?? CB.rstar;
+       if (sum[root]?.[1] > 0) s.m = sum[root][0] / sum[root][1];
+-      const rule = clamp(rs + s.pi + CB.phiPi * (s.pi - CB.pistar) + CB.phiY * gap, RATE_RANGE[0], RATE_RANGE[1]);
++      // s.e = 則から外す分 (政策のショック。ふだんは無い。政策の反応を測る実験 tools/policy-irf.js だけが入れる。回 KE7・B-006)
++      const rule = clamp(rs + s.pi + CB.phiPi * (s.pi - CB.pistar) + CB.phiY * gap + (s.e || 0), RATE_RANGE[0], RATE_RANGE[1]);
+       s.i = this.cbRule(root) ? rule : this.fiscalFor(root, root).rate ?? rule;
+       s.u = s.u * keep + CB.sd * Math.sqrt(1 - keep * keep) * this.randNormal();
+       s.pi = clamp(CB.pistar + s.x + CB.kappa * gap - CB.lambda * (s.i - s.pi - rs) + s.u, CB.pi[0], CB.pi[1]);
+@@ -66,7 +67,7 @@
+         if (!(gv.cpn >= -1)) gv.cpn = yl;
+         if (b > b0) gv.cpn = (gv.cpn * b0 + yl * (b - b0)) / b; // 新しく出した分は、いまの利回りで
+         gv.cpn += (yl - gv.cpn) * Math.min(1, h / CB.roll); // 借り換え
+-        if (gv.fr?.y > 0 && this.isColonized(id) && b / gv.fr.y > CB.dmax) this.sovDefault(id);
++        if (gv.fr?.y > 0 && this.isColonized(id) && b / gv.fr.y > CB.dmax && !this.dfltOut(gv)) this.sovDefault(id);
+       } else delete gv.cpn;
+       gv.b0 = gv.bond || 0;
+     }
+@@ -89,7 +90,16 @@
+   longYield(id) {
+     const n = this.rstarOf(this.realmOf(id)) + CB.pistar, i = this.cbRateAt(id), k = CB.persist / CB.mat;
+     const gv = this.govs[id], d = gv?.fr?.y > 0 ? Math.min(CB.dmax, (gv.bond || 0) / gv.fr.y) : 0; // 不履行の線より上は同じ (払えない分は不履行で消える)
+-    return n + (i - n) * k * (1 - GM.exp(-1 / k)) + CB.tp + CB.credit * d;
++    return n + (i - n) * k * (1 - GM.exp(-1 / k)) + CB.tp + CB.credit * d + this.dfltSpread(gv);
++  }
++  // 不履行のあと、新しく国債を出せない間か (QD-26 = b。CB.exclude 年)
++  dfltOut(gv) { return gv?.dflt !== undefined && this.year - gv.dflt < CB.exclude; }
++  // 不履行のあとの利回りの上乗せ (QD-26 = c): 1 年目 haircut × spread[0] から 4〜5 年目 haircut × spread[1] へ指数で下がり、spread[2] 年で消える
++  dfltSpread(gv) {
++    const t = gv?.dflt !== undefined ? this.year - gv.dflt : Infinity;
++    if (!(t < CB.spread[2])) return 0;
++    const k = GM.log(CB.spread[0] / CB.spread[1]) / 3.5; // 1 年目から 4.5 年目までの下がり方
++    return CB.haircut * CB.spread[0] * GM.exp(-k * Math.max(0, t - 1));
+   }
+   // 国債の実質の利子率 (利札 − 物価の上がり方)
+   bondRate(id) { const gv = this.govs[id]; return (gv.cpn ?? this.longYield(id)) - this.inflOf(id); }
+@@ -110,7 +120,7 @@
+     for (const [acct, v] of dep) this.cash('default', -x * (v / held), acct);
+     gv.dflt = this.year;
+     gv.nd = (gv.nd || 0) + 1; // 不履行の回数
+-    if (this.realmOf(id) === this.cap && !this.spectate) this.event('goal', id, JA`国の星系の政府が国債の ${Math.round(CB.haircut * 100)}% (${Math.round(x)} cr) を払えなくなった (不履行)。預金がそのぶん目減りした`, true);
++    if (this.realmOf(id) === this.cap && !this.spectate) this.event('goal', id, JA`国の星系の政府が国債の ${Math.round(CB.haircut * 100)}% (${Math.round(x)} cr) を払えなくなった (不履行)。預金がそのぶん目減りした。これから ${Math.round(CB.exclude)} 年は新しく国債を出せない`, true);
+   }
+   // 国債の残高を動かす (v > 0 で増える)。お金の試験 (MONEY_AUDIT) に、政府の純額 (資金 − 国債) の変化として載せる
+   bondMove(kind, v, id) {
+diff --git a/src/economy/fiscal-consts.js b/src/economy/fiscal-consts.js
+index e94e956..6ec00fb 100644
+--- a/src/economy/fiscal-consts.js
++++ b/src/economy/fiscal-consts.js
+@@ -76,8 +76,12 @@ const DEBT = { a: -0.0023, rho: 0.0336, beta: 0.056, war: -0.0171, sd: 0.0269, a
+ //   国債の利子: 政府ごとの国債の利札 cpn (出した年の長期の利回りの、額で重みをつけた平均)。毎年 1 ÷ roll ずつ、いまの利回りで借り換える
+ //   不履行: 国債 ÷ GDP が dmax (JST の 18 か国の、国ごとの債務 ÷ GDP の最大の中央値) を超えた政府は、国債の haircut (Cruces & Trebesch 2013 の 180 件の平均 37%) を払わない。
+ //     銀行の損は、利子と同じく預金の額に比べて預金から引く (銀行の純資産は 0 のまま)
++//   不履行のあと (QD-26 = b と c。回 KE7): exclude 年は新しく国債を出せず、その間は不履行もしない (Cruces & Trebesch 2013 の 180 件で、削った割合が 30% を超えた
++//     不履行から市場に戻るまでの平均 6.1 年。全体の平均は 5.1 年・中央 3 年)。前は不履行の次の刻みにまた借りて、小さな入植地の政府が 1 年に 4 回ずつ不履行を繰り返した
++//     (8 銀河 × 150 年で 66,568 回)。戻ったあとも、長期の利回りに haircut × spread[0] (1 年目) から haircut × spread[1] (4〜5 年目) へ指数で下がる上乗せがつき、
++//     spread[2] 年で消える (同じ論文の表 4 の 2 列: 削り 1 点あたり 6.75bp・3.16bp。7 年目まで有意)。37% の削りで +2.5 点 → +1.2 点
+ // kappa・lambda・theta・anchor・sd・ar・persist・roll・speed は仮の値 (現実の政策の反応と比べるのは回 KE3・B-006)
+-const CB = { rstar: 0.01, rs: [0.00234, 1.343], rsr: [0.0023, 0.0567], trend: 5, pistar: 0.02, phiPi: 0.5, phiY: 0.5, speed: 5, gap: [-0.1355, 0.1175], kappa: 0.1, lambda: 0.1, theta: 0.3, anchor: 0.3, sd: 0.01, ar: 0.5, pi: [-0.2, 1], persist: 3, mat: 10, roll: 7, tp: -0.0004, credit: 0.0175, dmax: 1.3821, haircut: 0.37 };
++const CB = { rstar: 0.01, rs: [0.00234, 1.343], rsr: [0.0023, 0.0567], trend: 5, pistar: 0.02, phiPi: 0.5, phiY: 0.5, speed: 5, gap: [-0.1355, 0.1175], kappa: 0.1, lambda: 0.1, theta: 0.3, anchor: 0.3, sd: 0.01, ar: 0.5, pi: [-0.2, 1], persist: 3, mat: 10, roll: 7, tp: -0.0004, credit: 0.0175, dmax: 1.3821, haircut: 0.37, exclude: 6.1, spread: [0.0675, 0.0316, 7] };
+ // 中央銀行の状態 (国ごと。国 = 首都の星系): P = 物価の水準 (基準の値段 = 1)、x = 見込みの目標からのずれ、u = ゆらぎ、pi = 物価の上がり方、i = 政策金利、m = 物の値段の指数、
+ // yp・pp・np = 前の刻みの星系ごとの GDP・潜在の産出・人口、g1・gs = 1 年でならした伸び・speed 年でならした伸び、gt = 1 人あたりの潜在の伸びを trend 年でならしたもの、
+ // rs = 中立の実質の金利 (回 KE6。前の版のセーブにはなく、rstar から始まる)、h = 政策金利の 1 年ごとの記録 [[年, i]] (遠い星系には、知らせが光速で届いた分の政策金利が効く)
+diff --git a/src/economy/fiscal-ui.js b/src/economy/fiscal-ui.js
+index 01f04cb..d1bae70 100644
+--- a/src/economy/fiscal-ui.js
++++ b/src/economy/fiscal-ui.js
+@@ -56,7 +56,7 @@ function fiscalHtml(g) {
+       <tr><td>中央銀行</td><td><select data-act="fiscal" data-k="cb" aria-label="政策金利の決め方"><option value="1"${rule ? ' selected' : ''}>任せる (テイラー則)</option><option value="0"${rule ? '' : ' selected'}>自分で決める</option></select></td><td colspan="2" class="muted wrap">任せると、中央銀行が物価の上がり方と景気の速さを見て政策金利を決める (中立の金利 年 ${(g.rstarOf(g.cap) * 100).toFixed(2)}% + 物価の上がり方 + ${CB.phiPi} × (物価の上がり方 − 目標 ${(CB.pistar * 100).toFixed(0)}%) + ${CB.phiY} × 景気のずれ)。中立の金利は、1 人あたりの生産力の伸びが速いほど高い。政策金利を動かすと「自分で決める」になる</td></tr>
+       <tr><td>政策金利</td><td>${slider('rate', RATE_RANGE, RATE_STEP, rule ? cbRate : f.rate, 'pct2', TR('政策金利'))}</td><td colspan="2" class="muted wrap">名目の金利。会社と家計の借り・預金・交易の運ぶ年数には、物価の上がり方を引いた実質の金利 (いま 年 ${(g.rateAt(g.cap) * 100).toFixed(2)}%) が効く (運ぶ年数ぶん輸入の値段が e^(実質の金利 × 年数) 倍)。物価より低いまま止めると、物価の上がり方が上がっていく</td></tr>
+       <tr><td>物価</td><td class="num">年 ${(cbs.pi * 100).toFixed(1)}%</td><td colspan="2" class="muted wrap">物価の上がり方 (目標 ${(CB.pistar * 100).toFixed(0)}%)。物価の指数 ${g.cpiOf(g.cap).toFixed(2)} (始め 1)。帳簿は始めの値段で数えるので、思ったより物価が上がると、預金と国債の重さがそのぶん減る</td></tr>
+-      <tr><td>長期の国債の利回り</td><td class="num">年 ${(g.longYield(g.cap) * 100).toFixed(2)}%</td><td colspan="2" class="muted wrap">10 年の国債: 政策金利の見込み + 期間の上乗せ + 信用の上乗せ (国債 ÷ GDP × ${(CB.credit * 100).toFixed(2)}%。いま ${(CB.credit * Math.min(CB.dmax, (cg.bond || 0) / Math.max(cg.fr?.y || 0, 1e-9)) * 100).toFixed(2)}%)。国債 ÷ GDP が ${Math.round(CB.dmax * 100)}% を超えると不履行になり、国債の ${Math.round(CB.haircut * 100)}% を払わない (預金がそのぶん目減りする)</td></tr>
++      <tr><td>長期の国債の利回り</td><td class="num">年 ${(g.longYield(g.cap) * 100).toFixed(2)}%</td><td colspan="2" class="muted wrap">10 年の国債: 政策金利の見込み + 期間の上乗せ + 信用の上乗せ (国債 ÷ GDP × ${(CB.credit * 100).toFixed(2)}%。いま ${(CB.credit * Math.min(CB.dmax, (cg.bond || 0) / Math.max(cg.fr?.y || 0, 1e-9)) * 100).toFixed(2)}%)。国債 ÷ GDP が ${Math.round(CB.dmax * 100)}% を超えると不履行になり、国債の ${Math.round(CB.haircut * 100)}% を払わない (預金がそのぶん目減りする)。不履行のあと ${Math.round(CB.exclude)} 年は新しく国債を出せず、戻ったあとも ${CB.spread[2]} 年まで利回りに上乗せがつく${g.dfltOut(cg) ? TR`(いまは不履行のあとで、あと ${(CB.exclude - (g.year - cg.dflt)).toFixed(1)} 年借りられない)` : ''}</td></tr>
+       <tr><td>赤字の上限</td><td>${slider('deficit', DEFICIT_RANGE, DEFICIT_STEP, f.deficit || 0, 'pct1gdp', TR('赤字の上限'))}</td><td colspan="2" class="muted wrap">資金が足りない分を、1 年にこの額まで国債で借りる (${ME.capName}の GDP ${fmtAmt(cg.fr?.y || 0)} cr/年)。国債 ${fmtAmt(cg.bond || 0)} cr・いま借りられる額 ${fmtAmt(Math.max(0, g.funds(g.cap) - cg.credits))} cr。手元の資金が税収の ${Math.round(DEBT.cash * 12)} か月分を超えると、超えた分で国債を返す。国債 ÷ GDP は ${Math.round(DEBT.limit * 100)}% まで</td></tr>
+       ${(() => { const T = g.tech[g.cap], rd = T?.rd, Y = rd?.y || 0; return TR`<tr><td>研究開発の税額控除</td><td>${slider('rdcredit', RDCREDIT_RANGE, RDCREDIT_STEP, f.rdcredit ?? FISCAL_DEFAULT.rdcredit, 'pct1', TR('研究開発の税額控除'))}</td><td colspan="2" class="muted wrap">会社の研究開発費のこの割合を政府が返す (いま ${fmtAmt(rd?.credit || 0)} cr/年。研究開発費は GDP の ${Y > 0 ? ((100 * rd.spend) / Y).toFixed(2) : '0'}%、そのうち政府が出す分 ${rd?.spend > 0 ? pct(rd.pub / rd.spend) : '—'})。既定は ${(FISCAL_DEFAULT.rdcredit * 100).toFixed(1)}% (現実の国の中央値)。控除を上げると会社の研究者が増える (研究開発の値段への弾力性 ${RND.elastic}。${RND.adjust} 年ほどで寄る)</td></tr>`; })()}
+       ${(() => { const Y = g.realmSystems(g.cap).reduce((k, x) => k + (g.govs[x.id]?.fr?.y || 0), 0), pin = cg.pinY || 0; return TR`<tr><td>外との配当</td><td class="num">${pin >= 0 ? '+' : '−'}${fmtAmt(Math.abs(pin))} cr/年</td><td colspan="2" class="muted wrap">国民総所得 (GNI) = GDP + ほかの国の会社の持ち分から受け取る配当 − ほかの国の持ち主に払う配当。国の GDP ${fmtAmt(Y)} cr/年 に対して GNI ÷ GDP ${Y > 0 ? ((Y + pin) / Y).toFixed(3) : '—'}。新しい投資の ${Math.round(OWNER.fdi * 100)}% はほかの国が出す (豊かな国ほど多く出す)</td></tr>`; })()}
+diff --git a/src/economy/fiscal.js b/src/economy/fiscal.js
+index 23a6c13..6fcfe78 100644
+--- a/src/economy/fiscal.js
++++ b/src/economy/fiscal.js
+@@ -43,7 +43,7 @@
+       if (this.isHuman(id) && !this.spectate) {
+         const deficit = this.fiscalFor(id, id).deficit || 0;
+         gv.bw = (gv.bw || 0) * fade;
+-        if (gv.credits < 0 && deficit > 0) { const x = -gv.credits; gv.credits = 0; gv.bond = (gv.bond || 0) + x; gv.bw += x; }
++        if (gv.credits < 0 && deficit > 0 && !this.dfltOut(gv)) { const x = -gv.credits; gv.credits = 0; gv.bond = (gv.bond || 0) + x; gv.bw += x; }
+         const extra = gv.credits - keepCash;
+         if (extra > 0 && gv.bond > 0) { const x = Math.min(gv.bond, extra * out); gv.credits -= x; gv.bond -= x; }
+         continue;
+@@ -62,7 +62,8 @@
+         gv.due = Math.min(-x - pay, (gv.bond || 0) - pay);
+         x = -pay;
+       }
+-      if (gv.credits + x < 0) x = -gv.credits;
++      if (this.dfltOut(gv)) x = Math.min(x, 0); // 不履行のあとは新しく出せない (資金のマイナスは、戻るまで残る。QD-26)
++      else if (gv.credits + x < 0) x = -gv.credits;
+       if (x) { gv.credits += x; gv.bond = Math.max(0, (gv.bond || 0) + x); }
+       const T = Math.max(0, (gv.ledger?.tax || 0) + (gv.ledger?.natives || 0));
+       const pub = Math.min(Math.max(0, gv.credits), Math.max(0, T - s * fr.y - (fr.d ?? 0)) * h);
+@@ -97,7 +98,7 @@
+     const gv = this.govs[id];
+     if (!gv) return 0;
+     const y = gv.fr?.y || 0;
+-    let room = Math.max(0, DEBT.limit * y - (gv.bond || 0) - (gv.due || 0));
++    let room = this.dfltOut(gv) ? 0 : Math.max(0, DEBT.limit * y - (gv.bond || 0) - (gv.due || 0)); // 不履行のあとは借りられない (QD-26)
+     if (this.isHuman(id) && !this.spectate) room = Math.min(room, Math.max(0, (this.fiscalFor(id, id).deficit || 0) * y - (gv.bw || 0)));
+     return gv.credits + room;
+   }
+diff --git a/src/economy/market-consts.js b/src/economy/market-consts.js
+index 995dfc4..4960e1a 100644
+--- a/src/economy/market-consts.js
++++ b/src/economy/market-consts.js
+@@ -131,6 +131,8 @@ const OWNER = { colony: 1, fdi: 0.1103, out: 1.0445, min: 1e-3, gmax: 0.2 };
+ //   政府の買い物 (build) とは分ける。財政の目標の GDP (tools/fiscal-panel.js。付加価値 + 政府の買い物) に入れると、建設の賃金には税が掛からないので
+ //   税収 ÷ GDP (R19) が 0.134 → 0.105 に下がった。投資の目標の GDP (tools/capital-panel.js) には、国民経済計算のとおり投資として入れる)。
+ //   始めの資本は、初めて付加価値を測った刻みの K*。この段では資本は産出に効かない (B-119 の 2 で効かせる)。smooth・speed は仮の値
++// 軍の維持費のうち主人の政府が払う割合 (約定の束の「軍事」の法ごと。QD-31 = c。回 SE6 の政治の返事: 宗 = 保護国・委任統治領・直轄など、分 = 藩部・自治領・封臣など、従 = 冊封・緩衝国など)
++const UPKEEP_LORD = { S: 1, M: 0.5, V: 0 };
+ const GOV_BUY = new Set(['build', 'upkeep', 'welfare', 'security', 'military', 'education', 'public', 'health']); // 政府が民間から買う出入り (GDP に入る。tools/fiscal-panel.js と同じ)
+ const KSTOCK = { ky: [[2343, 2.37], [7106, 3.513], [13518, 4.315], [26436, 4.485], [50989, 4.706]], smooth: 5, speed: 0.5, gmax: OWNER.gmax };
+ saveField('capacity', (game) => (game.capacity.length ? game.capacity : undefined), {
+diff --git a/src/economy/market-economy.js b/src/economy/market-economy.js
+index 21e758d..ff86cb2 100644
+--- a/src/economy/market-economy.js
++++ b/src/economy/market-economy.js
+@@ -593,16 +593,26 @@
+       }
+     }
+     this.invStep(h);
+-    // 7. 軍の維持費
+-    // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)。受け取るのは払う星系の民間 (兵の給料と補給の買い付け)
++    // 7. 軍の維持費 (回 KE7・B-017・QD-31 = c。docs/money.md の 5.6)
++    // 駐留する艦隊と兵 (入植していない星系に置いた艦隊と移動中の部隊は太陽系) は、駐留する星系の約定の束の「軍事」(politics/pc-vassal.js の BUNDLE_ITEMS の mil) の法で分けて払う:
++    // 宗なら主人の政府、分なら半分ずつ、従なら自分 (UPKEEP_LORD)。主人のいない国の首都は自分で払う。動いている艦隊は、持ち主の国の首都が払う
++    // (前は行き先の星系の政府が払っていて、攻め込まれた小さな国の首都が敵の艦隊の維持費まで払っていた)。
++    // 受け取るのは払う政府の星系の民間 (兵の給料と補給の買い付け。主人の分を駐留する星系へ送ると、お金が光より速く動くので)。
++    // 前は税収の何十倍もの維持費で小さな政府が赤字を国債で埋め続け、不履行を繰り返した
+     const payer = (id) => (this.isColonized(id) ? id : 0);
++    const MIL = BUNDLE_ITEMS.indexOf('mil');
++    const pay = (p, x) => {
++      const gv = this.govs[p], lord = gv?.lord, share = lord !== null && lord !== undefined && this.isColonized(lord) ? UPKEEP_LORD[this.bundleOf(gv).law[MIL]] ?? 0 : 0;
++      if (share < 1) this.earn('upkeep', -x * (1 - share), p, { hh: p });
++      if (share > 0) this.earn('upkeep', -x * share, lord, { hh: lord });
++    };
+     // 国家方針が軍拡期なら、地球の国の艦隊の維持費が40%安い
+     const upk = (p) => WARSHIP_UPKEEP * (this.policy && this.policyAt(p) === 'military' ? 0.6 : 1);
+-    for (const [id, n] of Object.entries(this.garrison)) if (n) { const p = payer(Number(id)); this.earn('upkeep', -upk(p) * n * h, p, { hh: p }); }
+-    for (const f of this.fleets) { const p = payer(f.to); this.earn('upkeep', -upk(p) * f.n * h, p, { hh: p }); }
++    for (const [id, n] of Object.entries(this.garrison)) if (n) { const p = payer(Number(id)); pay(p, upk(p) * n * h); }
++    for (const f of this.fleets) { const o = f.owner ?? 0, p = this.isColonized(o) ? o : payer(f.to); this.earn('upkeep', -upk(p) * f.n * h, p, { hh: p }); } // 持ち主の国がなくなった艦隊は、前と同じ行き先
+     for (const c of this.colonies) {
+       const u = TROOP_UPKEEP * c.troops + SLAVE_TROOP_UPKEEP * c.slaveTroops;
+-      if (u) this.earn('upkeep', -u * h, c.sys, { hh: c.sys });
++      if (u) pay(c.sys, u * h);
+     }
+     for (const m of this.troopMoves) this.earn('upkeep', -(TROOP_UPKEEP * m.troops + SLAVE_TROOP_UPKEEP * m.slave) * h, 0, { hh: 0 });
+     // 8. 兵站: 艦隊は1艦隊あたり年に FLEET_SUPPLY の燃料と金属を使う。駐留する星系の備蓄から出す
+diff --git a/src/outward/lang-en.js b/src/outward/lang-en.js
+index a96250a..a2f1b0f 100644
+--- a/src/outward/lang-en.js
++++ b/src/outward/lang-en.js
+@@ -1048,7 +1048,7 @@ const I18N_EN = {
+ "予算は {0}": "budget {0}",
+ "財政を変えた ({0})。遠い星系には知らせが光速で届いてから効く": "Fiscal policy changed ({0}). Distant systems are affected once the news reaches them at light speed",
+ // == economy/central-bank.js
+-"国の星系の政府が国債の {0}% ({1} cr) を払えなくなった (不履行)。預金がそのぶん目減りした": "System governments of the realm defaulted on {0}% of their bonds ({1} cr). Deposits lost that much in value",
++"国の星系の政府が国債の {0}% ({1} cr) を払えなくなった (不履行)。預金がそのぶん目減りした。これから {2} 年は新しく国債を出せない": "System governments of the realm defaulted on {0}% of their bonds ({1} cr). Deposits lost that much in value. No new bonds can be issued for the next {2} years",
+ // == politics/policy-decisions.js
+ "不明な方針": "Unknown policy",
+ "いまの方針と同じ": "Same as the current policy",
+@@ -2058,6 +2058,7 @@ const I18N_EN = {
+ "税率": "Tax rate",
+ "・消費税と合わせた重さ ×{0}: 家臣の忠誠度の目標 {1}{2}・議会の支持 年 {3}{4}": "; combined burden with consumption tax ×{0}: vassal loyalty target {1}{2}, council support {3}{4}/yr",
+ "政策金利": "Policy rate",
++"(いまは不履行のあとで、あと {0} 年借りられない)": " (now after a default: no borrowing for another {0} years)",
+ "赤字の上限": "Deficit cap",
+ "研究開発の税額控除": "R&D tax credit",
+ "<tr><td>研究開発の税額控除</td><td>{0}</td><td colspan=\"2\" class=\"muted wrap\">会社の研究開発費のこの割合を政府が返す (いま {1} cr/年。研究開発費は GDP の {2}%、そのうち政府が出す分 {3})。既定は {4}% (現実の国の中央値)。控除を上げると会社の研究者が増える (研究開発の値段への弾力性 {5}。{6} 年ほどで寄る)</td></tr>": "<tr><td>R&D tax credit</td><td>{0}</td><td colspan=\"2\" class=\"muted wrap\">The government refunds this share of firms’ R&D spending (now {1} cr/yr; R&D spending is {2}% of GDP, of which the government funds {3}). Default {4}% (median of real countries). A higher credit brings more company researchers (price elasticity of R&D {5}; adjusts over about {6} years)</td></tr>",
+@@ -2065,7 +2066,7 @@ const I18N_EN = {
+ " <span class=\"bad\">(資金が足りず {0} しか払えていない)</span>": " <span class=\"bad\">(short of funds: only {0} paid)</span>",
+ "<h3>年齢と、年金・医療</h3><table class=\"tbl\"><tr><td>{0}の年齢</td><td>{1}</td></tr>\n        <tr><td>年金・医療</td><td>{2} cr/年・{3} cr/年{4} <span class=\"muted\">高齢 (65 歳〜。ゲームの年数は 100 ÷ 28 倍) が多いほど増える。政府が自動で払う</span></td></tr></table>": "<h3>Age, pensions and health care</h3><table class=\"tbl\"><tr><td>Ages in {0}</td><td>{1}</td></tr>\n        <tr><td>Pensions, health care</td><td>{2} cr/yr · {3} cr/yr{4} <span class=\"muted\">Rises with the elderly share (65+; game years are scaled by 100 ÷ 28). Paid automatically by the government</span></td></tr></table>",
+ "<p class=\"note bad\">資金が足りず、予算を {0} しか払えていない (効き目もそのぶん下がる)</p>": "<p class=\"note bad\">Short of funds: only {0} of the budget paid (effects reduced accordingly)</p>",
+-"<h3>{0}財政</h3>\n    <p class=\"note\">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・政策金利・赤字の上限を変えるには政治力 {1} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く{2}。効き目の大きさは仮の値。</p>\n    <table class=\"tbl\">\n      <tr><td>税率</td><td>{3}</td><td colspan=\"2\" class=\"muted wrap\">所得への税 (標準 {4}% の ×{5}){6}。自給の所得には掛からない</td></tr>\n      <tr><td>消費税</td><td>{7}</td><td colspan=\"2\" class=\"muted wrap\">家計の買い物 (物とサービス) の値段に掛け、星系の政府に入る。所得の低い星系に重い (逆進)。忠誠度と議会への効き目は税率と合わせた重さで決まる</td></tr>\n      <tr><td>関税</td><td>{8}</td><td colspan=\"2\" class=\"muted wrap\">ほかの国からの輸入の値段に掛ける (買い手の会社が、買い手の星系の政府に払う)。高いほど国の中の売り手から買う。政府の資材の買い付けと主人の支援には掛からない</td></tr>\n      <tr><td>中央銀行</td><td><select data-act=\"fiscal\" data-k=\"cb\" aria-label=\"政策金利の決め方\"><option value=\"1\"{9}>任せる (テイラー則)</option><option value=\"0\"{10}>自分で決める</option></select></td><td colspan=\"2\" class=\"muted wrap\">任せると、中央銀行が物価の上がり方と景気の速さを見て政策金利を決める (中立の金利 年 {11}% + 物価の上がり方 + {12} × (物価の上がり方 − 目標 {13}%) + {14} × 景気のずれ)。中立の金利は、1 人あたりの生産力の伸びが速いほど高い。政策金利を動かすと「自分で決める」になる</td></tr>\n      <tr><td>政策金利</td><td>{15}</td><td colspan=\"2\" class=\"muted wrap\">名目の金利。会社と家計の借り・預金・交易の運ぶ年数には、物価の上がり方を引いた実質の金利 (いま 年 {16}%) が効く (運ぶ年数ぶん輸入の値段が e^(実質の金利 × 年数) 倍)。物価より低いまま止めると、物価の上がり方が上がっていく</td></tr>\n      <tr><td>物価</td><td class=\"num\">年 {17}%</td><td colspan=\"2\" class=\"muted wrap\">物価の上がり方 (目標 {18}%)。物価の指数 {19} (始め 1)。帳簿は始めの値段で数えるので、思ったより物価が上がると、預金と国債の重さがそのぶん減る</td></tr>\n      <tr><td>長期の国債の利回り</td><td class=\"num\">年 {20}%</td><td colspan=\"2\" class=\"muted wrap\">10 年の国債: 政策金利の見込み + 期間の上乗せ + 信用の上乗せ (国債 ÷ GDP × {21}%。いま {22}%)。国債 ÷ GDP が {23}% を超えると不履行になり、国債の {24}% を払わない (預金がそのぶん目減りする)</td></tr>\n      <tr><td>赤字の上限</td><td>{25}</td><td colspan=\"2\" class=\"muted wrap\">資金が足りない分を、1 年にこの額まで国債で借りる ({26}の GDP {27} cr/年)。国債 {28} cr・いま借りられる額 {29} cr。手元の資金が税収の {30} か月分を超えると、超えた分で国債を返す。国債 ÷ GDP は {31}% まで</td></tr>\n      {32}\n      {33}\n    </table>\n    {34}\n    <h3>予算 ({35}の税収 {36} cr/年 のうち {37}% を使う。合わせて {38}% まで)</h3>\n    <table class=\"tbl\">{39}</table>\n    {40}": "<h3>{0}Public finance</h3>\n    <p class=\"note\">Values are set finely with the sliders (the range spans the 1st–99th percentile of values used by real countries; the value is set on release). Changing the tax rate, policy rate or deficit cap costs {1} political capital. Allocating the budget costs none. Every change takes effect in each system once the news reaches it at light speed{2}. The size of the effects is provisional.</p>\n    <table class=\"tbl\">\n      <tr><td>Tax rate</td><td>{3}</td><td colspan=\"2\" class=\"muted wrap\">Tax on income (×{5} the standard {4}%){6}. Subsistence income is not taxed</td></tr>\n      <tr><td>Consumption tax</td><td>{7}</td><td colspan=\"2\" class=\"muted wrap\">Levied on household purchases (goods and services) and paid to the system government. Weighs most on low-income systems (regressive). Its effect on loyalty and the council depends on the combined burden with the tax rate</td></tr>\n      <tr><td>Tariffs</td><td>{8}</td><td colspan=\"2\" class=\"muted wrap\">Levied on imports from other nations (paid by the buying firm to the buying system’s government). The higher the tariff, the more buyers turn to domestic sellers. Not applied to government purchases of materials or to aid from an overlord</td></tr>\n      <tr><td>Central bank</td><td><select data-act=\"fiscal\" data-k=\"cb\" aria-label=\"How the policy rate is set\"><option value=\"1\"{9}>Delegate (Taylor rule)</option><option value=\"0\"{10}>Set it myself</option></select></td><td colspan=\"2\" class=\"muted wrap\">When delegated, the central bank sets the policy rate from inflation and the pace of the economy (neutral rate {11}%/yr + inflation + {12} × (inflation − target {13}%) + {14} × output gap). The neutral rate is higher when output per person grows faster. Moving the policy rate switches to “Set it myself”</td></tr>\n      <tr><td>Policy rate</td><td>{15}</td><td colspan=\"2\" class=\"muted wrap\">The nominal rate. Borrowing and saving by firms and households, and the years goods spend in transit, respond to the real rate, net of inflation (now {16}%/yr) (over the transit time, import prices rise by a factor of e^(real rate × years)). Held below inflation, it makes inflation keep rising</td></tr>\n      <tr><td>Prices</td><td class=\"num\">{17}%/yr</td><td colspan=\"2\" class=\"muted wrap\">Inflation (target {18}%). Price index {19} (start 1). The ledgers count in starting prices, so unexpected inflation reduces the real weight of savings and bonds by that much</td></tr>\n      <tr><td>Long-term bond yield</td><td class=\"num\">{20}%/yr</td><td colspan=\"2\" class=\"muted wrap\">10-year bonds: expected policy rate + term premium + credit premium (bonds ÷ GDP × {21}%; now {22}%). If bonds ÷ GDP exceeds {23}%, the state defaults and does not repay {24}% of its bonds (savings shrink by that much)</td></tr>\n      <tr><td>Deficit cap</td><td>{25}</td><td colspan=\"2\" class=\"muted wrap\">Shortfalls are covered by borrowing in bonds, up to this amount per year (GDP of {26}: {27} cr/yr). Bonds {28} cr; can borrow now {29} cr. When cash on hand exceeds {30} months of tax revenue, the excess repays bonds. Bonds ÷ GDP up to {31}%</td></tr>\n      {32}\n      {33}\n    </table>\n    {34}\n    <h3>Budget (uses {37}% of {35}’s tax revenue of {36} cr/yr; up to {38}% in total)</h3>\n    <table class=\"tbl\">{39}</table>\n    {40}",
++"<h3>{0}財政</h3>\n    <p class=\"note\">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・政策金利・赤字の上限を変えるには政治力 {1} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く{2}。効き目の大きさは仮の値。</p>\n    <table class=\"tbl\">\n      <tr><td>税率</td><td>{3}</td><td colspan=\"2\" class=\"muted wrap\">所得への税 (標準 {4}% の ×{5}){6}。自給の所得には掛からない</td></tr>\n      <tr><td>消費税</td><td>{7}</td><td colspan=\"2\" class=\"muted wrap\">家計の買い物 (物とサービス) の値段に掛け、星系の政府に入る。所得の低い星系に重い (逆進)。忠誠度と議会への効き目は税率と合わせた重さで決まる</td></tr>\n      <tr><td>関税</td><td>{8}</td><td colspan=\"2\" class=\"muted wrap\">ほかの国からの輸入の値段に掛ける (買い手の会社が、買い手の星系の政府に払う)。高いほど国の中の売り手から買う。政府の資材の買い付けと主人の支援には掛からない</td></tr>\n      <tr><td>中央銀行</td><td><select data-act=\"fiscal\" data-k=\"cb\" aria-label=\"政策金利の決め方\"><option value=\"1\"{9}>任せる (テイラー則)</option><option value=\"0\"{10}>自分で決める</option></select></td><td colspan=\"2\" class=\"muted wrap\">任せると、中央銀行が物価の上がり方と景気の速さを見て政策金利を決める (中立の金利 年 {11}% + 物価の上がり方 + {12} × (物価の上がり方 − 目標 {13}%) + {14} × 景気のずれ)。中立の金利は、1 人あたりの生産力の伸びが速いほど高い。政策金利を動かすと「自分で決める」になる</td></tr>\n      <tr><td>政策金利</td><td>{15}</td><td colspan=\"2\" class=\"muted wrap\">名目の金利。会社と家計の借り・預金・交易の運ぶ年数には、物価の上がり方を引いた実質の金利 (いま 年 {16}%) が効く (運ぶ年数ぶん輸入の値段が e^(実質の金利 × 年数) 倍)。物価より低いまま止めると、物価の上がり方が上がっていく</td></tr>\n      <tr><td>物価</td><td class=\"num\">年 {17}%</td><td colspan=\"2\" class=\"muted wrap\">物価の上がり方 (目標 {18}%)。物価の指数 {19} (始め 1)。帳簿は始めの値段で数えるので、思ったより物価が上がると、預金と国債の重さがそのぶん減る</td></tr>\n      <tr><td>長期の国債の利回り</td><td class=\"num\">年 {20}%</td><td colspan=\"2\" class=\"muted wrap\">10 年の国債: 政策金利の見込み + 期間の上乗せ + 信用の上乗せ (国債 ÷ GDP × {21}%。いま {22}%)。国債 ÷ GDP が {23}% を超えると不履行になり、国債の {24}% を払わない (預金がそのぶん目減りする)。不履行のあと {25} 年は新しく国債を出せず、戻ったあとも {26} 年まで利回りに上乗せがつく{27}</td></tr>\n      <tr><td>赤字の上限</td><td>{28}</td><td colspan=\"2\" class=\"muted wrap\">資金が足りない分を、1 年にこの額まで国債で借りる ({29}の GDP {30} cr/年)。国債 {31} cr・いま借りられる額 {32} cr。手元の資金が税収の {33} か月分を超えると、超えた分で国債を返す。国債 ÷ GDP は {34}% まで</td></tr>\n      {35}\n      {36}\n    </table>\n    {37}\n    <h3>予算 ({38}の税収 {39} cr/年 のうち {40}% を使う。合わせて {41}% まで)</h3>\n    <table class=\"tbl\">{42}</table>\n    {43}": "<h3>{0}Public finance</h3>\n    <p class=\"note\">Values are set finely with the sliders (the range spans the 1st–99th percentile of values used by real countries; the value is set on release). Changing the tax rate, policy rate or deficit cap costs {1} political capital. Allocating the budget costs none. Every change takes effect in each system once the news reaches it at light speed{2}. The size of the effects is provisional.</p>\n    <table class=\"tbl\">\n      <tr><td>Tax rate</td><td>{3}</td><td colspan=\"2\" class=\"muted wrap\">Tax on income (×{5} the standard {4}%){6}. Subsistence income is not taxed</td></tr>\n      <tr><td>Consumption tax</td><td>{7}</td><td colspan=\"2\" class=\"muted wrap\">Levied on household purchases (goods and services) and paid to the system government. Weighs most on low-income systems (regressive). Its effect on loyalty and the council depends on the combined burden with the tax rate</td></tr>\n      <tr><td>Tariffs</td><td>{8}</td><td colspan=\"2\" class=\"muted wrap\">Levied on imports from other nations (paid by the buying firm to the buying system’s government). The higher the tariff, the more buyers turn to domestic sellers. Not applied to government purchases of materials or to aid from an overlord</td></tr>\n      <tr><td>Central bank</td><td><select data-act=\"fiscal\" data-k=\"cb\" aria-label=\"How the policy rate is set\"><option value=\"1\"{9}>Delegate (Taylor rule)</option><option value=\"0\"{10}>Set it myself</option></select></td><td colspan=\"2\" class=\"muted wrap\">When delegated, the central bank sets the policy rate from inflation and the pace of the economy (neutral rate {11}%/yr + inflation + {12} × (inflation − target {13}%) + {14} × output gap). The neutral rate is higher when output per person grows faster. Moving the policy rate switches to “Set it myself”</td></tr>\n      <tr><td>Policy rate</td><td>{15}</td><td colspan=\"2\" class=\"muted wrap\">The nominal rate. Borrowing and saving by firms and households, and the years goods spend in transit, respond to the real rate, net of inflation (now {16}%/yr) (over the transit time, import prices rise by a factor of e^(real rate × years)). Held below inflation, it makes inflation keep rising</td></tr>\n      <tr><td>Prices</td><td class=\"num\">{17}%/yr</td><td colspan=\"2\" class=\"muted wrap\">Inflation (target {18}%). Price index {19} (start 1). The ledgers count in starting prices, so unexpected inflation reduces the real weight of savings and bonds by that much</td></tr>\n      <tr><td>Long-term bond yield</td><td class=\"num\">{20}%/yr</td><td colspan=\"2\" class=\"muted wrap\">10-year bonds: expected policy rate + term premium + credit premium (bonds ÷ GDP × {21}%; now {22}%). If bonds ÷ GDP exceeds {23}%, the state defaults and does not repay {24}% of its bonds (savings shrink by that much). After a default, no new bonds can be issued for {25} years, and yields carry a premium for up to {26} years{27}</td></tr>\n      <tr><td>Deficit cap</td><td>{28}</td><td colspan=\"2\" class=\"muted wrap\">Shortfalls are covered by borrowing in bonds, up to this amount per year (GDP of {29}: {30} cr/yr). Bonds {31} cr; can borrow now {32} cr. When cash on hand exceeds {33} months of tax revenue, the excess repays bonds. Bonds ÷ GDP up to {34}%</td></tr>\n      {35}\n      {36}\n    </table>\n    {37}\n    <h3>Budget (uses {40}% of {38}’s tax revenue of {39} cr/yr; up to {41}% in total)</h3>\n    <table class=\"tbl\">{42}</table>\n    {43}",
+ // == screen/goals-ui.js
+ "いまの方針": "Current policy",
+ "{0}年後から変えられる": "Can change in {0} years",
+diff --git a/targets/targets.json b/targets/targets.json
+index 76e582a..e154dd8 100644
+--- a/targets/targets.json
++++ b/targets/targets.json
+@@ -1,6 +1,6 @@
+ {
+-  "version": 26,
+-  "fixedAt": "2026-10-28",
++  "version": 27,
++  "fixedAt": "2026-10-29",
+   "note": "調整を始める前に固定した、合わせる目標。書き換えは「目標の変更」だけの PR で、理由を書き、関係する調整の結果を見る前に行う。説明は docs/targets.md",
+   "rules": [
+     "数値の合格幅がまだ決まっていない目標 (band が null) は、取得スクリプトで生データから統計量を計算した時点で、その計算結果だけから幅を決めて書き込み、固定する。シミュレーションの結果を見てから幅を決めてはいけない",
+@@ -33,7 +33,8 @@
+     { "version": 23, "date": "2026-10-25", "what": "技術革新の 3 つ目 (研究開発の政策。研究者を有給にし、公の研究の予算と研究開発の税額控除を足す) を入れるため (ユーザーの依頼 2026-10-25「おすすめ四つでお願い」。回 KE6・B-122。docs/research/innovation.md)、研究開発費と所得 R73・研究開発費のうち政府が出す割合 R74・研究開発の税の優遇 R75 を足した。R73: WDI の研究開発費 ÷ GDP を 1 人あたり所得 (R61・R62 と同じ) の 5 分位に分けた 25%〜75% 点 (149 か国・2416 国・年。1996〜2024 年。R66 と同じ形)。R74: OECD MSTI の GERD のうち政府が出した割合の、2015〜2023 年の国ごとの平均の国の中央値 32.4064% (幅は国の 25%〜75% 点。46 か国)。R75: OECD R&D Tax Incentives の税の優遇 ÷ GDP の、同じ形の国の中央値 0.0299% (55 か国。0 の国も入れた)。生データは新しく取った OECD のもの (data/fetch/fetch_rnd.py)。どれも生データの計算結果だけで決めた。ゲームにはまだ研究開発の費用がないので、ゲームの結果は見ていない" },
+     { "version": 24, "date": "2026-10-25", "what": "技術革新の 4 つ目 (汎用技術 (GPT) と J カーブ。平均 60 年に一度ばらばらに現れ、国ごとに S カーブで採用される) を入れるため (ユーザーの依頼 2026-10-25「おすすめ四つでお願い」。回 KE6・B-123。docs/research/innovation.md)、前線の技術の伸びの揺れ R76 と、新しい技術の採用の遅れと所得 R77 を足した。R76: Fernald の利用率を補正した米国の TFP (1948〜2025 年) を労働増大的な形にした年率の、10 年の移動平均の標準偏差 0.9244 ポイントの ±50%。R77: WDI の携帯電話とインターネットが 10% に達した年の、所得のいちばん上の 5 分位からの遅れの、分位ごとの幅 (2 つの技術の国の 25%〜75% 点を合わせた。192 か国)。生データは新しく取ったもの (data/fetch/fetch_gpt.py)。どれも生データの計算結果だけで決めた。ゲームにはまだ GPT がないので、ゲームの結果は見ていない" },
+     { "version": 25, "date": "2026-10-26", "what": "民間の投資を採掘のほかにもひろげ、入植地ごとの資本を産出に効かせるため (ユーザーの決定 2026-10-26「資本を生産に効かせる」。回 KE6・B-119。docs/requests/2026-10-26-KE.md)、投資と所得 R78 と、資本 ÷ 産出と所得 R79 を足した。R78: WDI の総固定資本形成 ÷ GDP を 1 人あたり所得の 5 分位に分けた 25%〜75% 点 (173 か国・5,378 国・年。1990〜2024 年)。R79: Penn World Table 11.0 の資本ストック ÷ 産出 (cn ÷ rgdpo。2015〜2019 年) を同じく 5 分位に分けた 25%〜75% 点 (174 か国)。生データは前からあるもの (data/raw/gni・data/raw/tfp・data/raw/tech)。どれも生データの計算結果だけで決めた。ゲームにはまだ会社の資本の投資がないので、ゲームの結果は見ていない" },
+-    { "version": 26, "date": "2026-10-28", "what": "入植船の乗員の人数を選べるようにし、少ない人数の入植団が絶えることを入れるため (回 FU3・B-033)、R17 の合格を数で書き、幅を決めた。幅は Marin & Beluffi 2018 の本文 (arXiv:1806.03856 v1) の数だけから決めた: 25 組 (50 人) で絶える割合 0.35〜0.65 (論文の 50 ± 15%)、98 人で 3% 以下 (論文は 100 回の旅のうち 0 回絶えた。0 / 100 の 95% の上限 (3 ÷ 100))。統計量も、論文が出しているもの (100 回の旅で絶える割合) に直した (前は「遺伝的多様性が保たれる確率」と書いていたが、HERITAGE が数えるのは絶えたかどうか)。Smith 2014 の 14,000〜44,000 人は、モンテカルロでなく統計を掛け合わせて出したもの (Marin & Beluffi の 3.1 節) で、本文 (有料) がこの環境から読めず計算のやり方を確かめられないので、再現は本文を確かめてからにし、それまでは結論の幅を前提と並べて画面に出す。どの数も論文から写しただけで、ゲームの計算の結果は幅に使っていない。同じ版で、星系の中の集団 (回 SE6・B-020。決まった案 11-2 c「政治から締め出された集団の割合もハザードに効かせる (EPR、Cederman ほか 2010)」) のため、政治から締め出された人口と分離の紛争 R42 を足した: EPR Core 2021・ACD2EPR 2021・UCDP 二者間 21.1・Maddison 2023 の国・年のロジットの、締め出された割合の係数 2.0894 の 95% 信頼区間 (1.2654〜2.9134。159 か国 8,937 国・年・始まり 123 件)。生データは新しく取ったもの (data/fetch/fetch_groups.py)。生データの計算結果だけで決めた。ゲームにはまだ集団がないので、ゲームの結果は見ていない" }
++    { "version": 26, "date": "2026-10-28", "what": "入植船の乗員の人数を選べるようにし、少ない人数の入植団が絶えることを入れるため (回 FU3・B-033)、R17 の合格を数で書き、幅を決めた。幅は Marin & Beluffi 2018 の本文 (arXiv:1806.03856 v1) の数だけから決めた: 25 組 (50 人) で絶える割合 0.35〜0.65 (論文の 50 ± 15%)、98 人で 3% 以下 (論文は 100 回の旅のうち 0 回絶えた。0 / 100 の 95% の上限 (3 ÷ 100))。統計量も、論文が出しているもの (100 回の旅で絶える割合) に直した (前は「遺伝的多様性が保たれる確率」と書いていたが、HERITAGE が数えるのは絶えたかどうか)。Smith 2014 の 14,000〜44,000 人は、モンテカルロでなく統計を掛け合わせて出したもの (Marin & Beluffi の 3.1 節) で、本文 (有料) がこの環境から読めず計算のやり方を確かめられないので、再現は本文を確かめてからにし、それまでは結論の幅を前提と並べて画面に出す。どの数も論文から写しただけで、ゲームの計算の結果は幅に使っていない。同じ版で、星系の中の集団 (回 SE6・B-020。決まった案 11-2 c「政治から締め出された集団の割合もハザードに効かせる (EPR、Cederman ほか 2010)」) のため、政治から締め出された人口と分離の紛争 R42 を足した: EPR Core 2021・ACD2EPR 2021・UCDP 二者間 21.1・Maddison 2023 の国・年のロジットの、締め出された割合の係数 2.0894 の 95% 信頼区間 (1.2654〜2.9134。159 か国 8,937 国・年・始まり 123 件)。生データは新しく取ったもの (data/fetch/fetch_groups.py)。生データの計算結果だけで決めた。ゲームにはまだ集団がないので、ゲームの結果は見ていない" },
++    { "version": 27, "date": "2026-10-29", "what": "政策の反応を現実と比べる (回 KE7・B-006) ため、R80〜R83 を足した: 金融の引き締めと GDP (2 年目)・物価 (4 年目)、税の引き上げと GDP (2 年目)、政府支出の乗数 (2 年)。幅はどれも論文の推定 ± 2 標準誤差で、論文の数だけから決めた (docs/research/policy-irf.md)。ゲームの側は tools/policy-irf.js の双子の試合。道具が動くかを 1 銀河 × 5 か国で試した (金利の GDP への効きはほぼ 0、税と支出はぶれが大きい) が、幅にはゲームの値を使っていない" }
+   ],
+   "realism": [
+     {
+@@ -703,6 +704,46 @@
+       ],
+       "reference": "分位ごとの中央値 2.37・3.51・4.32・4.49・4.71 (豊かな国ほど高い)。いまのゲームの資本の目安 (CAPITAL.alpha ÷ (irr + delta)) は 3.07。計算は data/derived/capital.json の R79",
+       "split": "calibration"
++    },
++    {
++      "id": "R80", "area": "経済", "name": "金融の引き締めと GDP (2 年目)",
++      "data": { "source": "Jordà, Schularick & Taylor (2020) The effects of quasi-random monetary experiments. Journal of Monetary Economics 112: 22–40 の表 5 (LP-IV・全期間。17 か国 1870〜2013 年の年次。為替の三すくみを操作変数にした短期金利の外れ)", "version": "FRBSF Working Paper 2017-02 (2018 年 5 月の改訂。NBER WP 23074 と同じ数)", "years": "1870-2013", "script": "論文の表と図から写した (docs/research/policy-irf.md)。実データの台本はない (推定は論文のもの)" },
++      "statistic": "短期金利 1 点の引き上げのあと 2 年目の、1 人あたり実質 GDP の差 (%)。金利の道は 1 年目 +1.5 点・2 年目 +0.75 点・3 年目から 0 (論文の図 2 の本文)",
++      "sim": "tools/policy-irf.js: 画面なしの版で、途中の年 (40・70・100 年目) のセーブから同じ試合を分け、片方の AI の国だけ政策を変えて、変えた年に国にあった星系の実質 GDP・物価の指数の差を年ごとに測る (双子の試合。差がそのまま政策の効き目)。30 以上の銀河 × 6 か国。実験ごとの値の中央値を比べる (試合が分かれたあとの戦争や独立のぶれに引きずられないように)。中央銀行の則から、変えた年から 0 年目 +1 点・1 年目 +1.5 点・2 年目 +0.75 点外し (s.e)、0 年目の政策金利の差 1 点あたりにする",
++      "pass": "ゲームの中央値が幅の中 (幅 = 論文の推定 −1.88 ± 2 × 標準誤差 0.33)",
++      "band": [-2.54, -1.22],
++      "reference": "LP-OLS では −0.22 (0.16)。論文は「OLS は効き目をずっと小さく見積もる」と書く",
++      "split": "calibration"
++    },
++    {
++      "id": "R81", "area": "経済", "name": "金融の引き締めと物価 (4 年目)",
++      "data": { "source": "Jordà, Schularick & Taylor (2020) の表 5 (LP-IV・全期間)", "version": "R80 と同じ", "years": "1870-2013", "script": "論文の表と図から写した (docs/research/policy-irf.md)。実データの台本はない (推定は論文のもの)" },
++      "statistic": "短期金利 1 点の引き上げのあと 4 年目の、物価の水準 (CPI) の差 (%)",
++      "sim": "tools/policy-irf.js: 画面なしの版で、途中の年 (40・70・100 年目) のセーブから同じ試合を分け、片方の AI の国だけ政策を変えて、変えた年に国にあった星系の実質 GDP・物価の指数の差を年ごとに測る (双子の試合。差がそのまま政策の効き目)。30 以上の銀河 × 6 か国。実験ごとの値の中央値を比べる (試合が分かれたあとの戦争や独立のぶれに引きずられないように)。R80 と同じ実験の物価の指数 (cpiOf)",
++      "pass": "ゲームの中央値が幅の中 (幅 = 論文の推定 −3.83 ± 2 × 標準誤差 0.92)",
++      "band": [-5.67, -1.99],
++      "reference": "Romer & Romer (2004) の米国の月次: 生産者物価は 48 か月で −5.9 (1.08)",
++      "split": "calibration"
++    },
++    {
++      "id": "R82", "area": "経済", "name": "税の引き上げと GDP (2 年目)",
++      "data": { "source": "Romer & Romer (2010) The Macroeconomic Effects of Tax Changes: Estimates Based on a New Measure of Fiscal Shocks. American Economic Review 100(3): 763–801 の図 4 (外から決まった税の変更。米国 1947〜2007 年の四半期)", "version": "AER の版 (図は PDF の線の座標から読み、本文の 10 期目 −3.08 (t = −3.53) と合うことを確かめた)", "years": "1947-2007", "script": "論文の表と図から写した (docs/research/policy-irf.md)。実データの台本はない (推定は論文のもの)" },
++      "statistic": "GDP の 1% の税の引き上げのあと 8 期目 (2 年目) の実質 GDP の差 (%)",
++      "sim": "tools/policy-irf.js: 画面なしの版で、途中の年 (40・70・100 年目) のセーブから同じ試合を分け、片方の AI の国だけ政策を変えて、変えた年に国にあった星系の実質 GDP・物価の指数の差を年ごとに測る (双子の試合。差がそのまま政策の効き目)。30 以上の銀河 × 6 か国。実験ごとの値の中央値を比べる (試合が分かれたあとの戦争や独立のぶれに引きずられないように)。所得への税率を変えた年からずっと上げ、0 年目の税収の差 (GDP 比) 1% あたりにする",
++      "pass": "ゲームの中央値が幅の中 (幅 = 論文の推定 −2.73 ± 2 × 標準誤差 0.80)",
++      "band": [-4.33, -1.13],
++      "reference": "いちばん大きいのは 10 期目の −3.08。国の財政の立て直し (Guajardo, Leigh & Pescatori 2014 の 17 か国) では GDP の 1% の引き締めで 2 年目 −0.62 (0.16)",
++      "split": "calibration"
++    },
++    {
++      "id": "R83", "area": "経済", "name": "政府支出の乗数 (2 年)",
++      "data": { "source": "Ramey & Zubairy (2014) Government Spending Multipliers in Good Times and in Bad: Evidence from U.S. Historical Data. NBER Working Paper 20719 の表 1 (軍事支出のニュースで識別。米国 1889〜2013 年の四半期。2018 年の JPE の版の元)", "version": "NBER WP 20719 (2014 年 11 月)", "years": "1889-2013", "script": "論文の表と図から写した (docs/research/policy-irf.md)。実データの台本はない (推定は論文のもの)" },
++      "statistic": "政府支出の 2 年の累積の乗数 (累積の GDP の差 ÷ 累積の政府支出の差)",
++      "sim": "tools/policy-irf.js: 画面なしの版で、途中の年 (40・70・100 年目) のセーブから同じ試合を分け、片方の AI の国だけ政策を変えて、変えた年に国にあった星系の実質 GDP・物価の指数の差を年ごとに測る (双子の試合。差がそのまま政策の効き目)。30 以上の銀河 × 6 か国。実験ごとの値の中央値を比べる (試合が分かれたあとの戦争や独立のぶれに引きずられないように)。財政の則の目標の基礎収支を GDP の 1% 下げ (u。自己相関で戻る)、2 年の累積の GDP の差 ÷ 累積の政府の買い付けの差",
++      "pass": "ゲームの中央値が幅の中 (幅 = 論文の推定 0.76 ± 2 × 標準誤差 0.10)",
++      "band": [0.556, 0.964],
++      "reference": "4 年では 0.84 (0.09)。Blanchard–Perotti の識別では 0.54 (2 年)。JPE の版のデータとコードでの推定し直しでは 0.66 (docs/research/policy-irf.md の 3b。論文の数ではない)",
++      "split": "calibration"
+     }
+   ],
+   "fun": [
+diff --git a/targets/targets.lock b/targets/targets.lock
+index fced0c7..c25ff43 100644
+--- a/targets/targets.lock
++++ b/targets/targets.lock
+@@ -1 +1 @@
+-4edcf30682182c5be5419bb6e2d90252c2ac06d89d436e19aca605972b866f51  targets.json  2026-10-28
++a181b0ec01bbae1cfa7b3fc2e849da7bc4504e84bcac6d34b5350bf69090b004  targets.json  2026-10-29
+diff --git a/tools/policy-irf.js b/tools/policy-irf.js
+new file mode 100644
+index 0000000..2d8a48f
+--- /dev/null
++++ b/tools/policy-irf.js
+@@ -0,0 +1,121 @@
++// 政策の反応 (回 KE7・B-006。目標 R80〜R84、docs/money.md の 6)。画面なしの版で、途中の年のセーブから同じ試合を分け (双子の試合)、片方の国だけ政策を変えて、
++// 国の GDP・物価・政策金利・税収・政府の買い付けの差を年ごとに測る。変える国と年を前もって決めた組で回すので、差がそのまま政策の効き目 (現実の局所射影の目標と比べる)。
++//   rate  = 中央銀行の則から外す (0 年目 +1 点・1 年目 +1.5 点・2 年目 +0.75 点、そのあとは則に戻る。R80 の Jordà, Schularick & Taylor 2020 の金利の道)。GDP・物価の差 ÷ 0 年目の政策金利の差
++//   tax   = 所得への税率を上げる (ずっと。Romer & Romer 2010 の税の変更の多くは長く続く)。GDP の差 ÷ 上げた年の税収の差 (GDP 比)
++//   spend = 財政の目標の基礎収支を GDP の 1% 下げる (財政の則の外れ u。自己相関 DEBT.ar で戻る)。乗数 = 累積の GDP の差 ÷ 累積の政府の買い付けの差 (Ramey & Zubairy 2018)
++// 測る星系は、政策を変えた年に国にあった星系だけ (入植と併合で国が大きくなった分を入れない)。人の国 (観戦では AI と同じ財政) は財政の置き場が違うので変えない。
++// 使い方: node tools/policy-irf.js [銀河の数=12] [国の数=6] [--kind rate,tax,spend] [--at 40,70,100] [--h 6] [--seeds 1,2,…] [--json 結果.json]   (HTML=… で別の版。進み具合は標準エラーへ)
++//         node tools/policy-irf.js --merge a.json,b.json,…   (銀河の組を分けて並べて回した結果をまとめて表にする)
++const fs = require('fs');
++const H = require('./headless');
++
++const a = process.argv.slice(2);
++const arg = (k, d) => { const i = a.indexOf(`--${k}`); return i >= 0 ? a[i + 1] : d; };
++const pos = a.filter((x, i) => !x.startsWith('--') && !(i > 0 && a[i - 1].startsWith('--')));
++const [nS = '12', natS = '6'] = pos;
++const KINDS = arg('kind', 'rate,tax,spend').split(',');
++const AT = arg('at', '40,70,100').split(',').map(Number);
++const HZ = Number(arg('h', 6));
++const SHOCK = { rate: [0.01, 0.015, 0.0075], tax: 0.012, spend: 0.01 }; // 政策金利の則からの外れ (年ごと)・所得への税率 +1.2 点 (税収がおよそ GDP の 1%)・基礎収支の目標 −1% (GDP 比)
++const GOV_BUY = new Set(['build', 'upkeep', 'welfare', 'security', 'military', 'education', 'public', 'health']); // tools/fiscal-panel.js と同じ (GDP に入る政府の買い付け)
++const sim = H.load(process.env.HTML ? { src: process.env.HTML } : {});
++
++// 1 つの試合に、星系ごとの 1 年の足し上げ (所得・政府の買い付け・税収) をつける (fiscal-panel.js と同じ数え方)
++function instrument(g) {
++  const acc = {};
++  const A = (id) => (acc[id] ??= { inc: 0, buy: 0, tax: 0 });
++  const earn = g.earn.bind(g), cash = g.cash.bind(g), eco = g.economy.bind(g);
++  g.earn = (kind, amount, sys = 0, other = null) => { const gv = g.gov(sys), c0 = gv.credits, r = earn(kind, amount, sys, other), d = gv.credits - c0; if ((kind === 'tax' || kind === 'ctax') && d > 0) A(sys).tax += d; return r; };
++  g.cash = (kind, v, acct) => { if ((acct.hh !== undefined || acct.fm !== undefined) && GOV_BUY.has(kind) && v > 0) A(acct.hh ?? acct.fm).buy += v; return cash(kind, v, acct); };
++  g.economy = (h) => { const r = eco(h); for (const c of g.colonies) A(c.sys).inc += (c.incY || 0) * h; return r; };
++  return acc;
++}
++const clone = (seed, d) => { const g = sim.newGame(seed, { nations: Number(natS) }); if (!g.restore(JSON.parse(JSON.stringify(d)))) throw new Error('セーブを読めない'); return g; };
++
++// 1 年ぶん進め、国 (星系の組 S と首都 root) の数を返す
++function year(g, acc, S, root) {
++  for (const k of Object.keys(acc)) delete acc[k];
++  let i = 0;
++  for (let t = 0; t < 4; t++) { g.advance(0.25); i += (g.cbRateAt ? g.cbRateAt(root) : 0) / 4; }
++  let gdp = 0, buy = 0, tax = 0;
++  for (const id of S) { const x = acc[id]; if (x) { gdp += x.inc + x.buy; buy += x.buy; tax += x.tax; } }
++  return { gdp, buy, tax, cpi: g.cpiOf ? g.cpiOf(root) : 1, i };
++}
++
++function shock(g, kind, root) {
++  if (kind === 'tax') { const f = g.aiFiscal(root); g.aif[root] = { ...f, tax: f.tax + SHOCK.tax }; }
++  if (kind === 'spend') { const fr = g.govs[root]?.fr; if (fr) fr.u -= SHOCK.spend; }
++}
++
++const results = []; // { seed, at, root, kind, d: [{ dy, dp, di, dt, dg, y0 }] }
++const t0 = Date.now();
++const SEEDS = arg('seeds') ? arg('seeds').split(',') : Array.from({ length: Number(nS) }, (_, i) => String(i + 1));
++if (arg('merge')) for (const f of arg('merge').split(',')) results.push(...JSON.parse(fs.readFileSync(f, 'utf8')).results);
++for (const seed of arg('merge') ? [] : SEEDS) {
++  const base = sim.newGame(seed, { nations: Number(natS) });
++  let y = 0;
++  for (const at of AT) {
++    sim.run(base, at - y); y = at;
++    const d = sim.buildSave(base);
++    const roots = [...new Set(base.colonizedSystems().map((x) => base.realmOf(x.id)))].filter((r) => !base.isHuman(r) && base.govs[r]?.fr?.y > 0);
++    if (!roots.length) continue;
++    // 0 = 比べる元、1 = 何も変えない双子 (元と差が 0 になることを確かめる。ずれたら、セーブで落ちる値があって実験が成り立たない)
++    const runs = [{ kind: null }, { kind: null }].concat(roots.flatMap((root) => KINDS.map((kind) => ({ kind, root }))));
++    const games = runs.map(() => clone(seed, d));
++    const accs = games.map(instrument);
++    const sets = Object.fromEntries(roots.map((r) => [r, base.realmSystems(r).map((x) => x.id)]));
++    runs.forEach((r, k) => { if (r.kind) shock(games[k], r.kind, r.root); });
++    const series = runs.map(() => []);
++    for (let hz = 0; hz < HZ; hz++) {
++      games.forEach((g, k) => {
++        if (runs[k].kind === 'rate') { const e = SHOCK.rate[hz], s = g.cbOf(runs[k].root); if (e) s.e = e; else delete s.e; } // 外すのは 3 年だけ
++        series[k].push(Object.fromEntries(roots.map((r) => [r, year(g, accs[k], sets[r], r)])));
++      });
++    }
++    for (const r of roots) for (let hz = 0; hz < HZ; hz++) if (series[1][hz][r].gdp !== series[0][hz][r].gdp || series[1][hz][r].cpi !== series[0][hz][r].cpi) { process.stderr.write(`何も変えない双子がずれた (銀河 ${seed} の ${at} 年・国 ${r}・${hz} 年目)\n`); process.exitCode = 1; }
++    runs.forEach((r, k) => {
++      if (!r.kind) return;
++      const c = series[0], t = series[k];
++      const y0 = c[0][r.root].gdp;
++      if (!(y0 > 0)) return;
++      results.push({
++        seed, at, root: r.root, kind: r.kind, y0,
++        d: t.map((x, hz) => {
++          const X = x[r.root], C = c[hz][r.root];
++          return { dy: 100 * Math.log(X.gdp / C.gdp), dp: 100 * Math.log(X.cpi / C.cpi), di: 100 * (X.i - C.i), dt: (X.tax - C.tax) / C.gdp, dg: X.buy - C.buy, dY: X.gdp - C.gdp };
++        }),
++      });
++    });
++    process.stderr.write(`銀河 ${seed} の ${at} 年: 国 ${roots.length} (${((Date.now() - t0) / 1000).toFixed(0)} 秒)\n`);
++  }
++}
++
++// まとめ: 種類ごとに、年ごとの中央値 (目標の判定に使う。試合が分かれたあとの戦争や独立のぶれに引きずられないように) と、平均 ± 標準誤差
++const mean = (xs) => xs.reduce((k, x) => k + x, 0) / xs.length;
++const median = (xs) => { const v = [...xs].sort((x, y) => x - y), n = v.length; return n ? (n % 2 ? v[(n - 1) / 2] : (v[n / 2 - 1] + v[n / 2]) / 2) : NaN; };
++const se = (xs) => { const m = mean(xs); return Math.sqrt(xs.reduce((k, x) => k + (x - m) ** 2, 0) / Math.max(1, xs.length - 1) / xs.length); };
++const fin = (xs) => xs.filter(Number.isFinite);
++const out = { seeds: arg('merge') ? [...new Set(results.map((r) => r.seed))].length : SEEDS.length, nations: Number(natS), at: AT, h: HZ, shock: SHOCK, kinds: {} };
++const lines = [];
++for (const kind of KINDS) {
++  const rs = results.filter((r) => r.kind === kind);
++  if (!rs.length) continue;
++  const o = (out.kinds[kind] = { n: rs.length, years: [] });
++  lines.push(`### ${kind} (実験 ${rs.length})`, '', kind === 'spend' ? '| 年 | GDP の差 (%) | 累積の乗数 | 政府の買い付けの差 (GDP 比 %) |' : '| 年 | GDP の差 (%) | 物価の差 (%) | 政策金利の差 (点) | 税収の差 (GDP 比 %) |', kind === 'spend' ? '|---|---|---|---|' : '|---|---|---|---|---|');
++  for (let hz = 0; hz < HZ; hz++) {
++    // 規格化: rate は外した年の政策金利の差 (点)、tax は上げた年の税収の差 (GDP 比 %) で割る。spend は乗数 (累積の GDP の差 ÷ 累積の買い付けの差)
++    const norm = (r) => (kind === 'rate' ? r.d[0].di : kind === 'tax' ? 100 * r.d[0].dt : 1);
++    const ok = rs.filter((r) => Math.abs(norm(r)) > 1e-6);
++    const dy = fin(ok.map((r) => r.d[hz].dy / norm(r))), dp = fin(ok.map((r) => r.d[hz].dp / norm(r)));
++    const mult = fin(rs.map((r) => { const Y = r.d.slice(0, hz + 1).reduce((k, x) => k + x.dY, 0), G = r.d.slice(0, hz + 1).reduce((k, x) => k + x.dg, 0); return Math.abs(G) > 1e-9 ? Y / G : NaN; }));
++    const di = fin(rs.map((r) => r.d[hz].di)), dt = fin(rs.map((r) => 100 * r.d[hz].dt)), dg = fin(rs.map((r) => (100 * r.d[hz].dg) / r.y0));
++    const yr = { hz, dy: [median(dy), mean(dy), se(dy)], dp: [median(dp), mean(dp), se(dp)], di: median(di), dt: median(dt), mult: mult.length ? [median(mult), mean(mult), se(mult)] : null, dg: median(dg), n: ok.length };
++    o.years.push(yr);
++    const f = (v) => `**${v[0].toFixed(2)}** (平均 ${v[1].toFixed(2)} ± ${v[2].toFixed(2)})`;
++    lines.push(kind === 'spend' ? `| ${hz} | ${f(yr.dy)} | ${yr.mult ? f(yr.mult) : '—'} | ${yr.dg.toFixed(2)} |` : `| ${hz} | ${f(yr.dy)} | ${f(yr.dp)} | ${yr.di.toFixed(2)} | ${yr.dt.toFixed(2)} |`);
++  }
++  lines.push('');
++}
++lines.push(`(${((Date.now() - t0) / 60000).toFixed(1)} 分。太字は実験ごとの値の中央値。rate・tax の GDP と物価は、0 年目の政策金利の差 1 点・税収の差 GDP の 1% あたり。政策金利・税収・買い付けの差は中央値)`);
++console.log(lines.join('\n'));
++if (arg('json')) fs.writeFileSync(arg('json'), JSON.stringify({ ...out, results }, null, 1));
+diff --git a/tools/tests/policy-irf.js b/tools/tests/policy-irf.js
+new file mode 100644
+index 0000000..d561f0a
+--- /dev/null
++++ b/tools/tests/policy-irf.js
+@@ -0,0 +1,15 @@
++// 政策の反応の道具 (tools/policy-irf.js。回 KE7・B-006) の試験。1 銀河で双子の試合を回し、何も変えない双子が比べる元と同じ筋になる (セーブで落ちる値がない) こと、
++// 3 つの政策のどれも表が出ることを確かめる
++// 使い方: node tools/tests/policy-irf.js
++// CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
++const J = require('../ci-judge');
++exports.ci = [{ judge: J.passes('政策の反応') }];
++if (require.main !== module) return;
++const path = require('path');
++const { spawnSync } = require('child_process');
++const r = spawnSync('node', [path.join(__dirname, '..', 'policy-irf.js'), '1', '6', '--at', '30', '--h', '2'], { encoding: 'utf8', env: process.env });
++const fails = [];
++if (r.status !== 0) fails.push(`道具が失敗した (終了コード ${r.status}): ${(r.stderr || '').split('\n').filter((l) => /ずれた|Error/.test(l)).slice(0, 3).join(' / ')}`);
++for (const k of ['rate', 'tax', 'spend']) if (!new RegExp(`### ${k} \\(実験 [1-9]`).test(r.stdout)) fails.push(`${k} の表がない`);
++console.log(fails.length ? `政策の反応 不合格: ${fails.join('・')}` : '政策の反応 合格');
++process.exit(fails.length ? 1 : 0);
