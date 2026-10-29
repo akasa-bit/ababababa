@@ -11,7 +11,7 @@
 - 機能を壊さない (下の「試験」をすべて通してからマージする)。
 - 画面は Xiaomi Pad 8 Pro (3200×2136・144Hz、CSS で横 1280×780・縦 854×1200、画素の比 2.5) で確かめる。Playwright の viewport をこの大きさにして撮る。新しいゲームで出る「遊び方の記録にご協力ください」(プレイ記録の同意) は、撮るときは「記録しない」(`#endbox [data-consent="no"]`) を押して奥へ進んでよい (2026-10-25 のユーザーの指示。`docs/requests/2026-10-25-GA.md` の GA-3)。
 - 「スキン 6」= グラファイト (黒に近い灰色)・白・NASA の赤橙の配色。配色の 10 案から選ばれた唯一の配色で、切り替えは削除した (下の 15)。
-- 作業ブランチは、そのセッションで指定されたもの (例: `ccr-f641c31e-9hmryq`)。マージのあとは `git fetch origin main && git checkout -B <ブランチ> origin/main` で main に合わせ直し、`--force-with-lease` でプッシュする。
+- 作業ブランチは、そのセッションで指定されたもの (例: `ccr-f641c31e-9hmryq`)。マージのあとは `git fetch origin main && git checkout -B <ブランチ> origin/main` で main に合わせ直し、`--force-with-lease` でプッシュする。 強制プッシュをしないときは、合わせ直したあと `git merge -s ours origin/<ブランチ>` で前の PR のブランチを取り込んでから、ふつうにプッシュする (中身は main と同じなので、ぶつからない。W2。`docs/parallel.md` の 4)。
 - リポジトリに入れるもの (コミット・PR・コード・文書) に、AI のモデルの名前を書かない。
 - コミットの末尾の行と PR の本文の末尾は、そのセッションで与えられる案内 (共同作者の行・セッションへのリンク・「Generated with Claude Code」の行) に従う。
 - 試験で書き出す画面の写し (`shots/`) と、作業用の台本は、リポジトリの外 (作業用のフォルダ) に置く。リポジトリに残すものは `tools/` に入れる。
@@ -126,7 +126,7 @@
 | `docs/P0-audit.md` | 書き直しの前の監査 (数値と式の一覧と、現実との差) |
 | `docs/session-start.md` | セッションをつないで続ける手順と、いつもの約束 (どの回も最初に読む) |
 | `docs/restart.md` | 2026-10-21 の再出発の手順 (回 R1〜R4)。基準の数は `docs/restart-baseline.md` |
-| `docs/sessions.md` | 回の分け方 (1 波目・2 波目) と、それぞれの最初のメッセージ。前の一覧は `docs/archive/sessions-2026-10.md` |
+| `docs/sessions.md` | 回の分け方 (1 波目・2 波目・3 波目 (通しのセッション)) と、それぞれの最初のメッセージ。前の一覧は `docs/archive/sessions-2026-10.md` |
 | `docs/parallel.md` | 並行で進める決まり (6 つのレーン KE・SE・FU・GA・DO・SO・コードの場所の持ち主・番号と返事待ちの置き場・マージの前の取り込み) |
 | `docs/src-files.md` | `src/` のファイルの地図 (74 のファイルと持ち主・`//#include` の組み立て・セーブの項目の登録・組み立てた `index.html` をコミットしない理由) |
 | `docs/registry.md` | 番号の予約 (目標 R・F、補正 C、返事待ち QD、残りの作業 B のレーンごとの範囲、セーブの項目と `EDITIONS.game` の値の名前) |
