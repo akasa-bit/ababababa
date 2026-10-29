@@ -2,6 +2,8 @@ name: 試験と自動対戦
 
 # PR ごとに: 組み立てたゲーム版が元のファイルと合っているか・試験・合わせる目標の固定・画面なしの版での自動対戦 (main との比べ)・面白さの代わりの数と必勝法を探す AI。
 # 結果の表は、ジョブの要約と PR のコメント (1 つを書き直す) に出す
+# 試験・自動対戦・面白さの数は別の実行機で同時に回し、最後のジョブ test が表をまとめて合否を出す (回 DO7。前は 1 つのジョブで順に回していて、
+# 実行機が遅い日に 40 分の上限に当たり、表のあとの合否の段まで届かなかった。#280 の知らせ)
 on:
   pull_request:
   workflow_dispatch:
@@ -15,9 +17,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  tests:
+    name: 試験
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    outputs:
+      outcome: ${{ steps.tests.outcome }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,21 +37,84 @@ jobs:
           npx playwright install --with-deps chromium
       - name: 試験
         id: tests
+        continue-on-error: true
         run: node tools/ci-tests.js > ci-tests.md
-      - name: 自動対戦 (main と比べる)
+      - uses: actions/upload-artifact@v4
         if: always()
+        with:
+          name: ci-tests
+          path: ci-tests.md
+          if-no-files-found: ignore
+          overwrite: true
+
+  battle:
+    name: 自動対戦 (main と比べる)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 自動対戦 (main と比べる)
         run: |
           # src は場所ごとのファイルに分けてある (回 R3) ので、main と PR のそれぞれを 1 枚に組み立ててから比べる
           node tools/src.js --ref origin/${{ github.base_ref || 'main' }} --out base-src.html
           node tools/src.js --out head-src.html
           node tools/ci-report.js base-src.html head-src.html 8 150 6 > ci-report.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-report
+          path: ci-report.md
+          if-no-files-found: ignore
+          overwrite: true
+
+  fun:
+    name: 面白さの代わりの数と必勝法を探す AI (main と比べる)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: 面白さの代わりの数と必勝法を探す AI (main と比べる)
-        if: always()
-        run: FUN_GATE_OUT=fun-gate.txt node tools/fun-report.js base-src.html head-src.html 8 150 6 12 4 > fun-report.md
-      - name: 表を出す
-        if: always()
         run: |
-          { cat ci-tests.md 2>/dev/null; echo; cat ci-report.md 2>/dev/null; echo; cat fun-report.md 2>/dev/null; } > ci-summary.md
+          node tools/src.js --ref origin/${{ github.base_ref || 'main' }} --out base-src.html
+          node tools/src.js --out head-src.html
+          FUN_GATE_OUT=fun-gate.txt node tools/fun-report.js base-src.html head-src.html 8 150 6 12 4 > fun-report.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fun-report
+          path: |
+            fun-report.md
+            fun-gate.txt
+          if-no-files-found: ignore
+          overwrite: true
+
+  test:
+    name: test
+    needs: [tests, battle, fun]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: out
+          merge-multiple: true
+      - name: 表を出す
+        run: |
+          # 途中で止まったジョブは、表の代わりにそのことを書く (表が欠けたまま合格に見えないように)
+          part() { if [ -s "out/$1" ]; then cat "out/$1"; else echo "### $2"; echo; echo "**表がない** (ジョブの結果: $3)。"; fi; }
+          { part ci-tests.md 試験 '${{ needs.tests.result }}'; echo; part ci-report.md '自動対戦 (main と比べる)' '${{ needs.battle.result }}'; echo; part fun-report.md 面白さの代わりの数 '${{ needs.fun.result }}'; } > ci-summary.md
           cat ci-summary.md >> "$GITHUB_STEP_SUMMARY"
       - name: PR に書く
         if: always() && github.event_name == 'pull_request'
@@ -63,8 +131,10 @@ jobs:
             if (old) await github.rest.issues.updateComment({ owner, repo, comment_id: old.id, body });
             else await github.rest.issues.createComment({ owner, repo, issue_number, body });
       - name: 落ちた試験があれば失敗にする
-        if: steps.tests.outcome == 'failure'
-        run: exit 1
+        if: needs.tests.outputs.outcome == 'failure' || needs.tests.result != 'success' || needs.battle.result != 'success' || needs.fun.result != 'success'
+        run: |
+          echo "試験 ${{ needs.tests.outputs.outcome }} (ジョブ ${{ needs.tests.result }})・自動対戦 ${{ needs.battle.result }}・面白さの数 ${{ needs.fun.result }}"
+          exit 1
       # 面白さの代わりの数が止める線を越えたら、PR の本文に理由がない限り失敗にする (docs/parallel.md の 4 の 3。本文は回し直したときにも読み直す)
       - name: 面白さの数の止める線
         if: always() && github.event_name == 'pull_request'
@@ -72,7 +142,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const crossed = fs.existsSync('fun-gate.txt') ? fs.readFileSync('fun-gate.txt', 'utf8').trim() : '';
+            const crossed = fs.existsSync('out/fun-gate.txt') ? fs.readFileSync('out/fun-gate.txt', 'utf8').trim() : '';
             if (!crossed) return;
             const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: context.issue.number });
             if (/面白さの数が悪くなった理由\s*[:：]\s*\S/.test(pr.body || '')) { core.notice(`止める線を越えたが、PR の本文に理由がある:\n${crossed}`); return; }

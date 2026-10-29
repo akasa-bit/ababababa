@@ -1,7 +1,8 @@
 // データの書き出し (tools/export.js。回 DO6・B-072) の試験。画面なしの版で 1 銀河を回し、表の形と、表どうしが食い違わないことを確かめる
 // 1. 表の列がコードブック (docs/export.md) にすべて載っている (列を足してコードブックを忘れると落ちる)
 // 2. 交易: 国の輸出の合計 (sna の P6) = 輸入の合計 (P7) = trade.csv の額の合計。国の中の輸送 (i = j) は入れない
-// 3. GFS: 収入 = 税 + 移転 + 財産所得など、支出 = 目的別 (COFOG) + 利子 + 移転、純貸出 = 収入 − 支出
+// 3. GFS: 収入 = 税 + 移転 + 財産所得など、支出 = 目的別 (COFOG) + 利子 + 移転、純貸出 = 収入 − 支出。
+//    GFS の純貸出 (GNLB) と帳簿の純貸出 (sna の B9_S13) の差が、支出の合計の 1% より小さい (政府の出入りの種類が GFS の分類から漏れると落ちる。回 DO7)
 // 4. 貸借: 銀行の預金 (負債) = 部門の預金の合計、銀行の準備 = 預金 − 貸出 − 国債
 // 5. 政策の出来事: わざと消費税を変えた年に、地球の国の ctax の行が 1 つ出る
 // 6. 戦争: どの戦争も参加国が 2 つ、始まり ≤ 終わり
@@ -38,9 +39,12 @@ check(rows.trade.every((r) => r.i !== r.j), '国の中の輸送が交易の表�
 
 // 3. GFS
 for (const r of rows.gfs) {
-  const ge = r.GF01 + r.GF02 + r.GF03 + r.GF04 + r.GF09 + r.GF10 + r.GF0107 + r.GE_TR;
+  const ge = r.GF01 + r.GF02 + r.GF03 + r.GF04 + r.GF07 + r.GF09 + r.GF10 + r.GF0107 + r.GE_TR;
   if (!near(r.GR, r.GR11 + r.GR13 + r.GR14) || !near(r.GR11, r.GR111 + r.GR114 + r.GR115) || !near(r.GE, ge) || !near(r.GNLB, r.GR - r.GE, r.GR, r.GE)) { fails.push(`GFS の恒等式が合わない (${r.year} 年 国 ${r.country})`); break; }
 }
+const b9 = new Map(rows.sna.map((r) => [`${r.year}|${r.country}`, r.B9_S13]));
+const gap = sum(rows.gfs.map((r) => Math.abs(r.GNLB - (b9.get(`${r.year}|${r.country}`) ?? r.GNLB)))), spent = sum(rows.gfs.map((r) => r.GE));
+check(gap < 0.01 * spent, `GFS の純貸出と帳簿の純貸出の差が支出の ${((100 * gap) / spent).toFixed(1)}% (1% まで。政府の出入りの種類が GFS の分類から漏れている。tools/export.js の GOV_BUY・GOV_FN)`);
 
 // 4. 貸借
 for (const r of rows.balance) {

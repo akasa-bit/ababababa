@@ -39,7 +39,6 @@
     if (obj(d.tech)) this.tech = d.tech;
     if (obj(d.aif)) this.aif = d.aif;
     if (Number.isFinite(d.alpha) && d.alpha > 0) this.alpha = d.alpha;
-    if (Array.isArray(d.gpts)) this.gpts = d.gpts; // 汎用技術 (GPT。回 KE6)
     if (obj(d.warStats)) this.warStats = d.warStats;
     if (Array.isArray(d.peaceOffers)) this.peaceOffers = d.peaceOffers.filter((o) => o && typeof o.key === 'string');
     if (Array.isArray(d.conferences)) this.conferences = d.conferences.filter((c) => c && sysOk(c.loser) && Array.isArray(c.bids));

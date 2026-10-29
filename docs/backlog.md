@@ -122,6 +122,8 @@
 | B-071 | **済み (#189・#194)**。面白さの物差しを F 系の目標にする (最初の入植船まで・2 時間の継続・最初の 20 年の出来事・1 時間の重大な知らせ・戦略ごとの 1 位・挑戦の達成率・出来事の繰り返し・説明の段の数)。CI の表で大きく悪くなる PR を止める線を決める | `targets/targets.json`・`tools/check-targets.js`・`tools/fun-report.js`・`tools/ci-report.js` | Q1 | S | 道具と検証 | `critique/04-plan.md` の 5・3-2・0-7 |
 | B-072 | **済み (回 DO6)。ゲームの中のボタンは画面と最初の体験に頼んだ (`notices/GA/2026-10-23-DO-export-button.md`)。`docs/export.md`**。データの書き出し: SNA・GFS/COFOG・部門の貸借・値段・交易 (BACI)・戦争 (COW) の国・星系・年の表、政策の出来事の記録、コードブック、設定 1 つで N 銀河の一括実行と分析の例、ゲームの中の「データを書き出す」ボタン (同意の仕組みを通す)。形は `tools/vassal-export.js` に合わせる | `tools/headless.js`・新しい (`tools/`)・`exportSave` | B-001・B-060 | L | 道具と検証 | `sessions.md` の 25・`econ-policy.md` の 6 と 7 の 7・`vassal-history.md` の 8・`game-plan.md` の 6 (実データと同じ形の書き出し) |
 | B-221 | **済み (回 DO4)**。試験の一覧 (`tools/ci-tests.js` の `TESTS`) を、`tools/tests/` に置いたファイルを自動で拾う形にする (合否の決まりは試験のファイルの側に)。みんなが書き足して衝突したため | `tools/ci-tests.js`・`tools/tests/` | — | S | 道具と検証 | 回 W1 の Q1 (`docs/requests/2026-10-23-common.md`) |
+| B-222 | 結末の型の分布を自動対戦で測る (評論家の 2-6)。`g.ending()` (`src/screen/eras-score.js`。状態を読むだけ) が `{ type, label, causes, share, indep, loose }` を返す。回 GA4 の手元の 10 試合 (300 年) では、地球だけは帝国の維持 4、6 か国は均衡 5・衰え 1、連邦への移行は 0 | `tools/fun-targets.js` か新しい道具 | B-058 | S | 道具と検証 | 状態のファイルの前からの知らせ (回 GA4・B-058)。回 DO7 で移した |
+| B-223 | 1 時間あたりの重大な知らせの数を CI の表に出す (評論家の 0-7)。`railNews(g, g.knownEvents(), new Set(g.acked), () => false)` (`src/screen/events-ui.js`) が帯で目立たせる知らせ (`majors`) と予算を超えた件数 (`over`) を返す。40 年 ≈ 遊んで 1 時間。回 GA2 の手元の測り: 前は 40 年あたり平均 78・最大 192 件、後は平均約 9・最大 12 件。上限を目標にするかは画面と最初の体験で決める (`fun.md` の 7.4) | `tools/ci-report.js`・`tools/headless.js` | B-048 | S | 道具と検証 | 状態のファイルの前からの知らせ (回 GA2・B-048)。回 DO7 で移した |
 
 ## 外向き
 

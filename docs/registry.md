@@ -106,6 +106,7 @@
 ### 道具と検証
 
 - B-221: 試験の一覧を自動で拾う (回 DO4。W1 の Q1 = a。common の回 W1 で取った)
+- B-222・B-223: 結末の型の分布を自動対戦で測る・1 時間あたりの重大な知らせの数を CI の表に (回 DO7。状態のファイルの前からの知らせを移した)
 - F16〜F21: 楽しさの目標 (最初の 20 年の出来事と判断・どの戦略にも勝つ銀河・挑戦の達成率・出来事の繰り返し・最初の入植船まで・2 時間の継続)。目標の版 12 (回 DO2・B-071)
 
 ### 外向き
@@ -131,6 +132,7 @@
 - saveField: cb (経済。src/economy/fiscal-consts.js。国ごとの中央銀行の状態: 物価の水準・見込み・政策金利の記録。回 KE1)
 - 入植地の項目 c.edu (集団ごとの人数・就学年数・学力 { p, s, q })・c.hk (生産性の倍率)・c.incU (学歴と学力を決める、ならした所得) (セーブの colonies にそのまま入る。回 KE5。`docs/hcap.md`)
 - saveField: capacity (経済。src/economy/market-consts.js。星系の会社が持つ民間の採掘の能力。回 KE5。`docs/regions.md` の 5)
+- saveField: gpts (経済。src/economy/market-consts.js。銀河の汎用技術の表。回 KE6 で `core/save.js` の一覧に足したものを、回 DO7 で登録の形に移した)
 
 ### 政治
 
