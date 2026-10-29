@@ -66,7 +66,7 @@
         if (!(gv.cpn >= -1)) gv.cpn = yl;
         if (b > b0) gv.cpn = (gv.cpn * b0 + yl * (b - b0)) / b; // 新しく出した分は、いまの利回りで
         gv.cpn += (yl - gv.cpn) * Math.min(1, h / CB.roll); // 借り換え
-        if (gv.fr?.y > 0 && this.isColonized(id) && b / gv.fr.y > CB.dmax) this.sovDefault(id);
+        if (gv.fr?.y > 0 && this.isColonized(id) && b / gv.fr.y > CB.dmax && !this.dfltOut(gv)) this.sovDefault(id);
       } else delete gv.cpn;
       gv.b0 = gv.bond || 0;
     }
@@ -89,7 +89,16 @@
   longYield(id) {
     const n = this.rstarOf(this.realmOf(id)) + CB.pistar, i = this.cbRateAt(id), k = CB.persist / CB.mat;
     const gv = this.govs[id], d = gv?.fr?.y > 0 ? Math.min(CB.dmax, (gv.bond || 0) / gv.fr.y) : 0; // 不履行の線より上は同じ (払えない分は不履行で消える)
-    return n + (i - n) * k * (1 - GM.exp(-1 / k)) + CB.tp + CB.credit * d;
+    return n + (i - n) * k * (1 - GM.exp(-1 / k)) + CB.tp + CB.credit * d + this.dfltSpread(gv);
+  }
+  // 不履行のあと、新しく国債を出せない間か (QD-26 = b。CB.exclude 年)
+  dfltOut(gv) { return gv?.dflt !== undefined && this.year - gv.dflt < CB.exclude; }
+  // 不履行のあとの利回りの上乗せ (QD-26 = c): 1 年目 haircut × spread[0] から 4〜5 年目 haircut × spread[1] へ指数で下がり、spread[2] 年で消える
+  dfltSpread(gv) {
+    const t = gv?.dflt !== undefined ? this.year - gv.dflt : Infinity;
+    if (!(t < CB.spread[2])) return 0;
+    const k = GM.log(CB.spread[0] / CB.spread[1]) / 3.5; // 1 年目から 4.5 年目までの下がり方
+    return CB.haircut * CB.spread[0] * GM.exp(-k * Math.max(0, t - 1));
   }
   // 国債の実質の利子率 (利札 − 物価の上がり方)
   bondRate(id) { const gv = this.govs[id]; return (gv.cpn ?? this.longYield(id)) - this.inflOf(id); }
@@ -110,7 +119,7 @@
     for (const [acct, v] of dep) this.cash('default', -x * (v / held), acct);
     gv.dflt = this.year;
     gv.nd = (gv.nd || 0) + 1; // 不履行の回数
-    if (this.realmOf(id) === this.cap && !this.spectate) this.event('goal', id, JA`国の星系の政府が国債の ${Math.round(CB.haircut * 100)}% (${Math.round(x)} cr) を払えなくなった (不履行)。預金がそのぶん目減りした`, true);
+    if (this.realmOf(id) === this.cap && !this.spectate) this.event('goal', id, JA`国の星系の政府が国債の ${Math.round(CB.haircut * 100)}% (${Math.round(x)} cr) を払えなくなった (不履行)。預金がそのぶん目減りした。これから ${Math.round(CB.exclude)} 年は新しく国債を出せない`, true);
   }
   // 国債の残高を動かす (v > 0 で増える)。お金の試験 (MONEY_AUDIT) に、政府の純額 (資金 − 国債) の変化として載せる
   bondMove(kind, v, id) {

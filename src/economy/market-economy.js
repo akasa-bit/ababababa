@@ -593,16 +593,26 @@
       }
     }
     this.invStep(h);
-    // 7. 軍の維持費
-    // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)。受け取るのは払う星系の民間 (兵の給料と補給の買い付け)
+    // 7. 軍の維持費 (回 KE7・B-017・QD-31 = c。docs/money.md の 5.6)
+    // 駐留する艦隊と兵 (入植していない星系に置いた艦隊と移動中の部隊は太陽系) は、駐留する星系の約定の束の「軍事」(politics/pc-vassal.js の BUNDLE_ITEMS の mil) の法で分けて払う:
+    // 宗なら主人の政府、分なら半分ずつ、従なら自分 (UPKEEP_LORD)。主人のいない国の首都は自分で払う。動いている艦隊は、持ち主の国の首都が払う
+    // (前は行き先の星系の政府が払っていて、攻め込まれた小さな国の首都が敵の艦隊の維持費まで払っていた)。
+    // 受け取るのは払う政府の星系の民間 (兵の給料と補給の買い付け。主人の分を駐留する星系へ送ると、お金が光より速く動くので)。
+    // 前は税収の何十倍もの維持費で小さな政府が赤字を国債で埋め続け、不履行を繰り返した
     const payer = (id) => (this.isColonized(id) ? id : 0);
+    const MIL = BUNDLE_ITEMS.indexOf('mil');
+    const pay = (p, x) => {
+      const gv = this.govs[p], lord = gv?.lord, share = lord !== null && lord !== undefined && this.isColonized(lord) ? UPKEEP_LORD[this.bundleOf(gv).law[MIL]] ?? 0 : 0;
+      if (share < 1) this.earn('upkeep', -x * (1 - share), p, { hh: p });
+      if (share > 0) this.earn('upkeep', -x * share, lord, { hh: lord });
+    };
     // 国家方針が軍拡期なら、地球の国の艦隊の維持費が40%安い
     const upk = (p) => WARSHIP_UPKEEP * (this.policy && this.policyAt(p) === 'military' ? 0.6 : 1);
-    for (const [id, n] of Object.entries(this.garrison)) if (n) { const p = payer(Number(id)); this.earn('upkeep', -upk(p) * n * h, p, { hh: p }); }
-    for (const f of this.fleets) { const p = payer(f.to); this.earn('upkeep', -upk(p) * f.n * h, p, { hh: p }); }
+    for (const [id, n] of Object.entries(this.garrison)) if (n) { const p = payer(Number(id)); pay(p, upk(p) * n * h); }
+    for (const f of this.fleets) { const o = f.owner ?? 0, p = this.isColonized(o) ? o : payer(f.to); this.earn('upkeep', -upk(p) * f.n * h, p, { hh: p }); } // 持ち主の国がなくなった艦隊は、前と同じ行き先
     for (const c of this.colonies) {
       const u = TROOP_UPKEEP * c.troops + SLAVE_TROOP_UPKEEP * c.slaveTroops;
-      if (u) this.earn('upkeep', -u * h, c.sys, { hh: c.sys });
+      if (u) pay(c.sys, u * h);
     }
     for (const m of this.troopMoves) this.earn('upkeep', -(TROOP_UPKEEP * m.troops + SLAVE_TROOP_UPKEEP * m.slave) * h, 0, { hh: 0 });
     // 8. 兵站: 艦隊は1艦隊あたり年に FLEET_SUPPLY の燃料と金属を使う。駐留する星系の備蓄から出す
