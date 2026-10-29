@@ -47,7 +47,8 @@
     for (const root of roots) {
       const s = this.cbOf(root), gap = this.speedGap(root, s, h, pot), rs = s.rs ?? CB.rstar;
       if (sum[root]?.[1] > 0) s.m = sum[root][0] / sum[root][1];
-      const rule = clamp(rs + s.pi + CB.phiPi * (s.pi - CB.pistar) + CB.phiY * gap, RATE_RANGE[0], RATE_RANGE[1]);
+      // s.e = 則から外す分 (政策のショック。ふだんは無い。政策の反応を測る実験 tools/policy-irf.js だけが入れる。回 KE7・B-006)
+      const rule = clamp(rs + s.pi + CB.phiPi * (s.pi - CB.pistar) + CB.phiY * gap + (s.e || 0), RATE_RANGE[0], RATE_RANGE[1]);
       s.i = this.cbRule(root) ? rule : this.fiscalFor(root, root).rate ?? rule;
       s.u = s.u * keep + CB.sd * Math.sqrt(1 - keep * keep) * this.randNormal();
       s.pi = clamp(CB.pistar + s.x + CB.kappa * gap - CB.lambda * (s.i - s.pi - rs) + s.u, CB.pi[0], CB.pi[1]);
