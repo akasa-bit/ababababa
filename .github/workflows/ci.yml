@@ -101,7 +101,8 @@ jobs:
   test:
     name: test
     needs: [tests, battle, fun]
-    if: always()
+    # 新しいプッシュで走り全体が止められたとき (concurrency) は動かない。ジョブが時間切れで止まったときは動いて「表がない」と書く
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
