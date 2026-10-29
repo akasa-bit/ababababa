@@ -228,6 +228,16 @@ node tools/eta.js "$PWD/index.html" 0.5 2   # FGK 型・M 型の主星あたり�
 node tools/eta.js "$PWD/index.html" 1.0 2   # M 型の目標 R06 は 1〜1.5 地球半径
 ```
 
+## 政策の反応 (目標 R80〜R83。tools/policy-irf.js)
+
+```sh
+node tools/policy-irf.js 12 6 --json irf.json                    # 12 銀河 × 40・70 年目に、AI の国ごとに金利・税・支出を変えた双子の試合 (5 年)
+node tools/policy-irf.js 0 6 --seeds 1,2,3 --json a.json          # 銀河を分けて並べて回し (途中で止めても済んだ分は残る)
+node tools/policy-irf.js --merge a.json,b.json                    # まとめて表にする
+```
+
+途中の年のセーブから同じ試合を分け、片方の国だけ政策を変えて、GDP・物価などの差を年ごとに測る。表の太字は実験ごとの値の中央値 (目標の判定に使う)。何も変えない双子が比べる元と同じ筋にならないと、終了コード 1。結果の読み方は `docs/money.md` の 6。30 銀河 × 2 つの年で、4 つ並べて手元で 1 時間ほど。
+
 ## 交易と距離 (目標 R01)
 
 ```sh

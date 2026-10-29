@@ -218,6 +218,43 @@
 - **残り**: 小さな国と家臣の政府が、税収の何十倍もの艦隊と兵を駐留させたまま (GDP 0.1 cr ほどの星系に 2〜8 艦隊)、維持費の赤字を 6 年ごとの不履行で消している。AI の防衛の配備が払える額を見ていないので、船と戦争の B-175 に載せた。
 - 資金がマイナスの政府には利子がつかない (前から)。不履行のあとの 6.1 年は、その形で赤字が残る。
 
+## 6. 政策の反応を現実と比べる (回 KE7・B-006)
+
+**測り方** (`tools/policy-irf.js`): 画面なしの版で、途中の年 (40・70 年目) のセーブから同じ試合を分け (双子の試合)、片方の AI の国だけ政策を変えて、変えた年に国にあった星系の実質 GDP・物価の指数・政策金利・税収・政府の買い付けの差を年ごとに測る。変える国と年を前もって決めた組で回すので、差がそのまま政策の効き目になる (現実の局所射影や操作変数で識別した反応と同じものを、ゲームでは実験で測る)。何も変えない双子が比べる元とまったく同じ筋になることを毎回確かめている (試験 `tools/tests/policy-irf.js`)。
+
+| 政策 | 変え方 | 割るもの |
+|---|---|---|
+| 金融 (rate) | 中央銀行の則から 0 年目 +1 点・1 年目 +1.5 点・2 年目 +0.75 点外し (`cbStep` の `s.e`)、そのあとは則に戻る (R80 の論文の金利の道) | 0 年目の政策金利の差 (点) |
+| 税 (tax) | 所得への税率を +1.2 点、ずっと | 0 年目の税収の差 (GDP 比 %) |
+| 支出 (spend) | 財政の則の目標の基礎収支を GDP の 1% 下げる (外れ `u`。自己相関 0.70/年で戻る) | 乗数 = 累積の GDP の差 ÷ 累積の政府の買い付けの差 |
+
+試合が分かれたあとの戦争・独立の違いで、小さな国の GDP は何倍にも動く (平均はぶれて使えない) ので、実験ごとの値の**中央値**で比べる。
+
+**結果** (2026-10-29。main = #288 の版。30 銀河 × 40・70 年目 × 6 か国、実験は政策ごとに 346、全部で 1,038):
+
+| 目標 | 論文 (幅) | ゲーム (中央値) | 判定 |
+|---|---|---|---|
+| R80 金利 +1 点 → 2 年目の GDP | −1.88% (−2.54〜−1.22) | **−0.07%** | **不合格** (ほぼ効かない) |
+| R81 金利 +1 点 → 4 年目の物価 | −3.83% (−5.67〜−1.99) | **−3.84%** | 合格 |
+| R82 税 +GDP の 1% → 2 年目の GDP | −2.73% (−4.33〜−1.13) | **+0.96%** | **不合格** (向きが逆) |
+| R83 支出の 2 年の乗数 | 0.76 (0.556〜0.964) | **1.00** | **不合格** (ちょうど 1) |
+
+| 年 | 金利: GDP | 金利: 物価 | 金利: 政策金利の差 | 税: GDP | 税: 税収の差 | 支出: 乗数 |
+|---|---|---|---|---|---|---|
+| 0 | −0.00 | −0.47 | +0.67 | +0.91 | +1.06 | 1.00 |
+| 1 | −0.03 | −1.90 | +0.95 | +0.94 | +1.06 | 1.00 |
+| 2 | −0.07 | −3.26 | +0.40 | +0.96 | +1.05 | 1.00 |
+| 3 | −0.07 | −3.80 | −0.03 | +1.00 | +1.07 | 1.00 |
+| 4 | −0.11 | −3.84 | −0.01 | +0.72 | +1.05 | 1.00 |
+
+**わかったこと**: ゲームの民間の生産は、人と生産力と市場の値段だけで決まり、金利・税・政府支出では動かない。
+
+- 金利が効くのは、借りの利子 (借り手から預金者への移し) と交易の運ぶ年数の値段だけで、家計の買い物や会社の投資を通って生産に効く道がない。物価は物価の式 (`π = … − lambda × (実質の政策金利 − r*)`) が直に動かすので、現実と合う。
+- GDP (= 民間の付加価値 + 政府の買い付け) は政府の買い付けの分だけ 1 対 1 で増える (乗数ちょうど 1)。税を上げると、AI の国の財政の則 (`debtStep`) が増えた税収を行政サービスにそのまま使うので、民間が減らないまま政府の買い付けが増え、GDP がかえって増える。
+- 3 波目の回 KE8・KE9 で入れる政策 (支出の 10 機能・価格統制・量的緩和など) も、このままだと生産には効かない。
+
+**決まったこと** (QD-97 = b。2026-10-29。`docs/requests/2026-10-29-KE.md` の KE-2): 需要のずれを 1 本の式で入れる。総需要 (家計の消費 + 投資 + 政府) が潜在の産出からずれた分の一部だけ、短い間生産が動き (稼働率)、消費は可処分所得と実質金利で動く。係数は R80・R82・R83 に合わせて決める (回 KE7 の続き)。
+
 ## 出典
 
 - Godley, W. & Lavoie, M. (2007). *Monetary Economics: An Integrated Approach to Credit, Money, Income, Production and Wealth*. Palgrave Macmillan.
@@ -227,4 +264,7 @@
 - Holston, K., Laubach, T. & Williams, J. C. (2023). Measuring the Natural Rate of Interest after COVID-19. Federal Reserve Bank of New York Staff Reports 1063 (推計はニューヨーク連銀の 2026 年 Q2 までの版)。
 - Laubach, T. & Williams, J. C. (2003). Measuring the Natural Rate of Interest. *Review of Economics and Statistics* 85(4), 1063–1070.
 - Walsh, C. E. (2003). Speed Limit Policies: The Output Gap and Optimal Monetary Policy. *American Economic Review* 93(1), 265–278.
+- Jordà, Ò., Schularick, M. & Taylor, A. M. (2020). The effects of quasi-random monetary experiments. *Journal of Monetary Economics* 112, 22–40 (6 の R80・R81。`docs/research/policy-irf.md`)。
+- Romer, C. D. & Romer, D. H. (2010). The Macroeconomic Effects of Tax Changes. *American Economic Review* 100(3), 763–801 (6 の R82)。
+- Ramey, V. A. & Zubairy, S. (2014). Government Spending Multipliers in Good Times and in Bad. NBER Working Paper 20719 (6 の R83)。
 - Jordà, Ò., Schularick, M. & Taylor, A. M. (2017). Macrofinancial History and the New Business Cycle Facts. *NBER Macroeconomics Annual* 31 (JST R6。cpi・stir・ltrate・debtgdp)。
