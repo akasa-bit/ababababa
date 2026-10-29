@@ -30,7 +30,7 @@
 
 使い方:
   python3 data/build/analyze_fiscal.py                     現実のデータ → data/derived/fiscal.json
-  python3 data/build/analyze_fiscal.py ゲームのパネル.csv    ゲームの値を同じ式で計算して表示する
+  python3 data/build/analyze_fiscal.py ゲームのパネル.csv    ゲームの値を同じ式で計算して表示する (人口 100 万人以上の国・年だけ。MIN_POP=0 で絞らない)
 """
 import json, os, sys
 import numpy as np
@@ -201,6 +201,10 @@ def game_stats(df):
     galaxy の列がなければ (現実のデータ)、stats() と同じ"""
     if 'galaxy' not in df.columns:
         return stats(df)
+    # ゲームの国は、人口 100 万人以上の国・年だけ (実データの JST は 18 の大きな国。R79 と同じ。目標の版 28・QD-34 = b)。pop の単位は 100 万人。
+    # MIN_POP=0 で絞らない (前の測り方と比べるため)
+    if 'pop' in df.columns:
+        df = df[df['pop'] >= float(os.environ.get('MIN_POP', '1'))]
     per = {g: stats(d) for g, d in df.groupby('galaxy')}
     out = {}
     for k, name in [(k, n) for k, (n, _) in STATS.items()] + ([('R28', REACTION)] if any('R28' in s for s in per.values()) else []) + [(k, n) for k, n in MONEY.items() if any(k in s for s in per.values())]:
