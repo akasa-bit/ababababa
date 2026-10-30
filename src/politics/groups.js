@@ -55,13 +55,15 @@
   }
   // 集団の忠誠度の、星系の忠誠度からの差 (11-2 c)。G = groupsOf の値、k = 民族、q = 所得の分位 (0〜4。省くと民族だけ)、terms = 忠誠度の目標の内訳 (税と福祉の予算を読む)
   // 民族: 締め出された集団は権力に加わっている集団より GROUPS.exclLoy 点低い (人口で平均すると 0)。
-  // 分位: 税の項は所得の分け前に比例して重く、福祉の予算の項は下の分位に厚い (どちらも平均すると 0)
+  // 分位: 税の項 (所得への税・消費税・関税) と福祉の予算の項を、手段ごとの帰着の分け前で分ける (回 KE8・B-012。分位の項 = 星系の項 × incFactor。
+  // 所得への税は上の分位に、消費税・関税・福祉は下の分位に重い。どれも人口で平均すると 0)
   groupDev(G, k, q, terms) {
     const e = G.eth.find((x) => x.k === k);
     let d = e ? -GROUPS.exclLoy * ((GROUP_STATUS[e.st].incl ? 0 : 1) - G.excl) : 0;
     if (q !== undefined) {
-      const w = 5 * groupQuint(q), tax = (terms || []).find((t) => t.label.startsWith('税'))?.v || 0, wel = (terms || []).find((t) => t.label === '福祉の予算')?.v || 0;
-      d += tax * (w - 1) + wel * (1 - w);
+      const tax = (terms || []).find((t) => t.label.startsWith('税')), wel = (terms || []).find((t) => t.label === '福祉の予算')?.v || 0;
+      for (const [i, v] of Object.entries(tax?.parts || {})) if (v) d += v * (this.incFactor(i, q) - 1);
+      if (wel) d += wel * (this.incFactor('welfare', q) - 1);
     }
     return d;
   }

@@ -675,7 +675,9 @@
       const gv = this.govs[root], now = (pinT[root] || 0) / h;
       if (gv && (now || gv.pinY)) gv.pinY = (gv.pinY || 0) + (now - (gv.pinY || 0)) * Math.min(1, h);
     }
-    const a = Math.min(1, h);
+    const a = Math.min(1, h), mxT = this._mxT || {};
+    this._mxT = {};
+    for (const [key, gv] of Object.entries(this.govs)) { const now = (mxT[key] || 0) / h; if (now || gv.mx) gv.mx = (gv.mx || 0) + (now - (gv.mx || 0)) * a; } // 関税の掛かる輸入 [cr/年] (trade.js)
     for (const gv of Object.values(this.govs)) {
       gv.ledger ??= {};
       for (const k of Object.keys(LEDGER_LABEL)) {

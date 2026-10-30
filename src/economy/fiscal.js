@@ -5,7 +5,8 @@
       const gv = p.human && p.fiscal && this.govs[p.cap];
       if (!gv) continue;
       const tax = Math.max(0, gv.ledger?.tax || 0);
-      const parts = Object.keys(BUDGET).map((k) => [k, (p.fiscal.budget?.[k] || 0) * tax * h]).filter(([, x]) => x > 0);
+      const B = this.fiscalFor(p.cap, p.cap).budget; // 首都で効いている予算 (行政の遅れのあいだは前の予算)
+      const parts = Object.keys(BUDGET).map((k) => [k, (B?.[k] || 0) * tax * h]).filter(([, x]) => x > 0);
       const want = parts.reduce((a, [, x]) => a + x, 0);
       const f = want > 0 ? Math.min(1, Math.max(0, gv.credits) / want) : 1;
       for (const [k, x] of parts) this.earn(k, -x * f, p.cap, { hh: p.cap });
@@ -131,11 +132,18 @@
       if (gov !== undefined) this.earn('interest', x, gov); else this.cash('interest', x, acct);
     }
   }
-  // 財政。fiscalFor(国, 星系) = その星系で効いている、その国の財政 (変えた知らせが光速で届くまでは前の財政)。人間でない国は標準
+  // 財政。fiscalFor(国, 星系) = その星系で効いている、その国の財政 (変えた知らせが光速で届くまでは前の財政)。人間でない国は標準。
+  // 手段ごとに行政の遅れがあり (ADMIN_LAG。回 KE8・B-012)、f.on[手段] = 首都で効き始める年。遠い星系は、そのうえ光の遅れのあと。f.done = いちばん遅い手段の年
   fiscalFor(root, id) {
     const f = this.players[this.playerOf(root)]?.fiscal;
     if (!f) return this.isHuman(root) ? FISCAL_DEFAULT : this.aiFiscal(root);
-    return this.year >= f.since + this.sysDist(root, id) ? f : f.prev ?? FISCAL_DEFAULT;
+    const at = this.year - this.sysDist(root, id);
+    if (at >= (f.done ?? f.since)) return f;
+    const prev = f.prev ?? FISCAL_DEFAULT;
+    if (!f.on || at < f.since) return prev; // 前の版のセーブ (on がない) は、どの手段も光の遅れだけ
+    const m = { ...f };
+    for (const [k, t] of Object.entries(f.on)) if (at < t) m[k] = prev[k];
+    return m;
   }
   fiscalAt(id) { return this.fiscalFor(this.realmOf(id), id); }
   taxK(id) { return taxRateOf(this.fiscalAt(id).tax) / MARKET.tax; }
@@ -157,7 +165,8 @@
   }
   ctaxAt(id) { return this.fiscalAt(id).ctax || 0; } // 消費税 (その星系で効いている国の)
   // 関税: 買い手の星系で効いている国の関税率。同じ国の中の取引には掛からない
-  tariffFor(buyer, seller) { return this.realmOf(buyer) === this.realmOf(seller) || this.pactFreeTrade(this.realmOf(buyer), this.realmOf(seller)) ? 0 : this.fiscalAt(buyer).tariff || 0; } // 交易協定の相手には掛けない (政治の pactFreeTrade。回 SE2)
+  tariffFor(buyer, seller) { return this.dutiable(buyer, seller) ? this.fiscalAt(buyer).tariff || 0 : 0; }
+  dutiable(buyer, seller) { return this.realmOf(buyer) !== this.realmOf(seller) && !this.pactFreeTrade(this.realmOf(buyer), this.realmOf(seller)); } // 交易協定の相手には掛けない (政治の pactFreeTrade。回 SE2)
   // 予算の効き目 (0〜1)。首都が予算を払いきれていなければ、払えた割合だけ効く
   budgetAt(root, id, k) { return budgetEffect((this.fiscalFor(root, id).budget?.[k] || 0) * (this.govs[root]?.bpaid ?? 1)); }
   // 国 (首都とその従属星系の政府) の支出を 10 機能に分ける (COFOG。回 KE8・B-007): [{ code, label, v: cr/年, share, oecd }]。ならした帳簿の支払い (負の値) から。
@@ -195,7 +204,13 @@
     const total = Object.values(budget).reduce((a, v) => a + v, 0);
     if (total > BUDGET_TOTAL + 1e-9) return fail(JA`予算は合わせて税収の ${BUDGET_TOTAL * 100}% まで`);
     if (Math.abs(tax - taxRateOf(cur.tax)) < 1e-9 && ctax === (cur.ctax || 0) && tariff === (cur.tariff || 0) && rate === cur.rate && cb === cb0 && deficit === (cur.deficit || 0) && rdcredit === (cur.rdcredit ?? FISCAL_DEFAULT.rdcredit) && Object.keys(BUDGET).every((k) => budget[k] === (cur.budget?.[k] || 0))) return fail('いまと同じ');
-    this.fiscal = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, since: this.year, prev: { tax: taxRateOf(cur.tax), ctax: cur.ctax || 0, tariff: cur.tariff || 0, rate: cur.rate, cb: cb0, deficit: cur.deficit || 0, rdcredit: cur.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...(cur.budget || FISCAL_DEFAULT.budget) } } };
+    // 前の財政 = いま首都で効いている値 (行政の遅れの途中の手段は、その前の値)。手段ごとの効き始め on: 変えた手段は今 + 行政の遅れ、変えていない手段は前の効き始めのまま
+    const e = this.fiscalFor(this.cap, this.cap);
+    const prev = { tax: taxRateOf(e.tax), ctax: e.ctax || 0, tariff: e.tariff || 0, rate: e.rate, cb: e.cb ?? 1, deficit: e.deficit || 0, rdcredit: e.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...(e.budget || FISCAL_DEFAULT.budget) } };
+    const next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget }, on = {};
+    const eq = (k, a) => (k === 'budget' ? Object.keys(BUDGET).every((b) => budget[b] === (a.budget?.[b] || 0)) : k === 'tax' ? Math.abs(tax - taxRateOf(a.tax)) < 1e-9 : next[k] === (a[k] ?? FISCAL_DEFAULT[k]));
+    for (const k of Object.keys(next)) on[k] = eq(k, prev) ? this.year : eq(k, cur) && cur.on?.[k] > this.year ? cur.on[k] : this.year + adminLag(k, next, prev);
+    this.fiscal = { ...next, since: this.year, on, done: Math.max(...Object.values(on)), prev };
     const parts = [JA`税率は ${(tax * 100).toFixed(1)}%`, JA`消費税は ${(ctax * 100).toFixed(1)}%`, JA`関税は ${(tariff * 100).toFixed(1)}%`, cb ? '政策金利は中央銀行に任せる' : JA`政策金利は年 ${(rate * 100).toFixed(2)}%`, JA`赤字の上限は ${deficit ? JA`GDP の ${(deficit * 100).toFixed(1)}%` : 'なし (国債を出さない)'}`, JA`研究開発の税額控除は ${(rdcredit * 100).toFixed(1)}%`, JA`予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
     this.event('goal', this.cap, JA`財政を変えた (${parts.join('、')})。遠い星系には知らせが光速で届いてから効く`, true);
     return { ok: true };

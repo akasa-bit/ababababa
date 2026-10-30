@@ -34,12 +34,13 @@ function fiscalHtml(g) {
   const f = g.fiscal || FISCAL_DEFAULT;
   const cg = g.gov(g.cap);
   const tax = Math.max(0, g.gov(g.cap).ledger?.tax || 0);
-  const pend = g.fiscal ? g.realmSystems(g.cap).filter((s) => g.year < f.since + g.sysDist(g.cap, s.id)).length : 0;
+  const pend = g.fiscal ? g.realmSystems(g.cap).filter((s) => g.year < (f.done ?? f.since) + g.sysDist(g.cap, s.id)).length : 0;
+  const wait = Object.entries(g.fiscal?.on || {}).filter(([, t]) => t > g.year).map(([k, t]) => TR`${FISCAL_LAG_LABEL[k]} (あと ${(t - g.year).toFixed(2)} 年)`); // 行政の遅れで、首都でまだ効いていない手段 (回 KE8・B-012)
   // 値はスライダーで細かく選ぶ (幅と刻みは docs/policy-ranges.md)。離すと命令になる。動かしているあいだは値だけ変わる (onPanelInput)
   const slider = (k, [lo, hi], step, cur, fmt, label) => `<label class="slider"><input type="range" data-act="fiscal" data-k="${k}" data-fmt="${fmt}" min="${lo}" max="${hi}" step="${step}" value="${cur}" aria-label="${label}"><output>${fiscalFmt(fmt, cur)}</output></label>`;
   const used = Object.keys(BUDGET).reduce((a, k) => a + (f.budget?.[k] || 0), 0);
   const paid = g.gov(g.cap).bpaid ?? 1;
-  const taxRate = taxRateOf(f.tax), taxK = taxRate / MARKET.tax, bK = burdenK(f);
+  const taxRate = taxRateOf(f.tax), taxK = taxRate / MARKET.tax, loss = g.policyLoss(g.cap, f), lossAll = loss.tax + loss.ctax + loss.tariff; // 家計の損の割合 (首都。回 KE8・B-012)
   const rule = (f.cb ?? 1) === 1, cbRate = g.cbRateAt(g.cap), cbs = g.cb[g.cap] || { pi: CB.pistar }; // 中央銀行 (回 KE1。画面から状態を作らない)
   const rows = Object.entries(BUDGET).map(([k, b]) => {
     const sh = f.budget?.[k] || 0;
@@ -48,11 +49,11 @@ function fiscalHtml(g) {
     return `<tr><td>${ico(BUDGET_ICON[k])}${b.label}</td><td>${slider(k, BUDGET_RANGE, BUDGET_STEP, sh, 'pct0', b.label)}</td><td>${sh ? TR`${fmtAmt(sh * tax)} cr/年・${eff}` : TR('<span class="muted">使わない</span>')}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
   }).join('');
   return TR`<h3>${ico('credits')}財政</h3>
-    <p class="note">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・政策金利・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。どれも、知らせが光速で届いた星系から効く${pend ? TR` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
+    <p class="note">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・政策金利・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。どれも、行政の遅れ (所得への税と研究開発の税額控除 ${ADMIN_LAG.tax} 年・消費税の率 ${ADMIN_LAG.ctax} 年 (新しく入れるときは ${ADMIN_LAG.ctaxNew} 年)・関税 ${ADMIN_LAG.tariff} 年・予算 ${ADMIN_LAG.budget} 年。政策金利と赤字の上限はすぐ) のあと首都で効き、遠い星系にはそのうえ知らせが光速で届いてから効く${wait.length ? TR` (首都でまだ効いていない: ${wait.join('・')})` : ''}${pend ? TR` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
     <table class="tbl">
-      <tr><td>税率</td><td>${slider('tax', TAX_RANGE, TAX_STEP, taxRate, 'pct1', TR('税率'))}</td><td colspan="2" class="muted wrap">所得への税 (標準 ${(MARKET.tax * 100).toFixed(1)}% の ×${taxK.toFixed(2)})${Math.abs(bK - 1) > 1e-9 ? TR`・消費税と合わせた重さ ×${bK.toFixed(2)}: 家臣の忠誠度の目標 ${TAX_LOYALTY * (bK - 1) > 0 ? '+' : ''}${(TAX_LOYALTY * (bK - 1)).toFixed(1)}・議会の支持 年 ${TAX_COUNCIL * (bK - 1) > 0 ? '+' : ''}${(TAX_COUNCIL * (bK - 1)).toFixed(2)}` : ''}。自給の所得には掛からない</td></tr>
-      <tr><td>消費税</td><td>${slider('ctax', CTAX_RANGE, CTAX_STEP, f.ctax || 0, 'pct1', TR('消費税'))}</td><td colspan="2" class="muted wrap">家計の買い物 (物とサービス) の値段に掛け、星系の政府に入る。所得の低い星系に重い (逆進)。忠誠度と議会への効き目は税率と合わせた重さで決まる</td></tr>
-      <tr><td>関税</td><td>${slider('tariff', TARIFF_RANGE, TARIFF_STEP, f.tariff || 0, 'pct1', TR('関税'))}</td><td colspan="2" class="muted wrap">ほかの国からの輸入の値段に掛ける (買い手の会社が、買い手の星系の政府に払う)。高いほど国の中の売り手から買う。政府の資材の買い付けと主人の支援には掛からない</td></tr>
+      <tr><td>税率</td><td>${slider('tax', TAX_RANGE, TAX_STEP, taxRate, 'pct1', TR('税率'))}</td><td colspan="2" class="muted wrap">所得への税 (標準 ${(MARKET.tax * 100).toFixed(1)}% の ×${taxK.toFixed(2)})${Math.abs(lossAll) > 1e-9 ? TR`・消費税と関税と合わせた家計の損は${ME.capName}の家計の所得の ${lossAll > 0 ? '' : '−'}${Math.abs(lossAll * 100).toFixed(1)}% (標準と比べて): 家臣の忠誠度の目標 ${LOSS.loyalty * lossAll > 0 ? '+' : ''}${(LOSS.loyalty * lossAll).toFixed(1)}・議会の支持 年 ${LOSS.council * lossAll > 0 ? '+' : ''}${(LOSS.council * lossAll).toFixed(2)} (所得の 1% の損ごとに ${(-LOSS.loyalty / 100).toFixed(2)} 点・年 ${(-LOSS.council / 100).toFixed(3)})` : ''}。自給の所得には掛からない</td></tr>
+      <tr><td>消費税</td><td>${slider('ctax', CTAX_RANGE, CTAX_STEP, f.ctax || 0, 'pct1', TR('消費税'))}</td><td colspan="2" class="muted wrap">家計の買い物 (物とサービス) の値段に掛け、星系の政府に入る。所得の低い分位に重い (逆進)。忠誠度と議会には、家計の損 (税率 × 買い物 ÷ 所得) として効く</td></tr>
+      <tr><td>関税</td><td>${slider('tariff', TARIFF_RANGE, TARIFF_STEP, f.tariff || 0, 'pct1', TR('関税'))}</td><td colspan="2" class="muted wrap">ほかの国からの輸入の値段に掛ける (買い手の会社が、買い手の星系の政府に払う)。高いほど国の中の売り手から買う。政府の資材の買い付けと主人の支援には掛からない。値段を通して家計が負うとみて、忠誠度と議会に効く (${ME.capName}の関税の掛かる輸入 ${fmtAmt(cg.mx || 0)} cr/年)</td></tr>
       <tr><td>中央銀行</td><td><select data-act="fiscal" data-k="cb" aria-label="政策金利の決め方"><option value="1"${rule ? ' selected' : ''}>任せる (テイラー則)</option><option value="0"${rule ? '' : ' selected'}>自分で決める</option></select></td><td colspan="2" class="muted wrap">任せると、中央銀行が物価の上がり方と景気の速さを見て政策金利を決める (中立の金利 年 ${(g.rstarOf(g.cap) * 100).toFixed(2)}% + 物価の上がり方 + ${CB.phiPi} × (物価の上がり方 − 目標 ${(CB.pistar * 100).toFixed(0)}%) + ${CB.phiY} × 景気のずれ)。中立の金利は、1 人あたりの生産力の伸びが速いほど高い。政策金利を動かすと「自分で決める」になる</td></tr>
       <tr><td>政策金利</td><td>${slider('rate', RATE_RANGE, RATE_STEP, rule ? cbRate : f.rate, 'pct2', TR('政策金利'))}</td><td colspan="2" class="muted wrap">名目の金利。会社と家計の借り・預金・交易の運ぶ年数には、物価の上がり方を引いた実質の金利 (いま 年 ${(g.rateAt(g.cap) * 100).toFixed(2)}%) が効く (運ぶ年数ぶん輸入の値段が e^(実質の金利 × 年数) 倍)。物価より低いまま止めると、物価の上がり方が上がっていく</td></tr>
       <tr><td>物価</td><td class="num">年 ${(cbs.pi * 100).toFixed(1)}%</td><td colspan="2" class="muted wrap">物価の上がり方 (目標 ${(CB.pistar * 100).toFixed(0)}%)。物価の指数 ${g.cpiOf(g.cap).toFixed(2)} (始め 1)。帳簿は始めの値段で数えるので、思ったより物価が上がると、預金と国債の重さがそのぶん減る</td></tr>
@@ -69,7 +70,21 @@ function fiscalHtml(g) {
     })()}
     <h3>予算 (${ME.capName}の税収 ${fmtAmt(tax)} cr/年 のうち ${Math.round(used * 100)}% を使う。合わせて ${BUDGET_TOTAL * 100}% まで)</h3>
     <table class="tbl">${rows}</table>
-    ${paid < 0.99 && used ? TR`<p class="note bad">資金が足りず、予算を ${pct(paid)} しか払えていない (効き目もそのぶん下がる)</p>` : ''}` + cofogHtml(g);
+    ${paid < 0.99 && used ? TR`<p class="note bad">資金が足りず、予算を ${pct(paid)} しか払えていない (効き目もそのぶん下がる)</p>` : ''}` + cofogHtml(g) + incidenceHtml(g);
+}
+// 財政の手段の名前 (行政の遅れの知らせ)
+const FISCAL_LAG_LABEL = { tax: '所得への税', ctax: '消費税', tariff: '関税', rate: '政策金利', cb: '中央銀行', deficit: '赤字の上限', rdcredit: '研究開発の税額控除', budget: '予算' };
+// 帰着の表 (回 KE8・B-012): 決めた財政を標準の財政と比べた 1 年の損得。部門ごとと、国の家計の所得の 5 分位ごと (分位の所得に対する割合)
+function incidenceHtml(g) {
+  if (!g.fiscal) return '';
+  const rows = g.incidenceOf(g.cap, g.fiscal, FISCAL_DEFAULT).filter((r) => Math.abs(r.hh) + Math.abs(r.fm) + Math.abs(r.gov) > 1e-6);
+  if (!rows.length) return '';
+  const Y = g.realmSystems(g.cap).reduce((a, x) => a + g.hhIncomeOf(x.id), 0);
+  const amt = (v) => `${v >= 0 ? '+' : '−'}${fmtAmt(Math.abs(v))}`;
+  const qp = (v, q) => (Y > 0 ? `${v >= 0 ? '+' : '−'}${Math.abs((100 * v) / (Y * groupQuint(q))).toFixed(2)}%` : '—');
+  return TR`<h3>帰着 (標準の財政と比べた 1 年の損得)</h3>
+    <p class="note">いまの帳簿の大きさに率の差を掛けた見込み [cr/年。+ が得]。買い物や輸入の量の変化は入れていない。所得の分位は国の家計の 5 分位 (下 → 上) の、分位の所得に対する割合。家計の分を、現実の国の帰着の調べ (所得税は上に、消費税・関税・福祉は下に重い) で分け、会社の分は持ち主 (ほとんどいちばん上の分位) に分けた。集団の忠誠度の差にも同じ分け方で効く</p>
+    <div class="scroll"><table class="tbl"><tr><th>手段</th><th>家計</th><th>会社</th><th>政府</th><th>ほかの国</th><th>所得の分位</th><th>行政の遅れ</th></tr>${rows.map((r) => `<tr><td>${esc(r.label)}</td><td class="num">${amt(r.hh)}</td><td class="num">${amt(r.fm)}</td><td class="num">${amt(r.gov)}</td><td class="num">${amt(r.row)}</td><td class="num">${r.q.map(qp).join(' / ')}</td><td class="num">${r.lag ? TR`${r.lag} 年` : TR('すぐ')}</td></tr>`).join('')}</table></div>`;
 }
 // 支出の 10 機能 (COFOG。回 KE8・B-007): 国の政府の支出を機能に分けた表。OECD の平均は参考
 function cofogHtml(g) {
