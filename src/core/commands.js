@@ -71,6 +71,7 @@
     if (act === 'design') return this.setDesign(d); // 入植船の設計 (船と戦争。ship/settler.js。B-033)
     if (act === 'policy') return this.setPolicy(d.value);
     if (act === 'fiscal') return this.setFiscal(d);
+    if (act === 'bill') return this.billAct(d.bill, d.op); // 審議中の法案を押す・引っ込める (政治。politics/support.js。回 SE7)
     if (act === 'grant') {
       const to = Number(d.sys);
       if (to === this.cap || !this.isColonized(to) || this.realmOf(to) !== this.cap) return fail(JA`${this.realmName(this.cap)}の星系にだけ送れる`);

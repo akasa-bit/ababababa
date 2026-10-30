@@ -60,10 +60,11 @@
   }
   // 星系の集団 (民族 × 所得の 5 分位。groupsOf) ごとの損得 (回 KE8・B-012。回 SE7 の利益集団の支持が使う): f1 にしたときの f0 と比べた 1 年の損得。
   // [{ k: 民族, q: 分位, v: cr/年, rel: v ÷ 集団の家計の所得, by: { 手段: cr/年 } }] (損の大きい順)。民族の間の所得の差は入れていない (どの民族も星系と同じ分位の分け前)
-  groupIncidence(id, f1, f0 = FISCAL_DEFAULT) {
+  // rows = 国の帰着の表 (incidenceOf。いくつもの星系で使うときに渡す)
+  groupIncidence(id, f1, f0 = FISCAL_DEFAULT, rows = this.incidenceOf(this.realmOf(id), f1, f0)) {
     const G = this.groupsOf(id);
     if (!G) return [];
-    const Y = this.hhIncomeOf(id), rows = this.incidenceOf(this.realmOf(id), f1, f0), out = [];
+    const Y = this.hhIncomeOf(id), out = [];
     const sh = (k, q) => (k === 'income' ? groupQuint(q) : INCIDENCE[k][q] / INCIDENCE[k].reduce((a, v) => a + v, 0));
     for (const e of G.eth) for (let q = 0; q < 5; q++) {
       const by = {};

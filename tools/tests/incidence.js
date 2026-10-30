@@ -33,13 +33,13 @@ res.groups = vas !== undefined && gi.length > 0 && near(gi.reduce((a, x) => a + 
 // 2. 忠誠と議会: 所得への税だけなら前の式と同じ・倍率の平均は 1・集団の差の平均は 0
 res.factor = Object.keys(INCIDENCE).every((k) => near([0, 1, 2, 3, 4].reduce((a, q) => a + g.incFactor(k, q), 0) / 5, 1));
 g.pc = 100;
-res.set = g.setFiscal({ tax: 0.2, ctax: 0.1, tariff: 0.05, welfare: 0.1 }).ok;
+res.set = g.setFiscal({ tax: 0.2, ctax: 0.1, tariff: 0.05, welfare: 0.1 }, true).ok; // 審議を通さずすぐ (審議は tools/tests/support.js)
 const t0 = g.year;
 res.lagged = g.fiscalFor(g.cap, g.cap).tax === FISCAL_DEFAULT.tax && g.fiscalFor(g.cap, g.cap).tariff === 0 && g.fiscalFor(g.cap, g.cap).ctax === 0; // 決めたばかりでは、首都でもまだ効いていない
 g.advance(0.25); g.advance(0.25); // 0.5 年: 関税 (0.05 年) と予算 (0.5 年) は効き、所得への税 (0.85 年) と消費税 (新しく入れる 1.75 年) はまだ
 const e1 = g.fiscalFor(g.cap, g.cap);
 res.lagMid = e1.tariff === 0.05 && e1.budget.welfare === 0.1 && e1.tax === FISCAL_DEFAULT.tax && e1.ctax === 0;
-res.pendingKept = g.setFiscal({ tariff: 0.06 }).ok && near(g.fiscal.on.ctax, t0 + ADMIN_LAG.ctaxNew) && near(g.fiscal.on.tax, t0 + ADMIN_LAG.tax) && g.fiscal.prev.ctax === 0; // 遅れの途中で関税を変えても、消費税と所得への税の効き始めは動かない
+res.pendingKept = g.setFiscal({ tariff: 0.06 }, true).ok && near(g.fiscal.on.ctax, t0 + ADMIN_LAG.ctaxNew) && near(g.fiscal.on.tax, t0 + ADMIN_LAG.tax) && g.fiscal.prev.ctax === 0; // 遅れの途中で関税を変えても、消費税と所得への税の効き始めは動かない
 const d = JSON.parse(JSON.stringify(sim.buildSave(g)));
 const g2 = new sim.Game(sim.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
 g2.restore(d);

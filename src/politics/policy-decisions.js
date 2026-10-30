@@ -1,7 +1,11 @@
-  setPolicy(id) {
+  // 国家方針を変える (命令 policy)。議会の審議にかける (回 SE7・B-022。QD-109 b。politics/support.js の proposeBill)。now = 審議を通さずすぐ (試験から)
+  setPolicy(id, now = false) {
     if (!POLICIES[id]) return fail('不明な方針');
     if (this.policy?.id === id) return fail('いまの方針と同じ');
     if (this.policy && this.year - this.policy.since < POLICY_YEARS) return fail(JA`${Math.ceil(this.policy.since + POLICY_YEARS - this.year)}年後まで変えられない`);
+    return now ? this.applyPolicy(id) : this.proposeBill('policy', id);
+  }
+  applyPolicy(id) {
     this.policy = { id, since: this.year, prev: this.policy?.id ?? null };
     this.event('goal', this.cap, JA`国家方針を「${POLICIES[id].label}」にした (${POLICIES[id].good}。${POLICIES[id].bad})。遠い星系には知らせが光速で届いてから効く`, true);
     return { ok: true };
@@ -74,6 +78,7 @@
       return { ok: true };
     }
     if (dec.kind === 'pact') { this.resolvePact(dec, k); return { ok: true }; } // 遅れて届く外交 (politics/diplomacy.js)
+    if (dec.kind === 'bill') { if (k !== 'wait' && this.bill(dec.type)?.since === dec.since) this.billAct(dec.type, k); return { ok: true }; } // 審議で押し戻された法案 (politics/support.js)
     const s = STORY[dec.type];
     if (s) {
       if (local) this.govDid(dec.sys, JA`「${dec.opts.find((o) => o.k === k)?.label || k}」を選んだ`, JA`${this.homeName()}の返事が期限までに届かず、現地で決めた`);

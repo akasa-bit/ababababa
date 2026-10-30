@@ -181,15 +181,17 @@
   }
   // 艦隊の戦力の倍率 (種族の特性 × 軍事の予算)。x は国か星系、at は戦う星系
   fleetMul(x, at) { const root = this.realmOf(x); return this.modsOf(x).fleet * (1 + BUDGET.military.fleet * this.budgetAt(root, at, 'military')); }
-  setFiscal(d) {
-    const cur = this.fiscal || FISCAL_DEFAULT;
+  // 財政を変える (命令 fiscal)。政策金利と中央銀行の任せ方はすぐ変わり (中央銀行の決定)、ほかの手段は議会の審議にかける (回 SE7・B-022。QD-109 b。
+  // politics/support.js の proposeBill)。d に書いていない手段は、審議中の法案の値から。now = 審議を通さずすぐ変える (試験と道具から)
+  setFiscal(d, now = false) {
+    const cur = now ? this.fiscal || FISCAL_DEFAULT : this.fiscalDraft(), dec = this.fiscal || FISCAL_DEFAULT;
     const rawTax = d.tax ?? cur.tax;
     if (!(typeof rawTax === 'number' || TAX_LEVELS[rawTax])) return fail('選べない値');
-    const cb0 = cur.cb ?? 1, cb = d.cb !== undefined ? Number(d.cb) : Number(d.rate ?? cur.rate) !== cur.rate ? 0 : cb0; // 政策金利を動かしたら「自分で決める」に
+    const cb0 = dec.cb ?? 1, cb = d.cb !== undefined ? Number(d.cb) : Number(d.rate ?? dec.rate) !== dec.rate ? 0 : cb0; // 政策金利を動かしたら「自分で決める」に
     if (cb !== 0 && cb !== 1) return fail('選べない値');
     // 任せていたのをやめるときは、いまの中央銀行の政策金利から始める
-    const start = cb0 === 1 && cb === 0 && (d.rate === undefined || Number(d.rate) === cur.rate);
-    const tax = taxRateOf(rawTax), rate = start ? clamp(Math.round(this.cbRateAt(this.cap) / RATE_STEP) * RATE_STEP, RATE_RANGE[0], RATE_RANGE[1]) : Number(d.rate ?? cur.rate), deficit = Number(d.deficit ?? cur.deficit ?? 0), ctax = Number(d.ctax ?? cur.ctax ?? 0), tariff = Number(d.tariff ?? cur.tariff ?? 0);
+    const start = cb0 === 1 && cb === 0 && (d.rate === undefined || Number(d.rate) === dec.rate);
+    const tax = taxRateOf(rawTax), rate = start ? clamp(Math.round(this.cbRateAt(this.cap) / RATE_STEP) * RATE_STEP, RATE_RANGE[0], RATE_RANGE[1]) : Number(d.rate ?? dec.rate), deficit = Number(d.deficit ?? cur.deficit ?? 0), ctax = Number(d.ctax ?? cur.ctax ?? 0), tariff = Number(d.tariff ?? cur.tariff ?? 0);
     const rdcredit = Number(d.rdcredit ?? cur.rdcredit ?? FISCAL_DEFAULT.rdcredit); // 研究開発の税額控除 (回 KE6。前の版のセーブは既定)
     const budget = {};
     for (const k of Object.keys(BUDGET)) budget[k] = Number(d[k] ?? cur.budget?.[k] ?? 0);
@@ -203,11 +205,27 @@
     if (Object.values(budget).some((v) => !onStep(v, BUDGET_RANGE, BUDGET_STEP))) return fail(JA`予算は機能ごとに 0〜${BUDGET_RANGE[1] * 100}% (刻み ${BUDGET_STEP * 100}%)`);
     const total = Object.values(budget).reduce((a, v) => a + v, 0);
     if (total > BUDGET_TOTAL + 1e-9) return fail(JA`予算は合わせて税収の ${BUDGET_TOTAL * 100}% まで`);
-    if (Math.abs(tax - taxRateOf(cur.tax)) < 1e-9 && ctax === (cur.ctax || 0) && tariff === (cur.tariff || 0) && rate === cur.rate && cb === cb0 && deficit === (cur.deficit || 0) && rdcredit === (cur.rdcredit ?? FISCAL_DEFAULT.rdcredit) && Object.keys(BUDGET).every((k) => budget[k] === (cur.budget?.[k] || 0))) return fail('いまと同じ');
-    // 前の財政 = いま首都で効いている値 (行政の遅れの途中の手段は、その前の値)。手段ごとの効き始め on: 変えた手段は今 + 行政の遅れ、変えていない手段は前の効き始めのまま
-    const e = this.fiscalFor(this.cap, this.cap);
+    const next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget };
+    const rest = !(Math.abs(tax - taxRateOf(dec.tax)) < 1e-9 && ctax === (dec.ctax || 0) && tariff === (dec.tariff || 0) && deficit === (dec.deficit || 0) && rdcredit === (dec.rdcredit ?? FISCAL_DEFAULT.rdcredit) && Object.keys(BUDGET).every((k) => budget[k] === (dec.budget?.[k] || 0)));
+    const cbPart = rate !== dec.rate || cb !== cb0;
+    if (now) return rest || cbPart ? this.applyFiscal(next) : fail('いまと同じ');
+    const pending = this.bill('fiscal');
+    if (!rest && !cbPart) { if (!pending) return fail('いまと同じ'); return this.billAct('fiscal', 'withdraw'); } // 法案を出す前の値に戻した
+    const cool = this.me.bills?.cool?.fiscal || 0;
+    if (rest && this.year < cool - 1e-9) return fail(JA`財政の法案は廃案になったばかりで、${(cool - this.year).toFixed(1)} 年あとまで出せない`);
+    if (cbPart) this.applyFiscal({ ...dec, rate, cb }); // 政策金利はすぐ
+    if (!rest) { if (pending) this.billAct('fiscal', 'withdraw'); return { ok: true }; }
+    return this.proposeBill('fiscal', next);
+  }
+  // 財政をいま変える (法案が通ったとき・政策金利・試験)。next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget }
+  applyFiscal(n) {
+    const cur = this.fiscal || FISCAL_DEFAULT, next = { tax: taxRateOf(n.tax), ctax: n.ctax || 0, tariff: n.tariff || 0, rate: n.rate, cb: n.cb ?? 1, deficit: n.deficit || 0, rdcredit: n.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...FISCAL_DEFAULT.budget, ...(n.budget || {}) } };
+    const { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget } = next;
+    // 前の財政 = いま首都で効いている値 (行政の遅れの途中の手段は、その前の値)。手段ごとの効き始め on: 変えた手段は今 + 行政の遅れ、変えていない手段は前の効き始めのまま。
+    // 同じ時に 2 度変えたとき (政策金利と、すぐ通った法案。回 SE7) は 1 度目を直したものとみて、1 度目の前の財政を引き継ぐ (遠い星系が光の遅れなしに 1 度目を受けないように)
+    const e = cur.since === this.year && cur.prev ? cur.prev : this.fiscalFor(this.cap, this.cap);
     const prev = { tax: taxRateOf(e.tax), ctax: e.ctax || 0, tariff: e.tariff || 0, rate: e.rate, cb: e.cb ?? 1, deficit: e.deficit || 0, rdcredit: e.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...(e.budget || FISCAL_DEFAULT.budget) } };
-    const next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget }, on = {};
+    const on = {};
     const eq = (k, a) => (k === 'budget' ? Object.keys(BUDGET).every((b) => budget[b] === (a.budget?.[b] || 0)) : k === 'tax' ? Math.abs(tax - taxRateOf(a.tax)) < 1e-9 : next[k] === (a[k] ?? FISCAL_DEFAULT[k]));
     for (const k of Object.keys(next)) on[k] = eq(k, prev) ? this.year : eq(k, cur) && cur.on?.[k] > this.year ? cur.on[k] : this.year + adminLag(k, next, prev);
     this.fiscal = { ...next, since: this.year, on, done: Math.max(...Object.values(on)), prev };

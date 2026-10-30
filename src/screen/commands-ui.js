@@ -119,7 +119,7 @@ function onPanelChange(e) {
   else if (act === 'regimedefault') issue('set', { key: 'regime', value: v });
   else if (act === 'histtype') { app.histType = v; } // 史料の欄で読む型 (見るだけ)
   else if (act === 'fiscal') {
-    const c = app.game.fiscal || FISCAL_DEFAULT;
+    const c = app.game.fiscalDraft(); // 審議中の法案があれば、その値から (政治。回 SE7)
     const d = { tax: c.tax, ctax: c.ctax || 0, tariff: c.tariff || 0, rate: c.rate, deficit: c.deficit || 0, ...c.budget };
     const k = e.target.dataset.k;
     d[k] = Number(v);
