@@ -32,7 +32,7 @@
   // view: r の見ている艦隊 (既定は r の首都に届いている記録)。z: 読み違い。gift: 添えた贈り物 [cr]
   pactScore(r, p, kind, { gift = 0, z = 0, view = null } = {}) {
     if (!this.pactAllowed(r, p, kind)) return { s: -Infinity, why: JA`好戦的な種族の国とは${PACT_KINDS[kind].label}の協定を結べない` }; // 回 SE8
-    if (kind === 'trade' && this.modsOf(p).tradePacts) return { s: 1, why: '商才の種族の国からの交易協定' }; // 商才: AI の国は断らない (回 SE8)
+    if (kind === 'trade' && this.modsOf(p).tradePacts && !this.pactBreaches(p)) return { s: 1, why: '商才の種族の国からの交易協定' }; // 商才: 破約をしていなければ、AI の国は断らない (回 SE8)
     const ships = view || ((t) => (t === r ? this.realmShips(r) : this.seenShips(r, t)));
     const mine = ships(r);
     const seen = ships(p) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(r, p)));

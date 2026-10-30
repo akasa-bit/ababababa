@@ -15,7 +15,7 @@ const SPECIES_TRAITS = {
   warlike: { label: '好戦的', desc: '宣戦に政治力が要らない・戦争疲弊の溜まり方 ×0.5。代わりに 不可侵と防衛同盟の協定を結べない', good: '宣戦に政治力が要らない・戦争疲弊の溜まり方 ×0.5', bad: '不可侵と防衛同盟の協定を結べない', warFree: true, exhaust: 0.5, noPacts: ['nap', 'ally'] },
   industrious: { label: '勤勉', desc: '施設の建設費 ×0.75。代わりに 議会のいら立ち 毎年 −0.5 (ふつう −0.25)', good: '施設の建設費 ×0.75', bad: '議会のいら立ち 毎年 −0.5 (ふつう −0.25)', build: 0.75, councilDrift: 2 },
   miners: { label: '鉱夫', desc: '採掘基地の費用 ×0.5。代わりに 工業の生産 ×0.95', good: '採掘基地の費用 ×0.5', bad: '工業の生産 ×0.95', outpost: 0.5, ind: 0.95 },
-  traders: { label: '商才', desc: '交易協定を申し入れると、AI の国は断らない。代わりに 関税を 5% より上げられない', good: '交易協定を申し入れると、AI の国は断らない', bad: '関税を 5% より上げられない', tradePacts: true, tariffMax: 0.05 },
+  traders: { label: '商才', desc: '破約をしていなければ、交易協定の申し入れを AI の国は断らない。代わりに 関税を 5% より上げられない', good: '破約をしていなければ、交易協定の申し入れを AI の国は断らない', bad: '関税を 5% より上げられない', tradePacts: true, tariffMax: 0.05 },
   wise: { label: '賢明', desc: '法案の支持 +10 点 (説得がうまい)。代わりに 政治力の上限 70 (ふつう 100)', good: '法案の支持 +10 点 (説得がうまい)', bad: '政治力の上限 70 (ふつう 100)', billBonus: 0.1, pcCap: 70 },
 };
 const HUMAN_TRAITS = ['adaptable', 'traders'];
