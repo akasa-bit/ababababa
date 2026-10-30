@@ -227,6 +227,25 @@ M₀ は、試合の始めに政府が持っていた資金 (`START_CREDITS`) �
 | 利子率の既定値 (`FISCAL_DEFAULT.rate`・`CB.rstar`) | 年 1% | Schmelzing の時代ごとの幅 (3.6)。R01 は 1% で合格・2% で不合格 (回 KE4)。QD-32 |
 | 人間でない国の利子率・予算 | 年 1%・0 | セッション 21 (中央銀行の決まり方はセッション 22 のテイラー則) |
 
+## 6. 支出の 10 機能 (COFOG。回 KE8・B-007)
+
+政府の支出を、国連の政府の機能の分類 (COFOG。1999 年) の 10 機能に分けて、財政の画面に出す (`COFOG`・`cofogOf`。`src/economy/fiscal-consts.js`・`fiscal.js`)。新しい予算の項目は足していない (効き目のある機能はもう予算にある)。
+
+| 機能 | ゲームの出入りの種類 | OECD の平均 (参考) |
+|---|---|---|
+| GF01 一般公共サービス | 行政サービス (`public`)・研究の予算 (`research`。基礎研究 GF0105)・国債の利子 (`interest` の払い。公債の取引 GF0107) | 13% |
+| GF02 防衛 | 軍事の予算 (`military`)・軍の維持費 (`upkeep`) | 3% |
+| GF03 公共の秩序と安全 | 治安の予算 (`security`) | 4% |
+| GF04 経済業務 | 政府の建設 (`build`) | 10% |
+| GF05 環境保護・GF06 住宅と地域・GF08 娯楽・文化・宗教 | (ゲームにまだ当たる支出がない) | — |
+| GF07 保健 | 医療 (`health`。年齢つきの人口。回 KE2) | 18% |
+| GF09 教育 | 教育の予算 (`education`) | 12% |
+| GF10 社会保護 | 福祉の予算 (`welfare`)・年金 (`pension`。回 KE2) | 40% |
+
+- OECD の平均は `docs/econ-policy-list.md` の 3 の B の書き写した値で、合わせる目標にはしていない。書き出し (`tools/export.js`) の GFS の列も同じ当て方 (回 DO7)。
+- 建設・教育・研究の予算は、収支の表 (`LEDGER_LABEL`) に入っていない。足すと国の収入 (`income()`。表の合計) が変わって AI の判断が変わるので、この表のためだけに政府ごとに別にならす (`gv.cof`。`COFOG_EXTRA`)。建設は `earn` を通らず (`cash`)、刻みの中で帳簿をならしたあとにも払うので、次にならすまでためる (`gv.bld`)。
+- 試合は変わらない (ならした値を足しただけ)。手元の銀河 3 の 100 年目の地球の国: 一般公共サービス 48%・社会保護 26%・保健 19%・経済業務 6%・防衛 0.5%。
+
 ## 出典
 
 - Jordà, Ò., Schularick, M. & Taylor, A. M. (2017). Macrofinancial History and the New Business Cycle Facts. *NBER Macroeconomics Annual* 31, 213–263.

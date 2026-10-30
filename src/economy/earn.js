@@ -29,7 +29,11 @@
   // 政府の収支の表 (led) に載せるものは earn を通す
   cash(kind, v, acct) {
     let t;
-    if (acct.gov !== undefined) { this.gov(acct.gov).credits += v; t = 'gov'; }
+    if (acct.gov !== undefined) {
+      const gv = this.gov(acct.gov);
+      gv.credits += v; t = 'gov';
+      if (kind === 'build') gv.bld = (gv.bld || 0) + v; // 政府の建設も収支の表に (支出の 10 機能の経済業務。回 KE8・B-007)。建設は earn を通らず、刻みの中で帳簿をならしたあとにも払うので、次にならすまでためておく
+    }
     else if (acct.hh !== undefined || acct.pv !== undefined) { bankMove(this.gov(acct.hh ?? acct.pv), 'hh', v, 'hloan'); t = 'hh'; }
     else if (acct.fm !== undefined) { bankMove(this.gov(acct.fm), 'fm', v); t = 'fm'; }
     else if (acct.nat !== undefined) { bankMove(this.natives[acct.nat], 'cr', v); t = 'nat'; }

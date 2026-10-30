@@ -682,6 +682,15 @@
         const now = ((gv.led || {})[k] || 0) / h;
         gv.ledger[k] = gv.ledger[k] === undefined ? now : gv.ledger[k] + (now - gv.ledger[k]) * a;
       }
+      // 支出の 10 機能のためだけに、収支の表にない政府の支出 (建設・教育・研究の予算) もならしておく (回 KE8・B-007。収支の表 LEDGER_LABEL に足すと、
+      // 国の収入 income() が変わって AI の判断が変わるので分ける)。建設は前にならしてからの分 (earn.js の cash の bld)
+      for (const k of COFOG_EXTRA) {
+        const now = ((k === 'build' ? gv.bld : (gv.led || {})[k]) || 0) / h;
+        if (!now && gv.cof?.[k] === undefined) continue;
+        gv.cof ??= {};
+        gv.cof[k] = gv.cof[k] === undefined ? now : gv.cof[k] + (now - gv.cof[k]) * a;
+      }
+      delete gv.bld;
       for (const k of Object.keys(E_LABEL)) {
         const now = ((gv.eled || {})[k] || 0) / h;
         if (!now && gv.eledger?.[k] === undefined) continue;

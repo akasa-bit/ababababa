@@ -69,6 +69,12 @@ function fiscalHtml(g) {
     })()}
     <h3>予算 (${ME.capName}の税収 ${fmtAmt(tax)} cr/年 のうち ${Math.round(used * 100)}% を使う。合わせて ${BUDGET_TOTAL * 100}% まで)</h3>
     <table class="tbl">${rows}</table>
-    ${paid < 0.99 && used ? TR`<p class="note bad">資金が足りず、予算を ${pct(paid)} しか払えていない (効き目もそのぶん下がる)</p>` : ''}`;
+    ${paid < 0.99 && used ? TR`<p class="note bad">資金が足りず、予算を ${pct(paid)} しか払えていない (効き目もそのぶん下がる)</p>` : ''}` + cofogHtml(g);
+}
+// 支出の 10 機能 (COFOG。回 KE8・B-007): 国の政府の支出を機能に分けた表。OECD の平均は参考
+function cofogHtml(g) {
+  const rows = g.cofogOf(g.cap).map((r) => `<tr><td>${r.label}</td><td class="num">${fmtAmt(r.v)}</td><td class="num">${r.v > 0 ? pct(r.share) : '—'}</td><td class="num muted">${r.oecd ? pct(r.oecd) : '—'}</td></tr>`).join('');
+  return TR`<h3>支出の 10 機能</h3><p class="note">国の政府 (首都と従属星系) の 1 年の支出を、国連の政府の機能の分類 (COFOG) で分けたもの。建設は経済業務、研究の予算と国債の利子は一般公共サービス、年金は社会保護、医療は保健に入る。右の列は OECD の国の平均 (参考)</p>
+    <table class="tbl"><tr><th>機能</th><th>cr/年</th><th>割合</th><th>OECD の平均</th></tr>${rows}</table>`;
 }
 

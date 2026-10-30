@@ -39,6 +39,23 @@ const BUDGET = {
   // 研究 (回 KE6・B-122): 効き目は budgetEffect でなく、払った額 ÷ 研究者 1 人の費用だけ公の研究者を足す (RND。docs/innovation.md の 3)
   research: { label: '研究', good: '公の研究者が増え、8〜15 年あとから国の技術の伸びが速くなる (研究者 1 人の費用は 1 人あたり所得の約 4〜5 倍)。民間の研究も呼び込む (弾力性 0.5)' },
 };
+// 支出の 10 機能 (COFOG。国連 1999 の政府の機能の分類。回 KE8・B-007。docs/fiscal.md の 7): 帳簿 (ledger) の出入りの種類を機能に当てる。
+// 建設は経済業務、研究の予算は一般公共サービスの基礎研究 (GF0105)、国債の利子は一般公共サービスの公債の取引 (GF0107)、年金と福祉は社会保護、医療は保健。
+// 環境保護・住宅と地域・娯楽と文化と宗教は、ゲームにまだ当たる支出がない (0 のまま見せる)。oecd = OECD の一般政府の支出の機能ごとの割合 (OECD 加盟国の平均。
+// docs/econ-policy-list.md の 3 の B の書き写した値。参考に並べるだけで、合わせる目標にはしていない)
+const COFOG = [
+  { code: 'GF01', label: '一般公共サービス', kinds: ['public', 'research', 'interest'], oecd: 0.13 },
+  { code: 'GF02', label: '防衛', kinds: ['military', 'upkeep'], oecd: 0.03 },
+  { code: 'GF03', label: '公共の秩序と安全', kinds: ['security'], oecd: 0.04 },
+  { code: 'GF04', label: '経済業務', kinds: ['build'], oecd: 0.10 },
+  { code: 'GF05', label: '環境保護', kinds: [], oecd: null },
+  { code: 'GF06', label: '住宅と地域', kinds: [], oecd: null },
+  { code: 'GF07', label: '保健', kinds: ['health'], oecd: 0.18 },
+  { code: 'GF08', label: '娯楽・文化・宗教', kinds: [], oecd: null },
+  { code: 'GF09', label: '教育', kinds: ['education'], oecd: 0.12 },
+  { code: 'GF10', label: '社会保護', kinds: ['welfare', 'pension'], oecd: 0.40 },
+];
+const COFOG_EXTRA = ['build', 'education', 'research']; // 収支の表 (LEDGER_LABEL) にない支出。政府ごとに gv.cof でならす (market-economy.js)
 const BUDGET_HALF = 0.1;
 const budgetEffect = (share) => (share > 0 ? share / (share + BUDGET_HALF) : 0);
 // 研究開発の税額控除 (回 KE6・B-122): 会社の研究開発費の rdcredit の割合を、国の政府が会社に返す。幅は OECD の R&D Tax Incentives の、税の優遇 ÷ 会社の研究開発費の
