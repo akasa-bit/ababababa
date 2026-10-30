@@ -4,8 +4,11 @@ const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番
 // 忠誠度の目標の内訳。目標 = 先頭から順に足した値 (0〜100 に収める)
 // 忠誠度の目標の内訳。距離は直接には小さく効き、主人の関与 (指令・援助・艦隊・視察) が途絶えた年数が大きく効く
 // (遠い星系ほど関与が届くのに時間と政治力がかかるので、距離は間接的に効く)
-function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = BASE_REGIME, arrears = false, concession = false, policy = null, exhaustion = 0, tax = 'normal', ctax = 0, welfare = 0 }) {
-  const taxK = burdenK({ tax, ctax });
+// 税の項 (回 KE8・B-012): 家計の損の割合 loss (policyLoss。所得への税・消費税・関税) × LOSS.loyalty。parts = 手段ごとの値 (集団の差 groupDev が分位ごとに分ける)。
+// loss を渡さなければ、税率から (関税は 0)
+function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = BASE_REGIME, arrears = false, concession = false, policy = null, exhaustion = 0, tax = 'normal', ctax = 0, tariff = 0, loss = null, welfare = 0 }) {
+  const t = taxRateOf(tax), l = loss || { tax: t - MARKET.tax, ctax: (ctax * (1 - t)) / (1 + ctax), tariff: 0 };
+  const parts = { tax: LOSS.loyalty * l.tax, ctax: LOSS.loyalty * l.ctax, tariff: LOSS.loyalty * l.tariff };
   return [
     { label: '基準', v: 85 },
     { label: '主人との距離', v: -(0.6 * dLord), note: `${dLord.toFixed(1)} ly` },
@@ -20,7 +23,7 @@ function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, negle
     ...(arrears ? [{ label: '関税受領官 (滞納)', v: -H33.arrears }] : []),
     { label: JA`国家方針${policy ? ` (${POLICIES[policy].label})` : ''}`, v: POLICY_LOYALTY[policy] || 0 },
     ...(exhaustion ? [{ label: '国の戦争疲弊', v: -EXHAUST.loyalty * exhaustion, note: `${Math.round(exhaustion)}` }] : []),
-    ...(Math.abs(taxK - 1) > 1e-9 ? [{ label: JA`税 (${(taxRateOf(tax) * 100).toFixed(1)}%${ctax ? JA` + 消費税 ${(ctax * 100).toFixed(1)}%` : ''})`, v: TAX_LOYALTY * (taxK - 1) }] : []),
+    ...(Math.abs(l.tax) > 1e-9 || l.ctax > 0 || l.tariff > 0 ? [{ label: JA`税 (${(t * 100).toFixed(1)}%${ctax ? JA` + 消費税 ${(ctax * 100).toFixed(1)}%` : ''}${tariff ? JA` + 関税 ${(tariff * 100).toFixed(1)}%` : ''})`, v: parts.tax + parts.ctax + parts.tariff, parts }] : []),
     ...(welfare ? [{ label: '福祉の予算', v: BUDGET.welfare.loyalty * welfare }] : []),
   ];
 }

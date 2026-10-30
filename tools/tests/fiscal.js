@@ -5,7 +5,7 @@
 const J = require('../ci-judge');
 exports.ci = [{
   args: (c) => [c.shots],
-  judge: J.byJson((j) => Object.values(j).every((v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1.8,1,1,0.05' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
+  judge: J.byJson((j) => Object.values(j).every((v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1,1,1,0.05' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
     && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.bad2.every((b) => b === false) && v.ok2 && v.ctax.join() === '0.1,0.05,true,1.935,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length), '財政の結果が違う'),
 }];
 if (require.main !== module) return;
@@ -35,7 +35,7 @@ const { chromium } = require('playwright');
       res.bad = [issue('fiscal', { tax: 0.279, rate: 0.05, welfare: 0.6, security: 0.3, military: 0.2 }).ok, issue('fiscal', { tax: 0.4 }).ok, issue('fiscal', { rate: 0.051 }).ok, issue('fiscal', { tax: 'nope' }).ok];
       res.ok = issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.1, military: 0.1 }).ok; // 前の段階の名前 (重税 = 15.5% × 1.8) も通る
       res.pc = 50 - g.pc; // 税と利子率を変えたので 5
-      res.now = [+g.taxK(0).toFixed(3), +g.taxK(far).toFixed(3), g.fiscalFor(0, far).cb ?? 1, g.cbRateAt(0)]; // 首都はすぐ、遠い星系はまだ前のまま (1・中央銀行に任せたまま)。政策金利を選んだので首都は自分で決める (0.05)
+      res.now = [+g.taxK(0).toFixed(3), +g.taxK(far).toFixed(3), g.fiscalFor(0, far).cb ?? 1, g.cbRateAt(0)]; // 所得への税は行政の遅れ (ADMIN_LAG.tax 年) のあいだ首都でもまだ前のまま、遠い星系も前のまま (1・中央銀行に任せたまま)。政策金利はすぐ効くので首都は自分で決める (0.05)
       const L0 = g.loyaltyTerms(far).map((t) => t.label);
       for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25);
       const pc0 = g.pc;
@@ -51,7 +51,7 @@ const { chromium } = require('playwright');
       res.bad2 = [issue('fiscal', { ctax: 0.3 }).ok, issue('fiscal', { tariff: 0.3 }).ok, issue('fiscal', { ctax: 0.101 }).ok];
       res.ok2 = issue('fiscal', { ctax: 0.1, tariff: 0.05 }).ok;
       for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25); // 遠い星系に届くまで進める
-      res.ctax = [g.fiscal.ctax, g.fiscal.tariff, g.gov(0).ledger.ctax > 0, +burdenK(g.fiscal).toFixed(3), g.loyaltyTerms(far).some((x) => x.label === '税 (20.0% + 消費税 10.0%)')];
+      res.ctax = [g.fiscal.ctax, g.fiscal.tariff, g.gov(0).ledger.ctax > 0, +burdenK(g.fiscal).toFixed(3), g.loyaltyTerms(far).some((x) => x.label === '税 (20.0% + 消費税 10.0% + 関税 5.0%)')];
       res.hazard = (g.secessionTerms(far) || []).some((t) => t.label === '治安の予算' && t.f < 1);
       res.fleet = [g.modsOf(0).fleet, +g.fleetMul(0, 0).toFixed(3)];
       const led = g.gov(0).ledger;

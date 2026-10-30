@@ -70,6 +70,7 @@
 | `economy/demography-consts.js` | 経済 | 48 | 年齢つきの人口の率と値 (DEMO。回 KE2) |
 | `economy/demography.js` | 経済 | 83 | Game: 年齢つきの人口 (コーホート・率の補間・年金と医療。回 KE2) |
 | `economy/central-bank.js` | 経済 | 102 | Game: 中央銀行 (政策金利)・国の物価・長期の利回り・国債の利札と不履行 (回 KE1) |
+| `economy/incidence.js` | 経済 | 80 | Game: 帰着の表 (手段ごとの部門と所得の分位の損得・星系の集団ごとの損得)・家計の損の割合 (回 KE8・B-012) |
 | `politics/policy-decisions.js` | 政治 | 125 | Game: 国家方針・直轄・決めること・語り手・議会 |
 | `screen/eras-score.js` | 画面と最初の体験 | 109 | Game: 時代の課題・挑戦・点数・終わり (手引きにする所。QD-07) |
 | `politics/earth-politics.js` | 政治 | 32 | Game: 主人の関与・地球の政治の自動 |

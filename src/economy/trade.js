@@ -40,8 +40,11 @@
       if (paid > 0) {
         if (prepaid) this.cash('import', -paid * price, { way: q, f: 'pre' }); else this.payFrom('import', -paid * price, q.from);
         this.payFrom('trade', paid * price, q.to); this.noteLordTrade(q.from, q.to, paid * price);
-        const duty = MARKET.buy ? this.tariffFor(q.from, q.to) * paid * price : 0;
-        if (duty > 0) this.earn('tariff', duty, q.from, { fm: q.from }); // 関税: 買い手の会社が、買い手の星系の政府に払う (ほかの国からの輸入だけ。送り出すときに記帳)
+        if (MARKET.buy && this.dutiable(q.from, q.to)) {
+          const T = (this._mxT ??= {}), duty = this.tariffFor(q.from, q.to) * paid * price;
+          T[q.from] = (T[q.from] || 0) + paid * price; // 関税の掛かる輸入の額 (帰着の表の関税の元。gv.mx に 1 年でならす。回 KE8・B-012)
+          if (duty > 0) this.earn('tariff', duty, q.from, { fm: q.from }); // 関税: 買い手の会社が、買い手の星系の政府に払う (ほかの国からの輸入だけ。送り出すときに記帳)
+        }
       }
       if (aid > 0) { this.receiveAid(q.from, aid * price); this.noteLordTrade(q.from, q.to, aid * price); }
       for (const l of legs) {

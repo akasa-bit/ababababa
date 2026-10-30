@@ -75,8 +75,9 @@
       credits: gv ? gv.credits : 0, bond: gv?.bond || 0, hh: gv?.hh || 0, loan: gv?.loan || 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null, energy: gv?.E || 0, power: this.power(id),
       ...(() => { // その星系で効いている財政 (標準でないものだけ)
         if (!this.isColonized(id)) return {};
-        const root = this.realmOf(id), t = taxRateOf(this.fiscalAt(id).tax), w = this.budgetAt(root, id, 'welfare'), sc = this.budgetAt(root, id, 'security');
-        return { ...(Math.abs(t - MARKET.tax) > 1e-9 ? { tax: t } : {}), ...(w ? { welfare: w } : {}), ...(sc ? { security: sc } : {}) };
+        const root = this.realmOf(id), f = this.fiscalAt(id), t = taxRateOf(f.tax), w = this.budgetAt(root, id, 'welfare'), sc = this.budgetAt(root, id, 'security');
+        const l = f.ctax > 0 || f.tariff > 0 ? this.policyLoss(id, f) : null; // 家計の損の割合 (消費税・関税があるときだけ。回 KE8・B-012)
+        return { ...(Math.abs(t - MARKET.tax) > 1e-9 ? { tax: t } : {}), ...(l ? { ctax: f.ctax || 0, tariff: f.tariff || 0, loss: l } : {}), ...(w ? { welfare: w } : {}), ...(sc ? { security: sc } : {}) };
       })(),
       outposts: this.outposts.filter((o) => o.sys === id).map((o) => ({ body: o.body, lv: o.lv })),
       natives: Object.fromEntries(this.system(id).bodies.filter((b) => this.natives[`${id}|${b.id}`]).map((b) => [b.id, { ...this.natives[`${id}|${b.id}`] }])),
