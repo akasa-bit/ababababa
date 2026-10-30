@@ -40,7 +40,8 @@
       }
     }
     const W = out.reduce((a, g) => a + g.w, 0);
-    return { S: W > 0 ? out.reduce((a, g) => a + g.w * g.p, 0) / W : 0.5, groups: out };
+    const S = W > 0 ? out.reduce((a, g) => a + g.w * g.p, 0) / W : 0.5;
+    return { S: Math.min(1, S + this.modsOf(root).billBonus), groups: out }; // 賢明は +10 点 (回 SE8)
   }
   // 法案を出す (財政か国家方針。命令の中から)。支持が ENACT.now 以上ならすぐ通る。審議中の同じ種類の法案は出し直しになる (始めの段から。
   // 押し戻された回数は引き継ぐ。出し直しで廃案を逃れられないように)

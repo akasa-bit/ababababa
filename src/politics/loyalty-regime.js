@@ -511,6 +511,7 @@
   // 指令に要る政治力。艦隊への指令・自動の指令・太陽系の中の行動は0。直轄の星系は半分
   pcCost(act, d) {
     if (d.auto || d.awe || d.aweBack || PC_FREE_ACTS.has(act)) return 0;
+    if (act === 'declarewar' && this.modsOf(this.cap).warFree) return 0; // 好戦的は宣戦に政治力が要らない (回 SE8)
     if (act === 'declarewar' || act === 'peace' || act === 'pact') return PC_DIPLOMACY;
     if (act === 'policy') return POLICY_COST;
     if (act === 'bill') return d.op === 'push' ? this.billPushCost(d.bill) : 0; // 審議中の法案を押す (回 SE7)
@@ -537,7 +538,7 @@
   }
   pcYearly() {
     this.pcLast = this.pcIncome().total;
-    this.pc = clamp(this.pc + this.pcLast, 0, PC_CAP);
+    this.pc = clamp(this.pc + this.pcLast, 0, this.pcCap());
   }
   // 主人の関与 (指令・援助・艦隊・視察・回答) が届いた: 放っておかれた年数が0に戻る
   attend(id) { if (!this.isHuman(id) && this.govs[id]) this.govs[id].attended = this.year; }

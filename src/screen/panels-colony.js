@@ -71,7 +71,7 @@ function outpostBox(g, sys, b) {
   return TR`<h3>${ico('outpost')}採掘基地</h3>
     <p class="note">${o ? TR`Lv${o.lv} 稼働中: ${yieldText(g.outpostYield(o))} /年` : TR`無人の採掘基地で${res.map((r) => RES_LABEL[r]).join(TR('と'))}を採る。採れた資源はこの星系の備蓄に入る。`}
       <br>${o ? TR('拡張後') : TR('建設後')}: ${yieldText(g.outpostYield(next))} /年</p>
-    ${costButton(g, `data-act="outpost" data-sys="${sys.id}" data-body="${esc(b.id)}"`, o ? TR('採掘基地を拡張') : TR('採掘基地を建設'), g.outpostCost(o), sys.id, busy || (c.ok ? '' : c.reason))}`;
+    ${costButton(g, `data-act="outpost" data-sys="${sys.id}" data-body="${esc(b.id)}"`, o ? TR('採掘基地を拡張') : TR('採掘基地を建設'), g.outpostCost(o, sys.id), sys.id, busy || (c.ok ? '' : c.reason))}`;
 }
 
 function depositRow(b) {

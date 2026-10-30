@@ -25,7 +25,7 @@
   earthPoliticsYearly() {
     const n = this.realmSystems(this.cap).length;
     const want = this.aiPolicy || (this.enemiesOf(this.cap).length ? 'military' : n < 25 ? 'expand' : 'consolidate'); // aiPolicy は実験用 (自動対戦で方針を固定する)
-    if (this.policy?.id !== want && (!this.policy || this.year - this.policy.since >= POLICY_YEARS) && this.pc >= POLICY_COST + 10 && this.bill('policy')?.target !== want && !(this.year < (this.me.bills?.cool?.policy || 0))) this.command('policy', { value: want }); // 審議中か廃案のすぐあとは出さない (回 SE7)
+    if (this.policy?.id !== want && (!this.policy || this.year - this.policy.since >= this.policyYears()) && this.pc >= POLICY_COST + 10 && this.bill('policy')?.target !== want && !(this.year < (this.me.bills?.cool?.policy || 0))) this.command('policy', { value: want }); // 審議中か廃案のすぐあとは出さない (回 SE7)
     for (const dec of this.visibleDecisions()) {
       let k = dec.def;
       // 要求: のむ見込み (家臣の大きさ・遠さ・拒んだら独立する見込み。QD-41 = c) でのむ。拒むなら、首都の艦隊が反乱の 2 倍 + 1 以上あれば威圧する

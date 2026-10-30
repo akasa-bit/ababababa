@@ -101,9 +101,9 @@ class Game {
   speciesOfRealm(root) { return this.nationOf(root)?.species || HUMAN; }
   // その星系の国の種族の特性の倍率 (国家選択のない試合では特性なし)
   modsOf(sys) {
-    if (!this.nations) return NO_MODS;
+    if (!this.nations) return noMods();
     const n = this.nationOf(this.realmOf(sys));
-    return n ? (n.mods ??= traitMods(n.traits)) : NO_MODS;
+    return n ? (n.mods ??= traitMods(n.traits)) : noMods();
   }
   isHome(sys, body) { return this.nations ? this.nations.some((n) => n.cap === sys && n.body === body) : sys === 0 && body === 'earth'; }
   // 開始時に宇宙へ出ている国を作る: 地球 (人類) と、異星の種族の母星 count−1 か国。
@@ -111,7 +111,9 @@ class Game {
   foundNations(count, handicap = 'normal', customs = []) { this.applyNations(this.planNations(count, customs), handicap); }
   // customs = ホーム画面の「国家づくり」で作った国 ({ name, species, traits, env, dist })。先に置き、残りをくじで埋める
   planNations(count, customs = []) {
-    const list = [{ cap: 0, body: 'earth', species: HUMAN, traits: HUMAN_TRAITS, name: '地球の国' }];
+    // size = 開始の大きさ (回 SE8・QD-111 = c。nationSizeOf)。種族の名前から別のくじで引く (国の置き場所のくじを変えないように)
+    const sizeOf = (species, cu) => (cu && Number.isFinite(cu.size) ? cu.size : nationSizeOf(new Rng(hashSeed(`${this.galaxy.seed}/size/${species}`)).next()));
+    const list = [{ cap: 0, body: 'earth', species: HUMAN, traits: HUMAN_TRAITS, name: '地球の国', size: sizeOf(HUMAN) }];
     const rng = new Rng(hashSeed(`${this.galaxy.seed}/nations`));
     // 候補: 太陽系から 10 光年より遠い、住みやすい岩石惑星 (銀河のどこでも)。
     // 文明の進んだ先住民の星や住みやすい星ほど選ばれやすいが、選ぶのは重みつきのくじ (毎回ちがう配置になる)
@@ -156,7 +158,7 @@ class Game {
         name = nationName(species, traits, rng);
       }
       used.add(species);
-      list.push({ cap: sys, body: body.id, species, traits: [...traits], name });
+      list.push({ cap: sys, body: body.id, species, traits: [...traits], name, size: sizeOf(species, cu) });
       cands.splice(0, cands.length, ...cands.filter((c) => c.sys !== sys));
     }
     return list;
@@ -178,8 +180,42 @@ class Game {
       this.garrison[n.cap] = 3;
     }
     this.nmap = null;
+    for (const n of this.nations) this.applyNationSize(n);
     this.applyHomeworlds();
     this.addAiSeats();
+  }
+  // 開始の大きさ (回 SE8・B-029・QD-111 = c。docs/nations.md): 人口・艦隊・兵・資金・備蓄を size に合わせる。母星の人口は上限 (12,000) があるので標準の 1.15 倍まで、
+  // それより大きな国は、近くの住める惑星に入植地を足して持つ (size が 0.5 増えるごとに 1 星系。入植地の人口は上限の 6 割まで)。艦隊と兵は size の 0.958 乗、資金は 1.135 乗
+  // (COW の国力の指標の、軍の人員と軍事費の人口への傾き)。size = 1 なら前と同じ
+  applyNationSize(n) {
+    const r = n.size ?? 1;
+    if (Math.abs(r - 1) < 1e-9) return;
+    const home = this.colonies.find((c) => c.sys === n.cap && c.body === n.body), army = GM.pow(r, NATION_SIZE.army);
+    if (!home) return;
+    const base = home.pop, hp = base * Math.min(r, 1.15);
+    home.pop = hp;
+    if (home.age) { const k = hp / base; for (const a of ['m', 'f']) home.age[a] = home.age[a].map((x) => x * k); }
+    home.troops = Math.max(1, Math.round(3 * army));
+    this.garrison[n.cap] = Math.max(1, Math.round(3 * army));
+    this.gov(n.cap).credits = START_CREDITS * GM.pow(r, NATION_SIZE.money);
+    const st = this.stockOf(n.cap);
+    for (const k of Object.keys(st)) st[k] *= r;
+    const extra = r > 1.15 ? Math.floor((r - 1) / 0.5) : 0;
+    if (!extra) return;
+    let rest = base * (r - Math.min(r, 1.15));
+    const taken = new Set(this.nations.map((m) => m.cap));
+    const spots = this.galaxy.systems.filter((s) => !taken.has(s.id) && !this.isColonized(s.id) && this.sysDist(n.cap, s.id) <= 12)
+      .flatMap((s) => s.bodies.filter((b) => b.type === 'rocky' && (b.settle?.grade || 0) >= 2 && !b.natives && !this.blockedByNatives(s.id, b.id)).map((b) => ({ s, b, d: this.sysDist(n.cap, s.id) })))
+      .sort((a, c) => (c.b.settle.grade - a.b.settle.grade) || (a.d - c.d));
+    const used = new Set();
+    for (const { s, b } of spots) {
+      if (used.size >= extra || rest <= 0 || used.has(s.id)) continue;
+      used.add(s.id);
+      const pop = Math.min(rest / (extra - used.size + 1), 0.6 * [80, 80, 800, 4000][b.settle.grade]);
+      this.addColony(s.id, b.id, 'planet', b.name, pop, n.cap, n.species);
+      this.govs[s.id].founded = START_YEAR;
+      rest -= pop;
+    }
   }
   // 母星の資源の埋蔵は地球と同じにする (地球は特別に燃料を持つ。母星が燃料を持たないと工業が動かない)。
   // 銀河は読み込みのたびにシードから作り直すので、読み込み時にもかける

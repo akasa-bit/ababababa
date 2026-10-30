@@ -1,7 +1,7 @@
   // 他の星系に駐留する全艦をこの星系へ集める
   // --- 採掘基地 ---
   outpostAt(sysId, bodyId) { return this.outposts.find((o) => o.sys === sysId && o.body === bodyId); }
-  outpostCost(o) { const k = GM.pow(2, (o ? o.lv : 0)); return { credits: 200 * k, metal: 100 * k }; }
+  outpostCost(o, sys = o?.sys) { const k = GM.pow(2, (o ? o.lv : 0)) * (sys === undefined ? 1 : this.modsOf(sys).outpost); return { credits: 200 * k, metal: 100 * k }; } // 鉱夫は ×0.5 (回 SE8)
   outpostYield(o) {
     const b = this.target(o.sys, o.body);
     return Object.fromEntries(outpostRes(b).map((r) => [r, (this.productivity || 1) * STRUCTURE.modern * this.techA(o.sys, 'mine') * YIELD.mine * OUTPOST_RATE * (b.deposits?.[r] || 0) * o.lv]));
@@ -50,7 +50,7 @@
     if (!c.ok) return c;
     const o = this.outpostAt(sysId, bodyId);
     const label = JA`${prefix}${this.target(sysId, bodyId).name} の採掘基地 ${o ? `Lv${o.lv + 1}` : '建設'}`;
-    return this.order(this.outpostCost(o), sysId, { type: 'outpost', body: bodyId, label });
+    return this.order(this.outpostCost(o, sysId), sysId, { type: 'outpost', body: bodyId, label });
   }
 
   // --- 自動開発 ---
@@ -109,7 +109,7 @@
           const bodies = sys.bodies.filter((b) => outpostRes(b).includes(r) && (b.deposits?.[r] || 0) > 0.05 && this.outpostCheck(id, b.id).ok)
             .sort((a, b) => b.deposits[r] - a.deposits[r]);
           if (bodies.length) {
-            done = tryOrder(this.outpostCost(this.outpostAt(id, bodies[0].id)), () => this.buildOutpost(id, bodies[0].id, tag));
+            done = tryOrder(this.outpostCost(this.outpostAt(id, bodies[0].id), id), () => this.buildOutpost(id, bodies[0].id, tag));
           } else {
             const c = cols.filter((x) => (this.target(x.sys, x.body).deposits?.[r] || 0) > 0.05 && x.lv.mine < FACILITY_MAX.mine
               && !this.pending((j) => j.type === 'upgrade' && j.col === colKey(x) && j.fac === 'mine'))[0];
@@ -162,10 +162,10 @@
     const gv = this.gov(id);
     const pop = this.coloniesIn(id).reduce((k, c) => k + c.pop, 0);
     const ai = this.aiColonize(id);
-    const busy = this.projects.some((j) => j.type === 'ship' && j.sys === id) || this.ships.filter((x) => x.from === id).length >= ai.ships;
+    const busy = this.projects.some((j) => j.type === 'ship' && j.sys === id) || this.ships.filter((x) => x.from === id).length >= ai.ships + this.modsOf(id).colonyShips; // 多産は 1 隻多く (回 SE8)
     const pol = this.policyAt(id);
     const wait = Math.max(3, (this.isHuman(id) || this.nationOf(id) ? 5 : gv.mandate === 'expand' ? 6 : 10) + (pol === 'expand' ? -4 : pol === 'consolidate' ? 5 : 0));
-    return pop >= ai.pop && !busy && this.year - (gv.lastColony ?? gv.founded) >= wait;
+    return pop >= ai.pop * this.modsOf(id).colonizePop && !busy && this.year - (gv.lastColony ?? gv.founded) >= wait; // 多産は 3 分の 1 の人口から (回 SE8)
   }
   // 入植を急ぐか (ゲーム性の補正。台帳の C20。回 SE5・B-028。政治のレーンが足した): AI の国の星系の政府は、入植船を同時に ships 隻まで飛ばし、人口 pop 百万人から、
   // range 倍の光年まで入植先を探す。人間の国の星系の政府 (と補正なし) は、前のまま 1 隻ずつ・300 万人から・ふだん 10 光年
@@ -179,13 +179,13 @@
   colonyTarget(id) {
     const range = (this.isHuman(id) || this.nationOf(id) ? 20 : this.gov(id).far ? 25 : this.gov(id).mandate === 'expand' ? 15 : 10) * this.aiColonize(id).range; // 探すのは 25 光年まで (nearSystems)
     let best = null;
-    const many = this.aiColonize(id).ships > 1; // 何隻も飛ばすときは、入植船が向かっている星系を外す (C20)
+    const many = this.aiColonize(id).ships + this.modsOf(id).colonyShips > 1; // 何隻も飛ばすときは、入植船が向かっている星系を外す (C20。多産も)
     for (const [tid, d] of this.nearSystems(id)) {
       if (d > range || tid === id || this.isColonized(tid) || (many && this.ships.some((x) => x.to === tid))) continue;
       const t = this.system(tid);
       for (const b of t.bodies) {
         const grade = b.settle?.grade || 0;
-        if (grade < 1 || !this.check(t.id, b.id, 'planet').ok) continue;
+        if (grade < 1 || !this.check(t.id, b.id, 'planet', id).ok) continue;
         const score = grade * 10 - d;
         if (!best || score > best.score) best = { t, b, kind: 'planet', score };
       }
@@ -233,7 +233,7 @@
       for (const b of s.bodies) {
         if (!this.outpostCheck(id, b.id).ok) continue;
         const o = this.outpostAt(id, b.id);
-        const cost = this.outpostCost(o);
+        const cost = this.outpostCost(o, id);
         cands.push({ cost, w: o ? 0.5 : 0.3, what: JA`${b.name || '天体'} の採掘基地${o ? 'の拡張' : ''}`, run: () => this.buildOutpost(id, b.id, tag) });
       }
       cands.sort((a, b) => a.cost.credits * a.w - b.cost.credits * b.w);
