@@ -329,6 +329,22 @@
       c.wage = avg;
     }
   }
+  // 需要のずれを進める (回 KE7・QD-97 = b。DEMAND)。税は政策の値 (首都の財政の所得への税率 + 消費税率) で測る (税収 ÷ GDP のような割合を使うと、
+  // 生産が落ちる → 割合が上がる → さらに落ちる、と回り道ができて揺れた)
+  demandStep(h) {
+    if (!MARKET.buy) return;
+    const roots = new Set(this.colonies.map((c) => this.realmOf(c.sys)));
+    const a = 1 - GM.exp(-h / DEMAND.adj), b = 1 - GM.exp(-h / DEMAND.trend);
+    for (const root of roots) {
+      const f = this.fiscalFor(root, root), tx = taxRateOf(f.tax) + (f.ctax || 0);
+      const s = (this.demand[root] ??= { d: 0, tx });
+      const want = -DEMAND.r * (this.rateAt(root) - this.rstarOf(root)) - DEMAND.tax * (tx - s.tx);
+      s.d = clamp(s.d + (want - s.d) * a, DEMAND.lim[0], DEMAND.lim[1]);
+      s.tx += (tx - s.tx) * b;
+    }
+    for (const key of Object.keys(this.demand)) if (!roots.has(Number(key))) delete this.demand[key]; // なくなった国
+  }
+  demandOf(id) { return 1 + (this.demand?.[this.realmOf(id)]?.d || 0); } // 家計の工業品の需要に掛ける倍率
   economy(h) {
     this.stepH = h;
     // 0. エネルギー: スウォームの発電を蓄える。蓄えの上限 (SWARM.store 年分の出力) を超えた分は捨てる
@@ -458,6 +474,7 @@
       const fl = F(id), gap = u - made;
       fl.short.goods += HITECH.goods * gap; fl.short.rare += HITECH.rare * gap;
     }
+    this.demandStep(h); // 需要のずれ (前の刻みの所得と、ならした帳簿から。回 KE7・QD-97)
     // 3. 消費と人口の増減、税収
     // 食べ物・水・工業品の在庫は星系でまとめて持つので、不足の知らせは星系でいちばん大きな入植地 (head) だけが出し、ほかの入植地は状態 (alerts) を写す
     // (回 KE4・B-019。前は国の本星の星系のステーションも同じ不足をそれぞれ知らせ、1 試合の飢餓の知らせ約 48 件のうち 27 件がそれだった)
@@ -486,7 +503,7 @@
       const food = use('food', c.pop);
       const water = this.needsWater(c) ? use('water', 0.1 * c.pop) : 1;
       // 工業品の需要は所得で決まる (Engel 曲線)。その値打ちのうち hitechShare の割合が高付加価値物品 (回 KE5)。充足率は値打ちで重みをつけた平均
-      const gNeed = (MARKET.buy ? this.goodsNeed(inc) : 0.3) * c.pop, sH = MARKET.buy ? this.hitechShare(inc) : 0;
+      const gNeed = (MARKET.buy ? this.goodsNeed(inc) * this.demandOf(c.sys) : 0.3) * c.pop, sH = MARKET.buy ? this.hitechShare(inc) : 0; // 需要のずれ (回 KE7・QD-97)
       const low = use('goods', gNeed * (1 - sH)), high = sH > 0 ? use('hitech', (gNeed * sH * PRICE.goods) / PRICE.hitech) : 1;
       const goods = (1 - sH) * low + sH * high;
       c.sat = { food, water, goods, hitech: high };

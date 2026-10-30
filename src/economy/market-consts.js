@@ -131,10 +131,21 @@ const OWNER = { colony: 1, fdi: 0.1103, out: 1.0445, min: 1e-3, gmax: 0.2 };
 //   政府の買い物 (build) とは分ける。財政の目標の GDP (tools/fiscal-panel.js。付加価値 + 政府の買い物) に入れると、建設の賃金には税が掛からないので
 //   税収 ÷ GDP (R19) が 0.134 → 0.105 に下がった。投資の目標の GDP (tools/capital-panel.js) には、国民経済計算のとおり投資として入れる)。
 //   始めの資本は、初めて付加価値を測った刻みの K*。この段では資本は産出に効かない (B-119 の 2 で効かせる)。smooth・speed は仮の値
+// 需要のずれ (回 KE7・QD-97 = b。docs/money.md の 7): 国ごとに 1 つ。家計の工業品と高付加価値物品の需要に (1 + ずれ) を掛け、作る量は今の稼働率 (需要で決まる生産) でついてくる。
+//   ずれの目標 = −r × (実質の政策金利 − 中立の金利) − tax × (税率 − その傾向)。税率は首都の財政の所得への税率 + 消費税率、傾向は trend 年でならした値。
+//   ずれは目標に adj 年で寄り、lim の幅に止める。r・tax・adj は、双子の試合 (tools/policy-irf.js) が R80・R81・R82 に合うように決めた値 (較正)。
+//   政府の買い付けの項は試してやめた (AI の財政の則は、足した買い付けのぶん行政サービスを減らすので、国の買い付けの差が実験の中で逆向きになり、押しのけが効かなかった)。
+//   政府の買い付けは、中央銀行が景気を見て金利を上げる道でだけ民間を押しのける
+const DEMAND = { r: 2, tax: 6, adj: 2.5, trend: 10, lim: [-0.3, 0.3] };
 // 軍の維持費のうち主人の政府が払う割合 (約定の束の「軍事」の法ごと。QD-31 = c。回 SE6 の政治の返事: 宗 = 保護国・委任統治領・直轄など、分 = 藩部・自治領・封臣など、従 = 冊封・緩衝国など)
 const UPKEEP_LORD = { S: 1, M: 0.5, V: 0 };
 const GOV_BUY = new Set(['build', 'upkeep', 'welfare', 'security', 'military', 'education', 'public', 'health']); // 政府が民間から買う出入り (GDP に入る。tools/fiscal-panel.js と同じ)
 const KSTOCK = { ky: [[2343, 2.37], [7106, 3.513], [13518, 4.315], [26436, 4.485], [50989, 4.706]], smooth: 5, speed: 0.5, gmax: OWNER.gmax };
+// 需要のずれの状態 (回 KE7・QD-97): { [国の首都]: { d: ずれ, tx: 税率の傾向 } }。前の版のセーブは、ずれ 0・傾向は始めの値から
+saveField('demand', (game) => (Object.keys(game.demand).length ? game.demand : undefined), {
+  init: (game) => { game.demand = {}; },
+  read: (game, d) => { game.demand = d.demand && typeof d.demand === 'object' ? Object.fromEntries(Object.entries(d.demand).filter(([, v]) => v && Number.isFinite(v.d))) : {}; },
+});
 saveField('capacity', (game) => (game.capacity.length ? game.capacity : undefined), {
   init: (game) => { game.capacity = []; },
   read: (game, d) => { game.capacity = Array.isArray(d.capacity) ? d.capacity.filter((k) => k && Number.isFinite(k.k) && k.k > 0 && game.system(k.sys)?.bodies.some((b) => b.id === k.body)) : []; },

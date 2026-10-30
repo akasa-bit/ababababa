@@ -137,6 +137,7 @@
 - 入植地の項目 c.edu (集団ごとの人数・就学年数・学力 { p, s, q })・c.hk (生産性の倍率)・c.incU (学歴と学力を決める、ならした所得) (セーブの colonies にそのまま入る。回 KE5。`docs/hcap.md`)
 - saveField: capacity (経済。src/economy/market-consts.js。星系の会社が持つ民間の採掘の能力。回 KE5。`docs/regions.md` の 5)
 - saveField: gpts (経済。src/economy/market-consts.js。銀河の汎用技術の表。回 KE6 で `core/save.js` の一覧に足したものを、回 DO7 で登録の形に移した)
+- saveField: demand (経済。src/economy/market-consts.js。国ごとの需要のずれと、税率・政府の買い付け・GDP の傾向。回 KE7・QD-97)
 
 ### 政治
 
