@@ -28,8 +28,8 @@ function goalsSheet(app) {
       <div><span>直轄</span><b>${g.directCount()} / ${g.directMax()}</b><span>星系</span></div>
     </div>
     <h3>国家方針${pol ? TR` — いまは「${POLICIES[pol.id].label}」(${Math.round(pol.since)}年から)` : ''}</h3>
-    <p class="note">国の向きを一つ選ぶ。${POLICY_YEARS}年に一度だけ変えられる (政治力 ${POLICY_COST})。効果は、知らせが光速で届いた星系から順に効く。</p>
-    <div class="btns wrap">${polBtns}</div>
+    <p class="note">国の向きを一つ選ぶ。${POLICY_YEARS}年に一度だけ変えられる (政治力 ${POLICY_COST})。議会の審議にかけ (国の権力に加わっている集団の支持が ${pct(ENACT.now)} 以上ならすぐ通る)、通ったあと、知らせが光速で届いた星系から順に効く。</p>
+    ${billHtml(g, 'policy')}<div class="btns wrap">${polBtns}</div>
     ${fiscalHtml(g)}
     <h3>政治力 (${ME.home}の意志)</h3>
     <p class="note">星系の政府への指令 (施設・交易路・方針・視察・要求への返事など) には政治力が要る。遠い星系ほど多く (距離 d 光年で 2 + 0.15d、直轄の星系は半分)。宣戦・講和は ${PC_DIPLOMACY}。${ME.capName}の中の行動 (${ME.capName}からの入植船・施設) と艦隊への指令は要らない。年ごとに貯まり、${PC_CAP} で頭打ちになる。</p>

@@ -19,7 +19,7 @@ const X = require('../export');
 const [seed = '2', years = '120'] = process.argv.slice(2);
 const sim = H.load(process.env.HTML ? { src: process.env.HTML } : {});
 const rows = Object.fromEntries(Object.keys(X.COLS).map((k) => [k, []]));
-const g = X.play(sim, seed, Number(years), 6, (t, r) => rows[t].push(r), (gg, y) => { if (y === 10) gg.setFiscal({ ctax: 0.05 }); });
+const g = X.play(sim, seed, Number(years), 6, (t, r) => rows[t].push(r), (gg, y) => { if (y === 10) gg.setFiscal({ ctax: 0.05 }, true); });
 const fails = [];
 const check = (ok, msg) => { if (!ok) fails.push(msg); };
 // 表の値は 8 桁に丸めてあるので、足し引きした項の大きさに比べて 1e-6 まで許す

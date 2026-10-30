@@ -44,7 +44,7 @@
 |---|---|---|---|---|---|---|
 | B-020 | 星系の中の集団: 階層 5 × 民族 (種族と、本国生まれ / 入植地生まれ) × 価値観 2 軸。集団ごとの忠誠度の平均を忠誠度に、政治から締め出された集団の割合をハザードに (EPR)、R08 を較正し直す。不満の大きい 1〜2 集団を 1 行で出す | `loyaltyYearly`・`unrestYearly`・`HAZARD`・`hazardOf`・`races`・`regimeBox` | 11-1〜11-4 (決まった)・B-010 のあと | L | 政治 | `sessions.md` の 11・`game-plan.md` の段 7・`proposals/11-groups.md`・`status/Q.md`・`econ-policy.md` の 9。**済み (回 SE6。#279。`docs/groups.md`)** |
 | B-021 | 現地のエリート (いまは 1 つの行為者) を、集団に合わせる | `elite`・`ELITE_LABEL`・`bundleStep` | B-020 | S | 政治 | `status/H.md` の残り・`vassal-game.md` の 9・`vassal-history.md` の 8。**済み (回 SE6。#279。現地のエリート = ここ生まれのいちばん上の分位の集団)** |
-| B-022 | 政策を利益集団の支持で通す形 (Victoria 3 の形) | `POLICY_COST`・`councilYearly`・`politicsYearly` | B-012・B-020・C の 10 | M | 政治 | `econ-policy-list.md` の 5 と 7 の 3・`econ-policy.md` の 9 |
+| B-022 | **済み (回 SE7。`docs/support.md`。QD-106〜QD-109 = b)** 政策を利益集団の支持で通す形 (Victoria 3 の形) | `POLICY_COST`・`councilYearly`・`politicsYearly` | B-012・B-020・C の 10 | M | 政治 | `econ-policy-list.md` の 5 と 7 の 3・`econ-policy.md` の 9 |
 | B-023 | 共同統治の 2 国目の宗主どうしの外交 (分け前を断ったときの関係の悪化) | `lord2`・`H33`・`BARGAIN` | — | S | 政治 | `status/H.md` の残り・`vassal-game.md` の 9。**済み (#185)** |
 | B-024 | 傀儡国が、宗主の敗戦で消える道筋を入れる | `REGIMES`・`warsYearly`・`TREATY` | — | S | 政治 | `status/H.md` の残り。**済み (#185)** |
 | B-025 | 史料の原文確認: 裁定者が自分の知識で決めた 3 か所と、本文に当たれなかった条約 (Aitchison・理藩院則例・実録・COFA の条番号・中世の文書) | `data/raw/vassal/`・`data/build/build_vassal_game.py` → `VASSAL_DATA` | — | S | 政治 | `status/H.md` の注意・`vassal-game.md` の 7・`vassal-cases.md` の 2 |

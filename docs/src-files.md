@@ -66,6 +66,9 @@
 | `ship/war-peace.js` | 船と戦争 | 236 | Game: 戦争の状態・戦争疲弊・戦勝点・講和・講和会議 |
 | `politics/loyalty-regime.js` | 政治 | 468 | Game: 忠誠・統治体制・主権の束・共同統治・任免・不満と要求・独立・直轄・政治力 |
 | `politics/groups.js` | 政治 | 89 | Game: 星系の中の集団 (民族の権力への近さ・締め出された人口・集団の忠誠度の差・現地のエリート・直轄の上書き include)。回 SE6 で足した |
+| `politics/support-consts.js` | 政治 | 27 | 利益集団の支持と審議の値 (SUPPORT・POLICY_VALUES・ENACT・BILL_LABEL)。回 SE7 で足した (`docs/support.md`) |
+| `politics/support.js` | 政治 | 113 | Game: 法案の支持 (集団ごとの見込みと声の重さ)・法案を出す・審議の関門・押す・引っ込める・AI の返事。回 SE7 で足した |
+| `politics/support-ui.js` | 政治 | 17 | 審議中の法案の欄 (`billHtml`。財政と国家方針の欄で使う)。回 SE7 で足した |
 | `economy/fiscal.js` | 経済 | 169 | Game: 予算・国債・利子・財政の値 |
 | `economy/demography-consts.js` | 経済 | 48 | 年齢つきの人口の率と値 (DEMO。回 KE2) |
 | `economy/demography.js` | 経済 | 83 | Game: 年齢つきの人口 (コーホート・率の補間・年金と医療。回 KE2) |

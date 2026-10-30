@@ -55,6 +55,7 @@
       for (const gv of Object.values(this.govs)) { gv.led = {}; gv.eled = {}; }
       if (this.arrivals()) changed = true;
       this.economy(h);
+      this.billsStep(); // 審議中の法案の関門 (政治。politics/support.js。回 SE7)
       if (this.pirates(h)) changed = true;
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
