@@ -160,6 +160,16 @@
   tariffFor(buyer, seller) { return this.realmOf(buyer) === this.realmOf(seller) || this.pactFreeTrade(this.realmOf(buyer), this.realmOf(seller)) ? 0 : this.fiscalAt(buyer).tariff || 0; } // 交易協定の相手には掛けない (政治の pactFreeTrade。回 SE2)
   // 予算の効き目 (0〜1)。首都が予算を払いきれていなければ、払えた割合だけ効く
   budgetAt(root, id, k) { return budgetEffect((this.fiscalFor(root, id).budget?.[k] || 0) * (this.govs[root]?.bpaid ?? 1)); }
+  // 国 (首都とその従属星系の政府) の支出を 10 機能に分ける (COFOG。回 KE8・B-007): [{ code, label, v: cr/年, share, oecd }]。ならした帳簿の支払い (負の値) から。
+  // 利子は払った分だけ (受け取りと差し引きの値なので、負のときだけ数える)
+  cofogOf(root) {
+    const L = {};
+    for (const x of this.realmSystems(root)) { const gv = this.govs[x.id]; for (const led of [gv?.ledger, gv?.cof]) for (const [k, v] of Object.entries(led || {})) L[k] = (L[k] || 0) + v; }
+    const rows = COFOG.map((f) => ({ code: f.code, label: f.label, oecd: f.oecd, v: f.kinds.reduce((t, k) => t + Math.max(0, -(L[k] || 0)), 0) }));
+    const sum = rows.reduce((t, r) => t + r.v, 0);
+    for (const r of rows) r.share = sum > 0 ? r.v / sum : 0;
+    return rows;
+  }
   // 艦隊の戦力の倍率 (種族の特性 × 軍事の予算)。x は国か星系、at は戦う星系
   fleetMul(x, at) { const root = this.realmOf(x); return this.modsOf(x).fleet * (1 + BUDGET.military.fleet * this.budgetAt(root, at, 'military')); }
   setFiscal(d) {
