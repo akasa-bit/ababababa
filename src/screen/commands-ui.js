@@ -122,7 +122,7 @@ function onPanelChange(e) {
   else if (act === 'fiscalctl') { // 価格統制と交易の規制 (経済。回 KE9・B-008): 選んだ 1 つだけを変えた財政の法案を出す
     const c = app.game.fiscalDraft(), { k, r } = e.target.dataset;
     const o = { ...(c[k] || {}) };
-    if (k === 'ceil') { if (Number(v)) o[r] = Number(v); else delete o[r]; } else if (e.target.checked) o[r] = true; else delete o[r];
+    if (k === 'ceil' || k === 'reserve' || k === 'floor') { if (Number(v)) o[r] = Number(v); else delete o[r]; } else if (e.target.checked) o[r] = true; else delete o[r]; // 公的備蓄と価格の下限 (回 KE12) も選ぶ欄
     issue('fiscal', { [k]: o });
     save();
   }

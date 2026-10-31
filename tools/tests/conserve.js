@@ -26,7 +26,7 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
     const g = __app.game;
     if (NAT) { g.foundNations(6, 'normal'); g.setPlayerNation(g.nations[0].cap); }
     g.setSpectate(true);
-    const IN = new Set(['extract', 'make', 'arrive']), OUT = new Set(['consume', 'use', 'burn', 'build', 'ship', 'supply', 'waste', 'pirate']);
+    const IN = new Set(['extract', 'make', 'arrive', 'release']), OUT = new Set(['consume', 'use', 'burn', 'build', 'ship', 'supply', 'waste', 'pirate', 'store']); // store・release = 政府の倉との出し入れ (回 KE12。倉の釣り合いは tools/tests/granary.js)
     const stocks = () => JSON.parse(JSON.stringify(g.stock));
     const transit = () => {
       const t = {}; const add = (r, v) => { t[r] = (t[r] || 0) + v; };

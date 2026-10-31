@@ -182,7 +182,7 @@ const basePrice = (r) => PRICE[r] * (MARKET.buy ? MARKET.level / STRUCTURE.moder
 const stageName = (y) => (STRUCTURE.stages.find(([edge]) => (y || 0) < edge) || STRUCTURE.stages[STRUCTURE.stages.length - 1])[1];
 const SECTORS = ['farm', 'mine', 'ind', 'hi', 'serv', 'home']; // home = 自給 (YIELD の説明)。hi = 高付加価値の工業 (回 KE5)
 const MARKET_SECTORS = ['farm', 'mine', 'ind', 'hi', 'serv'];
-const ABSORB = new Set(['consume', 'use', 'burn', 'build', 'ship', 'supply']); // 市場の需要に数える出入り (捨てた・奪われたは数えない)
+const ABSORB = new Set(['consume', 'use', 'burn', 'build', 'ship', 'supply']); // 市場の需要に数える出入り (捨てた・奪われたは数えない。政府の倉の買い入れ store も数えない: ふだんの消費 u を倉の積み増しで膨らませると、在庫の目標と値段が上がりすぎる。回 KE12)
 // 方針 (前の版の FOCUS) から、始めの就業の割合を作る
 const sharesOf = (focus) => { const f = FOCUS[focus] || FOCUS.balanced; return { farm: f.farm, mine: f.mine, ind: f.ind, hi: 0, serv: 0, home: 0 }; };
 const zeroRes = () => { const o = {}; for (const r of RES) o[r] = 0; return o; };

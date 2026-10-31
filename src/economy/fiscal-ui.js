@@ -111,10 +111,18 @@ function ctlHtml(g) {
   const rows = CTL_RES.map((r) => `<tr><td>${ico(r)}${RES_LABEL[r]}</td><td class="num">×${fmt(g.price(cap, r) / basePrice(r), 2)}</td><td><select data-act="fiscalctl" data-k="ceil" data-r="${r}" aria-label="${RES_LABEL[r]}">${opts(r)}</select></td><td>${RATION_RES.includes(r) ? box('ration', r, f.ration?.[r]) : '—'}</td><td>${box('ban', r, f.ban?.[r])}</td></tr>`).join('');
   const others = (g.nations || []).filter((n) => n.cap !== cap && g.realmAlive(n.cap));
   const emb = others.map((n) => `<label>${box('embargo', n.cap, f.embargo?.[n.cap])} ${esc(n.name)}</label>`).join(' ');
+  // 政府の倉 (回 KE12・B-128): 資源ごとに公的備蓄の月数・価格の下限と、国の倉の中身
+  const held = (r) => g.realmSystems(cap).reduce((a, x) => a + (g.gran?.[x.id]?.[r] || 0), 0);
+  const sel = (k, r, list, label) => `<select data-act="fiscalctl" data-k="${k}" data-r="${r}" aria-label="${RES_LABEL[r]}">${list.map((x) => `<option value="${x}"${(f[k]?.[r] || 0) === x ? ' selected' : ''}>${x ? label(x) : TR('なし')}</option>`).join('')}</select>`;
+  const fl = [0, 0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1];
+  const grows = RESERVE_RES.map((r) => `<tr><td>${ico(r)}${RES_LABEL[r]}</td><td>${sel('reserve', r, RESERVE_MONTHS, (m) => TR`${m} か月`)}</td><td>${sel('floor', r, fl, (k) => `×${k}`)}</td><td class="num">${fmtAmt(held(r))}</td></tr>`).join('');
   return TR`<h3>価格統制と交易の規制</h3>
-    <p class="note">値段の上限: 市場の値段をこの倍率 × 基準の値段で止める (足りない分は不足になる。闇市は入れていない)。配給: 不足のとき、星系の在庫を入植地の人口に比べて分ける。輸出禁止: ほかの国の買い手に売らない。禁輸: その国とは売りも買いもしない。どれも財政の法案として議会の審議にかかる。値段は${ME.capName}の市場の、基準の値段に対する倍率</p>
+    <p class="note">値段の上限: 市場の値段をこの倍率 × 基準の値段で止める (足りない分は不足になる。闇市の分だけ効かない)。配給: 不足のとき、星系の在庫を入植地の人口に比べて分ける。輸出禁止: ほかの国の買い手に売らない。禁輸: その国とは売りも買いもしない。どれも財政の法案として議会の審議にかかる。値段は${ME.capName}の市場の、基準の値段に対する倍率</p>
     <div class="scroll"><table class="tbl"><tr><th>資源</th><th>いまの値段</th><th>値段の上限</th><th>配給</th><th>輸出禁止</th></tr>${rows}</table></div>
-    ${others.length ? TR`<p>禁輸: ${emb}</p>` : ''}`;
+    ${others.length ? TR`<p>禁輸: ${emb}</p>` : ''}
+    <h3>政府の倉</h3>
+    <p class="note">公的備蓄: 星系の政府の倉に、星系のふだんの消費の何か月分を持つか (常平倉。値段がふだんより安いとき市場から買い、高いとき売って、値段をならす)。価格の下限: 値段がこの倍率 × 基準の値段より下がらないように、政府が市場から買って倉に入れる (量の上限はなく、お金は星系の政府が払う)。値段の上限は、闇市の分 (上限との差の ${Math.round(BLACK.evasion * 100)}%) だけ効かない。どれも財政の法案として議会の審議にかかる</p>
+    <div class="scroll"><table class="tbl"><tr><th>資源</th><th>公的備蓄</th><th>価格の下限</th><th>国の倉</th></tr>${grows}</table></div>`;
 }
 // 財政の手段の名前 (行政の遅れの知らせ)
 // 財政のグラフ (回 GA9・B-059。GA-1: 財政を動かすかを決めるためのグラフを財政の画面の中に。期間は試合の始めから直近 10 年まで変えられる)。

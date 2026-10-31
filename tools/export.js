@@ -137,6 +137,7 @@ function play(sim, seed, years, nations, emit, onYear = null) {
       const GR11 = tax + ctax + tariff, GR14 = intIn + other, GR = GR11 + grants + GR14;
       const cof = { GF01: 0, GF02: 0, GF03: 0, GF04: 0, GF07: 0, GF09: 0, GF10: 0 };
       for (const [kind, code] of [...Object.entries(GOV_BUY), ...Object.entries(GOV_FN)]) cof[code] += Math.max(0, -G(kind));
+      cof.GF04 += -G('granary'); // 政府の倉の正味の買い入れ (売れば負。COFOG 04.2 の市場の安定。在庫の積み増しなので GDP の政府の買い付けには足さない。回 KE12)
       const GE_TR = Math.max(0, -G('grant')) + Math.max(0, -G('tribute'));
       const GE = Object.values(cof).reduce((a, v) => a + v, 0) + intOut + GE_TR;
       const B9 = Object.entries(f).filter(([k]) => !k.startsWith('bond:') && !FIN.has(k)).reduce((a, [, by]) => a + (by.gov || 0), 0);

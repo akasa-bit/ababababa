@@ -15,12 +15,42 @@
         if (st[r] < 0.95 * cap) goal = Math.max(goal, m.L[r] * (1 - MARKET.store)); // 倉に空きがあれば、蓄える人が値段を支える
         const tau = typeof MARKET.tau === "object" ? MARKET.tau[r] || 0 : MARKET.tau;
         m.p[r] = tau > 0 ? m.p[r] * GM.pow(goal / m.p[r], Math.min(1, h / tau)) : goal;
-        if (ceil?.[r]) m.p[r] = Math.min(m.p[r], ceil[r] * basePrice(r)); // 上限で足りない分は不足になる (闇市は入れない)
+        if (ceil?.[r]) { const c = ceil[r] * basePrice(r); if (m.p[r] > c) m.p[r] = c + BLACK.evasion * (m.p[r] - c); } // 上限で足りない分は不足になる。闇市の分 (BLACK.evasion) だけ上限が効かない (回 KE12)
         m.L[r] += (m.p[r] - m.L[r]) * Math.min(1, h / MARKET.long);
       }
     }
   }
   price(sys, r) { return this.market[sys]?.p[r] ?? basePrice(r); }
+  // 政府の倉 (回 KE12・B-128。docs/fiscal.md の 13。毎刻み、人間の国の星系だけ): 公的備蓄 (常平倉) と価格の下限で、星系の政府が市場と倉のあいだで物を売り買いする。
+  // 買い: 値段がふだん (m.L) より安いとき、市場の在庫が目標の厚さを超える分を、倉が目標 (ふだんの消費 × 月数 ÷ 12) に届くまで GRANARY.fill 年で。
+  //       価格の下限より安いときは、値段が下限に戻るまで (在庫から決まる値段の式を逆に解いた量)。
+  // 売り: 値段がふだんより高いとき、市場の在庫が目標の厚さに届くまで倉から。お金は星系の政府と会社のあいだ (種類 granary)、物は mv の store・release
+  granaryStep(h) {
+    if (this.spectate) return;
+    for (const key of Object.keys(this.market)) {
+      const id = Number(key);
+      if (!this.isColonized(id) || !this.isHuman(this.realmOf(id))) continue;
+      const f = this.fiscalAt(id), R = f.reserve || {}, F = f.floor || {}, G = this.gran[id] || {};
+      if (!Object.keys(R).length && !Object.keys(F).length && !Object.keys(G).length) continue;
+      const m = this.market[id], st = this.stockOf(id);
+      for (const r of RESERVE_RES) {
+        const u = m.u[r] || 0, have = G[r] || 0, p = m.p[r], L = m.L[r], normal = MARKET.cover[r] * u;
+        let buy = 0, sell = 0;
+        const want = ((R[r] || 0) / 12) * u;
+        if (p < L && want > have) buy = Math.min(want - have, Math.max(0, st[r] - normal)) * Math.min(1, h / GRANARY.fill);
+        if (F[r]) { const pf = F[r] * basePrice(r), ref = MARKET.anchor ? L : basePrice(r); if (p < pf && u > 0) buy = Math.max(buy, Math.max(0, st[r] - (ref * normal) / pf)); }
+        if (!buy && p > L && have > 0 && st[r] < normal && !(F[r] && p <= F[r] * basePrice(r))) sell = Math.min(have, normal - st[r]) * Math.min(1, h / GRANARY.fill);
+        const x = buy - sell;
+        if (Math.abs(x) < 1e-12) continue;
+        const g = (this.gran[id] ??= {});
+        if (x > 0) { this.mv(id, r, -x, 'store'); this.cash('granary', -x * p, { gov: id }); this.cash('granary', x * p, { fm: id }); }
+        else { this.mv(id, r, -x, 'release'); this.cash('granary', x * p, { fm: id }); this.cash('granary', -x * p, { gov: id }); }
+        g[r] = Math.max(0, (g[r] || 0) + x);
+        if (g[r] < 1e-9) delete g[r];
+      }
+      if (this.gran[id] && !Object.keys(this.gran[id]).length) delete this.gran[id];
+    }
+  }
   // 在庫 stock・ふだんの消費 u のときの、在庫から決まる値段 (MARKET の式)。ref = ふだんの値段 (省くと基準の値段)。
   // ふだんの値段を、ならした値段 (m.L。MARKET.long 年) にすると、在庫の厚さが目標から離れたときだけ値段が動き、つり合いの値段の水準は
   // 作る費用 (部門の稼ぎが等しくなる所) で決まる (Deaton & Laroque 1992 の形: 値段は「ふだんの値段」からの在庫によるずれ)。

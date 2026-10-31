@@ -22,7 +22,14 @@ res.bad = g.setFiscal({ ceil: { food: 0.3 } }, true).ok === false && g.setFiscal
 const before = g.price(cap, 'food') / base('food');
 res.set = g.setFiscal({ ceil: { food: 0.5 }, ban: { metal: true }, embargo: { [other]: true } }, true).ok;
 for (let i = 0; i < 4; i++) g.advance(0.25);
-res.ceil = g.price(cap, 'food') <= 0.5 * base('food') + 1e-9;
+// 闇市 (回 KE12): 上限で切った値段は、上限 + BLACK.evasion × (切らない値段 − 上限)。値段をいまの在庫で決め直して (刻み 0 の marketStep)、切らない値段と比べる
+{
+  const { BLACK } = sim.tables, c = 0.5 * base('food');
+  g.marketStep(1e-12);
+  const free = g.priceAt('food', g.stockOf(cap).food, g.market[cap].u.food), p = g.price(cap, 'food');
+  res.ceil = free > c ? near(p, c + BLACK.evasion * (free - c), 1e-9) : near(p, free, 1e-9);
+  res.ceilNums = [+(p / base('food')).toFixed(4), +(free / base('food')).toFixed(4), BLACK.evasion];
+}
 // 3. 輸出禁止と禁輸
 const mine = g.realmSystems(cap).map((s) => s.id), third = g.nations.find((n) => n.cap !== cap && n.cap !== other && g.realmAlive(n.cap))?.cap;
 res.ban = g.tradeBarred(third, cap, 'metal') && !g.tradeBarred(third, cap, 'food') && !g.tradeBarred(cap, third, 'metal') && (mine.length < 2 || !g.tradeBarred(mine[1], cap, 'metal'));

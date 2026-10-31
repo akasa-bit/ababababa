@@ -41,7 +41,7 @@
 | B-125 | **済み (#308。`fiscal.md` の 9.5)**。債務の再編のあと数年、議会の支持と家臣の忠誠度が下がる (払わない割合が大きいほど重い。大きさは論文の推定から。W3-Q8 = b) | `central-bank.js` の `restructure`・`politics/loyalty-regime.js`・`policy-decisions.js` | B-009 | S | 経済 | 同上 |
 | B-126 | **済み (#308。工業品の値段の遅れ。`fiscal.md` の 9.5)**。首都の GDP (`gv.fr.y`) が 1〜3 年で ±50% 上下する銀河がある (シード 7・11)。経済の作りか測り方 (ならし方) かを調べて直す | `market-economy.js`・`development.js` | — | M | 経済 | `docs/notices/KE/2026-10-31-GA-gdp-swing.md` |
 | B-127 | **済み (#309・#310。R84 合格。`fiscal.md` の 12)**。星系ごとの所得の分け方 (いまは全部の星系で同じ 5 分位の分け前 `GROUPS.quint`) を作り、その上に土地改革を入れる (W3-Q3 = c。B-011 の残り。`docs/fiscal.md` の 10.1) | `politics/groups.js`・`incidence.js`・`fiscal.js` | B-011 | L | 経済 | 同上 |
-| B-128 | 政府の倉: 公的備蓄・価格の下限 (政府が下限で買い取る)・闇市 (W3-Q3 = c。B-008 の残り。`docs/fiscal.md` の 8.1)。物の出入りの試験 (`conserve.js`) も直す | `market-economy.js`・`fiscal.js` | B-008 | L | 経済 | 同上 |
+| B-128 | **済み (#311。`fiscal.md` の 13。闇市の逃れの割合は仮の値 QD-98)**。政府の倉: 公的備蓄・価格の下限 (政府が下限で買い取る)・闇市 (W3-Q3 = c。B-008 の残り。`docs/fiscal.md` の 8.1)。物の出入りの試験 (`conserve.js`) も直す | `market-economy.js`・`fiscal.js` | B-008 | L | 経済 | 同上 |
 
 ## 政治
 
