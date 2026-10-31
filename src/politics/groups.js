@@ -44,7 +44,7 @@
     const eth = keep.map(([k, n]) => ({ k, share: n / K, st: this.groupStatus(gv, k === 'home' || k === 'local' ? k : 'other') }));
     const excl = eth.reduce((a, e) => a + (GROUP_STATUS[e.st].incl ? 0 : e.share), 0);
     const y = inc / P;
-    return { eth, excl, inc: y, values: groupValues(y) };
+    return { eth, excl, inc: y, values: groupValues(y), quint: this.quintOf(id) }; // quint = 星系の所得の 5 分位の分け前 (回 KE11)
   }
   // 集団の価値観 (QD-42): 星系の値 + よそ生まれの差 + 所得の分位の差 (q = 0〜4。省くと民族だけ)。よそ生まれの差は、星系の民族の割合で平均すると 0 (星系の値はそのまま)。
   // よそ生まれ = 支配する種族のよそ生まれ (home)。ここ生まれとほかの種族は、ここで生まれた人として数える
@@ -62,8 +62,8 @@
     let d = e ? -GROUPS.exclLoy * ((GROUP_STATUS[e.st].incl ? 0 : 1) - G.excl) : 0;
     if (q !== undefined) {
       const tax = (terms || []).find((t) => t.label.startsWith('税')), wel = (terms || []).find((t) => t.label === '福祉の予算')?.v || 0;
-      for (const [i, v] of Object.entries(tax?.parts || {})) if (v) d += v * (this.incFactor(i, q) - 1);
-      if (wel) d += wel * (this.incFactor('welfare', q) - 1);
+      for (const [i, v] of Object.entries(tax?.parts || {})) if (v) d += v * (this.incFactor(i, q, G.quint) - 1);
+      if (wel) d += wel * (this.incFactor('welfare', q, G.quint) - 1);
     }
     return d;
   }

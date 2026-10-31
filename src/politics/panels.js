@@ -66,7 +66,7 @@ function groupsBox(g, id, k, o) {
     <p class="note">不満の大きい集団: ${worst || TR('なし (集団の間に忠誠度の差がない)')}。政治から締め出された人口 <b class="${G.excl > 0.25 ? 'bad' : ''}">${pct(G.excl)}</b> (離反の起きやすさ ×${GM.exp(GROUPS.exclBeta * (G.excl - GROUPS.exclRef)).toFixed(2)})</p>
     <details class="note" data-h="groups" ${app.helpOpen?.has('groups') ? 'open' : ''}><summary>説明 — 民族と所得の分位</summary>
       <div class="scroll"><table class="tbl"><tr><th>民族</th><th>人口</th><th>権力への近さ</th>${GROUP_QUINT_LABEL.map((l) => `<th>${l}</th>`).join('')}</tr>${rows}</table></div>
-      <p class="muted">表の右の 5 列は、所得の分位ごとの忠誠度 (分位の所得の分け前は ${GROUPS.quint.map((x) => `${Math.round(x * 100)}%`).join(TR('・'))}。世界銀行の 2,434 国・年の中央値)。締め出された集団 (無力・差別) は、権力に加わっている集団より ${GROUPS.exclLoy} 点低い (人口で平均すると星系の忠誠度)。税は所得の多い分位ほど重く、福祉の予算は下の分位に厚い。
+      <p class="muted">表の右の 5 列は、所得の分位ごとの忠誠度 (この星系の分位の所得の分け前は ${(G.quint || GROUPS.quint).map((x) => `${Math.round(x * 100)}%`).join(TR('・'))}。星系ごとの所得の偏りと土地改革から決まる。世界銀行の 2,434 国・年の中央値は ${GROUPS.quint.map((x) => `${Math.round(x * 100)}%`).join(TR('・'))})。締め出された集団 (無力・差別) は、権力に加わっている集団より ${GROUPS.exclLoy} 点低い (人口で平均すると星系の忠誠度)。税は所得の多い分位ほど重く、福祉の予算は下の分位に厚い。
       権力への近さは統治体制の実態の「統治者の任免」で決まる: 宗主が任じるなら よそ生まれが優位でここ生まれは締め出され、分け合うなら両方が加わり、従属国が任じるなら ここ生まれが優位。ほかの種族は締め出される (強制労働か「宗教と文化」を宗主が握るなら差別)。直轄の星系だけ手で変えられる。
       締め出された人口の割合が 10 ポイント増えると、離反の起きやすさは ${GM.exp(GROUPS.exclBeta * 0.1).toFixed(2)} 倍 (EPR と UCDP の 159 か国 8,937 国・年。目標 R42)。</p>
       <p class="muted">価値観 (2 軸の近い形。国の平均を 0 として、国の間の差の大きさで割った値。Global Flourishing Study の 22 か国と香港の個票から): 星系の平均は 伝統 ↔ 世俗 ${G.values.secular.toFixed(2)} (${lean(G.values.secular, TR('世俗'), TR('伝統'))})・生存 ↔ 自己表現 ${G.values.selfexp.toFixed(2)} (${lean(G.values.selfexp, TR('自己表現'), TR('生存'))})。</p>

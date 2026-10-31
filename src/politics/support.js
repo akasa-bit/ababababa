@@ -15,7 +15,7 @@
     const R = SUPPORT.ref, d = (k) => ((target[k] ?? FISCAL_DEFAULT[k]) - (f0[k] ?? FISCAL_DEFAULT[k]));
     x += val(SUPPORT.values.tax, (taxRateOf(target.tax) - taxRateOf(f0.tax)) / R.tax);
     const dt = d('tariff') / R.tariff;
-    x += val(SUPPORT.values.tariff, dt) - SUPPORT.skill * GM.log(5 * groupQuint(q)) * dt; // 関税: 所得の低い分位ほど働き口を守る保護を支持する
+    x += val(SUPPORT.values.tariff, dt) - SUPPORT.skill * GM.log(5 * (G.quint?.[q] ?? groupQuint(q))) * dt; // 関税: 所得の低い分位ほど働き口を守る保護を支持する (分け前は星系の。回 KE11)
     for (const b of Object.keys(BUDGET)) x += val(SUPPORT.values[b], ((target.budget?.[b] || 0) - (f0.budget?.[b] || 0)) / R.budget);
     // 輸出禁止と禁輸 (回 KE9・B-008): 関税と同じく、生存の価値観 (排外) の集団ほど支持する (1 つ足すごとに関税を ref 上げるのと同じ重さ)
     const n = (k) => Object.keys(target[k] || {}).length - Object.keys(f0[k] || {}).length;
@@ -37,7 +37,7 @@
       for (const e of G.eth) {
         if (!GROUP_STATUS[e.st]?.incl) continue;
         for (let q = 0; q < 5; q++) {
-          const w = P * e.share * 0.2 * GM.pow(5 * groupQuint(q), SUPPORT.clout);
+          const w = P * e.share * 0.2 * GM.pow(5 * (G.quint?.[q] ?? groupQuint(q)), SUPPORT.clout); // 分け前は星系の (回 KE11。前の版の記録は標準)
           if (w > 0) out.push({ sys: id, k: e.k, q, w, p: 1 / (1 + GM.exp(-this.supportLogit(kind, target, f0, G, e.k, q, inc, lord))) });
         }
       }
@@ -70,6 +70,7 @@
     if (['ceil', 'ration', 'ban', 'embargo'].some((k) => JSON.stringify(target[k] || {}) !== JSON.stringify(f0[k] || {}))) out.push(this.ctlText(target) || JA`価格統制と交易の規制をやめる`); // 回 KE9
     if ((target.repress || 0) !== (f0.repress || 0)) out.push(JA`金融抑圧 ${((target.repress || 0) * 100).toFixed(1)} 点`); // 回 KE9 (B-009)
     if ((target.soe || 0) !== (f0.soe || 0)) out.push(JA`国有の割合 ${Math.round((target.soe || 0) * 100)}%`); // 回 KE9 (B-011)
+    if ((target.land || 0) !== (f0.land || 0)) out.push(JA`土地改革 ${Math.round((target.land || 0) * 100)}%`); // 回 KE11 (B-127)
     if ((target.capctl || 0) !== (f0.capctl || 0)) out.push(JA`資本規制 ${Math.round((target.capctl || 0) * 100)}%`);
     return out.join('・');
   }
