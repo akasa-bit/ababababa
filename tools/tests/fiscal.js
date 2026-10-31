@@ -55,10 +55,13 @@ const { chromium } = require('playwright');
       res.bad2 = [issue('fiscal', { ctax: 0.3 }).ok, issue('fiscal', { tariff: 0.3 }).ok, issue('fiscal', { ctax: 0.101 }).ok];
       res.ok2 = issue('fiscal', { ctax: 0.1, tariff: 0.05 }).ok;
       pass();
-      for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25); // 遠い星系に届くまで進める
-      // 遠い星系が重税のあいだに離反した (国を出た) ときは、税の項を見る相手がいないので見ない (画面ありの版は回ごとに選ぶ星系が違う。4 光年の星系で 1 度起きた)
+      // 遠い星系に届くまで進める: 光の年数 (四捨五入しない) + 消費税を新しく入れる行政の遅れ (ADMIN_LAG.ctaxNew。回 KE8)。前は四捨五入した光年 + 2 年で、
+      // 距離の端数が 0.25 光年を超えると届く前に見ていた (4.4 光年の星系で落ちた)
+      for (let i = 0; i < Math.ceil((g.sysDist(0, far) + ADMIN_LAG.ctaxNew) * 4) + 4; i++) g.advance(0.25);
+      // 遠い星系が重税のあいだに離反した (国を出た) ときは、税の項を見る相手がいないので見ない (画面ありの版は回ごとに選ぶ星系が違う)
       res.ctax = [g.fiscal.ctax, g.fiscal.tariff, g.gov(0).ledger.ctax > 0, +burdenK(g.fiscal).toFixed(3), g.realmOf(far) !== 0 || g.loyaltyTerms(far).some((x) => x.label === '税 (20.0% + 消費税 10.0% + 関税 5.0%)')];
       res.left = g.realmOf(far) !== 0;
+      if (!res.ctax[4]) res.ctaxSeen = { terms: (g.loyaltyTerms(far) || []).map((t) => t.label), f: g.fiscalFor(0, far), on: g.fiscal.on, since: g.fiscal.since, done: g.fiscal.done, year: g.year, dist: g.sysDist(0, far), lord: g.govs[far].lord }; // 落ちたときの手がかり
       res.hazard = (g.secessionTerms(far) || []).some((t) => t.label === '治安の予算' && t.f < 1);
       res.fleet = [g.modsOf(0).fleet, +g.fleetMul(0, 0).toFixed(3)];
       const led = g.gov(0).ledger;

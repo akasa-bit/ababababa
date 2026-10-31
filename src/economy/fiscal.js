@@ -105,30 +105,45 @@
   }
   // 利子: 銀行から借りている会社・家計・先住民が、その星系で効いている実質の利子率 (政策金利 − 物価の上がり方。rateAt) で、国債の政府が国債の実質の利札 (bondRate) で
   // 利子を払う (帳簿は実質の cr なので。回 KE1)。銀行はそれを、預金
-  // (政府の資金・家計と会社と先住民の手持ち) の額に比べて分ける。銀行の儲けは 0 (docs/fiscal.md)。運ぶ途中のお金には利子がつかない
+  // (政府の資金・家計と会社と先住民の手持ち) の額に比べて分ける。銀行の儲けは 0 (docs/fiscal.md)。運ぶ途中のお金には利子がつかない。
+  // 回 KE9 (B-009): 国債の利子は銀行が持つ分 (国債 − 中央銀行の持つ qb) だけ (中央銀行の受け取りは国に戻るので差し引き)。金融抑圧の国は、その分の利札を repress 点
+  // 下げて払い、下げた分は国の中の預金者 (その国の星系の政府・家計・会社・先住民) が受け取らない (国の中の預金者がふつうに受け取る額まで)
   interestStep(h) {
-    const debtors = [], deposits = [];
+    const debtors = [], deposits = [], rep = {}, heldR = {};
     let paid = 0, held = 0;
+    const realmAt = (sys) => (this.isColonized(sys) ? this.realmOf(sys) : null);
     for (const key of Object.keys(this.govs)) {
       const id = Number(key), gv = this.govs[key];
       if (gv.loan > 0) { const x = gv.loan * this.rateAt(id) * h; debtors.push([{ fm: id }, x]); paid += x; }
       if (gv.hloan > 0) { const x = gv.hloan * this.rateAt(id) * h; debtors.push([{ hh: id }, x]); paid += x; }
       if (gv.hm > 0) { const x = gv.hm * this.rateAt(id) * h; debtors.push([{ hh: id }, x]); paid += x; } // 民間の信用 (回 KE3)
       if (gv.bl > 0) { const x = gv.bl * this.rateAt(id) * h; debtors.push([{ fm: id }, x]); paid += x; }
-      if (gv.bond > 0) { const x = gv.bond * this.bondRate(id) * h; debtors.push([{ gov: id }, x]); paid += x; gv.bondPaid = (gv.bondPaid || 0) + x; }
-      if (gv.credits > 0) { deposits.push([{ gov: id }, gv.credits, id]); held += gv.credits; }
-      if (gv.hh > 0) { deposits.push([{ hh: id }, gv.hh]); held += gv.hh; }
-      if (gv.fm > 0) { deposits.push([{ fm: id }, gv.fm]); held += gv.fm; }
+      const bk = Math.max(0, (gv.bond || 0) - (gv.qb || 0));
+      if (bk > 0) {
+        const x = bk * this.bondRate(id) * h, root = this.realmOf(id), rp = this.isColonized(id) && this.isHuman(root) && !this.spectate ? bk * (this.fiscalFor(root, id).repress || 0) * h : 0;
+        debtors.push([{ gov: id }, x, rp, root]); paid += x;
+        if (rp) rep[root] = (rep[root] || 0) + rp;
+      }
+      const R = realmAt(id), dep = (acct, v, gov) => { deposits.push([acct, v, gov, R]); held += v; if (R !== null) heldR[R] = (heldR[R] || 0) + v; };
+      if (gv.credits > 0) dep({ gov: id }, gv.credits, id);
+      if (gv.hh > 0) dep({ hh: id }, gv.hh);
+      if (gv.fm > 0) dep({ fm: id }, gv.fm);
     }
     for (const [key, st] of Object.entries(this.natives)) {
-      const sys = Number(key.split('|')[0]);
+      const sys = Number(key.split('|')[0]), R = realmAt(sys);
       if (st.loan > 0) { const x = st.loan * this.rateAt(sys) * h; debtors.push([{ nat: key }, x]); paid += x; }
-      if (st.cr > 0) { deposits.push([{ nat: key }, st.cr]); held += st.cr; }
+      if (st.cr > 0) { deposits.push([{ nat: key }, st.cr, undefined, R]); held += st.cr; if (R !== null) heldR[R] = (heldR[R] || 0) + st.cr; }
     }
     if (!paid || !(held > 0)) return; // マイナスの利子率なら向きが逆になる (預金が払い、借り手が受け取る。スイス 2014〜2022 年の形)
-    for (const [acct, x] of debtors) if (acct.gov !== undefined) this.earn('interest', -x, acct.gov); else this.cash('interest', -x, acct);
-    for (const [acct, v, gov] of deposits) {
-      const x = paid * (v / held);
+    // 金融抑圧の下げ幅は、国の中の預金者がふつうに受け取る額まで (足りない分は政府がふつうに払う)
+    const k = {};
+    for (const [R, r] of Object.entries(rep)) { const full = Math.max(0, (paid * (heldR[R] || 0)) / held); k[R] = r > full ? full / r : 1; rep[R] = Math.min(r, full); }
+    for (const [acct, x, rp = 0, root] of debtors) {
+      const y = x - rp * (k[root] ?? 0);
+      if (acct.gov !== undefined) { this.earn('interest', -y, acct.gov); this.govs[acct.gov].bondPaid = (this.govs[acct.gov].bondPaid || 0) + y; } else this.cash('interest', -y, acct);
+    }
+    for (const [acct, v, gov, R] of deposits) {
+      const x = paid * (v / held) - (R !== null && rep[R] ? (rep[R] * v) / heldR[R] : 0);
       if (gov !== undefined) this.earn('interest', x, gov); else this.cash('interest', x, acct);
     }
   }
@@ -200,6 +215,8 @@
     const start = cb0 === 1 && cb === 0 && (d.rate === undefined || Number(d.rate) === dec.rate);
     const tax = taxRateOf(rawTax), rate = start ? clamp(Math.round(this.cbRateAt(this.cap) / RATE_STEP) * RATE_STEP, RATE_RANGE[0], RATE_RANGE[1]) : Number(d.rate ?? dec.rate), deficit = Number(d.deficit ?? cur.deficit ?? 0), ctax = Number(d.ctax ?? cur.ctax ?? 0), tariff = Number(d.tariff ?? cur.tariff ?? 0);
     const rdcredit = Number(d.rdcredit ?? cur.rdcredit ?? FISCAL_DEFAULT.rdcredit); // 研究開発の税額控除 (回 KE6。前の版のセーブは既定)
+    // 物価の目標と量的緩和 (中央銀行の決定なので、政策金利と同じくすぐ)・金融抑圧 (法なので審議にかける)。回 KE9・B-009。前の版のセーブは既定
+    const pistar = Number(d.pistar ?? dec.pistar ?? FISCAL_DEFAULT.pistar), qe = Number(d.qe ?? dec.qe ?? 0), repress = Number(d.repress ?? cur.repress ?? 0);
     const budget = {};
     for (const k of Object.keys(BUDGET)) budget[k] = Number(d[k] ?? cur.budget?.[k] ?? 0);
     // 幅と刻みは docs/policy-ranges.md (前の段階の名前 (重税など) は刻みに乗らなくてもよい)
@@ -211,23 +228,26 @@
     if (tariff > this.modsOf(this.cap).tariffMax + 1e-9) return fail(JA`商才の種族の国は、関税を ${this.modsOf(this.cap).tariffMax * 100}% より上げられない`); // 回 SE8
     if (!onStep(rdcredit, RDCREDIT_RANGE, RDCREDIT_STEP)) return fail(JA`研究開発の税額控除は 0〜${RDCREDIT_RANGE[1] * 100}% (刻み ${RDCREDIT_STEP * 100}%)`);
     if (Object.values(budget).some((v) => !onStep(v, BUDGET_RANGE, BUDGET_STEP))) return fail(JA`予算は機能ごとに 0〜${BUDGET_RANGE[1] * 100}% (刻み ${BUDGET_STEP * 100}%)`);
+    if (!onStep(pistar, TARGET_RANGE, TARGET_STEP)) return fail(JA`物価の目標は年 0〜${TARGET_RANGE[1] * 100}% (刻み ${TARGET_STEP * 100}%)`);
+    if (!onStep(qe, QE_RANGE, QE_STEP)) return fail(JA`量的緩和は国債の 0〜${QE_RANGE[1] * 100}% (刻み ${QE_STEP * 100}%)`);
+    if (!onStep(repress, REPRESS_RANGE, REPRESS_STEP)) return fail(JA`金融抑圧は 0〜${REPRESS_RANGE[1] * 100} 点 (刻み ${REPRESS_STEP * 100} 点)`);
     const total = Object.values(budget).reduce((a, v) => a + v, 0);
     if (total > BUDGET_TOTAL + 1e-9) return fail(JA`予算は合わせて税収の ${BUDGET_TOTAL * 100}% まで`);
     // 価格統制と交易の規制 (回 KE9・B-008): 値段の上限・配給・輸出禁止・禁輸。0 と false は外す
     const ctl = this.fiscalCtl(d, cur);
     if (!ctl.ok) return ctl;
     const { ceil, ration, ban, embargo } = ctl;
-    const next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, ceil, ration, ban, embargo };
+    const next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, ceil, ration, ban, embargo, pistar, qe, repress };
     const same = (a, b) => JSON.stringify(a || {}) === JSON.stringify(b || {});
     const rest = !(Math.abs(tax - taxRateOf(dec.tax)) < 1e-9 && ctax === (dec.ctax || 0) && tariff === (dec.tariff || 0) && deficit === (dec.deficit || 0) && rdcredit === (dec.rdcredit ?? FISCAL_DEFAULT.rdcredit) && Object.keys(BUDGET).every((k) => budget[k] === (dec.budget?.[k] || 0))
-      && same(ceil, dec.ceil) && same(ration, dec.ration) && same(ban, dec.ban) && same(embargo, dec.embargo));
-    const cbPart = rate !== dec.rate || cb !== cb0;
+      && same(ceil, dec.ceil) && same(ration, dec.ration) && same(ban, dec.ban) && same(embargo, dec.embargo) && repress === (dec.repress || 0));
+    const cbPart = rate !== dec.rate || cb !== cb0 || pistar !== (dec.pistar ?? FISCAL_DEFAULT.pistar) || qe !== (dec.qe || 0);
     if (now) return rest || cbPart ? this.applyFiscal(next) : fail('いまと同じ');
     const pending = this.bill('fiscal');
     if (!rest && !cbPart) { if (!pending) return fail('いまと同じ'); return this.billAct('fiscal', 'withdraw'); } // 法案を出す前の値に戻した
     const cool = this.me.bills?.cool?.fiscal || 0;
     if (rest && this.year < cool - 1e-9) return fail(JA`財政の法案は廃案になったばかりで、${(cool - this.year).toFixed(1)} 年あとまで出せない`);
-    if (cbPart) this.applyFiscal({ ...dec, rate, cb }); // 政策金利はすぐ
+    if (cbPart) this.applyFiscal({ ...dec, rate, cb, pistar, qe }); // 政策金利・物価の目標・量的緩和はすぐ
     if (!rest) { if (pending) this.billAct('fiscal', 'withdraw'); return { ok: true }; }
     return this.proposeBill('fiscal', next);
   }
@@ -255,16 +275,16 @@
     for (const [c, v] of Object.entries(pick('embargo'))) { const x = Number(c); if (x === this.cap || !this.realmAlive(x)) return fail('禁輸の相手の国がない'); if (v) embargo[x] = true; }
     return { ok: true, ceil: sorted(ceil), ration: sorted(ration), ban: sorted(ban), embargo: sorted(embargo) };
   }
-  // 財政をいま変える (法案が通ったとき・政策金利・試験)。next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, ceil, ration, ban, embargo }
+  // 財政をいま変える (法案が通ったとき・政策金利・試験)。next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, ceil, ration, ban, embargo, pistar, qe, repress }
   applyFiscal(n) {
     const cur = this.fiscal || FISCAL_DEFAULT, next = { tax: taxRateOf(n.tax), ctax: n.ctax || 0, tariff: n.tariff || 0, rate: n.rate, cb: n.cb ?? 1, deficit: n.deficit || 0, rdcredit: n.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...FISCAL_DEFAULT.budget, ...(n.budget || {}) },
-      ceil: { ...(n.ceil || {}) }, ration: { ...(n.ration || {}) }, ban: { ...(n.ban || {}) }, embargo: { ...(n.embargo || {}) } };
-    const { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget } = next;
+      ceil: { ...(n.ceil || {}) }, ration: { ...(n.ration || {}) }, ban: { ...(n.ban || {}) }, embargo: { ...(n.embargo || {}) }, pistar: n.pistar ?? FISCAL_DEFAULT.pistar, qe: n.qe || 0, repress: n.repress || 0 };
+    const { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, pistar, qe, repress } = next;
     // 前の財政 = いま首都で効いている値 (行政の遅れの途中の手段は、その前の値)。手段ごとの効き始め on: 変えた手段は今 + 行政の遅れ、変えていない手段は前の効き始めのまま。
     // 同じ時に 2 度変えたとき (政策金利と、すぐ通った法案。回 SE7) は 1 度目を直したものとみて、1 度目の前の財政を引き継ぐ (遠い星系が光の遅れなしに 1 度目を受けないように)
     const e = cur.since === this.year && cur.prev ? cur.prev : this.fiscalFor(this.cap, this.cap);
     const prev = { tax: taxRateOf(e.tax), ctax: e.ctax || 0, tariff: e.tariff || 0, rate: e.rate, cb: e.cb ?? 1, deficit: e.deficit || 0, rdcredit: e.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...(e.budget || FISCAL_DEFAULT.budget) },
-      ceil: { ...(e.ceil || {}) }, ration: { ...(e.ration || {}) }, ban: { ...(e.ban || {}) }, embargo: { ...(e.embargo || {}) } };
+      ceil: { ...(e.ceil || {}) }, ration: { ...(e.ration || {}) }, ban: { ...(e.ban || {}) }, embargo: { ...(e.embargo || {}) }, pistar: e.pistar ?? FISCAL_DEFAULT.pistar, qe: e.qe || 0, repress: e.repress || 0 };
     const on = {};
     const obj = new Set(['ceil', 'ration', 'ban', 'embargo']);
     const eq = (k, a) => (k === 'budget' ? Object.keys(BUDGET).every((b) => budget[b] === (a.budget?.[b] || 0)) : k === 'tax' ? Math.abs(tax - taxRateOf(a.tax)) < 1e-9 : obj.has(k) ? JSON.stringify(next[k]) === JSON.stringify(a[k] || {}) : next[k] === (a[k] ?? FISCAL_DEFAULT[k]));
@@ -273,6 +293,9 @@
     const parts = [JA`税率は ${(tax * 100).toFixed(1)}%`, JA`消費税は ${(ctax * 100).toFixed(1)}%`, JA`関税は ${(tariff * 100).toFixed(1)}%`, cb ? '政策金利は中央銀行に任せる' : JA`政策金利は年 ${(rate * 100).toFixed(2)}%`, JA`赤字の上限は ${deficit ? JA`GDP の ${(deficit * 100).toFixed(1)}%` : 'なし (国債を出さない)'}`, JA`研究開発の税額控除は ${(rdcredit * 100).toFixed(1)}%`, JA`予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
     const ctl = this.ctlText(next);
     if (ctl) parts.push(JA`価格統制と交易の規制は ${ctl}`);
+    if (pistar !== FISCAL_DEFAULT.pistar) parts.push(JA`物価の目標は年 ${(pistar * 100).toFixed(0)}%`);
+    if (qe) parts.push(JA`量的緩和で中央銀行が国債の ${Math.round(qe * 100)}% を持つ`);
+    if (repress) parts.push(JA`金融抑圧で国債の利札を ${(repress * 100).toFixed(1)} 点下げる`);
     this.event('goal', this.cap, JA`財政を変えた (${parts.join('、')})。遠い星系には知らせが光速で届いてから効く`, true);
     return { ok: true };
   }

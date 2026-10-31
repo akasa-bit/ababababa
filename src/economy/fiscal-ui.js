@@ -28,6 +28,7 @@ function fiscalFmt(fmt, v) {
   if (fmt === 'pct1') return `${(v * 100).toFixed(1)}%`;
   if (fmt === 'pct2') return TR`年 ${(v * 100).toFixed(2)}%`;
   if (fmt === 'pct1gdp') return v ? TR`GDP の ${(v * 100).toFixed(1)}%/年` : TR('なし');
+  if (fmt === 'pt1') return v ? TR`${(v * 100).toFixed(1)} 点` : TR('なし');
   return String(v);
 }
 function fiscalHtml(g) {
@@ -59,6 +60,7 @@ function fiscalHtml(g) {
       <tr><td>物価</td><td class="num">年 ${(cbs.pi * 100).toFixed(1)}%</td><td colspan="2" class="muted wrap">物価の上がり方 (目標 ${(CB.pistar * 100).toFixed(0)}%)。物価の指数 ${g.cpiOf(g.cap).toFixed(2)} (始め 1)。帳簿は始めの値段で数えるので、思ったより物価が上がると、預金と国債の重さがそのぶん減る</td></tr>
       <tr><td>長期の国債の利回り</td><td class="num">年 ${(g.longYield(g.cap) * 100).toFixed(2)}%</td><td colspan="2" class="muted wrap">10 年の国債: 政策金利の見込み + 期間の上乗せ + 信用の上乗せ (国債 ÷ GDP × ${(CB.credit * 100).toFixed(2)}%。いま ${(CB.credit * Math.min(CB.dmax, (cg.bond || 0) / Math.max(cg.fr?.y || 0, 1e-9)) * 100).toFixed(2)}%)。国債 ÷ GDP が ${Math.round(CB.dmax * 100)}% を超えると不履行になり、国債の ${Math.round(CB.haircut * 100)}% を払わない (預金がそのぶん目減りする)。不履行のあと ${Math.round(CB.exclude)} 年は新しく国債を出せず、戻ったあとも ${CB.spread[2]} 年まで利回りに上乗せがつく${g.dfltOut(cg) ? TR`(いまは不履行のあとで、あと ${(CB.exclude - (g.year - cg.dflt)).toFixed(1)} 年借りられない)` : ''}</td></tr>
       <tr><td>赤字の上限</td><td>${slider('deficit', DEFICIT_RANGE, DEFICIT_STEP, f.deficit || 0, 'pct1gdp', TR('赤字の上限'))}</td><td colspan="2" class="muted wrap">資金が足りない分を、1 年にこの額まで国債で借りる (${ME.capName}の GDP ${fmtAmt(cg.fr?.y || 0)} cr/年)。国債 ${fmtAmt(cg.bond || 0)} cr・いま借りられる額 ${fmtAmt(Math.max(0, g.funds(g.cap) - cg.credits))} cr。手元の資金が税収の ${Math.round(DEBT.cash * 12)} か月分を超えると、超えた分で国債を返す。国債 ÷ GDP は ${Math.round(DEBT.limit * 100)}% まで</td></tr>
+      ${debtToolsHtml(g, f, fd, slider)}
       ${(() => { const T = g.tech[g.cap], rd = T?.rd, Y = rd?.y || 0; return TR`<tr><td>研究開発の税額控除</td><td>${slider('rdcredit', RDCREDIT_RANGE, RDCREDIT_STEP, f.rdcredit ?? FISCAL_DEFAULT.rdcredit, 'pct1', TR('研究開発の税額控除'))}</td><td colspan="2" class="muted wrap">会社の研究開発費のこの割合を政府が返す (いま ${fmtAmt(rd?.credit || 0)} cr/年。研究開発費は GDP の ${Y > 0 ? ((100 * rd.spend) / Y).toFixed(2) : '0'}%、そのうち政府が出す分 ${rd?.spend > 0 ? pct(rd.pub / rd.spend) : '—'})。既定は ${(FISCAL_DEFAULT.rdcredit * 100).toFixed(1)}% (現実の国の中央値)。控除を上げると会社の研究者が増える (研究開発の値段への弾力性 ${RND.elastic}。${RND.adjust} 年ほどで寄る)</td></tr>`; })()}
       ${(() => { const Y = g.realmSystems(g.cap).reduce((k, x) => k + (g.govs[x.id]?.fr?.y || 0), 0), pin = cg.pinY || 0; return TR`<tr><td>外との配当</td><td class="num">${pin >= 0 ? '+' : '−'}${fmtAmt(Math.abs(pin))} cr/年</td><td colspan="2" class="muted wrap">国民総所得 (GNI) = GDP + ほかの国の会社の持ち分から受け取る配当 − ほかの国の持ち主に払う配当。国の GDP ${fmtAmt(Y)} cr/年 に対して GNI ÷ GDP ${Y > 0 ? ((Y + pin) / Y).toFixed(3) : '—'}。新しい投資の ${Math.round(OWNER.fdi * 100)}% はほかの国が出す (豊かな国ほど多く出す)</td></tr>` + TR`<tr><td>景気</td><td class="num">${(g.demand?.[g.cap]?.d || 0) >= 0 ? '+' : '−'}${Math.abs((g.demand?.[g.cap]?.d || 0) * 100).toFixed(1)}%</td><td colspan="2" class="muted wrap">需要のずれ: 家計の工業品の買い物が、ふだんよりこれだけ多い (マイナスなら少ない)。作る量と所得もこれについてくる。実質の政策金利を中立より高くする・税率を上げると下がり、${DEMAND.adj} 年ほどで寄り、${DEMAND.trend} 年ほどでふだんに戻る</td></tr>`; })()}
     </table>
@@ -71,6 +73,16 @@ function fiscalHtml(g) {
     <h3>予算 (${ME.capName}の税収 ${fmtAmt(tax)} cr/年 のうち ${Math.round(used * 100)}% を使う。合わせて ${BUDGET_TOTAL * 100}% まで)</h3>
     <table class="tbl">${rows}</table>
     ${paid < 0.99 && used ? TR`<p class="note bad">資金が足りず、予算を ${pct(paid)} しか払えていない (効き目もそのぶん下がる)</p>` : ''}` + ctlHtml(g) + cofogHtml(g) + incidenceHtml(g);
+}
+// 物価の目標・量的緩和・金融抑圧・債務の再編 (回 KE9・B-009。docs/fiscal.md の 9)。物価の目標と量的緩和は中央銀行の決定なのですぐ (決めた値 fd)、金融抑圧は法案 (審議中の値 f)
+function debtToolsHtml(g, f, fd, slider) {
+  const cg = g.gov(g.cap), s = g.cb[g.cap] || {}, Y = cg.fr?.y || 0, ids = g.realmSystems(g.cap).map((x) => x.id);
+  const bond = ids.reduce((a, id) => a + (g.govs[id]?.bond || 0), 0), qb = ids.reduce((a, id) => a + (g.govs[id]?.qb || 0), 0), dev = Math.abs((s.pi ?? CB.pistar) - CB.pistar);
+  const out = g.dfltOut(cg), pc = RESTRUCTURE.pc;
+  return TR`<tr><td>物価の目標</td><td>${slider('pistar', TARGET_RANGE, TARGET_STEP, fd.pistar ?? FISCAL_DEFAULT.pistar, 'pct0', TR('物価の目標'))}</td><td colspan="2" class="muted wrap">中央銀行が目指す物価の上がり方 (既定 ${(CB.pistar * 100).toFixed(0)}%)。上げると、人々の見込みが少しずつそこへ動き (いま見込む目標 年 ${((s.T ?? CB.pistar) * 100).toFixed(1)}%)、物価の上がり方と長期の利回りも上がる。国債の利札は借り換えの ${CB.roll} 年ほど遅れて上がるので、そのあいだ国債の実質の利子が下がる (インフレ税)。物価が ${(CB.pistar * 100).toFixed(0)}% から外れると、1 点ごとに所得の ${INFL_LOSS}% の損と同じだけ家臣の忠誠度と議会の支持が下がる (いま 年 ${((s.pi ?? CB.pistar) * 100).toFixed(1)}%: 忠誠度の目標 ${(LOSS.loyalty * INFL_LOSS * dev).toFixed(1)}・議会 年 ${(LOSS.council * INFL_LOSS * dev).toFixed(2)})</td></tr>
+      <tr><td>量的緩和</td><td>${slider('qe', QE_RANGE, QE_STEP, fd.qe || 0, 'pct0', TR('量的緩和'))}</td><td colspan="2" class="muted wrap">国の政府の国債のうち、中央銀行が買って持つ割合 (${QE.speed} 年ほどかけて買う)。持った分の利子は国に戻る。長期の利回りが下がり (中央銀行の持つ国債 GDP の 10% ごとに ${(QE.tp * 10).toFixed(2)} 点)、買い入れ GDP の 1% ごとに物価が ${QE.pi}% ほど上がる。いま中央銀行が持つ国債 ${fmtAmt(qb)} cr (国の国債 ${fmtAmt(bond)} cr)</td></tr>
+      <tr><td>金融抑圧</td><td>${slider('repress', REPRESS_RANGE, REPRESS_STEP, f.repress || 0, 'pt1', TR('金融抑圧'))}</td><td colspan="2" class="muted wrap">銀行に国債を持たせ、預金の利子に上限を置いて、国の政府の国債の利札をこれだけ下げる (法なので議会の審議にかける)。下げた分は国の中の預金者 (家計・会社・政府) が受け取らない。1945〜80 年の先進国は、実質の金利が負の年が約半分で、債務が年に GDP の 3〜4% ずつ目減りした (Reinhart & Sbrancia)</td></tr>
+      <tr><td>債務の再編</td><td>${out ? TR`<span class="muted">あと ${((CB.exclude * (cg.hc ?? CB.haircut)) / CB.haircut - (g.year - cg.dflt)).toFixed(1)} 年はできない</span>` : RESTRUCTURE.hc.map((h) => `<button data-act="restructure" data-hc="${h}" ${g.pc < pc || !(bond - qb > 0) ? 'disabled' : ''}>${Math.round(h * 100)}%</button>`).join(' ')}</td><td colspan="2" class="muted wrap">国の政府の国債のうち銀行が持つ分 (${fmtAmt(Math.max(0, bond - qb))} cr) の、選んだ割合を払わない (政治力 ${pc}。取り消せない)。預金がそのぶん目減りし、払わない割合に比べて長く (37% で ${CB.exclude} 年) 新しく国債を出せず、そのあとも利回りに上乗せがつく。中央銀行の持つ分は減らさない。現実の再編は半分が 23% 未満か 53% 超 (ギリシャ 2012 年 53.5%・アルゼンチン 2005 年 76.8%)</td></tr>`;
 }
 // 価格統制と交易の規制 (回 KE9・B-008。docs/fiscal.md の 8)。値は審議中の法案があればその値 (fiscalDraft)。変えると財政の法案になる
 function ctlHtml(g) {
@@ -87,7 +99,7 @@ function ctlHtml(g) {
     ${others.length ? TR`<p>禁輸: ${emb}</p>` : ''}`;
 }
 // 財政の手段の名前 (行政の遅れの知らせ)
-const FISCAL_LAG_LABEL = { tax: '所得への税', ctax: '消費税', tariff: '関税', rate: '政策金利', cb: '中央銀行', deficit: '赤字の上限', rdcredit: '研究開発の税額控除', budget: '予算' };
+const FISCAL_LAG_LABEL = { tax: '所得への税', ctax: '消費税', tariff: '関税', rate: '政策金利', cb: '中央銀行', deficit: '赤字の上限', rdcredit: '研究開発の税額控除', budget: '予算', ceil: '値段の上限', ration: '配給', ban: '輸出禁止', embargo: '禁輸', pistar: '物価の目標', qe: '量的緩和', repress: '金融抑圧' };
 // 帰着の表 (回 KE8・B-012): 決めた財政を標準の財政と比べた 1 年の損得。部門ごとと、国の家計の所得の 5 分位ごと (分位の所得に対する割合)
 function incidenceHtml(g) {
   if (!g.fiscal) return '';

@@ -25,14 +25,16 @@ const { chromium } = require('playwright');
     g.realmWars[key] = g.warNews[key].year = g.year - 10 - Math.ceil(g.sysDist(0, e));
     // 講和の申し入れは、相手の首都から光速で届いてから見える (B-030)
     // 戦い続けている戦争にする (戦果が動かない戦争は立ち消えになる。WAREND.lapse)
-    for (let i = 0; i < 8 || (i < 4 * (Math.ceil(g.sysDist(0, e)) + 12) && !g.peaceOffers.length); i++) { g.warStats[key].lastEv = g.year; g.advance(0.25); }
-    return [g.warScore(0, e), g.peaceOffers.length, g.realmSystems(e).length, Math.round(g.gov(e).credits)];
+    // 申し入れが来ていて、首都に届いている戦果 (光の遅れ) も勝ちになるまで待つ (前から同じ相手と戦争をしていると、申し入れが先に届く。回 KE9 で筋が変わってそうなった)
+    for (let i = 0; i < 8 || (i < 4 * (Math.ceil(g.sysDist(0, e)) + 12) && (!g.peaceOffers.some((o) => o.key === key) || g.warScoreAt(0, 0, e) < 50)); i++) { g.warStats[key].lastEv = g.year; g.advance(0.25); }
+    return [g.warScore(0, e), g.peaceOffers.length, g.realmSystems(e).length, Math.round(g.gov(e).credits), key];
   });
 
   await p.evaluate(() => { __app.dirty = true; });
   await p.waitForTimeout(1200);
   await p.screenshot({ path: 'shots/war-offer.png' });
-  const acc = await p.$('#rail [data-act="acceptpeace"]');
+  // この戦争の申し入れのボタンを押す (ほかの戦争の申し入れが先に並ぶことがある。回 KE9 で筋が変わり、ほかの国との白紙講和を先に押していた)
+  const acc = await p.$(`#rail [data-act="acceptpeace"][data-key="${r1[4]}"]`);
   if (acc) await acc.click();
   await p.waitForTimeout(1200);
   await p.screenshot({ path: 'shots/war-conf.png' });
