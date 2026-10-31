@@ -1634,11 +1634,11 @@ const I18N_EN = {
 "政治力 {0}": "{0} political capital",
 "費用なし": "No cost",
 "<div class=\"dec\"><div class=\"m\">{0}・{1}{2}{3}</div>\n    <div class=\"t clamp3\">{4}</div>\n    <div class=\"opts\">{5}</div></div>": "<div class=\"dec\"><div class=\"m\">{0} · {1}{2}{3}</div>\n    <div class=\"t clamp3\">{4}</div>\n    <div class=\"opts\">{5}</div></div>",
-"<button data-act=\"ackall\">重大な知らせをすべて確かめた</button>": "<button data-act=\"ackall\">Acknowledge all major news</button>",
 "<div class=\"more\">ほかに決めること {0} 件 (イベント)</div>": "<div class=\"more\">{0} more decisions (Events)</div>",
 "<button class=\"state\" data-act=\"view\" data-v=\"events\">{0}飢餓・水不足の星系 {1} — 地図の赤い「!」</button>": "<button class=\"state\" data-act=\"view\" data-v=\"events\">{0}Systems in famine & drought: {1} — red “!” on the map</button>",
 "<button class=\"more\" data-act=\"view\" data-v=\"events\">ほかに重大な知らせ {0} 件 (イベントのタブ)</button>": "<button class=\"more\" data-act=\"view\" data-v=\"events\">{0} more major news items (Events tab)</button>",
-"<div class=\"railbar\">{0}<button data-act=\"railtoggle\">{1}隠す</button></div>\n    {2}{3}{4}{5}{6}{7}\n    {8}\n    {9}{10}\n    {11}{12}": "<div class=\"railbar\">{0}<button data-act=\"railtoggle\">{1}Hide</button></div>\n    {2}{3}{4}{5}{6}{7}\n    {8}\n    {9}{10}\n    {11}{12}",
+"<button data-act=\"ackall\">重大な知らせをすべて確かめた</button>": "<button data-act=\"ackall\">Acknowledge all major news</button>",
+"{0}{1}{2}{3}{4}{5}\n    {6}\n    {7}{8}\n    {9}{10}\n    <div class=\"railbar\">{11}<button data-act=\"railtoggle\">{12}隠す</button></div>": "{0}{1}{2}{3}{4}{5}\n    {6}\n    {7}{8}\n    {9}{10}\n    <div class=\"railbar\">{11}<button data-act=\"railtoggle\">{12}Hide</button></div>",
 // == politics/panels.js
 "最後通牒: {0}年に{1}で独立": "Ultimatum: {1} chance of independence in {0}",
 "。{0}なので戦争にはならない": ". Under {0}, it will not lead to war",

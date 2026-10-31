@@ -259,7 +259,7 @@ function railHtml(g) {
     const fade = major ? 1 : clamp((10000 - (now - (app.railFirst.get(e.id) ?? now))) / 3000, 0.35, 1);
     const more = ids.length > 1 ? TR` (同じ星系の続報 ほか ${ids.length - 1} 件)` : '';
     return `<div class="ri ${e.good ? 'good' : EVENT_TONE[e.kind] || ''}" style="opacity:${fade.toFixed(2)}">
-      <button data-act="fly" data-sys="${e.sys ?? 0}" title="${esc(e.text)}"><span class="t">${tagIco(e.kind)}${esc(e.text)}</span><span class="m">${esc(when(e) + more)}</span></button>
+      <button data-act="fly" data-sys="${e.sys ?? 0}"><span class="t">${tagIco(e.kind)}${esc(e.text)}</span><span class="m">${esc(when(e) + more)}</span></button>
       ${major ? TR`<button class="ack" data-act="ack" data-id="${ids.join(',')}" aria-label="確かめた">${ico('ack')}</button>` : '<span></span>'}</div>`;
   };
   const dec = (d) => TR`<div class="dec"><div class="m">${d.kind === 'demand' ? TR('要求') : TR('出来事')}・${esc(place(d.sys))}${d.kind === 'demand' ? '' : TR`・${Math.round(d.deadline)}年までに返事`}${d.sys === g.cap ? '' : TR`・返事は ${g.lightDelay(d.sys).toFixed(0)} 年で届く`}</div>
@@ -269,14 +269,14 @@ function railHtml(g) {
       const why = (o.cr || 0) > g.funds(g.cap) ? TR('資金が足りない') : pc > g.pc ? TR('政治力が足りない') : '';
       return `<button data-act="decide" data-sys="${d.sys}" data-id="${d.id}" data-opt="${o.k}" ${why ? 'disabled' : ''} title="${esc(o.note || '')}">${esc(o.label)}<small>${esc(why || [o.cr ? `${o.cr} cr` : '', pc ? TR`政治力 ${pc}` : ''].filter(Boolean).join(TR('・')) || TR('費用なし'))}</small><small class="clamp2">${esc(o.note || '')}</small></button>`;
     }).join('')}</div></div>`;
-  // 帯が地図を覆わないように、重大な知らせは 2 件・届いたばかりの知らせは 1 件まで (縦は QD-59 の T4。横も同じにした、2026-10-25 の依頼 GA-1)
-  const shownMajors = majors.slice(0, 2);
+  // 縦の画面では帯が地図を覆いやすいので、重大な知らせは 2 件・届いたばかりの知らせは 1 件まで (QD-59 の T4)
+  const tall = innerHeight > innerWidth;
+  const shownMajors = majors.slice(0, tall ? 2 : 3);
   const moreN = majors.slice(shownMajors.length).reduce((k, x) => k + x.ids.length, 0) + news.over;
-  // 隠す・すべて確かめたのボタンは、帯がスクロールしても押せるように一番上に置く
-  return TR`<div class="railbar">${majors.length > 1 ? TR('<button data-act="ackall">重大な知らせをすべて確かめた</button>') : ''}<button data-act="railtoggle">${ico('hide')}隠す</button></div>
-    ${consent}${surprise.slice(0, 2).map((w) => surpriseHtml(g, w)).join('')}${guide}${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? TR`<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
+  return TR`${consent}${surprise.slice(0, 2).map((w) => surpriseHtml(g, w)).join('')}${guide}${diplo.join('')}${decs.slice(0, 2).map(dec).join('')}${decs.length > 2 ? TR`<div class="more">ほかに決めること ${decs.length - 2} 件 (イベント)</div>` : ''}
     ${hungry ? TR`<button class="state" data-act="view" data-v="events">${tagIco('famine')}飢餓・水不足の星系 ${hungry} — 地図の赤い「!」</button>` : ''}
     ${shownMajors.map((x) => item(x.e, true, x.ids)).join('')}${moreN ? TR`<button class="more" data-act="view" data-v="events">ほかに重大な知らせ ${moreN} 件 (イベントのタブ)</button>` : ''}
-    ${report}${recent.slice(0, 1).map((e) => item(e, false)).join('')}`;
+    ${report}${recent.slice(0, tall ? 1 : recent.length).map((e) => item(e, false)).join('')}
+    <div class="railbar">${majors.length > 1 ? TR('<button data-act="ackall">重大な知らせをすべて確かめた</button>') : ''}<button data-act="railtoggle">${ico('hide')}隠す</button></div>`;
 }
 
