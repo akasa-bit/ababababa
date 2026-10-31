@@ -45,6 +45,14 @@
         const di = i1 - i0, k = (L * di) / D;
         add(row('rate', '政策金利', 'rate', lagOf('rate')), id, k * Math.max(0, gv.hh || 0) - di * ((gv.hloan || 0) + (gv.hm || 0)), k * Math.max(0, gv.fm || 0) - di * ((gv.loan || 0) + (gv.bl || 0)), k * Math.max(0, gv.credits || 0), own);
       }
+      // 値段の上限 (回 KE9・B-008): 家計が買う物 (食料・水・工業品) は、いまの値段と上限の差 × ふだんの消費を、会社 (売り手) から家計へ。
+      // 原料 (金属・燃料・希少元素) は買い手も会社なので、部門では差し引き 0 (行に入れない)。いまの値段が上限で止まっている所は、上限を外したときの値段の上がりを数えない
+      for (const r of new Set([...Object.keys(f0.ceil || {}), ...Object.keys(f1.ceil || {})])) {
+        if (!RATION_RES.includes(r) && r !== 'hitech') continue;
+        const p = this.price(id, r), u = this.market[id]?.u[r] || 0, cap = (f) => (f.ceil?.[r] ? f.ceil[r] * basePrice(r) : Infinity);
+        const x = -(Math.min(p, cap(f1)) - Math.min(p, cap(f0))) * u;
+        if (x) add(row('ceil', '値段の上限', 'ctax', lagOf('ceil')), id, x, -x, 0, own);
+      }
       const dc = (f1.rdcredit ?? FISCAL_DEFAULT.rdcredit) - (f0.rdcredit ?? FISCAL_DEFAULT.rdcredit);
       if (dc && P > 0 && Ysum > 0) { const x = (dc * P * Y) / Ysum; add(row('rdcredit', '研究開発の税額控除', 'firm', lagOf('rdcredit')), id, 0, x, -x, own); }
     }

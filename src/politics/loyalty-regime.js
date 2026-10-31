@@ -521,7 +521,7 @@
     if (act === 'declarewar' || act === 'peace' || act === 'pact') return PC_DIPLOMACY;
     if (act === 'policy') return POLICY_COST;
     if (act === 'bill') return d.op === 'push' ? this.billPushCost(d.bill) : 0; // 審議中の法案を押す (回 SE7)
-    if (act === 'fiscal') { const c = this.fiscalDraft(), r = this.fiscal || FISCAL_DEFAULT; return taxRateOf(d.tax ?? c.tax) !== taxRateOf(c.tax) || Number(d.ctax ?? c.ctax ?? 0) !== (c.ctax || 0) || Number(d.tariff ?? c.tariff ?? 0) !== (c.tariff || 0) || Number(d.rate ?? r.rate) !== r.rate || Number(d.deficit ?? c.deficit ?? 0) !== (c.deficit || 0) ? FISCAL_COST : 0; } // 審議中なら出した法案と比べる (回 SE7)
+    if (act === 'fiscal') { const c = this.fiscalDraft(), r = this.fiscal || FISCAL_DEFAULT; return taxRateOf(d.tax ?? c.tax) !== taxRateOf(c.tax) || Number(d.ctax ?? c.ctax ?? 0) !== (c.ctax || 0) || Number(d.tariff ?? c.tariff ?? 0) !== (c.tariff || 0) || Number(d.rate ?? r.rate) !== r.rate || Number(d.deficit ?? c.deficit ?? 0) !== (c.deficit || 0) || ['ceil', 'ration', 'ban', 'embargo'].some((k) => d[k] !== undefined && JSON.stringify(d[k]) !== JSON.stringify(c[k] || {})) ? FISCAL_COST : 0; } // 審議中なら出した法案と比べる (回 SE7)。価格統制と交易の規制も (回 KE9)
     const extra = act === 'decide' ? this.decisionOpt(d)?.pc || 0 : 0;
     const target = act === 'grant' || act === 'decide' ? Number(d.sys) : this.cmdTarget(act, d);
     if (target === undefined || target === null || target === this.cap || Number.isNaN(target)) return extra;

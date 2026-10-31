@@ -7,13 +7,14 @@
       const m = (this.market[key] ??= { u: zeroRes(), p: Object.fromEntries(RES.map((r) => [r, basePrice(r)])) });
       m.L ??= { ...m.p }; // ならした値段
       const got = this.absorb[key], short = this.unmet[key];
-      const cap = stockCap(this.flowPop?.[key] || 0);
+      const cap = stockCap(this.flowPop?.[key] || 0), ceil = this.isColonized(Number(key)) ? this.fiscalAt(Number(key)).ceil : null; // 値段の上限 (回 KE9・B-008)
       for (const r of RES) {
         if (m.u[r] === undefined) { m.u[r] = 0; m.p[r] = basePrice(r); m.L[r] = m.p[r]; } // 前の版のセーブの市場 (高付加価値物品がない。回 KE5)
         m.u[r] += ((got?.[r] || 0) / h + (short?.[r] || 0) - m.u[r]) * (fresh ? 1 : a); // 受注残は年あたりの需要として
         let goal = this.priceAt(r, st[r], m.u[r], MARKET.anchor ? m.L[r] : undefined); // 使い道がなければ最低の値段
         if (st[r] < 0.95 * cap) goal = Math.max(goal, m.L[r] * (1 - MARKET.store)); // 倉に空きがあれば、蓄える人が値段を支える
         m.p[r] = MARKET.tau > 0 ? m.p[r] * GM.pow(goal / m.p[r], Math.min(1, h / MARKET.tau)) : goal;
+        if (ceil?.[r]) m.p[r] = Math.min(m.p[r], ceil[r] * basePrice(r)); // 上限で足りない分は不足になる (闇市は入れない)
         m.L[r] += (m.p[r] - m.L[r]) * Math.min(1, h / MARKET.long);
       }
     }
@@ -478,8 +479,16 @@
     // 3. 消費と人口の増減、税収
     // 食べ物・水・工業品の在庫は星系でまとめて持つので、不足の知らせは星系でいちばん大きな入植地 (head) だけが出し、ほかの入植地は状態 (alerts) を写す
     // (回 KE4・B-019。前は国の本星の星系のステーションも同じ不足をそれぞれ知らせ、1 試合の飢餓の知らせ約 48 件のうち 27 件がそれだった)
-    const head = {}, va = {};
-    for (const c of this.colonies) if (!head[c.sys] || c.pop > head[c.sys].pop) head[c.sys] = c;
+    const head = {}, va = {}, sysPop = {};
+    for (const c of this.colonies) { if (!head[c.sys] || c.pop > head[c.sys].pop) head[c.sys] = c; sysPop[c.sys] = (sysPop[c.sys] || 0) + c.pop; }
+    // 配給 (回 KE9・B-008): 配給のある資源は、刻みの始めの星系の在庫を入植地の人口に比べて分け、1 つの入植地がそれより多く買わない
+    const share = {};
+    const rationOf = (sys, r) => {
+      const rn = this.fiscalAt(sys).ration;
+      if (!rn?.[r]) return Infinity;
+      const s = (share[sys] ??= {});
+      return (s[r] ??= Math.max(0, this.stockOf(sys)[r]) / Math.max(sysPop[sys] || 0, 1e-9));
+    };
     for (const c of this.colonies) {
       const lead = head[c.sys] === c;
       const st = this.stockOf(c.sys);
@@ -492,7 +501,7 @@
         if (e && r !== 'goods') e = Math.max(MARKET.elasticFloor, e * GM.pow(Math.max(inc, 1) / MARKET.elasticY, -MARKET.elasticSlope)); // 所得が高いほど食料は値段に動じない
         const k = e ? clamp(GM.pow((this.price(c.sys, r) * (1 + ct)) / basePrice(r), -e), 0.3, 2) : 1; // 値段 (消費税を含む) で消費が動く
         fl.cons[r] += v;
-        const want = v * k * h;
+        const want = Math.min(v * k * h, rationOf(c.sys, r) * c.pop);
         const got = Math.min(Math.max(st[r], 0), want);
         this.mv(c.sys, r, -got, 'consume');
         if (MARKET.buy && v * h > got && this.stepping) { const un = (this.unmet[c.sys] ??= zeroRes()); un[r] += (v * h - got) / h; } // 必要な量のうち買えなかった分 (高くて控えた分も) は需要 (作る合図) に数える。値段で控えた消費だけを需要と見ると、不足のまま生産を絞って値段が天井に張りつく

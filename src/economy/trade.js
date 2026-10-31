@@ -17,7 +17,7 @@
     // 届いた要求を処理する
     for (const q of this.requests) {
       if (q.kind !== 'trade' || q.arrive > this.year) continue;
-      if (this.tradeBlocked(q.to, q.from)) { this.refund(q); continue; } // 送り手が開戦を知っていれば断る
+      if (this.tradeBlocked(q.to, q.from) || this.tradeBarred(q.from, q.to, q.res)) { this.refund(q); continue; } // 送り手が開戦を知っていれば断る。輸出禁止と禁輸 (回 KE9) も
       const rp = this.routePath(q.to, q.from);
       const spare = spareOf(q.to, q.res);
       // 余りがなければ取り消さずに入荷待ちにして、作れた分から送る。届いてから TRADE.wait 年たっても送りきれなければ、残りを取り消す
@@ -116,7 +116,7 @@
           if (cands.length >= TRADE.sources) break;
           const kpair = pairKey(T, S, res);
           if (pendingPair.has(kpair)) continue;
-          if (blocked(T, S)) continue; // 交戦中の国どうしでは取引しない (開戦を知ってから)
+          if (blocked(T, S) || this.tradeBarred(T, S, res)) continue; // 交戦中の国どうしでは取引しない (開戦を知ってから)。輸出禁止と禁輸 (回 KE9)
           const kp = sysRes(S, res);
           const avail = this.spareSeen(T, S, res) - (promised.get(kp) || 0); // 買い手に届いている売り手の余り (回 KE3。前はいまの余り)
           if (avail <= min) continue;

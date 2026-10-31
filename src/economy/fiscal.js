@@ -166,6 +166,13 @@
   ctaxAt(id) { return this.fiscalAt(id).ctax || 0; } // 消費税 (その星系で効いている国の)
   // 関税: 買い手の星系で効いている国の関税率。同じ国の中の取引には掛からない
   tariffFor(buyer, seller) { return this.dutiable(buyer, seller) ? this.fiscalAt(buyer).tariff || 0 : 0; }
+  // 輸出禁止と禁輸 (回 KE9・B-008): 売り手の国が資源 r の輸出を止めている、か、どちらかの国が相手の国を禁輸にしていれば、売り買いしない (同じ国の中はいつも売り買いする)
+  tradeBarred(buyer, seller, r) {
+    const a = this.realmOf(buyer), b = this.realmOf(seller);
+    if (a === b) return false;
+    const fs = this.fiscalAt(seller), fb = this.fiscalAt(buyer);
+    return !!(fs.ban?.[r] || fs.embargo?.[a] || fb.embargo?.[b]);
+  }
   dutiable(buyer, seller) { return this.realmOf(buyer) !== this.realmOf(seller) && !this.pactFreeTrade(this.realmOf(buyer), this.realmOf(seller)); } // 交易協定の相手には掛けない (政治の pactFreeTrade。回 SE2)
   // 予算の効き目 (0〜1)。首都が予算を払いきれていなければ、払えた割合だけ効く
   budgetAt(root, id, k) { return budgetEffect((this.fiscalFor(root, id).budget?.[k] || 0) * (this.govs[root]?.bpaid ?? 1)); }
@@ -206,8 +213,14 @@
     if (Object.values(budget).some((v) => !onStep(v, BUDGET_RANGE, BUDGET_STEP))) return fail(JA`予算は機能ごとに 0〜${BUDGET_RANGE[1] * 100}% (刻み ${BUDGET_STEP * 100}%)`);
     const total = Object.values(budget).reduce((a, v) => a + v, 0);
     if (total > BUDGET_TOTAL + 1e-9) return fail(JA`予算は合わせて税収の ${BUDGET_TOTAL * 100}% まで`);
-    const next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget };
-    const rest = !(Math.abs(tax - taxRateOf(dec.tax)) < 1e-9 && ctax === (dec.ctax || 0) && tariff === (dec.tariff || 0) && deficit === (dec.deficit || 0) && rdcredit === (dec.rdcredit ?? FISCAL_DEFAULT.rdcredit) && Object.keys(BUDGET).every((k) => budget[k] === (dec.budget?.[k] || 0)));
+    // 価格統制と交易の規制 (回 KE9・B-008): 値段の上限・配給・輸出禁止・禁輸。0 と false は外す
+    const ctl = this.fiscalCtl(d, cur);
+    if (!ctl.ok) return ctl;
+    const { ceil, ration, ban, embargo } = ctl;
+    const next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, ceil, ration, ban, embargo };
+    const same = (a, b) => JSON.stringify(a || {}) === JSON.stringify(b || {});
+    const rest = !(Math.abs(tax - taxRateOf(dec.tax)) < 1e-9 && ctax === (dec.ctax || 0) && tariff === (dec.tariff || 0) && deficit === (dec.deficit || 0) && rdcredit === (dec.rdcredit ?? FISCAL_DEFAULT.rdcredit) && Object.keys(BUDGET).every((k) => budget[k] === (dec.budget?.[k] || 0))
+      && same(ceil, dec.ceil) && same(ration, dec.ration) && same(ban, dec.ban) && same(embargo, dec.embargo));
     const cbPart = rate !== dec.rate || cb !== cb0;
     if (now) return rest || cbPart ? this.applyFiscal(next) : fail('いまと同じ');
     const pending = this.bill('fiscal');
@@ -218,19 +231,48 @@
     if (!rest) { if (pending) this.billAct('fiscal', 'withdraw'); return { ok: true }; }
     return this.proposeBill('fiscal', next);
   }
-  // 財政をいま変える (法案が通ったとき・政策金利・試験)。next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget }
+  // 価格統制と交易の規制の説明 (なければ空)
+  ctlText(f) {
+    const out = [];
+    for (const [r, k] of Object.entries(f.ceil || {})) out.push(JA`${RES_LABEL[r]}の値段の上限 ×${k}`);
+    for (const r of Object.keys(f.ration || {})) out.push(JA`${RES_LABEL[r]}の配給`);
+    for (const r of Object.keys(f.ban || {})) out.push(JA`${RES_LABEL[r]}の輸出禁止`);
+    for (const c of Object.keys(f.embargo || {})) out.push(JA`${this.realmName(Number(c))}への禁輸`);
+    return out.join('・');
+  }
+  // 価格統制と交易の規制を d から読む (書いていないものは cur のまま)。値は並べ替えた写し (比べるときに JSON で比べるので)
+  fiscalCtl(d, cur) {
+    const pick = (k) => (d[k] !== undefined ? d[k] : cur[k]) || {};
+    const sorted = (o) => Object.fromEntries(Object.entries(o).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+    const ceil = {}, ration = {}, ban = {}, embargo = {};
+    for (const [r, v] of Object.entries(pick('ceil'))) {
+      const k = Number(v);
+      if (!CTL_RES.includes(r) || !(k === 0 || onStep(k, CEIL_RANGE, CEIL_STEP))) return fail(JA`値段の上限は基準の値段の ${CEIL_RANGE[0]}〜${CEIL_RANGE[1]} 倍 (刻み ${CEIL_STEP})`);
+      if (k) ceil[r] = k;
+    }
+    for (const [r, v] of Object.entries(pick('ration'))) { if (!RATION_RES.includes(r)) return fail('配給を選べない資源'); if (v) ration[r] = true; }
+    for (const [r, v] of Object.entries(pick('ban'))) { if (!CTL_RES.includes(r)) return fail('輸出を止められない資源'); if (v) ban[r] = true; }
+    for (const [c, v] of Object.entries(pick('embargo'))) { const x = Number(c); if (x === this.cap || !this.realmAlive(x)) return fail('禁輸の相手の国がない'); if (v) embargo[x] = true; }
+    return { ok: true, ceil: sorted(ceil), ration: sorted(ration), ban: sorted(ban), embargo: sorted(embargo) };
+  }
+  // 財政をいま変える (法案が通ったとき・政策金利・試験)。next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, ceil, ration, ban, embargo }
   applyFiscal(n) {
-    const cur = this.fiscal || FISCAL_DEFAULT, next = { tax: taxRateOf(n.tax), ctax: n.ctax || 0, tariff: n.tariff || 0, rate: n.rate, cb: n.cb ?? 1, deficit: n.deficit || 0, rdcredit: n.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...FISCAL_DEFAULT.budget, ...(n.budget || {}) } };
+    const cur = this.fiscal || FISCAL_DEFAULT, next = { tax: taxRateOf(n.tax), ctax: n.ctax || 0, tariff: n.tariff || 0, rate: n.rate, cb: n.cb ?? 1, deficit: n.deficit || 0, rdcredit: n.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...FISCAL_DEFAULT.budget, ...(n.budget || {}) },
+      ceil: { ...(n.ceil || {}) }, ration: { ...(n.ration || {}) }, ban: { ...(n.ban || {}) }, embargo: { ...(n.embargo || {}) } };
     const { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget } = next;
     // 前の財政 = いま首都で効いている値 (行政の遅れの途中の手段は、その前の値)。手段ごとの効き始め on: 変えた手段は今 + 行政の遅れ、変えていない手段は前の効き始めのまま。
     // 同じ時に 2 度変えたとき (政策金利と、すぐ通った法案。回 SE7) は 1 度目を直したものとみて、1 度目の前の財政を引き継ぐ (遠い星系が光の遅れなしに 1 度目を受けないように)
     const e = cur.since === this.year && cur.prev ? cur.prev : this.fiscalFor(this.cap, this.cap);
-    const prev = { tax: taxRateOf(e.tax), ctax: e.ctax || 0, tariff: e.tariff || 0, rate: e.rate, cb: e.cb ?? 1, deficit: e.deficit || 0, rdcredit: e.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...(e.budget || FISCAL_DEFAULT.budget) } };
+    const prev = { tax: taxRateOf(e.tax), ctax: e.ctax || 0, tariff: e.tariff || 0, rate: e.rate, cb: e.cb ?? 1, deficit: e.deficit || 0, rdcredit: e.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...(e.budget || FISCAL_DEFAULT.budget) },
+      ceil: { ...(e.ceil || {}) }, ration: { ...(e.ration || {}) }, ban: { ...(e.ban || {}) }, embargo: { ...(e.embargo || {}) } };
     const on = {};
-    const eq = (k, a) => (k === 'budget' ? Object.keys(BUDGET).every((b) => budget[b] === (a.budget?.[b] || 0)) : k === 'tax' ? Math.abs(tax - taxRateOf(a.tax)) < 1e-9 : next[k] === (a[k] ?? FISCAL_DEFAULT[k]));
+    const obj = new Set(['ceil', 'ration', 'ban', 'embargo']);
+    const eq = (k, a) => (k === 'budget' ? Object.keys(BUDGET).every((b) => budget[b] === (a.budget?.[b] || 0)) : k === 'tax' ? Math.abs(tax - taxRateOf(a.tax)) < 1e-9 : obj.has(k) ? JSON.stringify(next[k]) === JSON.stringify(a[k] || {}) : next[k] === (a[k] ?? FISCAL_DEFAULT[k]));
     for (const k of Object.keys(next)) on[k] = eq(k, prev) ? this.year : eq(k, cur) && cur.on?.[k] > this.year ? cur.on[k] : this.year + adminLag(k, next, prev);
     this.fiscal = { ...next, since: this.year, on, done: Math.max(...Object.values(on)), prev };
     const parts = [JA`税率は ${(tax * 100).toFixed(1)}%`, JA`消費税は ${(ctax * 100).toFixed(1)}%`, JA`関税は ${(tariff * 100).toFixed(1)}%`, cb ? '政策金利は中央銀行に任せる' : JA`政策金利は年 ${(rate * 100).toFixed(2)}%`, JA`赤字の上限は ${deficit ? JA`GDP の ${(deficit * 100).toFixed(1)}%` : 'なし (国債を出さない)'}`, JA`研究開発の税額控除は ${(rdcredit * 100).toFixed(1)}%`, JA`予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
+    const ctl = this.ctlText(next);
+    if (ctl) parts.push(JA`価格統制と交易の規制は ${ctl}`);
     this.event('goal', this.cap, JA`財政を変えた (${parts.join('、')})。遠い星系には知らせが光速で届いてから効く`, true);
     return { ok: true };
   }

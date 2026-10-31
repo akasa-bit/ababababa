@@ -40,7 +40,14 @@ const INCIDENCE = { tax: [3.2, 6.0, 11.1, 19.5, 60.3], ctax: [11.7, 15.2, 18.6, 
 //   ctax = 消費税の率の変更 (英国 2008 年の引き下げは 7 日・ドイツ 2020 年は 28 日の平均)、ctaxNew = 消費税を新しく入れる (準備に 18〜24 か月。Tait 1988・米国会計検査院 1993)。
 //   tariff = 関税の率の変更 (米国 2018 年の鉄鋼の関税は布告から 15 日)。budget = 予算 (次の会計年度から。決める時は年の中で一様とみて平均半年)。
 //   rate・cb = 中央銀行の決定 (次の日から)、deficit = 借りる上限 (首都の政府が決める)
-const ADMIN_LAG = { tax: 0.85, ctax: 0.05, ctaxNew: 1.75, tariff: 0.05, rate: 0, cb: 0, deficit: 0, rdcredit: 0.85, budget: 0.5 };
+const ADMIN_LAG = { tax: 0.85, ctax: 0.05, ctaxNew: 1.75, tariff: 0.05, rate: 0, cb: 0, deficit: 0, rdcredit: 0.85, budget: 0.5, ceil: 0, ration: 0.15, ban: 0, embargo: 0 };
+//   ceil = 値段の上限 (米国 1971 年 8 月 15 日の 90 日の凍結は発表の日から。大統領令 11615)・ration = 配給 (英国の食料の配給は 1939 年 11 月の発表から 1940 年 1 月 8 日の始まりまで約 2 か月)・
+//   ban・embargo = 輸出禁止と禁輸 (大統領の布告で数日。米国 1962 年のキューバの禁輸は 2 月 3 日の布告から 2 月 7 日)
+// 価格統制と交易の規制 (回 KE9・B-008。docs/fiscal.md の 8): 国の財政に持つ。ceil = { 資源: 基準の値段の倍率 } (値段の上限。上限で足りない分は不足になる。闇市は入れない)・
+// ration = { 資源: true } (配給: 星系の在庫を、入植地の人口に比べて分ける。不足のとき、先に買った入植地が取りつくさない)・ban = { 資源: true } (輸出禁止: ほかの国の買い手に売らない)・
+// embargo = { 国の首都: true } (禁輸: その国とは売りも買いもしない)。CTL_RES = 選べる資源、RATION_RES = 配給を選べる資源 (家計が買う物)、CEIL_RANGE = 値段の上限の幅 (基準の値段の倍率)
+const CTL_RES = ['food', 'water', 'fuel', 'metal', 'rare', 'goods', 'hitech'], RATION_RES = ['food', 'water', 'goods'];
+const CEIL_RANGE = [0.5, 2], CEIL_STEP = 0.05;
 // 財政の 1 つの手段の行政の遅れ (prev = いま首都で効いている財政、f = 新しい財政)
 const adminLag = (k, f, prev) => (k === 'ctax' && !(prev.ctax > 0) && f.ctax > 0 ? ADMIN_LAG.ctaxNew : ADMIN_LAG[k] ?? 0);
 // 人間でない国の財政 (docs/fiscal.md の 1)。vary = 1 なら、国ごとに現実の国の分布から引く (docs/policy-ranges.md)。既定は 0 (標準): C-22「おすすめと既定のままで」。1 の結果は docs/fiscal.md の 1.3:
@@ -81,7 +88,7 @@ const budgetEffect = (share) => (share > 0 ? share / (share + BUDGET_HALF) : 0);
 // 研究開発の税額控除 (回 KE6・B-122): 会社の研究開発費の rdcredit の割合を、国の政府が会社に返す。幅は OECD の R&D Tax Incentives の、税の優遇 ÷ 会社の研究開発費の
 // 国・年の 1〜99% 点 (0〜27.9%)。既定はその国ごとの平均の中央値 3.90% を刻みに丸めた 4% (data/derived/innovation.json の rnd.credit)
 const RDCREDIT_RANGE = [0, 0.28], RDCREDIT_STEP = 0.005;
-const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 } };
+const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 }, ceil: {}, ration: {}, ban: {}, embargo: {} };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)

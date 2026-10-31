@@ -72,7 +72,7 @@
   shipyard(o, cost) {
     if (this.stockOf(o).hitech >= cost.hitech) return { id: o, t: 0 };
     const { dist } = this.reach(o);
-    for (const s of this.reachSorted(o)) if (!this.tradeBlocked(o, s) && this.stockOf(s).hitech >= cost.hitech) return { id: s, t: dist[s] };
+    for (const s of this.reachSorted(o)) if (!this.tradeBlocked(o, s) && !this.tradeBarred(o, s, 'hitech') && this.stockOf(s).hitech >= cost.hitech) return { id: s, t: dist[s] };
     return { id: o, t: 0 };
   }
   // 交易路 r に n 隻の輸送船を足す。pay = 払う帳簿 ({ gov: 星系 } か { fm: 星系 })

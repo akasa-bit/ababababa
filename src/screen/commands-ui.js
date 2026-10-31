@@ -118,6 +118,13 @@ function onPanelChange(e) {
   else if (act === 'evkind') { EvPrefs.kinds[e.target.dataset.k] = e.target.checked; saveEvPrefs(); }
   else if (act === 'regimedefault') issue('set', { key: 'regime', value: v });
   else if (act === 'histtype') { app.histType = v; } // 史料の欄で読む型 (見るだけ)
+  else if (act === 'fiscalctl') { // 価格統制と交易の規制 (経済。回 KE9・B-008): 選んだ 1 つだけを変えた財政の法案を出す
+    const c = app.game.fiscalDraft(), { k, r } = e.target.dataset;
+    const o = { ...(c[k] || {}) };
+    if (k === 'ceil') { if (Number(v)) o[r] = Number(v); else delete o[r]; } else if (e.target.checked) o[r] = true; else delete o[r];
+    issue('fiscal', { [k]: o });
+    save();
+  }
   else if (act === 'fiscal') {
     const c = app.game.fiscalDraft(); // 審議中の法案があれば、その値から (政治。回 SE7)
     const d = { tax: c.tax, ctax: c.ctax || 0, tariff: c.tariff || 0, rate: c.rate, deficit: c.deficit || 0, ...c.budget };
