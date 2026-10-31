@@ -116,6 +116,7 @@
   autoDevelop() {
     this.capacityYearly(); // 民間の採掘の能力 (回 KE5)
     this.ownYearly(); // 遠くの持ち主 (回 KE5)
+    this.eachPlayer(() => this.chronYearly()); // 財政のグラフの記録 (回 GA9・B-059)
     // 太陽系 (プレイヤー) は自動開発をオンにしたときだけ。他の星系の政府はいつも自分の資金で開発する
     for (const id of this.colonizedSystems().map((x) => x.id).filter((k) => !this.isHuman(k) || this.auto[k])) {
       const fl = this.flow[id];
