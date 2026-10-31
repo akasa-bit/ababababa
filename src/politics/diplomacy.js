@@ -31,6 +31,8 @@
   // r が、p からの協定 kind を受けるかの点 (0 以上で受ける) と理由。
   // view: r の見ている艦隊 (既定は r の首都に届いている記録)。z: 読み違い。gift: 添えた贈り物 [cr]
   pactScore(r, p, kind, { gift = 0, z = 0, view = null } = {}) {
+    if (!this.pactAllowed(r, p, kind)) return { s: -Infinity, why: JA`好戦的な種族の国とは${PACT_KINDS[kind].label}の協定を結べない` }; // 回 SE8
+    if (kind === 'trade' && this.modsOf(p).tradePacts && !this.pactBreaches(p)) return { s: 1, why: '商才の種族の国からの交易協定' }; // 商才: 破約をしていなければ、AI の国は断らない (回 SE8)
     const ships = view || ((t) => (t === r ? this.realmShips(r) : this.seenShips(r, t)));
     const mine = ships(r);
     const seen = ships(p) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(r, p)));
@@ -63,6 +65,7 @@
   proposePact(d, from = this.cap) {
     const to = Number(d.sys), kind = d.pact, gift = Math.max(0, Math.round(Number(d.gift) || 0));
     if (!PACT_KINDS[kind]) return fail('不明な協定');
+    if (!this.pactAllowed(from, to, kind)) return fail(JA`好戦的な種族の国とは${PACT_KINDS[kind].label}の協定を結べない`); // 回 SE8
     if (to === from || !this.realmAlive(to) || !this.realmAlive(from)) return fail('相手の国がない');
     if (this.pactBetween(from, to, kind)) return fail(JA`${PACT_KINDS[kind].label}の協定をもう結んでいる`);
     if (this.diplo.sent.some((o) => o.from === from && o.to === to && o.kind === kind)) return fail('同じ申し入れが届く途中');
@@ -89,6 +92,8 @@
     this.asRealm(r, () => this.councilAdd(-PACT.breachCouncil, why)); // 席の国 (AI の国も) は議会の支持が下がる
   }
   // AI の国 (と観戦の地球) が、届いた申し入れに答える
+  // 協定を結べるか (好戦的な種族の国は、不可侵と防衛同盟を結べない。回 SE8・B-029)
+  pactAllowed(a, b, kind) { return !this.modsOf(a).noPacts.includes(kind) && !this.modsOf(b).noPacts.includes(kind); }
   pactAnswerAi(o) {
     const sc = this.pactScore(o.to, o.from, o.kind, { gift: o.gift, z: this.misread() });
     if (sc.s >= 0) return this.makePact(o.from, o.to, o.kind, o.gift);

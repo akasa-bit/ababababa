@@ -226,7 +226,7 @@ const STORY = {
     },
     resolve(g, dec, k) {
       if (k === 'survey') { g.spendDecision(dec, { pv: dec.sys }); dec.found = g.rand() < 0.5; if (!dec.found) g.message(JA`${here(g, dec.sys)}の調査隊は何も見つけられなかった`, dec.sys); }
-      else { g.pc = Math.min(PC_CAP, g.pc + 5); g.councilAdd(1, '古い航法記録を公開した'); }
+      else { g.pc = Math.min(g.pcCap(), g.pc + 5); g.councilAdd(1, '古い航法記録を公開した'); }
     },
     next: (g, dec, k) => (k === 'survey' && dec.found ? later('derelict3') : null),
     weigh: (g, dec, k) => (k === 'survey' ? 1 + richer(g, 1500) : 1 + (g.pc < 40 ? 0.6 : 0)),

@@ -228,6 +228,15 @@ node tools/eta.js "$PWD/index.html" 0.5 2   # FGK 型・M 型の主星あたり�
 node tools/eta.js "$PWD/index.html" 1.0 2   # M 型の目標 R06 は 1〜1.5 地球半径
 ```
 
+## 国ごとの違いの釣り合い (回 SE8・B-029。tools/nation-balance.js)
+
+国家選択 6 か国の観戦で、国ごとの特性・開始の大きさ・終わりの星系の数を記録し、特性ごと・開始の大きさの組ごとの勝率 (終わりの年に星系の数が 1 位) を全体の勝率と比べる。比が 1.5 を超えるか 0.5 を下回る特性は値を直す (QD-112 = a。`docs/nations.md` の 4)。特性は開始の大きさをそろえた試合 (`--equal`) で測る。CI では回さない (1 銀河 × 150 年で 15〜20 秒)。
+
+```sh
+node tools/nation-balance.js 1 15 150 --equal --json a.json      # シード 1〜15 (途中までもシードごとに書き出す。いくつかに分けて並べて回す)
+node tools/nation-balance.js --merge a.json,b.json              # まとめて表にする
+```
+
 ## 政策の反応 (目標 R80〜R83。tools/policy-irf.js)
 
 ```sh

@@ -31,16 +31,15 @@
     if (c.kind === 'planet' && this.isHome(c.sys, c.body)) return 12000 * (1 + 0.25 * c.lv.habitat);
     if (c.kind === 'station') return 2 * (1 + c.lv.habitat);
     const b = this.target(c.sys, c.body);
-    const grade = b.settle?.grade || 1;
-    const m = this.modsOf(c.sys);
-    return [80, 80, 800, 4000][grade] * (1 + 0.5 * c.lv.habitat) * m.cap * (m.capBy[b.surface] || 1);
+    const m = this.modsOf(c.sys), grade = b.settle?.grade || 1;
+    return [80, 80, 800, 4000][grade] * (grade <= 1 ? m.harsh : 1) * (1 + 0.5 * c.lv.habitat) * m.cap * (m.capBy[b.surface] || 1); // 適応力: 住みにくい惑星 (適性 1) ×3 (回 SE8)
   }
   surfaceOf(c) { return c.kind === 'planet' ? this.target(c.sys, c.body).surface : null; }
   fertility(c) { return { temperate: 1, ocean: 0.6 }[this.surfaceOf(c)] || 0; }
   needsWater(c) { return !this.fertility(c); } // 温暖・海洋の惑星以外は水を消費する
 
   // 入植可否と理由。惑星入植は適性≥1の固体天体のみ、ステーションは任意の天体の周回軌道に建設できる。
-  check(sysId, bodyId, kind) {
+  check(sysId, bodyId, kind, from = this.cap) {
     const t = this.target(sysId, bodyId);
     if (!t) return fail('対象が存在しない');
     if (this.colonyAt(sysId, bodyId, kind)) return fail('建設済み');
@@ -49,6 +48,7 @@
     if (kind === 'planet' && !(t.settle && t.settle.grade >= 1)) {
       return fail(t.settle ? t.settle.notes.join('、') || '入植に適さない' : '惑星ではない');
     }
+    if (kind === 'planet' && this.modsOf(from).forbid.includes(t.surface)) return fail(JA`${this.speciesOfRealm(this.realmOf(from))}はこの型の惑星に住めない`); // 水棲・寒冷適応・乾燥適応 (回 SE8)
     if (kind === 'planet' && this.isSurveyed(sysId) && this.blockedByNatives(sysId, bodyId)) {
       return fail('最も進んだ未恒星間文明の惑星には同意が必要 (友好度40以上)');
     }
@@ -278,7 +278,7 @@
   }
 
   dispatch(fromId, toId, bodyId, kind) {
-    const c = this.check(toId, bodyId, kind);
+    const c = this.check(toId, bodyId, kind, fromId);
     if (!c.ok) return c;
     if (!this.isColonized(fromId)) return fail('出発地に入植地がない');
     const label = JA`${this.target(toId, bodyId).name} への入植船 (${KIND_LABEL[kind]})`;

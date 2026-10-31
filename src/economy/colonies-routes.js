@@ -23,7 +23,7 @@
   // 国家方針が整備期なら、建設費 (資金) が25%安い
   upgradeCost(c, fac) {
     const k = GM.pow(2, c.lv[fac]);
-    const f = this.policyAt(c.sys) === 'consolidate' ? 0.75 : 1;
+    const f = (this.policyAt(c.sys) === 'consolidate' ? 0.75 : 1) * this.modsOf(c.sys).build; // 勤勉は ×0.75 (回 SE8)
     return { credits: Math.round((100 + 0.05 * c.pop) * k * f), metal: Math.round(50 * k) };
   }
   upgrade(c, fac) {

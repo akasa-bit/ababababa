@@ -1,0 +1,48 @@
+{
+ "size": {
+  "source": "Maddison Project Database 2023, 1820 年",
+  "countries": 90,
+  "median_pop_thousands": 2045.0,
+  "ratio_to_median": {
+   "10": 0.0889,
+   "25": 0.2616,
+   "50": 1.0,
+   "75": 2.2619,
+   "90": 6.2471
+  }
+ },
+ "size_check_cow": {
+  "source": "COW National Material Capabilities 6.0, 1820 年の主権国家",
+  "states": 23,
+  "median_pop_thousands": 3780.0,
+  "ratio_to_median": {
+   "10": 0.2844,
+   "25": 0.4292,
+   "50": 1.0,
+   "75": 3.0004,
+   "90": 7.8015
+  }
+ },
+ "army": {
+  "source": "COW NMC 6.0, 1816〜1850 年、ln milper ~ ln tpop + 年",
+  "b": 0.9582,
+  "se": 0.078,
+  "n": 924,
+  "states": 37,
+  "years": [
+   1816,
+   1850
+  ]
+ },
+ "money": {
+  "source": "COW NMC 6.0, 1816〜1850 年、ln milex ~ ln tpop + 年",
+  "b": 1.135,
+  "se": 0.0749,
+  "n": 572,
+  "states": 27,
+  "years": [
+   1816,
+   1850
+  ]
+ }
+}

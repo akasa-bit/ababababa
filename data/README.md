@@ -312,3 +312,12 @@ python3 data/build/build_hcap.py ゲームのパネル.csv   # ゲームの R62�
 | 加工 | `data/build/analyze_values.py` → `data/derived/values.json` | 伝統 ↔ 世俗 (宗教の大切さ・集まり・法に従う) と生存 ↔ 自己表現の近い形 (信頼・暮らしの心配のなさ・幸福) の国の平均を ln 1 人あたり GDP に当てた切片と傾き (23 の国と地域。相関 0.88・0.28)、国の中の所得の 5 分位ごとの差とよそ生まれの差 (国の固定効果つき)。`src/politics/groups-consts.js` の `GROUPS.values` |
 
 - **限界**: 22 か国と香港だけ。生存 ↔ 自己表現は WVS の目印の項目 (脱物質主義・寛容・署名) がなく、暮らしの安心と信頼・幸福で作る近い形。所得の区分は国ごとに粗く、分位の境は区分の境に寄る。世界価値観調査の個票は「非営利に限る・再配布しない」が条件なので使っていない (前の近い形は QoG の WVS の国の平均。`data/raw/groups/qog_wvs.csv` は比べるために残す)
+
+## 国ごとに違う開始の大きさのデータ (回 SE8・B-029・QD-111 = c。ゲームの係数で、目標ではない)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_nations.py` → `data/raw/nations/` | Correlates of War の国力の指標 6.0 (National Material Capabilities。zip の中の abridged の zip の CSV。国・年ごとの総人口・軍の人員・軍事費ほか。1816〜2016 年)。取ってきたままのファイルの SHA-256 は `MANIFEST.json`。1820 年の国の人口は、前から置いてある Maddison Project Database 2023 (`data/raw/productivity/mpd2023_full.csv.gz`) を使う |
+| 加工 | `data/build/analyze_nations.py` → `data/derived/nations.json` | 1820 年の国 (いまの国境の 90 か国) の人口 ÷ 中央値 (204.5 万人) の 10・25・50・75・90% 点: 0.089・0.262・1・2.26・6.25 (照合: COW の 1820 年の主権国家 23 か国で 0.28・0.43・1・3.0・7.8)。1816〜1850 年の国・年 (年の固定効果つき) で ln 軍の人員 の ln 総人口 への傾き 0.958 (国でまとめた標準誤差 0.078・37 か国・924 国・年)、ln 軍事費 の傾き 1.135 (0.075)。`src/politics/nations.js` の `NATION_SIZE` |
+
+- **限界**: Maddison の 1820 年は、いまの国境で数えた人口 (当時の国でない地域も 1 つに数える)。ゲームは 10〜90% 点のあいだから引き、母星の人口の上限があるので比を 0.5 乗に縮めている (補正の台帳の C21)。軍の人員と軍事費の傾きは 19 世紀前半の主権国家だけ

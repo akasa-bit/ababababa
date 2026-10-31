@@ -53,7 +53,7 @@
 | B-141 | 「内政」の一強: 放っておかれても忠誠度が下がらなくなった (#228) あと、遠い星系に関与しない内政の戦略が勝つ割合が上がった (24 銀河 × 150 年で 50% → 63%)。内政にも代わりの損を付けるか、ほかの戦略に得を足す | `politics/`・`tools/strategy.js` の測り方 | — | M | 政治 | #228 の面白さの数 |
 | B-142 | **済み (QD-41 c の PR。`docs/demands.md`)** AI の国の要求への新しい判断 (QD-41 = c。2026-10-28): 家臣の大きさ・遠さと離反の見込みで、のむか拒むかを決める (いまは観戦の地球と同じく、首都の艦隊が反乱の 2 倍 + 1 以上なら半々で拒んで威圧し、ほかはのむ) | `earthPoliticsYearly`・`knownRebelFleet`・`secessionTermsOf` | — | M | 政治 | `decisions.md` の QD-41・`status/SE.md` の回 SE5 |
 | B-028 | AI の国が入植を急ぎ、銀河を取り合う。構造転換 (#152) のあとで入植が増えたので、先に測り直す | `aiOrdersYearly`・`colonize` | Q2・B-068 | M | 政治 | `critique/04-plan.md` の 2-1・2.3 の 9・2.1 の注意。**済み (#274・#275。回 SE5。R40 73.4%・R41 9。AI の国にも席を持たせた)** |
-| B-029 | 国ごとに規則が違う開始: 種族の特性を倍率から規則の違いへ。開始の人口と星系も国ごとに | `SPECIES_TRAITS`・`HUMAN_TRAITS`・`NATION_COUNTS`・`NationLib` | Q2 | M | 政治 | `critique/04-plan.md` の 2-4・2.3 の 15 |
+| B-029 | **済み (回 SE8。`docs/nations.md`。QD-110〜QD-113)** 国ごとに規則が違う開始: 種族の特性を倍率から規則の違いへ。開始の人口と星系も国ごとに | `SPECIES_TRAITS`・`HUMAN_TRAITS`・`NATION_COUNTS`・`NationLib` | Q2 | M | 政治 | `critique/04-plan.md` の 2-4・2.3 の 15 |
 
 ## 船と戦争
 

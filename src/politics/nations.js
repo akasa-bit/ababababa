@@ -1,17 +1,22 @@
 // --- 国と種族 (国家選択) ---
-// 種族の特性 (係数表)。国の種族の特性が、その国のすべての星系に効く。値は倍率 (pc は政治力の年あたりの加算)
+// 種族の特性 (回 SE8・B-029。QD-110 = a: 倍率から規則の違いへ)。特性ごとに、得る規則 good と失う規則 bad を 1 つずつ持つ (desc = 画面の説明。good と bad をつないだもの) (人口の上限のように規則にしにくいものだけ倍率を残す)。
+// 種族は架空なので、規則と値はゲームの読みやすさで決めた (補正の台帳の C08 と同じ扱い)。釣り合いは国ごとの勝率で測って直す (QD-112 = a。docs/nations.md)。
+// 規則の値 (traitMods がまとめる): colonizePop = 入植船を出せる星系の人口の倍率・starve = 飢えで人口が減る速さの倍率・councilDrift = 議会のいら立ちの倍率・
+//   policyYears = 国家方針を変えられる間隔・harsh = 住みにくい惑星 (適性 1) の人口の上限の倍率・forbid = 入植できない惑星の型・warFree = 宣戦に政治力が要らない・
+//   exhaust = 戦争疲弊の溜まり方の倍率・noPacts = 結べない協定・build = 施設の建設費の倍率・outpost = 採掘基地の費用の倍率・tradePacts = 交易協定を相手の AI が断らない・
+//   tariffMax = 関税の上限・billBonus = 法案の支持に足す点・pcCap = 政治力の上限。growth・cap・capBy・ind は前からの倍率
 const SPECIES_TRAITS = {
-  prolific: { label: '多産', desc: '人口の増え方 ×1.3', growth: 1.3 },
-  longlived: { label: '長命', desc: '人口の増え方 ×0.8・人口の上限 ×1.15', growth: 0.8, cap: 1.15 },
-  adaptable: { label: '適応力', desc: '人口の上限 ×1.1', cap: 1.1 },
-  aquatic: { label: '水棲', desc: '海洋の惑星で人口の上限 ×1.5、乾燥した惑星で ×0.6', capBy: { ocean: 1.5, desert: 0.6 } },
-  cryophile: { label: '寒冷適応', desc: '寒冷な惑星で人口の上限 ×1.5、温暖な惑星で ×0.8', capBy: { frozen: 1.5, temperate: 0.8 } },
-  xerophile: { label: '乾燥適応', desc: '乾燥した惑星で人口の上限 ×1.5、海洋の惑星で ×0.8', capBy: { desert: 1.5, ocean: 0.8 } },
-  warlike: { label: '好戦的', desc: '艦隊の戦力 ×1.2', fleet: 1.2 },
-  industrious: { label: '勤勉', desc: '工業の生産 ×1.2', ind: 1.2 },
-  miners: { label: '鉱夫', desc: '鉱業の生産 ×1.25', mine: 1.25 },
-  traders: { label: '商才', desc: '交易の収入 ×1.25', trade: 1.25 },
-  wise: { label: '賢明', desc: '政治力 +1/年', pc: 1 },
+  prolific: { label: '多産', desc: '入植船を同時に 1 隻多く飛ばせ、出せる星系の人口が 3 分の 1。代わりに 食料が足りないと人口の減り方が 1.5 倍', good: '入植船を同時に 1 隻多く飛ばせ、出せる星系の人口が 3 分の 1', bad: '食料が足りないと人口の減り方が 1.5 倍', colonizePop: 1 / 3, colonyShips: 1, starve: 1.5 },
+  longlived: { label: '長命', desc: '議会のいら立ちが半分 (毎年 −0.125)。代わりに 国家方針を変えられる間隔が 45 年 (ふつう 30 年)・人口の増え方 ×0.8', good: '議会のいら立ちが半分 (毎年 −0.125)', bad: '国家方針を変えられる間隔が 45 年 (ふつう 30 年)・人口の増え方 ×0.8', councilDrift: 0.5, policyYears: 45, growth: 0.8 },
+  adaptable: { label: '適応力', desc: '住みにくい惑星 (適性 1) の人口の上限 ×3', good: '住みにくい惑星 (適性 1) の人口の上限 ×3', bad: 'なし', harsh: 3 },
+  aquatic: { label: '水棲', desc: '海洋の惑星で人口の上限 ×1.5。代わりに 乾燥した惑星に入植できない', good: '海洋の惑星で人口の上限 ×1.5', bad: '乾燥した惑星に入植できない', capBy: { ocean: 1.5 }, forbid: ['desert'] },
+  cryophile: { label: '寒冷適応', desc: '寒冷な惑星で人口の上限 ×1.5。代わりに 温暖な惑星に入植できない', good: '寒冷な惑星で人口の上限 ×1.5', bad: '温暖な惑星に入植できない', capBy: { frozen: 1.5 }, forbid: ['temperate'] },
+  xerophile: { label: '乾燥適応', desc: '乾燥した惑星で人口の上限 ×1.5。代わりに 海洋の惑星に入植できない', good: '乾燥した惑星で人口の上限 ×1.5', bad: '海洋の惑星に入植できない', capBy: { desert: 1.5 }, forbid: ['ocean'] },
+  warlike: { label: '好戦的', desc: '宣戦に政治力が要らない・戦争疲弊の溜まり方 ×0.5。代わりに 不可侵と防衛同盟の協定を結べない', good: '宣戦に政治力が要らない・戦争疲弊の溜まり方 ×0.5', bad: '不可侵と防衛同盟の協定を結べない', warFree: true, exhaust: 0.5, noPacts: ['nap', 'ally'] },
+  industrious: { label: '勤勉', desc: '施設の建設費 ×0.75。代わりに 議会のいら立ち 毎年 −0.5 (ふつう −0.25)', good: '施設の建設費 ×0.75', bad: '議会のいら立ち 毎年 −0.5 (ふつう −0.25)', build: 0.75, councilDrift: 2 },
+  miners: { label: '鉱夫', desc: '採掘基地の費用 ×0.5。代わりに 工業の生産 ×0.95', good: '採掘基地の費用 ×0.5', bad: '工業の生産 ×0.95', outpost: 0.5, ind: 0.95 },
+  traders: { label: '商才', desc: '破約をしていなければ、交易協定の申し入れを AI の国は断らない。代わりに 関税を 5% より上げられない', good: '破約をしていなければ、交易協定の申し入れを AI の国は断らない', bad: '関税を 5% より上げられない', tradePacts: true, tariffMax: 0.05 },
+  wise: { label: '賢明', desc: '法案の支持 +10 点 (説得がうまい)。代わりに 政治力の上限 70 (ふつう 100)', good: '法案の支持 +10 点 (説得がうまい)', bad: '政治力の上限 70 (ふつう 100)', billBonus: 0.1, pcCap: 70 },
 };
 const HUMAN_TRAITS = ['adaptable', 'traders'];
 const TRAIT_CLASH = [['prolific', 'longlived'], ['aquatic', 'cryophile', 'xerophile'], ['adaptable', 'longlived']];
@@ -29,19 +34,42 @@ function speciesTraits(species) {
   }
   return out;
 }
-// 特性をまとめた倍率
+// 特性をまとめた倍率と規則
 function traitMods(traits) {
-  const m = { growth: 1, cap: 1, capBy: {}, fleet: 1, ind: 1, mine: 1, trade: 1, pc: 0 };
+  const m = { growth: 1, cap: 1, capBy: {}, fleet: 1, ind: 1, mine: 1, trade: 1, pc: 0,
+    colonizePop: 1, colonyShips: 0, starve: 1, councilDrift: 1, policyYears: POLICY_YEARS, harsh: 1, forbid: [], warFree: false, exhaust: 1, noPacts: [], build: 1, outpost: 1, tradePacts: false, tariffMax: 1, billBonus: 0, pcCap: PC_CAP };
   for (const k of traits || []) {
     const t = SPECIES_TRAITS[k];
     if (!t) continue;
-    for (const f of ['growth', 'cap', 'fleet', 'ind', 'mine', 'trade']) if (t[f]) m[f] *= t[f];
+    for (const f of ['growth', 'cap', 'fleet', 'ind', 'mine', 'trade', 'colonizePop', 'starve', 'councilDrift', 'exhaust', 'build', 'outpost', 'harsh']) if (t[f] !== undefined) m[f] *= t[f];
+    if (t.colonyShips) m.colonyShips += t.colonyShips;
     if (t.pc) m.pc += t.pc;
     for (const [s, v] of Object.entries(t.capBy || {})) m.capBy[s] = (m.capBy[s] || 1) * v;
+    if (t.policyYears) m.policyYears = Math.max(m.policyYears, t.policyYears);
+    if (t.forbid) m.forbid = [...m.forbid, ...t.forbid];
+    if (t.noPacts) m.noPacts = [...m.noPacts, ...t.noPacts];
+    if (t.warFree) m.warFree = true;
+    if (t.tradePacts) m.tradePacts = true;
+    if (t.tariffMax !== undefined) m.tariffMax = Math.min(m.tariffMax, t.tariffMax);
+    if (t.billBonus) m.billBonus += t.billBonus;
+    if (t.pcCap) m.pcCap = Math.min(m.pcCap, t.pcCap);
   }
   return m;
 }
-const NO_MODS = traitMods([]);
+// 国ごとに違う開始の大きさ (回 SE8・B-029。QD-111 = c: 現実の国の大きさの散らばりから引き、釣り合わせない)。
+// q = 1820 年の国の人口 ÷ 中央値 の 10・25・50・75・90% 点 (Maddison Project Database 2023 の 90 か国。data/build/analyze_nations.py → data/derived/nations.json)。
+// 国ごとに 10〜90% 点のあいだの順位 u を一様に引き、点のあいだは対数で内挿する。ゲームの大きさ = 比 ^ EDITIONS.game.nationSize (母星の人口の上限があるので縮める。補正の台帳の C21)。
+// army = ln 軍の人員 の ln 総人口 への傾き 0.958 (COW の国力の指標 6.0 の 1816〜1850 年。開始の艦隊と兵)・money = ln 軍事費 の傾き 1.135 (開始の資金)
+const NATION_SIZE = { q: [[0.1, 0.0889], [0.25, 0.2616], [0.5, 1], [0.75, 2.2619], [0.9, 6.2471]], army: 0.9582, money: 1.135 };
+function nationSizeOf(u) {
+  const Q = NATION_SIZE.q, x = clamp(u, Q[0][0], Q[Q.length - 1][0]);
+  let i = 0;
+  while (i < Q.length - 2 && x > Q[i + 1][0]) i++;
+  const [u0, r0] = Q[i], [u1, r1] = Q[i + 1], t = (x - u0) / (u1 - u0);
+  return GM.exp((GM.log(r0) + t * (GM.log(r1) - GM.log(r0))) * (ED.nationSize ?? 0));
+}
+let NO_MODS_ = null;
+const noMods = () => (NO_MODS_ ??= traitMods([])); // 特性なし (国家選択のない試合)。政治力の上限などの値が読み込まれてから作る
 // ハンディキャップ表 (難易度)。AI の頭の良さは変えず、AI の国の収入と建設費の倍率と、プレイヤーに見える情報だけを変える
 // info: full = 他国の艦隊の数も正確に見える、fuzzy = 5 艦隊単位の概数、hidden = 見えない
 // 開始時に選ぶ生産性 (1 人あたりの産出の倍率。農業・鉱業・工業と採掘基地に効く)。「いまのまま」= 現代 (2023 年) の最前線の生産性とみなす。

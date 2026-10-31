@@ -2,9 +2,11 @@
   setPolicy(id, now = false) {
     if (!POLICIES[id]) return fail('不明な方針');
     if (this.policy?.id === id) return fail('いまの方針と同じ');
-    if (this.policy && this.year - this.policy.since < POLICY_YEARS) return fail(JA`${Math.ceil(this.policy.since + POLICY_YEARS - this.year)}年後まで変えられない`);
+    if (this.policy && this.year - this.policy.since < this.policyYears()) return fail(JA`${Math.ceil(this.policy.since + this.policyYears() - this.year)}年後まで変えられない`);
     return now ? this.applyPolicy(id) : this.proposeBill('policy', id);
   }
+  policyYears() { return this.modsOf(this.cap).policyYears; } // 国家方針を変えられる間隔 (長命は 45 年。回 SE8)
+  pcCap() { return this.modsOf(this.cap).pcCap; } // 政治力の上限 (賢明は 70。回 SE8)
   applyPolicy(id) {
     this.policy = { id, since: this.year, prev: this.policy?.id ?? null };
     this.event('goal', this.cap, JA`国家方針を「${POLICIES[id].label}」にした (${POLICIES[id].good}。${POLICIES[id].bad})。遠い星系には知らせが光速で届いてから効く`, true);
@@ -145,7 +147,7 @@
     if (why) this.message(JA`議会の支持 ${v > 0 ? '+' : ''}${v} (${why})`);
   }
   councilYearly() {
-    this.council = clamp(this.council - 0.25 - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20) + LOSS.council * Object.values(this.policyLoss(this.cap)).reduce((a, v) => a + v, 0), 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる。首都の家計の損 (税・消費税・関税。回 KE8・B-012) も落とす
+    this.council = clamp(this.council - 0.25 * this.modsOf(this.cap).councilDrift - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20) + LOSS.council * Object.values(this.policyLoss(this.cap)).reduce((a, v) => a + v, 0), 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる。首都の家計の損 (税・消費税・関税。回 KE8・B-012) も落とす
     if (this.council < 15) {
       this.event('goal', this.cap, JA`議会の支持が ${Math.round(this.council)} まで落ち、政権が交代した。国家方針は白紙に戻り、貯めていた政治力を失った`);
       this.policy = null;

@@ -3,14 +3,15 @@ function nationCard(g, n) {
   const cols = g.colonies.filter((c) => g.realmOf(c.sys) === n.cap);
   const others = g.nations.filter((m) => m.cap !== n.cap).map((m) => ({ m, d: g.sysDist(n.cap, m.cap) })).sort((a, b) => a.d - b.d);
   const near = others[0];
-  // 難しさの目安: 近い国が多いほど難しい (地球は議会・時代の課題などの手引きがあるぶん易しめ)
-  const crowd = others.filter((o) => o.d < 25).length;
-  const stars = clamp((n.cap === 0 ? 1 : 2) + (near && near.d < 18 ? 1 : 0) + (crowd >= 2 ? 1 : 0), 1, 3);
+  // 難しさの目安: 近い国が多いほど難しい (地球は議会・時代の課題などの手引きがあるぶん易しめ)。開始の大きさ (回 SE8・QD-111 = c) が小さいほど難しく、大きいほど易しい
+  const crowd = others.filter((o) => o.d < 25).length, size = n.size ?? 1;
+  const stars = clamp((n.cap === 0 ? 1 : 2) + (near && near.d < 18 ? 1 : 0) + (crowd >= 2 ? 1 : 0) + (size < 0.7 ? 1 : size > 1.4 ? -1 : 0), 1, 3);
   const home = g.target(n.cap, n.body)?.name || g.system(n.cap).name;
   const hm = app.picking.humans.includes(n.cap);
   return TR`<div class="nat ${app.picking.cap === n.cap ? 'on' : ''}" data-pick="${n.cap}">
     <span class="dot" style="background:${realmColor(n.cap)}"></span> <b class="nm">${esc(n.name)}</b> <span class="muted">首都 ${esc(home)} (${esc(g.system(n.cap).name)})</span><br>
-    ${ico('pop')}人口 ${fmtPop(cols.reduce((a, c) => a + c.pop, 0))}・${ico('colony')}星系 ${g.realmSystems(n.cap).length}・種族 ${esc(n.species)}<br>
+    ${ico('pop')}人口 ${fmtPop(cols.reduce((a, c) => a + c.pop, 0))}・${ico('colony')}星系 ${g.realmSystems(n.cap).length}・${ico('fleet')}艦隊 ${g.garrison[n.cap] || 0}・種族 ${esc(n.species)}<br>
+    <span class="muted">開始の大きさ ×${fmt(size, 2)} (1820 年の現実の国の人口の散らばりから。艦隊・兵・資金も合わせる)</span><br>
     ${n.traits.map((t) => `<span class="tr" title="${esc(SPECIES_TRAITS[t].desc)}">${ico(`tr-${t}`)}${SPECIES_TRAITS[t].label}</span>`).join('')}
     <div class="muted">${n.traits.map((t) => TX(SPECIES_TRAITS[t].desc)).join(TR('・'))}</div>
     <div>難しさの目安 <b>${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</b> <span class="muted">${near ? TR`いちばん近い国: ${esc(near.m.name)} ${fmt(near.d, 1)} 光年・25 光年以内に ${crowd} か国` : ''}${n.cap === 0 ? TR('・議会と時代の課題が道案内をする') : ''}</span></div>

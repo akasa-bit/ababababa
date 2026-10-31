@@ -3,10 +3,10 @@ function goalsSheet(app) {
   const g = app.game;
   const inc = g.pcIncome();
   const pol = g.policy;
-  const canChange = !pol || g.year - pol.since >= POLICY_YEARS;
+  const canChange = !pol || g.year - pol.since >= g.policyYears();
   const polBtns = Object.entries(POLICIES).map(([id, p]) => {
     const cur = pol?.id === id;
-    const why = cur ? TR('いまの方針') : !canChange ? TR`${Math.ceil(pol.since + POLICY_YEARS - g.year)}年後から変えられる` : g.pc < POLICY_COST ? TR`政治力が足りない (${POLICY_COST} 必要)` : '';
+    const why = cur ? TR('いまの方針') : !canChange ? TR`${Math.ceil(pol.since + g.policyYears() - g.year)}年後から変えられる` : g.pc < POLICY_COST ? TR`政治力が足りない (${POLICY_COST} 必要)` : '';
     return TR`<button data-act="policy" data-value="${id}" class="${cur ? 'on' : ''}" ${why && !cur ? 'disabled' : ''}>${ico(`pol-${id}`)}${p.label}<small>${esc(p.good)}<br>代わりに: ${esc(p.bad)}${why ? `<br>${esc(why)}` : TR`<br>政治力 ${POLICY_COST}`}</small></button>`;
   }).join('');
   const sc = g.ended && g.finalScore ? g.finalScore : g.score();
@@ -22,17 +22,17 @@ function goalsSheet(app) {
   const direct = g.knownSystems().filter((s) => s.id !== g.cap && g.known(s.id)?.direct).map((s) => `<button data-act="goto" data-sys="${s.id}">${esc(s.name)}</button>`).join(' ');
   const councilNote = g.council < 25 ? TR('<span class="bad">15を割ると政権交代</span>') : g.council >= 70 ? TR('<span class="hz">政治力が増えやすい</span>') : '';
   return TR`<div class="kpi">
-      <div><span>政治力</span><b>${Math.floor(g.pc)} / ${PC_CAP}</b><span>${inc.total >= 0 ? '+' : ''}${inc.total}/年</span></div>
+      <div><span>政治力</span><b>${Math.floor(g.pc)} / ${g.pcCap()}</b><span>${inc.total >= 0 ? '+' : ''}${inc.total}/年</span></div>
       <div><span>${ico('council')}議会の支持</span><b>${Math.round(g.council)}</b><span>${councilNote || TR('毎年 −0.25')}</span></div>
       <div><span>点数${g.ended ? TR(' (確定)') : ''}</span><b>${sc.total}</b><span>${g.endYear ? TR`${Math.round(g.endYear)}年で確定` : TR('終わりなし')}</span></div>
       <div><span>直轄</span><b>${g.directCount()} / ${g.directMax()}</b><span>星系</span></div>
     </div>
     <h3>国家方針${pol ? TR` — いまは「${POLICIES[pol.id].label}」(${Math.round(pol.since)}年から)` : ''}</h3>
-    <p class="note">国の向きを一つ選ぶ。${POLICY_YEARS}年に一度だけ変えられる (政治力 ${POLICY_COST})。議会の審議にかけ (国の権力に加わっている集団の支持が ${pct(ENACT.now)} 以上ならすぐ通る)、通ったあと、知らせが光速で届いた星系から順に効く。</p>
+    <p class="note">国の向きを一つ選ぶ。${g.policyYears()}年に一度だけ変えられる (政治力 ${POLICY_COST})。議会の審議にかけ (国の権力に加わっている集団の支持が ${pct(ENACT.now)} 以上ならすぐ通る)、通ったあと、知らせが光速で届いた星系から順に効く。</p>
     ${billHtml(g, 'policy')}<div class="btns wrap">${polBtns}</div>
     ${fiscalHtml(g)}
     <h3>政治力 (${ME.home}の意志)</h3>
-    <p class="note">星系の政府への指令 (施設・交易路・方針・視察・要求への返事など) には政治力が要る。遠い星系ほど多く (距離 d 光年で 2 + 0.15d、直轄の星系は半分)。宣戦・講和は ${PC_DIPLOMACY}。${ME.capName}の中の行動 (${ME.capName}からの入植船・施設) と艦隊への指令は要らない。年ごとに貯まり、${PC_CAP} で頭打ちになる。</p>
+    <p class="note">星系の政府への指令 (施設・交易路・方針・視察・要求への返事など) には政治力が要る。遠い星系ほど多く (距離 d 光年で 2 + 0.15d、直轄の星系は半分)。宣戦・講和は ${PC_DIPLOMACY}。${ME.capName}の中の行動 (${ME.capName}からの入植船・施設) と艦隊への指令は要らない。年ごとに貯まり、${g.pcCap()} で頭打ちになる。</p>
     <table class="tbl">${inc.parts.map(([l, v]) => TR`<tr><td>${esc(l)}</td><td class="${v < 0 ? 'bad' : ''}">${v >= 0 ? '+' : ''}${v}/年</td></tr>`).join('')}<tr class="total"><td>合計</td><td>${inc.total >= 0 ? '+' : ''}${inc.total}/年</td></tr></table>
     <h3>${ico('council')}議会の支持</h3>
     ${councilChart(g.council)}

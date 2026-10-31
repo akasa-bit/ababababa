@@ -80,7 +80,7 @@
     if (at <= this.year + 1e-9) this.exhaust(root, v);
     else this.exhaustSent.push({ r: root, v, at });
   }
-  exhaust(root, v) { if (root !== undefined && root !== null) this.exhaustion[root] = clamp((this.exhaustion[root] || 0) + v, 0, 100); }
+  exhaust(root, v) { if (root !== undefined && root !== null) this.exhaustion[root] = clamp((this.exhaustion[root] || 0) + (v > 0 ? v * this.modsOf(root).exhaust : v), 0, 100); } // 好戦的は溜まり方 ×0.5 (政治。回 SE8)
   // 艦隊戦で沈んだ艦隊を数える (by = 沈めた国、lost = 沈められた国、sys = 戦った星系)
   warLoss(by, lost, n, sys) {
     if (n <= 0) return;

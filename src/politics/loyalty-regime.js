@@ -217,7 +217,7 @@
     Object.assign(gv, { lord: winner, independent: false, loyalty: PUPPET.loyalty, friend: 0, fear: 0, orders: 0, attended: this.year, unrest: { stage: 0 } });
     const reg = this.defaultRegime(winner, id);
     if (reg === 'direct') gv.direct = true; else if (reg !== BASE_REGIME) gv.regime = reg;
-    for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
+    for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') this.voidDecision(d);
     this.event('politics', id, JA`${this.realmName(old)}の敗戦で、${this.system(id).name} の傀儡政権が倒れた。${this.realmName(winner)}の家臣になり、統治体制は${REGIMES[regimeKey(gv)].label}になった`, this.isHuman(winner));
   }
   // 共同統治の 2 国目への分け前を断つ・戻す (指令が届いたとき)。断つと家臣の忠誠度が下がる
@@ -355,9 +355,15 @@
     list.push({ year: Math.floor(this.year), what, why });
     gv.did = list.slice(-GOV_DID.max);
   }
+  // 決めることを取り消す (星系が独立した・傀儡政権が倒れた・不満が収まった)。返事に添えて送った額 (cr) は払った国へ返す
+  // (前は返さず、50 年後に決めることの一覧から消えるときにお金が消えていた。回 SE8 でお金の保存の試験が見つけた)
+  voidDecision(d) {
+    d.state = 'done'; d.void = true;
+    if (d.cr) this.release('grant', d, 'cr', d.payer ?? 0, d.payer ?? 0);
+  }
   calmUnrest(id, gv, why) {
     gv.unrest = { stage: 0 };
-    for (const p of this.players) for (const d of p.decisions || []) if (d.kind === 'demand' && d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
+    for (const p of this.players) for (const d of p.decisions || []) if (d.kind === 'demand' && d.sys === id && d.state !== 'done') this.voidDecision(d);
     this.event('politics', id, `${this.system(id).name}: ${why}`, true);
   }
   demandText(kind) { return kind === 'tax' ? JA`朝貢の免除 (${CONCESSION_YEARS}年)` : JA`自治 (${CONCESSION_YEARS}年、主人の指令を受けない)`; }
@@ -445,7 +451,7 @@
     delete gv.lord2;
     delete gv.jointCut;
     delete gv.arrears;
-    for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
+    for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') this.voidDecision(d);
     this.asRealm(formerRealm, () => {
       this.stats.indepFromEarth++;
       this.councilAdd(-8);
@@ -511,6 +517,7 @@
   // 指令に要る政治力。艦隊への指令・自動の指令・太陽系の中の行動は0。直轄の星系は半分
   pcCost(act, d) {
     if (d.auto || d.awe || d.aweBack || PC_FREE_ACTS.has(act)) return 0;
+    if (act === 'declarewar' && this.modsOf(this.cap).warFree) return 0; // 好戦的は宣戦に政治力が要らない (回 SE8)
     if (act === 'declarewar' || act === 'peace' || act === 'pact') return PC_DIPLOMACY;
     if (act === 'policy') return POLICY_COST;
     if (act === 'bill') return d.op === 'push' ? this.billPushCost(d.bill) : 0; // 審議中の法案を押す (回 SE7)
@@ -537,7 +544,7 @@
   }
   pcYearly() {
     this.pcLast = this.pcIncome().total;
-    this.pc = clamp(this.pc + this.pcLast, 0, PC_CAP);
+    this.pc = clamp(this.pc + this.pcLast, 0, this.pcCap());
   }
   // 主人の関与 (指令・援助・艦隊・視察・回答) が届いた: 放っておかれた年数が0に戻る
   attend(id) { if (!this.isHuman(id) && this.govs[id]) this.govs[id].attended = this.year; }
