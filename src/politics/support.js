@@ -69,6 +69,8 @@
     for (const [k, b] of Object.entries(BUDGET)) if ((target.budget?.[k] || 0) !== (f0.budget?.[k] || 0)) out.push(JA`${b.label}の予算 ${Math.round((target.budget?.[k] || 0) * 100)}%`);
     if (['ceil', 'ration', 'ban', 'embargo'].some((k) => JSON.stringify(target[k] || {}) !== JSON.stringify(f0[k] || {}))) out.push(this.ctlText(target) || JA`価格統制と交易の規制をやめる`); // 回 KE9
     if ((target.repress || 0) !== (f0.repress || 0)) out.push(JA`金融抑圧 ${((target.repress || 0) * 100).toFixed(1)} 点`); // 回 KE9 (B-009)
+    if ((target.soe || 0) !== (f0.soe || 0)) out.push(JA`国有の割合 ${Math.round((target.soe || 0) * 100)}%`); // 回 KE9 (B-011)
+    if ((target.capctl || 0) !== (f0.capctl || 0)) out.push(JA`資本規制 ${Math.round((target.capctl || 0) * 100)}%`);
     return out.join('・');
   }
   // 通す: 財政はいまの政策金利と中央銀行の任せ方のまま、ほかの手段を法案の値に。国家方針は方針を変える

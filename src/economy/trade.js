@@ -191,6 +191,14 @@
     if (!r) { r = { to, from, v: 0, at, hh: 1 }; this.refunds.push(r); M.set(`${to}|${at}`, r); }
     this.cash('dividend', v, { way: r, f: 'v' });
   }
+  // 星系 from の家計から遠くの持ち主 to の家計へ、資本の受け渡し (国有化の補償。回 KE9・B-011) の v を光速で送る。配当と同じ返金の列に入るが、所得ではないので GNI に数えない
+  sendCapital(from, to, v, kind) {
+    if (!(v > 0)) return;
+    const at = Math.ceil(this.year + this.sysDist(from, to) - 1e-9), M = (this._remit ??= new Map(this.refunds.filter((q) => q.hh).map((q) => [`${q.to}|${q.at}`, q])));
+    let r = M.get(`${to}|${at}`);
+    if (!r) { r = { to, from, v: 0, at, hh: 1 }; this.refunds.push(r); M.set(`${to}|${at}`, r); }
+    this.cash(kind, v, { way: r, f: 'v' });
+  }
   // 貨物を積み出す。path は経由する星系の列、times は各星系に着く年
   shipCargo(from, legs, res, amt) {
     const path = [from, ...legs.map((l) => l.next)];

@@ -365,6 +365,25 @@ M₀ は、試合の始めに政府が持っていた資金 (`START_CREDITS`) �
 - 中央銀行の儲けと損 (持った国債の値下がり) は入れていない。利子はそのまま国に戻る。
 - 再編の政治の損 (政権が倒れやすくなる) は入れていない。政治力と借りられない間だけ。
 
+## 10. 国有化・民営化・資本規制 (回 KE9・B-011)
+
+`docs/econ-policy-list.md` の 3 の H・E と 4 (24-4)。回 KE6 の会社の資本 (`gv.K`。`docs/regions.md` の 7) と、回 KE5 の遠くの持ち主 (`gv.own`。`docs/regions.md` の 6) の上に載せた。値は `src/economy/fiscal-consts.js` の `SOE_RANGE`・`CAPCTL_RANGE`・`SOE`。どちらも法なので議会の審議にかけ、人間の国だけが使う。
+
+| 手段 | 形 | 行政の遅れ | 出どころ |
+|---|---|---|---|
+| 国有の割合 (`soe`。幅 0〜80%・刻み 10%) | 国の星系ごとに、政府の持ち分 `gv.soe` を法の割合にそろえる (`soeStep`。毎刻み)。上げる分は民間の持ち主 (地元の家計と遠くの持ち主) から持ち分に比べて買い取り、割合の差 × 会社の資本を国債で払う (遠くの持ち主へは光速で送る。資本の受け渡しなので GNI には数えない)。下げる分は地元の家計に同じ値で売り、政府の資金に入る。国有の分の配当は星系の政府に入る (帳簿の「国有企業の配当」)。国有の割合 × `SOE.eff` だけ工業と採掘の生産性が下がる (農業は家計が持つとみる)。国有の分はほかの国が持てない (遠くの持ち分の目標が (1 − 国有の割合) 倍) | 0.47 年 (英国の石炭の国有化法は 1946 年 7 月 12 日に成立し、1947 年 1 月 1 日に移った) | eff 0.055 = Brown, Earle & Telegdy (2006) の民営化の全要素生産性の効き (ルーマニア +15%・ハンガリー +8%・ウクライナ +2%・ロシア −3%) の平均。外国の買い手への民営化は +18〜35% だが、ここでは国の中の家計に売るので入れない |
+| 資本規制 (`capctl`。幅 0〜100%・刻み 25%) | 国の星系のほかの国の持ち分の目標と、国が外へ出す投資の重み (`ownYearly` の W) を (1 − capctl) 倍にする。持ち分は資本の入れ替わりの速さ (年 delta + 伸び) で動くので、効くのは数十年かけて | すぐ (マレーシアの 1998 年 9 月 1 日の規制は発表の日から) | 形は `econ-policy-list.md` の 3 の E |
+
+- 純資産: 国有化も民営化も、国のすべての純資産 (政府の資金 − 国債・民間の手持ち − 借り・運ぶ途中) は変わらない (会社の資本の値と同じ額のお金が入れ替わるだけ)。
+- 配当: 会社の手持ちが配当の前にマイナスの星系 (借りの大きい会社) は配当を出さないので、国有にしても政府には入らない。シード 3 の 40 年目の地球の首都の会社がそうだった (前からの形。会社の借りの大きさは `docs/structure.md` の 7)。
+- 試験: `tools/tests/owners.js` (選べない値・法案・国有化の補償と持ち分と純資産・生産性・配当・民営化・保存と読み込み・資本規制で持ち分の目標と外への投資が減る)。
+
+### 10.1 入れなかったもの
+
+- 土地改革: いまのゲームには土地の持ち主も、所得の分位ごとの財産もなく、所得の 5 分位の分け前は全部の星系で同じ定数 (`GROUPS.quint`)。土地改革を形にするには、星系ごとの所得の分け方 (と、それを使う集団・帰着・支持の式) を先に作る必要があるので、回 KE9 では入れなかった (回 W3 で聞く)。
+- 補償なしの国有化 (収用): 補償はいつも会社の資本の値。収用 (外国の持ち主への補償を払わない形。1938 年のメキシコの石油など) と、それへのほかの国の反発は入れていない。
+- 帰着の表の国有化の行: 補償が資本の値なので 1 次の損得は 0 とみて、行を足していない (配当と生産性の動きは入れていない)。
+
 ## 出典
 
 - Jordà, Ò., Schularick, M. & Taylor, A. M. (2017). Macrofinancial History and the New Business Cycle Facts. *NBER Macroeconomics Annual* 31, 213–263.
@@ -376,3 +395,4 @@ M₀ は、試合の始めに政府が持っていた資金 (`START_CREDITS`) �
 - Weale, M. & Wieladek, T. (2016). What are the macroeconomic effects of asset purchases? *Journal of Monetary Economics* (2016), 81–93.
 - Reinhart, C. M. & Sbrancia, M. B. (2015). The liquidation of government debt. *Economic Policy* 30(82), 291–333.
 - Cruces, J. J. & Trebesch, C. (2013). Sovereign Defaults: The Price of Haircuts. *American Economic Journal: Macroeconomics* 5(3), 85–117.
+- Brown, J. D., Earle, J. S. & Telegdy, Á. (2006). The Productivity Effects of Privatization: Longitudinal Estimates from Hungary, Romania, Russia, and Ukraine. *Journal of Political Economy* 114(1), 61–99.

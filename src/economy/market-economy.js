@@ -48,8 +48,9 @@
   payFrom(kind, v, sys) { if (MARKET.buy) this.cash(kind, v, { fm: sys }); else this.earn(kind, v, sys); }
   // 1 人 (人口の単位) あたりの年の産出。sector = farm (食料)・mine (資源 r)・ind (低付加価値物品)・hi (高付加価値物品。回 KE5)
   yieldOf(c, sector, r) {
-    const k = (this.productivity || 1) * STRUCTURE.modern * this.techA(c.sys, sector) * this.laborK(c) * (c.hk ?? 1); // 開始時に選ぶ生産性 × 物差しの倍率 × 国の技術の水準 × 働き手の倍率 (回 KE2) × 学歴 (回 KE5)
+    let k = (this.productivity || 1) * STRUCTURE.modern * this.techA(c.sys, sector) * this.laborK(c) * (c.hk ?? 1); // 開始時に選ぶ生産性 × 物差しの倍率 × 国の技術の水準 × 働き手の倍率 (回 KE2) × 学歴 (回 KE5)
     if (sector === 'farm') return k * YIELD.farm * (1 + this.fertility(c)) * (1 + 0.25 * c.lv.farm);
+    k *= 1 - SOE.eff * (this.govs[c.sys]?.soe || 0); // 国有の会社は生産性が低い (工業と採掘。農業は家計が持つとみる。回 KE9・B-011)
     const tm = this.modsOf(c.sys);
     if (sector === 'ind') return k * YIELD.ind * (1 + 0.25 * c.lv.factory) * tm.ind;
     if (sector === 'hi') return k * YIELD.hi * (1 + 0.25 * c.lv.factory) * tm.ind; // 工場の段と種族の工業の特性は、低付加価値の工業と同じく効く
@@ -611,9 +612,10 @@
         const v = gv.fm;
         let here = v;
         this.cash('dividend', -v, { fm: id });
-        if (gv.own) { // 遠くの持ち主の分 (OWNER): 利潤 (付加価値の alpha。配当できる手持ちまで) × 持ち分を、光速で送る
+        if (gv.own || gv.soe) { // 遠くの持ち主の分 (OWNER): 利潤 (付加価値の alpha。配当できる手持ちまで) × 持ち分を、光速で送る。国有の分 (回 KE9) は星系の政府へ
           const P = Math.min(v, CAPITAL.alpha * (va[id] || 0));
-          for (const [o, s] of Object.entries(gv.own)) { const x = P * s; here -= x; this.remit(id, Number(o), x); }
+          for (const [o, s] of Object.entries(gv.own || {})) { const x = P * s; here -= x; this.remit(id, Number(o), x); }
+          if (gv.soe > 0) { const x = P * gv.soe; here -= x; this.earn('dividend', x, id); }
         }
         this.cash('dividend', here, { hh: id });
       }

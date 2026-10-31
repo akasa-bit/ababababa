@@ -60,11 +60,13 @@
   // 年 1 回: 遠くの持ち分が、資本の入れ替わりの速さ (delta + 地元の実質の所得の伸び) で目標に近づく。目標 = OWNER.fdi × ほかの国の重みの割合
   // (重み = 国の大きさ × 1 人あたりの所得の OWNER.out 乗。その国の首都の家計が持つ)。
   // 持ち主がいなくなった分は地元へ (OWNER。回 KE5)
+  // 回 KE9 (B-011): 国有の分 (gv.soe) は目標の外 (残りの民間の分の中でほかの国が持つ)。資本規制 (人間の国の capctl) は、国の星系のほかの国の持ち分の目標と、
+  // 国が外へ出す重みを (1 − capctl) 倍にする
   ownYearly() {
     const Y = {}, N = {}, ys = {};
     for (const c of this.colonies) { const v = c.pop * (c.incU ?? c.inc ?? 0), r = this.realmOf(c.sys); Y[r] = (Y[r] || 0) + v; N[r] = (N[r] || 0) + c.pop; ys[c.sys] = (ys[c.sys] || 0) + v; } // 実質の所得 (ならしたもの)
-    const W = {};
-    for (const [r, v] of Object.entries(Y)) if (v > 0 && N[r] > 0) W[r] = v * GM.pow(v / N[r], OWNER.out); // 出す国の重み
+    const W = {}, cc = (r) => (this.isHuman(r) && !this.spectate ? this.fiscalFor(r, r).capctl || 0 : 0); // 資本規制 (国の首都で効いている値)
+    for (const [r, v] of Object.entries(Y)) if (v > 0 && N[r] > 0) W[r] = v * GM.pow(v / N[r], OWNER.out) * (1 - cc(Number(r))); // 出す国の重み
     const tot = Object.values(W).reduce((k, v) => k + v, 0);
     for (const [k, gv] of Object.entries(this.govs)) {
       const id = Number(k), y = ys[id] || 0;
@@ -73,7 +75,8 @@
       gv.ownY = y;
       if (!this.isColonized(id)) { delete gv.own; continue; }
       const me = this.realmOf(id), rest = tot - (W[me] || 0), T = {};
-      if (rest > 0) for (const [r, v] of Object.entries(W)) if (Number(r) !== me) T[r] = (OWNER.fdi * v) / rest;
+      const open = (1 - (gv.soe || 0)) * (1 - cc(me)); // 国有の分と資本規制の分は、ほかの国が持てない
+      if (rest > 0) for (const [r, v] of Object.entries(W)) if (Number(r) !== me) T[r] = (OWNER.fdi * v * open) / rest;
       const own = (gv.own ??= {}), q = first ? 0 : GM.exp(-(CAPITAL.delta + g));
       for (const r of Object.keys(T)) own[r] ??= 0;
       for (const o of Object.keys(own)) {
@@ -81,6 +84,33 @@
         if (own[o] < OWNER.min || !this.isColonized(Number(o))) delete own[o];
       }
       if (!Object.keys(own).length) delete gv.own;
+    }
+  }
+  // 国有化と民営化 (回 KE9・B-011。毎刻み。人間の国の星系だけ): その星系で効いている財政の国有の割合 soe に、政府の持ち分 gv.soe をそろえる。
+  // 上げる分は、民間の持ち主 (地元の家計と遠くの持ち主) から持ち分に比べて買い取り、割合の差 × 会社の資本 gv.K を国債で払う (遠くの持ち主へは光速で送る)。
+  // 下げる分は、地元の家計に同じ値で売る (政府の資金に入る)。どちらも国のすべての純資産は変わらない (物の値打ちと同じ額のお金が入れ替わるだけ)
+  soeStep() {
+    if (this.spectate) return;
+    for (const key of Object.keys(this.govs)) {
+      const id = Number(key), gv = this.govs[key];
+      if (!this.isColonized(id)) continue;
+      const root = this.realmOf(id);
+      if (!this.isHuman(root)) continue;
+      const want = this.fiscalFor(root, id).soe || 0, cur = gv.soe || 0, d = want - cur, K = Math.max(0, gv.K || 0);
+      if (Math.abs(d) < 1e-9) continue;
+      if (d > 0) {
+        const k = d / (1 - cur), own = gv.own || {}, local = 1 - cur - Object.values(own).reduce((a, s) => a + s, 0);
+        const pay = [];
+        for (const o of Object.keys(own)) { pay.push([Number(o), own[o] * k * K]); own[o] *= 1 - k; if (own[o] < OWNER.min) delete own[o]; }
+        const C = local * k * K + pay.reduce((a, [, x]) => a + x, 0);
+        this.bondMove('nationalize', C, id); // 補償は国債で (銀行が国債を買い、持ち主の預金を作る)
+        if (local * k * K > 0) this.cash('nationalize', local * k * K, { hh: id });
+        for (const [o, x] of pay) this.sendCapital(id, o, x, 'nationalize');
+      } else {
+        const x = -d * K;
+        if (x > 0) { this.cash('privatize', -x, { hh: id }); this.cash('privatize', x, { gov: id }); }
+      }
+      if (want > 0) gv.soe = want; else delete gv.soe;
     }
   }
   autoDevelop() {
