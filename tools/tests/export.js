@@ -3,6 +3,7 @@
 // 2. 交易: 国の輸出の合計 (sna の P6) = 輸入の合計 (P7) = trade.csv の額の合計。国の中の輸送 (i = j) は入れない
 // 3. GFS: 収入 = 税 + 移転 + 財産所得など、支出 = 目的別 (COFOG) + 利子 + 移転、純貸出 = 収入 − 支出。
 //    GFS の純貸出 (GNLB) と帳簿の純貸出 (sna の B9_S13) の差が、支出の合計の 1% より小さい (政府の出入りの種類が GFS の分類から漏れると落ちる。回 DO7)
+//    30 年目から観戦をやめて国有化 (国有の割合 30%。人間の国だけ)、70 年目に一部を民営化 (10%) して、国有企業の配当と株の売り買いも数える (回 DO8)
 // 4. 貸借: 銀行の預金 (負債) = 部門の預金の合計、銀行の準備 = 預金 − 貸出 − 国債
 // 5. 政策の出来事: わざと消費税を変えた年に、地球の国の ctax の行が 1 つ出る
 // 6. 戦争: どの戦争も参加国が 2 つ、始まり ≤ 終わり
@@ -19,7 +20,7 @@ const X = require('../export');
 const [seed = '2', years = '120'] = process.argv.slice(2);
 const sim = H.load(process.env.HTML ? { src: process.env.HTML } : {});
 const rows = Object.fromEntries(Object.keys(X.COLS).map((k) => [k, []]));
-const g = X.play(sim, seed, Number(years), 6, (t, r) => rows[t].push(r), (gg, y) => { if (y === 10) gg.setFiscal({ ctax: 0.05 }, true); });
+const g = X.play(sim, seed, Number(years), 6, (t, r) => rows[t].push(r), (gg, y) => { if (y === 10) gg.setFiscal({ ctax: 0.05 }, true); if (y === 30) { gg.setSpectate(false); gg.setFiscal({ soe: 0.3 }, true); } if (y === 70) gg.setFiscal({ soe: 0.1 }, true); });
 const fails = [];
 const check = (ok, msg) => { if (!ok) fails.push(msg); };
 // 表の値は 8 桁に丸めてあるので、足し引きした項の大きさに比べて 1e-6 まで許す

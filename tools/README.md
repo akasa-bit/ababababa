@@ -24,6 +24,7 @@ PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメ
 - `node tools/research-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]`: 国ごと・年ごとの技術の伸びと研究者の数を書き出す。`python3 data/build/build_ideas.py --game <出力.csv>` で、Bloom ほか 2020 と同じ式で R11 の合否を出す
 
 - `node tools/fun-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数] [探索の予算] [探索の銀河の数]`: 面白さの代わりの数 (判断を求められる回数・待つだけの年・1 つの戦略が強すぎないか・逆転・選ぶ意味の大きさ) を main と並べ、PR の版で必勝法を探す AI の小さな探索を回す。合否は付けないが、main より大きく悪くなったら「止める線」に出す (`FUN_GATE_OUT` のファイルに書き、CI のジョブ「面白さの数の止める線」が見る。線は `docs/parallel.md` の 4 の 3)。数の中身は `docs/fun.md`
+  - CI (回 DO8・B-224) は 24 銀河を 3 つの実行機に分ける: 各実行機が `--part k/3 --json fun-part-k.json` で 8 銀河ずつ回し (探索は 1 番目だけ)、最後のジョブが `node tools/fun-report.js --merge fun-part-1.json fun-part-2.json fun-part-3.json` で 1 つの表と止める線にする。`--seeds 25-48` で銀河の番号を選べる。比べる元と PR に同じファイルを渡すと 1 回だけ回す (main どうしの揺れを測るとき。`docs/fun.md` の 12.1)
 
 手元で同じものを回すときは `CHROMIUM=/opt/pw-browsers/chromium node tools/ci-tests.js` (3 分ほど)。
 
@@ -121,6 +122,8 @@ node tools/headless.js 1 100 6 params.json     # 値のファイルで表を差�
 値のファイルは `{ "表の名前": { "項目": 値 } }` の形 (例: `{ "ED": { "hazardBase": 0.8 }, "TRADE": { "rate": 0.02 } }`)。名前が大文字の表の定数 (と、この版の値 `ED`) だけを書き換えられる。ない項目を書くと止まる。読み込みのときに表から計算してしまう値 (`E_UNIT` など) は変わらない。
 
 ほかの道具からは `const H = require('./headless'); const sim = H.load({ params }); const g = sim.run(sim.newGame('1', { nations: 6 }), 100);` で使う (`g` はゲームの `Game` そのもの。`sim.hash(g)` は状態の要約、`sim.tables` は表)。
+
+`newGame` の選べる値: `nations` (国の数)・`galaxy: 'gen'` (自動生成の銀河。回 GA10。ないときは実在の星)・`gen` (銀河の版。前の版と比べるとき。ないときはいまの版 `GALAXY_GEN`。版 5 から星系はおよそ 2 倍)。
 
 ## 使い方
 
