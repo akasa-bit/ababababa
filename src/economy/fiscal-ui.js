@@ -82,7 +82,17 @@ function debtToolsHtml(g, f, fd, slider) {
   return TR`<tr><td>物価の目標</td><td>${slider('pistar', TARGET_RANGE, TARGET_STEP, fd.pistar ?? FISCAL_DEFAULT.pistar, 'pct0', TR('物価の目標'))}</td><td colspan="2" class="muted wrap">中央銀行が目指す物価の上がり方 (既定 ${(CB.pistar * 100).toFixed(0)}%)。上げると、人々の見込みが少しずつそこへ動き (いま見込む目標 年 ${((s.T ?? CB.pistar) * 100).toFixed(1)}%)、物価の上がり方と長期の利回りも上がる。国債の利札は借り換えの ${CB.roll} 年ほど遅れて上がるので、そのあいだ国債の実質の利子が下がる (インフレ税)。物価が ${(CB.pistar * 100).toFixed(0)}% から外れると、1 点ごとに所得の ${INFL_LOSS}% の損と同じだけ家臣の忠誠度と議会の支持が下がる (いま 年 ${((s.pi ?? CB.pistar) * 100).toFixed(1)}%: 忠誠度の目標 ${(LOSS.loyalty * INFL_LOSS * dev).toFixed(1)}・議会 年 ${(LOSS.council * INFL_LOSS * dev).toFixed(2)})</td></tr>
       <tr><td>量的緩和</td><td>${slider('qe', QE_RANGE, QE_STEP, fd.qe || 0, 'pct0', TR('量的緩和'))}</td><td colspan="2" class="muted wrap">国の政府の国債のうち、中央銀行が買って持つ割合 (${QE.speed} 年ほどかけて買う)。持った分の利子は国に戻る。長期の利回りが下がり (中央銀行の持つ国債 GDP の 10% ごとに ${(QE.tp * 10).toFixed(2)} 点)、買い入れ GDP の 1% ごとに物価が ${QE.pi}% ほど上がる。いま中央銀行が持つ国債 ${fmtAmt(qb)} cr (国の国債 ${fmtAmt(bond)} cr)</td></tr>
       <tr><td>金融抑圧</td><td>${slider('repress', REPRESS_RANGE, REPRESS_STEP, f.repress || 0, 'pt1', TR('金融抑圧'))}</td><td colspan="2" class="muted wrap">銀行に国債を持たせ、預金の利子に上限を置いて、国の政府の国債の利札をこれだけ下げる (法なので議会の審議にかける)。下げた分は国の中の預金者 (家計・会社・政府) が受け取らない。1945〜80 年の先進国は、実質の金利が負の年が約半分で、債務が年に GDP の 3〜4% ずつ目減りした (Reinhart & Sbrancia)</td></tr>
+      ${ownersHtml(g, f, slider)}
       <tr><td>債務の再編</td><td>${out ? TR`<span class="muted">あと ${((CB.exclude * (cg.hc ?? CB.haircut)) / CB.haircut - (g.year - cg.dflt)).toFixed(1)} 年はできない</span>` : RESTRUCTURE.hc.map((h) => `<button data-act="restructure" data-hc="${h}" ${g.pc < pc || !(bond - qb > 0) ? 'disabled' : ''}>${Math.round(h * 100)}%</button>`).join(' ')}</td><td colspan="2" class="muted wrap">国の政府の国債のうち銀行が持つ分 (${fmtAmt(Math.max(0, bond - qb))} cr) の、選んだ割合を払わない (政治力 ${pc}。取り消せない)。預金がそのぶん目減りし、払わない割合に比べて長く (37% で ${CB.exclude} 年) 新しく国債を出せず、そのあとも利回りに上乗せがつく。中央銀行の持つ分は減らさない。現実の再編は半分が 23% 未満か 53% 超 (ギリシャ 2012 年 53.5%・アルゼンチン 2005 年 76.8%)</td></tr>`;
+}
+// 国有化・民営化と資本規制 (回 KE9・B-011。docs/fiscal.md の 10)。どちらも法なので審議中の値 (f)
+function ownersHtml(g, f, slider) {
+  const ids = g.realmSystems(g.cap).map((x) => x.id).filter((id) => g.isColonized(id) && g.govs[id]);
+  let K = 0, S = 0, F = 0;
+  for (const id of ids) { const gv = g.govs[id], k = Math.max(0, gv.K || 0); K += k; S += k * (gv.soe || 0); F += k * Object.entries(gv.own || {}).filter(([o]) => g.realmOf(Number(o)) !== g.cap).reduce((a, [, s]) => a + s, 0); }
+  const div = Math.max(0, g.gov(g.cap).ledger?.dividend || 0);
+  return TR`<tr><td>国有の割合</td><td>${slider('soe', SOE_RANGE, SOE_STEP, f.soe || 0, 'pct0', TR('国有の割合'))}</td><td colspan="2" class="muted wrap">国の星系の会社のうち政府が持つ割合 (法なので議会の審議にかける)。上げると持ち主から会社の資本の値で買い取り、補償は国債で払う。下げると地元の家計に同じ値で売る。国有の分の配当は星系の政府に入り (${ME.capName} ${fmtAmt(div)} cr/年)、工業と採掘の生産性は国有の割合 1 割ごとに ${(SOE.eff * 10).toFixed(2)}% 下がる (旧社会主義国の民営化の平均)。いま国の会社の資本 ${fmtAmt(K)} cr のうち政府 ${K > 0 ? pct(S / K) : '—'}・ほかの国 ${K > 0 ? pct(F / K) : '—'}</td></tr>
+      <tr><td>資本規制</td><td>${slider('capctl', CAPCTL_RANGE, CAPCTL_STEP, f.capctl || 0, 'pct0', TR('資本規制'))}</td><td colspan="2" class="muted wrap">ほかの国の会社が国の星系に持つ持ち分の目標と、国の家計が外の会社に持つ投資を、この割合だけ絞る (法なので議会の審議にかける)。持ち分は資本の入れ替わりの速さで (数十年かけて) 動く</td></tr>`;
 }
 // 価格統制と交易の規制 (回 KE9・B-008。docs/fiscal.md の 8)。値は審議中の法案があればその値 (fiscalDraft)。変えると財政の法案になる
 function ctlHtml(g) {
@@ -99,7 +109,7 @@ function ctlHtml(g) {
     ${others.length ? TR`<p>禁輸: ${emb}</p>` : ''}`;
 }
 // 財政の手段の名前 (行政の遅れの知らせ)
-const FISCAL_LAG_LABEL = { tax: '所得への税', ctax: '消費税', tariff: '関税', rate: '政策金利', cb: '中央銀行', deficit: '赤字の上限', rdcredit: '研究開発の税額控除', budget: '予算', ceil: '値段の上限', ration: '配給', ban: '輸出禁止', embargo: '禁輸', pistar: '物価の目標', qe: '量的緩和', repress: '金融抑圧' };
+const FISCAL_LAG_LABEL = { tax: '所得への税', ctax: '消費税', tariff: '関税', rate: '政策金利', cb: '中央銀行', deficit: '赤字の上限', rdcredit: '研究開発の税額控除', budget: '予算', ceil: '値段の上限', ration: '配給', ban: '輸出禁止', embargo: '禁輸', pistar: '物価の目標', qe: '量的緩和', repress: '金融抑圧', soe: '国有の割合', capctl: '資本規制' };
 // 帰着の表 (回 KE8・B-012): 決めた財政を標準の財政と比べた 1 年の損得。部門ごとと、国の家計の所得の 5 分位ごと (分位の所得に対する割合)
 function incidenceHtml(g) {
   if (!g.fiscal) return '';
