@@ -310,6 +310,7 @@ python3 data/build/build_hcap.py ゲームのパネル.csv   # ゲームの R62�
 |---|---|---|
 | 取得 | `data/fetch/fetch_values.py` → `data/raw/values/` | Global Flourishing Study の 1・2 年目の全世界の個票 (Gallup・Center for Open Science。CC BY 4.0) から、国・1 年目の重み・世帯の所得の区分・この国で生まれたか・9 項目の 1 年目だけを gzip で (`gfs_wave1_values.csv.gz`。207,919 人・2.3 MB)。世界銀行 WDI の 1 人あたり GDP (購買力平価の 2021 年のドル。2022 年)。取ってきたままのファイルの SHA-256 は `MANIFEST.json` |
 | 加工 | `data/build/analyze_values.py` → `data/derived/values.json` | 伝統 ↔ 世俗 (宗教の大切さ・集まり・法に従う) と生存 ↔ 自己表現の近い形 (信頼・暮らしの心配のなさ・幸福) の国の平均を ln 1 人あたり GDP に当てた切片と傾き (23 の国と地域。相関 0.88・0.28)、国の中の所得の 5 分位ごとの差とよそ生まれの差 (国の固定効果つき)。`src/politics/groups-consts.js` の `GROUPS.values` |
+| 加工 | `data/build/build_ineq.py` → `data/derived/ineq.json` | 所得の 5 分位の分け前 (WDI) を対数正規 (ばらつき σ) に当てはめ、上位 20% の分け前の国の平均の分布 (R84)・σ の国の平均の分布と国の中の年ごとのばらつき・σ を農業の就業の割合に当てた傾き。`--game` でゲームの星系のパネルに同じ式 (回 KE11) |
 
 - **限界**: 22 か国と香港だけ。生存 ↔ 自己表現は WVS の目印の項目 (脱物質主義・寛容・署名) がなく、暮らしの安心と信頼・幸福で作る近い形。所得の区分は国ごとに粗く、分位の境は区分の境に寄る。世界価値観調査の個票は「非営利に限る・再配布しない」が条件なので使っていない (前の近い形は QoG の WVS の国の平均。`data/raw/groups/qog_wvs.csv` は比べるために残す)
 
