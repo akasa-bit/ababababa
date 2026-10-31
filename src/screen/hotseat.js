@@ -53,6 +53,7 @@ function readHomeForm() {
   if (!$('home-seed')) return;
   app.homeSeed = $('home-seed').value.trim();
   app.homeSpectate = !!$('home-spectate')?.checked;
+  if ($('home-galaxy')) app.homeGalaxy = $('home-galaxy').value; // 星間マップの作り方 (回 GA10)
   app.homeEnd = Number($('home-end').value);
   app.homeProd = $('home-prod').value; app.homeProdK = Number($('home-prodk').value);
   app.homeNat = Number($('home-nat').value); app.homeHc = $('home-hc').value; if ($('home-pv')) app.homePv = $('home-pv').value;
@@ -100,7 +101,7 @@ $('home').onclick = (e) => {
   // シングルプレイの設定を決めたら地図を作る。いまのゲームが進んでいるときだけ 2 回押して確定する (B-194)
   if (act === 'new') {
     if (homeGoing() && !confirm2('new')) return;
-    newGame(app.homeSeed || String(Math.floor(Math.random() * 1e6)));
+    newGame(app.homeSeed || String(Math.floor(Math.random() * 1e6)), app.homeGalaxy === 'gen' ? 'gen' : 'real'); // 星間マップの作り方 (回 GA10・B-195)
     if (app.homeSpectate) app.game.setSpectate(true);
     app.game.endYear = app.homeEnd === 0 ? null : START_YEAR + (app.homeEnd ?? 500);
     app.game.challenges = (app.homeCh || []).filter((k) => CHALLENGES[k]).map((id) => ({ id, status: 'active' }));
@@ -331,7 +332,7 @@ window.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
   if (e.key === ' ') { setSpeed(app.speed ? 0 : app.lastSpeed || 1); e.preventDefault(); }
   else if (e.key >= '1' && e.key <= String(SPEEDS.length)) setSpeed(SPEEDS[Number(e.key) - 1]);
-  else if (app.view === 'galaxy' && app.game.galaxy.kind === 'real' && e.key.length === 1 && 'zxrf'.includes(e.key)) galaxyView.rotateBy(e.key === 'z' ? -0.15 : e.key === 'x' ? 0.15 : 0, e.key === 'r' ? 0.1 : e.key === 'f' ? -0.1 : 0); // 地図を回す (Z/X)・傾ける (R/F)
+  else if (app.view === 'galaxy' && is3D(app.game.galaxy) && e.key.length === 1 && 'zxrf'.includes(e.key)) galaxyView.rotateBy(e.key === 'z' ? -0.15 : e.key === 'x' ? 0.15 : 0, e.key === 'r' ? 0.1 : e.key === 'f' ? -0.1 : 0); // 地図を回す (Z/X)・傾ける (R/F)
   else if (e.key === 'g') app.setView('galaxy');
   else if (e.key === 's') app.setView('system');
   else if (e.key === 'e') app.setView('empire');

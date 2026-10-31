@@ -47,7 +47,7 @@ const app = {
   },
 };
 
-// kind: 'real' = 実在の星の 3 次元の銀河 (新しいゲーム)、'flat' = 以前の平面の銀河 (古いセーブ)
+// kind: 'real' = 実在の星の 3 次元の銀河 (新しいゲームの既定)、'gen' = 自動生成の 3 次元の銀河 (設定で選ぶ。回 GA10)、'flat' = 以前の平面の銀河 (古いセーブ)
 function newGame(seed, kind = 'real', gen = GALAXY_GEN) {
   const galaxy = generateGalaxy({ seed, starCount: 400, meanSpacing: 4, kind, gen });
   app.game = new Game(galaxy);
@@ -105,7 +105,7 @@ $('zoom-out').onclick = () => mapView().zoomAt(1 / 1.5, w / 2, h / 2);
 $('zoom-fit').onclick = () => mapView().fit();
 // 3 次元の地図の回転: 「回す」をオンにするとドラッグで回る。「真上」で真上からの見方と斜めからの見方を切り替える
 function updateMapButtons() {
-  const real = app.game?.galaxy?.kind === 'real';
+  const real = is3D(app.game?.galaxy);
   $('rotbtn').hidden = $('topbtn').hidden = !real || app.view !== 'galaxy';
   $('rotbtn').classList.toggle('on', !!app.rotateMode);
   setHtml($('topbtn'), galaxyView.cam.pitch < 0.01 ? TR('斜め') : TR('真上'));
