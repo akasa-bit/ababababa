@@ -32,6 +32,8 @@ const { chromium } = require('playwright');
       const vs = vassals().sort((a, c) => g.sysDist(0, c) - g.sysDist(0, a));
       const far = vs[0];
       res.far = Math.round(g.sysDist(0, far));
+      // 試すのは税の項なので、待つあいだに遠い星系が重税で離反しないよう落ち着かせておく (回 GA9 の CI で、重税の 6 年のあいだに独立して忠誠度の内訳が null になり止まった)
+      const keep = () => { const gv = g.govs[far]; if (gv && gv.lord !== null) { gv.loyalty = Math.max(gv.loyalty ?? 0, 90); delete gv.unrest; delete gv.autonomy; } };
       g.pc = 50;
       // 選べない値: 予算の合計が 10 割を超える・税率が幅の外 (40%)・利子率が刻みの外・前の段階の名前でないもの
       res.bad = [issue('fiscal', { tax: 0.279, rate: 0.05, welfare: 0.6, security: 0.3, military: 0.2 }).ok, issue('fiscal', { tax: 0.4 }).ok, issue('fiscal', { rate: 0.051 }).ok, issue('fiscal', { tax: 'nope' }).ok];
@@ -40,12 +42,12 @@ const { chromium } = require('playwright');
       res.pc = 50 - g.pc; // 税と利子率を変えたので 5
       res.now = [+g.taxK(0).toFixed(3), +g.taxK(far).toFixed(3), g.fiscalFor(0, far).cb ?? 1, g.cbRateAt(0)]; // 所得への税は行政の遅れ (ADMIN_LAG.tax 年) のあいだ首都でもまだ前のまま、遠い星系も前のまま (1・中央銀行に任せたまま)。政策金利はすぐ効くので首都は自分で決める (0.05)
       const L0 = g.loyaltyTerms(far).map((t) => t.label);
-      for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25);
+      for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) { keep(); g.advance(0.25); }
       const pc0 = g.pc;
       res.budgetOnly = [issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.2, military: 0.1 }).ok, pc0 - g.pc]; // 予算だけなら政治力は要らない (0)
       pass();
       const cr0 = g.council;
-      for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25);
+      for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) { keep(); g.advance(0.25); }
       res.later = [+g.taxK(far).toFixed(3), g.cbRateAt(far)];
       const L1 = g.loyaltyTerms(far);
       res.loyalty = [L0.some((l) => l.startsWith('税 (')), L1.some((t) => t.label === '税 (27.9%)' && Math.abs(t.v + 12) < 1e-6), L1.some((t) => t.label === '福祉の予算' && t.v > 0)]; // 重税 (×1.8) の忠誠度 −15 × 0.8 = −12
@@ -57,7 +59,7 @@ const { chromium } = require('playwright');
       pass();
       // 遠い星系に届くまで進める: 光の年数 (四捨五入しない) + 消費税を新しく入れる行政の遅れ (ADMIN_LAG.ctaxNew。回 KE8)。前は四捨五入した光年 + 2 年で、
       // 距離の端数が 0.25 光年を超えると届く前に見ていた (4.4 光年の星系で落ちた)
-      for (let i = 0; i < Math.ceil((g.sysDist(0, far) + ADMIN_LAG.ctaxNew) * 4) + 4; i++) g.advance(0.25);
+      for (let i = 0; i < Math.ceil((g.sysDist(0, far) + ADMIN_LAG.ctaxNew) * 4) + 4; i++) { keep(); g.advance(0.25); }
       // 遠い星系が重税のあいだに離反した (国を出た) ときは、税の項を見る相手がいないので見ない (画面ありの版は回ごとに選ぶ星系が違う)
       res.ctax = [g.fiscal.ctax, g.fiscal.tariff, g.gov(0).ledger.ctax > 0, +burdenK(g.fiscal).toFixed(3), g.realmOf(far) !== 0 || g.loyaltyTerms(far).some((x) => x.label === '税 (20.0% + 消費税 10.0% + 関税 5.0%)')];
       res.left = g.realmOf(far) !== 0;
