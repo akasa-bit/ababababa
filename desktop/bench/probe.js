@@ -42,10 +42,14 @@
       out.dcl = Math.round(nav ? nav.domContentLoadedEventEnd : NaN);
       out.ready = Math.round(performance.now());
       out.epochReady = Date.now();
-      // 同じ銀河で比べる
+      // 同じ銀河で比べる (銀河の番号はシングルプレイの設定の中。回 GA1 でホーム画面を「はじめる」1 つにしたあと)
+      if (!$('home-seed')) { document.querySelector('[data-home="tab"][data-t="single"]')?.click(); await sleep(200); }
       $('home-seed').value = '20261020';
       for (let i = 0; i < 3 && !$('home').hidden; i++) { document.querySelector('[data-home="new"]')?.click(); await sleep(400); }
       out.started = $('home').hidden;
+      // 遊び方の記録の同意の欄が地図に重なるので、「記録しない」を押して地図の全体で測る (はじめて遊ぶ端末で出る)
+      document.querySelector('#endbox [data-consent="no"]')?.click();
+      await sleep(200);
       key('1'); // 止める
       await sleep(500);
       out.idle = stat(await frames(3000));
