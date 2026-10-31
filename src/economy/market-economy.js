@@ -13,7 +13,8 @@
         m.u[r] += ((got?.[r] || 0) / h + (short?.[r] || 0) - m.u[r]) * (fresh ? 1 : a); // 受注残は年あたりの需要として
         let goal = this.priceAt(r, st[r], m.u[r], MARKET.anchor ? m.L[r] : undefined); // 使い道がなければ最低の値段
         if (st[r] < 0.95 * cap) goal = Math.max(goal, m.L[r] * (1 - MARKET.store)); // 倉に空きがあれば、蓄える人が値段を支える
-        m.p[r] = MARKET.tau > 0 ? m.p[r] * GM.pow(goal / m.p[r], Math.min(1, h / MARKET.tau)) : goal;
+        const tau = typeof MARKET.tau === "object" ? MARKET.tau[r] || 0 : MARKET.tau;
+        m.p[r] = tau > 0 ? m.p[r] * GM.pow(goal / m.p[r], Math.min(1, h / tau)) : goal;
         if (ceil?.[r]) m.p[r] = Math.min(m.p[r], ceil[r] * basePrice(r)); // 上限で足りない分は不足になる (闇市は入れない)
         m.L[r] += (m.p[r] - m.L[r]) * Math.min(1, h / MARKET.long);
       }

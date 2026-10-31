@@ -18,7 +18,7 @@
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: distance(this.system(id), this.system(this.realmOf(lord))),
       bigger: pop(id) > pop(lord), orders: gv.orders || 0, lordShips: this.garrison[lord] || 0, dep: gv.dep || 0,
       neglect: this.neglectOf(gv), regime: regimeKey(gv), arrears: (gv.arrears || 0) > 0.01, concession: (gv.taxFree || 0) > this.year || (gv.autonomy || 0) > this.year, policy: this.policyAt(id), exhaustion: this.exhaustion[this.realmOf(id)] || 0,
-      ...(() => { const f = this.fiscalAt(id); return { tax: f.tax, ctax: f.ctax || 0, tariff: f.tariff || 0, loss: this.policyLoss(id, f) }; })(), welfare: this.budgetAt(this.realmOf(id), id, 'welfare'), infl: this.inflOf(id) });
+      ...(() => { const f = this.fiscalAt(id); return { tax: f.tax, ctax: f.ctax || 0, tariff: f.tariff || 0, loss: this.policyLoss(id, f) }; })(), welfare: this.budgetAt(this.realmOf(id), id, 'welfare'), infl: this.inflOf(id), rsx: this.rsxLoss(this.realmOf(id)) });
   }
   // 地球の知る限りの内訳 (地球に届いている記録で。表示用)
   knownLoyaltyTerms(id) {
@@ -30,7 +30,7 @@
     // 放っておかれた年数は、記録の時点から今までの年数を足す (そのあと関与が届いたかは、まだ地球には見えない)
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: this.sysDist(id, capital),
       bigger: pop(id) > pop(lord), orders: k.orders || 0, lordShips: this.knownGarrison(lord), dep: k.dep || 0,
-      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), regime: this.knownRegime(k), arrears: (k.arrears || 0) > 0.01, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0, tax: k.tax || 'normal', ctax: k.ctax || 0, tariff: k.tariff || 0, loss: k.loss || null, welfare: k.welfare || 0, infl: k.infl ?? null });
+      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), regime: this.knownRegime(k), arrears: (k.arrears || 0) > 0.01, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0, tax: k.tax || 'normal', ctax: k.ctax || 0, tariff: k.tariff || 0, loss: k.loss || null, welfare: k.welfare || 0, infl: k.infl ?? null, rsx: k.rsx || 0 });
   }
   // 統治体制 (主人がいなければ null)
   regimeOf(gv) { return regimeKey(gv); }

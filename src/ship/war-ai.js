@@ -326,11 +326,32 @@
   // 海賊対策の建艦 (年1回、星系政府の自動開発より先): 海賊が現れる5年前から、各星系の政府は自分の資金で
   // 軍事基地を建て、駐留艦隊 + 向かっている艦隊 + 編成中が海賊の最大戦力に届くまで年1艦隊ずつ編成する
   // (海賊対策を優先するので、資金が費用の1.2倍以上あれば)。太陽系は海賊に狙われないので対象外 (観戦モードの地球政府は自動防衛配備で対応する)
+  // 軍の維持費の重さ (回 KE10・B-175。MIL_BURDEN): その星系に置いた艦隊 (向かっている分・編成中を含む) と兵の年の維持費 ÷ 星系の GDP
+  milUpkeep(id) {
+    const ships = (this.garrison[id] || 0) + this.incoming(id) + queuedWarships(this.projects, id);
+    return ships * WARSHIP_UPKEEP + this.coloniesIn(id).reduce((a, c) => a + TROOP_UPKEEP * c.troops + SLAVE_TROOP_UPKEEP * c.slaveTroops, 0);
+  }
+  // 人間が動かしていない星系の政府が、年の維持費 add を足しても上限の内か (国が交戦中なら war の上限)
+  milAfford(id, add) {
+    if (this.isHuman(id)) return true;
+    const y = this.govs[id]?.fr?.y || 0, war = this.aiEnemiesOf(this.realmOf(id)).length > 0;
+    return this.milUpkeep(id) + add <= (war ? MIL_BURDEN.war : MIL_BURDEN.peace) * y;
+  }
+  // 平時に上限を超えている星系は、年に 1 艦隊 (威圧の艦隊は除く) か、なければ 1 連隊 (先住民のいない入植地から。徴集した人口は戻る) を解く
+  milTrim(id) {
+    if (this.isHuman(id) || this.aiEnemiesOf(this.realmOf(id)).length || this.milAfford(id, 0)) return;
+    const g = this.garrison[id] || 0;
+    if (g - Math.min(g, this.awe[id] || 0) > 0) { this.garrison[id] = g - 1; return; }
+    // 先住民のいた星の兵は残す (nativeOf は記録を作るので使わない)
+    const c = this.coloniesIn(id).filter((x) => x.troops > 0 && !this.target(x.sys, x.body)?.natives).sort((a, b) => b.troops - a.troops)[0];
+    if (c) { c.troops -= 1; c.pop += TROOP_DRAFT; }
+  }
   pirateDefenseYearly() {
     const base = Math.max(1, this.pirateMax());
     for (const s of this.colonizedSystems()) {
       const id = s.id;
       if (this.isHuman(id)) continue;
+      this.milTrim(id);
       const gv = this.gov(id);
       // 委任方針が軍備なら、海賊の最大戦力より2艦隊多く置く (海賊が現れる前から)
       if (this.year < PIRATE_START - 5 && gv.mandate !== 'arm') continue;
@@ -341,7 +362,7 @@
       if (!this.hasShipyard(id)) {
         const big = this.coloniesIn(id).sort((a, b) => b.pop - a.pop)[0];
         if (big && this.funds(id) >= 1.2 * this.upgradeCost(big, 'shipyard').credits && !this.procure(this.upgradeCost(big, 'shipyard'), id).why) this.upgrade(big, 'shipyard');
-      } else if (this.funds(id) >= 1.2 * WARSHIP_COST.credits && !this.procure(WARSHIP_COST, id).why) this.buildWarship(id);
+      } else if (this.milAfford(id, WARSHIP_UPKEEP) && this.funds(id) >= 1.2 * WARSHIP_COST.credits && !this.procure(WARSHIP_COST, id).why) this.buildWarship(id);
     }
   }
   // 独立国の軍備 (年1回、星系政府の自動開発より先): どの独立国も星系ごとに軍事基地を建て、平時は守りの艦隊 (首都5・他3) を保つ。
@@ -356,7 +377,7 @@
         const big = this.coloniesIn(x.id).sort((a, b) => b.pop - a.pop)[0];
         const goal = x.id === root ? 5 : 3;
         if (!this.hasShipyard(x.id)) { if (big && this.funds(x.id) >= 2 * this.upgradeCost(big, 'shipyard').credits) this.upgrade(big, 'shipyard'); }
-        else if (this.funds(x.id) >= 2 * WARSHIP_COST.credits && (war || (this.garrison[x.id] || 0) + queuedWarships(this.projects, x.id) < goal)) this.buildWarship(x.id);
+        else if (this.funds(x.id) >= 2 * WARSHIP_COST.credits && this.milAfford(x.id, WARSHIP_UPKEEP) && (war || (this.garrison[x.id] || 0) + queuedWarships(this.projects, x.id) < goal)) this.buildWarship(x.id);
         // 戦争中の首都は、資金に余裕があれば宇宙要塞を FORT.aiGoal まで上げる
         if (war && x.id === root && this.fortLevel(root) < FORT.aiGoal && this.funds(root) >= 3 * this.fortCost(root).credits && !this.pending((j) => j.type === 'fort' && j.sys === root)) this.fortUpgrade(root);
       }

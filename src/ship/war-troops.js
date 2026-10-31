@@ -293,7 +293,7 @@
   barracksYearly() {
     for (const c of this.colonies) {
       for (let i = 0; i < c.lv.barracks && c.troops < 5 * c.lv.barracks; i++) {
-        if (this.funds(c.sys) < 2 * TROOP_COST.credits || this.procure(TROOP_COST, c.sys).why) break;
+        if (this.funds(c.sys) < 2 * TROOP_COST.credits || !this.milAfford(c.sys, TROOP_UPKEEP) || this.procure(TROOP_COST, c.sys).why) break; // 維持費の重さの上限 (回 KE10・B-175)
         if (!this.trainTroop(c, true).ok) break;
       }
     }

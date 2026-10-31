@@ -107,7 +107,7 @@
   // 利子: 銀行から借りている会社・家計・先住民が、その星系で効いている実質の利子率 (政策金利 − 物価の上がり方。rateAt) で、国債の政府が国債の実質の利札 (bondRate) で
   // 利子を払う (帳簿は実質の cr なので。回 KE1)。銀行はそれを、預金
   // (政府の資金・家計と会社と先住民の手持ち) の額に比べて分ける。銀行の儲けは 0 (docs/fiscal.md)。運ぶ途中のお金には利子がつかない。
-  // 回 KE9 (B-009): 国債の利子は銀行が持つ分 (国債 − 中央銀行の持つ qb) だけ (中央銀行の受け取りは国に戻るので差し引き)。金融抑圧の国は、その分の利札を repress 点
+  // 回 KE9 (B-009): 国債の利札は銀行が持つ分 (国債 − 中央銀行の持つ qb) に払い、中央銀行の持つ分には政策金利 (回 KE10・B-124)。金融抑圧の国は、銀行が持つ分の利札を repress 点
   // 下げて払い、下げた分は国の中の預金者 (その国の星系の政府・家計・会社・先住民) が受け取らない (国の中の預金者がふつうに受け取る額まで)
   interestStep(h) {
     const debtors = [], deposits = [], rep = {}, heldR = {};
@@ -125,6 +125,8 @@
         debtors.push([{ gov: id }, x, rp, root]); paid += x;
         if (rp) rep[root] = (rep[root] || 0) + rp;
       }
+      // 中央銀行の持つ分は、中央銀行が準備に払う政策金利 (実質) を政府が負う (利札との差は中央銀行の儲けか損として国に納めるか埋める。回 KE10・B-124)
+      if (gv.qb > 0) { const x = gv.qb * this.rateAt(id) * h; debtors.push([{ gov: id }, x]); paid += x; }
       const R = realmAt(id), dep = (acct, v, gov) => { deposits.push([acct, v, gov, R]); held += v; if (R !== null) heldR[R] = (heldR[R] || 0) + v; };
       if (gv.credits > 0) dep({ gov: id }, gv.credits, id);
       if (gv.hh > 0) dep({ hh: id }, gv.hh);

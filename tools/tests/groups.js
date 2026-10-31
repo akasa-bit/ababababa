@@ -71,6 +71,7 @@ else {
   Object.assign(g.govs[vas], { direct: true, loyalty: 100, autonomy: 0, unrest: { stage: 0 } }); delete g.govs[vas].regime; delete g.govs[vas].fact; delete g.govs[vas].law; // 指令に従う直轄の星系にする
   for (let i = 0; i < 4 * (g.lightDelay(vas) + 2); i++) g.advance(0.25); // 直轄になった記録を地球に届ける
   check(g.groupStatus(g.govs[vas], 'local') === 'powerless', `直轄のここ生まれが ${g.groupStatus(g.govs[vas], 'local')} (無力のはず)`);
+  g.pc = 100; // 届けるあいだの年に政治力を使っていることがある (筋による。回 KE10) ので、送る前に足しておく
   const r = g.command('include', { sys: vas, key: 'local', value: 'incl' });
   check(r.ok, `include が送れない: ${r.reason}`);
   for (let i = 0; i < 4 * (g.lightDelay(vas) + 1) && !g.govs[vas].include; i++) g.advance(0.25);
