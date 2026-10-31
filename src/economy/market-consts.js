@@ -10,7 +10,7 @@
 // 値段は「ならした値段 (long 年) × (1 − 貯蔵の年の費用 store)」より下がらない。人は、expect 年でならした稼ぎを見て部門を移る。
 // eta・smooth・mobility・tau・store・long・expect は仮の値で、目標 R23〜R26 に合わせて決める (docs/market.md)。buy: 1 なら、政府は建設の資材を市場の値段で民間から買う
 const MARKET = { eta: 1, smooth: 1, min: 0.1, max: 10, cover: { food: 0.28, water: 0.28, metal: 0.28, fuel: 0.28, rare: 0.28, goods: 1.39 / 12, slaves: 0.28, hitech: 1.39 / 12 },
-  mobility: 0.2, buy: 1, tau: 0, store: 1, long: 5, expect: 0.25, anchor: 0, fill: 1, // fill: 在庫の目標への不足を埋める年数 (需要で決まる生産。economy の 1) // anchor: 1 なら、値段はならした値段 (long 年) からの在庫によるずれ (priceAt の説明。試したら値段の揺れ R23 が 0.27 → 0.54、食料の在庫 R25 が 3.7 年になったのでやめた)
+  mobility: 0.2, buy: 1, tau: { goods: 0.5, hitech: 0.5 }, store: 1, long: 5, expect: 0.25, anchor: 0, fill: 1, // fill: 在庫の目標への不足を埋める年数 (需要で決まる生産。economy の 1) // anchor: 1 なら、値段はならした値段 (long 年) からの在庫によるずれ (priceAt の説明。試したら値段の揺れ R23 が 0.27 → 0.54、食料の在庫 R25 が 3.7 年になったのでやめた)
   // 人の消費の短期の値段の弾力性 (消費 = 必要な量 × (値段 ÷ 基準価格)^(−弾力性)、0.3〜2 倍に収める)。食料: Andreyeva, Long & Brownell 2010 のメタ分析、
   // 工業品: 耐久財のおおよその値。高くて買えない分は充足率が下がる (飢えや不足として人口に効く)。安ければ必要より多く使う (飼料・無駄)。
   // 食料と水の弾力性は所得が上がるほど小さくなる (食費の割合が小さくなるので値段に動じない。Seale & Regmi 2006 の国の所得ごとの食料の需要の推定では、

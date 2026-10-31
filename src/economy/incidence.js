@@ -55,9 +55,9 @@
         const x = -(Math.min(p, cap(f1)) - Math.min(p, cap(f0))) * u;
         if (x) add(row('ceil', '値段の上限', 'ctax', lagOf('ceil')), id, x, -x, 0, own);
       }
-      // 金融抑圧と量的緩和 (回 KE9・B-009): 政府が払わなくなる国債の利子 (銀行が持つ国債 × 下げた点数、中央銀行が持つ国債 × 国債の実質の利子) を、
+      // 金融抑圧と量的緩和 (回 KE9・B-009): 政府が払わなくなる国債の利子 (銀行が持つ国債 × 下げた点数、中央銀行が持つ国債 × (国債の実質の利子 − 政策金利の実質。回 KE10・B-124)) を、
       // 国の中の預金者 (家計・会社・政府) が預金に比べて受け取らない (量的緩和の利回りと物価の動きは入れない。分け前は政策金利と同じ rate)
-      for (const [k, label, x] of [['repress', '金融抑圧', Math.max(0, (gv.bond || 0) - (gv.qb || 0)) * ((f1.repress || 0) - (f0.repress || 0))], ['qe', '量的緩和', (gv.bond || 0) * ((f1.qe || 0) - (f0.qe || 0)) * this.bondRate(id)]]) {
+      for (const [k, label, x] of [['repress', '金融抑圧', Math.max(0, (gv.bond || 0) - (gv.qb || 0)) * ((f1.repress || 0) - (f0.repress || 0))], ['qe', '量的緩和', (gv.bond || 0) * ((f1.qe || 0) - (f0.qe || 0)) * (this.bondRate(id) - this.rateAt(id))]]) {
         if (!x) continue;
         const r = row(k, label, 'rate', lagOf(k));
         add(r, id, 0, 0, x, own);

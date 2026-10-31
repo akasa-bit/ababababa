@@ -48,8 +48,9 @@
       const root = this.realmOf(id), b = gv.bond || 0, want = this.isColonized(id) && this.isHuman(root) && !this.spectate ? (this.fiscalFor(root, id).qe || 0) * b : 0;
       const q0 = Math.min((gv.qb || 0) * (gv.qbB > b ? b / gv.qbB : 1), b), q = Math.max(0, Math.min(b, q0 + (want - q0) * Math.min(1, h / QE.speed)));
       if (q > 0) { gv.qb = q; gv.qbB = b; } else { delete gv.qb; delete gv.qbB; }
-      const o = (out[root] ??= [0, 0]);
+      const o = (out[root] ??= [0, 0, 0]);
       o[0] += q - q0;
+      o[2] += q0; // 買う前の持ち高 (効きの薄れに使う。回 KE10・B-124)
     }
     for (const [root, o] of Object.entries(out)) for (const x of this.realmSystems(Number(root))) o[1] += this.govs[x.id]?.fr?.y || 0;
     return out;
@@ -72,9 +73,10 @@
       const T = this.targetOf(root);
       if (s.T !== undefined || T !== CB.pistar) { s.T = (s.T ?? CB.pistar) + (T - (s.T ?? CB.pistar)) * Math.min(1, CB.theta * h); if (Math.abs(s.T - CB.pistar) < 1e-9 && T === CB.pistar) delete s.T; }
       const Ts = s.T ?? CB.pistar;
-      // 量的緩和の物価の押し上げ s.q (買い入れ ÷ GDP × QE.pi を、QE.fade の速さで消える上がり方として足す。合計の上がりが QE.pi × 買い入れ ÷ GDP)
+      // 量的緩和の物価の押し上げ s.q (買い入れ ÷ GDP × QE.pi を、QE.fade の速さで消える上がり方として足す。合計の上がりが QE.pi × 買い入れ ÷ GDP)。
+      // 回 KE10 (B-124): 買い入れ ÷ GDP は、持ち高の効き qeEff の増えた分 (持ち高が GDP の 20% を超えると薄れる)
       const q = qe[root];
-      if (s.q || (q && q[0])) { s.q = (s.q || 0) * GM.exp(-QE.fade * h) + (q && q[1] > 0 ? (QE.pi * QE.fade * q[0]) / q[1] : 0); if (Math.abs(s.q) < 1e-12) delete s.q; }
+      if (s.q || (q && q[0])) { s.q = (s.q || 0) * GM.exp(-QE.fade * h) + (q && q[1] > 0 ? QE.pi * QE.fade * (qeEff((q[2] + q[0]) / q[1]) - qeEff(q[2] / q[1])) : 0); if (Math.abs(s.q) < 1e-12) delete s.q; }
       // s.e = 則から外す分 (政策のショック。ふだんは無い。政策の反応を測る実験 tools/policy-irf.js だけが入れる。回 KE7・B-006)
       const rule = clamp(rs + s.pi + CB.phiPi * (s.pi - T) + CB.phiY * gap + (s.e || 0), RATE_RANGE[0], RATE_RANGE[1]);
       s.i = this.cbRule(root) ? rule : this.fiscalFor(root, root).rate ?? rule;
@@ -119,7 +121,7 @@
   longYield(id) {
     const root = this.realmOf(id), n = this.rstarOf(root) + this.targetSeen(root), i = this.cbRateAt(id), k = CB.persist / CB.mat;
     const gv = this.govs[id], d = gv?.fr?.y > 0 ? Math.min(CB.dmax, (gv.bond || 0) / gv.fr.y) : 0; // 不履行の線より上は同じ (払えない分は不履行で消える)
-    const qe = gv?.qb > 0 && gv.fr?.y > 0 ? QE.tp * Math.min(gv.qb / gv.fr.y, CB.dmax) : 0;
+    const qe = gv?.qb > 0 && gv.fr?.y > 0 ? QE.tp * qeEff(Math.min(gv.qb / gv.fr.y, CB.dmax)) : 0; // 持ち高が GDP の 20% を超えると薄れる (回 KE10・B-124)
     return n + (i - n) * k * (1 - GM.exp(-1 / k)) + CB.tp + CB.credit * d + this.dfltSpread(gv) - qe;
   }
   // 不履行のあと、新しく国債を出せない間か (QD-26 = b。CB.exclude 年。債務の再編は払わなかった割合 gv.hc に比べて伸びる。回 KE9)
@@ -170,8 +172,16 @@
     const gc = this.govs[this.cap]; // 首都の政府に国債がなくても、国として借りられない間と上乗せを持つ
     gc.dflt = this.year;
     if (hc !== CB.haircut) gc.hc = hc; else delete gc.hc;
+    gc.rsx = [this.year, hc]; // 再編の政治の損 (回 KE10・B-125。rsxLoss)
     this.event('goal', this.cap, JA`債務を再編した: 国の ${ids.length} 星系の政府の国債のうち、銀行が持つ分の ${Math.round(hc * 100)}% (${Math.round(x)} cr) を払わない。預金がそのぶん目減りした。これから ${((CB.exclude * hc) / CB.haircut).toFixed(1)} 年は新しく国債を出せず、そのあとも利回りに上乗せがつく`, true);
     return { ok: true };
+  }
+  // 再編の政治の損 (回 KE10・B-125): 国 root が債務を再編してから RESTRUCTURE.years 年のあいだの、家計の所得に比べた損の割合 (忠誠度と議会に LOSS で効く)
+  rsxLoss(root) {
+    const r = this.govs[root]?.rsx;
+    if (!r) return 0;
+    const t = this.year - r[0];
+    return t >= 0 && t < RESTRUCTURE.years ? RESTRUCTURE.loss * (r[1] / CB.haircut) * (1 - t / RESTRUCTURE.years) : 0;
   }
   // 国債の残高を動かす (v > 0 で増える)。お金の試験 (MONEY_AUDIT) に、政府の純額 (資金 − 国債) の変化として載せる
   bondMove(kind, v, id) {

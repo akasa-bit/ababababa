@@ -1,9 +1,10 @@
 // 物価の目標・量的緩和・金融抑圧・債務の再編・物価の外れの政治の損 (回 KE9・B-009・QD-27 = b) の試験。画面なしの版で回す:
 //   選べない値を断る・物価の目標と量的緩和はすぐ (中央銀行の決定)、金融抑圧は法案・物価の目標を上げると物価の上がり方と見込みと長期の利回りが上がる・
-//   量的緩和で中央銀行の持つ国債が目標に近づき、政府の利子は銀行の持つ分だけ・長期の利回りが QE.tp × 中央銀行の持つ国債 ÷ GDP だけ下がる・
+//   量的緩和で中央銀行の持つ国債が目標に近づき、政府は銀行の持つ分に利札・中央銀行の持つ分に政策金利 (実質) を払う (回 KE10・B-124)・
+//   長期の利回りが QE.tp × 効き (中央銀行の持つ国債 ÷ GDP。GDP の 20% を超えると対数で薄れる。回 KE10) だけ下がる・
 //   金融抑圧で国の政府の利子が下げた点数ぶん減り、同じ額を国の中の預金者が受け取らない (ほかの国の預金者は同じ)・利子の受け払いの合計が 0・
 //   債務の再編で銀行の持つ国債と預金が同じ額だけ減り、借りられない年数が割合に比べて伸び、続けてはできない・政治力 20・
-//   忠誠度と議会に物価の項 (LOSS × INFL_LOSS × |物価 − 2%|)・保存と読み込みで残る・帰着の表の足し算が 0
+//   忠誠度と議会に物価の項 (LOSS × INFL_LOSS × |物価 − 2%|)・再編のあと 2 年、忠誠度と議会に再編の項 (回 KE10・B-125)・保存と読み込みで残る・帰着の表の足し算が 0
 // 使い方: node tools/tests/debttools.js [シード]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 exports.ci = [{ args: ['3'], judge: (o) => (o.includes('債務の道具 合格') ? '' : '物価の目標・量的緩和・金融抑圧・債務の再編の結果が違う') }];
@@ -59,16 +60,18 @@ const flows = (h) => {
 {
   const a = withBonds(), b = withBonds(), c = withBonds();
   // 量的緩和: 中央銀行が首都の国債の 4 割を持つ
-  const gb = b.govs[b.cap], q = 0.4 * gb.bond, rate = b.bondRate(b.cap);
+  const gb = b.govs[b.cap], q = 0.4 * gb.bond, rate = b.bondRate(b.cap), pr = b.rateAt(b.cap);
   const y0 = b.longYield(b.cap);
   gb.qb = q; gb.qbB = gb.bond;
-  res.qeYield = near(y0 - b.longYield(b.cap), QE.tp * Math.min(q / gb.fr.y, CB.dmax), 1e-9);
+  const x = Math.min(q / gb.fr.y, CB.dmax);
+  res.qeYield = near(y0 - b.longYield(b.cap), QE.tp * QE.scale * Math.log(1 + x / QE.scale), 1e-9) && QE.scale * Math.log(1 + x / QE.scale) <= x;
   const ca = a.govs[a.cap].credits, cb0 = gb.credits;
   const fa = flows(a), fb = flows(b);
-  // 首都の政府は q × 実質の利札 × 刻み だけ利子を払わない (受け取る預金の利子は、払う人が減ったぶん少し減る)
+  // 首都の政府は q × (実質の利札 − 実質の政策金利) × 刻み だけ利子が減る (中央銀行の持つ分は政策金利。回 KE10。受け取る預金の利子は、払う人が減ったぶん少し減る)
   const dq = (gb.credits - cb0) - (a.govs[a.cap].credits - ca);
-  res.qeInterest = (rate > 0 ? dq > 0.5 * q * rate * 0.25 : dq < 0) && near(fa.all, 0, 1e-6) && near(fb.all, 0, 1e-6);
-  res.qeIntNums = [+rate.toFixed(4), +dq.toFixed(2), +(q * rate * 0.25).toFixed(2), +fa.all.toFixed(6), +fb.all.toFixed(6)];
+  const save = q * (rate - pr) * 0.25;
+  res.qeInterest = (save > 0 ? dq > 0.5 * save && dq < 1.5 * save : dq < 0.5 * Math.abs(save)) && near(fa.all, 0, 1e-6) && near(fb.all, 0, 1e-6);
+  res.qeIntNums = [+rate.toFixed(4), +pr.toFixed(4), +dq.toFixed(2), +save.toFixed(2), +fa.all.toFixed(6), +fb.all.toFixed(6)];
   // 金融抑圧: 2 点。行政の遅れのあとに効く (比べる双子 a2 は、まだ利子を受け払いしていないもの)
   const a2 = withBonds();
   c.setFiscal({ repress: 0.02 }, true);
@@ -106,6 +109,19 @@ const flows = (h) => {
   const still = h.dfltOut(gc);
   h.year += 0.02;
   res.exclude = sp && still && !h.dfltOut(gc);
+  // 再編の政治の損 (回 KE10・B-125): 家臣の忠誠度の目標に「債務の再編」の項 (LOSS.loyalty × 損の割合)、議会の支持も同じ損で下がり、RESTRUCTURE.years 年で消える
+  const v = ids(h).find((id) => h.gov(id).lord !== null && h.gov(id).lord !== undefined), L = RESTRUCTURE.loss * (0.5 / CB.haircut);
+  h.year = gc.dflt + 0.5;
+  const t1 = v !== undefined ? h.loyaltyTerms(v).find((x) => x.label === '債務の再編') : null, l1 = h.rsxLoss(h.cap);
+  h.cb[h.cap].pi = CB.pistar; // 物価の項を消して、議会の再編の分だけを見る
+  const c0 = (h.council = 50);
+  h.councilYearly();
+  const lossC = LOSS.council * (Object.values(h.policyLoss(h.cap)).reduce((a, x) => a + x, 0) + L * 0.75);
+  const council = near(h.council, Math.max(0, Math.min(100, c0 - 0.25 * h.modsOf(h.cap).councilDrift + lossC)), 1e-6);
+  h.year = gc.dflt + RESTRUCTURE.years + 0.01;
+  const gone = h.rsxLoss(h.cap) === 0 && (v === undefined || !h.loyaltyTerms(v).some((x) => x.label === '債務の再編'));
+  res.rsx = near(l1, L * 0.75, 1e-9) && (v === undefined || near(t1?.v, LOSS.loyalty * L * 0.75, 1e-9)) && council && gone;
+  res.rsxNums = [+l1.toFixed(4), t1 ? +t1.v.toFixed(2) : null, +h.council.toFixed(2)];
 }
 // 6. 物価の項 (忠誠度と議会)
 {

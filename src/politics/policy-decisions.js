@@ -147,7 +147,7 @@
     if (why) this.message(JA`議会の支持 ${v > 0 ? '+' : ''}${v} (${why})`);
   }
   councilYearly() {
-    this.council = clamp(this.council - 0.25 * this.modsOf(this.cap).councilDrift - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20) + LOSS.council * (Object.values(this.policyLoss(this.cap)).reduce((a, v) => a + v, 0) + INFL_LOSS * Math.abs(this.inflOf(this.cap) - CB.pistar)), 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる。首都の家計の損 (税・消費税・関税。回 KE8・B-012) と、物価の目標 2% からの外れ (QD-27 = b。回 KE9) も落とす
+    this.council = clamp(this.council - 0.25 * this.modsOf(this.cap).councilDrift - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20) + LOSS.council * (Object.values(this.policyLoss(this.cap)).reduce((a, v) => a + v, 0) + INFL_LOSS * Math.abs(this.inflOf(this.cap) - CB.pistar) + this.rsxLoss(this.cap)), 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる。首都の家計の損 (税・消費税・関税。回 KE8・B-012) と、物価の目標 2% からの外れ (QD-27 = b。回 KE9) と、債務の再編のあと 2 年 (回 KE10・B-125) も落とす
     if (this.council < 15) {
       this.event('goal', this.cap, JA`議会の支持が ${Math.round(this.council)} まで落ち、政権が交代した。国家方針は白紙に戻り、貯めていた政治力を失った`);
       this.policy = null;
