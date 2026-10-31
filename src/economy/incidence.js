@@ -86,7 +86,8 @@
       for (const r of new Set([...Object.keys(f0.ceil || {}), ...Object.keys(f1.ceil || {})])) {
         if (!RATION_RES.includes(r) && r !== 'hitech') continue;
         const p = this.price(id, r), u = this.market[id]?.u[r] || 0, cap = (f) => (f.ceil?.[r] ? f.ceil[r] * basePrice(r) : Infinity);
-        const x = -(Math.min(p, cap(f1)) - Math.min(p, cap(f0))) * u;
+        const eff = (c) => (p > c ? c + BLACK.evasion * (p - c) : p); // 闇市の分だけ上限が効かない (回 KE12)
+        const x = -(eff(cap(f1)) - eff(cap(f0))) * u;
         if (x) add(row('ceil', '値段の上限', 'ctax', lagOf('ceil')), id, x, -x, 0, own);
       }
       // 金融抑圧と量的緩和 (回 KE9・B-009): 政府が払わなくなる国債の利子 (銀行が持つ国債 × 下げた点数、中央銀行が持つ国債 × (国債の実質の利子 − 政策金利の実質。回 KE10・B-124)) を、

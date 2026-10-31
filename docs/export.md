@@ -78,7 +78,7 @@ python3 tools/export_example.py export-out                       # 分析の例 
 | `GF0107` | 公的債務の取引 (利子) | 政府が払った利子 (種類 `interest` の支払い) |
 | `GF02` | 防衛 | 軍の維持費と軍事の予算 (種類 `upkeep`・`military`) |
 | `GF03` | 治安 | 治安の予算 (種類 `security`) |
-| `GF04` | 経済業務 | 政府の建設 (種類 `build`) |
+| `GF04` | 経済業務 | 政府の建設 (種類 `build`) と、政府の倉の正味の買い入れ (種類 `granary`。売れば負。COFOG 04.2 の市場の安定。回 KE12) |
 | `GF07` | 保健 | 医療 (種類 `health`。回 KE2。政府が会社から買う) |
 | `GF09` | 教育 | 教育の予算 (種類 `education`。回 KE5) |
 | `GF10` | 社会保護 | 福祉の予算 (種類 `welfare`) と年金 (種類 `pension`。回 KE2。家計への移転なので `P3_S13` には入れない) |

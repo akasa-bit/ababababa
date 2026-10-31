@@ -40,11 +40,12 @@ const INCIDENCE = { tax: [3.2, 6.0, 11.1, 19.5, 60.3], ctax: [11.7, 15.2, 18.6, 
 //   ctax = 消費税の率の変更 (英国 2008 年の引き下げは 7 日・ドイツ 2020 年は 28 日の平均)、ctaxNew = 消費税を新しく入れる (準備に 18〜24 か月。Tait 1988・米国会計検査院 1993)。
 //   tariff = 関税の率の変更 (米国 2018 年の鉄鋼の関税は布告から 15 日)。budget = 予算 (次の会計年度から。決める時は年の中で一様とみて平均半年)。
 //   rate・cb = 中央銀行の決定 (次の日から)、deficit = 借りる上限 (首都の政府が決める)
-const ADMIN_LAG = { tax: 0.85, ctax: 0.05, ctaxNew: 1.75, tariff: 0.05, rate: 0, cb: 0, deficit: 0, rdcredit: 0.85, budget: 0.5, ceil: 0, ration: 0.15, ban: 0, embargo: 0, pistar: 0, qe: 0, repress: 0.5, soe: 0.47, capctl: 0, land: 1 };
+const ADMIN_LAG = { tax: 0.85, ctax: 0.05, ctaxNew: 1.75, tariff: 0.05, rate: 0, cb: 0, deficit: 0, rdcredit: 0.85, budget: 0.5, ceil: 0, ration: 0.15, ban: 0, embargo: 0, pistar: 0, qe: 0, repress: 0.5, soe: 0.47, capctl: 0, land: 1, reserve: 0.5, floor: 0 };
 //   ceil = 値段の上限 (米国 1971 年 8 月 15 日の 90 日の凍結は発表の日から。大統領令 11615)・ration = 配給 (英国の食料の配給は 1939 年 11 月の発表から 1940 年 1 月 8 日の始まりまで約 2 か月)・
 //   ban・embargo = 輸出禁止と禁輸 (大統領の布告で数日。米国 1962 年のキューバの禁輸は 2 月 3 日の布告から 2 月 7 日)
 //   soe = 国有化と民営化 (英国の石炭の国有化法は 1946 年 7 月 12 日に成立し、1947 年 1 月 1 日に移った。0.47 年)・capctl = 資本規制 (マレーシアの 1998 年 9 月 1 日の規制は発表の日から)
 //   land = 土地改革 (台湾の「耕者有其田」は 1953 年 1 月の法から年末までに移した・韓国の農地改革法は 1949 年 6 月から 1950 年の分配。約 1 年。回 KE11)
+//   reserve = 公的備蓄 (予算と同じ半年と置いた仮の値)・floor = 価格の下限 (買い入れの窓口を開くまで。値段の上限と同じくすぐ。回 KE12)
 //   pistar・qe = 物価の目標と量的緩和 (中央銀行の決定と同じく次の日から。買い入れは QE.speed 年かけて進む)・repress = 金融抑圧 (銀行の預金の利子の上限と国債を持つ義務。法の変更なので予算と同じ半年と置いた仮の値)
 // 価格統制と交易の規制 (回 KE9・B-008。docs/fiscal.md の 8): 国の財政に持つ。ceil = { 資源: 基準の値段の倍率 } (値段の上限。上限で足りない分は不足になる。闇市は入れない)・
 // ration = { 資源: true } (配給: 星系の在庫を、入植地の人口に比べて分ける。不足のとき、先に買った入植地が取りつくさない)・ban = { 資源: true } (輸出禁止: ほかの国の買い手に売らない)・
@@ -115,13 +116,26 @@ const SOE = { eff: 0.055 };
 const INEQ = { q: [[0.1, 0.5476], [0.25, 0.609], [0.5, 0.7064], [0.75, 0.8237], [0.9, 0.9599]], within: 0.069, agr: 0.2749, agrRef: 0.2014, min: 0.2 };
 // 土地改革の幅 (地主の農地のうち耕す人へ移す割合)。戦後の日本・韓国・台湾は耕地の 3〜4 割を移し、自作の農家が 8〜9 割になった
 const LAND_RANGE = [0, 1], LAND_STEP = 0.25;
+// 政府の倉 (回 KE12・B-128。docs/fiscal.md の 13)。どちらも財政の法 (議会の審議) で、人間の国の星系だけ。倉は星系ごと (game.gran)。
+//   reserve = { 資源: 目標の月数 } (公的備蓄: 星系の政府の倉に、その星系のふだんの消費の何か月分を持つか)。RESERVE_MONTHS から選ぶ
+//     (ザンビアの食料備蓄 3 か月・IEA の石油は正味の輸入の 90 日・フィンランドの穀物 6 → 9 か月・中国の穀物 9〜12 か月)。
+//     動かし方は常平倉: 値段がふだんの値段 (5 年でならした m.L) より安ければ、市場の在庫が目標の厚さ (cover) を超える分を、倉が目標に届くまで買う (GRANARY.fill 年で)。
+//     高ければ、市場の在庫が目標の厚さに届くまで倉から売る (値段をふだんへ戻す)
+//   floor = { 資源: 基準の値段の倍率 } (価格の下限: 値段がそれより下がらないように、政府が市場の在庫を買って倉に入れる。量の上限はなく、お金は星系の政府が払う)。
+//     米国の農産物の価格の支え (商品金融公社の買い入れ)・EU の介入買い入れの形。FLOOR_RANGE (0.05 刻み)
+// 倉の物は傷まないとみる (穀物の倉の損は年 1〜2% だが入れていない)
+const RESERVE_RES = ['food', 'water', 'fuel', 'metal', 'rare'], RESERVE_MONTHS = [0, 3, 6, 9, 12], FLOOR_RANGE = [0.5, 1], FLOOR_STEP = 0.05;
+const GRANARY = { fill: 1 };
+// 闇市 (回 KE12・B-128): 値段の上限が効かない割合。上限で切った値段は、上限 + evasion × (切らない値段 − 上限) になる (上限の外で売り買いされる分の平均)。
+//   第二次大戦の米英の価格統制の研究 (Mills & Rockoff 1987) は、規制と取り締まりの手厚い英国のほうが逃れが少なかったとするが、割合の数はない。0.3 は仮の値 (QD-98。回 W4 で聞く)
+const BLACK = { evasion: 0.3 };
 // 標準正規分布の累積 (erfc の有理近似。誤差 1.2e-7。Numerical Recipes の erfcc。GM の exp だけで決まる)
 const normCdf = (x) => { const z = Math.abs(x) / Math.SQRT2, t = 1 / (1 + 0.5 * z), r = t * GM.exp(-z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277))))))))); return x >= 0 ? 1 - r / 2 : r / 2; };
 const INEQ_Z = [-0.8416212335729143, -0.2533471031357997, 0.2533471031357997, 0.8416212335729143]; // 20・40・60・80% 点
 // 対数正規 (ばらつき s) の所得の 5 分位の分け前 (下から。合計 1)
 const quintShares = (s) => { const c = INEQ_Z.map((z) => normCdf(z - s)); return [c[0], c[1] - c[0], c[2] - c[1], c[3] - c[2], 1 - c[3]]; };
 const TARGET_RANGE = [0, 0.2], TARGET_STEP = 0.01, QE_RANGE = [0, 0.6], QE_STEP = 0.05, REPRESS_RANGE = [0, 0.04], REPRESS_STEP = 0.005;
-const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0, soe: 0, capctl: 0, land: 0 };
+const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0, soe: 0, capctl: 0, land: 0, reserve: {}, floor: {} };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)
@@ -193,6 +207,11 @@ const RESTRUCTURE = { hc: [0.25, 0.37, 0.5, 0.75], pc: 20, loss: 0.238, years: 2
 const INFL_LOSS = 1;
 // 財政のグラフの記録 (回 GA9・B-059。docs/fiscal.md の 11): 人間の国ごと (首都の星系) に { r: 1 年 1 行の [年, GDP の伸び, 物価の上がり方, 政策金利, 長期の利回り,
 // 国債 ÷ GDP, 政府の収支 ÷ GDP], m: 財政を変えた [年, 変えた手段の名前の列], p: 前の年の星系ごとの [GDP, 政府の純額] }。試合の始めから全部持つ (期間は画面で選ぶ。GA-1)
+// 政府の倉 (回 KE12・B-128): 星系ごとの { 資源: 量 }。物の出入りは mv の種類 store (市場から倉へ)・release (倉から市場へ)
+saveField('gran', (game) => (Object.keys(game.gran || {}).length ? game.gran : undefined), {
+  init: (game) => { game.gran = {}; },
+  read: (game, d) => { game.gran = d.gran && typeof d.gran === 'object' ? Object.fromEntries(Object.entries(d.gran).filter(([, g]) => g && typeof g === 'object')) : {}; },
+});
 saveField('chron', (game) => (Object.keys(game.chron || {}).length ? game.chron : undefined), {
   init: (game) => { game.chron = {}; },
   read: (game, d) => { game.chron = d.chron && typeof d.chron === 'object' ? Object.fromEntries(Object.entries(d.chron).filter(([, c]) => c && Array.isArray(c.r) && Array.isArray(c.m))) : {}; },
