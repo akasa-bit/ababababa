@@ -56,7 +56,9 @@ const { chromium } = require('playwright');
       res.ok2 = issue('fiscal', { ctax: 0.1, tariff: 0.05 }).ok;
       pass();
       for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25); // 遠い星系に届くまで進める
-      res.ctax = [g.fiscal.ctax, g.fiscal.tariff, g.gov(0).ledger.ctax > 0, +burdenK(g.fiscal).toFixed(3), g.loyaltyTerms(far).some((x) => x.label === '税 (20.0% + 消費税 10.0% + 関税 5.0%)')];
+      // 遠い星系が重税のあいだに離反した (国を出た) ときは、税の項を見る相手がいないので見ない (画面ありの版は回ごとに選ぶ星系が違う。4 光年の星系で 1 度起きた)
+      res.ctax = [g.fiscal.ctax, g.fiscal.tariff, g.gov(0).ledger.ctax > 0, +burdenK(g.fiscal).toFixed(3), g.realmOf(far) !== 0 || g.loyaltyTerms(far).some((x) => x.label === '税 (20.0% + 消費税 10.0% + 関税 5.0%)')];
+      res.left = g.realmOf(far) !== 0;
       res.hazard = (g.secessionTerms(far) || []).some((t) => t.label === '治安の予算' && t.f < 1);
       res.fleet = [g.modsOf(0).fleet, +g.fleetMul(0, 0).toFixed(3)];
       const led = g.gov(0).ledger;

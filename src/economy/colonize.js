@@ -134,7 +134,7 @@
       // 資材輸送船は交易路しか通れないので、交易路でつながった星系からだけ取り寄せる
       const { dist } = this.reach(sysId);
       const sources = this.colonizedSystems()
-        .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !this.tradeBlocked(sysId, s.id) && (onlyFrom === undefined || s.id === onlyFrom))
+        .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !this.tradeBlocked(sysId, s.id) && !this.tradeBarred(sysId, s.id, r) && (onlyFrom === undefined || s.id === onlyFrom))
         // 取り寄せ元に残す量: 前の版は 1 年分の需要。市場のある版は、目標の在庫の厚さぶん (それより多くは、値段で売る。bulkPrice)
         // 取り寄せ元は、光の遅れのぶん古い記録で余りが見える星系から選ぶ (回 KE3)。送れる量は、いまの在庫が上限 (取り寄せの注文が届くまでの遅れは、まだ入れていない)
         .map((s) => ({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id), spare: Math.min(this.spareSeen(sysId, s.id, r), this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) * (MARKET.buy ? MARKET.cover[r] : 1)) }))

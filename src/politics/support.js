@@ -17,6 +17,9 @@
     const dt = d('tariff') / R.tariff;
     x += val(SUPPORT.values.tariff, dt) - SUPPORT.skill * GM.log(5 * groupQuint(q)) * dt; // 関税: 所得の低い分位ほど働き口を守る保護を支持する
     for (const b of Object.keys(BUDGET)) x += val(SUPPORT.values[b], ((target.budget?.[b] || 0) - (f0.budget?.[b] || 0)) / R.budget);
+    // 輸出禁止と禁輸 (回 KE9・B-008): 関税と同じく、生存の価値観 (排外) の集団ほど支持する (1 つ足すごとに関税を ref 上げるのと同じ重さ)
+    const n = (k) => Object.keys(target[k] || {}).length - Object.keys(f0[k] || {}).length;
+    x += val(SUPPORT.values.tariff, n('ban') + n('embargo'));
     return x;
   }
   // 法案の支持 (QD-106 b・QD-107 b): 国の星系の、権力に加わっている集団の支持の見込みを、声の重さ (人口 × 所得の分け前^clout) で平均した S。
@@ -64,6 +67,7 @@
     if ((target.deficit || 0) !== (f0.deficit || 0)) out.push(JA`赤字の上限 ${p(target.deficit || 0)}`);
     if ((target.rdcredit ?? FISCAL_DEFAULT.rdcredit) !== (f0.rdcredit ?? FISCAL_DEFAULT.rdcredit)) out.push(JA`研究開発の税額控除 ${p(target.rdcredit)}`);
     for (const [k, b] of Object.entries(BUDGET)) if ((target.budget?.[k] || 0) !== (f0.budget?.[k] || 0)) out.push(JA`${b.label}の予算 ${Math.round((target.budget?.[k] || 0) * 100)}%`);
+    if (['ceil', 'ration', 'ban', 'embargo'].some((k) => JSON.stringify(target[k] || {}) !== JSON.stringify(f0[k] || {}))) out.push(this.ctlText(target) || JA`価格統制と交易の規制をやめる`); // 回 KE9
     return out.join('・');
   }
   // 通す: 財政はいまの政策金利と中央銀行の任せ方のまま、ほかの手段を法案の値に。国家方針は方針を変える

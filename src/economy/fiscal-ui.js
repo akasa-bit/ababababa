@@ -70,7 +70,21 @@ function fiscalHtml(g) {
     })()}
     <h3>予算 (${ME.capName}の税収 ${fmtAmt(tax)} cr/年 のうち ${Math.round(used * 100)}% を使う。合わせて ${BUDGET_TOTAL * 100}% まで)</h3>
     <table class="tbl">${rows}</table>
-    ${paid < 0.99 && used ? TR`<p class="note bad">資金が足りず、予算を ${pct(paid)} しか払えていない (効き目もそのぶん下がる)</p>` : ''}` + cofogHtml(g) + incidenceHtml(g);
+    ${paid < 0.99 && used ? TR`<p class="note bad">資金が足りず、予算を ${pct(paid)} しか払えていない (効き目もそのぶん下がる)</p>` : ''}` + ctlHtml(g) + cofogHtml(g) + incidenceHtml(g);
+}
+// 価格統制と交易の規制 (回 KE9・B-008。docs/fiscal.md の 8)。値は審議中の法案があればその値 (fiscalDraft)。変えると財政の法案になる
+function ctlHtml(g) {
+  const f = g.fiscalDraft(), cap = g.cap;
+  const ks = [0, 0.5, 0.75, 0.9, 1, 1.1, 1.25, 1.5, 2];
+  const opts = (r) => ks.map((k) => `<option value="${k}"${(f.ceil?.[r] || 0) === k ? ' selected' : ''}>${k ? `×${k}` : TR('なし')}</option>`).join('');
+  const box = (k, r, on) => `<input type="checkbox" data-act="fiscalctl" data-k="${k}" data-r="${r}"${on ? ' checked' : ''} aria-label="${k}">`;
+  const rows = CTL_RES.map((r) => `<tr><td>${ico(r)}${RES_LABEL[r]}</td><td class="num">×${fmt(g.price(cap, r) / basePrice(r), 2)}</td><td><select data-act="fiscalctl" data-k="ceil" data-r="${r}" aria-label="${RES_LABEL[r]}">${opts(r)}</select></td><td>${RATION_RES.includes(r) ? box('ration', r, f.ration?.[r]) : '—'}</td><td>${box('ban', r, f.ban?.[r])}</td></tr>`).join('');
+  const others = (g.nations || []).filter((n) => n.cap !== cap && g.realmAlive(n.cap));
+  const emb = others.map((n) => `<label>${box('embargo', n.cap, f.embargo?.[n.cap])} ${esc(n.name)}</label>`).join(' ');
+  return TR`<h3>価格統制と交易の規制</h3>
+    <p class="note">値段の上限: 市場の値段をこの倍率 × 基準の値段で止める (足りない分は不足になる。闇市は入れていない)。配給: 不足のとき、星系の在庫を入植地の人口に比べて分ける。輸出禁止: ほかの国の買い手に売らない。禁輸: その国とは売りも買いもしない。どれも財政の法案として議会の審議にかかる。値段は${ME.capName}の市場の、基準の値段に対する倍率</p>
+    <div class="scroll"><table class="tbl"><tr><th>資源</th><th>いまの値段</th><th>値段の上限</th><th>配給</th><th>輸出禁止</th></tr>${rows}</table></div>
+    ${others.length ? TR`<p>禁輸: ${emb}</p>` : ''}`;
 }
 // 財政の手段の名前 (行政の遅れの知らせ)
 const FISCAL_LAG_LABEL = { tax: '所得への税', ctax: '消費税', tariff: '関税', rate: '政策金利', cb: '中央銀行', deficit: '赤字の上限', rdcredit: '研究開発の税額控除', budget: '予算' };
