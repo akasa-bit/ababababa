@@ -4,13 +4,17 @@
 // 使い方: node tools/fun-targets.js [--src src/index.html] [--seeds 30] [--years 500] [--nations 6] [--with 探索の結果.json,…] [--no-extra]  → Markdown を標準出力へ。結果の JSON は --out に
 //   --with = 必勝法を探す AI (tools/search.js --out) の最良の戦略を、F06 の判定に足す (つり合いの本番。回 DO5・B-066)。F17〜F19 は決めた 6 つの戦略だけで見る
 //   --no-extra = 何もしない・遅れなしの放任を回さない
+//   --part k/K --json p.json = 銀河を K 個に分けた k 番目だけを回し、試合の結果を JSON に書く (回 DO8。実行機に分けて回す .github/workflows/measure.yml 用)
+//   --merge p1.json,p2.json,… = 分けて回した結果をまとめて表にする (ほかの引数は回したときと同じにする)
 const fs = require('fs');
 const S = require('./strategy');
 
 const a = process.argv.slice(2);
 const arg = (name, d) => { const i = a.indexOf(`--${name}`); return i >= 0 ? a[i + 1] : d; };
 const src = arg('src');
-const seeds = Array.from({ length: Number(arg('seeds', 30)) }, (_, i) => String(i + 1));
+const allSeeds = Array.from({ length: Number(arg('seeds', 30)) }, (_, i) => String(i + 1));
+const partArg = arg('part'), mergeArg = arg('merge');
+const seeds = (() => { if (!partArg) return allSeeds; const [k, K] = partArg.split('/').map(Number), per = Math.ceil(allSeeds.length / K); return allSeeds.slice((k - 1) * per, k * per); })();
 const years = Number(arg('years', 500));
 const nations = Number(arg('nations', 6));
 const presets = Object.keys(S.PRESETS);
@@ -28,11 +32,23 @@ const CH = { sixty: '60 星系', loyal: '独立を許さない', unify: '統一'
 (async () => {
   const t0 = Date.now();
   const extra = a.includes('--no-extra') ? [] : [['idle', '何もしない', S.EXTRA.idle.s], ['passive0', '放任 (遅れなし)', null]];
-  const jobs = [...names.map((n) => S.humanize(STRAT[n])), ...extra.map((e) => e[2])].flatMap((s) => seeds.map((seed) => ({ src, seed, years, nations, strategy: s })));
-  const rs = await S.runAll(jobs);
-  const part = (i) => rs.slice(i * seeds.length, (i + 1) * seeds.length);
-  const by = Object.fromEntries(names.map((n, i) => [n, part(i)]));
-  const ex = Object.fromEntries(extra.map((e, i) => [e[0], part(names.length + i)]));
+  let by, ex;
+  if (mergeArg) {
+    // 分けて回した結果をつなぐ (銀河の番号の順)
+    const parts = mergeArg.split(',').map((f) => JSON.parse(fs.readFileSync(f, 'utf8'))).sort((x, y) => Number(x.seeds[0]) - Number(y.seeds[0]));
+    seeds.splice(0, seeds.length, ...parts.flatMap((p) => p.seeds));
+    const cat = (k, n) => parts.flatMap((p) => p[k][n]);
+    by = Object.fromEntries(names.map((n) => [n, cat('by', n)]));
+    ex = Object.fromEntries(extra.map((e) => [e[0], cat('ex', e[0])]));
+  } else {
+    const jobs = [...names.map((n) => S.humanize(STRAT[n])), ...extra.map((e) => e[2])].flatMap((s) => seeds.map((seed) => ({ src, seed, years, nations, strategy: s })));
+    const rs = await S.runAll(jobs);
+    const part = (i) => rs.slice(i * seeds.length, (i + 1) * seeds.length);
+    by = Object.fromEntries(names.map((n, i) => [n, part(i)]));
+    ex = Object.fromEntries(extra.map((e, i) => [e[0], part(names.length + i)]));
+    if (partArg) { fs.writeFileSync(arg('json'), JSON.stringify({ seeds, years, nations, by, ex })); console.log(`part ${partArg}: 銀河 ${seeds.join(',')} (${((Date.now() - t0) / 60000).toFixed(1)} 分)`); return; }
+  }
+  const rs = Object.values(by)[0];
   const all = presets.flatMap((n) => by[n]);
   // F06・F17: 銀河ごとの 1 位
   // F06 は探索の最良も入れた組で、F17 は決めた 6 つだけで数える

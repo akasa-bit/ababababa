@@ -73,9 +73,15 @@ jobs:
           overwrite: true
 
   fun:
-    name: 面白さの代わりの数と必勝法を探す AI (main と比べる)
+    # 24 銀河を 3 つの実行機に 8 銀河ずつ分けて回す (回 DO8・B-224。W3-Q2 = a)。必勝法を探す AI の探索は 1 番目だけが回す。
+    # 表と止める線は、最後のジョブ test が 3 つの結果をまとめて出す (tools/fun-report.js --merge)
+    name: 面白さの代わりの数と必勝法を探す AI (main と比べる・${{ matrix.part }}/3)
     runs-on: ubuntu-latest
     timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -87,14 +93,12 @@ jobs:
         run: |
           node tools/src.js --ref origin/${{ github.base_ref || 'main' }} --out base-src.html
           node tools/src.js --out head-src.html
-          FUN_GATE_OUT=fun-gate.txt node tools/fun-report.js base-src.html head-src.html 8 150 6 12 4 > fun-report.md
+          node tools/fun-report.js base-src.html head-src.html 24 150 6 12 4 --part ${{ matrix.part }}/3 --json fun-part-${{ matrix.part }}.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fun-report
-          path: |
-            fun-report.md
-            fun-gate.txt
+          name: fun-part-${{ matrix.part }}
+          path: fun-part-${{ matrix.part }}.json
           if-no-files-found: ignore
           overwrite: true
 
@@ -106,6 +110,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
@@ -113,6 +121,10 @@ jobs:
           merge-multiple: true
       - name: 表を出す
         run: |
+          # 面白さの数: 3 つの実行機の結果がそろっていれば 1 つの表と止める線にまとめる (欠けていれば表を出さない)
+          if [ -s out/fun-part-1.json ] && [ -s out/fun-part-2.json ] && [ -s out/fun-part-3.json ]; then
+            FUN_GATE_OUT=out/fun-gate.txt node tools/fun-report.js --merge out/fun-part-1.json out/fun-part-2.json out/fun-part-3.json > out/fun-report.md || rm -f out/fun-report.md
+          fi
           # 途中で止まったジョブは、表の代わりにそのことを書く (表が欠けたまま合格に見えないように)
           part() { if [ -s "out/$1" ]; then cat "out/$1"; else echo "### $2"; echo; echo "**表がない** (ジョブの結果: $3)。"; fi; }
           { part ci-tests.md 試験 '${{ needs.tests.result }}'; echo; part ci-report.md '自動対戦 (main と比べる)' '${{ needs.battle.result }}'; echo; part fun-report.md 面白さの代わりの数 '${{ needs.fun.result }}'; } > ci-summary.md

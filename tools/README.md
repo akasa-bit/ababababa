@@ -24,6 +24,7 @@ PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメ
 - `node tools/research-panel.js <出力.csv> [銀河の数] [年数] [国の数] [値のファイル.json]`: 国ごと・年ごとの技術の伸びと研究者の数を書き出す。`python3 data/build/build_ideas.py --game <出力.csv>` で、Bloom ほか 2020 と同じ式で R11 の合否を出す
 
 - `node tools/fun-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数] [探索の予算] [探索の銀河の数]`: 面白さの代わりの数 (判断を求められる回数・待つだけの年・1 つの戦略が強すぎないか・逆転・選ぶ意味の大きさ) を main と並べ、PR の版で必勝法を探す AI の小さな探索を回す。合否は付けないが、main より大きく悪くなったら「止める線」に出す (`FUN_GATE_OUT` のファイルに書き、CI のジョブ「面白さの数の止める線」が見る。線は `docs/parallel.md` の 4 の 3)。数の中身は `docs/fun.md`
+  - CI (回 DO8・B-224) は 24 銀河を 3 つの実行機に分ける: 各実行機が `--part k/3 --json fun-part-k.json` で 8 銀河ずつ回し (探索は 1 番目だけ)、最後のジョブが `node tools/fun-report.js --merge fun-part-1.json fun-part-2.json fun-part-3.json` で 1 つの表と止める線にする。`--seeds 25-48` で銀河の番号を選べる。比べる元と PR に同じファイルを渡すと 1 回だけ回す (main どうしの揺れを測るとき。`docs/fun.md` の 12.1)
 
 手元で同じものを回すときは `CHROMIUM=/opt/pw-browsers/chromium node tools/ci-tests.js` (3 分ほど)。
 
@@ -121,6 +122,8 @@ node tools/headless.js 1 100 6 params.json     # 値のファイルで表を差�
 値のファイルは `{ "表の名前": { "項目": 値 } }` の形 (例: `{ "ED": { "hazardBase": 0.8 }, "TRADE": { "rate": 0.02 } }`)。名前が大文字の表の定数 (と、この版の値 `ED`) だけを書き換えられる。ない項目を書くと止まる。読み込みのときに表から計算してしまう値 (`E_UNIT` など) は変わらない。
 
 ほかの道具からは `const H = require('./headless'); const sim = H.load({ params }); const g = sim.run(sim.newGame('1', { nations: 6 }), 100);` で使う (`g` はゲームの `Game` そのもの。`sim.hash(g)` は状態の要約、`sim.tables` は表)。
+
+`newGame` の選べる値: `nations` (国の数)・`galaxy: 'gen'` (自動生成の銀河。回 GA10。ないときは実在の星)・`gen` (銀河の版。前の版と比べるとき。ないときはいまの版 `GALAXY_GEN`。版 5 から星系はおよそ 2 倍)。
 
 ## 使い方
 
@@ -311,6 +314,23 @@ node tools/session-check.js --check # tools/sessions.json と docs/sessions.md �
 ```
 
 回の順番 (どの回の前にどの回が済んでいる必要があるか) は `tools/sessions.json`。済んだかは、main の `docs/status/<レーン>.md` の「## 済んだ回」の行 (`- GA1 (#180)`) で決まる (`git fetch origin main` してから読む。`SESSION_CHECK_LOCAL=1` で手元のファイル)。
+
+## 大きい測りを実行機に分けて回す (.github/workflows/measure.yml。回 DO8)
+
+手元の機械は CPU が 4 つで、30 銀河 × 500 年の判定は何時間もかかる。GitHub の実行機 (1 台 4 つ) に分けて同時に回す手動のワークフロー (`workflow_dispatch`)。main にあるワークフローを、測りたいブランチ (`ref`) で起動する。
+
+- `cmd`: それぞれの実行機で回すコマンド。`{part}` (1〜) と `{parts}` (実行機の数) を置き換える。結果は `out/` に書く
+- `parts`: 実行機の数 (1〜20)
+- `merge`: 全部の `out/` を集めたあとに回すコマンド。標準出力がジョブ「まとめ」の要約とログに出る
+- 結果の `out/` は成果物 `measure-all` に残る
+
+```sh
+# 例: 地球だけ・30 銀河 × 500 年の判定を 10 台で (探索の結果は先に out/ に書いておく)
+cmd   = node tools/fun-targets.js --seeds 30 --years 500 --nations 0 --part {part}/{parts} --json out/p{part}.json
+merge = node tools/fun-targets.js --seeds 30 --years 500 --nations 0 --merge $(ls out/p*.json | paste -sd,)
+```
+
+分けて回せる道具: `tools/fun-targets.js` (`--part k/K --json`・`--merge a.json,b.json`)・`tools/fun-report.js` (`--part k/K --json`・`--merge a.json b.json`)・`tools/nation-balance.js`・`tools/policy-irf.js` (どちらも `--merge`)。
 
 ## ほかの道具 (一覧。回 DO7 で足した)
 
