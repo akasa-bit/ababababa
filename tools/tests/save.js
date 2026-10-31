@@ -17,17 +17,20 @@ const { assemble } = require('../src');
 const BASE_REF = '3a5b5d9'; // docs/restart-baseline.md の基準の main (src を分ける前)
 const fails = [];
 const now = H.load({ edition: 'game' });
-const blank = (sim) => new sim.Game(sim.generateGalaxy({ seed: '4', starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
+// セーブを読むときは、ゲームと同じくセーブに書いた銀河の版で銀河を作る (screen/playlog.js の読み込み。版 5 で星が変わった)
+const blank = (sim, gen = sim.GALAXY_GEN) => new sim.Game(sim.generateGalaxy({ seed: '4', starCount: 400, meanSpacing: 4, kind: 'real', gen }));
 
 // 1
 const tmp = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'nlu-save-')), 'base-src.html');
 fs.writeFileSync(tmp, assemble({ ref: BASE_REF }));
 const old = H.load({ src: tmp, edition: 'game' });
 const gOld = old.run(old.newGame('4', { nations: 6 }), 60);
-const gNew = blank(now);
-if (!gNew.restore(JSON.parse(JSON.stringify(old.buildSave(gOld))))) fails.push('前のゲームのセーブが読めない');
-const gAgain = blank(now);
-if (!gAgain.restore(JSON.parse(JSON.stringify(now.buildSave(gNew))))) fails.push('前のセーブを読んだものを、保存して読み直せない');
+const dOld = JSON.parse(JSON.stringify(old.buildSave(gOld)));
+const gNew = blank(now, dOld.gen || 1);
+if (!gNew.restore(dOld)) fails.push('前のゲームのセーブが読めない');
+const dNew = JSON.parse(JSON.stringify(now.buildSave(gNew)));
+const gAgain = blank(now, dNew.gen || 1);
+if (!gAgain.restore(dNew)) fails.push('前のセーブを読んだものを、保存して読み直せない');
 now.run(gNew, 40); now.run(gAgain, 40);
 const [h0, h1] = [now.hash(gAgain), now.hash(gNew)];
 if (h0 !== h1) fails.push(`前のセーブを読んだものと、それを保存して読み直したもので、続けた筋が違う (${h1}・読み直し ${h0})`);

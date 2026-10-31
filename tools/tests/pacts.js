@@ -80,8 +80,10 @@ const dhe = g.sysDist(h, al), dhme = g.sysDist(h, g.cap), t0 = g.year;
 if (dhe > 1.5) check(!g.atWar(al, f2), '開戦の知らせが届く前に、AI の同盟国が参戦した');
 for (let i = 0; i < 4 * (dhe + 2) && !g.atWar(al, f2) && g.atWar(f2, h); i++) g.advance(0.25);
 check(g.atWar(al, f2) && g.year >= t0 + dhe - 1e-9, `AI の同盟国が、知らせが届いたあとも参戦しない、か光より速く参戦した (${(g.year - t0).toFixed(1)} 年・${dhe.toFixed(1)} 光年)`);
-let call = g.decisions.find((x) => x.kind === 'pact' && x.type === 'call' && x.state === 'open');
-for (let i = 0; i < 4 * (dhme + 2) && !call; i++) { g.advance(0.25); call = g.decisions.find((x) => x.kind === 'pact' && x.type === 'call' && x.state === 'open'); }
+// f2 の宣戦の知らせを待つ (待つあいだに別の国が h に宣戦することがあるので、相手で選ぶ。待つ年は宣戦した年 t0 から数える。銀河の版 5 で国どうしが遠くなった)
+const callOf = () => g.decisions.find((x) => x.kind === 'pact' && x.type === 'call' && x.state === 'open' && x.enemy === f2 && x.ally === h);
+let call = callOf();
+while (!call && g.year < t0 + dhme + 2) { g.advance(0.25); call = callOf(); }
 check(call && call.enemy === f2 && call.ally === h && g.year >= t0 + dhme - 1e-9, '人間の同盟国に「参戦するか」が届かない、か光より速く届いた');
 if (call) {
   const c0 = g.council;
