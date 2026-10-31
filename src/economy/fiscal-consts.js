@@ -164,6 +164,12 @@ const RESTRUCTURE = { hc: [0.25, 0.37, 0.5, 0.75], pc: 20 };
 //   Fair の大統領選挙の式 (2012 年の版): 物価の上がり方 1 点で与党の票 −0.684 点、1 人あたりの成長 1 点で +0.672 点 → 物価 1 点 ≒ 所得 1% の損。
 //   1984 年の版 (−0.34 と +1.02) なら 3 分の 1。Fair は物価の上がり方の絶対値で数えるが、ここでは中央銀行の目標 2% からの差にした
 const INFL_LOSS = 1;
+// 財政のグラフの記録 (回 GA9・B-059。docs/fiscal.md の 11): 人間の国ごと (首都の星系) に { r: 1 年 1 行の [年, GDP の伸び, 物価の上がり方, 政策金利, 長期の利回り,
+// 国債 ÷ GDP, 政府の収支 ÷ GDP], m: 財政を変えた [年, 変えた手段の名前の列], p: 前の年の星系ごとの [GDP, 政府の純額] }。試合の始めから全部持つ (期間は画面で選ぶ。GA-1)
+saveField('chron', (game) => (Object.keys(game.chron || {}).length ? game.chron : undefined), {
+  init: (game) => { game.chron = {}; },
+  read: (game, d) => { game.chron = d.chron && typeof d.chron === 'object' ? Object.fromEntries(Object.entries(d.chron).filter(([, c]) => c && Array.isArray(c.r) && Array.isArray(c.m))) : {}; },
+});
 // 民間の信用 (回 KE3・B-002。目標 R22。docs/debt.md の 7)。家計の借り (住宅など。gv.hm) と会社の借り (設備投資など。gv.bl) を、預金と差し引かない残高として持つ
 // (前は家計と会社の手持ちと借りを差し引いた 1 つの値だったので、預金と借りを同時に持てず、R22 が 0 だった)。
 // 毎年 GDP の stock ÷ years を新しく借り、残高の 1 ÷ years を返す。定常では残高 ÷ GDP = stock (伸びる星系ではそれより低い)。

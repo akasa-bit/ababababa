@@ -51,6 +51,7 @@ function fiscalHtml(g) {
   }).join('');
   return TR`<h3>${ico('credits')}財政</h3>${billHtml(g, 'fiscal')}
     <p class="note">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・政策金利・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。政策金利と中央銀行の任せ方のほかは、議会の審議にかける (国の権力に加わっている集団の支持が ${pct(ENACT.now)} 以上ならすぐ通る)。どれも、行政の遅れ (所得への税と研究開発の税額控除 ${ADMIN_LAG.tax} 年・消費税の率 ${ADMIN_LAG.ctax} 年 (新しく入れるときは ${ADMIN_LAG.ctaxNew} 年)・関税 ${ADMIN_LAG.tariff} 年・予算 ${ADMIN_LAG.budget} 年。政策金利と赤字の上限はすぐ) のあと首都で効き、遠い星系にはそのうえ知らせが光速で届いてから効く${wait.length ? TR` (首都でまだ効いていない: ${wait.join('・')})` : ''}${pend ? TR` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
+    ${fiscalChartsHtml(g)}
     <table class="tbl">
       <tr><td>税率</td><td>${slider('tax', TAX_RANGE, TAX_STEP, taxRate, 'pct1', TR('税率'))}</td><td colspan="2" class="muted wrap">所得への税 (標準 ${(MARKET.tax * 100).toFixed(1)}% の ×${taxK.toFixed(2)})${Math.abs(lossAll) > 1e-9 ? TR`・消費税と関税と合わせた家計の損は${ME.capName}の家計の所得の ${lossAll > 0 ? '' : '−'}${Math.abs(lossAll * 100).toFixed(1)}% (標準と比べて): 家臣の忠誠度の目標 ${LOSS.loyalty * lossAll > 0 ? '+' : ''}${(LOSS.loyalty * lossAll).toFixed(1)}・議会の支持 年 ${LOSS.council * lossAll > 0 ? '+' : ''}${(LOSS.council * lossAll).toFixed(2)} (所得の 1% の損ごとに ${(-LOSS.loyalty / 100).toFixed(2)} 点・年 ${(-LOSS.council / 100).toFixed(3)})` : ''}。自給の所得には掛からない</td></tr>
       <tr><td>消費税</td><td>${slider('ctax', CTAX_RANGE, CTAX_STEP, f.ctax || 0, 'pct1', TR('消費税'))}</td><td colspan="2" class="muted wrap">家計の買い物 (物とサービス) の値段に掛け、星系の政府に入る。所得の低い分位に重い (逆進)。忠誠度と議会には、家計の損 (税率 × 買い物 ÷ 所得) として効く</td></tr>
@@ -109,6 +110,51 @@ function ctlHtml(g) {
     ${others.length ? TR`<p>禁輸: ${emb}</p>` : ''}`;
 }
 // 財政の手段の名前 (行政の遅れの知らせ)
+// 財政のグラフ (回 GA9・B-059。GA-1: 財政を動かすかを決めるためのグラフを財政の画面の中に。期間は試合の始めから直近 10 年まで変えられる)。
+// 首都に届いた記録 (chronYearly) の 1 年 1 行から、小さな図を並べる (1 つの図に縦の目盛りは 1 つ)。財政を変えた年に縦の点線の印。
+// 年の帯に触れると、その年の値が出る (title)。色は 2 本目だけ var(--info) の破線にし、線の端に名前を書く (色だけで見分けない)
+const CHART_SPANS = [10, 25, 50, 100, 0]; // 0 = 試合の始めから
+function fiscalChartsHtml(g) {
+  const c = g.chron?.[g.cap];
+  if (!c || c.r.length < 2) return TR`<p class="note muted">財政のグラフは、記録が 2 年分たまると出る (首都に届いた記録から 1 年に 1 回)。</p>`;
+  const span = typeof app !== 'undefined' && app.chartSpan !== undefined ? app.chartSpan : 50;
+  const last = c.r[c.r.length - 1][0], first = span ? last - span : -Infinity;
+  const rows = c.r.filter((x) => x[0] > first), marks = c.m.filter((m) => m[0] > (rows[0]?.[0] ?? last) - 0.5);
+  const pc = (v) => (v === null ? '—' : `${(v * 100).toFixed(1)}%`);
+  const panels = [
+    { t: TR('GDP の伸び (年)'), s: [[1, TR('伸び')]], ref: 0 },
+    { t: TR('物価の上がり方 (年)'), s: [[2, TR('物価')]], ref: CB.pistar, refLabel: TR`目標 ${(CB.pistar * 100).toFixed(0)}%` },
+    { t: TR('金利 (年)'), s: [[3, TR('政策金利')], [4, TR('長期の利回り')]] },
+    { t: TR('国債 ÷ GDP'), s: [[5, TR('国債')]], ref: 0 },
+    { t: TR('政府の収支 ÷ GDP (年)'), s: [[6, TR('収支')]], ref: 0 },
+  ];
+  const spans = CHART_SPANS.filter((n) => n === 0 || n < last - c.r[0][0] + 10).map((n) => `<button data-act="chartspan" data-n="${n}" class="${n === span ? 'on' : ''}">${n ? TR`${n} 年` : TR('はじめから')}</button>`).join('');
+  const label = (k) => k.map((x) => FISCAL_LAG_LABEL[x] || x).join(TR('・'));
+  const svg = (p) => {
+    const W = 260, Hh = 100, L = 44, R = 8, T = 8, B = 18, xs = rows.map((r) => r[0]), x0 = xs[0], x1 = Math.max(xs[xs.length - 1], x0 + 1);
+    const vals = rows.flatMap((r) => p.s.map(([i]) => r[i])).filter((v) => v !== null);
+    if (p.ref !== undefined) vals.push(p.ref);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    if (!(hi > lo)) { lo -= 0.01; hi += 0.01; }
+    const X = (y) => L + ((y - x0) / (x1 - x0)) * (W - L - R), Y = (v) => T + (1 - (v - lo) / (hi - lo)) * (Hh - T - B);
+    const line = (i) => { let d = '', pen = false; for (const r of rows) { if (r[i] === null) { pen = false; continue; } d += `${pen ? 'L' : 'M'}${X(r[0]).toFixed(1)},${Y(r[i]).toFixed(1)}`; pen = true; } return d; };
+    const lastOf = (i) => [...rows].reverse().find((r) => r[i] !== null);
+    const ref = p.ref !== undefined ? `<line x1="${L}" x2="${W - R}" y1="${Y(p.ref).toFixed(1)}" y2="${Y(p.ref).toFixed(1)}" stroke="var(--dim)" stroke-width="1" stroke-dasharray="3 3"/>${p.refLabel ? `<text x="${L + 3}" y="${(Y(p.ref) - 3).toFixed(1)}" fill="var(--muted)" font-size="10">${esc(p.refLabel)}</text>` : ''}` : '';
+    const mk = marks.map((m) => `<g><line x1="${X(m[0]).toFixed(1)}" x2="${X(m[0]).toFixed(1)}" y1="${T}" y2="${Hh - B}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="1 2"/><title>${esc(TR`${Math.floor(m[0])} 年: 財政を変えた (${label(m[1])})`)}</title></g>`).join('');
+    const lines = p.s.map(([i], j) => `<path d="${line(i)}" fill="none" stroke="${j ? 'var(--info)' : 'var(--fg)'}" stroke-width="2" stroke-linejoin="round" ${j ? 'stroke-dasharray="5 3"' : ''}/>`).join('');
+    const cols = rows.map((r, k) => { const xa = k ? (X(rows[k - 1][0]) + X(r[0])) / 2 : L, xb = k < rows.length - 1 ? (X(r[0]) + X(rows[k + 1][0])) / 2 : W - R; return `<rect x="${xa.toFixed(1)}" y="${T}" width="${Math.max(0.5, xb - xa).toFixed(1)}" height="${Hh - T - B}" fill="transparent"><title>${esc(TR`${r[0]} 年: ${p.s.map(([i, n]) => `${n} ${pc(r[i])}`).join(TR('・'))}`)}</title></rect>`; }).join('');
+    // 見出しの下に、線の見本 (実線・破線)・名前・いちばん新しい値 (2 本の図の凡例を兼ねる)
+    const key = p.s.map(([i, n], j) => { const e = lastOf(i); return `<span class="fkey"><svg viewBox="0 0 18 6" aria-hidden="true"><line x1="0" x2="18" y1="3" y2="3" stroke="${j ? 'var(--info)' : 'var(--fg)'}" stroke-width="2" ${j ? 'stroke-dasharray="5 3"' : ''}/></svg>${esc(n)} <b class="num">${e ? pc(e[i]) : '—'}</b></span>`; }).join('');
+    return `<figure class="fchart"><figcaption>${esc(p.t)}<br>${key}</figcaption><svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${esc(p.t)}">
+      <line x1="${L}" x2="${W - R}" y1="${Hh - B}" y2="${Hh - B}" stroke="var(--line)"/>
+      <text x="${L - 4}" y="${T + 8}" fill="var(--muted)" font-size="10" text-anchor="end">${pc(hi)}</text><text x="${L - 4}" y="${Hh - B}" fill="var(--muted)" font-size="10" text-anchor="end">${pc(lo)}</text>
+      <text x="${L}" y="${Hh - 4}" fill="var(--muted)" font-size="10">${x0}</text><text x="${W - R}" y="${Hh - 4}" fill="var(--muted)" font-size="10" text-anchor="end">${xs[xs.length - 1]}</text>
+      ${ref}${mk}${lines}${cols}</svg></figure>`;
+  };
+  const table = `<details><summary>${TR('表で見る')}</summary><div class="scroll"><table class="tbl"><tr><th>${TR('年')}</th>${panels.flatMap((p) => p.s.map(([, n]) => `<th>${esc(n)}</th>`)).join('')}</tr>${[...rows].reverse().map((r) => `<tr><td>${r[0]}</td>${panels.flatMap((p) => p.s.map(([i]) => `<td class="num">${pc(r[i])}</td>`)).join('')}</tr>`).join('')}</table></div></details>`;
+  return TR`<h3>財政のグラフ</h3><p class="note">首都に届いた記録から 1 年に 1 回 (遠い星系の分は光の年数だけ古い)。点線は財政を変えた年 (触れると中身)。伸びと収支は前の年も記録のあった星系だけで比べる。</p>
+    <div class="chips">${spans}</div><div class="fcharts">${panels.map(svg).join('')}</div>${table}`;
+}
 const FISCAL_LAG_LABEL = { tax: '所得への税', ctax: '消費税', tariff: '関税', rate: '政策金利', cb: '中央銀行', deficit: '赤字の上限', rdcredit: '研究開発の税額控除', budget: '予算', ceil: '値段の上限', ration: '配給', ban: '輸出禁止', embargo: '禁輸', pistar: '物価の目標', qe: '量的緩和', repress: '金融抑圧', soe: '国有の割合', capctl: '資本規制' };
 // 帰着の表 (回 KE8・B-012): 決めた財政を標準の財政と比べた 1 年の損得。部門ごとと、国の家計の所得の 5 分位ごと (分位の所得に対する割合)
 function incidenceHtml(g) {

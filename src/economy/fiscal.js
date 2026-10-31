@@ -148,6 +148,25 @@
       if (gov !== undefined) this.earn('interest', x, gov); else this.cash('interest', x, acct);
     }
   }
+  // 財政のグラフの記録 (回 GA9・B-059。年 1 回、人間の席ごと): 首都に届いた記録 (known) から、国の GDP の伸び・国債 ÷ GDP・政府の収支 ÷ GDP、首都の中央銀行から
+  // 物価の上がり方・政策金利・長期の利回り。伸びと収支は、前の年も記録のあった星系だけで比べる (入植や併合で国が大きくなった分を入れない。前の年の星系ごとの
+  // [GDP, 政府の純額] は c.p に持ち、セーブにも入れる (読み込んだあとも同じ記録になるように))。収支 = 政府の純額 (資金 − 国債) の 1 年の増え
+  chronYearly() {
+    const cap = this.cap, now = {}, c = (this.chron[cap] ??= { r: [], m: [] }), prev = c.p;
+    let Y = 0, D = 0, a = 0, b = 0, w = 0;
+    for (const s of this.knownOwnSystems()) {
+      const k = this.known(s.id);
+      if (!(k?.gdp > 0)) continue;
+      now[s.id] = [k.gdp, (k.credits || 0) - (k.bond || 0)];
+      Y += k.gdp; D += k.bond || 0;
+      const p = prev?.[s.id];
+      if (p) { a += k.gdp; b += p[0]; w += now[s.id][1] - p[1]; }
+    }
+    c.p = now;
+    if (!(Y > 0)) return;
+    const r4 = (v) => (v === null || !Number.isFinite(v) ? null : Math.round(v * 1e4) / 1e4), s = this.cb[cap];
+    c.r.push([Math.round(this.year), r4(a > 0 && b > 0 ? GM.log(a / b) : null), r4(s?.pi ?? null), r4(this.cbRateAt(cap)), r4(this.govs[cap] ? this.longYield(cap) : null), r4(D / Y), r4(a > 0 ? w / a : null)]);
+  }
   // 財政。fiscalFor(国, 星系) = その星系で効いている、その国の財政 (変えた知らせが光速で届くまでは前の財政)。人間でない国は標準。
   // 手段ごとに行政の遅れがあり (ADMIN_LAG。回 KE8・B-012)、f.on[手段] = 首都で効き始める年。遠い星系は、そのうえ光の遅れのあと。f.done = いちばん遅い手段の年
   fiscalFor(root, id) {
@@ -293,6 +312,8 @@
     const obj = new Set(['ceil', 'ration', 'ban', 'embargo']);
     const eq = (k, a) => (k === 'budget' ? Object.keys(BUDGET).every((b) => budget[b] === (a.budget?.[b] || 0)) : k === 'tax' ? Math.abs(tax - taxRateOf(a.tax)) < 1e-9 : obj.has(k) ? JSON.stringify(next[k]) === JSON.stringify(a[k] || {}) : next[k] === (a[k] ?? FISCAL_DEFAULT[k]));
     for (const k of Object.keys(next)) on[k] = eq(k, prev) ? this.year : eq(k, cur) && cur.on?.[k] > this.year ? cur.on[k] : this.year + adminLag(k, next, prev);
+    const changed = Object.keys(next).filter((k) => !eq(k, cur));
+    if (changed.length) (this.chron[this.cap] ??= { r: [], m: [] }).m.push([Math.round(this.year * 100) / 100, changed]); // 財政のグラフの印 (回 GA9)
     this.fiscal = { ...next, since: this.year, on, done: Math.max(...Object.values(on)), prev };
     const parts = [JA`税率は ${(tax * 100).toFixed(1)}%`, JA`消費税は ${(ctax * 100).toFixed(1)}%`, JA`関税は ${(tariff * 100).toFixed(1)}%`, cb ? '政策金利は中央銀行に任せる' : JA`政策金利は年 ${(rate * 100).toFixed(2)}%`, JA`赤字の上限は ${deficit ? JA`GDP の ${(deficit * 100).toFixed(1)}%` : 'なし (国債を出さない)'}`, JA`研究開発の税額控除は ${(rdcredit * 100).toFixed(1)}%`, JA`予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
     const ctl = this.ctlText(next);

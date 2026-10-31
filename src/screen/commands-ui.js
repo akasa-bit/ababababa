@@ -49,6 +49,7 @@ function onPanelClick(e) {
   if (act === 'fleetsel') { app.fleetSel = new Set([sys]); app.fleetMove.clear(); app.fleetConfirm = null; app.setView('galaxy'); return renderFleetBar(); }
   if (act === 'gobody') { app.openSystem(sys); return app.selectBody(body); }
   if (act === 'etab') { app.empireTab = btn.dataset.t; app.dirty = true; return; }
+  if (act === 'chartspan') { app.chartSpan = Number(btn.dataset.n); app.dirty = true; return; } // 財政のグラフの期間 (経済。回 GA9・B-059)
   if (act === 'evfilter') { app.eventFilter = btn.dataset.f; app.dirty = true; return; }
   // 知らせの帯
   if (act === 'deselect') return app.deselect();

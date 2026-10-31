@@ -420,6 +420,10 @@ body.nosel aside { display:none; }
 #sky::after { content:""; position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 45%, rgba(11,12,13,.6) 100%); }
 .council { margin:4px 0 8px; max-width:420px; }
 .council svg { display:block; width:100%; height:auto; }
+/* 財政のグラフ (回 GA9・B-059): 小さな図を並べる。縦 854 px でも横にはみ出さない */
+.fcharts { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:8px; margin:4px 0 8px; }
+.fchart { margin:0; } .fchart figcaption { font-size:var(--fs1); color:var(--muted); } .fchart > svg { display:block; width:100%; height:auto; font-family:var(--font-num); }
+.fkey { display:inline-flex; align-items:center; gap:4px; margin-right:12px; color:var(--fg); } .fkey svg { width:18px; height:6px; }
 .council .num { font-family:var(--font-num); }
 .council figcaption { font-size:var(--fs1); color:var(--muted); display:flex; gap:6px; align-items:center; justify-content:center; }
 .council .sw { display:inline-block; width:10px; height:10px; border-radius:50%; } .council .sw.own { background:var(--own); } .council .sw.opp { background:var(--enemy); margin-left:10px; }
