@@ -1,7 +1,14 @@
 // --- アカウントとクラウド (Firebase。docs/online.md) ---
 // Firebase のプロジェクトの設定 (Firebase のコンソールの「ウェブアプリ」の firebaseConfig)。null なら、アカウントの機能は出さない。
 // ホーム画面の「アカウント」タブから、端末ごとに設定を貼って試すこともできる (ブラウザに覚える)
-const FIREBASE_CONFIG = null;
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyDRHWVbw1hQLzCTEASRnbekq7hHNmvAN_E',
+  authDomain: 'nolongerubiquitous.firebaseapp.com',
+  projectId: 'nolongerubiquitous',
+  storageBucket: 'nolongerubiquitous.firebasestorage.app',
+  messagingSenderId: '848142753399',
+  appId: '1:848142753399:web:1178da094fa97ec8b5f072',
+};
 const FB_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 const CLOUD_PART = 700000; // クラウドのセーブを分けて置く 1 つの大きさ [文字] (Firestore の文書は 1 MiB まで)
 const ROOM_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 部屋のコードに使う字 (見間違えやすい I・L・O・0・1 を除く)

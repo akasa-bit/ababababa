@@ -17,7 +17,7 @@
 4. 「Firestore Database」を作り、「ルール」にリポジトリの `firestore.rules` の中身を貼って公開する。
 5. 「プロジェクトの設定」→「マイアプリ」でウェブアプリを足し、`firebaseConfig` (apiKey・authDomain・projectId・appId など) を写す。
 6. 写した設定を次のどちらかに入れる。
-   - **みんなが使えるようにする**: `src/index.html` の `FIREBASE_CONFIG` に書いて、組み立て直す (`node tools/build.mjs`)。ウェブアプリの apiKey は公開してよい値。守るのは Firestore のルールの役目です。
+   - **みんなが使えるようにする**: `src/outward/cloud.js` の `FIREBASE_CONFIG` に書いて、組み立て直す (`node tools/build.mjs`)。ウェブアプリの apiKey は公開してよい値。守るのは Firestore のルールの役目です。
    - **この端末だけで試す**: ホーム画面の「アカウント」タブの「Firebase の設定」に、JSON のまま貼って「設定を使う」。
 
 ## 2. 仕組み
