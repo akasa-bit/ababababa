@@ -1,0 +1,111 @@
+name: 測り (手で回す・実行機に分ける)
+
+# 手元より大きい測り (30 銀河 × 500 年の判定・目標の測り直しなど) を、GitHub の実行機に分けて同時に回す (回 DO8。docs/status/DO.md の次にやることの 0)。
+# 手元の機械は CPU が 4 つで、3 波目の 6 か国の判定 (12 銀河 × 300 年) でも数時間かかった。実行機 1 台も 4 つなので、10 台に分ければおよそ 10 倍速い。
+# 使い方 (Actions の画面か API の workflow_dispatch):
+#   cmd    = それぞれの実行機で回すコマンド。{part} (1〜parts) と {parts} を置き換える。結果は out/ に書く (out/ は先に作ってある)
+#   parts  = 実行機の数 (1〜20)
+#   merge  = 全部の実行機の out/ を 1 つの out/ に集めたあとに回すコマンド (なくてもよい)。標準出力はジョブの要約とログに出る
+#   ref    = 測る版 (ブランチかコミット。空なら起動したブランチ)
+# 例: cmd = node tools/fun-targets.js --seeds 30 --years 500 --nations 0 --part {part}/{parts} --json out/p{part}.json
+# 結果の out/ は成果物 measure-all に残る (14 日)。ゲームの中身は変えない
+on:
+  workflow_dispatch:
+    inputs:
+      cmd:
+        description: 'それぞれの実行機で回すコマンド ({part}・{parts} を置き換える。結果は out/ へ)'
+        required: true
+      parts:
+        description: '実行機の数 (1〜20)'
+        required: true
+        default: '10'
+      merge:
+        description: '集めたあとに回すコマンド (なくてもよい)'
+        required: false
+        default: ''
+      ref:
+        description: '測る版 (空なら起動したブランチ)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: 分け方
+    runs-on: ubuntu-latest
+    outputs:
+      parts: ${{ steps.p.outputs.parts }}
+    steps:
+      - id: p
+        env:
+          PARTS: ${{ inputs.parts }}
+        run: |
+          n=$(( PARTS < 1 ? 1 : PARTS > 20 ? 20 : PARTS ))
+          echo "parts=$(seq -s, 1 $n | sed 's/^/[/;s/$/]/')" >> "$GITHUB_OUTPUT"
+
+  run:
+    name: 測り ${{ matrix.part }}
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        part: ${{ fromJSON(needs.plan.outputs.parts) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 回す
+        env:
+          CMD: ${{ inputs.cmd }}
+          PART: ${{ matrix.part }}
+          PARTS: ${{ strategy.job-total }}
+        run: |
+          mkdir -p out
+          c="${CMD//\{part\}/$PART}"; c="${c//\{parts\}/$PARTS}"
+          echo "$c"
+          bash -c "$c"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: measure-${{ matrix.part }}
+          path: out/
+          if-no-files-found: ignore
+
+  merge:
+    name: まとめ
+    needs: run
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: measure-*
+          path: out
+          merge-multiple: true
+      - name: まとめる
+        if: ${{ inputs.merge != '' }}
+        env:
+          MERGE: ${{ inputs.merge }}
+        run: |
+          bash -c "$MERGE" | tee merged.txt
+          cat merged.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: measure-all
+          path: out/
+          if-no-files-found: ignore

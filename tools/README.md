@@ -315,6 +315,23 @@ node tools/session-check.js --check # tools/sessions.json と docs/sessions.md �
 
 回の順番 (どの回の前にどの回が済んでいる必要があるか) は `tools/sessions.json`。済んだかは、main の `docs/status/<レーン>.md` の「## 済んだ回」の行 (`- GA1 (#180)`) で決まる (`git fetch origin main` してから読む。`SESSION_CHECK_LOCAL=1` で手元のファイル)。
 
+## 大きい測りを実行機に分けて回す (.github/workflows/measure.yml。回 DO8)
+
+手元の機械は CPU が 4 つで、30 銀河 × 500 年の判定は何時間もかかる。GitHub の実行機 (1 台 4 つ) に分けて同時に回す手動のワークフロー (`workflow_dispatch`)。main にあるワークフローを、測りたいブランチ (`ref`) で起動する。
+
+- `cmd`: それぞれの実行機で回すコマンド。`{part}` (1〜) と `{parts}` (実行機の数) を置き換える。結果は `out/` に書く
+- `parts`: 実行機の数 (1〜20)
+- `merge`: 全部の `out/` を集めたあとに回すコマンド。標準出力がジョブ「まとめ」の要約とログに出る
+- 結果の `out/` は成果物 `measure-all` に残る
+
+```sh
+# 例: 地球だけ・30 銀河 × 500 年の判定を 10 台で (探索の結果は先に out/ に書いておく)
+cmd   = node tools/fun-targets.js --seeds 30 --years 500 --nations 0 --part {part}/{parts} --json out/p{part}.json
+merge = node tools/fun-targets.js --seeds 30 --years 500 --nations 0 --merge $(ls out/p*.json | paste -sd,)
+```
+
+分けて回せる道具: `tools/fun-targets.js` (`--part k/K --json`・`--merge a.json,b.json`)・`tools/fun-report.js` (`--part k/K --json`・`--merge a.json b.json`)・`tools/nation-balance.js`・`tools/policy-irf.js` (どちらも `--merge`)。
+
 ## ほかの道具 (一覧。回 DO7 で足した)
 
 上の節に書いていない道具。使い方は各ファイルの先頭のコメント。
