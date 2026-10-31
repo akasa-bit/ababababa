@@ -39,7 +39,7 @@ function routeBox(app, sys) {
     const out = r.a === sys.id ? 0 : 1;
     const other = g.system(r.a === sys.id ? r.b : r.a);
     const use = g.routeUse(r);
-    return TR`<div class="route"><div><b>⇄ ${esc(other.name)}</b> <span class="muted">${distance(sys, other).toFixed(1)} ly ・ Lv${r.lv} (片道 ${fmtAmt(g.routeCap(r))}/年)</span> <span class="${use > 0.9 ? 'bad' : 'muted'}">稼働率 ${pct(Math.min(use, 1))}</span><br>
+    return TR`<div class="route"><div><b>⇄ ${esc(other.name)}</b> <span class="muted">${distance(sys, other).toFixed(1)} ly ・ Lv${r.lv} (輸送船 ${Math.round(g.routeShips(r))} 隻・片道 ${fmtAmt(g.routeCap(r))}/年。量は質量 100 万 t)</span> <span class="${use > 0.9 ? 'bad' : 'muted'}">稼働率 ${pct(Math.min(use, 1))}</span><br>
       <span class="muted">送り ${fmtAmt(r.vol[out])}/年 ・ 受け取り ${fmtAmt(r.vol[1 - out])}/年</span></div>
       ${costButton(g, `data-act="uproute" data-route="${r.id}"`, TR('拡張'), g.routeUpCost(r), r.a, busyText(g, (j) => j.type === 'route' && j.route === r.id))}</div>`;
   }).join('');
