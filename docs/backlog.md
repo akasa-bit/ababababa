@@ -156,7 +156,7 @@
 | B-086 | **済み (#190。回 SO2。CI の「包装 (Windows と Linux)」。`desktop/README.md` の 1-4)** Windows 版を Windows の上で動かして確かめる (実機か、CI に Windows を足す) | `desktop/`・`.github/workflows/` | — | S | 外向き | `status/S.md` の残り |
 | B-087 | Steam Deck の実機で確かめる: F08 の描画の速さ・Game Mode の全画面・`<select>` の出方・Gamepad API・セーブの書き出しと読み込み・小さな文字 | `desktop/bench/run.mjs` | ユーザーの実機 | S | 外向き | `status/S.md` の残り・`desktop/README.md` の 4・`desktop/controller.md` の 3 |
 | B-088 | **済み (#183。回 SO1。字体は包装で同梱。Firebase の SDK は同梱しない。`desktop/README.md` の 1-2)** 字体を同梱する (いまは Google Fonts をネットから読む)。Firebase の SDK もネットなしでどうするか決める | `src/index.html` の頭の `<link>`・`FB_SDK`・`desktop/` | — | S | 外向き | `status/S.md` の残り・`desktop/README.md` の 4 |
-| B-089 | Firebase の設定を入れて公開する (アカウント・クラウドのセーブ・部屋のコード) | `FIREBASE_CONFIG`・`firestore.rules` | Firebase の設定 (ユーザー) | S | 外向き | `online.md` の 1・`status/common.md` の 4 |
+| B-089 | Firebase の設定を入れて公開する (アカウント・クラウドのセーブ・部屋のコード)。**途中 (2026-10-31)**: コンソールの準備 (ログインの 3 つ・承認済みドメイン・Firestore (Standard・東京・`(default)`)・ルール) は済み。設定 (ウェブアプリは 1 つめ、appId `…1178da094fa97ec8b5f072`) はブランチ `firebase-config` に入れた。**残り**: PR を作って main にマージ → 公開された版で、ゲストのログインとクラウドのセーブを実機で確かめる。使わない 2 つめのウェブアプリ (appId `…1b1667aa80e31a27b5f072`) はコンソールから消してよい | `FIREBASE_CONFIG`・`firestore.rules` | Firebase の設定 (ユーザー) | S | 外向き | `online.md` の 1・`status/common.md` の 4 |
 | B-090 | 公開の開発日記 (`docs/` の決めたことを、遊ぶ人向けに言い直す) | 新しい | B-081 | M | 外向き | `critique/04-plan.md` の 5-3 |
 | B-091 | 発売後の 30 日に何度も直し、直す順番を公開して約束する | — | 発売 | L | 外向き | `critique/04-plan.md` の 5-1・5-2 |
 
