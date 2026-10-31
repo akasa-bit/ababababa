@@ -1,5 +1,5 @@
 // 国ごとに規則が違う開始 (回 SE8・B-029) の試験。画面なしの版で回す:
-//   開始の大きさ: 10・50・90% 点で 0.30・1・2.50・国ごとに違う・母星の人口と艦隊と資金が大きさに合う・大きな国は星系を足す・保存と読み込みで残る・
+//   開始の大きさ: ゲーム版はどの国も 1 (回 SE9・B-143)・散らばりの値 (nationSize 0.5) なら 10・50・90% 点で 0.30・1・2.50 で国ごとに違う・母星の人口と艦隊と資金が大きさに合う・大きな国は星系を足す・保存と読み込みで残る・
 //     国家選択のない試合はどの規則もない
 //   特性の規則: 多産 (入植船を出せる人口と数)・長命 (議会のいら立ち半分・国家方針の間隔 45 年)・適応力 (住みにくい惑星の上限 ×3)・水棲 (乾燥した惑星に入植できない)・
 //     好戦的 (宣戦に政治力が要らない・疲弊 ×0.5・不可侵を結べない)・勤勉 (建設費 ×0.75)・鉱夫 (採掘基地の費用 ×0.5)・商才 (関税 5% まで・交易協定を AI が断らない)・
@@ -19,7 +19,10 @@ const g = sim.newGame(seed, { nations: 6 });
 const sizeAt = (u) => Math.pow(NATION_SIZE.q.find((x) => x[0] === u)[1], 0.5); // 点の上では内挿がないので、比の 0.5 乗
 res.points = near(sizeAt(0.1), 0.2982, 1e-3) && near(sizeAt(0.5), 1) && near(sizeAt(0.9), 2.4994, 1e-3);
 const sizes = g.nations.map((n) => n.size);
-res.vary = sizes.every((r) => r >= 0.29 && r <= 2.51) && new Set(sizes.map((r) => r.toFixed(3))).size > 3;
+// 回 SE9 (B-143): ゲーム版はどの国も開始の大きさ 1 (EDITIONS.game.nationSize = 0)。散らばりの作りは残してあり、0.5 に戻せば国ごとに違う
+res.equal = sizes.every((r) => r === 1);
+const sizesAt05 = H.load({ params: { ED: { nationSize: 0.5 } } }).newGame(seed, { nations: 6 }).nations.map((n) => n.size);
+res.vary = sizesAt05.every((r) => r >= 0.29 && r <= 2.51) && new Set(sizesAt05.map((r) => r.toFixed(3))).size > 3;
 res.package = g.nations.every((n) => {
   const home = g.colonies.find((c) => c.sys === n.cap && c.body === n.body);
   return near(home.pop, 10000 * Math.min(n.size, 1.15), 1e-6) && g.garrison[n.cap] === Math.max(1, Math.round(3 * Math.pow(n.size, NATION_SIZE.army))) && near(g.gov(n.cap).credits, 1000 * Math.pow(n.size, NATION_SIZE.money), 1e-6);
