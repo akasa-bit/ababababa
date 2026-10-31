@@ -40,9 +40,10 @@ const INCIDENCE = { tax: [3.2, 6.0, 11.1, 19.5, 60.3], ctax: [11.7, 15.2, 18.6, 
 //   ctax = 消費税の率の変更 (英国 2008 年の引き下げは 7 日・ドイツ 2020 年は 28 日の平均)、ctaxNew = 消費税を新しく入れる (準備に 18〜24 か月。Tait 1988・米国会計検査院 1993)。
 //   tariff = 関税の率の変更 (米国 2018 年の鉄鋼の関税は布告から 15 日)。budget = 予算 (次の会計年度から。決める時は年の中で一様とみて平均半年)。
 //   rate・cb = 中央銀行の決定 (次の日から)、deficit = 借りる上限 (首都の政府が決める)
-const ADMIN_LAG = { tax: 0.85, ctax: 0.05, ctaxNew: 1.75, tariff: 0.05, rate: 0, cb: 0, deficit: 0, rdcredit: 0.85, budget: 0.5, ceil: 0, ration: 0.15, ban: 0, embargo: 0 };
+const ADMIN_LAG = { tax: 0.85, ctax: 0.05, ctaxNew: 1.75, tariff: 0.05, rate: 0, cb: 0, deficit: 0, rdcredit: 0.85, budget: 0.5, ceil: 0, ration: 0.15, ban: 0, embargo: 0, pistar: 0, qe: 0, repress: 0.5 };
 //   ceil = 値段の上限 (米国 1971 年 8 月 15 日の 90 日の凍結は発表の日から。大統領令 11615)・ration = 配給 (英国の食料の配給は 1939 年 11 月の発表から 1940 年 1 月 8 日の始まりまで約 2 か月)・
 //   ban・embargo = 輸出禁止と禁輸 (大統領の布告で数日。米国 1962 年のキューバの禁輸は 2 月 3 日の布告から 2 月 7 日)
+//   pistar・qe = 物価の目標と量的緩和 (中央銀行の決定と同じく次の日から。買い入れは QE.speed 年かけて進む)・repress = 金融抑圧 (銀行の預金の利子の上限と国債を持つ義務。法の変更なので予算と同じ半年と置いた仮の値)
 // 価格統制と交易の規制 (回 KE9・B-008。docs/fiscal.md の 8): 国の財政に持つ。ceil = { 資源: 基準の値段の倍率 } (値段の上限。上限で足りない分は不足になる。闇市は入れない)・
 // ration = { 資源: true } (配給: 星系の在庫を、入植地の人口に比べて分ける。不足のとき、先に買った入植地が取りつくさない)・ban = { 資源: true } (輸出禁止: ほかの国の買い手に売らない)・
 // embargo = { 国の首都: true } (禁輸: その国とは売りも買いもしない)。CTL_RES = 選べる資源、RATION_RES = 配給を選べる資源 (家計が買う物)、CEIL_RANGE = 値段の上限の幅 (基準の値段の倍率)
@@ -88,7 +89,14 @@ const budgetEffect = (share) => (share > 0 ? share / (share + BUDGET_HALF) : 0);
 // 研究開発の税額控除 (回 KE6・B-122): 会社の研究開発費の rdcredit の割合を、国の政府が会社に返す。幅は OECD の R&D Tax Incentives の、税の優遇 ÷ 会社の研究開発費の
 // 国・年の 1〜99% 点 (0〜27.9%)。既定はその国ごとの平均の中央値 3.90% を刻みに丸めた 4% (data/derived/innovation.json の rnd.credit)
 const RDCREDIT_RANGE = [0, 0.28], RDCREDIT_STEP = 0.005;
-const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 }, ceil: {}, ration: {}, ban: {}, embargo: {} };
+// 物価の目標・量的緩和・金融抑圧 (回 KE9・B-009。docs/fiscal.md の 9)。
+//   pistar = 中央銀行の物価の目標 (既定 2% = CB.pistar。上げると、物価の上がり方と見込みと長期の利回りの錨がそこへ動く。国債の利札は借り換えの年数だけ遅れるので、
+//     その間は国債の実質の利子が下がる = インフレ税)。幅 0〜20%。
+//   qe = 量的緩和: 国の星系の政府の国債のうち、中央銀行が持つ割合 (日本銀行は 2023 年に国債の約 5 割)。幅 0〜60%
+//   repress = 金融抑圧: 国の政府の国債の利札を下げる点数 (国の中の預金者がそのぶん受け取らない)。Reinhart & Sbrancia (2015): 1945〜80 年の先進国は実質の金利が
+//     負の年が約半分で、米英の債務は年に GDP の 3〜4% ずつ目減りした。国債 ÷ GDP が 1 ほどなら 3〜4 点にあたるので、幅 0〜4 点
+const TARGET_RANGE = [0, 0.2], TARGET_STEP = 0.01, QE_RANGE = [0, 0.6], QE_STEP = 0.05, REPRESS_RANGE = [0, 0.04], REPRESS_STEP = 0.005;
+const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0 };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)
@@ -133,6 +141,20 @@ saveField('cb', (game) => (Object.keys(game.cb).length ? game.cb : undefined), {
   init: (game) => { game.cb = {}; },
   read: (game, d) => { game.cb = d.cb && typeof d.cb === 'object' ? Object.fromEntries(Object.entries(d.cb).filter(([, s]) => s && Number.isFinite(s.P) && Number.isFinite(s.i) && Array.isArray(s.h))) : {}; },
 });
+// 量的緩和 (回 KE9・B-009): 中央銀行が持つ国債 (gv.qb) の利子は政府に戻る (中央銀行の儲けを国に納める) ので、政府は銀行が持つ分 (国債 − qb) だけ利子を払う。
+//   tp = 中央銀行の持つ国債 ÷ GDP 1 あたりの長期の利回りの下がり (米国の 2008〜10 年の買い入れ 約 1.75 兆ドル = GDP の約 12% で期間の上乗せが約 0.5 点。
+//     Gagnon ほか 2011 の結果をまとめたカンザスシティ連銀の見方)・pi = 買い入れ GDP の 1% あたりの物価の水準の上がり (Weale & Wieladek 2016: 米国 0.62%・英国 0.32% の平均)・
+//   fade = その物価の押し上げが消える速さ [1/年] (押し上げの合計が pi になるように、物価の上がり方に足して指数で消す)・speed = 買い入れが目標に近づく年数 (米国の 1 回目は 2009 年 3 月〜2010 年 3 月)
+const QE = { tp: 0.042, pi: 0.47, fade: 1, speed: 1 };
+// 債務の再編 (回 KE9・B-009): 人間の国が、国の政府の国債のうち銀行が持つ分の haircut の割合を払わない (中央銀行の持つ分は減らさない。ギリシャ 2012 年の民間の再編の形)。
+//   hc = 選べる割合 (Cruces & Trebesch 2013 の 1970〜2010 年の 180 件: 半分は 23% 未満か 53% 超・ギリシャ 2012 年 53.5%・アルゼンチン 2005 年 76.8%)。
+//   不履行と同じく預金が目減りし、借りられない年数と利回りの上乗せは割合に比べて伸びる (CB.exclude・CB.spread は CB.haircut の平均の場合。大きな再編ほど長く高い、は
+//   Cruces & Trebesch 2013。比例は仮の形)。pc = 政治力 (国家方針と同じ 20。仮の値)
+const RESTRUCTURE = { hc: [0.25, 0.37, 0.5, 0.75], pc: 20 };
+// 物価が外れたときの政治の損 (QD-27 = b。回 KE9): 物価の上がり方と 2% の差 1 点を、家計の所得の何割の損とみるか (LOSS と同じ重さで忠誠度と議会に効く)。
+//   Fair の大統領選挙の式 (2012 年の版): 物価の上がり方 1 点で与党の票 −0.684 点、1 人あたりの成長 1 点で +0.672 点 → 物価 1 点 ≒ 所得 1% の損。
+//   1984 年の版 (−0.34 と +1.02) なら 3 分の 1。Fair は物価の上がり方の絶対値で数えるが、ここでは中央銀行の目標 2% からの差にした
+const INFL_LOSS = 1;
 // 民間の信用 (回 KE3・B-002。目標 R22。docs/debt.md の 7)。家計の借り (住宅など。gv.hm) と会社の借り (設備投資など。gv.bl) を、預金と差し引かない残高として持つ
 // (前は家計と会社の手持ちと借りを差し引いた 1 つの値だったので、預金と借りを同時に持てず、R22 が 0 だった)。
 // 毎年 GDP の stock ÷ years を新しく借り、残高の 1 ÷ years を返す。定常では残高 ÷ GDP = stock (伸びる星系ではそれより低い)。

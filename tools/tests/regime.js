@@ -53,14 +53,15 @@ const { chromium } = require('playwright');
       for (let i = 0; i < Math.ceil(g.lightDelay(c) * 4) + 4; i++) { delete g.govs[c].autonomy; g.advance(0.25); }
       res.dominionLog = g.log.filter((m) => /冊封朝貢国なので指令を受けない/.test(m.text || m.t || '')).length > 0 || JSON.stringify(g.log.slice(-40)).includes('冊封朝貢国なので');
       res.mandateNow = g.govs[c].mandate || 'balanced';
-      // 強制労働の後遺症: 20 年で 0.4 前後
-      for (let i = 0; i < 80; i++) g.advance(0.25);
-      res.scar = +(g.govs[e].scar || 0).toFixed(2);
-      // 冊封朝貢国 (法の束の点 6 = 自治の度合い 3) → 直接統治 (0.5) は忠誠度 −20
+      // 冊封朝貢国 (法の束の点 6 = 自治の度合い 3) → 直接統治 (0.5) は忠誠度 −20。強制労働の後遺症を待つ 20 年より前に確かめる
+      // (待つあいだに宇宙海賊の略奪などで家臣が国を出ることがある。回 KE9 で物価の項が入って試合の筋が変わり、フィロンがそうなった)
       delete g.govs[c].autonomy; // 待つあいだに自治を認める出来事が起きることがある (シードによる。直轄にできなくなる)
       const L0 = g.govs[c].loyalty;
       const r1 = g.setRule(c, 'direct');
-      res.revoke = [r1.ok, Math.round(L0 - g.govs[c].loyalty)];
+      res.revoke = [r1.ok, Math.round(L0 - g.govs[c].loyalty), r1.reason || ''];
+      // 強制労働の後遺症: 20 年で 0.4 前後
+      for (let i = 0; i < 80; i++) g.advance(0.25);
+      res.scar = +(g.govs[e].scar || 0).toFixed(2);
       // 強制労働をやめる → 後遺症は残り、ゆっくり消える
       g.setRegime(e, 'indirect');
       const s0 = g.govs[e].scar; for (let i = 0; i < 40; i++) g.advance(0.25);

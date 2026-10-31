@@ -18,7 +18,7 @@
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: distance(this.system(id), this.system(this.realmOf(lord))),
       bigger: pop(id) > pop(lord), orders: gv.orders || 0, lordShips: this.garrison[lord] || 0, dep: gv.dep || 0,
       neglect: this.neglectOf(gv), regime: regimeKey(gv), arrears: (gv.arrears || 0) > 0.01, concession: (gv.taxFree || 0) > this.year || (gv.autonomy || 0) > this.year, policy: this.policyAt(id), exhaustion: this.exhaustion[this.realmOf(id)] || 0,
-      ...(() => { const f = this.fiscalAt(id); return { tax: f.tax, ctax: f.ctax || 0, tariff: f.tariff || 0, loss: this.policyLoss(id, f) }; })(), welfare: this.budgetAt(this.realmOf(id), id, 'welfare') });
+      ...(() => { const f = this.fiscalAt(id); return { tax: f.tax, ctax: f.ctax || 0, tariff: f.tariff || 0, loss: this.policyLoss(id, f) }; })(), welfare: this.budgetAt(this.realmOf(id), id, 'welfare'), infl: this.inflOf(id) });
   }
   // 地球の知る限りの内訳 (地球に届いている記録で。表示用)
   knownLoyaltyTerms(id) {
@@ -30,7 +30,7 @@
     // 放っておかれた年数は、記録の時点から今までの年数を足す (そのあと関与が届いたかは、まだ地球には見えない)
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: this.sysDist(id, capital),
       bigger: pop(id) > pop(lord), orders: k.orders || 0, lordShips: this.knownGarrison(lord), dep: k.dep || 0,
-      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), regime: this.knownRegime(k), arrears: (k.arrears || 0) > 0.01, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0, tax: k.tax || 'normal', ctax: k.ctax || 0, tariff: k.tariff || 0, loss: k.loss || null, welfare: k.welfare || 0 });
+      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), regime: this.knownRegime(k), arrears: (k.arrears || 0) > 0.01, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0, tax: k.tax || 'normal', ctax: k.ctax || 0, tariff: k.tariff || 0, loss: k.loss || null, welfare: k.welfare || 0, infl: k.infl ?? null });
   }
   // 統治体制 (主人がいなければ null)
   regimeOf(gv) { return regimeKey(gv); }
@@ -521,7 +521,9 @@
     if (act === 'declarewar' || act === 'peace' || act === 'pact') return PC_DIPLOMACY;
     if (act === 'policy') return POLICY_COST;
     if (act === 'bill') return d.op === 'push' ? this.billPushCost(d.bill) : 0; // 審議中の法案を押す (回 SE7)
-    if (act === 'fiscal') { const c = this.fiscalDraft(), r = this.fiscal || FISCAL_DEFAULT; return taxRateOf(d.tax ?? c.tax) !== taxRateOf(c.tax) || Number(d.ctax ?? c.ctax ?? 0) !== (c.ctax || 0) || Number(d.tariff ?? c.tariff ?? 0) !== (c.tariff || 0) || Number(d.rate ?? r.rate) !== r.rate || Number(d.deficit ?? c.deficit ?? 0) !== (c.deficit || 0) || ['ceil', 'ration', 'ban', 'embargo'].some((k) => d[k] !== undefined && JSON.stringify(d[k]) !== JSON.stringify(c[k] || {})) ? FISCAL_COST : 0; } // 審議中なら出した法案と比べる (回 SE7)。価格統制と交易の規制も (回 KE9)
+    if (act === 'restructure') return RESTRUCTURE.pc; // 債務の再編 (経済。回 KE9)
+    if (act === 'fiscal') { const c = this.fiscalDraft(), r = this.fiscal || FISCAL_DEFAULT; return taxRateOf(d.tax ?? c.tax) !== taxRateOf(c.tax) || Number(d.ctax ?? c.ctax ?? 0) !== (c.ctax || 0) || Number(d.tariff ?? c.tariff ?? 0) !== (c.tariff || 0) || Number(d.rate ?? r.rate) !== r.rate || Number(d.deficit ?? c.deficit ?? 0) !== (c.deficit || 0) || ['ceil', 'ration', 'ban', 'embargo'].some((k) => d[k] !== undefined && JSON.stringify(d[k]) !== JSON.stringify(c[k] || {}))
+      || Number(d.pistar ?? r.pistar ?? FISCAL_DEFAULT.pistar) !== (r.pistar ?? FISCAL_DEFAULT.pistar) || Number(d.qe ?? r.qe ?? 0) !== (r.qe || 0) || Number(d.repress ?? c.repress ?? 0) !== (c.repress || 0) ? FISCAL_COST : 0; } // 審議中なら出した法案と比べる (回 SE7)。価格統制と交易の規制・物価の目標・量的緩和・金融抑圧も (回 KE9)
     const extra = act === 'decide' ? this.decisionOpt(d)?.pc || 0 : 0;
     const target = act === 'grant' || act === 'decide' ? Number(d.sys) : this.cmdTarget(act, d);
     if (target === undefined || target === null || target === this.cap || Number.isNaN(target)) return extra;

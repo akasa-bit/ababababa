@@ -77,7 +77,8 @@
         if (!this.isColonized(id)) return {};
         const root = this.realmOf(id), f = this.fiscalAt(id), t = taxRateOf(f.tax), w = this.budgetAt(root, id, 'welfare'), sc = this.budgetAt(root, id, 'security');
         const l = f.ctax > 0 || f.tariff > 0 ? this.policyLoss(id, f) : null; // 家計の損の割合 (消費税・関税があるときだけ。回 KE8・B-012)
-        return { ...(Math.abs(t - MARKET.tax) > 1e-9 ? { tax: t } : {}), ...(l ? { ctax: f.ctax || 0, tariff: f.tariff || 0, loss: l } : {}), ...(w ? { welfare: w } : {}), ...(sc ? { security: sc } : {}) };
+        const pi = this.inflOf(id); // 国の物価の上がり方 (忠誠度の物価の項。回 KE9)
+        return { ...(Math.abs(t - MARKET.tax) > 1e-9 ? { tax: t } : {}), ...(l ? { ctax: f.ctax || 0, tariff: f.tariff || 0, loss: l } : {}), ...(w ? { welfare: w } : {}), ...(sc ? { security: sc } : {}), ...(Math.abs(pi - CB.pistar) > 1e-9 ? { infl: pi } : {}) };
       })(),
       outposts: this.outposts.filter((o) => o.sys === id).map((o) => ({ body: o.body, lv: o.lv })),
       natives: Object.fromEntries(this.system(id).bodies.filter((b) => this.natives[`${id}|${b.id}`]).map((b) => [b.id, { ...this.natives[`${id}|${b.id}`] }])),

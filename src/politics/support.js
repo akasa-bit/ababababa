@@ -68,6 +68,7 @@
     if ((target.rdcredit ?? FISCAL_DEFAULT.rdcredit) !== (f0.rdcredit ?? FISCAL_DEFAULT.rdcredit)) out.push(JA`研究開発の税額控除 ${p(target.rdcredit)}`);
     for (const [k, b] of Object.entries(BUDGET)) if ((target.budget?.[k] || 0) !== (f0.budget?.[k] || 0)) out.push(JA`${b.label}の予算 ${Math.round((target.budget?.[k] || 0) * 100)}%`);
     if (['ceil', 'ration', 'ban', 'embargo'].some((k) => JSON.stringify(target[k] || {}) !== JSON.stringify(f0[k] || {}))) out.push(this.ctlText(target) || JA`価格統制と交易の規制をやめる`); // 回 KE9
+    if ((target.repress || 0) !== (f0.repress || 0)) out.push(JA`金融抑圧 ${((target.repress || 0) * 100).toFixed(1)} 点`); // 回 KE9 (B-009)
     return out.join('・');
   }
   // 通す: 財政はいまの政策金利と中央銀行の任せ方のまま、ほかの手段を法案の値に。国家方針は方針を変える
@@ -77,7 +78,7 @@
     if (kind === 'policy') { this.event('goal', this.cap, msg, true); return this.applyPolicy(target); }
     const cur = this.fiscal || FISCAL_DEFAULT;
     this.event('goal', this.cap, msg, true);
-    return this.applyFiscal({ ...target, rate: cur.rate, cb: cur.cb ?? 1 });
+    return this.applyFiscal({ ...target, rate: cur.rate, cb: cur.cb ?? 1, pistar: cur.pistar ?? FISCAL_DEFAULT.pistar, qe: cur.qe || 0 }); // 中央銀行の決定 (政策金利・物価の目標・量的緩和) はいまの値のまま (回 KE9)
   }
   // 審議の関門 (毎刻み。席ごとに、関門の年が来た法案だけ)
   billsStep() {
