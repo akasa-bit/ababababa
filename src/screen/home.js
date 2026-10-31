@@ -39,7 +39,7 @@ function singleHtml() {
       <div class="row"><label>星間マップ <select id="home-galaxy"><option value="real" ${app.homeGalaxy === 'gen' ? '' : 'selected'}>実在の星 (既定)</option><option value="gen" ${app.homeGalaxy === 'gen' ? 'selected' : ''}>自動生成</option></select></label></div>
       <div class="row"><label>銀河の番号 <input id="home-seed" type="text" inputmode="numeric" placeholder="空欄ならランダム" value="${esc(app.homeSeed || '')}"></label>
         <label><input id="home-spectate" type="checkbox" ${app.homeSpectate ? 'checked' : ''}> 観戦モード</label></div>
-      ${homeHelp(TR('星間マップ: 「実在の星」は太陽から約 54 光年までの実在の恒星 (CNS5) を、銀河面から ±4 光年の板に置く (惑星は分かっているものと、まだ見つかっていない分を足したもの)。「自動生成」は、同じ板と同じ広さに、実在の星の表と同じ密度と恒星の型の割合で星を置き、名前と惑星をすべて作る (銀河の番号が同じなら同じ星図)。') + ' ' + TR('観戦モード: 光の遅れなしに実際の様子 (船の実際の位置・各星系のいまの状態) を見られ、') + ME.gov + TR('も自動で入植・開発・防衛・戦争をする。ゲーム中でも上の「観戦」ボタンで切り替えられる。'))}</section>
+      ${homeHelp(TR('星間マップ: 「実在の星」は太陽から約 54 光年までの実在の恒星 (CNS5) を、銀河面から ±4 光年の板から取り、高さを半分に詰めて ±2 光年の板に置く (惑星は分かっているものと、まだ見つかっていない分を足したもの)。「自動生成」は、同じ板と同じ広さに、実在の星の表と同じ密度と恒星の型の割合で星を置き、名前と惑星をすべて作る (銀河の番号が同じなら同じ星図)。') + ' ' + TR('観戦モード: 光の遅れなしに実際の様子 (船の実際の位置・各星系のいまの状態) を見られ、') + ME.gov + TR('も自動で入植・開発・防衛・戦争をする。ゲーム中でも上の「観戦」ボタンで切り替えられる。'))}</section>
     <section><h3>国</h3>
       <div class="row"><label>国の数 <select id="home-nat">${NATION_COUNTS.map((n) => `<option value="${n}" ${n === (app.homeNat ?? 1) ? 'selected' : ''}>${n === 1 ? TR('地球だけ (国家選択なし)') : TR`${n} か国から選ぶ`}</option>`).join('')}</select></label>
         <label>難易度 <select id="home-hc">${Object.entries(HANDICAP).map(([k, h]) => `<option value="${k}" ${k === (app.homeHc ?? 'normal') ? 'selected' : ''}>${h.label}</option>`).join('')}</select></label></div>

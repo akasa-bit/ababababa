@@ -47,6 +47,9 @@
       $('home-seed').value = '20261020';
       for (let i = 0; i < 3 && !$('home').hidden; i++) { document.querySelector('[data-home="new"]')?.click(); await sleep(400); }
       out.started = $('home').hidden;
+      // 遊び方の記録の同意の欄が地図に重なるので、「記録しない」を押して地図の全体で測る (はじめて遊ぶ端末で出る)
+      document.querySelector('#endbox [data-consent="no"]')?.click();
+      await sleep(200);
       key('1'); // 止める
       await sleep(500);
       out.idle = stat(await frames(3000));

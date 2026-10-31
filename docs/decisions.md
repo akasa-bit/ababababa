@@ -343,7 +343,6 @@ QD-42 (世界価値観調査の個票) は「登録して、ファイルを渡�
 | QD-21 | Steamworks のアカウントを作り、本人確認・銀行・税の書類を出す (約 1 か月) | Steamworks の SDK・オーバーレイ・画面のキーボード・Steam Cloud・ストアのページの審査・Playtest。待ち時間が長いので、早く始めるほどよい | `store/steamworks.md` の 9 の 1、`docs/status/S.md` |
 | QD-22 | Steam Direct の手数料 100 米ドルを払う (ここから 30 日) | ストアのページとビルドの審査 | `store/steamworks.md` の 9 の 2 |
 | QD-23 | Firebase のプロジェクトを作り、設定 (`firebaseConfig`) を渡す。ログインの 3 方式 (Google・メール・匿名) をオンにし、承認済みドメインに `akasa-bit.github.io` を足し、Firestore にルールを貼る | アカウント機能 (クラウドのセーブ・自作の国・部屋のコードでのネット対戦)。いまは `FIREBASE_CONFIG = null` で隠れている。もらったら `src/index.html` に入れて組み立て直す | `docs/online.md` の 1、`docs/status/common.md` の 4 |
-| QD-24 | Steam Deck の実機で `desktop/bench/run.mjs` と同じ手順を回す | 目標 F08 の判定、Deck の Verified | `docs/status/S.md`、`desktop/README.md` の 4 |
 | QD-72 | Steam Input の既定の設定 (`desktop/steam-input/`) を Steam Deck の実機の設定画面で読み込み、割り当てが表のとおりか見て、書き出し直す。Steamworks の「Steam Input」で既定にする | Steam Deck の Verified・コントローラーで遊べること。QD-21 (アカウント) と QD-24 (実機) のあと | `desktop/steam-input/README.md` の 2・3 |
 | QD-54 | 音の素材を買う (QD-53 で選んだもの。おすすめなら M1 と S1 の 2 つ、約 6,000 円。S4 は無料で取れる)。買ったら、ファイルを Claude に渡す (置き場は QD-53 の a か b) | 音 (B-047)。渡されたら `src/screen/sound.js` の表に名前を書いて鳴らす | 上の QD-53 の候補 |
 | QD-25 | (任意) HMD・HFD の利用登録 (人間の生命表と出生のデータ) | 年齢つきの人口 (D の 10) を生データで確かめる分。いまは WPP 2024 で代わりにしている | `docs/status/Q.md` |
@@ -356,7 +355,7 @@ Windows 版を Windows の上で動かす確かめは、回 SO2 で CI (「包�
 | 何を | 決まったこと | 出どころ |
 |---|---|---|
 | 赤外線での見つかりやすさ (監査 A の G5・P8・補正の台帳の C10) | シミュレーション版を作るときに選んでもらう | `docs/game-plan.md` の 3、`docs/physics.md` の 10 |
-| 銀河面 ±2 光年の板を、シミュレーション版だけ厚くするか (G7・C07) | 同上。ゲーム版は 2026-10-31 のユーザーの依頼 GA-2「星の密度、あげてほしい」で ±4 光年にした (銀河の版 5。`docs/requests/2026-10-31-GA.md`) | `docs/game-plan.md` の 3 |
+| 銀河面 ±2 光年の板を、シミュレーション版だけ厚くするか (G7・C07) | 同上。ゲーム版は 2026-10-31 のユーザーの依頼 GA-2・GA-3 で、±4 光年の板の星を高さを半分に詰めて ±2 光年に置くようにした (銀河の版 5。`docs/requests/2026-10-31-GA.md`) | `docs/game-plan.md` の 3 |
 | ライセンス (G6) | いったん置く (依頼 130 「ライセンス系の話も一旦無視でいい」) | `docs/game-plan.md` の 1、`docs/requests-log.md` の 130 |
 
 ## 5. その回の最初に聞く予定のもの (まだ聞いていない)
@@ -376,6 +375,7 @@ Windows 版を Windows の上で動かす確かめは、回 SO2 で CI (「包�
 
 | 文書に残っている問い | 答え | どこで答えたか |
 |---|---|---|
+| QD-24 (Steam Deck の実機で `desktop/bench/run.mjs` と同じ手順を回し、目標 F08 を判定する) | 要らない (2026-10-31 のユーザーの決定「steam deckの検査はいらない」)。F08 は画面の手順 `desktop/bench/probe.js` で見る | `docs/requests/2026-10-31-GA.md` の GA-3 |
 | 5 の表の 23 (経済のグラフで、画面ごとに何を判断するか) | 財政を動かすか (GDP の伸び・物価・政策金利と長期の利回り・政府の収支と国債 ÷ GDP) を財政の画面の中に。期間は試合の始めから直近 10 年まで変えられる | 回 GA9 の始め (`docs/requests/2026-10-31-GA.md` の GA-1) |
 | 回 DO6 (B-072) の「書き出す表と形」(5 の表の 25) | 国 × 年の核 (SNA・GFS/COFOG・部門の貸借・物価と金利) + 星系 × 年の値段 + 交易 (BACI の形)・戦争 (COW の形) + 政策の出来事の記録・コードブック。表ごとの CSV で、列は SNA/GFS の符号 (どちらもおすすめ) | `docs/requests/2026-10-23-DO.md` の DO-4 |
 | レーン C の「決めてもらうこと」1〜13 (開始時の生産性・入植の速さ・R10・R11・R25・R26・入れる政策・値の幅・通す手間・20〜25 の分け方・人間でない国の税と消費税と関税) | おすすめと既定のまま (C-21 で一度「現実に近い案」になったが、C-22 で戻した) | `docs/requests/2026-10-20-C.md` の C-22。`docs/status/C.md` の表 |
