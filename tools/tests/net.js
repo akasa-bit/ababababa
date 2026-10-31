@@ -4,7 +4,8 @@ const J = require('../ci-judge');
 exports.ci = [{
   judge: (o) => {
     const m = o.match(/sync2 \[ \[ \d+, '(\w+)', '[\d.]+' \], \[ \d+, '(\w+)', '[\d.]+', (\d+) \] \]/);
-    return m && m[1] === m[2] && m[3] === '1' && /errs \[\] \[\]/.test(o) && /^physics true/m.test(o) ? '' : 'ネット対戦の要約が合わない';
+    const ga = o.match(/^galaxy gen (\d+) gen (\d+)$/m); // 親が自動生成の星図を選び、参加者も同じ星図 (回 GA10)
+    return m && m[1] === m[2] && m[3] === '1' && /errs \[\] \[\]/.test(o) && /^physics true/m.test(o) && ga && ga[1] === ga[2] ? '' : 'ネット対戦の要約か星図が合わない';
   },
 }];
 if (require.main !== module) return;
@@ -19,6 +20,7 @@ const URL = `file://${HTML}?seed=11`;
   const H = await mk(1280, 780), G = await mk(854, 1200);
   await H.evaluate(() => { if ($('home').hidden) openHome(); });
   await H.fill('#home-seed', '5'); await H.selectOption('#home-nat', '5');
+  await H.selectOption('#home-galaxy', 'gen'); // 自動生成の星図 (回 GA10)。参加者も親のセーブから同じ星図を作り直す
   await H.click('[data-home="new"]'); await H.waitForTimeout(400);
   const caps = await H.evaluate(() => __app.game.nations.map((n) => n.cap));
   await H.click(`#pick [data-human="${caps[2]}"]`);
@@ -39,6 +41,8 @@ const URL = `file://${HTML}?seed=11`;
   await H.click('[data-net="start"]');
   await G.waitForFunction(() => Net.on, null, { timeout: 15000 });
   console.log('codes', offer.length, answer.length);
+  const chart = () => { const g = __app.game.galaxy; let h = 0; for (const ch of JSON.stringify(g.systems.map((s) => [s.name, s.x, s.y, s.z, s.stars.map((t) => t.cls)]))) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return `${g.kind} ${h}`; };
+  console.log('galaxy', await H.evaluate(chart), await G.evaluate(chart)); // 親と参加者の星図
   const hook = () => { window.__st = {}; const orig = Net.hash.bind(Net); Net.hash = function () { const d = { ...buildSave(__app.game) }; for (const k of ['pi', 'savedAt', 'endShown', 'spectate', 'credits', ...PLAYER_KEYS]) delete d[k]; window.__st[this.k] = JSON.stringify(d); const ks = Object.keys(window.__st); if (ks.length > 30) delete window.__st[ks[0]]; return orig(); }; };
   await H.evaluate(hook); await G.evaluate(hook);
   await G.evaluate(() => { const sd = Net.send.bind(Net); window.__gbad = []; Net.send = function (p, o) { if (o.t === 'resync') window.__gbad.push({ k: o.k, s: window.__st[o.k] }); return sd(p, o); }; });

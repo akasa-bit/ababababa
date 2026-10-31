@@ -165,7 +165,7 @@ function playLogHtml() {
 // セーブデータを読み込んで現在のゲームに反映する。失敗時は現在の状態を保つ。
 function loadSave(d) {
   const prev = app.game;
-  newGame(d.seed, d.galaxy === 'real' ? 'real' : 'flat', d.gen || 1);
+  newGame(d.seed, galaxyKindOf(d.galaxy), d.gen || 1); // 銀河の作り方はセーブのまま (自動生成の銀河も、ネット対戦の参加者も同じ銀河を作り直す。回 GA10)
   if (app.game.restore(d)) {
     app.speed = SPEEDS.includes(d.speed) ? d.speed : 1;
     updateSpeedButtons();

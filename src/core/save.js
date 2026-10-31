@@ -71,7 +71,7 @@ function saveMeta(d) {
 const SAVE_LEGACY = [
   ['v', (game) => 2],
   ['seed', (game) => game.galaxy.seed],
-  ['galaxy', (game) => (game.galaxy.kind === 'real' ? 'real' : undefined)],
+  ['galaxy', (game) => (is3D(game.galaxy) ? game.galaxy.kind : undefined)], // real = 実在の星・gen = 自動生成 (回 GA10)・書かなければ平面の古い銀河
   ['gen', (game) => (game.galaxy.gen > 1 ? game.galaxy.gen : undefined)],
   ['rs', (game) => game.rs],
   ['players', (game) => game.players],

@@ -85,9 +85,9 @@ function load({ src = SRC, params = null, edition = null, lang = null } = {}) {
     ...N,
     // ページの中で式を評価する (試験用の let の値 MASS_AUDIT・MONEY_AUDIT などを読み書きする)
     evaluate: (code) => vm.runInContext(code, ctx),
-    // 新しい試合 (ゲームの newGame と同じ銀河)。nations を渡すと国家選択のある試合にし、プレイヤーの国も AI に任せる (観戦)
-    newGame(seed, { nations = 0, spectate = true } = {}) {
-      const g = new N.Game(N.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: N.GALAXY_GEN }));
+    // 新しい試合 (ゲームの newGame と同じ銀河)。nations を渡すと国家選択のある試合にし、プレイヤーの国も AI に任せる (観戦)。galaxy = 'real' (実在の星) か 'gen' (自動生成。回 GA10)
+    newGame(seed, { nations = 0, spectate = true, galaxy = 'real' } = {}) {
+      const g = new N.Game(N.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: galaxy, gen: N.GALAXY_GEN }));
       if (nations) { g.foundNations(nations); g.setPlayerNation(g.nations[1].cap); }
       if (spectate) g.setSpectate(true);
       return g;

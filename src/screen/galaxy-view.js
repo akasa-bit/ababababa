@@ -22,7 +22,7 @@ class GalaxyView {
     this.cam.y = 0;
     this.cam.z = 0;
     // 3 次元の銀河は、少し斜めから見下ろして始める (平面の銀河は真上から)
-    if (this.camKind !== g.kind) { this.camKind = g.kind; this.cam.yaw = 0; this.cam.pitch = g.kind === 'real' ? DEFAULT_PITCH : 0; }
+    if (this.camKind !== g.kind) { this.camKind = g.kind; this.cam.yaw = 0; this.cam.pitch = is3D(g) ? DEFAULT_PITCH : 0; }
   }
 
   // 地球の知っている入植星系がすべて収まるように寄せる (従属マップを開いたとき)
@@ -141,7 +141,7 @@ class GalaxyView {
         // (中身が指に貼りついたまま拡大・移動し、ずれていかない)
         this.cam.zoom = clamp(pinch.zoom * d / pinch.d, 1.5, 80);
         // 2 本指をひねると回る (3 次元の銀河のとき)
-        if (this.app.game.galaxy.kind === 'real') this.cam.yaw = pinch.yaw - (Math.atan2(b[1] - a[1], b[0] - a[0]) - pinch.ang);
+        if (is3D(this.app.game.galaxy)) this.cam.yaw = pinch.yaw - (Math.atan2(b[1] - a[1], b[0] - a[0]) - pinch.ang);
         this.pinWorld(pinch.world[0], pinch.world[1], mx, my);
         return;
       }
@@ -399,7 +399,7 @@ class GalaxyView {
     }
     ctx.setLineDash([]);
     // 高さの手がかり: 傾けているときは、各星から銀河面 (z = 0) へ縦の線を引く (EVE Online の星図と同じ)
-    if (!flat && this.app.game.galaxy.kind === 'real') {
+    if (!flat && is3D(this.app.game.galaxy)) {
       ctx.strokeStyle = 'rgba(120,150,210,0.16)';
       ctx.beginPath();
       for (const sx of this.app.game.galaxy.systems) {
