@@ -1,6 +1,6 @@
 // 財政のグラフ (回 GA9・B-059) の試験。画面なしの版で回す:
 //   人間の国の 1 年 1 行の記録 (chron) ができる・値は数か null・財政を変えた年の印・保存と読み込みで残る・
-//   財政の画面のグラフが 5 つの図・期間 (app.chartSpan) で行が絞られる・記録が 2 年分ないときは説明だけ
+//   財政の画面のグラフが 5 つの図・期間 (app.chartSpan) で行が絞られる・記録が 2 年分ないときは説明だけ・星系の記録の項目がそろっている
 // 使い方: node tools/tests/charts.js [シード]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 exports.ci = [{ args: ['3'], judge: (o) => (o.includes('財政のグラフ 合格') ? '' : '財政のグラフの記録か図が違う') }];
@@ -34,6 +34,9 @@ sim.evaluate('app.chartSpan = 0');
 const whole = html(g);
 sim.evaluate('delete app.chartSpan');
 res.span = years(ten) === 10 && years(whole) === c.r.length;
+// 星系の記録 (known) に、GDP と、前からの項目 (主人・収入・借り・力) がそろっている (前に注釈の書き方の誤りで行の後ろの項目が消えた)
+const v = Object.keys(g.govs).map(Number).find((id) => id !== g.cap && g.isColonized(id) && g.realmOf(id) === g.cap && g.govs[id].lord !== null);
+res.snapshot = v === undefined || ['gdp', 'lord', 'income', 'loan', 'power', 'energy'].every((k) => k in (g.snapshot(v) || {}));
 const g3 = sim.newGame(seed, { nations: 6 });
 res.empty = !html(g3).includes('<svg');
 const ok = Object.values(res).every(Boolean);
