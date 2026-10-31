@@ -42,7 +42,8 @@
       out.dcl = Math.round(nav ? nav.domContentLoadedEventEnd : NaN);
       out.ready = Math.round(performance.now());
       out.epochReady = Date.now();
-      // 同じ銀河で比べる
+      // 同じ銀河で比べる (銀河の番号はシングルプレイの設定の中。回 GA1 でホーム画面を「はじめる」1 つにしたあと)
+      if (!$('home-seed')) { document.querySelector('[data-home="tab"][data-t="single"]')?.click(); await sleep(200); }
       $('home-seed').value = '20261020';
       for (let i = 0; i < 3 && !$('home').hidden; i++) { document.querySelector('[data-home="new"]')?.click(); await sleep(400); }
       out.started = $('home').hidden;
