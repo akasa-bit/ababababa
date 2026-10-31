@@ -7,7 +7,7 @@
     this.requests.push(q);
     this.earn('grant', -amt, from);
     this.cash('grant', amt, { way: q, f: 'amt' });
-    if (!auto) this.message(`${this.system(to).name} へ資金援助 ${fmtAmt(amt)} cr を送った (届くまで ${this.travelYears(from, to).toFixed(1)} 年)`, from);
+    if (!auto) this.message(JA`${this.system(to).name} へ資金援助 ${fmtAmt(amt)} cr を送った (届くまで ${this.travelYears(from, to).toFixed(1)} 年)`, from);
     return { ok: true };
   }
   // 入植後 GRANT_YEARS 年のあいだ、主人の星系は年に1回、資金の3% (最大 GRANT_MAX cr) を自動で送る (地球は設定で止められる)
@@ -16,7 +16,7 @@
       const id = Number(key);
       const lord = gv.lord;
       if (lord === null || lord === undefined || !this.isColonized(id) || this.year - (gv.founded ?? this.year) > GRANT_YEARS) continue;
-      if (this.isHuman(lord) && this.asRealm(lord, () => !this.autoGrant || (!this.spectate && !this.known(id)?.cols.length))) continue; // 地球は入植を知ってから送る
+      if (this.isSeat(lord) && this.asRealm(lord, () => !this.autoGrant || (!this.spectate && !this.known(id)?.cols.length))) continue; // 席の国 (人間の国と AI の国) は入植を知ってから送る
       if (this.realmOf(id) !== this.realmOf(lord)) continue;
       const amt = Math.min(GRANT_MAX, 0.03 * this.gov(lord).credits);
       if (amt >= 1) this.sendGrant(lord, id, amt, true);

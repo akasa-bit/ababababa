@@ -121,6 +121,31 @@ const INVEST = { ky: CAPITAL.alpha / (CAPITAL.irr + CAPITAL.delta), margin: 0.5,
 //   所得への弾力性。手で決めない)。
 //   持ち主の星系に入植地がなくなったら、その分は地元のものになる。min より小さい持ち分は消す
 const OWNER = { colony: 1, fdi: 0.1103, out: 1.0445, min: 1e-3, gmax: 0.2 };
+// 会社の資本と投資 (回 KE6・B-119 の 1。ユーザーの決定 2026-10-26「資本を生産に効かせる」。docs/regions.md の 7)。星系の会社が資本 gv.K [cr] を持ち、年 CAPITAL.delta ずつ古くなる。
+//   目当ての資本 K* = ky(y) × gv.kY ÷ (1 − delta × ky(y))。gv.kY = ならした (smooth 年) 市場の付加価値 + 政府が民間から買った分 (GOV_BUY。建設・維持費・予算)。
+//   ÷ (1 − delta × ky) で、古くなった分の投資を足した GDP (国民経済計算の GDP = 消費 + 投資 + 政府。目標 R79 は資本 ÷ GDP) に対して資本 ÷ GDP が ky になる。ky(y) は星系の 1 人あたりの実質の所得 y (学歴と同じ c.incU。2011 年のドル) の ln で、
+//   ky の 5 点 [所得, 資本 ÷ 産出] の間を直線で埋める (端より外は端の値)。5 点は Penn World Table 11.0 の資本 ÷ 産出 (cn ÷ rgdpo、2015〜2019 年) の、
+//   所得の 5 分位ごとの所得と比の中央値 (目標 R79 と同じデータ。data/derived/capital.json の game.ky)。豊かな国ほど資本が多い。
+//   会社は配当の前に、古くなった分 + 伸びの分 (ならした付加価値の伸び gv.kG × K*。0〜gmax) + 目当てとの差 × speed を投資する。払えるのは
+//   その刻みの利潤 (付加価値の CAPITAL.alpha) まで (設備は手持ちの利潤で建てる。借りない)。建設の賃金として家計に払う (お金の種類 invest。利潤の使い道なので、
+//   政府の買い物 (build) とは分ける。財政の目標の GDP (tools/fiscal-panel.js。付加価値 + 政府の買い物) に入れると、建設の賃金には税が掛からないので
+//   税収 ÷ GDP (R19) が 0.134 → 0.105 に下がった。投資の目標の GDP (tools/capital-panel.js) には、国民経済計算のとおり投資として入れる)。
+//   始めの資本は、初めて付加価値を測った刻みの K*。この段では資本は産出に効かない (B-119 の 2 で効かせる)。smooth・speed は仮の値
+// 需要のずれ (回 KE7・QD-97 = b。docs/money.md の 7): 国ごとに 1 つ。家計の工業品と高付加価値物品の需要に (1 + ずれ) を掛け、作る量は今の稼働率 (需要で決まる生産) でついてくる。
+//   ずれの目標 = −r × (実質の政策金利 − 中立の金利) − tax × (税率 − その傾向)。税率は首都の財政の所得への税率 + 消費税率、傾向は trend 年でならした値。
+//   ずれは目標に adj 年で寄り、lim の幅に止める。r・tax・adj は、双子の試合 (tools/policy-irf.js) が R80・R81・R82 に合うように決めた値 (較正)。
+//   政府の買い付けの項は試してやめた (AI の財政の則は、足した買い付けのぶん行政サービスを減らすので、国の買い付けの差が実験の中で逆向きになり、押しのけが効かなかった)。
+//   政府の買い付けは、中央銀行が景気を見て金利を上げる道でだけ民間を押しのける
+const DEMAND = { r: 2, tax: 6, adj: 2.5, trend: 10, lim: [-0.3, 0.3] };
+// 軍の維持費のうち主人の政府が払う割合 (約定の束の「軍事」の法ごと。QD-31 = c。回 SE6 の政治の返事: 宗 = 保護国・委任統治領・直轄など、分 = 藩部・自治領・封臣など、従 = 冊封・緩衝国など)
+const UPKEEP_LORD = { S: 1, M: 0.5, V: 0 };
+const GOV_BUY = new Set(['build', 'upkeep', 'welfare', 'security', 'military', 'education', 'public', 'health']); // 政府が民間から買う出入り (GDP に入る。tools/fiscal-panel.js と同じ)
+const KSTOCK = { ky: [[2343, 2.37], [7106, 3.513], [13518, 4.315], [26436, 4.485], [50989, 4.706]], smooth: 5, speed: 0.5, gmax: OWNER.gmax };
+// 需要のずれの状態 (回 KE7・QD-97): { [国の首都]: { d: ずれ, tx: 税率の傾向 } }。前の版のセーブは、ずれ 0・傾向は始めの値から
+saveField('demand', (game) => (Object.keys(game.demand).length ? game.demand : undefined), {
+  init: (game) => { game.demand = {}; },
+  read: (game, d) => { game.demand = d.demand && typeof d.demand === 'object' ? Object.fromEntries(Object.entries(d.demand).filter(([, v]) => v && Number.isFinite(v.d))) : {}; },
+});
 saveField('capacity', (game) => (game.capacity.length ? game.capacity : undefined), {
   init: (game) => { game.capacity = []; },
   read: (game, d) => { game.capacity = Array.isArray(d.capacity) ? d.capacity.filter((k) => k && Number.isFinite(k.k) && k.k > 0 && game.system(k.sys)?.bodies.some((b) => b.id === k.body)) : []; },
@@ -174,6 +199,10 @@ saveField('econIntel', (game) => (Object.keys(game.econIntel.s).length ? game.ec
 saveField('refunds', (game) => (game.refunds.length ? game.refunds : undefined), {
   init: (game) => { game.refunds = []; delete game._remit; },
   read: (game, d) => { delete game._remit; game.refunds = Array.isArray(d.refunds) ? d.refunds.filter((r) => r && Number.isFinite(r.v) && Number.isFinite(r.at)) : []; },
+});
+// 銀河の汎用技術 (GPT。回 KE6。market-economy.js の gptStep): [{ t: 現れた年, inv: 発明した国の首都 }]。なければ書かない (回 DO7 で core/save.js の一覧からここへ移した)
+saveField('gpts', (game) => (game.gpts?.length ? game.gpts : undefined), {
+  read: (game, d) => { if (Array.isArray(d.gpts)) game.gpts = d.gpts; },
 });
 // 先住民と接触した年 { [星系]: 年 } (回 KE3。colonize.js の isSurveyed。接触の知らせは光速で広がる)。前の版のセーブ (項目がない) は、接触ずみの星系をずっと前から知っていたとして読む
 saveField('surveyAt', (game) => (game.surveyAt && Object.keys(game.surveyAt).length ? game.surveyAt : undefined), {

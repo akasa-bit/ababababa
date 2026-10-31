@@ -7,13 +7,14 @@
       const m = (this.market[key] ??= { u: zeroRes(), p: Object.fromEntries(RES.map((r) => [r, basePrice(r)])) });
       m.L ??= { ...m.p }; // ならした値段
       const got = this.absorb[key], short = this.unmet[key];
-      const cap = stockCap(this.flowPop?.[key] || 0);
+      const cap = stockCap(this.flowPop?.[key] || 0), ceil = this.isColonized(Number(key)) ? this.fiscalAt(Number(key)).ceil : null; // 値段の上限 (回 KE9・B-008)
       for (const r of RES) {
         if (m.u[r] === undefined) { m.u[r] = 0; m.p[r] = basePrice(r); m.L[r] = m.p[r]; } // 前の版のセーブの市場 (高付加価値物品がない。回 KE5)
         m.u[r] += ((got?.[r] || 0) / h + (short?.[r] || 0) - m.u[r]) * (fresh ? 1 : a); // 受注残は年あたりの需要として
         let goal = this.priceAt(r, st[r], m.u[r], MARKET.anchor ? m.L[r] : undefined); // 使い道がなければ最低の値段
         if (st[r] < 0.95 * cap) goal = Math.max(goal, m.L[r] * (1 - MARKET.store)); // 倉に空きがあれば、蓄える人が値段を支える
         m.p[r] = MARKET.tau > 0 ? m.p[r] * GM.pow(goal / m.p[r], Math.min(1, h / MARKET.tau)) : goal;
+        if (ceil?.[r]) m.p[r] = Math.min(m.p[r], ceil[r] * basePrice(r)); // 上限で足りない分は不足になる (闇市は入れない)
         m.L[r] += (m.p[r] - m.L[r]) * Math.min(1, h / MARKET.long);
       }
     }
@@ -47,8 +48,9 @@
   payFrom(kind, v, sys) { if (MARKET.buy) this.cash(kind, v, { fm: sys }); else this.earn(kind, v, sys); }
   // 1 人 (人口の単位) あたりの年の産出。sector = farm (食料)・mine (資源 r)・ind (低付加価値物品)・hi (高付加価値物品。回 KE5)
   yieldOf(c, sector, r) {
-    const k = (this.productivity || 1) * STRUCTURE.modern * this.techA(c.sys, sector) * this.laborK(c) * (c.hk ?? 1); // 開始時に選ぶ生産性 × 物差しの倍率 × 国の技術の水準 × 働き手の倍率 (回 KE2) × 学歴 (回 KE5)
+    let k = (this.productivity || 1) * STRUCTURE.modern * this.techA(c.sys, sector) * this.laborK(c) * (c.hk ?? 1); // 開始時に選ぶ生産性 × 物差しの倍率 × 国の技術の水準 × 働き手の倍率 (回 KE2) × 学歴 (回 KE5)
     if (sector === 'farm') return k * YIELD.farm * (1 + this.fertility(c)) * (1 + 0.25 * c.lv.farm);
+    k *= 1 - SOE.eff * (this.govs[c.sys]?.soe || 0); // 国有の会社は生産性が低い (工業と採掘。農業は家計が持つとみる。回 KE9・B-011)
     const tm = this.modsOf(c.sys);
     if (sector === 'ind') return k * YIELD.ind * (1 + 0.25 * c.lv.factory) * tm.ind;
     if (sector === 'hi') return k * YIELD.hi * (1 + 0.25 * c.lv.factory) * tm.ind; // 工場の段と種族の工業の特性は、低付加価値の工業と同じく効く
@@ -254,6 +256,33 @@
     }
     for (const [A, f, d] of add) A[f] += d;
   }
+  // 会社の資本と投資 (KSTOCK。回 KE6・B-119 の 1)。y = この刻みの市場の付加価値 [cr/年]。政府が民間から買った分は、前の刻みからの gv.kB
+  capitalStep(gv, id, y, h) {
+    if (!(y > 0) || !this.isColonized(id)) return;
+    const a = Math.min(1, h / KSTOCK.smooth), b = y + (gv.kB || 0) / h, y0 = gv.kY ?? b;
+    gv.kY = y0 + (b - y0) * a;
+    gv.kG = (gv.kG ?? 0) + (clamp(GM.log(gv.kY / y0) / h, 0, KSTOCK.gmax) - (gv.kG ?? 0)) * a;
+    const ky = this.kyOf(id), Ks = (ky * gv.kY) / (1 - CAPITAL.delta * ky);
+    if (gv.K === undefined) { gv.K = Ks; return; } // 始めの資本
+    gv.K *= 1 - CAPITAL.delta * h;
+    const I = clamp(CAPITAL.delta * gv.K + gv.kG * Ks + (Ks - gv.K) * KSTOCK.speed, 0, CAPITAL.alpha * y) * h;
+    if (I > 0) { this.cash('invest', -I, { fm: id }); this.cash('invest', I, { hh: id }); gv.K += I; this.invNote(id, I); }
+  }
+  // 星系の目当ての資本 ÷ 付加価値 (KSTOCK.ky を、星系の 1 人あたりの実質の所得の ln で直線で埋める)
+  kyOf(id) {
+    let n = 0, w = 0;
+    for (const c of this.coloniesIn(id)) { n += c.pop; w += c.pop * (c.incU ?? c.inc ?? STRUCTURE.y0); }
+    const y = GM.log(Math.max(n > 0 ? w / n : STRUCTURE.y0, 1)), P = KSTOCK.ky;
+    if (y <= GM.log(P[0][0])) return P[0][1];
+    for (let k = 1; k < P.length; k++) if (y <= GM.log(P[k][0])) { const x0 = GM.log(P[k - 1][0]), x1 = GM.log(P[k][0]); return P[k - 1][1] + ((y - x0) / (x1 - x0)) * (P[k][1] - P[k - 1][1]); }
+    return P[P.length - 1][1];
+  }
+  // 星系の投資 (政府の建設・会社の資本の投資・民間の採掘の能力。測るため。回 KE6): invNote で刻みの額を足し、invStep で 1 年でならす (gv.inv [cr/年])
+  invNote(id, v) { const gv = this.govs[id]; if (v > 0 && gv) gv.kI = (gv.kI || 0) + v; }
+  invStep(h) {
+    const a = Math.min(1, h);
+    for (const gv of Object.values(this.govs)) { const x = (gv.kI || 0) / h; if (x > 0 || gv.inv) gv.inv = (gv.inv || 0) + (x - (gv.inv || 0)) * a; delete gv.kI; delete gv.kB; }
+  }
   // 入植地の 1 人あたりの生産力 [2011 年の国際ドル] (構造転換の曲線に入れる所得 c.inc): いまの就業の割合で物の部門が作れる付加価値を基準の値段で測り
   // (生産側の実質 GDP。市場の値段の揺れと売れ残りの値下がりを受けない)、物の部門の人 1 人あたりにしたもの (サービスの人も同じ生産力とみなす)。
   // 市場で測った所得 (incomeUSD) を入れると、値段の揺れが需要に跳ね返って経済が振れた (docs/structure.md の 5 の「試してやめたもの」)
@@ -302,6 +331,22 @@
       c.wage = avg;
     }
   }
+  // 需要のずれを進める (回 KE7・QD-97 = b。DEMAND)。税は政策の値 (首都の財政の所得への税率 + 消費税率) で測る (税収 ÷ GDP のような割合を使うと、
+  // 生産が落ちる → 割合が上がる → さらに落ちる、と回り道ができて揺れた)
+  demandStep(h) {
+    if (!MARKET.buy) return;
+    const roots = new Set(this.colonies.map((c) => this.realmOf(c.sys)));
+    const a = 1 - GM.exp(-h / DEMAND.adj), b = 1 - GM.exp(-h / DEMAND.trend);
+    for (const root of roots) {
+      const f = this.fiscalFor(root, root), tx = taxRateOf(f.tax) + (f.ctax || 0);
+      const s = (this.demand[root] ??= { d: 0, tx });
+      const want = -DEMAND.r * (this.rateAt(root) - this.rstarOf(root)) - DEMAND.tax * (tx - s.tx);
+      s.d = clamp(s.d + (want - s.d) * a, DEMAND.lim[0], DEMAND.lim[1]);
+      s.tx += (tx - s.tx) * b;
+    }
+    for (const key of Object.keys(this.demand)) if (!roots.has(Number(key))) delete this.demand[key]; // なくなった国
+  }
+  demandOf(id) { return 1 + (this.demand?.[this.realmOf(id)]?.d || 0); } // 家計の工業品の需要に掛ける倍率
   economy(h) {
     this.stepH = h;
     // 0. エネルギー: スウォームの発電を蓄える。蓄えの上限 (SWARM.store 年分の出力) を超えた分は捨てる
@@ -390,7 +435,7 @@
         c.slaveWork = ks;
       }
       if (c.pop >= 1 && c.plan > 0) {
-        this.watch(c, 'industry', k, 'shortage', () => `${c.name} の工場が原料 (金属・燃料) 不足で減産 (稼働 ${pct(k)})`, `${c.name} の工場の原料不足が解消した`);
+        this.watch(c, 'industry', k, 'shortage', () => JA`${c.name} の工場が原料 (金属・燃料) 不足で減産 (稼働 ${pct(k)})`, JA`${c.name} の工場の原料不足が解消した`);
       }
     }
     // 2b. 高付加価値の工業 (回 KE5): 高付加価値物品 1 につき低付加価値物品 0.5 と希少元素 0.05 を使う (HITECH)。原料が足りなければ減産。質量は原料と同じ
@@ -431,11 +476,20 @@
       const fl = F(id), gap = u - made;
       fl.short.goods += HITECH.goods * gap; fl.short.rare += HITECH.rare * gap;
     }
+    this.demandStep(h); // 需要のずれ (前の刻みの所得と、ならした帳簿から。回 KE7・QD-97)
     // 3. 消費と人口の増減、税収
     // 食べ物・水・工業品の在庫は星系でまとめて持つので、不足の知らせは星系でいちばん大きな入植地 (head) だけが出し、ほかの入植地は状態 (alerts) を写す
     // (回 KE4・B-019。前は国の本星の星系のステーションも同じ不足をそれぞれ知らせ、1 試合の飢餓の知らせ約 48 件のうち 27 件がそれだった)
-    const head = {}, va = {};
-    for (const c of this.colonies) if (!head[c.sys] || c.pop > head[c.sys].pop) head[c.sys] = c;
+    const head = {}, va = {}, sysPop = {};
+    for (const c of this.colonies) { if (!head[c.sys] || c.pop > head[c.sys].pop) head[c.sys] = c; sysPop[c.sys] = (sysPop[c.sys] || 0) + c.pop; }
+    // 配給 (回 KE9・B-008): 配給のある資源は、刻みの始めの星系の在庫を入植地の人口に比べて分け、1 つの入植地がそれより多く買わない
+    const share = {};
+    const rationOf = (sys, r) => {
+      const rn = this.fiscalAt(sys).ration;
+      if (!rn?.[r]) return Infinity;
+      const s = (share[sys] ??= {});
+      return (s[r] ??= Math.max(0, this.stockOf(sys)[r]) / Math.max(sysPop[sys] || 0, 1e-9));
+    };
     for (const c of this.colonies) {
       const lead = head[c.sys] === c;
       const st = this.stockOf(c.sys);
@@ -448,7 +502,7 @@
         if (e && r !== 'goods') e = Math.max(MARKET.elasticFloor, e * GM.pow(Math.max(inc, 1) / MARKET.elasticY, -MARKET.elasticSlope)); // 所得が高いほど食料は値段に動じない
         const k = e ? clamp(GM.pow((this.price(c.sys, r) * (1 + ct)) / basePrice(r), -e), 0.3, 2) : 1; // 値段 (消費税を含む) で消費が動く
         fl.cons[r] += v;
-        const want = v * k * h;
+        const want = Math.min(v * k * h, rationOf(c.sys, r) * c.pop);
         const got = Math.min(Math.max(st[r], 0), want);
         this.mv(c.sys, r, -got, 'consume');
         if (MARKET.buy && v * h > got && this.stepping) { const un = (this.unmet[c.sys] ??= zeroRes()); un[r] += (v * h - got) / h; } // 必要な量のうち買えなかった分 (高くて控えた分も) は需要 (作る合図) に数える。値段で控えた消費だけを需要と見ると、不足のまま生産を絞って値段が天井に張りつく
@@ -459,13 +513,13 @@
       const food = use('food', c.pop);
       const water = this.needsWater(c) ? use('water', 0.1 * c.pop) : 1;
       // 工業品の需要は所得で決まる (Engel 曲線)。その値打ちのうち hitechShare の割合が高付加価値物品 (回 KE5)。充足率は値打ちで重みをつけた平均
-      const gNeed = (MARKET.buy ? this.goodsNeed(inc) : 0.3) * c.pop, sH = MARKET.buy ? this.hitechShare(inc) : 0;
+      const gNeed = (MARKET.buy ? this.goodsNeed(inc) * this.demandOf(c.sys) : 0.3) * c.pop, sH = MARKET.buy ? this.hitechShare(inc) : 0; // 需要のずれ (回 KE7・QD-97)
       const low = use('goods', gNeed * (1 - sH)), high = sH > 0 ? use('hitech', (gNeed * sH * PRICE.goods) / PRICE.hitech) : 1;
       const goods = (1 - sH) * low + sH * high;
       c.sat = { food, water, goods, hitech: high };
-      if (lead) this.watch(c, 'food', food, 'famine', () => `${c.name} で飢餓が発生 (食料の充足率 ${pct(food)})`, `${c.name} の飢餓が解消した`);
-      if (this.needsWater(c) && (lead || !this.needsWater(head[c.sys]))) this.watch(c, 'water', water, 'famine', () => `${c.name} で水不足が発生 (充足率 ${pct(water)})`, `${c.name} の水不足が解消した`);
-      if (lead && c.pop >= 1) this.watch(c, 'goods', goods, 'shortage', () => `${c.name} で工業品が不足 (充足率 ${pct(goods)})`, `${c.name} の工業品不足が解消した`);
+      if (lead) this.watch(c, 'food', food, 'famine', () => JA`${c.name} で飢餓が発生 (食料の充足率 ${pct(food)})`, JA`${c.name} の飢餓が解消した`);
+      if (this.needsWater(c) && (lead || !this.needsWater(head[c.sys]))) this.watch(c, 'water', water, 'famine', () => JA`${c.name} で水不足が発生 (充足率 ${pct(water)})`, JA`${c.name} の水不足が解消した`);
+      if (lead && c.pop >= 1) this.watch(c, 'goods', goods, 'shortage', () => JA`${c.name} で工業品が不足 (充足率 ${pct(goods)})`, JA`${c.name} の工業品不足が解消した`);
       const life = Math.min(food, water);
       const n = c.kind === 'planet' ? this.nativeOf(c.sys, c.body) : null;
       const unrest = n && n.st.status !== 'integrated' && n.st.rel < -20 ? 0.02 : 0;
@@ -473,24 +527,24 @@
       // 年齢つきの人口 (回 KE2。demography.js): 出生のしやすさ fert は、前の人口の増え方 (POP_GROWTH に掛けていたもの) と同じ要素。飢えと不穏は死亡に上乗せ。
       // 混み具合は、上限の手前 DEMO.crowd の割合から出生を減らす (前のロジスティックの 1 − 人口 ÷ 上限 をそのまま掛けると、上限の 83% の地球で出生が 6 分の 1 になった)
       const fert = welfare * this.modsOf(c.sys).growth * (REGIMES[regimeKey(this.govs[c.sys])].growth || 1) * clamp((1 - c.pop / this.capOf(c)) / DEMO.crowd, 0, 1) * life * (0.5 + 0.5 * goods) * (c.plague > this.year ? 0.2 : 1);
-      const pop0 = c.pop, nat = this.demoStep(c, h, ED.demoTotal ? 1 : fert, ED.demoTotal ? 0 : 0.05 * (1 - life) + unrest); // 補正のときは、出生のしやすさ・飢えは合計の側 (下) に入れ、年齢の中身は現実の率のまま
+      const pop0 = c.pop, nat = this.demoStep(c, h, ED.demoTotal ? 1 : fert, ED.demoTotal ? 0 : 0.05 * (1 - life) * this.modsOf(c.sys).starve + unrest); // 補正のときは、出生のしやすさ・飢えは合計の側 (下) に入れ、年齢の中身は現実の率のまま
       if (ED.demoTotal) {
         // 補正 (台帳の C13): 合計は前のロジスティックの増え方のまま。年齢の中身 (死亡・年をとる・出生率) は現実の率で動かす。年数を 1 世代の比で延ばすと、
         // 現実の率では人口が年 1.3% より速く増えられない (QD-29)。合計に足りない分は、出生率が高い入植地ほど生まれた子として、低い入植地ほど移民の年齢で足す
         // (DEMO.fill の 2 つの出生率で折れ線。豊かな国が人口を移民で保つ形)。多すぎる分は年齢の割合のまま減らす。
         // 試してやめたもの: 全部を子どもにする (豊かな本星で 0〜14 歳 34%)・全部を移民にする (どの入植地も移民の形に寄る)・全部を年齢の割合のまま増やす (高齢も増え、
         // 高齢の死亡率を下げたのと同じになって、低い所得でも 65 歳以上 15%)
-        const g0 = Math.min(ED.growthCap, POP_GROWTH * welfare * this.modsOf(c.sys).growth * (REGIMES[regimeKey(this.govs[c.sys])].growth || 1) * (1 - c.pop / this.capOf(c)) * life * (0.5 + 0.5 * goods) * (c.plague > this.year ? 0.2 : 1)) - 0.05 * (1 - life) - unrest;
-        c.pop = Math.max(0.001, c.pop * (1 + g0 * h));
+        const g0 = Math.min(ED.growthCap, POP_GROWTH * welfare * this.modsOf(c.sys).growth * (REGIMES[regimeKey(this.govs[c.sys])].growth || 1) * (1 - c.pop / this.capOf(c)) * life * (0.5 + 0.5 * goods) * (c.plague > this.year ? 0.2 : 1)) - 0.05 * (1 - life) * this.modsOf(c.sys).starve - unrest; // 多産は飢えの減り方 2 倍 (回 SE8)
+        c.pop = Math.max(POP_FLOOR, c.pop * (1 + g0 * h));
         const gap = c.pop - nat;
         if (gap > 0) {
           const kb = clamp((c.tfr - DEMO.fill[0]) / (DEMO.fill[1] - DEMO.fill[0]), 0, 1), ms = DEMO.migrant.reduce((x, v) => x + v, 0);
           c.age.m[0] += gap * kb * DEMO.boy; c.age.f[0] += gap * kb * (1 - DEMO.boy);
           for (let a = 0; a < DEMO.bins; a++) { const x = (gap * (1 - kb) * DEMO.migrant[a]) / ms / 2; c.age.f[a] += x; c.age.m[a] += x; }
         } else { const k = nat > 0 ? c.pop / nat : 1; for (let a = 0; a < DEMO.bins; a++) { c.age.f[a] *= k; c.age.m[a] *= k; } }
-      } else c.pop = Math.max(0.001, nat);
+      } else c.pop = Math.max(POP_FLOOR, nat);
       c.growth = GM.log(c.pop / Math.max(pop0, 1e-9)) / h; // 年あたりの増え方 (見せる・記録する)
-      if (c.pop >= 1) this.watch(c, 'aging', DEMO.alert / Math.max(this.ageShares(c).dep, 1e-9), 'shortage', () => `${c.name} の扶養比が ${Math.round(this.ageShares(c).dep * 100)} に上がった (働き手 100 人で支える子どもと高齢の数。年金と医療が増える)`, `${c.name} の扶養比が下がった`); // 10-5 の知らせ
+      if (c.pop >= 1) this.watch(c, 'aging', DEMO.alert / Math.max(this.ageShares(c).dep, 1e-9), 'shortage', () => JA`${c.name} の扶養比が ${Math.round(this.ageShares(c).dep * 100)} に上がった (働き手 100 人で支える子どもと高齢の数。年金と医療が増える)`, JA`${c.name} の扶養比が下がった`); // 10-5 の知らせ
       const income = MARKET.buy ? this.incomeOf(c) : 0;
       c.incY = income; // この刻みの所得 (年金と医療で使う。ageSpendStep)
       va[c.sys] = (va[c.sys] || 0) + income * h; // 星系の市場の付加価値 (賃金と配当に分ける。economy の 7)
@@ -553,27 +607,40 @@
     if (MARKET.buy) for (const key of Object.keys(this.govs)) {
       const gv = this.govs[key], id = Number(key), W = (1 - CAPITAL.alpha) * (va[id] || 0);
       if (W > 0) { this.cash('wages', -W, { fm: id }); this.cash('wages', W, { hh: id }); }
+      this.capitalStep(gv, id, (va[id] || 0) / h, h); // 会社の資本と投資 (配当の前に。回 KE6)
       if (gv.fm > 0) {
         const v = gv.fm;
         let here = v;
         this.cash('dividend', -v, { fm: id });
-        if (gv.own) { // 遠くの持ち主の分 (OWNER): 利潤 (付加価値の alpha。配当できる手持ちまで) × 持ち分を、光速で送る
+        if (gv.own || gv.soe) { // 遠くの持ち主の分 (OWNER): 利潤 (付加価値の alpha。配当できる手持ちまで) × 持ち分を、光速で送る。国有の分 (回 KE9) は星系の政府へ
           const P = Math.min(v, CAPITAL.alpha * (va[id] || 0));
-          for (const [o, s] of Object.entries(gv.own)) { const x = P * s; here -= x; this.remit(id, Number(o), x); }
+          for (const [o, s] of Object.entries(gv.own || {})) { const x = P * s; here -= x; this.remit(id, Number(o), x); }
+          if (gv.soe > 0) { const x = P * gv.soe; here -= x; this.earn('dividend', x, id); }
         }
         this.cash('dividend', here, { hh: id });
       }
     }
-    // 7. 軍の維持費
-    // 駐留する星系の政府が払う (入植していない星系に置いた艦隊と移動中の部隊は太陽系、移動中の艦隊は行き先)。受け取るのは払う星系の民間 (兵の給料と補給の買い付け)
+    this.invStep(h);
+    // 7. 軍の維持費 (回 KE7・B-017・QD-31 = c。docs/money.md の 5.6)
+    // 駐留する艦隊と兵 (入植していない星系に置いた艦隊と移動中の部隊は太陽系) は、駐留する星系の約定の束の「軍事」(politics/pc-vassal.js の BUNDLE_ITEMS の mil) の法で分けて払う:
+    // 宗なら主人の政府、分なら半分ずつ、従なら自分 (UPKEEP_LORD)。主人のいない国の首都は自分で払う。動いている艦隊は、持ち主の国の首都が払う
+    // (前は行き先の星系の政府が払っていて、攻め込まれた小さな国の首都が敵の艦隊の維持費まで払っていた)。
+    // 受け取るのは払う政府の星系の民間 (兵の給料と補給の買い付け。主人の分を駐留する星系へ送ると、お金が光より速く動くので)。
+    // 前は税収の何十倍もの維持費で小さな政府が赤字を国債で埋め続け、不履行を繰り返した
     const payer = (id) => (this.isColonized(id) ? id : 0);
+    const MIL = BUNDLE_ITEMS.indexOf('mil');
+    const pay = (p, x) => {
+      const gv = this.govs[p], lord = gv?.lord, share = lord !== null && lord !== undefined && this.isColonized(lord) ? UPKEEP_LORD[this.bundleOf(gv).law[MIL]] ?? 0 : 0;
+      if (share < 1) this.earn('upkeep', -x * (1 - share), p, { hh: p });
+      if (share > 0) this.earn('upkeep', -x * share, lord, { hh: lord });
+    };
     // 国家方針が軍拡期なら、地球の国の艦隊の維持費が40%安い
     const upk = (p) => WARSHIP_UPKEEP * (this.policy && this.policyAt(p) === 'military' ? 0.6 : 1);
-    for (const [id, n] of Object.entries(this.garrison)) if (n) { const p = payer(Number(id)); this.earn('upkeep', -upk(p) * n * h, p, { hh: p }); }
-    for (const f of this.fleets) { const p = payer(f.to); this.earn('upkeep', -upk(p) * f.n * h, p, { hh: p }); }
+    for (const [id, n] of Object.entries(this.garrison)) if (n) { const p = payer(Number(id)); pay(p, upk(p) * n * h); }
+    for (const f of this.fleets) { const o = f.owner ?? 0, p = this.isColonized(o) ? o : payer(f.to); this.earn('upkeep', -upk(p) * f.n * h, p, { hh: p }); } // 持ち主の国がなくなった艦隊は、前と同じ行き先
     for (const c of this.colonies) {
       const u = TROOP_UPKEEP * c.troops + SLAVE_TROOP_UPKEEP * c.slaveTroops;
-      if (u) this.earn('upkeep', -u * h, c.sys, { hh: c.sys });
+      if (u) pay(c.sys, u * h);
     }
     for (const m of this.troopMoves) this.earn('upkeep', -(TROOP_UPKEEP * m.troops + SLAVE_TROOP_UPKEEP * m.slave) * h, 0, { hh: 0 });
     // 8. 兵站: 艦隊は1艦隊あたり年に FLEET_SUPPLY の燃料と金属を使う。駐留する星系の備蓄から出す
@@ -619,13 +686,24 @@
       const gv = this.govs[root], now = (pinT[root] || 0) / h;
       if (gv && (now || gv.pinY)) gv.pinY = (gv.pinY || 0) + (now - (gv.pinY || 0)) * Math.min(1, h);
     }
-    const a = Math.min(1, h);
+    const a = Math.min(1, h), mxT = this._mxT || {};
+    this._mxT = {};
+    for (const [key, gv] of Object.entries(this.govs)) { const now = (mxT[key] || 0) / h; if (now || gv.mx) gv.mx = (gv.mx || 0) + (now - (gv.mx || 0)) * a; } // 関税の掛かる輸入 [cr/年] (trade.js)
     for (const gv of Object.values(this.govs)) {
       gv.ledger ??= {};
       for (const k of Object.keys(LEDGER_LABEL)) {
         const now = ((gv.led || {})[k] || 0) / h;
         gv.ledger[k] = gv.ledger[k] === undefined ? now : gv.ledger[k] + (now - gv.ledger[k]) * a;
       }
+      // 支出の 10 機能のためだけに、収支の表にない政府の支出 (建設・教育・研究の予算) もならしておく (回 KE8・B-007。収支の表 LEDGER_LABEL に足すと、
+      // 国の収入 income() が変わって AI の判断が変わるので分ける)。建設は前にならしてからの分 (earn.js の cash の bld)
+      for (const k of COFOG_EXTRA) {
+        const now = ((k === 'build' ? gv.bld : (gv.led || {})[k]) || 0) / h;
+        if (!now && gv.cof?.[k] === undefined) continue;
+        gv.cof ??= {};
+        gv.cof[k] = gv.cof[k] === undefined ? now : gv.cof[k] + (now - gv.cof[k]) * a;
+      }
+      delete gv.bld;
       for (const k of Object.keys(E_LABEL)) {
         const now = ((gv.eled || {})[k] || 0) / h;
         if (!now && gv.eledger?.[k] === undefined) continue;

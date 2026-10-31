@@ -5,7 +5,7 @@
 const J = require('../ci-judge');
 exports.ci = [{
   args: (c) => [c.shots],
-  judge: J.byJson((j) => Object.values(j).every((v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1.8,1,1,0.05' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
+  judge: J.byJson((j) => Object.values(j).every((v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1,1,1,0.05' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
     && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.bad2.every((b) => b === false) && v.ok2 && v.ctax.join() === '0.1,0.05,true,1.935,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length), '財政の結果が違う'),
 }];
 if (require.main !== module) return;
@@ -27,31 +27,43 @@ const { chromium } = require('playwright');
       // 地球の国に従属星系ができるまで (60 年から、最長 200 年) 進める
       g.setSpectate(true); for (let i = 0; i < 240 || (!vassals().length && i < 800); i++) g.advance(0.25); g.setSpectate(false);
       const res = {};
+      // 財政の法案は議会の審議にかかる (回 SE7)。この試験は財政の効き目を見るので、出した法案をすぐ通す (審議は tools/tests/support.js)
+      const pass = () => { const b = g.bill('fiscal'); if (b) g.enactBill('fiscal', b.target, b.S); };
       const vs = vassals().sort((a, c) => g.sysDist(0, c) - g.sysDist(0, a));
       const far = vs[0];
       res.far = Math.round(g.sysDist(0, far));
+      // 試すのは税の項なので、待つあいだに遠い星系が重税で離反しないよう落ち着かせておく (回 GA9 の CI で、重税の 6 年のあいだに独立して忠誠度の内訳が null になり止まった)
+      const keep = () => { const gv = g.govs[far]; if (gv && gv.lord !== null) { gv.loyalty = Math.max(gv.loyalty ?? 0, 90); delete gv.unrest; delete gv.autonomy; } };
       g.pc = 50;
       // 選べない値: 予算の合計が 10 割を超える・税率が幅の外 (40%)・利子率が刻みの外・前の段階の名前でないもの
       res.bad = [issue('fiscal', { tax: 0.279, rate: 0.05, welfare: 0.6, security: 0.3, military: 0.2 }).ok, issue('fiscal', { tax: 0.4 }).ok, issue('fiscal', { rate: 0.051 }).ok, issue('fiscal', { tax: 'nope' }).ok];
       res.ok = issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.1, military: 0.1 }).ok; // 前の段階の名前 (重税 = 15.5% × 1.8) も通る
+      pass();
       res.pc = 50 - g.pc; // 税と利子率を変えたので 5
-      res.now = [+g.taxK(0).toFixed(3), +g.taxK(far).toFixed(3), g.fiscalFor(0, far).cb ?? 1, g.cbRateAt(0)]; // 首都はすぐ、遠い星系はまだ前のまま (1・中央銀行に任せたまま)。政策金利を選んだので首都は自分で決める (0.05)
+      res.now = [+g.taxK(0).toFixed(3), +g.taxK(far).toFixed(3), g.fiscalFor(0, far).cb ?? 1, g.cbRateAt(0)]; // 所得への税は行政の遅れ (ADMIN_LAG.tax 年) のあいだ首都でもまだ前のまま、遠い星系も前のまま (1・中央銀行に任せたまま)。政策金利はすぐ効くので首都は自分で決める (0.05)
       const L0 = g.loyaltyTerms(far).map((t) => t.label);
-      for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25);
+      for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) { keep(); g.advance(0.25); }
       const pc0 = g.pc;
       res.budgetOnly = [issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.2, military: 0.1 }).ok, pc0 - g.pc]; // 予算だけなら政治力は要らない (0)
+      pass();
       const cr0 = g.council;
-      for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25);
+      for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) { keep(); g.advance(0.25); }
       res.later = [+g.taxK(far).toFixed(3), g.cbRateAt(far)];
       const L1 = g.loyaltyTerms(far);
       res.loyalty = [L0.some((l) => l.startsWith('税 (')), L1.some((t) => t.label === '税 (27.9%)' && Math.abs(t.v + 12) < 1e-6), L1.some((t) => t.label === '福祉の予算' && t.v > 0)]; // 重税 (×1.8) の忠誠度 −15 × 0.8 = −12
       // 幅の中の細かい値 (税率 20%・利子率 −0.75%・赤字の上限 7.5%) も通る。マイナスの利子率も選べる (docs/policy-ranges.md)
-      res.fine = [issue('fiscal', { tax: 0.2, rate: -0.0075, deficit: 0.075 }).ok, g.fiscal.tax, g.fiscal.rate, g.fiscal.deficit];
+      res.fine = [issue('fiscal', { tax: 0.2, rate: -0.0075, deficit: 0.075 }).ok, (pass(), g.fiscal.tax), g.fiscal.rate, g.fiscal.deficit];
       // 消費税と関税 (セッション 20 の 2): 幅の外 (30%) と刻みの外 (10.1%) は拒否、幅の中は通る。消費税は首都の家計の買い物から政府に入る (記帳 ctax)。税の重さは所得への税率と合わせて (0.2 + 0.1) ÷ 0.155
       res.bad2 = [issue('fiscal', { ctax: 0.3 }).ok, issue('fiscal', { tariff: 0.3 }).ok, issue('fiscal', { ctax: 0.101 }).ok];
       res.ok2 = issue('fiscal', { ctax: 0.1, tariff: 0.05 }).ok;
-      for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) g.advance(0.25); // 遠い星系に届くまで進める
-      res.ctax = [g.fiscal.ctax, g.fiscal.tariff, g.gov(0).ledger.ctax > 0, +burdenK(g.fiscal).toFixed(3), g.loyaltyTerms(far).some((x) => x.label === '税 (20.0% + 消費税 10.0%)')];
+      pass();
+      // 遠い星系に届くまで進める: 光の年数 (四捨五入しない) + 消費税を新しく入れる行政の遅れ (ADMIN_LAG.ctaxNew。回 KE8)。前は四捨五入した光年 + 2 年で、
+      // 距離の端数が 0.25 光年を超えると届く前に見ていた (4.4 光年の星系で落ちた)
+      for (let i = 0; i < Math.ceil((g.sysDist(0, far) + ADMIN_LAG.ctaxNew) * 4) + 4; i++) { keep(); g.advance(0.25); }
+      // 遠い星系が重税のあいだに離反した (国を出た) ときは、税の項を見る相手がいないので見ない (画面ありの版は回ごとに選ぶ星系が違う)
+      res.ctax = [g.fiscal.ctax, g.fiscal.tariff, g.gov(0).ledger.ctax > 0, +burdenK(g.fiscal).toFixed(3), g.realmOf(far) !== 0 || g.loyaltyTerms(far).some((x) => x.label === '税 (20.0% + 消費税 10.0% + 関税 5.0%)')];
+      res.left = g.realmOf(far) !== 0;
+      if (!res.ctax[4]) res.ctaxSeen = { terms: (g.loyaltyTerms(far) || []).map((t) => t.label), f: g.fiscalFor(0, far), on: g.fiscal.on, since: g.fiscal.since, done: g.fiscal.done, year: g.year, dist: g.sysDist(0, far), lord: g.govs[far].lord }; // 落ちたときの手がかり
       res.hazard = (g.secessionTerms(far) || []).some((t) => t.label === '治安の予算' && t.f < 1);
       res.fleet = [g.modsOf(0).fleet, +g.fleetMul(0, 0).toFixed(3)];
       const led = g.gov(0).ledger;
@@ -71,7 +83,7 @@ const { chromium } = require('playwright');
     // 画面のスライダーから変える (税率を 9.5% に)
     await p.evaluate(() => { __app.game.pc = 50; });
     await p.evaluate(() => { const el = document.querySelector('input[type="range"][data-act="fiscal"][data-k="tax"]'); el.value = '0.095'; el.dispatchEvent(new Event('change', { bubbles: true })); });
-    r.ui = await p.evaluate(() => __app.game.fiscal.tax);
+    r.ui = await p.evaluate(() => __app.game.fiscalDraft().tax); // スライダーは法案を出す (審議中の値)
     r.wide = await p.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
     out[tag] = { ...r, errs };
     await p.close();

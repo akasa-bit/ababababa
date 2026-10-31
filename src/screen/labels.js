@@ -46,12 +46,12 @@ const fmt = (v, d = 2) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.
 // 画面の文に出す「自分の国」の呼び名 (地球の国なら今までどおり「地球」「地球の国」「地球政府」「地球議会」)
 const ME = {
   get g() { return app.game?.players ? app.game : null; },
-  get realm() { const g = this.g; return g ? g.realmName(g.cap) : '地球'; },
+  get realm() { const g = this.g; return g ? g.realmName(g.cap) : TR('地球'); },
   get species() { const g = this.g; return g?.nationOf(g.cap)?.species || HUMAN; },
-  get gov() { return !this.g || this.g.cap === 0 ? '地球政府' : `${this.species}の政府`; },
-  get council() { return !this.g || this.g.cap === 0 ? '地球議会' : `${this.species}の議会`; },
-  get home() { const g = this.g; if (!g || g.cap === 0) return '地球'; const n = g.nationOf(g.cap); return (n && g.target(n.cap, n.body)?.name) || g.system(g.cap).name; },
-  get capName() { const g = this.g; return !g || g.cap === 0 ? '太陽系' : g.system(g.cap).name; },
+  get gov() { return !this.g || this.g.cap === 0 ? TR('地球政府') : TR`${this.species}の政府`; },
+  get council() { return !this.g || this.g.cap === 0 ? TR('地球議会') : TR`${this.species}の議会`; },
+  get home() { const g = this.g; if (!g || g.cap === 0) return TR('地球'); const n = g.nationOf(g.cap); return (n && g.target(n.cap, n.body)?.name) || g.system(g.cap).name; },
+  get capName() { const g = this.g; return !g || g.cap === 0 ? TR('太陽系') : g.system(g.cap).name; },
 };
 const PLAYER_KEYS = ['finalScore', 'pc', 'pcLast', 'council', 'policy', 'fiscal', 'decisions', 'story', 'era', 'challenges', 'stats', 'acked', 'aiPolicy',
   'autoBuild', 'autoGrant', 'autoDefense', 'autoAwe', 'autoHabitat', 'autoRoutes', 'migration', 'warThreshold', 'regime'];

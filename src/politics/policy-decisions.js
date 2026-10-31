@@ -1,9 +1,15 @@
-  setPolicy(id) {
+  // 国家方針を変える (命令 policy)。議会の審議にかける (回 SE7・B-022。QD-109 b。politics/support.js の proposeBill)。now = 審議を通さずすぐ (試験から)
+  setPolicy(id, now = false) {
     if (!POLICIES[id]) return fail('不明な方針');
     if (this.policy?.id === id) return fail('いまの方針と同じ');
-    if (this.policy && this.year - this.policy.since < POLICY_YEARS) return fail(`${Math.ceil(this.policy.since + POLICY_YEARS - this.year)}年後まで変えられない`);
+    if (this.policy && this.year - this.policy.since < this.policyYears()) return fail(JA`${Math.ceil(this.policy.since + this.policyYears() - this.year)}年後まで変えられない`);
+    return now ? this.applyPolicy(id) : this.proposeBill('policy', id);
+  }
+  policyYears() { return this.modsOf(this.cap).policyYears; } // 国家方針を変えられる間隔 (長命は 45 年。回 SE8)
+  pcCap() { return this.modsOf(this.cap).pcCap; } // 政治力の上限 (賢明は 70。回 SE8)
+  applyPolicy(id) {
     this.policy = { id, since: this.year, prev: this.policy?.id ?? null };
-    this.event('goal', this.cap, `国家方針を「${POLICIES[id].label}」にした (${POLICIES[id].good}。${POLICIES[id].bad})。遠い星系には知らせが光速で届いてから効く`, true);
+    this.event('goal', this.cap, JA`国家方針を「${POLICIES[id].label}」にした (${POLICIES[id].good}。${POLICIES[id].bad})。遠い星系には知らせが光速で届いてから効く`, true);
     return { ok: true };
   }
   // 統治体制の切り替え (指令が届いたとき)。直接統治 = 直轄 (gv.direct)。'delegate' は間接統治 (古い指令の名前)
@@ -15,7 +21,7 @@
     if (regime === 'direct') {
       if (gv.lord !== this.cap || this.realmOf(id) !== this.cap) return fail('直属の従属星系だけを直轄にできる');
       if ((gv.autonomy || 0) > this.year) return fail('自治を認めているので直轄にできない');
-      if (!gv.direct && this.directCount() >= this.directMax()) return fail(`直轄は ${this.directMax()} 星系まで`);
+      if (!gv.direct && this.directCount() >= this.directMax()) return fail(JA`直轄は ${this.directMax()} 星系まで`);
     }
     return this.setRegime(id, regime);
   }
@@ -46,7 +52,7 @@
     if (!this.spectate && dec.seen > this.year) return fail('まだ知らせが届いていない');
     const o = dec.opts.find((x) => x.k === d.opt);
     if (!o) return fail('不明な選択肢');
-    if (o.cr && o.cr > this.funds(this.cap)) return fail(`資金が足りない (${o.cr} cr)`); // 費用のない選択肢は、資金がマイナスでも送れる
+    if (o.cr && o.cr > this.funds(this.cap)) return fail(JA`資金が足りない (${o.cr} cr)`); // 費用のない選択肢は、資金がマイナスでも送れる
     if (o.cr) { this.earn('grant', -o.cr, this.cap); dec.payer = this.cap; this.cash('grant', o.cr, { way: dec, f: 'cr' }); }
     dec.state = 'sent';
     dec.reply = o.k;
@@ -70,13 +76,14 @@
       const gv = this.govs[dec.sys];
       if (!gv || gv.unrest?.stage !== 2) return { ok: true };
       if (k === 'accept') this.grantDemand(dec.sys, gv);
-      else this.refuseDemand(dec.sys, gv, k === 'awe' ? `${this.homeName()}は要求を拒み、威圧の艦隊を差し向けた` : `${this.homeName()}に要求を拒まれた`, k === 'awe' ? 'awe' : 'refuse');
+      else this.refuseDemand(dec.sys, gv, k === 'awe' ? JA`${this.homeName()}は要求を拒み、威圧の艦隊を差し向けた` : JA`${this.homeName()}に要求を拒まれた`, k === 'awe' ? 'awe' : 'refuse');
       return { ok: true };
     }
     if (dec.kind === 'pact') { this.resolvePact(dec, k); return { ok: true }; } // 遅れて届く外交 (politics/diplomacy.js)
+    if (dec.kind === 'bill') { if (k !== 'wait' && this.bill(dec.type)?.since === dec.since) this.billAct(dec.type, k); return { ok: true }; } // 審議で押し戻された法案 (politics/support.js)
     const s = STORY[dec.type];
     if (s) {
-      if (local) this.govDid(dec.sys, `「${dec.opts.find((o) => o.k === k)?.label || k}」を選んだ`, `${this.homeName()}の返事が期限までに届かず、現地で決めた`);
+      if (local) this.govDid(dec.sys, JA`「${dec.opts.find((o) => o.k === k)?.label || k}」を選んだ`, JA`${this.homeName()}の返事が期限までに届かず、現地で決めた`);
       s.resolve(this, dec, k, local);
       // 連作: 続きの段を予約する (返事が届いた年から数えて。回 SE3)
       const n = s.next?.(this, dec, k, local);
@@ -137,12 +144,12 @@
   // --- 議会の支持・時代の課題・挑戦・点数 ---
   councilAdd(v, why) {
     this.council = clamp(this.council + v, 0, 100);
-    if (why) this.message(`議会の支持 ${v > 0 ? '+' : ''}${v} (${why})`);
+    if (why) this.message(JA`議会の支持 ${v > 0 ? '+' : ''}${v} (${why})`);
   }
   councilYearly() {
-    this.council = clamp(this.council - 0.25 - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20) + TAX_COUNCIL * (burdenK(this.fiscal || FISCAL_DEFAULT) - 1), 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる。重い税も落とす
+    this.council = clamp(this.council - 0.25 * this.modsOf(this.cap).councilDrift - EXHAUST.council * Math.max(0, (this.exhaustion[this.cap] || 0) - 20) + LOSS.council * (Object.values(this.policyLoss(this.cap)).reduce((a, v) => a + v, 0) + INFL_LOSS * Math.abs(this.inflOf(this.cap) - CB.pistar)), 0, 100); // 戦争疲弊が 20 を超えると支持が落ちる。首都の家計の損 (税・消費税・関税。回 KE8・B-012) と、物価の目標 2% からの外れ (QD-27 = b。回 KE9) も落とす
     if (this.council < 15) {
-      this.event('goal', this.cap, `議会の支持が ${Math.round(this.council)} まで落ち、政権が交代した。国家方針は白紙に戻り、貯めていた政治力を失った`);
+      this.event('goal', this.cap, JA`議会の支持が ${Math.round(this.council)} まで落ち、政権が交代した。国家方針は白紙に戻り、貯めていた政治力を失った`);
       this.policy = null;
       this.pc = 0;
       this.council = 45;

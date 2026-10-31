@@ -4,8 +4,12 @@ const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番
 // 忠誠度の目標の内訳。目標 = 先頭から順に足した値 (0〜100 に収める)
 // 忠誠度の目標の内訳。距離は直接には小さく効き、主人の関与 (指令・援助・艦隊・視察) が途絶えた年数が大きく効く
 // (遠い星系ほど関与が届くのに時間と政治力がかかるので、距離は間接的に効く)
-function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = BASE_REGIME, arrears = false, concession = false, policy = null, exhaustion = 0, tax = 'normal', ctax = 0, welfare = 0 }) {
-  const taxK = burdenK({ tax, ctax });
+// 税の項 (回 KE8・B-012): 家計の損の割合 loss (policyLoss。所得への税・消費税・関税) × LOSS.loyalty。parts = 手段ごとの値 (集団の差 groupDev が分位ごとに分ける)。
+// loss を渡さなければ、税率から (関税は 0)。
+// 物価の項 (QD-27 = b。回 KE9・B-009): 国の物価の上がり方 infl と目標 2% の差 1 点を、家計の所得の INFL_LOSS 割の損とみて LOSS.loyalty を掛ける
+function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = BASE_REGIME, arrears = false, concession = false, policy = null, exhaustion = 0, tax = 'normal', ctax = 0, tariff = 0, loss = null, welfare = 0, infl = null }) {
+  const t = taxRateOf(tax), l = loss || { tax: t - MARKET.tax, ctax: (ctax * (1 - t)) / (1 + ctax), tariff: 0 };
+  const parts = { tax: LOSS.loyalty * l.tax, ctax: LOSS.loyalty * l.ctax, tariff: LOSS.loyalty * l.tariff };
   return [
     { label: '基準', v: 85 },
     { label: '主人との距離', v: -(0.6 * dLord), note: `${dLord.toFixed(1)} ly` },
@@ -14,14 +18,15 @@ function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, negle
     { label: '最近の指令', v: -(2 * orders) },
     { label: '主人の星系の艦隊', v: Math.min(15, 2 * lordShips) },
     { label: '支援で深まった従属', v: Math.min(40, dep) },
-    ...(NEGLECT_MAX ? [{ label: '放っておかれた年数', v: -Math.min(NEGLECT_MAX, NEGLECT_RATE * Math.max(0, neglect - NEGLECT_GRACE)), note: `${Math.floor(neglect)} 年` }] : []), // NEGLECT_MAX = 0 なら効かない
-    { label: `統治体制 (${REGIMES[regime].label})`, v: REGIMES[regime].loyalty },
+    ...(NEGLECT_MAX ? [{ label: '放っておかれた年数', v: -Math.min(NEGLECT_MAX, NEGLECT_RATE * Math.max(0, neglect - NEGLECT_GRACE)), note: JA`${Math.floor(neglect)} 年` }] : []), // NEGLECT_MAX = 0 なら効かない
+    { label: JA`統治体制 (${REGIMES[regime].label})`, v: REGIMES[regime].loyalty },
     { label: '減税・自治', v: concession ? 15 : 0 },
     ...(arrears ? [{ label: '関税受領官 (滞納)', v: -H33.arrears }] : []),
-    { label: `国家方針${policy ? ` (${POLICIES[policy].label})` : ''}`, v: POLICY_LOYALTY[policy] || 0 },
+    { label: JA`国家方針${policy ? ` (${POLICIES[policy].label})` : ''}`, v: POLICY_LOYALTY[policy] || 0 },
     ...(exhaustion ? [{ label: '国の戦争疲弊', v: -EXHAUST.loyalty * exhaustion, note: `${Math.round(exhaustion)}` }] : []),
-    ...(Math.abs(taxK - 1) > 1e-9 ? [{ label: `税 (${(taxRateOf(tax) * 100).toFixed(1)}%${ctax ? ` + 消費税 ${(ctax * 100).toFixed(1)}%` : ''})`, v: TAX_LOYALTY * (taxK - 1) }] : []),
+    ...(Math.abs(l.tax) > 1e-9 || l.ctax > 0 || l.tariff > 0 ? [{ label: JA`税 (${(t * 100).toFixed(1)}%${ctax ? JA` + 消費税 ${(ctax * 100).toFixed(1)}%` : ''}${tariff ? JA` + 関税 ${(tariff * 100).toFixed(1)}%` : ''})`, v: parts.tax + parts.ctax + parts.tariff, parts }] : []),
     ...(welfare ? [{ label: '福祉の予算', v: BUDGET.welfare.loyalty * welfare }] : []),
+    ...(infl !== null && Math.abs(infl - CB.pistar) > 1e-9 ? [{ label: JA`物価の上がり方 (年 ${(infl * 100).toFixed(1)}%)`, v: LOSS.loyalty * INFL_LOSS * Math.abs(infl - CB.pistar), note: JA`目標 ${(CB.pistar * 100).toFixed(0)}% からの差` }] : []),
   ];
 }
 const RES_LABEL = { food: '食料', water: '水', metal: '金属', fuel: '燃料', rare: '希少元素', goods: '低付加価値物品', slaves: '奴隷', hitech: '高付加価値物品', credits: 'cr' };
@@ -60,7 +65,7 @@ function makeNatives(rng, b) {
   if (!lush || !b.settle || b.settle.grade < 2 || !rng.chance(b.settle.grade === 3 ? 0.55 : 0.3)) return null;
   const tech = rng.weighted([0, 1, 2, 3], (t) => [0.4, 0.35, 0.18, 0.07][t]);
   return {
-    species: `${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`,
+    species: JA`${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`,
     pop: rng.logUniform(1, 300) * GM.pow((1 + tech), 1.5),
     tech,
     mood: Math.round(rng.range(-40, 30)),
@@ -77,7 +82,7 @@ function makeMoreNatives(rng, b) {
   if (!p || !rng.chance(p)) return null;
   const tech = rng.weighted([0, 1, 2, 3], (t) => (lush ? [0.4, 0.35, 0.18, 0.07] : [0.6, 0.3, 0.08, 0.02])[t]);
   return {
-    species: `${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`,
+    species: JA`${rng.pick(KANA_A)}${rng.pick(KANA_B)}人`,
     pop: rng.logUniform(1, lush ? 300 : 40) * GM.pow((1 + tech), 1.5),
     tech,
     mood: Math.round(rng.range(-40, 30)),

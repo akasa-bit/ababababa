@@ -51,7 +51,7 @@ function sheet() {
   for (const [key, st] of Object.entries(g.natives)) { const r = R(natRealm(key)); r.nat.dep += st.cr || 0; r.nat.loan += st.loan || 0; map[key] = natRealm(key); }
   let way = 0;
   for (const q of g.requests) way += (q.kind === 'trade' ? q.pre : q.kind === 'tribute' || q.kind === 'grant' ? q.amt : 0) || 0;
-  for (const d of g.decisions) way += d.cr || 0;
+  for (const p of g.players) for (const d of p.decisions || []) way += d.cr || 0; // どの席の決めることも (AI の国の席も。回 SE5)
   for (const s of g.ships) way += s.seed || 0;
   for (const j of g.projects) way += j.seed || 0;
   for (const r of g.refunds || []) way += r.v || 0; // 光速で届く途中の返金 (回 KE3)

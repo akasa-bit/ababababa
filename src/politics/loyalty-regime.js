@@ -18,7 +18,7 @@
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: distance(this.system(id), this.system(this.realmOf(lord))),
       bigger: pop(id) > pop(lord), orders: gv.orders || 0, lordShips: this.garrison[lord] || 0, dep: gv.dep || 0,
       neglect: this.neglectOf(gv), regime: regimeKey(gv), arrears: (gv.arrears || 0) > 0.01, concession: (gv.taxFree || 0) > this.year || (gv.autonomy || 0) > this.year, policy: this.policyAt(id), exhaustion: this.exhaustion[this.realmOf(id)] || 0,
-      tax: this.fiscalAt(id).tax, ctax: this.fiscalAt(id).ctax || 0, welfare: this.budgetAt(this.realmOf(id), id, 'welfare') });
+      ...(() => { const f = this.fiscalAt(id); return { tax: f.tax, ctax: f.ctax || 0, tariff: f.tariff || 0, loss: this.policyLoss(id, f) }; })(), welfare: this.budgetAt(this.realmOf(id), id, 'welfare'), infl: this.inflOf(id) });
   }
   // 地球の知る限りの内訳 (地球に届いている記録で。表示用)
   knownLoyaltyTerms(id) {
@@ -30,7 +30,7 @@
     // 放っておかれた年数は、記録の時点から今までの年数を足す (そのあと関与が届いたかは、まだ地球には見えない)
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: this.sysDist(id, capital),
       bigger: pop(id) > pop(lord), orders: k.orders || 0, lordShips: this.knownGarrison(lord), dep: k.dep || 0,
-      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), regime: this.knownRegime(k), arrears: (k.arrears || 0) > 0.01, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0, tax: k.tax || 'normal', welfare: k.welfare || 0 });
+      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), regime: this.knownRegime(k), arrears: (k.arrears || 0) > 0.01, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0, tax: k.tax || 'normal', ctax: k.ctax || 0, tariff: k.tariff || 0, loss: k.loss || null, welfare: k.welfare || 0, infl: k.infl ?? null });
   }
   // 統治体制 (主人がいなければ null)
   regimeOf(gv) { return regimeKey(gv); }
@@ -54,7 +54,7 @@
     if (!gv || gv.lord === null || gv.lord === undefined) return null;
     const pop = (x) => this.coloniesIn(x).reduce((k, c) => k + c.pop, 0);
     const b = this.bundleOf(gv);
-    return secessionTermsOf({ regime: regimeKey(gv), delay: this.sysDist(id, this.realmOf(id)), popRatio: pop(id) / Math.max(1e-3, pop(gv.lord)), loyalty: gv.loyalty ?? LOYALTY_START, security: this.budgetAt(this.realmOf(id), id, 'security'), gap: bundleGap(b.law, b.fact) });
+    return secessionTermsOf({ regime: regimeKey(gv), delay: this.sysDist(id, this.realmOf(id)), popRatio: pop(id) / Math.max(1e-3, pop(gv.lord)), loyalty: gv.loyalty ?? LOYALTY_START, security: this.budgetAt(this.realmOf(id), id, 'security'), gap: bundleGap(b.law, b.fact), excl: this.groupsOf(id)?.excl ?? null });
   }
   // 地球の知る限りの内訳 (表示用)。regime を渡すと、その統治体制にしたときの値 (比べる用。忠誠度の目標の差も入れる)
   knownSecessionTerms(id, regime = null) {
@@ -67,7 +67,10 @@
     const loyalty = clamp((k.loyalty ?? LOYALTY_START) + (REGIMES[r].loyalty - REGIMES[cur].loyalty) - Math.round(HAZARD.revoke * Math.max(0, this.lawRank(k) - REGIMES[r].rank)), 0, 100);
     const b = this.bundleOf(k);
     const law = r === cur ? b.law : REGIMES[r].law;
-    return secessionTermsOf({ regime: r, delay: this.sysDist(id, capital), popRatio: pop(id) / Math.max(1e-3, pop(k.lord)), loyalty, security: k.security || 0, gap: bundleGap(law, b.fact) });
+    // 締め出された人口: 記録の民族の構成を、その統治体制の実態で数え直す (直轄にすると実態はすべて宗。ほかの型は実態を引き継ぐ。setRegime)
+    const fact = r === 'direct' ? REGIMES.direct.fact : b.fact;
+    const excl = k.groups ? k.groups.eth.reduce((a, e) => a + (GROUP_STATUS[this.groupStatusOf(e.k === 'home' || e.k === 'local' ? e.k : 'other', { fact, regime: r, include: r === 'direct' ? k.include : null })].incl ? 0 : e.share), 0) : null;
+    return secessionTermsOf({ regime: r, delay: this.sysDist(id, capital), popRatio: pop(id) / Math.max(1e-3, pop(k.lord)), loyalty, security: k.security || 0, gap: bundleGap(law, b.fact), excl });
   }
   // 統治体制を変える (指令が届いたとき)。自治の度合いを下げると、下げた段ごとに忠誠度 −HAZARD.revoke
   setRegime(id, regime) {
@@ -85,7 +88,7 @@
     if (regime === 'direct') delete gv.fact; else gv.fact = fact; // 直轄はすべて宗主が握る
     if (regime === 'direct') gv.direct = true; else if (regime !== BASE_REGIME) gv.regime = regime;
     if (drop) gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - Math.round(HAZARD.revoke * drop));
-    this.event('politics', id, `${this.system(id).name} の統治体制を${REGIMES[old].label}から${REGIMES[regime].label}に変えた${drop ? ` (自治を狭めたので忠誠度 −${Math.round(HAZARD.revoke * drop)})` : ''}`, true);
+    this.event('politics', id, JA`${this.system(id).name} の統治体制を${REGIMES[old].label}から${REGIMES[regime].label}に変えた${drop ? JA` (自治を狭めたので忠誠度 −${Math.round(HAZARD.revoke * drop)})` : ''}`, true);
     return { ok: true };
   }
   // 星系の束 (法と実態)。持っていなければ型の雛形
@@ -104,18 +107,19 @@
     gv.law = b.law.slice(0, i) + value + b.law.slice(i + 1);
     if (!gv.fact) gv.fact = b.fact;
     if (drop) gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - Math.round(HAZARD.revoke * drop));
-    this.event('politics', id, `${this.system(id).name} との約定で「${BUNDLE_LABELS[item]}」を${BUNDLE_CODES[b.law[i]]}から${BUNDLE_CODES[value]}にした${drop ? ` (自治を狭めたので忠誠度 −${Math.round(HAZARD.revoke * drop)})` : ''}`, true);
+    this.event('politics', id, JA`${this.system(id).name} との約定で「${BUNDLE_LABELS[item]}」を${BUNDLE_CODES[b.law[i]]}から${BUNDLE_CODES[value]}にした${drop ? JA` (自治を狭めたので忠誠度 −${Math.round(HAZARD.revoke * drop)})` : ''}`, true);
     return { ok: true };
   }
-  // 現地のエリートと実態の層 (年1回): 協力なら実態が法へ、抵抗なら「従」へ、項目ごとに年 BUNDLE.p の確率で半段ずつ寄る。直轄は動かない
+  // 現地のエリートと実態の層 (年1回): 協力なら実態が法へ、抵抗なら「従」へ、項目ごとに年 BUNDLE.p の確率で半段ずつ寄る。直轄は動かない。
+  // 協力か抵抗かは、現地のエリートの集団 (支配する種族のここ生まれのいちばん上の分位。B-021) の忠誠度で決まる (前は星系の忠誠度)
   bundleYearly() {
     for (const [k, gv] of Object.entries(this.govs)) {
       const id = Number(k);
       if (gv.lord === null || gv.lord === undefined || gv.direct || !this.isColonized(id)) continue;
-      const L = gv.loyalty ?? LOYALTY_START;
+      const L = this.eliteLoyalty(id, gv); // 現地のエリートの集団の忠誠度 (B-021。politics/groups.js)
       const stance = L >= BUNDLE.coop ? 'coop' : L < BUNDLE.resist ? 'resist' : 'bargain';
       if (stance !== (gv.elite || 'bargain')) {
-        if (stance === 'resist' && this.realmOf(id) === this.cap) this.event('politics', id, `${this.system(id).name} の現地のエリートが、${this.realmName(this.cap)}への協力をやめて抵抗に回った (実態が従属国の側へ寄っていく)`);
+        if (stance === 'resist' && this.realmOf(id) === this.cap) this.event('politics', id, JA`${this.system(id).name} の現地のエリートが、${this.realmName(this.cap)}への協力をやめて抵抗に回った (実態が従属国の側へ寄っていく)`);
         if (stance === 'bargain') delete gv.elite; else gv.elite = stance;
       }
       if (stance === 'bargain') continue;
@@ -165,7 +169,7 @@
       if (key === 'T15' && this.rand() < 1 / GENERATION_YEARS) {
         const succ = this.bundleOf(gv).fact[BUNDLE_ITEMS.indexOf('succ')];
         if (succ === 'V') { gv.unionEnd = true; this.declareIndependence(id); }
-        else this.event('politics', id, `${this.system(id).name} で君主の代替わりがあった。継承は${succ === 'S' ? '宗主' : '両国の取り決め'}のもとで行われ、同君連合は続く`, this.realmOf(id) === this.cap);
+        else this.event('politics', id, JA`${this.system(id).name} で君主の代替わりがあった。継承は${succ === 'S' ? '宗主' : '両国の取り決め'}のもとで行われ、同君連合は続く`, this.realmOf(id) === this.cap);
       }
     }
   }
@@ -189,9 +193,9 @@
     if (!this.isHuman(second) && ships(second) >= JOINT.odds * Math.max(1, ships(main))) {
       this.beginWar(second, main, id);
       delete gv.grudge; // 恨みは開戦で晴らした (断ち続ければ、またたまる)
-      this.event('war', id, `${this.realmName(second)}が、${this.system(id).name} の朝貢の分け前をめぐって${this.realmName(main)}に宣戦した`);
+      this.event('war', id, JA`${this.realmName(second)}が、${this.system(id).name} の朝貢の分け前をめぐって${this.realmName(main)}に宣戦した`);
     } else if (gv.grudge >= JOINT.drop) {
-      this.event('politics', id, `${this.realmName(second)}は ${this.system(id).name} から手を引いた。${this.realmName(main)}が、ただ 1 国の宗主になった`, this.isHuman(main));
+      this.event('politics', id, JA`${this.realmName(second)}は ${this.system(id).name} から手を引いた。${this.realmName(main)}が、ただ 1 国の宗主になった`, this.isHuman(main));
       delete gv.lord2; delete gv.jointCut; delete gv.grudge;
       gv.jointSolo = true; // もう 2 国目を探さない
     }
@@ -209,12 +213,12 @@
   puppetFalls(id, winner) {
     const gv = this.govs[id];
     const old = this.realmOf(id);
-    for (const f of ['direct', 'regime', 'law', 'fact', 'elite', 'lord2', 'jointCut', 'grudge', 'jointSolo', 'arrears', 'patron']) delete gv[f];
+    for (const f of ['direct', 'regime', 'law', 'fact', 'elite', 'lord2', 'jointCut', 'grudge', 'jointSolo', 'arrears', 'patron', 'include']) delete gv[f];
     Object.assign(gv, { lord: winner, independent: false, loyalty: PUPPET.loyalty, friend: 0, fear: 0, orders: 0, attended: this.year, unrest: { stage: 0 } });
     const reg = this.defaultRegime(winner, id);
     if (reg === 'direct') gv.direct = true; else if (reg !== BASE_REGIME) gv.regime = reg;
-    for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
-    this.event('politics', id, `${this.realmName(old)}の敗戦で、${this.system(id).name} の傀儡政権が倒れた。${this.realmName(winner)}の家臣になり、統治体制は${REGIMES[regimeKey(gv)].label}になった`, this.isHuman(winner));
+    for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') this.voidDecision(d);
+    this.event('politics', id, JA`${this.realmName(old)}の敗戦で、${this.system(id).name} の傀儡政権が倒れた。${this.realmName(winner)}の家臣になり、統治体制は${REGIMES[regimeKey(gv)].label}になった`, this.isHuman(winner));
   }
   // 共同統治の 2 国目への分け前を断つ・戻す (指令が届いたとき)。断つと家臣の忠誠度が下がる
   setJointCut(id, cut) {
@@ -222,7 +226,7 @@
     if (!gv || regimeKey(gv) !== 'T08' || gv.lord2 === undefined) return fail('2 国目の宗主がいない (共同統治の家臣だけ)');
     if (!!gv.jointCut === !!cut) return { ok: true };
     if (cut) { gv.jointCut = true; gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - H33.jointCut); } else delete gv.jointCut;
-    this.event('politics', id, `${this.system(id).name} の朝貢の${cut ? `うち${this.realmName(gv.lord2)}への分け前を断った (忠誠度 −${H33.jointCut})` : `${this.realmName(gv.lord2)}への分け前を戻した`}`, true);
+    this.event('politics', id, JA`${this.system(id).name} の朝貢の${cut ? JA`うち${this.realmName(gv.lord2)}への分け前を断った (忠誠度 −${H33.jointCut})` : JA`${this.realmName(gv.lord2)}への分け前を戻した`}`, true);
     return { ok: true };
   }
   // 統治者の任免 (改易・廃位): 実態で任免を宗主が握るか分け合う家臣だけ。現地の統治者を替えると、実態は約定どおりに戻り、エリートは協力から始まる
@@ -235,7 +239,7 @@
     gv.elite = 'coop';
     gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - H33.depose);
     delete gv.unrest;
-    this.event('politics', id, `${this.system(id).name} の統治者を替えた (改易・廃位)。実態は約定どおりに戻ったが、忠誠度 −${H33.depose}`, true);
+    this.event('politics', id, JA`${this.system(id).name} の統治者を替えた (改易・廃位)。実態は約定どおりに戻ったが、忠誠度 −${H33.depose}`, true);
     return { ok: true };
   }
   // 強制労働の後遺症 (年1回)。独立したあとも残る
@@ -259,10 +263,10 @@
   rebelFleet(id) { return this.rebelFleetOf(this.coloniesIn(id), this.gov(id).credits); }
   knownRebelFleet(id) { const k = this.known(id); return this.rebelFleetOf(this.knownColonies(id), k?.credits); }
   // 恐怖度 (0〜100): 忠誠度とは別のパラメータ。その星系に駐留する地球の艦隊 (命令で駐留している分と威圧の分) が多いほど高い。
-  // 目標 = 50 × 地球の艦隊 / 反乱したときの推定艦隊 (同数で50、2倍で100)。年に最大10ずつ目標へ動く。地球の国の星系だけ
+  // 目標 = 50 × 地球の艦隊 / 反乱したときの推定艦隊 (同数で50、2倍で100)。年に最大10ずつ目標へ動く。席を持つ国の星系だけ (AI の国も。回 SE5)
   fearTarget(id) {
     const root = this.realmOf(id);
-    if (id === root || !this.isHuman(root)) return 0;
+    if (id === root || !this.isSeat(root)) return 0;
     return Math.min(100, 50 * this.earthFleetAt(id, root) / this.rebelFleet(id) * (this.policyAt(id) === 'military' ? 1.5 : 1));
   }
   // 恐怖度が高いほど独立を宣言しにくい (恐怖度100で確率が1/10)
@@ -321,17 +325,17 @@
       if (this.rand() < hazardYear(h)) {
         gv.unrest = { stage: 1, since: this.year, at: Math.round(loyal) };
         const why = terms.slice(1).filter((t) => t.f > 1.2).sort((a, b) => b.f - a.f).slice(0, 2).map((t) => `${t.label} ×${t.f.toFixed(1)}`).join('・');
-        this.event('politics', id, `${name} で${this.system(gv.lord).name}からの自立を求める動きが起きた (忠誠度 ${Math.round(loyal)}・離反の起きやすさ 年 ${pctH(hazardYear(h))}${why ? `。主な原因: ${why}` : ''})。このまま${UNREST_YEARS}年続くと、減税か自治を要求してくる`);
+        this.event('politics', id, JA`${name} で${this.system(gv.lord).name}からの自立を求める動きが起きた (忠誠度 ${Math.round(loyal)}・離反の起きやすさ 年 ${pctH(hazardYear(h))}${why ? JA`。主な原因: ${why}` : ''})。このまま${UNREST_YEARS}年続くと、減税か自治を要求してくる`);
       }
       return;
     }
     const calm = calmAtOf(u);
-    if (u.stage === 1 && loyal >= calm) return this.calmUnrest(id, gv, `忠誠度が ${Math.round(loyal)} に上がり、不満が収まった`); // 要求を出したあとは、返事が要る
+    if (u.stage === 1 && loyal >= calm) return this.calmUnrest(id, gv, JA`忠誠度が ${Math.round(loyal)} に上がり、不満が収まった`); // 要求を出したあとは、返事が要る
     if (u.stage === 1) { if (this.year - u.since >= UNREST_YEARS) this.raiseDemand(id, gv); return; }
     if (u.stage === 2) {
       if (u.aiAt !== undefined && this.year >= u.aiAt) {
-        // 主人の政府の判断 (半々)
-        if (this.rand() < 0.5) this.grantDemand(id, gv); else this.refuseDemand(id, gv, `${this.system(gv.lord).name} に要求を拒まれた`);
+        // 主人の政府の判断: 席の国の AI と同じく、のむ見込み (家臣の大きさ・遠さ・拒んだら独立する見込み。QD-41 = c) でのむ
+        if (this.rand() < this.demandAcceptP(id)) this.grantDemand(id, gv); else this.refuseDemand(id, gv, JA`${this.system(gv.lord).name} に要求を拒まれた`);
       } else if (this.year >= (u.timeout ?? Infinity)) this.refuseDemand(id, gv, '返事が届かないので、要求は拒まれたとみなした');
       return;
     }
@@ -340,7 +344,7 @@
     if (this.rand() < p) this.declareIndependence(id);
     else {
       gv.unrest = { stage: 1, since: this.year, at: Math.round(loyal) };
-      this.event('politics', id, `${name} は最後通牒の期限が来たが、独立を思いとどまった (恐怖度 ${Math.round(gv.fear || 0)}・友好度 ${Math.round(gv.friend || 0)}・忠誠度 ${Math.round(loyal)})。不満はまだ残っている`);
+      this.event('politics', id, JA`${name} は最後通牒の期限が来たが、独立を思いとどまった (恐怖度 ${Math.round(gv.fear || 0)}・友好度 ${Math.round(gv.friend || 0)}・忠誠度 ${Math.round(loyal)})。不満はまだ残っている`);
     }
   }
   // 星系の政府が決めたことを覚える (gv.did = [{ year, what, why }]。snapshot で地球へ光の遅れで届き、総督の手紙が読む)
@@ -351,30 +355,36 @@
     list.push({ year: Math.floor(this.year), what, why });
     gv.did = list.slice(-GOV_DID.max);
   }
+  // 決めることを取り消す (星系が独立した・傀儡政権が倒れた・不満が収まった)。返事に添えて送った額 (cr) は払った国へ返す
+  // (前は返さず、50 年後に決めることの一覧から消えるときにお金が消えていた。回 SE8 でお金の保存の試験が見つけた)
+  voidDecision(d) {
+    d.state = 'done'; d.void = true;
+    if (d.cr) this.release('grant', d, 'cr', d.payer ?? 0, d.payer ?? 0);
+  }
   calmUnrest(id, gv, why) {
     gv.unrest = { stage: 0 };
-    for (const p of this.players) for (const d of p.decisions || []) if (d.kind === 'demand' && d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
+    for (const p of this.players) for (const d of p.decisions || []) if (d.kind === 'demand' && d.sys === id && d.state !== 'done') this.voidDecision(d);
     this.event('politics', id, `${this.system(id).name}: ${why}`, true);
   }
-  demandText(kind) { return kind === 'tax' ? `朝貢の免除 (${CONCESSION_YEARS}年)` : `自治 (${CONCESSION_YEARS}年、主人の指令を受けない)`; }
+  demandText(kind) { return kind === 'tax' ? JA`朝貢の免除 (${CONCESSION_YEARS}年)` : JA`自治 (${CONCESSION_YEARS}年、主人の指令を受けない)`; }
   raiseDemand(id, gv) {
     const kind = (gv.taxFree || 0) > this.year ? 'autonomy' : 'tax';
     const what = this.demandText(kind);
     const name = this.system(id).name;
     gv.unrest = { stage: 2, since: this.year, kind };
-    if (!this.isHuman(gv.lord)) {
-      // 主人が人間のプレイヤーでなければ、主人の政府が判断する (要求と返事が光速で往復する)
+    if (!this.isSeat(gv.lord)) {
+      // 主人が席を持つ国 (人間の国と AI の国) の首都でなければ、主人の政府が判断する (要求と返事が光速で往復する)。席の国は「決めること」で答える (AI の国は観戦と同じ AI が。回 SE5)
       gv.unrest.aiAt = this.year + 2 * this.travelYears(id, gv.lord);
-      this.event('demand', id, `${name} が${this.system(gv.lord).name}に${what}を求めた`);
+      this.event('demand', id, JA`${name} が${this.system(gv.lord).name}に${what}を求めた`);
       return;
     }
     const gov = gv.governor || 'ask';
-    if (gov !== 'ask') this.govDid(id, gov === 'yield' ? `${what}の要求を認めた` : gov === 'suppress' ? `${what}の要求を退けて鎮圧した` : `${what}の要求に返事をしなかった`, `総督の方針「${GOVERNOR[gov]}」に従った (忠誠度 ${Math.round(gv.loyalty ?? LOYALTY_START)})`);
-    if (gov === 'yield') { this.event('demand', id, `${name} が${what}を求め、総督が方針どおりその場で認めた`); return this.grantDemand(id, gv); }
-    if (gov === 'suppress') { this.event('demand', id, `${name} が${what}を求め、総督が方針どおり鎮圧に動いた`); return this.refuseDemand(id, gv, '総督が要求を退けて鎮圧した', 'suppress'); }
+    if (gov !== 'ask') this.govDid(id, gov === 'yield' ? JA`${what}の要求を認めた` : gov === 'suppress' ? JA`${what}の要求を退けて鎮圧した` : JA`${what}の要求に返事をしなかった`, JA`総督の方針「${GOVERNOR[gov]}」に従った (忠誠度 ${Math.round(gv.loyalty ?? LOYALTY_START)})`);
+    if (gov === 'yield') { this.event('demand', id, JA`${name} が${what}を求め、総督が方針どおりその場で認めた`); return this.grantDemand(id, gv); }
+    if (gov === 'suppress') { this.event('demand', id, JA`${name} が${what}を求め、総督が方針どおり鎮圧に動いた`); return this.refuseDemand(id, gv, '総督が要求を退けて鎮圧した', 'suppress'); }
     if (gov === 'ignore') {
       gv.unrest.timeout = this.year + 10;
-      this.event('demand', id, `${name} が${what}を求めたが、総督は方針どおり返事をしない (10年で拒んだとみなされる)`);
+      this.event('demand', id, JA`${name} が${what}を求めたが、総督は方針どおり返事をしない (10年で拒んだとみなされる)`);
       return;
     }
     // 主人 (人間のプレイヤー) の決めることに加える
@@ -382,13 +392,13 @@
     const d = this.lightDelay(id);
     gv.unrest.timeout = this.year + 2 * d + 15;
     this.addDecision({ kind: 'demand', type: kind, sys: id, deadline: this.year + d + 15,
-      text: `${name} が${what}を求めている (忠誠度 ${Math.round(gv.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(gv.fear || 0)}・友好度 ${Math.round(gv.friend || 0)})。拒めば最後通牒になり、${ULTIMATUM_YEARS}年後に独立を宣言するおそれがある。返事が届かないまま ${(this.year + 2 * d + 15).toFixed(0)}年を過ぎると、拒んだとみなされる。`,
+      text: JA`${name} が${what}を求めている (忠誠度 ${Math.round(gv.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(gv.fear || 0)}・友好度 ${Math.round(gv.friend || 0)})。拒めば最後通牒になり、${ULTIMATUM_YEARS}年後に独立を宣言するおそれがある。返事が届かないまま ${(this.year + 2 * d + 15).toFixed(0)}年を過ぎると、拒んだとみなされる。`,
       opts: [
-        { k: 'accept', label: 'のむ', note: kind === 'tax' ? `${CONCESSION_YEARS}年朝貢を免除する。忠誠度 +20、その間の目標 +15` : `${CONCESSION_YEARS}年自治を認める (指令を受けず、直轄から外れる)。忠誠度 +20、その間の目標 +15` },
-        { k: 'refuse', label: '拒む', note: `最後通牒になる。忠誠度 −10` },
+        { k: 'accept', label: 'のむ', note: kind === 'tax' ? JA`${CONCESSION_YEARS}年朝貢を免除する。忠誠度 +20、その間の目標 +15` : JA`${CONCESSION_YEARS}年自治を認める (指令を受けず、直轄から外れる)。忠誠度 +20、その間の目標 +15` },
+        { k: 'refuse', label: '拒む', note: JA`最後通牒になる。忠誠度 −10` },
         { k: 'awe', label: '拒んで威圧する', note: '最後通牒になる。すぐ太陽系から威圧の艦隊 (推定独立軍の2倍) を送る。忠誠度 −5' },
       ] });
-    this.event('demand', id, `${name} が${this.homeName()}に${what}を求めた (返事は光速で ${d.toFixed(1)} 年かかる)`);
+    this.event('demand', id, JA`${name} が${this.homeName()}に${what}を求めた (返事は光速で ${d.toFixed(1)} 年かかる)`);
     });
   }
   grantDemand(id, gv) {
@@ -397,15 +407,21 @@
     gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 20);
     gv.unrest = { stage: 0 };
     this.attend(id);
-    this.event('politics', id, `${this.system(id).name} の要求 (${this.demandText(u.kind || 'tax')}) が認められ、不満が収まった`, true);
+    this.event('politics', id, JA`${this.system(id).name} の要求 (${this.demandText(u.kind || 'tax')}) が認められ、不満が収まった`, true);
   }
   refuseDemand(id, gv, why, mode = 'refuse') {
     gv.unrest = { stage: 3, since: this.year, end: this.year + ULTIMATUM_YEARS, kind: gv.unrest?.kind };
     gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - (mode === 'refuse' ? 10 : 5));
     if (mode === 'suppress') gv.fear = Math.min(100, (gv.fear || 0) + ((this.garrison[id] || 0) > 0 ? 25 : 10));
     // 拒むことは関与にならない (放っておかれた年数は戻らない。最後通牒を収めるには、別に関与を届けて忠誠度を戻す)
-    this.event('politics', id, `${this.system(id).name}: ${why}。最後通牒を突きつけた — ${Math.round(this.year + ULTIMATUM_YEARS)}年までに態度が変わらなければ独立を宣言する`);
+    this.event('politics', id, JA`${this.system(id).name}: ${why}。最後通牒を突きつけた — ${Math.round(this.year + ULTIMATUM_YEARS)}年までに態度が変わらなければ独立を宣言する`);
   }
+  // 国 r に請求権を持つ国 (RECLAIM。r が独立する前に属していた国で、まだ国として残り、1 世代たっていない)。なければ null
+  claimBy(r) {
+    const c = this.govs[r]?.claim;
+    return c && c.until > this.year && this.isColonized(c.by) && this.realmOf(c.by) === c.by ? c.by : null;
+  }
+  claimBonus(root, r) { return this.claimBy(r) === root ? RECLAIM.bonus : 0; }
   declareIndependence(id) {
     const gv = this.gov(id);
     const formerRealm = this.realmOf(id);
@@ -415,13 +431,14 @@
       .map((t) => `${t.label} −${(-t.v).toFixed(0)}`).join('・');
     const unionEnd = !!gv.unionEnd;
     delete gv.unionEnd;
-    const cause = unionEnd ? '。継承の危機で同君連合が解けた (継承は従属国が握っていた)' : `。忠誠度 ${Math.round(gv.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(gv.fear || 0)}・友好度 ${Math.round(gv.friend || 0)}${why ? ` (主な原因: ${why})` : ''}`;
+    const cause = unionEnd ? '。継承の危機で同君連合が解けた (継承は従属国が握っていた)' : JA`。忠誠度 ${Math.round(gv.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(gv.fear || 0)}・友好度 ${Math.round(gv.friend || 0)}${why ? JA` (主な原因: ${why})` : ''}`;
     gv.lord = null;
     gv.independent = true;
     gv.loyalty = 0;
     gv.fear = 0;
     gv.friend = 0;
     gv.unrest = { stage: 0 };
+    if (formerRealm !== id) gv.claim = { by: formerRealm, until: this.year + GENERATION_YEARS }; // 元の国の請求権 (RECLAIM)
     if (this.tech[formerRealm] && !this.tech[id]) this.tech[id] = { A: { ...this.tech[formerRealm].A } }; // 技術は元の国のものを持っていく
     if (!this.isHuman(id)) (this.aif ??= {})[id] = { ...this.fiscalFor(formerRealm, id) }; // 財政 (税率など) も元の国のものを引き継ぐ (制度は続く)
     const reg = REGIMES[regimeKey(gv)];
@@ -434,7 +451,7 @@
     delete gv.lord2;
     delete gv.jointCut;
     delete gv.arrears;
-    for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') { d.state = 'done'; d.void = true; }
+    for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') this.voidDecision(d);
     this.asRealm(formerRealm, () => {
       this.stats.indepFromEarth++;
       this.councilAdd(-8);
@@ -442,12 +459,12 @@
     });
     const members = this.colonizedSystems().filter((x) => this.realmOf(x.id) === id);
     const followers = members.length - 1;
-    // 地球の国からの独立は、半々の確率で、また地球の艦隊が駐留していれば必ず、そのまま戦争 (独立戦争) になる
-    const human = this.isHuman(formerRealm);
-    const present = human && members.some((x) => this.earthFleetAt(x.id, formerRealm) >= 1);
-    // 戦争になる確率は統治体制ごとの歴史の割合 (ICOW)。ゲーム版は艦隊が駐留していればかならず戦争になる。自治領は戦争なしで独立する
-    const war = human && !peaceful && ((ED.garrisonWar && present) || this.rand() < (reg.war ?? VIOLENT_SHARE));
-    this.lastIndependence = { id, war, p: peaceful ? 0 : reg.war ?? VIOLENT_SHARE, regime: reg.id || null }; // 測る道具 (tools/secession.js) のため。AI の国どうしの独立は戦争の判定をしないので、確率 p も残す
+    // 独立は、統治体制ごとの歴史の割合 (ICOW) で、そのまま戦争 (独立戦争) になる。元の国が AI の国でも同じ (回 SE5・B-028。前は地球の国からの独立だけ)
+    const seat = this.isSeat(formerRealm); // 席を持つ国 (人間の国と AI の国。回 SE5)
+    const present = seat && members.some((x) => this.earthFleetAt(x.id, formerRealm) >= 1);
+    // ゲーム版は、元の国の艦隊が駐留していればかならず戦争になる。自治領は戦争なしで独立する
+    const war = !peaceful && ((seat && ED.garrisonWar && present) || this.rand() < (reg.war ?? VIOLENT_SHARE));
+    this.lastIndependence = { id, war, p: peaceful ? 0 : reg.war ?? VIOLENT_SHARE, regime: reg.id || null }; // 測る道具 (tools/secession.js) のため。確率 p も残す
     let raised = 0;
     const clashes = [];
     if (war) {
@@ -464,23 +481,23 @@
         if (earth >= 1) clashes.push([x.id, earth]);
       }
     }
-    this.event('politics', id, `${this.system(id).name} が ${this.system(lord).name} への従属をやめ、${peaceful ? `${reg.label}から交渉で` : ''}独立を宣言した${followers ? ` (従属する ${followers} 星系も従う)` : ''}${cause}${war ? `。${this.realmName(formerRealm)}と戦争状態に入った (独立軍 ${raised} 艦隊)` : ''}`);
+    this.event('politics', id, JA`${this.system(id).name} が ${this.system(lord).name} への従属をやめ、${peaceful ? JA`${reg.label}から交渉で` : ''}独立を宣言した${followers ? JA` (従属する ${followers} 星系も従う)` : ''}${cause}${war ? JA`。${this.realmName(formerRealm)}と戦争状態に入った (独立軍 ${raised} 艦隊)` : ''}`);
     for (const [x, earth] of clashes) this.startBattle(x, formerRealm, earth, 0);
   }
   // 指令が届いたとき: 地球の国の外なら拒否、忠誠度が50未満なら (50−忠誠度)/50 の確率で拒否
   obeys(id, act = null) {
     if (id === this.cap) return { ok: true };
-    if (this.realmOf(id) !== this.cap) return fail(`${this.realmName(this.cap)}に属していないので従わない`);
+    if (this.realmOf(id) !== this.cap) return fail(JA`${this.realmName(this.cap)}に属していないので従わない`);
     const gv = this.gov(id);
     const loyalty = gv.loyalty ?? LOYALTY_START;
-    if ((gv.autonomy || 0) > this.year) return fail(`自治を認められているので従わない (${Math.round(gv.autonomy)}年まで)`);
+    if ((gv.autonomy || 0) > this.year) return fail(JA`自治を認められているので従わない (${Math.round(gv.autonomy)}年まで)`);
     if (gv.direct) { gv.orders = (gv.orders || 0) + 1; return { ok: true }; } // 直轄の星系はかならず従う
     const reg = REGIMES[regimeKey(gv)];
-    if (reg.noOrders && !['rule', 'bundle', 'jointcut', 'depose'].includes(act)) return fail(`${reg.label}なので指令を受けない (統治体制・約定・任免の指令だけは受ける)`);
+    if (reg.noOrders && !['rule', 'bundle', 'jointcut', 'depose'].includes(act)) return fail(JA`${reg.label}なので指令を受けない (統治体制・約定・任免の指令だけは受ける)`);
     const at = reg.refuseAt || 50; // 型ごと (実態で従属国が握る項目が多いほど、高い忠誠度でも拒む)
     if (loyalty < at && this.rand() < (at - loyalty) / at) {
       gv.loyalty = Math.max(0, loyalty - 2);
-      return fail(`忠誠度が低く (${Math.round(loyalty)}) 指令を拒否した`);
+      return fail(JA`忠誠度が低く (${Math.round(loyalty)}) 指令を拒否した`);
     }
     gv.orders = (gv.orders || 0) + 1;
     return { ok: true };
@@ -500,9 +517,13 @@
   // 指令に要る政治力。艦隊への指令・自動の指令・太陽系の中の行動は0。直轄の星系は半分
   pcCost(act, d) {
     if (d.auto || d.awe || d.aweBack || PC_FREE_ACTS.has(act)) return 0;
+    if (act === 'declarewar' && this.modsOf(this.cap).warFree) return 0; // 好戦的は宣戦に政治力が要らない (回 SE8)
     if (act === 'declarewar' || act === 'peace' || act === 'pact') return PC_DIPLOMACY;
     if (act === 'policy') return POLICY_COST;
-    if (act === 'fiscal') { const c = this.fiscal || FISCAL_DEFAULT; return taxRateOf(d.tax ?? c.tax) !== taxRateOf(c.tax) || Number(d.ctax ?? c.ctax ?? 0) !== (c.ctax || 0) || Number(d.tariff ?? c.tariff ?? 0) !== (c.tariff || 0) || Number(d.rate ?? c.rate) !== c.rate || Number(d.deficit ?? c.deficit ?? 0) !== (c.deficit || 0) ? FISCAL_COST : 0; }
+    if (act === 'bill') return d.op === 'push' ? this.billPushCost(d.bill) : 0; // 審議中の法案を押す (回 SE7)
+    if (act === 'restructure') return RESTRUCTURE.pc; // 債務の再編 (経済。回 KE9)
+    if (act === 'fiscal') { const c = this.fiscalDraft(), r = this.fiscal || FISCAL_DEFAULT; return taxRateOf(d.tax ?? c.tax) !== taxRateOf(c.tax) || Number(d.ctax ?? c.ctax ?? 0) !== (c.ctax || 0) || Number(d.tariff ?? c.tariff ?? 0) !== (c.tariff || 0) || Number(d.rate ?? r.rate) !== r.rate || Number(d.deficit ?? c.deficit ?? 0) !== (c.deficit || 0) || ['ceil', 'ration', 'ban', 'embargo'].some((k) => d[k] !== undefined && JSON.stringify(d[k]) !== JSON.stringify(c[k] || {}))
+      || Number(d.pistar ?? r.pistar ?? FISCAL_DEFAULT.pistar) !== (r.pistar ?? FISCAL_DEFAULT.pistar) || Number(d.qe ?? r.qe ?? 0) !== (r.qe || 0) || Number(d.repress ?? c.repress ?? 0) !== (c.repress || 0) || Number(d.soe ?? c.soe ?? 0) !== (c.soe || 0) || Number(d.capctl ?? c.capctl ?? 0) !== (c.capctl || 0) ? FISCAL_COST : 0; } // 審議中なら出した法案と比べる (回 SE7)。価格統制と交易の規制・物価の目標・量的緩和・金融抑圧・国有化・資本規制も (回 KE9)
     const extra = act === 'decide' ? this.decisionOpt(d)?.pc || 0 : 0;
     const target = act === 'grant' || act === 'decide' ? Number(d.sys) : this.cmdTarget(act, d);
     if (target === undefined || target === null || target === this.cap || Number.isNaN(target)) return extra;
@@ -520,12 +541,12 @@
     if (tp) parts.push(['種族の特性 (賢明)', tp]);
     if (this.era?.bonus) parts.push(['前の時代の課題', 2 * this.era.bonus]);
     const d = this.directCount();
-    if (d) parts.push([`直轄の維持 (${d} 星系)`, -DIRECT_UPKEEP * d]);
+    if (d) parts.push([JA`直轄の維持 (${d} 星系)`, -DIRECT_UPKEEP * d]);
     return { parts, total: parts.reduce((k, [, v]) => k + v, 0) };
   }
   pcYearly() {
     this.pcLast = this.pcIncome().total;
-    this.pc = clamp(this.pc + this.pcLast, 0, PC_CAP);
+    this.pc = clamp(this.pc + this.pcLast, 0, this.pcCap());
   }
   // 主人の関与 (指令・援助・艦隊・視察・回答) が届いた: 放っておかれた年数が0に戻る
   attend(id) { if (!this.isHuman(id) && this.govs[id]) this.govs[id].attended = this.year; }

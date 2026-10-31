@@ -130,6 +130,7 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #home .hmenu .items { display:flex; flex-direction:column; gap:10px; width:min(360px, 100%); }
 #home .hmenu .items button { margin:0; min-height:56px; font-size:var(--fs4); text-align:left; padding:10px 24px; }
 #home .hmenu .items .resume small { display:block; font-size:var(--fs1); opacity:.85; }
+#home .hmenu .langs { display:flex; gap:8px; margin-top:16px; } #home .hmenu .langs button { margin:0; min-height:44px; } /* 表示の言語 (回 T1) */
 #home .hpage, #pick > .phead { max-width:1100px; margin:0 auto; }
 #home .phead, #pick .phead { display:flex; gap:16px; align-items:center; margin-bottom:16px; } #home .phead h2, #pick .phead h2 { margin:0; font-size:var(--fs4); } #home .phead button, #pick .phead button { margin:0; min-height:44px; }
 #home .hgo { position:sticky; bottom:-40px; background:var(--bg); padding:16px 0 24px; margin-top:16px; display:flex; gap:12px; align-items:center; justify-content:flex-end; flex-wrap:wrap; border-top:1px solid var(--line); }
@@ -210,7 +211,7 @@ ul.bodies li:hover, ul.bodies li.sel { background:#16213a; }
 .hz { color:#6fdc96; }
 .grade { padding:0 6px; border-radius:3px; background:#2a2f3d; }
 .grade.g1 { background:#5a4320; } .grade.g2 { background:#2f5a2a; } .grade.g3 { background:#1d6a5d; }
-.field { display:block; font-size:12px; color:var(--muted); } select { width:100%; margin-top:2px; background:#111a2e; color:var(--fg); border:1px solid #2a3a60; border-radius:4px; padding:4px; }
+.field { display:block; font-size:12px; color:var(--muted); margin-top:8px; } /* 上のボタンの枠に名前が食い込まないように (余白は 8 px の倍数。回 GA9) */ select { width:100%; margin-top:2px; background:#111a2e; color:var(--fg); border:1px solid #2a3a60; border-radius:4px; padding:4px; }
 .btns { display:flex; gap:8px; } .btns button { flex:1; text-align:left; }
 .btns.batch { flex-wrap:wrap; } .btns.batch button { flex:1 1 130px; }
 td .btns.batch { flex-wrap:nowrap; } td .btns.batch button { flex:0 0 auto; width:10em; } td .btns.batch button, td .btns.batch button small { white-space:normal; } td .btns.batch button small { display:block; }
@@ -283,7 +284,7 @@ header { gap:8px 16px; padding:8px 16px; flex-wrap:wrap; }
 header nav { display:flex; gap:8px; }
 header nav button { padding:8px 16px; }
 #status { display:flex; gap:16px; align-items:center; min-width:0; flex:1 1 320px; }
-#date { min-width:0; white-space:nowrap; }
+#date { min-width:0; white-space:nowrap; flex:none; } /* 日付は縮めない (英語の画面で資金と重なったため。回 T1) */
 #treasury { flex:1 1 auto; }
 #treasury .k { color:var(--muted); font-size:var(--fs1); margin-right:4px; }
 #treasury .v { font-variant-numeric:tabular-nums; }
@@ -308,7 +309,7 @@ header nav button { padding:8px 16px; }
 @media (max-width: 560px) {
   header { position:relative; }
   header h1 { display:none; }
-  header nav { order:1; flex:1 1 auto; gap:4px; }
+  header nav { order:1; flex:1 1 auto; gap:4px; flex-wrap:wrap; min-width:0; } /* 幅 390 px でタブが 5 つ並ばないときは折り返す (前は「候補地」がはみ出し、ページの幅が 409 px になった。回 GA9) */
   header nav button { flex:1 1 auto; padding:8px 2px; min-width:44px; white-space:nowrap; }
   #memobtn { padding:8px 4px; min-width:44px; }
   #ctrl { display:contents; }
@@ -377,6 +378,7 @@ details.help[open] > summary { margin-bottom:8px; }
 /* 拡大縮小は右下 (知らせの帯は左上)。凡例はその下 */
 #zoom { left:auto; right:8px; bottom:64px; }
 #zoom button { font-size:var(--fs4); }
+#zoom button small { display:block; font-size:var(--fs1); line-height:1.2; } #zoom button small .ico, #zoom button > .ico { margin:0; }
 #zoom #vassalbtn { font-size:var(--fs2); }
 #legend { right:8px; bottom:8px; }
 #rail { max-height:calc(65% - 16px); }
@@ -418,6 +420,10 @@ body.nosel aside { display:none; }
 #sky::after { content:""; position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 45%, rgba(11,12,13,.6) 100%); }
 .council { margin:4px 0 8px; max-width:420px; }
 .council svg { display:block; width:100%; height:auto; }
+/* 財政のグラフ (回 GA9・B-059): 小さな図を並べる。縦 854 px でも横にはみ出さない */
+.fcharts { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:8px; margin:4px 0 8px; }
+.fchart { margin:0; } .fchart figcaption { font-size:var(--fs1); color:var(--muted); } .fchart > svg { display:block; width:100%; height:auto; font-family:var(--font-num); }
+.fkey { display:inline-flex; align-items:center; gap:4px; margin-right:12px; color:var(--fg); } .fkey svg { width:18px; height:6px; }
 .council .num { font-family:var(--font-num); }
 .council figcaption { font-size:var(--fs1); color:var(--muted); display:flex; gap:6px; align-items:center; justify-content:center; }
 .council .sw { display:inline-block; width:10px; height:10px; border-radius:50%; } .council .sw.own { background:var(--own); } .council .sw.opp { background:var(--enemy); margin-left:10px; }
@@ -516,6 +522,7 @@ h1, #empire h2, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url(#wo
         <button id="sigbtn" title="地図に光速の通信 (物資移送要求・指令・朝貢・送金) をどう描くか">通信: 表示しない</button>
         <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
         <button id="fxbtn" title="文字がときどき色ずれしてぶれる">画面の動き: 入</button>
+        <button id="langbtn" translate="no">🌐 English</button>
         <span id="savestat" class="muted"></span>
         <span id="credits" class="muted">背景画像: 天の川の星図 NASA/Goddard Space Flight Center Scientific Visualization Studio・Gaia DR2: ESA/Gaia/DPAC ／ 北アメリカ星雲 NASA/JPL-Caltech ／ 星系ごとの背景 NASA, ESA, JPL-Caltech, STScI ほか ／ アイコン: game-icons.net (Lorc, Delapouite ほか, CC BY 3.0)、Font Awesome・Solar・Streamline (CC BY 4.0)、Material・MDI・MingCute (Apache 2.0)・Tabler・Boxicons・Lucide Lab・Pinhead ほか、恒星・惑星はこのゲームで描いたもの (詳しくは README)</span>
       </div>

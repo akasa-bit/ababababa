@@ -29,12 +29,17 @@
   // 政府の収支の表 (led) に載せるものは earn を通す
   cash(kind, v, acct) {
     let t;
-    if (acct.gov !== undefined) { this.gov(acct.gov).credits += v; t = 'gov'; }
+    if (acct.gov !== undefined) {
+      const gv = this.gov(acct.gov);
+      gv.credits += v; t = 'gov';
+      if (kind === 'build') gv.bld = (gv.bld || 0) + v; // 政府の建設も収支の表に (支出の 10 機能の経済業務。回 KE8・B-007)。建設は earn を通らず、刻みの中で帳簿をならしたあとにも払うので、次にならすまでためておく
+    }
     else if (acct.hh !== undefined || acct.pv !== undefined) { bankMove(this.gov(acct.hh ?? acct.pv), 'hh', v, 'hloan'); t = 'hh'; }
     else if (acct.fm !== undefined) { bankMove(this.gov(acct.fm), 'fm', v); t = 'fm'; }
     else if (acct.nat !== undefined) { bankMove(this.natives[acct.nat], 'cr', v); t = 'nat'; }
     else { acct.way[acct.f] = (acct.way[acct.f] || 0) + v; t = 'way'; }
     if (MONEY_AUDIT) { const f = (MONEY_AUDIT[kind] ??= {}); f[t] = (f[t] || 0) + v; }
+    if (v > 0 && (t === 'hh' || t === 'fm') && GOV_BUY.has(kind)) { const gv = this.govs[acct.hh ?? acct.pv ?? acct.fm]; if (gv) gv.kB = (gv.kB || 0) + v; } // 政府が民間から買った分 (GDP。会社の資本の目当て。回 KE6。保存に入るよう星系の政府に持つ)
   }
   // 運ぶ途中の額を受け手へ渡す (受け手の政府がなければ送り手へ返す)。渡した額を返す
   release(kind, q, f, to, back) {

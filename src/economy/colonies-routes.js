@@ -23,14 +23,14 @@
   // 国家方針が整備期なら、建設費 (資金) が25%安い
   upgradeCost(c, fac) {
     const k = GM.pow(2, c.lv[fac]);
-    const f = this.policyAt(c.sys) === 'consolidate' ? 0.75 : 1;
+    const f = (this.policyAt(c.sys) === 'consolidate' ? 0.75 : 1) * this.modsOf(c.sys).build; // 勤勉は ×0.75 (回 SE8)
     return { credits: Math.round((100 + 0.05 * c.pop) * k * f), metal: Math.round(50 * k) };
   }
   upgrade(c, fac) {
     if (c.lv[fac] >= FACILITY_MAX[fac]) return fail('最大レベル');
     const col = colKey(c);
     if (this.pending((j) => j.type === 'upgrade' && j.col === col && j.fac === fac)) return fail('建設中');
-    return this.order(this.upgradeCost(c, fac), c.sys, { type: 'upgrade', col, fac, label: `${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` });
+    return this.order(this.upgradeCost(c, fac), c.sys, { type: 'upgrade', col, fac, label: JA`${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` });
   }
 
   // --- 交易路 ---
@@ -72,7 +72,7 @@
   shipyard(o, cost) {
     if (this.stockOf(o).hitech >= cost.hitech) return { id: o, t: 0 };
     const { dist } = this.reach(o);
-    for (const s of this.reachSorted(o)) if (!this.tradeBlocked(o, s) && this.stockOf(s).hitech >= cost.hitech) return { id: s, t: dist[s] };
+    for (const s of this.reachSorted(o)) if (!this.tradeBlocked(o, s) && !this.tradeBarred(o, s, 'hitech') && this.stockOf(s).hitech >= cost.hitech) return { id: s, t: dist[s] };
     return { id: o, t: 0 };
   }
   // 交易路 r に n 隻の輸送船を足す。pay = 払う帳簿 ({ gov: 星系 } か { fm: 星系 })
@@ -91,14 +91,14 @@
     if (!paid.ok) return paid;
     const r = { id: this.nextShipId++, a, b, lv: 1, ships: 0, transit: [zeroRes(), zeroRes()], vol: [0, 0], built: this.year, by: a };
     this.routes.push(r);
-    this.message(`${this.system(a).name} ⇄ ${this.system(b).name} の交易路を開設した`, a);
+    this.message(JA`${this.system(a).name} ⇄ ${this.system(b).name} の交易路を開設した`, a);
     // 最初の船 (片道 base の分) を、開いた星系の政府が造る。船ができるまでは送れない。造れなければ、運送業の会社があとで造る (routesYearly)
-    this.buyShips(r, this.shipsFor(r, SHIPPING.base), { gov: a }, { label: `${this.system(a).name} ⇄ ${this.system(b).name} の輸送船` });
+    this.buyShips(r, this.shipsFor(r, SHIPPING.base), { gov: a }, { label: JA`${this.system(a).name} ⇄ ${this.system(b).name} の輸送船` });
     return { ok: true };
   }
   upgradeRoute(r, tag = '') {
     if (this.pending((j) => j.type === 'route' && j.route === r.id)) return fail('拡張中');
-    return this.order(this.routeUpCost(r), r.a, { type: 'route', route: r.id, label: `${tag}${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路 Lv${r.lv + 1}` });
+    return this.order(this.routeUpCost(r), r.a, { type: 'route', route: r.id, label: JA`${tag}${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路 Lv${r.lv + 1}` });
   }
   routeOwner(r) { const o = r.by ?? r.a; return this.isColonized(o) ? o : this.isColonized(o === r.a ? r.b : r.a) ? (o === r.a ? r.b : r.a) : null; } // 船の持ち主 (開いた星系。いなくなっていれば反対の端)
   routeUse(r) { const c = this.routeCap(r); return c > 0 ? Math.max(r.vol[0], r.vol[1]) / c : r.vol[0] + r.vol[1] > 0 ? Infinity : 0; }
@@ -116,7 +116,7 @@
       if (o === null || this.pending((j) => j.type === 'ships' && j.route === r.id)) continue;
       // 使われている交易路は港の容量の分まで、使われていない交易路 (使われた割合が idle 未満) は片道 base の分まで船をそろえる (古くなった分と、港が広がった分)
       const n = this.shipsFor(r, use >= SHIPPING.idle ? this.portCap(r) : SHIPPING.base) - r.ships;
-      if (n > 0) this.buyShips(r, n, { fm: o }, { label: `${this.system(r.a).name} ⇄ ${this.system(r.b).name} の輸送船` });
+      if (n > 0) this.buyShips(r, n, { fm: o }, { label: JA`${this.system(r.a).name} ⇄ ${this.system(r.b).name} の輸送船` });
     }
     for (const r of this.routes) {
       const use = this.routeUse(r);
@@ -124,7 +124,7 @@
       if (use < 0.9) continue;
       if (!r.hot) {
         r.hot = true;
-        if (this.isHuman(this.realmOf(r.a)) || this.isHuman(this.realmOf(r.b))) this.event('trade', r.a, `${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路が混んでいる (容量の ${pct(use)})`);
+        if (this.isHuman(this.realmOf(r.a)) || this.isHuman(this.realmOf(r.b))) this.event('trade', r.a, JA`${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路が混んでいる (容量の ${pct(use)})`);
       }
       const gv = this.gov(r.a);
       const owner = this.players[this.playerOf(this.realmOf(r.a))];

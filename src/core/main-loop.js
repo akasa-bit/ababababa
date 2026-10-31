@@ -60,7 +60,7 @@ function frame(now) {
     else if (app.view === 'system') systemView.draw(w, h);
   }
 
-  const dateText = `西暦 ${Math.floor(game.year)}年 ${Math.floor((game.year % 1) * 12) + 1}月`;
+  const dateText = TR`西暦 ${Math.floor(game.year)}年 ${Math.floor((game.year % 1) * 12) + 1}月`;
   if (dateText !== lastDateText) { lastDateText = dateText; $('date').textContent = dateText; }
   acc += dt;
   // 0.5 秒ごとの更新 (右の欄・ログ・知らせの帯・収支)。年が進んでいない・操作もない・薄れていく知らせもないときは省く
@@ -73,7 +73,7 @@ function frame(now) {
     if (!SHEETS[app.view]) setHtml($('rail'), railHtml(game));
     setHtml($('treasury'), treasuryHtml(game));
     setHtml($('ledger'), ledgerHtml(game));
-    setHtml($('sec-ledger').firstElementChild, `${ico('credits')}${ME.gov}の収支`);
+    setHtml($('sec-ledger').firstElementChild, TR`${ico('credits')}${ME.gov}の収支`);
     if (hasFleetSelection()) renderFleetBar();
     $('skipbtn').classList.toggle('on', !!app.skip);
     if (game.ended && !game.endShown) { game.endShown = true; setSpeed(0); showEnd(); }
@@ -81,7 +81,7 @@ function frame(now) {
     const unseen = game.knownEvents().filter((e) => !e.good && evShown(e.kind) && (e.seen ?? e.year) > (app.seenTime ?? -Infinity)).length;
     // 決めることがあれば、イベントのタブに印 (⚑) をつける
     const dec = game.visibleDecisions().length;
-    const evLabel = `${ico('events')}イベント${unseen ? ` (${unseen})` : ''}${dec ? ` ⚑${dec}` : ''}`;
+    const evLabel = TR`${ico('events')}イベント${unseen ? ` (${unseen})` : ''}${dec ? ` ⚑${dec}` : ''}`;
     if (lastEvLabel !== evLabel) { lastEvLabel = evLabel; $('tab-events').innerHTML = evLabel; }
     $('tab-events').classList.toggle('hot', dec > 0);
     app.dirty = true;

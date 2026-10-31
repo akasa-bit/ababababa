@@ -133,10 +133,9 @@ function judge(rows) {
   const res = await runAll(jobs, threads);
   const rows = types.map((type) => {
     const ties = res.filter((_, i) => jobs[i].force === type).flat();
-    // 始めの離反の倍率: 型の倍率 × 法と実態の差の項 (始めは法 = 型の法、実態 = 型の実態)。型の倍率は型の平均の差のときの値なので、差の項で打ち消しあう
+    // 始めの離反の倍率: 型の倍率だけ (始めは法 = 型の法、実態 = 型の実態。法と実態の差は型の始めから数えるので (QD-40 = a)、差の項は 1)
     const vt = VASSAL_DATA.types[type === 'direct' || type === 'encomienda' ? 'T20' : type];
-    const gap0 = vt ? [...vt.law].reduce((k, c, i) => k + (c !== vt.fact[i] ? 1 : 0), 0) : 0;
-    const hr0 = vt ? (type === 'encomienda' ? 1.6 : vt.hr) * (gap0 !== vt.gap ? Math.pow(VASSAL_DATA.model[0].hr, gap0 - vt.gap) : 1) : null;
+    const hr0 = vt ? (type === 'encomienda' ? 1.6 : vt.hr) : null;
     const row = { type, label: label(type), hr0, tributeRate: type === 'encomienda' ? 0.4 : VASSAL_DATA.types[type === 'direct' ? 'T20' : type]?.tribute ?? null };
     for (const b of BANDS) {
       const ts = ties.filter((t) => t.band === b);
@@ -151,7 +150,7 @@ function judge(rows) {
   if (!skipForced) {
     console.log(`## 従属国の型のティアリスト (B-070)\n`);
     console.log(`銀河 ${nS} × ${years} 年 × ${nations} か国、型ごとに同じシード。すべての国の新しい家臣をその型にした。家臣 1 つあたり、結ばれてから ${horizon} 年のうちの数 (${horizon} 年を見届けられた結びつきだけ)。`);
-    console.log(`区分は家臣と主人の国の首都の光年: 陸続き < ${sim.tables.BUNDLE.aiDist[0]}・近い海 < ${sim.tables.BUNDLE.aiDist[1]}・遠い海 (AI が型を選ぶときと同じ)。★ = その区分でパレート最適 (朝貢の中央値と残った年数の両方で上回る型がない)。始めの離反の倍率 = 型の倍率 × 法と実態の差の項 (結ばれたときの値)。\n`);
+    console.log(`区分は家臣と主人の国の首都の光年: 陸続き < ${sim.tables.BUNDLE.aiDist[0]}・近い海 < ${sim.tables.BUNDLE.aiDist[1]}・遠い海 (AI が型を選ぶときと同じ)。★ = その区分でパレート最適 (朝貢の中央値と残った年数の両方で上回る型がない)。始めの離反の倍率 = 型の倍率 (結ばれたときは法と実態の差が型の始めのままなので、差の項は 1)。\n`);
     console.log(`| 型 | 朝貢の割合 | 始めの離反の倍率 | ${BANDS.map((b) => `${BAND_LABEL[b]}: 件数・朝貢 cr (中央値 / 平均)・残った年・独立 %`).join(' | ')} |`);
     console.log(`|---|---|---|${BANDS.map(() => '---').join('|')}|`);
     for (const r of rows) {

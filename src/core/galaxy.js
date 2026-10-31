@@ -210,7 +210,7 @@ function finalizeBody(body, star) {
   if (rad) {
     body.rad = rad;
     if (ED.physics.flare === true && rad.surf > RADIATION.limitSv && body.settle.grade === 3) { // 地表で暮らせないので、地下の街 (適性 2) の扱い (ゲーム版は表示だけで、適性は変えない)
-      body.settle = { ...body.settle, grade: 2, notes: [...body.settle.notes, `地表の被曝 ${(rad.surf * 1000).toFixed(0)} mSv/年`] };
+      body.settle = { ...body.settle, grade: 2, notes: [...body.settle.notes, JA`地表の被曝 ${(rad.surf * 1000).toFixed(0)} mSv/年`] };
     }
   }
   return body;
@@ -243,7 +243,7 @@ function generatePlanets(rng, star, sysName, maxA) {
   bodies.forEach((b) => {
     if (b.type === 'belt') {
       b.id = `belt${b.a.toFixed(2)}`;
-      b.name = `${sysName} 小惑星帯`;
+      b.name = JA`${sysName} 小惑星帯`;
     } else {
       const l = String.fromCharCode(letter++);
       b.id = l;
@@ -318,6 +318,7 @@ function makeNamer(rng) {
       let name = k(a, SYL_A, KANA_A) + k(a2, SYL_A, KANA_A) + k(b, SYL_B, KANA_B) + KANA_C[SYL_C.indexOf(c)];
       for (let i = 2; kana.has(name); i++) name = `${name.replace(/ \d+$/, '')} ${i}`;
       kana.add(name);
+      nameAlias(name, n); // 英語の画面では英字の形で出す (outward/i18n.js。用語集の names.systems)
       return name;
     }
   };
@@ -391,6 +392,47 @@ const GALAXY_GEN = 4;
 // 星が多すぎて地図を操作できなかったため (ユーザーの指示)
 const THIN_SLAB = 2;
 const ETA_EXTRA = 0.45;
+// 星系の天体に記号 (b, c, …) と名前を付け、FGK 型の主星にはハビタブルゾーンの地球型惑星を確率 ETA_EXTRA で足す (etaKey = その乱数列の名前。null なら足さない)。
+// 実在の銀河と自動生成の銀河が使う。既知の惑星は自分の記号のまま
+function nameBodies(name, stars, primary, maxA, all, known, etaKey) {
+  const bodies = all.sort((p, q) => p.a - q.a);
+  const used = new Set(known.map((k) => k.known.trim().split(/\s+/).pop()));
+  let letter = 'b'.charCodeAt(0);
+  for (const b of bodies) {
+    if (b.type === 'belt') continue;
+    let l = b.known ? b.known.trim().split(/\s+/).pop() : '';
+    if (!b.known) { while (used.has(String.fromCharCode(letter))) letter++; l = String.fromCharCode(letter++); used.add(l); }
+    b.id = l;
+    b.name = `${name} ${l}`;
+    finalizeBody(b, b.host ? stars.find((x) => x.id === b.host) : primary);
+  }
+  if (etaKey && 'FGK'.includes(primary.cls) && /[^I]V$/.test(primary.label)) {
+    const er = new Rng(hashSeed(etaKey));
+    const hz = habitableZone(primary);
+    const a = er.logUniform(hz.inner, hz.outer);
+    if (er.chance(ETA_EXTRA) && a <= maxA && bodies.every((b) => Math.abs(GM.log(b.a / a)) > GM.log(1.3))) {
+      const mass = er.logUniform(0.1, 4.5); // 0.5〜1.5 地球半径になる質量
+      const b = { type: 'rocky', a, phase: er.range(0, Math.PI * 2), mass, radius: mass < 1 ? GM.pow(mass, 0.3) : GM.pow(mass, 0.27), albedo: er.range(0.1, 0.45) };
+      b.pressure = atmosphere(er, b.mass, b.radius, eqTemp(primary.lum, a, b.albedo));
+      b.water = GM.pow(er.next(), 1.5);
+      while (used.has(String.fromCharCode(letter))) letter++;
+      b.id = String.fromCharCode(letter);
+      b.name = `${name} ${b.id}`;
+      finalizeBody(b, primary);
+      bodies.push(b);
+      bodies.sort((p, q) => p.a - q.a);
+    }
+  }
+  return bodies;
+}
+// 星の行 (REAL_STARS の rows) から恒星を作る。phase は rng で引く。flareCat = フレアの表を引く実在の星の番号 (自動生成でも、型を借りた星の値を使う)
+function starsOf(rng, name, rows, flareCat) {
+  return rows.map(([cls, label, mass, lum, temp, radius, sep, own], k) => ({
+    id: `s${k}`, name: own && k ? own : rows.length > 1 ? `${name} ${'ABCDEFG'[k]}` : name, cls, label, mass, lum, radius, temp,
+    color: tempToColor(temp), wd: cls === 'WD', sep: k ? Math.max(sep, 1) : 0, phase: rng.range(0, Math.PI * 2),
+    ...(ED.physics.flare && FLARES ? { flare: cls === 'M' ? FLARES.stars[flareCat]?.[k] ?? 0 : 'FGK'.includes(cls) ? FLARES.sun : 0 } : {}),
+  }));
+}
 function generateRealGalaxy(seed, gen = 1) {
   const rng = new Rng(hashSeed(`${seed}/real`));
   const namer = makeNamer(rng);
@@ -399,11 +441,7 @@ function generateRealGalaxy(seed, gen = 1) {
   REAL_STARS.s.forEach(([x, y, z, ja, cat, rows, pls], i) => {
     if (gen >= 3 && Math.abs(z) > THIN_SLAB) return; // 板の外の星は使わない (名前も乱数も使わない)
     const name = ja || namer();
-    const stars = rows.map(([cls, label, mass, lum, temp, radius, sep, own], k) => ({
-      id: `s${k}`, name: own && k ? own : rows.length > 1 ? `${name} ${'ABCDEFG'[k]}` : name, cls, label, mass, lum, radius, temp,
-      color: tempToColor(temp), wd: cls === 'WD', sep: k ? Math.max(sep, 1) : 0, phase: rng.range(0, Math.PI * 2),
-      ...(ED.physics.flare && FLARES ? { flare: cls === 'M' ? FLARES.stars[cat]?.[k] ?? 0 : 'FGK'.includes(cls) ? FLARES.sun : 0 } : {}),
-    }));
+    const stars = starsOf(rng, name, rows, cat);
     const primary = stars[0];
     const maxA = stars.length > 1 ? Math.max(0.1, stars[1].sep / 3) : 100;
     // 既知の惑星は、実際に回っている恒星で温度などを決める (プロキシマ b は伴星のプロキシマを回る)
@@ -411,34 +449,7 @@ function generateRealGalaxy(seed, gen = 1) {
     const known = pls.map((p) => Object.assign(knownPlanet(rng, p, hostOf(p)), p[4] ? { host: stars[p[4]].id } : {}));
     // 手続きの惑星は、既知の惑星と軌道が近すぎるもの (軌道半径の比 1.4 以内) を除いて足す
     const more = generatePlanets(rng, primary, name, maxA).filter((b) => known.every((k) => Math.abs(GM.log(b.a / k.a)) > GM.log(1.4)));
-    const bodies = [...known, ...more].sort((p, q) => p.a - q.a);
-    const used = new Set(known.map((k) => k.known.trim().split(/\s+/).pop()));
-    let letter = 'b'.charCodeAt(0);
-    for (const b of bodies) {
-      if (b.type === 'belt') continue;
-      let l = b.known ? b.known.trim().split(/\s+/).pop() : '';
-      if (!b.known) { while (used.has(String.fromCharCode(letter))) letter++; l = String.fromCharCode(letter++); used.add(l); }
-      b.id = l;
-      b.name = `${name} ${l}`;
-      finalizeBody(b, b.host ? stars.find((x) => x.id === b.host) : primary);
-    }
-    if (gen >= 2 && 'FGK'.includes(primary.cls) && /[^I]V$/.test(primary.label)) {
-      const er = new Rng(hashSeed(`${seed}/eta/${i}`));
-      const hz = habitableZone(primary);
-      const a = er.logUniform(hz.inner, hz.outer);
-      if (er.chance(ETA_EXTRA) && a <= maxA && bodies.every((b) => Math.abs(GM.log(b.a / a)) > GM.log(1.3))) {
-        const mass = er.logUniform(0.1, 4.5); // 0.5〜1.5 地球半径になる質量
-        const b = { type: 'rocky', a, phase: er.range(0, Math.PI * 2), mass, radius: mass < 1 ? GM.pow(mass, 0.3) : GM.pow(mass, 0.27), albedo: er.range(0.1, 0.45) };
-        b.pressure = atmosphere(er, b.mass, b.radius, eqTemp(primary.lum, a, b.albedo));
-        b.water = GM.pow(er.next(), 1.5);
-        while (used.has(String.fromCharCode(letter))) letter++;
-        b.id = String.fromCharCode(letter);
-        b.name = `${name} ${b.id}`;
-        finalizeBody(b, primary);
-        bodies.push(b);
-        bodies.sort((p, q) => p.a - q.a);
-      }
-    }
+    const bodies = nameBodies(name, stars, primary, maxA, [...known, ...more], known, gen >= 2 ? `${seed}/eta/${i}` : null);
     systems.push({ id: systems.length, name, cat, x, y, z, stars, bodies, real: true }); // 番号は並びの位置 (版 2 までは i + 1 と同じ)
   });
   const thin = gen >= 3;
@@ -447,6 +458,49 @@ function generateRealGalaxy(seed, gen = 1) {
   return galaxy;
 }
 
+// 自動生成の銀河 (kind = 'gen'。回 GA10・B-195。2026-10-23 の依頼 GA-3「選べるようにする」。既定は実在の星)。実在の銀河と同じ板 (±THIN_SLAB 光年) と同じ半径に、
+// 実在の星の表 (REAL_STARS。±17 光年の板・半径 53.8 光年) の密度 (星系の数 ÷ 体積) と主星の型の割合で星系を置く。
+//   星系の数 = 密度 × 体積を丸めた数。型ごとの数 = 型の割合 × 星系の数を最大剰余で丸める (目標 R04 の「密度 ±10%・型の割合 ±2 ポイント」に収まる)。
+//   星系の中身 (主星の型・連星・伴星の離れ) は、同じ型の実在の星系から 1 つ借りる (既知の惑星と固有の名前は借りない)。惑星は実在の銀河の未発見の惑星と同じ手続き。
+//   位置は板の中に一様 (ほかの星系から GEN_MIN 光年より近ければ引き直す)。名前はすべてカタカナ。太陽系は原点
+const GEN_MIN = 1; // [光年]
+function generateGenGalaxy(seed, gen) {
+  const rng = new Rng(hashSeed(`${seed}/gen`));
+  const namer = makeNamer(rng);
+  const sol = makeSol();
+  const systems = [{ id: 0, name: sol.name, x: 0, y: 0, z: 0, stars: [{ id: 's0', name: '太陽', ...sol.star, sep: 0, phase: 0 }], bodies: sol.bodies }];
+  const R = REAL_STARS.radius, all = REAL_STARS.s;
+  const n = Math.round((all.length / (Math.PI * R * R * 2 * REAL_STARS.slab)) * Math.PI * R * R * 2 * THIN_SLAB);
+  const byCls = {};
+  for (const row of all) (byCls[row[5][0][0]] ??= []).push(row);
+  const cls = Object.keys(byCls).sort(), quota = cls.map((k) => (byCls[k].length / all.length) * n), count = quota.map(Math.floor);
+  const order = cls.map((k, j) => j).sort((a, b) => quota[b] - count[b] - (quota[a] - count[a]) || a - b);
+  for (let j = 0, left = n - count.reduce((a, v) => a + v, 0); j < left; j++) count[order[j]]++;
+  const list = cls.flatMap((k, j) => Array(count[j]).fill(k));
+  for (let j = list.length - 1; j > 0; j--) { const k = Math.floor(rng.next() * (j + 1)); [list[j], list[k]] = [list[k], list[j]]; }
+  list.forEach((c, i) => {
+    let x, y, z;
+    for (let t = 0; t < 50; t++) {
+      const r = R * Math.sqrt(rng.next()), th = rng.range(0, 2 * Math.PI);
+      x = r * GM.cos(th); y = r * GM.sin(th); z = rng.range(-THIN_SLAB, THIN_SLAB);
+      if (systems.every((o) => GM.hypot(o.x - x, o.y - y, o.z - z) >= GEN_MIN)) break;
+    }
+    const [, , , , cat, rows] = rng.pick(byCls[c]);
+    const name = namer();
+    const stars = starsOf(rng, name, rows.map((r) => [...r.slice(0, 7), '']), cat);
+    const primary = stars[0], maxA = stars.length > 1 ? Math.max(0.1, stars[1].sep / 3) : 100;
+    const bodies = nameBodies(name, stars, primary, maxA, generatePlanets(rng, primary, name, maxA), [], gen >= 2 ? `${seed}/gen-eta/${i}` : null);
+    systems.push({ id: systems.length, name, x, y, z, stars, bodies });
+  });
+  const galaxy = { seed, kind: 'gen', gen, systems, radius: Math.max(...systems.map((s) => GM.hypot(s.x, s.y))), slab: THIN_SLAB, meanSpacing: 4 };
+  addExtras(galaxy);
+  return galaxy;
+}
+// 3 次元の銀河か (実在の星と自動生成。平面の銀河は古いセーブだけ)。地図の回す・傾けると、z のある距離に使う
+const is3D = (galaxy) => galaxy?.kind === 'real' || galaxy?.kind === 'gen';
+// セーブの項目 galaxy (銀河の作り方) から、作り直すときの kind (書いていなければ平面の古い銀河)
+const galaxyKindOf = (k) => (k === 'real' || k === 'gen' ? k : 'flat');
+
 function generateGalaxy(opts = {}) {
   const prev = GM;
   GM = (opts.gen ?? 1) >= 4 ? DMath : Math;
@@ -454,6 +508,7 @@ function generateGalaxy(opts = {}) {
 }
 function buildGalaxy({ seed = 1, starCount = 400, meanSpacing = 4, kind = 'flat', gen = 1 } = {}) {
   if (kind === 'real') return generateRealGalaxy(seed, gen);
+  if (kind === 'gen') return generateGenGalaxy(seed, gen);
   const rng = new Rng(typeof seed === 'number' ? seed : hashSeed(seed));
   const pts = scatter(rng, starCount, meanSpacing);
   const namer = makeNamer(rng);

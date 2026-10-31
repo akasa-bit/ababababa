@@ -15,7 +15,7 @@ function runCmd(g, pi, act, d) {
     if (r && (!r.ok || r.msg)) {
       const old = g.msgTo;
       if (g.players.length > 1) g.msgTo = pi;
-      g.message(r.ok ? r.msg : `できない: ${r.reason}`);
+      g.message(r.ok ? r.msg : JA`できない: ${r.reason}`);
       g.msgTo = old;
     }
     g.live = null; // 観戦モードの「いまの様子」を取り直す
@@ -49,6 +49,7 @@ function onPanelClick(e) {
   if (act === 'fleetsel') { app.fleetSel = new Set([sys]); app.fleetMove.clear(); app.fleetConfirm = null; app.setView('galaxy'); return renderFleetBar(); }
   if (act === 'gobody') { app.openSystem(sys); return app.selectBody(body); }
   if (act === 'etab') { app.empireTab = btn.dataset.t; app.dirty = true; return; }
+  if (act === 'chartspan') { app.chartSpan = Number(btn.dataset.n); app.dirty = true; return; } // 財政のグラフの期間 (経済。回 GA9・B-059)
   if (act === 'evfilter') { app.eventFilter = btn.dataset.f; app.dirty = true; return; }
   // 知らせの帯
   if (act === 'deselect') return app.deselect();
@@ -118,8 +119,15 @@ function onPanelChange(e) {
   else if (act === 'evkind') { EvPrefs.kinds[e.target.dataset.k] = e.target.checked; saveEvPrefs(); }
   else if (act === 'regimedefault') issue('set', { key: 'regime', value: v });
   else if (act === 'histtype') { app.histType = v; } // 史料の欄で読む型 (見るだけ)
+  else if (act === 'fiscalctl') { // 価格統制と交易の規制 (経済。回 KE9・B-008): 選んだ 1 つだけを変えた財政の法案を出す
+    const c = app.game.fiscalDraft(), { k, r } = e.target.dataset;
+    const o = { ...(c[k] || {}) };
+    if (k === 'ceil') { if (Number(v)) o[r] = Number(v); else delete o[r]; } else if (e.target.checked) o[r] = true; else delete o[r];
+    issue('fiscal', { [k]: o });
+    save();
+  }
   else if (act === 'fiscal') {
-    const c = app.game.fiscal || FISCAL_DEFAULT;
+    const c = app.game.fiscalDraft(); // 審議中の法案があれば、その値から (政治。回 SE7)
     const d = { tax: c.tax, ctax: c.ctax || 0, tariff: c.tariff || 0, rate: c.rate, deficit: c.deficit || 0, ...c.budget };
     const k = e.target.dataset.k;
     d[k] = Number(v);
@@ -127,6 +135,8 @@ function onPanelChange(e) {
     save();
   }
   else if (act === 'pvdesign') { issue('pvdesign', { sys: Number(e.target.dataset.sys), value: v }); save(); }
+  else if (act === 'design') { issue('design', { [e.target.dataset.k]: v }); save(); } // 入植船の設計 (船と戦争の ship/ships-ui.js。B-033)
+  else if (act === 'include') { issue('include', { sys: Number(e.target.dataset.sys), key: e.target.dataset.key, value: v }); save(); } // 直轄の星系の集団の権力への近さ (政治の politics/panels.js。B-020)
   else if (act === 'bundle') {
     // 約定の 1 項目の交渉は光速の指令 (政治力を使う)
     issue('bundle', { sys: Number(e.target.dataset.sys), item: e.target.dataset.item, value: v });

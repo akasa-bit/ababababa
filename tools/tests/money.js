@@ -18,7 +18,7 @@ if (require.main !== module) return;
 const path = require('path');
 const H = require(path.resolve(__dirname, '..', 'headless'));
 const [seed = '5', years = '150', nations = '0'] = process.argv.slice(2);
-const KINDS = ['tax', 'natives', 'upkeep', 'build', 'trade', 'import', 'tribute', 'grant', 'treaty', 'interest', 'welfare', 'security', 'military', 'education', 'public', 'wages', 'spend', 'ctax', 'tariff', 'default', 'pension', 'health', 'housing', 'dividend', 'freight', 'research', 'rdcredit'];
+const KINDS = ['tax', 'natives', 'upkeep', 'build', 'trade', 'import', 'tribute', 'grant', 'treaty', 'interest', 'welfare', 'security', 'military', 'education', 'public', 'wages', 'spend', 'ctax', 'tariff', 'default', 'pension', 'health', 'housing', 'dividend', 'freight', 'research', 'rdcredit', 'invest'];
 const sim = H.load(process.env.HTML ? { src: process.env.HTML } : {});
 const g = sim.newGame(seed, { nations: Number(nations) });
 const holdings = () => {
@@ -33,7 +33,7 @@ const holdings = () => {
   for (const st of Object.values(g.natives)) { h.nat += (st.cr || 0) - (st.loan || 0); loan += st.loan || 0; if (st.cr < 0 || st.loan < 0) h.bad = true; }
   h.loan = loan;
   for (const q of g.requests) h.way += (q.kind === 'trade' ? q.pre : q.kind === 'tribute' || q.kind === 'grant' ? q.amt : 0) || 0;
-  for (const d of g.decisions) h.way += d.cr || 0;
+  for (const p of g.players) for (const d of p.decisions || []) h.way += d.cr || 0; // どの席の決めることも (AI の国の席も。回 SE5)
   for (const s of g.ships) h.way += s.seed || 0;
   for (const j of g.projects) h.way += j.seed || 0;
   for (const r of g.refunds || []) h.way += r.v || 0; // 光速で届く途中の返金 (回 KE3)

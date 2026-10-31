@@ -23,6 +23,35 @@ const taxRateOf = (t) => (typeof t === 'number' ? t : MARKET.tax * (TAX_LEVELS[t
 const TAX_LOYALTY = -15, TAX_COUNCIL = -0.5;
 // 税の重さ k = (所得への税率 + 消費税) ÷ 標準。消費税は家計の買い物の値段に乗るので、家計にとっては所得への税と同じ重さと見る (関税は買い手の会社が払うので入れない)
 const burdenK = (f) => (taxRateOf(f.tax) + (f.ctax || 0)) / MARKET.tax;
+// 損の大きさと忠誠・議会 (回 KE8・B-012。docs/fiscal.md の 7): 家計の損 (標準の財政と比べた、家計の市場の所得に対する割合 ℓ) 1 あたり、家臣の忠誠度の目標 loyalty × ℓ・
+// 首都の議会の支持 年 council × ℓ。所得への税だけを変えたときに前の式 (TAX_LOYALTY × (k − 1)) と同じになる値 (−15 ÷ 15.5% = 所得の 1% の損で −0.97 点)。
+// ℓ = 所得への税 (税率 − 標準) + 消費税 (税率 × 買い物 ÷ 所得。買い物 ≈ 所得 − 所得への税) + 関税 (星系の関税の額 ÷ 家計の所得。値段を通して家計が負う)
+const LOSS = { loyalty: TAX_LOYALTY / MARKET.tax, council: TAX_COUNCIL / MARKET.tax };
+// 帰着 (回 KE8・B-012。docs/research/incidence.md): 手段ごとに、家計の損得が所得の 5 分位 (下 → 上) にどう分かれるか (合計に対する %)。
+//   tax = 所得への税 (英国 ONS「税と給付の家計の所得への効き」2023/24 の所得税)・ctax = 消費税 (OECD・韓国租税研究院 2014 の 19 か国の付加価値税)・
+//   tariff = 関税 (Reynolds 2021。米国の 2018〜20 年の関税の家計の負担)・firm = 会社の損得を負う持ち主 (米国財務省 2025 の法人税の分布)・
+//   welfare = 福祉 (世界銀行 ASPIRE の高所得国の社会扶助)・education = 教育 (Verbist ほか 2012 の OECD 27 か国)・
+//   rate = 政策金利を上げたときの家計の利子の純の得 (Tzamourani 2019 のユーロ圏の金利の差の持ち高を 5 分位に)。
+//   治安・軍事・研究の予算は首都の家計への賃金と買い付けなので、所得の分け前と同じ (GROUPS.quint) と見る
+const INCIDENCE = { tax: [3.2, 6.0, 11.1, 19.5, 60.3], ctax: [11.7, 15.2, 18.6, 22.5, 32.1], tariff: [8.8, 13.0, 15.9, 23.8, 38.4], firm: [0.6, 2.1, 4.8, 10.5, 82.0],
+  welfare: [26.6, 22.3, 19.4, 17.6, 14.1], education: [20.9, 20.6, 21.3, 19.8, 17.4], rate: [1.2, 10.4, 14.3, 21.0, 53.1] };
+// 行政の遅れ [年] (回 KE8・B-012): 決めてから首都で効くまで。遠い星系は、そのうえ知らせが光速で届くまで。
+//   tax・rdcredit = 税の法の変更 (Mertens & Ravn 2012 の米国の 70 件の税の変更のうち 37 件が 90 日より遅く、その中央値 6 四半期。90 日以内を半四半期と置いた平均)。
+//   ctax = 消費税の率の変更 (英国 2008 年の引き下げは 7 日・ドイツ 2020 年は 28 日の平均)、ctaxNew = 消費税を新しく入れる (準備に 18〜24 か月。Tait 1988・米国会計検査院 1993)。
+//   tariff = 関税の率の変更 (米国 2018 年の鉄鋼の関税は布告から 15 日)。budget = 予算 (次の会計年度から。決める時は年の中で一様とみて平均半年)。
+//   rate・cb = 中央銀行の決定 (次の日から)、deficit = 借りる上限 (首都の政府が決める)
+const ADMIN_LAG = { tax: 0.85, ctax: 0.05, ctaxNew: 1.75, tariff: 0.05, rate: 0, cb: 0, deficit: 0, rdcredit: 0.85, budget: 0.5, ceil: 0, ration: 0.15, ban: 0, embargo: 0, pistar: 0, qe: 0, repress: 0.5, soe: 0.47, capctl: 0 };
+//   ceil = 値段の上限 (米国 1971 年 8 月 15 日の 90 日の凍結は発表の日から。大統領令 11615)・ration = 配給 (英国の食料の配給は 1939 年 11 月の発表から 1940 年 1 月 8 日の始まりまで約 2 か月)・
+//   ban・embargo = 輸出禁止と禁輸 (大統領の布告で数日。米国 1962 年のキューバの禁輸は 2 月 3 日の布告から 2 月 7 日)
+//   soe = 国有化と民営化 (英国の石炭の国有化法は 1946 年 7 月 12 日に成立し、1947 年 1 月 1 日に移った。0.47 年)・capctl = 資本規制 (マレーシアの 1998 年 9 月 1 日の規制は発表の日から)
+//   pistar・qe = 物価の目標と量的緩和 (中央銀行の決定と同じく次の日から。買い入れは QE.speed 年かけて進む)・repress = 金融抑圧 (銀行の預金の利子の上限と国債を持つ義務。法の変更なので予算と同じ半年と置いた仮の値)
+// 価格統制と交易の規制 (回 KE9・B-008。docs/fiscal.md の 8): 国の財政に持つ。ceil = { 資源: 基準の値段の倍率 } (値段の上限。上限で足りない分は不足になる。闇市は入れない)・
+// ration = { 資源: true } (配給: 星系の在庫を、入植地の人口に比べて分ける。不足のとき、先に買った入植地が取りつくさない)・ban = { 資源: true } (輸出禁止: ほかの国の買い手に売らない)・
+// embargo = { 国の首都: true } (禁輸: その国とは売りも買いもしない)。CTL_RES = 選べる資源、RATION_RES = 配給を選べる資源 (家計が買う物)、CEIL_RANGE = 値段の上限の幅 (基準の値段の倍率)
+const CTL_RES = ['food', 'water', 'fuel', 'metal', 'rare', 'goods', 'hitech'], RATION_RES = ['food', 'water', 'goods'];
+const CEIL_RANGE = [0.5, 2], CEIL_STEP = 0.05;
+// 財政の 1 つの手段の行政の遅れ (prev = いま首都で効いている財政、f = 新しい財政)
+const adminLag = (k, f, prev) => (k === 'ctax' && !(prev.ctax > 0) && f.ctax > 0 ? ADMIN_LAG.ctaxNew : ADMIN_LAG[k] ?? 0);
 // 人間でない国の財政 (docs/fiscal.md の 1)。vary = 1 なら、国ごとに現実の国の分布から引く (docs/policy-ranges.md)。既定は 0 (標準): C-22「おすすめと既定のままで」。1 の結果は docs/fiscal.md の 1.3:
 //   taxK = 税の合計 ÷ 所得 を、WDI の税収 ÷ GDP の国ごとの中央値の 10・50・90% 点 (8.0・15.7・24.2%) をゲームの標準 (15.5%) に合わせて 0.51・1・1.54 倍にしたもの
 //   ctaxShare = そのうち消費税の割合 (WDI の 財・サービスへの税 ÷ 税収 GC.TAX.GSRV.RV.ZS の国ごとの中央値の 10・50・90% 点)、tariff = 関税率 (WDI TM.TAX.MRCH.WM.AR.ZS の同じ点)
@@ -39,12 +68,44 @@ const BUDGET = {
   // 研究 (回 KE6・B-122): 効き目は budgetEffect でなく、払った額 ÷ 研究者 1 人の費用だけ公の研究者を足す (RND。docs/innovation.md の 3)
   research: { label: '研究', good: '公の研究者が増え、8〜15 年あとから国の技術の伸びが速くなる (研究者 1 人の費用は 1 人あたり所得の約 4〜5 倍)。民間の研究も呼び込む (弾力性 0.5)' },
 };
+// 支出の 10 機能 (COFOG。国連 1999 の政府の機能の分類。回 KE8・B-007。docs/fiscal.md の 6): 帳簿 (ledger) の出入りの種類を機能に当てる。
+// 建設は経済業務、研究の予算は一般公共サービスの基礎研究 (GF0105)、国債の利子は一般公共サービスの公債の取引 (GF0107)、年金と福祉は社会保護、医療は保健。
+// 環境保護・住宅と地域・娯楽と文化と宗教は、ゲームにまだ当たる支出がない (0 のまま見せる)。oecd = OECD の一般政府の支出の機能ごとの割合 (OECD 加盟国の平均。
+// docs/econ-policy-list.md の 3 の B の書き写した値。参考に並べるだけで、合わせる目標にはしていない)
+const COFOG = [
+  { code: 'GF01', label: '一般公共サービス', kinds: ['public', 'research', 'interest'], oecd: 0.13 },
+  { code: 'GF02', label: '防衛', kinds: ['military', 'upkeep'], oecd: 0.03 },
+  { code: 'GF03', label: '公共の秩序と安全', kinds: ['security'], oecd: 0.04 },
+  { code: 'GF04', label: '経済業務', kinds: ['build'], oecd: 0.10 },
+  { code: 'GF05', label: '環境保護', kinds: [], oecd: null },
+  { code: 'GF06', label: '住宅と地域', kinds: [], oecd: null },
+  { code: 'GF07', label: '保健', kinds: ['health'], oecd: 0.18 },
+  { code: 'GF08', label: '娯楽・文化・宗教', kinds: [], oecd: null },
+  { code: 'GF09', label: '教育', kinds: ['education'], oecd: 0.12 },
+  { code: 'GF10', label: '社会保護', kinds: ['welfare', 'pension'], oecd: 0.40 },
+];
+const COFOG_EXTRA = ['build', 'education', 'research']; // 収支の表 (LEDGER_LABEL) にない支出。政府ごとに gv.cof でならす (market-economy.js)
 const BUDGET_HALF = 0.1;
 const budgetEffect = (share) => (share > 0 ? share / (share + BUDGET_HALF) : 0);
 // 研究開発の税額控除 (回 KE6・B-122): 会社の研究開発費の rdcredit の割合を、国の政府が会社に返す。幅は OECD の R&D Tax Incentives の、税の優遇 ÷ 会社の研究開発費の
 // 国・年の 1〜99% 点 (0〜27.9%)。既定はその国ごとの平均の中央値 3.90% を刻みに丸めた 4% (data/derived/innovation.json の rnd.credit)
 const RDCREDIT_RANGE = [0, 0.28], RDCREDIT_STEP = 0.005;
-const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 } };
+// 物価の目標・量的緩和・金融抑圧 (回 KE9・B-009。docs/fiscal.md の 9)。
+//   pistar = 中央銀行の物価の目標 (既定 2% = CB.pistar。上げると、物価の上がり方と見込みと長期の利回りの錨がそこへ動く。国債の利札は借り換えの年数だけ遅れるので、
+//     その間は国債の実質の利子が下がる = インフレ税)。幅 0〜20%。
+//   qe = 量的緩和: 国の星系の政府の国債のうち、中央銀行が持つ割合 (日本銀行は 2023 年に国債の約 5 割)。幅 0〜60%
+//   repress = 金融抑圧: 国の政府の国債の利札を下げる点数 (国の中の預金者がそのぶん受け取らない)。Reinhart & Sbrancia (2015): 1945〜80 年の先進国は実質の金利が
+//     負の年が約半分で、米英の債務は年に GDP の 3〜4% ずつ目減りした。国債 ÷ GDP が 1 ほどなら 3〜4 点にあたるので、幅 0〜4 点
+// 国有化・民営化・資本規制 (回 KE9・B-011。docs/fiscal.md の 10)。
+//   soe = 国の星系の会社のうち政府が持つ割合 (幅 0〜80%)。上げると、持ち主 (地元の家計と遠くの持ち主) から持ち分に比べて買い取り、割合の差 × 会社の資本 (gv.K) を国債で払う。
+//     下げると、地元の家計に同じ値で売り、政府の資金に入る。国有の分の配当は星系の政府に入る。
+//   capctl = 資本規制 (幅 0〜100%)。国の星系のほかの国の持ち分の目標と、国の家計が外へ出す投資の重みを (1 − capctl) 倍にする
+const SOE_RANGE = [0, 0.8], SOE_STEP = 0.1, CAPCTL_RANGE = [0, 1], CAPCTL_STEP = 0.25;
+// eff = 国有の割合 1 あたりの工業と採掘の生産性の下がり (Brown, Earle & Telegdy 2006: 民営化で全要素生産性がルーマニア +15%・ハンガリー +8%・ウクライナ +2%・ロシア −3%。
+//   その平均 5.5%。外国の買い手への民営化は +18〜35% だが、ここでは国の中の家計に売るので入れない)
+const SOE = { eff: 0.055 };
+const TARGET_RANGE = [0, 0.2], TARGET_STEP = 0.01, QE_RANGE = [0, 0.6], QE_STEP = 0.05, REPRESS_RANGE = [0, 0.04], REPRESS_STEP = 0.005;
+const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0, soe: 0, capctl: 0 };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)
@@ -57,28 +118,57 @@ const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算�
 const DEBT = { a: -0.0023, rho: 0.0336, beta: 0.056, war: -0.0171, sd: 0.0269, ar: 0.6971, trend: 10, gap: [-0.1756, 0.1451], cash: 0.1613, spend: 1, limit: 0.4687, repay: 0 };
 // 中央銀行・国の物価・利回り・国債の信用の危険 (回 KE1・B-001。docs/money.md の 5)。帳簿は前のまま基準の値段 (実質の cr) で持ち、物価の水準 P は国ごとの数として持つ。
 // 利子の受け払いは実質の利子率 (名目 − 物価の上がり方。Fisher) で行うので、思ったより物価が上がれば国債の重さが減り、預金が目減りする (インフレ税の入口)。
-//   政策金利 i: 人間でない国 (と、任せた人間の国) の中央銀行は Taylor (1993) の則 i = rstar + π + phiPi (π − pistar) + phiY × 景気のずれ。幅は RATE_RANGE。
-//     景気のずれは、国の GDP のこの 1 年の伸び (前の刻みにもあった星系だけで) − speed 年でならした伸び (Walsh 2003 の速さの則)。幅 gap は JST R6 の 18 か国の、実質 GDP の伸び − HP フィルター
-//     (λ = 100) の傾向の伸び の 1%〜99% 点 (data/build/analyze_fiscal.py の params)
-//     rstar = 自然な実質の利子率 (前の利子率の既定 年 1%。R01 の較正がこれで行われている)、pistar = 物価の目標 (先進国の中央銀行の 2%)、phiPi・phiY は Taylor (1993) の値
-//   物価の上がり方 π = pistar + x + kappa × 景気のずれ − lambda × (実質の政策金利 − rstar) + u。x は人々の見込みの目標からのずれで、
+//   政策金利 i: 人間でない国 (と、任せた人間の国) の中央銀行は Taylor (1993) の則 i = r* + π + phiPi (π − pistar) + phiY × 景気のずれ。幅は RATE_RANGE。
+//     景気のずれは、国の GDP のこの 1 年の伸び (前の刻みにもあった星系だけで) − speed 年でならした伸び (Walsh 2003 の速さの則)。幅 gap は JST R6 の 18 か国の、実質 GDP の伸び − HP フィルター (λ = 100) の傾向の伸び の 1%〜99% 点 (data/build/analyze_fiscal.py の params)
+//     r* = 国の中立の実質の金利 = rs[0] + rs[1] × (1 人あたりの潜在の伸びを trend 年でならしたもの)、幅 rsr (回 KE6・B-118)。Holston, Laubach & Williams (2023) の
+//     米国・カナダ・ユーロ圏の r* を、WDI の人口の伸びを引いた 1 人あたりの潜在の伸びに当てた最小二乗 (184 の国・年、相関 0.80) と、r* の 1%〜99% 点 (data/build/build_rstar.py)。
+//     潜在の産出 = 入植地の人口 × 生産力 potentialUSD (基準の値段。売れ残りと原料の不足を受けない)。
+//     HLW は総額の伸びで r* = g + z と置くが、ゲームの国は入植と移民で人口が年に何十 % も増えるので、1 人あたりに当て直した (ラムゼーの式の形)。
+//     trend = 5 年 (HLW の潜在の伸び g を、実際の GDP の伸びの指数のならしでいちばんよく写す年数。3 つの経済とも 5 年前後。data/derived/rstar.json の game.trend)。rstar = 始めの中立の金利と、中央銀行のない所の既定 (前の利子率の既定 年 1%。R01 の較正がこれで行われている)
+//     pistar = 物価の目標 (先進国の中央銀行の 2%)、phiPi・phiY は Taylor (1993) の値
+//   物価の上がり方 π = pistar + x + kappa × 景気のずれ − lambda × (実質の政策金利 − r*) + u。x は人々の見込みの目標からのずれで、
 //     実際の上がり方に theta の速さで寄り、anchor の速さで目標に戻る (中央銀行への信認)。u は 1 年の自己相関 ar・ばらつき sd のゆらぎ。
 //     政策金利を物価より低いまま止めておくと、見込みが上がって物価の上がり方が高いまま続く。
 //     見込みの寄り方 theta ÷ (theta + anchor) と lambda の和が 1 に近いと、ずれが何十倍にもふくらむ (anchor なし、または 0.71 + 0.25 では、政策金利の下限 −1% で
 //     デフレが自分で深まり、試しのシード 7 で 2315 年から π が −20% に張りついた)。いまは 0.5 + 0.1 で、ずれは 2.5 倍まで。pi は π の幅
 //   国の物価の指数 (cpi) = P × 家計が買った物の値段の指数 (物の量を、いまの値段と基準の値段で比べた Paasche 指数。サービスは入れない)
-//   長期の国債の利回り = 期待の仮説 (いまの政策金利が persist 年でならしの値 rstar + pistar に戻ると見て、mat 年の平均) + 期間の上乗せ tp + 信用の上乗せ credit × 国債 ÷ GDP。
+//   長期の国債の利回り = 期待の仮説 (いまの政策金利が persist 年でならしの値 r* + pistar に戻ると見て、mat 年の平均) + 期間の上乗せ tp + 信用の上乗せ credit × 国債 ÷ GDP。
 //     tp と credit は JST R6 の 18 か国で (長期 − 短期) を債務 ÷ GDP に当てた国ごとの切片と傾きの中央値 (目標 R34・R35。data/build/analyze_fiscal.py の params)
 //   国債の利子: 政府ごとの国債の利札 cpn (出した年の長期の利回りの、額で重みをつけた平均)。毎年 1 ÷ roll ずつ、いまの利回りで借り換える
 //   不履行: 国債 ÷ GDP が dmax (JST の 18 か国の、国ごとの債務 ÷ GDP の最大の中央値) を超えた政府は、国債の haircut (Cruces & Trebesch 2013 の 180 件の平均 37%) を払わない。
 //     銀行の損は、利子と同じく預金の額に比べて預金から引く (銀行の純資産は 0 のまま)
+//   不履行のあと (QD-26 = b と c。回 KE7): exclude 年は新しく国債を出せず、その間は不履行もしない (Cruces & Trebesch 2013 の 180 件で、削った割合が 30% を超えた
+//     不履行から市場に戻るまでの平均 6.1 年。全体の平均は 5.1 年・中央 3 年)。前は不履行の次の刻みにまた借りて、小さな入植地の政府が 1 年に 4 回ずつ不履行を繰り返した
+//     (8 銀河 × 150 年で 66,568 回)。戻ったあとも、長期の利回りに haircut × spread[0] (1 年目) から haircut × spread[1] (4〜5 年目) へ指数で下がる上乗せがつき、
+//     spread[2] 年で消える (同じ論文の表 4 の 2 列: 削り 1 点あたり 6.75bp・3.16bp。7 年目まで有意)。37% の削りで +2.5 点 → +1.2 点
 // kappa・lambda・theta・anchor・sd・ar・persist・roll・speed は仮の値 (現実の政策の反応と比べるのは回 KE3・B-006)
-const CB = { rstar: 0.01, pistar: 0.02, phiPi: 0.5, phiY: 0.5, speed: 5, gap: [-0.1355, 0.1175], kappa: 0.1, lambda: 0.1, theta: 0.3, anchor: 0.3, sd: 0.01, ar: 0.5, pi: [-0.2, 1], persist: 3, mat: 10, roll: 7, tp: -0.0004, credit: 0.0175, dmax: 1.3821, haircut: 0.37 };
+const CB = { rstar: 0.01, rs: [0.00234, 1.343], rsr: [0.0023, 0.0567], trend: 5, pistar: 0.02, phiPi: 0.5, phiY: 0.5, speed: 5, gap: [-0.1355, 0.1175], kappa: 0.1, lambda: 0.1, theta: 0.3, anchor: 0.3, sd: 0.01, ar: 0.5, pi: [-0.2, 1], persist: 3, mat: 10, roll: 7, tp: -0.0004, credit: 0.0175, dmax: 1.3821, haircut: 0.37, exclude: 6.1, spread: [0.0675, 0.0316, 7] };
 // 中央銀行の状態 (国ごと。国 = 首都の星系): P = 物価の水準 (基準の値段 = 1)、x = 見込みの目標からのずれ、u = ゆらぎ、pi = 物価の上がり方、i = 政策金利、m = 物の値段の指数、
-// yp・g1・gs = 前の刻みの星系ごとの GDP・1 年でならした伸び・speed 年でならした伸び、h = 政策金利の 1 年ごとの記録 [[年, i]] (遠い星系には、知らせが光速で届いた分の政策金利が効く)
+// yp・pp・np = 前の刻みの星系ごとの GDP・潜在の産出・人口、g1・gs = 1 年でならした伸び・speed 年でならした伸び、gt = 1 人あたりの潜在の伸びを trend 年でならしたもの、
+// rs = 中立の実質の金利 (回 KE6。前の版のセーブにはなく、rstar から始まる)、h = 政策金利の 1 年ごとの記録 [[年, i]] (遠い星系には、知らせが光速で届いた分の政策金利が効く)
 saveField('cb', (game) => (Object.keys(game.cb).length ? game.cb : undefined), {
   init: (game) => { game.cb = {}; },
   read: (game, d) => { game.cb = d.cb && typeof d.cb === 'object' ? Object.fromEntries(Object.entries(d.cb).filter(([, s]) => s && Number.isFinite(s.P) && Number.isFinite(s.i) && Array.isArray(s.h))) : {}; },
+});
+// 量的緩和 (回 KE9・B-009): 中央銀行が持つ国債 (gv.qb) の利子は政府に戻る (中央銀行の儲けを国に納める) ので、政府は銀行が持つ分 (国債 − qb) だけ利子を払う。
+//   tp = 中央銀行の持つ国債 ÷ GDP 1 あたりの長期の利回りの下がり (米国の 2008〜10 年の買い入れ 約 1.75 兆ドル = GDP の約 12% で期間の上乗せが約 0.5 点。
+//     Gagnon ほか 2011 の結果をまとめたカンザスシティ連銀の見方)・pi = 買い入れ GDP の 1% あたりの物価の水準の上がり (Weale & Wieladek 2016: 米国 0.62%・英国 0.32% の平均)・
+//   fade = その物価の押し上げが消える速さ [1/年] (押し上げの合計が pi になるように、物価の上がり方に足して指数で消す)・speed = 買い入れが目標に近づく年数 (米国の 1 回目は 2009 年 3 月〜2010 年 3 月)
+const QE = { tp: 0.042, pi: 0.47, fade: 1, speed: 1 };
+// 債務の再編 (回 KE9・B-009): 人間の国が、国の政府の国債のうち銀行が持つ分の haircut の割合を払わない (中央銀行の持つ分は減らさない。ギリシャ 2012 年の民間の再編の形)。
+//   hc = 選べる割合 (Cruces & Trebesch 2013 の 1970〜2010 年の 180 件: 半分は 23% 未満か 53% 超・ギリシャ 2012 年 53.5%・アルゼンチン 2005 年 76.8%)。
+//   不履行と同じく預金が目減りし、借りられない年数と利回りの上乗せは割合に比べて伸びる (CB.exclude・CB.spread は CB.haircut の平均の場合。大きな再編ほど長く高い、は
+//   Cruces & Trebesch 2013。比例は仮の形)。pc = 政治力 (国家方針と同じ 20。仮の値)
+const RESTRUCTURE = { hc: [0.25, 0.37, 0.5, 0.75], pc: 20 };
+// 物価が外れたときの政治の損 (QD-27 = b。回 KE9): 物価の上がり方と 2% の差 1 点を、家計の所得の何割の損とみるか (LOSS と同じ重さで忠誠度と議会に効く)。
+//   Fair の大統領選挙の式 (2012 年の版): 物価の上がり方 1 点で与党の票 −0.684 点、1 人あたりの成長 1 点で +0.672 点 → 物価 1 点 ≒ 所得 1% の損。
+//   1984 年の版 (−0.34 と +1.02) なら 3 分の 1。Fair は物価の上がり方の絶対値で数えるが、ここでは中央銀行の目標 2% からの差にした
+const INFL_LOSS = 1;
+// 財政のグラフの記録 (回 GA9・B-059。docs/fiscal.md の 11): 人間の国ごと (首都の星系) に { r: 1 年 1 行の [年, GDP の伸び, 物価の上がり方, 政策金利, 長期の利回り,
+// 国債 ÷ GDP, 政府の収支 ÷ GDP], m: 財政を変えた [年, 変えた手段の名前の列], p: 前の年の星系ごとの [GDP, 政府の純額] }。試合の始めから全部持つ (期間は画面で選ぶ。GA-1)
+saveField('chron', (game) => (Object.keys(game.chron || {}).length ? game.chron : undefined), {
+  init: (game) => { game.chron = {}; },
+  read: (game, d) => { game.chron = d.chron && typeof d.chron === 'object' ? Object.fromEntries(Object.entries(d.chron).filter(([, c]) => c && Array.isArray(c.r) && Array.isArray(c.m))) : {}; },
 });
 // 民間の信用 (回 KE3・B-002。目標 R22。docs/debt.md の 7)。家計の借り (住宅など。gv.hm) と会社の借り (設備投資など。gv.bl) を、預金と差し引かない残高として持つ
 // (前は家計と会社の手持ちと借りを差し引いた 1 つの値だったので、預金と借りを同時に持てず、R22 が 0 だった)。

@@ -4,7 +4,7 @@
     const E = this.econIntel, y = Math.floor(this.year);
     if (y <= E.y) return;
     E.y = y;
-    const span = (this.intelSpan ??= Math.ceil(Math.max(...this.galaxy.systems.map((a) => Math.max(...this.galaxy.systems.map((b) => distance(a, b))))))) + 1;
+    const span = this.intelSpanYears() + 1;
     const r3 = (v) => Number(v.toPrecision(3));
     for (const x of this.colonizedSystems()) {
       const id = x.id, st = this.stockOf(id);

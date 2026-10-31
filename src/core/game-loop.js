@@ -55,28 +55,29 @@
       for (const gv of Object.values(this.govs)) { gv.led = {}; gv.eled = {}; }
       if (this.arrivals()) changed = true;
       this.economy(h);
+      this.billsStep(); // 審議中の法案の関門 (政治。politics/support.js。回 SE7)
       if (this.pirates(h)) changed = true;
       if (this.battles.length) { this.battlesStep(h); changed = true; }
       this.autoTimer += h;
       this.keepGhosts(before);
-      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.eachPlayer(() => { this.autoDefend(); this.aweYearly(); }); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.routesYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.regimeYearly(); this.bundleYearly(); this.vassalTypesYearly(); this.aiOrdersYearly(); this.realmsYearly(); if (this.spectate) this.eachPlayer(() => this.earthWarYearly()); this.siegesYearly(); this.exhaustionYearly(); this.conferencesYearly(); this.politicsYearly(); this.recordSnapshots(); }
+      if (this.autoTimer >= 1) { this.autoTimer = 0; this.autoDevelop(); this.eachSeat(() => { this.autoDefend(); this.aweYearly(); }); this.migrate(); this.nativesYearly(); this.barracksYearly(); this.warsYearly(); this.realmsArm(); this.pirateDefenseYearly(); this.govsYearly(); this.govDevelopYearly(); this.stationsYearly(); this.routesYearly(); this.tributeYearly(); this.grantsYearly(); this.loyaltyYearly(); this.regimeYearly(); this.bundleYearly(); this.vassalTypesYearly(); this.aiOrdersYearly(); this.realmsYearly(); if (this.spectate) this.eachPlayer(() => this.earthWarYearly()); this.siegesYearly(); this.exhaustionYearly(); this.conferencesYearly(); this.politicsYearly(); this.recordSnapshots(); }
     }
     this.stepping = false;
     return changed;
   }
 
-  // 政治力・議会・時代の課題・挑戦・語り手・決めること・終わりの年 (年1回)
+  // 政治力・議会・時代の課題・挑戦・語り手・決めること・終わりの年 (年1回)。AI が動かす席 (国家選択の AI の国) も同じ仕組みで動き、観戦モードと同じ AI が決める (回 SE5)
   politicsYearly() {
     this.lordsAttendYearly();
     this.diplomacyYearly(); // 遅れて届く外交 (政治。politics/diplomacy.js)
-    this.eachPlayer(() => {
+    this.eachSeat(() => {
       this.pcYearly();
       this.councilYearly();
       this.erasYearly();
       this.challengesYearly();
       this.storyYearly();
       this.decisionsYearly();
-      if (this.spectate) this.earthPoliticsYearly();
+      if (this.spectate || this.aiSeat()) this.earthPoliticsYearly();
     });
     this.endYearly();
   }
@@ -119,7 +120,7 @@
       const amt = this.release('grant', q, 'amt', q.to, q.from);
       this.receiveAid(q.to, amt);
       if (this.govs[q.to]?.lord === q.from) this.attend(q.to); // 主人からの資金援助は関与になる
-      if (!q.auto) this.message(`資金援助 ${fmtAmt(amt)} cr が ${this.system(q.to).name} に届いた`, q.to);
+      if (!q.auto) this.message(JA`資金援助 ${fmtAmt(amt)} cr が ${this.system(q.to).name} に届いた`, q.to);
     }
     for (const q of this.requests) {
       if (q.kind !== 'order' || q.arrive > this.year) continue;
@@ -132,7 +133,7 @@
       const r = ob.ok ? this.exec(q.act, q.d) : ob;
       // 地球からの指令が届いたことは関与になる (放っておかれた年数が0に戻る)
       if (ob.ok && !['fleet', 'redirect', 'fleetclear', 'peace'].includes(q.act)) this.attend(q.to);
-      this.message(r.ok ? `指令「${q.label}」が ${this.system(q.to).name} に届き、実行された` : `指令「${q.label}」は ${this.system(q.to).name} で実行できなかった: ${r.reason}`, q.to);
+      this.message(r.ok ? JA`指令「${q.label}」が ${this.system(q.to).name} に届き、実行された` : JA`指令「${q.label}」は ${this.system(q.to).name} で実行できなかった: ${r.reason}`, q.to);
       });
       this.msgTo = undefined;
     }
@@ -152,7 +153,7 @@
         this.survey(s.to);
         let kind = s.kind;
         if (kind === 'planet' && this.blockedByNatives(s.to, s.body)) {
-          this.message(`${t.name} の先住民に着陸を拒まれた。入植団は軌道上にとどまる`, s.to);
+          this.message(JA`${t.name} の先住民に着陸を拒まれた。入植団は軌道上にとどまる`, s.to);
           kind = 'station';
         }
         // 積んできた食料と水は入植先の備蓄に入る (入植できなくても荷は下ろす)
@@ -162,12 +163,12 @@
         const seedTo = (acct) => { if (s.seed) { const v = s.seed; this.cash('build', -v, { way: s, f: 'seed' }); this.cash('build', v, acct); } };
         if (this.colonyAt(s.to, s.body, kind)) { joinEscort(this.colonyAt(s.to, s.body, kind)); seedTo({ pv: s.to }); continue; }
         const fresh = !this.govs[s.to];
-        this.addColony(s.to, s.body, kind, t.name, SETTLERS[kind], s.from);
+        if (!this.settlersLand(s, kind, t.name)) { seedTo({ gov: s.from }); continue; } // 乗ってきた人数と年齢で入植地を作る。始まりのうちに絶えたら作らない (船と戦争の ship/settler.js。B-033)
         seedTo(fresh ? { gov: s.to } : { pv: s.to });
         joinEscort(this.colonyAt(s.to, s.body, kind));
         if (kind === 'planet' && this.hostileNatives(s.to, s.body)) this.startWar(s.to, s.body);
         const sup = Object.entries(s.supplies || {}).filter(([, v]) => v > 0).map(([r, v]) => `${RES_LABEL[r]} ${fmtAmt(v)}`).join('・');
-        this.event('colony', s.to, `${t.name} に${KIND_LABEL[kind]}を設立した (${this.system(s.to).name})${sup ? `。積み荷: ${sup}` : ''}`, true);
+        this.event('colony', s.to, JA`${t.name} に${KIND_LABEL[kind]}を設立した (${this.system(s.to).name})${sup ? JA`。積み荷: ${sup}` : ''}`, true);
         if (fresh) this.asRealm(s.from, () => this.councilAdd(1)); // 人間の国の首都が送った入植船で新しい星系を拓いた
       }
     }
@@ -193,7 +194,7 @@
         if (!d) continue;
         d.troops += m.troops;
         d.slaveTroops += m.slave;
-        this.message(`歩兵 ${m.troops + m.slave} 連隊が ${d.name} に到着した`, d.sys);
+        this.message(JA`歩兵 ${m.troops + m.slave} 連隊が ${d.name} に到着した`, d.sys);
       }
     }
     const fleets = this.fleets.filter((f) => f.arrive <= this.year);

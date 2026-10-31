@@ -17,7 +17,7 @@
     // 届いた要求を処理する
     for (const q of this.requests) {
       if (q.kind !== 'trade' || q.arrive > this.year) continue;
-      if (this.tradeBlocked(q.to, q.from)) { this.refund(q); continue; } // 送り手が開戦を知っていれば断る
+      if (this.tradeBlocked(q.to, q.from) || this.tradeBarred(q.from, q.to, q.res)) { this.refund(q); continue; } // 送り手が開戦を知っていれば断る。輸出禁止と禁輸 (回 KE9) も
       const rp = this.routePath(q.to, q.from);
       const spare = spareOf(q.to, q.res);
       // 余りがなければ取り消さずに入荷待ちにして、作れた分から送る。届いてから TRADE.wait 年たっても送りきれなければ、残りを取り消す
@@ -40,8 +40,11 @@
       if (paid > 0) {
         if (prepaid) this.cash('import', -paid * price, { way: q, f: 'pre' }); else this.payFrom('import', -paid * price, q.from);
         this.payFrom('trade', paid * price, q.to); this.noteLordTrade(q.from, q.to, paid * price);
-        const duty = MARKET.buy ? this.tariffFor(q.from, q.to) * paid * price : 0;
-        if (duty > 0) this.earn('tariff', duty, q.from, { fm: q.from }); // 関税: 買い手の会社が、買い手の星系の政府に払う (ほかの国からの輸入だけ。送り出すときに記帳)
+        if (MARKET.buy && this.dutiable(q.from, q.to)) {
+          const T = (this._mxT ??= {}), duty = this.tariffFor(q.from, q.to) * paid * price;
+          T[q.from] = (T[q.from] || 0) + paid * price; // 関税の掛かる輸入の額 (帰着の表の関税の元。gv.mx に 1 年でならす。回 KE8・B-012)
+          if (duty > 0) this.earn('tariff', duty, q.from, { fm: q.from }); // 関税: 買い手の会社が、買い手の星系の政府に払う (ほかの国からの輸入だけ。送り出すときに記帳)
+        }
       }
       if (aid > 0) { this.receiveAid(q.from, aid * price); this.noteLordTrade(q.from, q.to, aid * price); }
       for (const l of legs) {
@@ -113,7 +116,7 @@
           if (cands.length >= TRADE.sources) break;
           const kpair = pairKey(T, S, res);
           if (pendingPair.has(kpair)) continue;
-          if (blocked(T, S)) continue; // 交戦中の国どうしでは取引しない (開戦を知ってから)
+          if (blocked(T, S) || this.tradeBarred(T, S, res)) continue; // 交戦中の国どうしでは取引しない (開戦を知ってから)。輸出禁止と禁輸 (回 KE9)
           const kp = sysRes(S, res);
           const avail = this.spareSeen(T, S, res) - (promised.get(kp) || 0); // 買い手に届いている売り手の余り (回 KE3。前はいまの余り)
           if (avail <= min) continue;
@@ -187,6 +190,14 @@
     let r = M.get(`${to}|${at}`);
     if (!r) { r = { to, from, v: 0, at, hh: 1 }; this.refunds.push(r); M.set(`${to}|${at}`, r); }
     this.cash('dividend', v, { way: r, f: 'v' });
+  }
+  // 星系 from の家計から遠くの持ち主 to の家計へ、資本の受け渡し (国有化の補償。回 KE9・B-011) の v を光速で送る。配当と同じ返金の列に入るが、所得ではないので GNI に数えない
+  sendCapital(from, to, v, kind) {
+    if (!(v > 0)) return;
+    const at = Math.ceil(this.year + this.sysDist(from, to) - 1e-9), M = (this._remit ??= new Map(this.refunds.filter((q) => q.hh).map((q) => [`${q.to}|${q.at}`, q])));
+    let r = M.get(`${to}|${at}`);
+    if (!r) { r = { to, from, v: 0, at, hh: 1 }; this.refunds.push(r); M.set(`${to}|${at}`, r); }
+    this.cash(kind, v, { way: r, f: 'v' });
   }
   // 貨物を積み出す。path は経由する星系の列、times は各星系に着く年
   shipCargo(from, legs, res, amt) {

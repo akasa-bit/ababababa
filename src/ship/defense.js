@@ -3,7 +3,7 @@
   pirateMax() { return Math.max(1, Math.round(1.5 * this.pirateBase())); }
   // 自動防衛配備で目指す駐留数。太陽系は海賊に狙われないので1艦隊、他の入植星系は海賊の最大戦力ぶん (海賊が現れる前は1艦隊)
   defenseGoal(id) { return this.isHuman(id) || this.year < PIRATE_START ? 1 : this.pirateMax(); } // 人間の国の首都は海賊に狙われない
-  incoming(id) { return this.fleets.filter((f) => f.to === id && !f.awe).reduce((k, f) => k + f.n, 0); }
+  incoming(id) { return this.fleets.filter((f) => f.to === id && !f.awe && (f.owner ?? 0) === this.cap).reduce((k, f) => k + f.n, 0); } // 自国が送った艦隊だけ (敵の艦隊を守りに数えない。B-169・監査の 2.8 の g)
   knownAwe(id) { return id === this.cap ? 0 : Math.min(this.knownGarrison(id), this.known(id)?.awe || 0); }
   defenseGap(id) { return Math.max(0, this.defenseGoal(id) - (this.knownGarrison(id) - this.knownAwe(id)) - this.incoming(id)); } // 地球から見た不足 (威圧の駐留は数えない)
 
@@ -44,7 +44,7 @@
       - queuedWarships(this.projects, C);
     for (let i = 0; i < Math.min(short, 5) && this.hasShipyard(C); i++) {
       if (this.funds(C) < 2 * WARSHIP_COST.credits || this.procure(WARSHIP_COST, C).why) break;
-      this.order(WARSHIP_COST, C, { type: 'warship', label: `[自動防衛] ${this.system(C).name} の艦隊` });
+      this.order(WARSHIP_COST, C, { type: 'warship', label: JA`[自動防衛] ${this.system(C).name} の艦隊` });
     }
   }
   // 反乱防止の威圧: 年に1回、地球の直属の従属星系 (主人が太陽系) に、反乱したときの推定艦隊の2倍の地球の艦隊を駐留させる。
@@ -87,7 +87,7 @@
     short -= queuedWarships(this.projects, this.cap);
     for (let i = 0; i < Math.min(short, 1000) && this.hasShipyard(this.cap); i++) {
       if (this.funds(this.cap) < WARSHIP_COST.credits) break;
-      if (!this.order(WARSHIP_COST, this.cap, { type: 'warship', label: `[威圧] ${this.system(this.cap).name} の艦隊` }).ok) break;
+      if (!this.order(WARSHIP_COST, this.cap, { type: 'warship', label: JA`[威圧] ${this.system(this.cap).name} の艦隊` }).ok) break;
     }
   }
   undefended() { return this.knownSystems().filter((s) => (s.id === this.cap || (this.known(s.id)?.realm ?? this.cap) === this.cap) && this.defenseGap(s.id) > 0); }

@@ -241,6 +241,27 @@ python3 data/build/build_innovation.py --game ゲームのパネル.csv   # ゲ�
 - **汎用技術 (R76・R77)**: 前線の技術の伸びの 10 年の移動平均の標準偏差 0.9244 ポイント (労働増大的な形)。普及の logit の傾きの中央値 0.1226/年。採用の遅れは所得の 4 番目の分位から 3〜16 年
 - 調べもの (536 件の目録) と、このあとの目標の案は `docs/research/innovation.md`
 
+## 中立の利子率のデータ (回 KE6・B-118。ゲームの係数で、目標ではない)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_hlw.py` → `data/raw/hlw/` | Holston, Laubach & Williams (2023) の推計 (ニューヨーク連銀。米国・カナダ・ユーロ圏の四半期の潜在の伸び g・その他の要因 z・自然利子率 r*・需給ギャップ。片側の推計、2026 年 Q2 まで。推計に使った実質 GDP の対数も)・WDI の人口の伸び (SP.POP.GROW。米国・カナダ・ユーロ圏)。取得日・URL・SHA-256・行数は `MANIFEST.json` |
+| 加工 | `data/build/build_rstar.py` → `data/derived/rstar.json` | 年平均の r* を、1 人あたりの潜在の伸び (g − 人口の伸び) に当てた最小二乗 (3 つの経済をまとめる): r* = 0.234 + 1.343 × 1 人あたりの伸び [% / 年] (184 の国・年、相関 0.80)。r* の 1%〜99% 点 0.23〜5.67%。HLW の g を実際の GDP の伸びの指数のならしでいちばんよく写す年数 5 年 (trend)。中央銀行の中立の金利 (`src/economy/fiscal-consts.js` の `CB.rs`・`CB.rsr`) |
+
+## 投資と資本のデータ (目標 R78・R79。回 KE6・B-119)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | 前からある `data/raw/gni/` (WDI の総固定資本形成 ÷ GDP NE.GDI.FTOT.ZS)・`data/raw/tfp/` (Penn World Table 11.0 の cn・rgdpo)・`data/raw/tech/` (所得 NY.GDP.PCAP.PP.KD) | |
+| 加工 | `data/build/build_capital.py` → `data/derived/capital.json` | 1 人あたり所得の 5 分位ごとの、投資 ÷ GDP の 25%〜75% 点 (R78。173 か国・5,378 国・年) と、資本 ÷ 産出 (cn ÷ rgdpo。2015〜2019 年) の 25%〜75% 点 (R79。174 か国) |
+
+```sh
+python3 data/build/build_capital.py                      # 計算する
+python3 data/build/build_capital.py --game ゲームのパネル.csv   # ゲームの R78・R79 (tools/capital-panel.js。B-119 の実装で足す)
+```
+
+- **結果**: 投資 ÷ GDP の中央値は所得の低い分位から 19.22・23.06・21.64・22.83・22.18% (所得によらず約 20%)。資本 ÷ 産出の中央値は 2.37・3.51・4.32・4.49・4.71 (豊かな国ほど高い)
+
 ## GNI と GDP のデータ (目標 R65。回 KE5・B-114)
 
 | 段 | 場所 | 中身 |
@@ -273,3 +294,30 @@ python3 data/build/build_hcap.py ゲームのパネル.csv   # ゲームの R62�
 - **限界**: 世界銀行の写しは 2010 年まで (Barro–Lee の元の表は 2015 年まで)。就学年数は学校に通った長さで、学んだ中身 (学力) は数えない。国の中の差 (地域・階層) は見ない
 - **ゲームの係数** (回 KE5・B-117。目標ではない): 教育の支出 ÷ GDP が 1% 高いと、25〜29 歳の就学年数の logit が 0.059 高い (ln y と一緒に当てた。131 か国・488 組。国を引き直す 5%〜95% 点 0.027〜0.126)。年齢ごとの就学年数は、年上の区分ほど学校を出たころの所得が年 4.5% ずつ低かったとみると、5 歳ごとの区分 (7,722 組) をよく再現する
 - **元の頁**: Barro–Lee の頁 (barrolee.github.io) の表は「All rights reserved」(引用すれば使ってよい) なので、生データは CC BY 4.0 の世界銀行の写しから取った
+
+## 家臣の要求への返事のデータ (QD-41 = c・B-142。ゲームの係数で、目標ではない)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_demands.py` → `data/raw/demands/` | Germann & Sambanis 2021 (International Organization) の再現データ (Harvard Dataverse。CC0) から、一度でも自決を求める運動 (SDM 1.0) のあった EPR の集団の行と使う列だけ。GeoEPR 2021 から集団の地域の重心だけ、CShapes 2.0 から首都の位置と国の面積だけ (どちらも CC BY-NC-SA 4.0。研究のための抜き出しで、ゲームには係数だけを入れる)。取ってきたままのファイルの SHA-256 は `MANIFEST.json` |
+| 加工 | `data/build/analyze_demands.py` → `data/derived/demands.json` | 運動が続いている集団・年 (263 集団・7,774 集団・年・1947〜2012) に、その年に政府が譲ったか (自治を新しく与えた・締め出しをやめた。139 年 = 1.8%) を、ln 人口の割合・ln 首都までの距離 ÷ 国の半径・前の年の武力の紛争でロジット回帰: 0.246・0.363・0.712。AI の主人の判断 (`src/politics/policy-consts.js` の `DEMAND_AI`) |
+
+- **限界**: 運動の年ごとの譲歩で、ゲームの「要求 1 回への返事」とは単位が違う。水準 (のむ割合の平均) は実データから出さず、前の AI の半々にそろえた (`docs/demands.md` の 3)。遠さの割り方 (国の半径か、集団の距離の中央値か) で遠さの係数が 0.36 と 0.21 に分かれる
+
+## 星系の中の集団の価値観のデータ (QD-42。回 SE6 の続き。ゲームの係数で、目標ではない)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_values.py` → `data/raw/values/` | Global Flourishing Study の 1・2 年目の全世界の個票 (Gallup・Center for Open Science。CC BY 4.0) から、国・1 年目の重み・世帯の所得の区分・この国で生まれたか・9 項目の 1 年目だけを gzip で (`gfs_wave1_values.csv.gz`。207,919 人・2.3 MB)。世界銀行 WDI の 1 人あたり GDP (購買力平価の 2021 年のドル。2022 年)。取ってきたままのファイルの SHA-256 は `MANIFEST.json` |
+| 加工 | `data/build/analyze_values.py` → `data/derived/values.json` | 伝統 ↔ 世俗 (宗教の大切さ・集まり・法に従う) と生存 ↔ 自己表現の近い形 (信頼・暮らしの心配のなさ・幸福) の国の平均を ln 1 人あたり GDP に当てた切片と傾き (23 の国と地域。相関 0.88・0.28)、国の中の所得の 5 分位ごとの差とよそ生まれの差 (国の固定効果つき)。`src/politics/groups-consts.js` の `GROUPS.values` |
+
+- **限界**: 22 か国と香港だけ。生存 ↔ 自己表現は WVS の目印の項目 (脱物質主義・寛容・署名) がなく、暮らしの安心と信頼・幸福で作る近い形。所得の区分は国ごとに粗く、分位の境は区分の境に寄る。世界価値観調査の個票は「非営利に限る・再配布しない」が条件なので使っていない (前の近い形は QoG の WVS の国の平均。`data/raw/groups/qog_wvs.csv` は比べるために残す)
+
+## 国ごとに違う開始の大きさのデータ (回 SE8・B-029・QD-111 = c。ゲームの係数で、目標ではない)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_nations.py` → `data/raw/nations/` | Correlates of War の国力の指標 6.0 (National Material Capabilities。zip の中の abridged の zip の CSV。国・年ごとの総人口・軍の人員・軍事費ほか。1816〜2016 年)。取ってきたままのファイルの SHA-256 は `MANIFEST.json`。1820 年の国の人口は、前から置いてある Maddison Project Database 2023 (`data/raw/productivity/mpd2023_full.csv.gz`) を使う |
+| 加工 | `data/build/analyze_nations.py` → `data/derived/nations.json` | 1820 年の国 (いまの国境の 90 か国) の人口 ÷ 中央値 (204.5 万人) の 10・25・50・75・90% 点: 0.089・0.262・1・2.26・6.25 (照合: COW の 1820 年の主権国家 23 か国で 0.28・0.43・1・3.0・7.8)。1816〜1850 年の国・年 (年の固定効果つき) で ln 軍の人員 の ln 総人口 への傾き 0.958 (国でまとめた標準誤差 0.078・37 か国・924 国・年)、ln 軍事費 の傾き 1.135 (0.075)。`src/politics/nations.js` の `NATION_SIZE` |
+
+- **限界**: Maddison の 1820 年は、いまの国境で数えた人口 (当時の国でない地域も 1 つに数える)。ゲームは 10〜90% 点のあいだから引き、母星の人口の上限があるので比を 0.5 乗に縮めている (補正の台帳の C21)。軍の人員と軍事費の傾きは 19 世紀前半の主権国家だけ

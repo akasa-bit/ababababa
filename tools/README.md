@@ -10,7 +10,7 @@
 
 ## CI (GitHub Actions)
 
-PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメント (1 つを書き直す) とジョブの要約に出す。
+PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメント (1 つを書き直す) とジョブの要約に出す。試験 (`tests`)・自動対戦 (`battle`)・面白さの代わりの数 (`fun`) は別の実行機で同時に回し、最後のジョブ `test` が 3 つの表をまとめて PR に書き、合否 (落ちた試験・止まったジョブ・面白さの数の止める線) を出す (回 DO7。前は 1 つのジョブで順に回して、遅い日に 40 分の上限に当たった)。途中で止まったジョブの表は「表がない」と出る。
 
 - `node tools/ci-tests.js`: 組み立て → 目標のファイルの固定の確認 → `tools/tests` の試験 (置いたファイルを自動で拾う。回 DO4・B-221。回し方と合否は各ファイルの先頭の `exports.ci` に書く。書き方は `docs/parallel.md` の 7 の道具と検証)。出力から合否を決め (`docs/handoff.md` の 14 と同じ見方)、Markdown の表を出す。1 つでも落ちたら失敗。名前を渡すとその試験だけ (`node tools/ci-tests.js det net`)
 - `node tools/ci-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数]`: 画面なしの版で、main と PR を同じシードで回し、入植地・人口・戦争・独立・資金などの平均と 10〜90% を並べる。合否は付けない (釣り合いが知らないうちに動いていないかを見る)
@@ -26,6 +26,33 @@ PR ごとに `.github/workflows/ci.yml` が回り、結果の表を PR のコメ
 - `node tools/fun-report.js <main の src> <PR の src> [銀河の数] [年数] [国の数] [探索の予算] [探索の銀河の数]`: 面白さの代わりの数 (判断を求められる回数・待つだけの年・1 つの戦略が強すぎないか・逆転・選ぶ意味の大きさ) を main と並べ、PR の版で必勝法を探す AI の小さな探索を回す。合否は付けないが、main より大きく悪くなったら「止める線」に出す (`FUN_GATE_OUT` のファイルに書き、CI のジョブ「面白さの数の止める線」が見る。線は `docs/parallel.md` の 4 の 3)。数の中身は `docs/fun.md`
 
 手元で同じものを回すときは `CHROMIUM=/opt/pw-browsers/chromium node tools/ci-tests.js` (3 分ほど)。
+
+## 締め出された人口と離反 (tools/groups-panel.js)
+
+回 SE6 (B-020)。目標 R42 のゲームの側。観戦で回し、年の始めに独立を求める動きがない家臣の星系・年ごとに、その年に動きが始まったか・政治から締め出された人口の割合・1 人あたりの所得・人口・平和の年数を CSV に書き出す。合否は実データと同じ台本でかける。
+
+```sh
+node tools/groups-panel.js 30 300 6 groups-panel.csv                  # 30 銀河 × 300 年 × 6 か国
+python3 data/build/analyze_groups.py --game groups-panel.csv          # 実データと同じロジット。係数が R42 の幅の中なら合格
+```
+
+## 家臣の要求への AI の返事 (tools/demands-panel.js)
+
+QD-41 = c (B-142。`docs/demands.md`)。観戦で回し、AI の主人が家臣の要求をのむかを決めるたびに、人口の割合・主人からの距離 ÷ 国の広がり・拒んだら独立する見込み・のむ見込み・のんだかを CSV に書き出す。終わりに材料の平均 (`DEMAND_AI.ref` を決めた値) とのんだ割合を出す。
+
+```sh
+node tools/demands-panel.js 12 300 6 demands-panel.csv                # 12 銀河 × 300 年 × 6 か国
+python3 data/build/analyze_demands.py --game demands-panel.csv        # ゲームの判断に実データと同じロジットをかけ、傾きを比べる
+```
+
+## 銀河の取り合い (tools/galaxy-race.js)
+
+目標 R40・R41 (回 SE5・B-028)。国家選択 6 か国の観戦で、2500 年 (開始から 200 年) の入植された星系の割合と、残っている AI の国 (プレイヤーの国でない国家選択の国) の星系の数の中央値を出す。50 年ごとの国の大きさと、国家選択にない独立国の星系も並べる。CI では回さない (30 銀河 × 300 年で 4 CPU 約 5 分)。
+
+```sh
+node tools/galaxy-race.js 30 300 6                       # R40・R41 の合否と 50 年ごとの表 (Markdown。--json で JSON)
+node tools/galaxy-race.js 16 200 6 src/index.html 値.json # 値のファイルで EDITIONS などを差し替えて測る
+```
 
 ## 戦略と必勝法を探す AI (tools/strategy.js・tools/search.js)
 
@@ -201,6 +228,25 @@ node tools/eta.js "$PWD/index.html" 0.5 2   # FGK 型・M 型の主星あたり�
 node tools/eta.js "$PWD/index.html" 1.0 2   # M 型の目標 R06 は 1〜1.5 地球半径
 ```
 
+## 国ごとの違いの釣り合い (回 SE8・B-029。tools/nation-balance.js)
+
+国家選択 6 か国の観戦で、国ごとの特性・開始の大きさ・終わりの星系の数を記録し、特性ごと・開始の大きさの組ごとの勝率 (終わりの年に星系の数が 1 位) を全体の勝率と比べる。比が 1.5 を超えるか 0.5 を下回る特性は値を直す (QD-112 = a。`docs/nations.md` の 4)。特性は開始の大きさをそろえた試合 (`--equal`) で測る。CI では回さない (1 銀河 × 150 年で 15〜20 秒)。
+
+```sh
+node tools/nation-balance.js 1 15 150 --equal --json a.json      # シード 1〜15 (途中までもシードごとに書き出す。いくつかに分けて並べて回す)
+node tools/nation-balance.js --merge a.json,b.json              # まとめて表にする
+```
+
+## 政策の反応 (目標 R80〜R83。tools/policy-irf.js)
+
+```sh
+node tools/policy-irf.js 12 6 --json irf.json                    # 12 銀河 × 40・70 年目に、AI の国ごとに金利・税・支出を変えた双子の試合 (5 年)
+node tools/policy-irf.js 0 6 --seeds 1,2,3 --json a.json          # 銀河を分けて並べて回し (途中で止めても済んだ分は残る)
+node tools/policy-irf.js --merge a.json,b.json                    # まとめて表にする
+```
+
+途中の年のセーブから同じ試合を分け、片方の国だけ政策を変えて、GDP・物価などの差を年ごとに測る。表の太字は実験ごとの値の中央値 (目標の判定に使う)。何も変えない双子が比べる元と同じ筋にならないと、終了コード 1。結果の読み方は `docs/money.md` の 6。30 銀河 × 2 つの年で、4 つ並べて手元で 1 時間ほど。
+
 ## 交易と距離 (目標 R01)
 
 ```sh
@@ -265,3 +311,19 @@ node tools/session-check.js --check # tools/sessions.json と docs/sessions.md �
 ```
 
 回の順番 (どの回の前にどの回が済んでいる必要があるか) は `tools/sessions.json`。済んだかは、main の `docs/status/<レーン>.md` の「## 済んだ回」の行 (`- GA1 (#180)`) で決まる (`git fetch origin main` してから読む。`SESSION_CHECK_LOCAL=1` で手元のファイル)。
+
+## ほかの道具 (一覧。回 DO7 で足した)
+
+上の節に書いていない道具。使い方は各ファイルの先頭のコメント。
+
+- `tools/src.js`: `src/index.html` の `//#include` を中身に置き換えて 1 枚に組み立てる (`--ref <git の参照>`・`--out`・`--check`)。組み立て・画面なしの版・CI はこれを通して読む
+- `tools/check-targets.js`: 合わせる目標 (`targets/targets.json`) の形とハッシュ (`targets.lock`) を確かめる。`--lock` で固定し直す (「目標の変更」の PR だけ)
+- `tools/ci-judge.js`: CI の試験の合否の小道具 (`tools/tests` の各ファイルの `exports.ci` から使う)
+- `tools/i18n.js`: 画面の文字列を集めて言語ごとの表 (`src/outward/lang-en.js`) とそろえる (`--sync`・`--todo`・`--stats`。`docs/i18n.md`)。`tools/i18n-scan.js` は英語の画面に残った日本語を探す
+- `tools/battles-headless.js`: 艦隊戦の法則 (R16) を CDB90 と同じ回帰で測る
+- `tools/demography-panel.js`: 年齢つきの人口のパネル (R36・R37)。`data/build/build_demography.py` で測る
+- `tools/innovation-panel.js`・`tools/gpt-panel.js`: 技術革新の国・年のパネル (R66〜) と汎用技術の採用の表 (R77)。`data/build/build_innovation.py` で測る
+- `tools/capital-panel.js`: 投資と資本の国・年のパネル (R78・R79)。`data/build/build_capital.py --game` で測る
+- `tools/secession-analyze.js`: 離反の自動対戦 (`tools/secession.js`) の結果を集計する (存続年数の中央値・統治体制ごとの独立の起きやすさ)
+- `tools/p0-measure.js`: P0 監査の実測 (`docs/P0-audit.md`。Chromium で開く)
+- `tools/unlzma.js`: LZMA の展開器 (ほかの道具から使う)

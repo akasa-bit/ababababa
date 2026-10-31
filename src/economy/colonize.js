@@ -13,7 +13,7 @@
     this.surveyed.push(sysId);
     (this.surveyAt ??= {})[sysId] = this.year; // 接触した年 (知らせが光速で広がる。isSurveyed)
     for (const b of this.system(sysId).bodies) {
-      if (b.natives) this.event('natives', sysId, `${b.name} で先住民「${b.natives.species}」(${TECH_LABEL[b.natives.tech]}) と接触した`);
+      if (b.natives) this.event('natives', sysId, JA`${b.name} で先住民「${b.natives.species}」(${TECH_LABEL[b.natives.tech]}) と接触した`);
     }
   }
   nativeOf(sysId, bodyId) {
@@ -31,16 +31,15 @@
     if (c.kind === 'planet' && this.isHome(c.sys, c.body)) return 12000 * (1 + 0.25 * c.lv.habitat);
     if (c.kind === 'station') return 2 * (1 + c.lv.habitat);
     const b = this.target(c.sys, c.body);
-    const grade = b.settle?.grade || 1;
-    const m = this.modsOf(c.sys);
-    return [80, 80, 800, 4000][grade] * (1 + 0.5 * c.lv.habitat) * m.cap * (m.capBy[b.surface] || 1);
+    const m = this.modsOf(c.sys), grade = b.settle?.grade || 1;
+    return [80, 80, 800, 4000][grade] * (grade <= 1 ? m.harsh : 1) * (1 + 0.5 * c.lv.habitat) * m.cap * (m.capBy[b.surface] || 1); // 適応力: 住みにくい惑星 (適性 1) ×3 (回 SE8)
   }
   surfaceOf(c) { return c.kind === 'planet' ? this.target(c.sys, c.body).surface : null; }
   fertility(c) { return { temperate: 1, ocean: 0.6 }[this.surfaceOf(c)] || 0; }
   needsWater(c) { return !this.fertility(c); } // 温暖・海洋の惑星以外は水を消費する
 
   // 入植可否と理由。惑星入植は適性≥1の固体天体のみ、ステーションは任意の天体の周回軌道に建設できる。
-  check(sysId, bodyId, kind) {
+  check(sysId, bodyId, kind, from = this.cap) {
     const t = this.target(sysId, bodyId);
     if (!t) return fail('対象が存在しない');
     if (this.colonyAt(sysId, bodyId, kind)) return fail('建設済み');
@@ -49,6 +48,7 @@
     if (kind === 'planet' && !(t.settle && t.settle.grade >= 1)) {
       return fail(t.settle ? t.settle.notes.join('、') || '入植に適さない' : '惑星ではない');
     }
+    if (kind === 'planet' && this.modsOf(from).forbid.includes(t.surface)) return fail(JA`${this.speciesOfRealm(this.realmOf(from))}はこの型の惑星に住めない`); // 水棲・寒冷適応・乾燥適応 (回 SE8)
     if (kind === 'planet' && this.isSurveyed(sysId) && this.blockedByNatives(sysId, bodyId)) {
       return fail('最も進んだ未恒星間文明の惑星には同意が必要 (友好度40以上)');
     }
@@ -82,11 +82,11 @@
   materialBill(cost, sysId) { return MARKET.buy && sysId !== undefined ? RES.reduce((k, r) => k + (cost[r] ? cost[r] * this.bulkPrice(sysId, r, cost[r]) : 0), 0) : 0; }
   lack(cost, sysId, payer = sysId ?? 0) {
     const bill = this.materialBill(cost, sysId);
-    if ((cost.credits || 0) + bill > this.funds(payer)) return bill ? `クレジット不足 (資材の代金 ${Math.ceil(bill)} cr を含む)` : 'クレジット不足';
-    if ((cost.energy || 0) > this.energyOf(payer)) return `エネルギー不足 (${fmtJ(Math.max(0, this.energyOf(payer)))}/${fmtJ(cost.energy)})`;
+    if ((cost.credits || 0) + bill > this.funds(payer)) return bill ? JA`クレジット不足 (資材の代金 ${Math.ceil(bill)} cr を含む)` : 'クレジット不足';
+    if ((cost.energy || 0) > this.energyOf(payer)) return JA`エネルギー不足 (${fmtJ(Math.max(0, this.energyOf(payer)))}/${fmtJ(cost.energy)})`;
     const st = sysId === undefined ? null : this.stockOf(sysId);
     for (const r of RES) {
-      if (cost[r] && (!st || st[r] < cost[r])) return `${RES_LABEL[r]}が不足 (${Math.floor(st ? st[r] : 0)}/${cost[r]})`;
+      if (cost[r] && (!st || st[r] < cost[r])) return JA`${RES_LABEL[r]}が不足 (${Math.floor(st ? st[r] : 0)}/${cost[r]})`;
     }
     return '';
   }
@@ -97,6 +97,7 @@
     if (cost.credits) { this.cash('build', -cost.credits, { gov: payer }); this.cash('build', cost.credits, { hh: sysId ?? payer }); } // 建てる星系の家計が受け取る (賃金)
     const bill = this.materialBill(cost, sysId);
     if (bill) { this.cash('build', -bill, { gov: payer }); this.cash('build', bill, { fm: sysId }); } // 資材は、その星系の会社から市場の値段で買う
+    this.invNote(sysId ?? payer, (cost.credits || 0) + (bill || 0)); // 投資に数える (回 KE6)
     if (cost.energy) this.bookE('build', -cost.energy, payer);
     for (const r of RES) if (cost[r]) this.mv(sysId, r, -cost[r], 'build');
     return { ok: true };
@@ -118,7 +119,7 @@
     if ((cost.credits || 0) > funds) return { why: 'クレジット不足' };
     // エネルギー: 船の推進の分と、取り寄せる資材を交易路で減速させる分は受け手、加速させる分は取り寄せ元が払う
     const eHave = this.energyOf(sysId ?? 0) - (cost.energy || 0);
-    if (eHave < 0) return { why: `エネルギー不足 (${fmtJ(Math.max(0, this.energyOf(sysId ?? 0)))}/${fmtJ(cost.energy)})` };
+    if (eHave < 0) return { why: JA`エネルギー不足 (${fmtJ(Math.max(0, this.energyOf(sysId ?? 0)))}/${fmtJ(cost.energy)})` };
     const eUsed = new Map();
     let eIn = 0;
     const plan = [];
@@ -126,14 +127,14 @@
     for (const r of RES) {
       let need = cost[r] || 0;
       if (!need) continue;
-      if (sysId === undefined) return { why: `${RES_LABEL[r]}が不足` };
+      if (sysId === undefined) return { why: JA`${RES_LABEL[r]}が不足` };
       const local = Math.min(Math.max(this.stockOf(sysId)[r], 0), need);
       if (local > 0) { plan.push({ from: sysId, r, amt: local, ...(MARKET.buy ? { price: this.bulkPrice(sysId, r, local) } : {}) }); need -= local; }
       if (need <= 1e-9) continue;
       // 資材輸送船は交易路しか通れないので、交易路でつながった星系からだけ取り寄せる
       const { dist } = this.reach(sysId);
       const sources = this.colonizedSystems()
-        .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !this.tradeBlocked(sysId, s.id) && (onlyFrom === undefined || s.id === onlyFrom))
+        .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !this.tradeBlocked(sysId, s.id) && !this.tradeBarred(sysId, s.id, r) && (onlyFrom === undefined || s.id === onlyFrom))
         // 取り寄せ元に残す量: 前の版は 1 年分の需要。市場のある版は、目標の在庫の厚さぶん (それより多くは、値段で売る。bulkPrice)
         // 取り寄せ元は、光の遅れのぶん古い記録で余りが見える星系から選ぶ (回 KE3)。送れる量は、いまの在庫が上限 (取り寄せの注文が届くまでの遅れは、まだ入れていない)
         .map((s) => ({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id), spare: Math.min(this.spareSeen(sysId, s.id, r), this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) * (MARKET.buy ? MARKET.cover[r] : 1)) }))
@@ -156,12 +157,12 @@
         // 買えなかった注文も需要として値段に効かせる (受注残。足りない分を 1 年で満たしたい需要として、この刻みの需要に足す。同じ刻みの注文は大きいほうだけ)
         // 試合を進めているあいだ (advance の中) だけ記録する。画面がボタンを出すために確かめるときは記録しない (端末ごとに状態が変わらないように)
         if (MARKET.buy && onlyFrom === undefined && this.stepping) { const u = (this.unmet[sysId] ??= zeroRes()); u[r] = Math.max(u[r], need); }
-        return { why: `${RES_LABEL[r]}が不足 (交易路でつながった星系を含めても足りない)` };
+        return { why: JA`${RES_LABEL[r]}が不足 (交易路でつながった星系を含めても足りない)` };
       }
     }
     const imp = plan.filter((x) => x.from !== sysId).reduce((k, x) => k + x.amt * x.price, 0);
     const local = plan.filter((x) => x.from === sysId).reduce((k, x) => k + x.amt * (x.price || 0), 0); // 地元で買う資材の代金 (MARKET.buy)
-    if (onlyFrom === undefined && imp + local > 0 && (cost.credits || 0) + imp + local > funds) return { why: `資金不足 (資材の代金 ${Math.ceil(imp + local)} cr を含む)`, poor: true };
+    if (onlyFrom === undefined && imp + local > 0 && (cost.credits || 0) + imp + local > funds) return { why: JA`資金不足 (資材の代金 ${Math.ceil(imp + local)} cr を含む)`, poor: true };
     return { why: '', eta, plan, imp };
   }
   // 建設を発注する。費用はその場で払い、資材が届いた時点で完成する。
@@ -182,6 +183,7 @@
     const seed = job.type === 'ship' ? SEED_FUNDS[job.kind] || 0 : 0;
     if (cost.credits) { this.cash('build', -cost.credits, payer); this.cash('build', cost.credits - seed, { hh: sysId }); } // 賃金は家計へ
     if (seed) this.cash('build', seed, { way: job, f: 'seed' });
+    this.invNote(sysId, (cost.credits || 0) - seed); // 投資に数える (回 KE6。入植船の開拓資金は除く)
     if (job.flight && SIM_ONLY && job.flight.path) this.bookPath('settler', job.flight.m, job.flight.path, 'free', { payer: sysId });
     else if (job.flight) this.bookShip('settler', job.flight.m, job.flight.beta, 'free', sysId, sysId, job.flight.ly ?? 0);
     else if (cost.energy) this.bookE('build', -cost.energy, sysId);
@@ -195,6 +197,7 @@
       if (MARKET.buy) {
         // 資材は売り手の星系の会社から買う。主人の支援なら、主人の政府が代わりに払う
         const v = x.amt * (x.price || 0);
+        this.invNote(sysId, v);
         if (v > 0 && p.aid && x.from !== sysId) { this.cash('grant', -v, { gov: x.from }); this.cash('grant', v, { fm: x.from }); }
         else if (v > 0 && x.from !== sysId) { if (firm) { this.cash('import', -v, payer); this.cash('import', v, { fm: x.from }); } else this.earn('import', -v, payer.gov, { fm: x.from }); }
         else if (v > 0 && payer.fm !== sysId) { this.cash('build', -v, payer); this.cash('build', v, { fm: sysId }); } // 会社が自分の在庫を使うときは払わない
@@ -217,7 +220,7 @@
       this.requests.push({ id: this.nextShipId++, kind: 'build', from: sysId, to: l.path[0], job: job.id, label: job.label, sent: this.year, arrive: l.times[0], state: 'sending' });
     }
     this.projects.push(job);
-    if (!firm) this.message(`${job.label}: 資材を周辺の星系から搬入中 (${p.aid ? `主人の ${this.system(this.gov(sysId).lord).name} から支援 ${Math.ceil(p.aid)} cr 相当` : `輸入費 ${Math.ceil(p.imp || 0)} cr`}、完成まで ${eta.toFixed(1)} 年)`, sysId);
+    if (!firm) this.message(JA`${job.label}: 資材を周辺の星系から搬入中 (${p.aid ? JA`主人の ${this.system(this.gov(sysId).lord).name} から支援 ${Math.ceil(p.aid)} cr 相当` : JA`輸入費 ${Math.ceil(p.imp || 0)} cr`}、完成まで ${eta.toFixed(1)} 年)`, sysId);
     return { ok: true };
   }
   pending(pred) { return this.projects.find(pred); }
@@ -226,25 +229,25 @@
       const c = this.colonyByKey(job.col);
       if (!c) return;
       c.lv[job.fac]++;
-      this.message(`${c.name} の${FACILITY[job.fac]}を Lv${c.lv[job.fac]} に拡張した`, c.sys);
+      this.message(JA`${c.name} の${FACILITY[job.fac]}を Lv${c.lv[job.fac]} に拡張した`, c.sys);
     } else if (job.type === 'ships') { // 輸送船 (回 KE5)
       const r = this.routes.find((x) => x.id === job.route);
       if (r) r.ships = this.routeShips(r) + job.n;
     } else if (job.type === 'warship') {
       const n = job.n || 1;
       this.garrison[job.sys] = (this.garrison[job.sys] || 0) + n;
-      this.message(`${this.system(job.sys).name} で${n > 1 ? ` ${n} ` : ''}艦隊を編成した (駐留 ${this.garrison[job.sys]} 艦隊)`, job.sys);
+      this.message(JA`${this.system(job.sys).name} で${n > 1 ? ` ${n} ` : ''}艦隊を編成した (駐留 ${this.garrison[job.sys]} 艦隊)`, job.sys);
     } else if (job.type === 'route') {
       const r = this.routes.find((x) => x.id === job.route);
       if (!r) return;
       r.lv++; // 港が広がる。広がった分の船は、運送業の会社が次の年に足す (回 KE5)
-      this.message(`${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路を Lv${r.lv} に拡張した`, r.a);
+      this.message(JA`${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路を Lv${r.lv} に拡張した`, r.a);
     } else if (job.type === 'troop') {
       const c = this.colonyByKey(job.col);
       if (!c) return;
       c.troops += 1;
-      c.pop = Math.max(0.001, c.pop - TROOP_DRAFT);
-      if (!job.quiet) this.message(`${c.name} で歩兵連隊を訓練した (駐留 ${c.troops} 連隊)`, c.sys);
+      c.pop = Math.max(POP_FLOOR, c.pop - TROOP_DRAFT);
+      if (!job.quiet) this.message(JA`${c.name} で歩兵連隊を訓練した (駐留 ${c.troops} 連隊)`, c.sys);
     } else if (job.type === 'capacity') { // 民間の採掘の能力 (回 KE5)
       const k = this.capacityAt(job.sys, job.body);
       if (k) k.k += job.k; else this.capacity.push({ sys: job.sys, body: job.body, k: job.k, by: job.pay?.fm ?? job.sys });
@@ -252,7 +255,7 @@
       const o = this.outpostAt(job.sys, job.body);
       if (o) o.lv++;
       else this.outposts.push({ sys: job.sys, body: job.body, lv: 1 });
-      this.message(`${this.target(job.sys, job.body).name} の採掘基地が Lv${o ? o.lv : 1} になった`, job.sys);
+      this.message(JA`${this.target(job.sys, job.body).name} の採掘基地が Lv${o ? o.lv : 1} になった`, job.sys);
     } else if (job.type === 'fort') {
       this.fortBuilt(job); // 宇宙要塞 (船と戦争。ship/fort.js)
     } else if (job.type === 'ship') {
@@ -275,18 +278,20 @@
   }
 
   dispatch(fromId, toId, bodyId, kind) {
-    const c = this.check(toId, bodyId, kind);
+    const c = this.check(toId, bodyId, kind, fromId);
     if (!c.ok) return c;
     if (!this.isColonized(fromId)) return fail('出発地に入植地がない');
-    const label = `${this.target(toId, bodyId).name} への入植船 (${KIND_LABEL[kind]})`;
-    const cost = this.shipCost(kind, fromId, toId);
-    return this.order(cost, fromId, { type: 'ship', to: toId, body: bodyId, kind, label, supplies: { food: cost.food, water: cost.water }, flight: this.settlerFlight(kind, fromId, toId) });
+    const label = JA`${this.target(toId, bodyId).name} への入植船 (${KIND_LABEL[kind]})`;
+    const des = this.settlerDesign(fromId); // 入植船の設計 (船と戦争。B-033)。注文したときのものを船に持たせる
+    const cost = this.shipCost(kind, fromId, toId, des);
+    return this.order(cost, fromId, { type: 'ship', to: toId, body: bodyId, kind, label, design: des, supplies: { food: cost.food, water: cost.water, ...(des.cargo ? { goods: des.cargo } : {}) }, flight: this.settlerFlight(kind, fromId, toId) });
   }
   // 入植船に積む食料と水。交易路を結んで物資移送要求の往復が回り出すまで (5年 + 出発地との往復の年数) を、
   // 人口の伸びも見込んで2倍ぶん積む。到着すると入植先の備蓄になる
   supplyYears(fromId, toId) { return 5 + 2 * this.travelYears(fromId, toId); }
-  shipSupplies(kind, fromId, toId) {
+  shipSupplies(kind, fromId, toId, des = this.settlerDesign(fromId)) {
     const y = this.supplyYears(fromId, toId);
-    const n = SETTLERS[kind];
-    return { food: Math.ceil(n * y * 2), water: Math.ceil(n * 0.1 * y * 2) };
+    const n = des.crew / 1e6; // 入植船の設計の人数 [百万人] (船と戦争。B-033)
+    const up = (x) => Math.ceil(x * 1000) / 1000;
+    return { food: up(n * y * 2), water: up(n * 0.1 * y * 2) };
   }

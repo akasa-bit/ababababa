@@ -4,15 +4,16 @@
   lightDelay(sys) { return sys === undefined || sys === null || sys === this.cap ? 0 : this.sysDist(this.cap, sys); }
   event(kind, sys, text, good = false) {
     if (STORY_RESET.has(kind) && this.story) this.story.last = this.year; // 語り手は、何かが起きた年から数え直す
-    this.events.unshift({ id: this.nextShipId++, year: this.year, seen: this.year + this.lightDelay(sys), kind, sys, text, good });
+    this.events.unshift({ id: this.nextShipId++, year: this.year, seen: this.year + this.lightDelay(sys), kind, sys, text, good, ...(this.players[this.pi]?.ai ? { p: this.pi } : {}) }); // AI の席の出来事は、その席だけに見せる
     this.events.length = Math.min(this.events.length, 300);
     this.message(text, sys, kind);
   }
   // 知らせが届く年: 出来事の星系からいまのプレイヤーの首都まで光が届く年 (地球が首都なら記録した seen のまま)
   seenOf(e) { return e.sys === undefined || e.sys === null ? e.seen ?? e.year : e.year + this.lightDelay(e.sys); }
   knownEvents() {
-    if (this.spectate) return this.events.filter((e) => e.year <= this.year).sort((a, b) => b.year - a.year);
-    if (this.cap !== 0 || this.players.length > 1) return this.events.map((e) => ({ ...e, seen: this.seenOf(e) })).filter((e) => e.seen <= this.year).sort((a, b) => b.seen - a.seen);
+    const mine = (e) => e.p === undefined || e.p === this.pi; // ほかの席 (AI の国) だけの出来事は出さない
+    if (this.spectate) return this.events.filter((e) => e.year <= this.year && mine(e)).sort((a, b) => b.year - a.year);
+    if (this.cap !== 0 || this.players.length > 1) return this.events.filter(mine).map((e) => ({ ...e, seen: this.seenOf(e) })).filter((e) => e.seen <= this.year).sort((a, b) => b.seen - a.seen);
     return this.events.filter((e) => (e.seen ?? e.year) <= this.year).sort((a, b) => (b.seen ?? b.year) - (a.seen ?? a.year));
   }
   // 充足率などの悪化と回復を見張る (ばたつかないよう 93% 未満で発生、99% 以上で解消)。
@@ -35,13 +36,14 @@
     } else if (c.alerts[key] && c.alertSince[key] !== null && this.year - (c.alertSince[key] ??= this.year) >= (WATCH_LOG_YEARS[kind] ?? 0)) {
       const years = this.year - c.alertSince[key];
       c.alertSince[key] = null; // 記録した印
-      this.event(kind, c.sys, `${onText()}${years >= 1.5 ? ` — ${Math.round(years)}年続いている` : ''}`);
+      this.event(kind, c.sys, `${onText()}${years >= 1.5 ? JA` — ${Math.round(years)}年続いている` : ''}`);
     }
   }
 
   // msgTo: 人間が複数いるとき、そのプレイヤーだけに見せる記録 (命令の結果など) の宛先
   message(text, sys, kind) {
-    this.log.unshift({ year: this.year, seen: this.year + this.lightDelay(sys), text, ...(kind ? { kind } : {}), ...(sys !== undefined && sys !== null ? { sys } : {}), ...(this.msgTo !== undefined ? { p: this.msgTo } : {}) });
+    const to = this.msgTo ?? (this.players[this.pi]?.ai ? this.pi : undefined); // AI の席の記録は、その席だけに見せる
+    this.log.unshift({ year: this.year, seen: this.year + this.lightDelay(sys), text, ...(kind ? { kind } : {}), ...(sys !== undefined && sys !== null ? { sys } : {}), ...(to !== undefined ? { p: to } : {}) });
     this.log.length = Math.min(this.log.length, 120);
   }
   knownLog() {
@@ -65,33 +67,39 @@
         key: colKey(c), name: c.name, kind: c.kind, body: c.body, pop: c.pop, cap: this.capOf(c), growth: c.growth || 0,
         sat: c.sat ? { ...c.sat } : null, focus: c.focus, sh: c.sh ? { ...c.sh } : null, inc: c.inc, lv: { ...c.lv }, troops: c.troops, slaveTroops: c.slaveTroops,
         races: { ...(c.races || {}) }, alerts: { ...(c.alerts || {}) }, industry: c.industry, slaveWork: c.slaveWork, ages: c.age ? this.ageShares(c) : null,
+        ...(c.age ? { school: Math.round(this.schoolOf(c) * 100) / 100, learn: Math.round(this.learnOf(c)) } : {}), // 大人の平均の就学年数と学力 (星系の欄。回 GA9 の知らせ KE-school)
       })),
       stock: { ...this.stockOf(id) },
       prod: fl ? { ...fl.prod } : zeroRes(), cons: fl ? { ...fl.cons } : zeroRes(),
       garrison: this.garrison[id] || 0, fort: this.forts?.[id] || 0, held: this.held[id] || 0, awe: this.awe[id] || 0, supply: this.supplied[id]?.k,
       projects: this.projects.filter((j) => j.sys === id).map((j) => ({ type: j.type, n: j.n, col: j.col, fac: j.fac, body: j.body, to: j.to, kind: j.kind, start: j.start, ready: j.ready, label: j.label })),
-      credits: gv ? gv.credits : 0, bond: gv?.bond || 0, hh: gv?.hh || 0, loan: gv?.loan || 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null, energy: gv?.E || 0, power: this.power(id),
+      // gdp = ならした GDP (財政のグラフ。回 GA9・B-059)
+      credits: gv ? gv.credits : 0, bond: gv?.bond || 0, gdp: gv?.fr?.y || 0, hh: gv?.hh || 0, loan: gv?.loan || 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null, energy: gv?.E || 0, power: this.power(id),
       ...(() => { // その星系で効いている財政 (標準でないものだけ)
         if (!this.isColonized(id)) return {};
-        const root = this.realmOf(id), t = taxRateOf(this.fiscalAt(id).tax), w = this.budgetAt(root, id, 'welfare'), sc = this.budgetAt(root, id, 'security');
-        return { ...(Math.abs(t - MARKET.tax) > 1e-9 ? { tax: t } : {}), ...(w ? { welfare: w } : {}), ...(sc ? { security: sc } : {}) };
+        const root = this.realmOf(id), f = this.fiscalAt(id), t = taxRateOf(f.tax), w = this.budgetAt(root, id, 'welfare'), sc = this.budgetAt(root, id, 'security');
+        const l = f.ctax > 0 || f.tariff > 0 ? this.policyLoss(id, f) : null; // 家計の損の割合 (消費税・関税があるときだけ。回 KE8・B-012)
+        const pi = this.inflOf(id); // 国の物価の上がり方 (忠誠度の物価の項。回 KE9)
+        return { ...(Math.abs(t - MARKET.tax) > 1e-9 ? { tax: t } : {}), ...(l ? { ctax: f.ctax || 0, tariff: f.tariff || 0, loss: l } : {}), ...(w ? { welfare: w } : {}), ...(sc ? { security: sc } : {}), ...(Math.abs(pi - CB.pistar) > 1e-9 ? { infl: pi } : {}) };
       })(),
       outposts: this.outposts.filter((o) => o.sys === id).map((o) => ({ body: o.body, lv: o.lv })),
       natives: Object.fromEntries(this.system(id).bodies.filter((b) => this.natives[`${id}|${b.id}`]).map((b) => [b.id, { ...this.natives[`${id}|${b.id}`] }])),
       wars: this.wars.filter((w) => w.sys === id).map((w) => ({ body: w.body, progress: w.progress, enemy: w.enemy })),
       unrest: gv?.unrest?.stage ? { ...gv.unrest } : null, attended: gv ? gv.attended ?? gv.founded : undefined, direct: !!gv?.direct, mandate: gv?.mandate || 'balanced', governor: gv?.governor || 'ask',
-      taxFree: gv?.taxFree || 0, autonomy: gv?.autonomy || 0, ...(gv?.regime ? { regime: gv.regime } : {}), ...(gv?.law ? { law: gv.law } : {}), ...(gv?.fact ? { fact: gv.fact } : {}), ...(gv?.elite ? { elite: gv.elite } : {}), ...(gv?.lord2 !== undefined ? { lord2: gv.lord2 } : {}), ...(gv?.jointCut ? { jointCut: true } : {}), ...(gv?.arrears ? { arrears: gv.arrears } : {}), ...(gv?.scar ? { scar: gv.scar } : {}), ...(gv?.did?.length ? { did: gv.did.slice() } : {}), ...(this.exhaustion?.[id] && this.isColonized(id) && this.realmOf(id) === id ? { exh: this.exhaustion[id] } : {}), policy: this.isColonized(id) ? this.policyAt(id) : null,
+      taxFree: gv?.taxFree || 0, autonomy: gv?.autonomy || 0, ...(gv?.regime ? { regime: gv.regime } : {}), ...(gv?.law ? { law: gv.law } : {}), ...(gv?.fact ? { fact: gv.fact } : {}), ...(gv?.elite ? { elite: gv.elite } : {}), ...(gv?.include ? { include: { ...gv.include } } : {}), ...(this.isColonized(id) ? { groups: this.groupsOf(id) } : {}), ...(gv?.lord2 !== undefined ? { lord2: gv.lord2 } : {}), ...(gv?.jointCut ? { jointCut: true } : {}), ...(gv?.arrears ? { arrears: gv.arrears } : {}), ...(gv?.scar ? { scar: gv.scar } : {}), ...(gv?.did?.length ? { did: gv.did.slice() } : {}), ...(this.exhaustion?.[id] && this.isColonized(id) && this.realmOf(id) === id ? { exh: this.exhaustion[id] } : {}), policy: this.isColonized(id) ? this.policyAt(id) : null,
       loyalty: gv ? gv.loyalty ?? LOYALTY_START : null, orders: gv ? gv.orders || 0 : 0, fear: gv ? gv.fear || 0 : 0, friend: gv ? gv.friend || 0 : 0, lordTrade: gv ? gv.lordTrade || 0 : 0, realm: this.isColonized(id) ? this.realmOf(id) : null, independent: !!gv?.independent, founded: gv ? gv.founded : undefined, aid: gv ? gv.aid || 0 : 0, dep: gv ? gv.dep || 0 : 0,
       siege: (() => { const g = this.sieges.find((x) => x.sys === id); return g ? { realm: g.realm, ships: g.ships, progress: g.progress, eff: this.fleetEff(g.sup, g.line), line: g.line } : null; })(),
       battle: (() => { const b = this.battleAt(id); return b ? { realm: b.realm, a: b.a, d: b.d, a0: b.a0, d0: b.d0, start: b.start, ea: this.fleetEff(b.sup, b.line), ed: this.fleetEff(b.dsup, 0), line: b.line } : null; })(),
     };
   }
   // --- AI の国の知っていること (光の遅れ) ---
+  // 知らせが銀河の端まで届く年数 (いちばん遠い 2 つの星系の光年)。セーブに入れず、初めて要るときに計算する (読み込みの直後でも同じ値。回 FU3 で 4 か所の式をまとめた)
+  intelSpanYears() { return (this.intelSpan ??= Math.ceil(Math.max(...this.galaxy.systems.map((a) => Math.max(...this.galaxy.systems.map((b) => distance(a, b))))))); }
   // 年ごとに、入植星系と艦隊のいる星系の [年, 国, 駐留艦隊, よその艦隊] を記録する (前と同じなら足さない)。
   // よその艦隊 = { [国]: n }: その星系を出発してまだ移動中の艦隊 (出発は見えるが、着いたかはまだ見えない)・その星系を攻囲している艦隊・攻めている艦隊。
   // いちばん遠い 2 つの星系の距離より古い記録は、もうどこからも見えないので、その時点の 1 つだけ残して捨てる
   recordIntel() {
-    const span = (this.intelSpan ??= Math.ceil(Math.max(...this.galaxy.systems.map((a) => Math.max(...this.galaxy.systems.map((b) => distance(a, b))))))) + 1;
+    const span = this.intelSpanYears() + 1;
     const away = {};
     const add = (id, r, n) => { if (n > 0) { const a = (away[id] ??= {}); a[r] = (a[r] || 0) + n; } };
     for (const f of this.fleets) add(f.from, f.owner ?? 0, f.n);
@@ -161,12 +169,12 @@
     if (BARGAIN.on) this.recordShips();
     this.snapVer = (this.snapVer || 0) + 1; // 記録が変わった (knownSystems の使い回しをやめる)
     const ids = new Set([...this.colonizedSystems().map((x) => x.id), ...Object.keys(this.garrison).filter((k) => this.garrison[k] > 0).map(Number)]);
-    const caps = this.players.filter((p) => p.human).map((p) => p.cap);
+    const caps = this.players.map((p) => p.cap); // AI の席も、光の遅れのぶん古い記録で判断する
     for (const id of ids) {
-      if (caps.every((c) => c === id)) continue; // 人間のプレイヤーの首都はいつも最新が見える
+      if (caps.every((c) => c === id)) continue; // 席の首都はいつも最新が見える
       const list = (this.snaps[id] ??= []);
       list.push(this.snapshot(id));
-      // どの人間のプレイヤーからも見えなくなった古い記録は捨てる (いちばん遠いプレイヤーの分まで残す)
+      // どの席からも見えなくなった古い記録は捨てる (いちばん遠い席の分まで残す)
       const seenYear = this.year - Math.max(...caps.map((c) => (c === id ? 0 : this.sysDist(c, id))));
       let i = 0;
       while (i + 1 < list.length && list[i + 1].year <= seenYear) i++;

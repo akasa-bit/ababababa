@@ -22,7 +22,7 @@ class GalaxyView {
     this.cam.y = 0;
     this.cam.z = 0;
     // 3 次元の銀河は、少し斜めから見下ろして始める (平面の銀河は真上から)
-    if (this.camKind !== g.kind) { this.camKind = g.kind; this.cam.yaw = 0; this.cam.pitch = g.kind === 'real' ? DEFAULT_PITCH : 0; }
+    if (this.camKind !== g.kind) { this.camKind = g.kind; this.cam.yaw = 0; this.cam.pitch = is3D(g) ? DEFAULT_PITCH : 0; }
   }
 
   // 地球の知っている入植星系がすべて収まるように寄せる (従属マップを開いたとき)
@@ -141,7 +141,7 @@ class GalaxyView {
         // (中身が指に貼りついたまま拡大・移動し、ずれていかない)
         this.cam.zoom = clamp(pinch.zoom * d / pinch.d, 1.5, 80);
         // 2 本指をひねると回る (3 次元の銀河のとき)
-        if (this.app.game.galaxy.kind === 'real') this.cam.yaw = pinch.yaw - (Math.atan2(b[1] - a[1], b[0] - a[0]) - pinch.ang);
+        if (is3D(this.app.game.galaxy)) this.cam.yaw = pinch.yaw - (Math.atan2(b[1] - a[1], b[0] - a[0]) - pinch.ang);
         this.pinWorld(pinch.world[0], pinch.world[1], mx, my);
         return;
       }
@@ -399,7 +399,7 @@ class GalaxyView {
     }
     ctx.setLineDash([]);
     // 高さの手がかり: 傾けているときは、各星から銀河面 (z = 0) へ縦の線を引く (EVE Online の星図と同じ)
-    if (!flat && this.app.game.galaxy.kind === 'real') {
+    if (!flat && is3D(this.app.game.galaxy)) {
       ctx.strokeStyle = 'rgba(120,150,210,0.16)';
       ctx.beginPath();
       for (const sx of this.app.game.galaxy.systems) {
@@ -783,7 +783,7 @@ class GalaxyView {
         ctx.strokeStyle = '#ffaa3c';
         ctx.beginPath(); ctx.arc(x, y, rr, -Math.PI / 2, -Math.PI / 2 + Math.max(0.05, k.siege.progress) * Math.PI * 2); ctx.stroke();
         ctx.lineWidth = 1;
-        this.labels.push({ text: `攻囲 ${Math.round(k.siege.progress * 100)}%`, font: 'bold 12px sans-serif', color: '#ffaa3c', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 4, y + rr], [x - rr - 4 - w, y + rr]] });
+        this.labels.push({ text: TR`攻囲 ${Math.round(k.siege.progress * 100)}%`, font: 'bold 12px sans-serif', color: '#ffaa3c', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 4, y + rr], [x - rr - 4 - w, y + rr]] });
       }
       if (k && k.battle) {
         // 艦隊戦: 点滅する赤い輪と、両軍の残りの比 (左が攻撃側の国の色、右が防衛側)
@@ -801,10 +801,10 @@ class GalaxyView {
         ctx.fillRect(x + rr + 4, y + rr + 4, w * frac, 4);
         ctx.fillStyle = realmColor(k.realm);
         ctx.fillRect(x + rr + 4 + w * frac, y + rr + 4, w * (1 - frac), 4);
-        this.labels.push({ text: `艦隊戦 ${Math.ceil(bt.a)}対${Math.ceil(bt.d)}`, font: 'bold 12px sans-serif', color: '#ff6b6b', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 4, y + rr], [x - rr - 4 - w, y + rr]] });
+        this.labels.push({ text: TR`艦隊戦 ${Math.ceil(bt.a)}対${Math.ceil(bt.d)}`, font: 'bold 12px sans-serif', color: '#ff6b6b', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 4, y + rr], [x - rr - 4 - w, y + rr]] });
       }
       if (k && k.cols.length && k.realm !== null && k.realm !== undefined && this.app.game.knownEnemiesOf(k.realm).length && (k.realm !== game.cap || s.id === game.cap)) {
-        this.labels.push({ text: '交戦中', font: 'bold 12px sans-serif', color: '#ff6b6b', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x - r - 4 - w, y - r - 4], [x - w / 2, y - r - 12], [x - r - 4 - w, y + r + 14]] });
+        this.labels.push({ text: TR('交戦中'), font: 'bold 12px sans-serif', color: '#ff6b6b', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x - r - 4 - w, y - r - 4], [x - w / 2, y - r - 12], [x - r - 4 - w, y + r + 14]] });
       }
       const wars = k ? k.wars : [];
       if (wars.length) {
@@ -893,7 +893,7 @@ class GalaxyView {
       ctx.setLineDash([]);
       ctx.font = 'bold 12px sans-serif';
       ctx.fillStyle = surprise ? '#ff8a80' : OWN.hex;
-      ctx.fillText(`${surprise ? '奇襲攻撃 ' : '移動 '}到着まで ${eta.toFixed(1)} 年`, tx + 12, ty - 12);
+      ctx.fillText(TR`${surprise ? TR('奇襲攻撃 ') : TR('移動 ')}到着まで ${eta.toFixed(1)} 年`, tx + 12, ty - 12);
     }
     // 従属マップ: ほかの描画を暗くして、家臣 → 主人 を矢印で結ぶ
     if (this.app.mapMode === 'vassal') this.drawVassals(K);
@@ -942,9 +942,9 @@ class GalaxyView {
       ctx.strokeStyle = 'rgba(255,255,255,0.35)';
       ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(hx, hy); ctx.stroke();
       const st = this.hover.stars[0];
-      const lines = [this.hover.name, `${st.label}${this.hover.stars.length > 1 ? ` 他${this.hover.stars.length - 1}星` : ''}`,
-        `距離 ${d.toFixed(1)} ly (通信 ${t.toFixed(1)} 年・船 ${(game.shipYears(sel.id, this.hover.id) + accelExtra(d, SHIP_SPEED, ACCEL.crew, game.physics)).toFixed(1)}〜${(game.shipYears(sel.id, this.hover.id, false) + accelExtra(d, OFFROUTE_SPEED, ACCEL.crew, game.physics)).toFixed(1)} 年)`,
-        `乗っている人の時計では ${shipTime(d, SHIP_SPEED, game.physics).toFixed(1)}〜${shipTime(d, OFFROUTE_SPEED, game.physics).toFixed(1)} 年 (相対論の時間の遅れ)`];
+      const lines = [this.hover.name, `${st.label}${this.hover.stars.length > 1 ? TR` 他${this.hover.stars.length - 1}星` : ''}`,
+        TR`距離 ${d.toFixed(1)} ly (通信 ${t.toFixed(1)} 年・船 ${(game.shipYears(sel.id, this.hover.id) + accelExtra(d, SHIP_SPEED, ACCEL.crew, game.physics)).toFixed(1)}〜${(game.shipYears(sel.id, this.hover.id, false) + accelExtra(d, OFFROUTE_SPEED, ACCEL.crew, game.physics)).toFixed(1)} 年)`,
+        TR`乗っている人の時計では ${shipTime(d, SHIP_SPEED, game.physics).toFixed(1)}〜${shipTime(d, OFFROUTE_SPEED, game.physics).toFixed(1)} 年 (相対論の時間の遅れ)`];
       if (this.app.mapMode === 'vassal') lines.push(...vassalHoverLines(game, this.hover.id));
       const [mx, my] = this.mouse || [hx, hy];
       ctx.font = '12px sans-serif';
@@ -998,12 +998,12 @@ class GalaxyView {
     const list = [];
     for (const q of game.requests) {
       if (q.kind !== 'order' || (q.by ?? 0) !== game.cap || q.arrive <= game.year) continue;
-      list.push({ from: q.from, to: q.to, sent: q.sent, arrive: q.arrive, label: `指令「${q.label}」→ ${game.system(q.to).name}`, pred: forecastOf(q.id) });
+      list.push({ from: q.from, to: q.to, sent: q.sent, arrive: q.arrive, label: TR`指令「${q.label}」→ ${game.system(q.to).name}`, pred: forecastOf(q.id) });
     }
     for (const d of game.decisions) {
       if (d.state !== 'sent' || d.sentAt === undefined || d.sys === game.cap) continue;
       const arrive = d.sentAt + game.lightDelay(d.sys);
-      if (arrive > game.year) list.push({ from: game.cap, to: d.sys, sent: d.sentAt, arrive, label: `返事 → ${game.system(d.sys).name}` });
+      if (arrive > game.year) list.push({ from: game.cap, to: d.sys, sent: d.sentAt, arrive, label: TR`返事 → ${game.system(d.sys).name}` });
     }
     if (!list.length) return;
     ctx.save();
@@ -1027,9 +1027,9 @@ class GalaxyView {
       ctx.fillStyle = '#aadcff';
       ctx.beginPath(); ctx.arc(ex, ey, 2.5, 0, Math.PI * 2); ctx.fill();
       if (i >= 4) return; // 文字は 4 つまで
-      const text = `${o.label} 届くまで あと ${Math.max(0, o.arrive - game.year).toFixed(1)} 年${o.pred?.short ? `・${o.pred.short}` : ''}`;
+      const text = TR`${o.label} 届くまで あと ${Math.max(0, o.arrive - game.year).toFixed(1)} 年${o.pred?.short ? TR`・${o.pred.short}` : ''}`;
       // 入らないときは短い文 (「あと n 年」だけ) で置き直す
-      this.labels.push({ text, short: `あと ${Math.max(0, o.arrive - game.year).toFixed(1)} 年`, font: '12px sans-serif', color: '#aadcff', prio: 5 + i * 0.01, at: (w) => [[ex + 6, ey - 6], [ex + 6, ey + 16], [ex - 6 - w, ey - 6], [ex - 6 - w, ey + 16], ...[36, 56, 76].flatMap((d) => [[ex + 6, ey - d], [ex + 6, ey + d], [ex - 6 - w, ey - d], [ex - 6 - w, ey + d]])] });
+      this.labels.push({ text, short: TR`あと ${Math.max(0, o.arrive - game.year).toFixed(1)} 年`, font: '12px sans-serif', color: '#aadcff', prio: 5 + i * 0.01, at: (w) => [[ex + 6, ey - 6], [ex + 6, ey + 16], [ex - 6 - w, ey - 6], [ex - 6 - w, ey + 16], ...[36, 56, 76].flatMap((d) => [[ex + 6, ey - d], [ex + 6, ey + d], [ex - 6 - w, ey - d], [ex - 6 - w, ey + d]])] });
     });
     ctx.restore();
   }
@@ -1167,8 +1167,8 @@ class GalaxyView {
     }
     // 説明
     const narrow = this.w < 560;
-    const lines = narrow ? ['従属マップ', '矢印: 家臣 → 主人', '太い輪: 首都・破線と赤い輪: 独立のおそれ']
-      : [`従属マップ (${ME.home}に届いている情報)`, '矢印: 家臣 → 主人 ・ 色: 国ごとの色から従属の深さでずれる', '太い輪: 国の首都 ・ 破線と赤い輪: 不満を抱える家臣 (不満・要求・最後通牒)'];
+    const lines = narrow ? [TR('従属マップ'), TR('矢印: 家臣 → 主人'), TR('太い輪: 首都・破線と赤い輪: 独立のおそれ')]
+      : [TR`従属マップ (${ME.home}に届いている情報)`, TR('矢印: 家臣 → 主人 ・ 色: 国ごとの色から従属の深さでずれる'), TR('太い輪: 国の首都 ・ 破線と赤い輪: 不満を抱える家臣 (不満・要求・最後通牒)')];
     ctx.font = '12px sans-serif';
     const bw = Math.max(...lines.map((l) => ctx.measureText(l).width), 250) + 16;
     const bh = 17 + lines.length * 16 + 18;
@@ -1181,7 +1181,7 @@ class GalaxyView {
     lines.forEach((l, i) => ctx.fillText(l, bx + 8, by + 17 + i * 16));
     // 深さのグラデーションの見本 (地球の国の色で): 首都 → 直属 → 2次 → 3次 → 4次以下
     const sy = by + 17 + lines.length * 16 + 2;
-    const labels = ['首都', '直属', '2次', '3次', '4次〜'];
+    const labels = [TR('首都'), TR('直属'), TR('2次'), TR('3次'), TR('4次〜')];
     let sx = bx + 8;
     for (let d = 0; d < labels.length; d++) {
       ctx.fillStyle = vassalDepthColor(0, d);
@@ -1215,10 +1215,10 @@ function vassalHoverLines(g, id) {
   const realm = k.realm ?? 0;
   const lord = id === g.cap ? (g.gov(id).lord ?? null) : k.lord ?? null;
   const vassals = g.knownSystems().filter((x) => x.id !== id && x.id !== g.cap && g.known(x.id)?.cols.length && g.known(x.id).lord === id).length;
-  const out = [`${realm === g.cap ? `${ME.realm}` : `${g.realmName(realm)}`}${lord === null ? ' の首都' : ''}・家臣 ${vassals}`];
+  const out = [TR`${realm === g.cap ? `${ME.realm}` : `${g.realmName(realm)}`}${lord === null ? TR(' の首都') : ''}・家臣 ${vassals}`];
   let depth = 0;
   for (let l = lord; l !== null && l !== undefined && depth < 20; l = l === g.cap ? null : g.known(l)?.lord ?? null) depth++;
-  if (lord !== null) out.push(`主人: ${g.system(lord).name} (${depth === 1 ? '直属' : `${depth}次の家臣`}) ・ 忠誠度 ${Math.round(k.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(k.fear || 0)}・友好度 ${Math.round(k.friend || 0)}`);
+  if (lord !== null) out.push(TR`主人: ${g.system(lord).name} (${depth === 1 ? TR('直属') : TR`${depth}次の家臣`}) ・ 忠誠度 ${Math.round(k.loyalty ?? LOYALTY_START)}・恐怖度 ${Math.round(k.fear || 0)}・友好度 ${Math.round(k.friend || 0)}`);
   return out;
 }
 

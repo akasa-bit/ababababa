@@ -1,7 +1,7 @@
 {
   "name": "nolongerubiquitous-tools",
   "private": true,
-  "description": "公開用 index.html の組み立て (build.mjs) と自動対戦の実験台",
+  "description": "公開用 index.html の組み立て (build.mjs) と自動対戦の実験台。acorn は画面の文字列を集める道具 (i18n.js)",
   "scripts": { "build": "node build.mjs" },
-  "devDependencies": { "esbuild": "0.21.5", "terser": "5.31.0" }
+  "devDependencies": { "acorn": "8.14.0", "acorn-walk": "8.3.4", "esbuild": "0.21.5", "terser": "5.31.0" }
 }

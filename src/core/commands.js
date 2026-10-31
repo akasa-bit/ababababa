@@ -9,15 +9,15 @@
       case 'uproute': return this.routes.find((r) => r.id === Number(d.route))?.a;
       case 'upgrade': case 'train': case 'focus': return colSys(d.col);
       case 'peace': return Number(d.sys);
-      case 'policy': case 'fiscal': return this.cap;
-      case 'rule': case 'bundle': case 'jointcut': case 'depose': case 'mandate': case 'governor': case 'inspect': case 'decide': case 'pvdesign': return Number(d.sys);
+      case 'policy': case 'fiscal': case 'design': case 'restructure': return this.cap;
+      case 'rule': case 'bundle': case 'jointcut': case 'depose': case 'mandate': case 'governor': case 'inspect': case 'decide': case 'pvdesign': case 'include': return Number(d.sys);
       default: return d.sys;
     }
   }
   command(act, d) {
     // 政治力: 足りなければ送れない。送れたら払う
     const pc = this.pcCost(act, d);
-    if (pc > this.pc + 1e-9) return fail(`政治力が足りない (${pc} 必要、いま ${Math.floor(this.pc)})`);
+    if (pc > this.pc + 1e-9) return fail(JA`政治力が足りない (${pc} 必要、いま ${Math.floor(this.pc)})`);
     const old = this.msgTo;
     if (this.players.length > 1) this.msgTo = this.pi;
     try {
@@ -31,20 +31,20 @@
     const v = d.value;
     if (d.key === 'auto') {
       const id = Number(d.sys);
-      if (!this.isColonized(id) || this.realmOf(id) !== this.cap) return fail(`${this.realmName(this.cap)}の星系だけ`);
+      if (!this.isColonized(id) || this.realmOf(id) !== this.cap) return fail(JA`${this.realmName(this.cap)}の星系だけ`);
       this.auto[id] = !!v;
-      return { ok: true, msg: `${this.system(id).name} の自動開発を${v ? 'オン' : 'オフ'}にした` };
+      return { ok: true, msg: JA`${this.system(id).name} の自動開発を${v ? 'オン' : 'オフ'}にした` };
     }
     if (d.key === 'acked') { this.acked = [...new Set([...(this.acked || []), ...(v || []).map(Number)])].slice(-300); return { ok: true }; }
     const SET = {
-      warThreshold: (x) => `戦争方針を「${(WAR_POLICIES.find(([y]) => y === x) || [0, x])[1]}」にした`,
-      autoHabitat: (x) => `過密時の居住区の自動拡張を${x ? 'オン' : 'オフ'}にした`,
-      autoRoutes: (x) => `混んだ交易路の自動拡張を${x ? 'オン' : 'オフ'}にした`,
-      migration: (x) => `恒星間移民を${x ? '許可' : '停止'}した`,
+      warThreshold: (x) => JA`戦争方針を「${(WAR_POLICIES.find(([y]) => y === x) || [0, x])[1]}」にした`,
+      autoHabitat: (x) => JA`過密時の居住区の自動拡張を${x ? 'オン' : 'オフ'}にした`,
+      autoRoutes: (x) => JA`混んだ交易路の自動拡張を${x ? 'オン' : 'オフ'}にした`,
+      migration: (x) => JA`恒星間移民を${x ? '許可' : '停止'}した`,
       autoGrant: () => '', autoBuild: () => '',
-      autoAwe: (x) => `反乱防止のための威圧を${x ? 'オン' : 'オフ'}にした`,
-      autoDefense: (x) => `自動防衛配備を${x ? 'オン' : 'オフ'}にした`,
-      regime: (x) => `新しい入植地の統治体制を「${REGIMES[regimeNorm(x)].label}」にした`,
+      autoAwe: (x) => JA`反乱防止のための威圧を${x ? 'オン' : 'オフ'}にした`,
+      autoDefense: (x) => JA`自動防衛配備を${x ? 'オン' : 'オフ'}にした`,
+      regime: (x) => JA`新しい入植地の統治体制を「${REGIMES[regimeNorm(x)].label}」にした`,
     };
     if (d.key === 'regime' && (!regimeNorm(v) || regimeNorm(v) === 'direct')) return fail('選べない統治体制');
     if (!SET[d.key]) return fail('設定がない');
@@ -68,11 +68,14 @@
     }
     if (act === 'declarewar') return this.declareWar(Number(d.sys));
     if (act === 'pact') return this.proposePact(d); // 遅れて届く外交 (政治。politics/diplomacy.js)
+    if (act === 'design') return this.setDesign(d); // 入植船の設計 (船と戦争。ship/settler.js。B-033)
     if (act === 'policy') return this.setPolicy(d.value);
     if (act === 'fiscal') return this.setFiscal(d);
+    if (act === 'restructure') return this.restructure(d.hc); // 債務の再編 (経済。economy/central-bank.js。回 KE9)
+    if (act === 'bill') return this.billAct(d.bill, d.op); // 審議中の法案を押す・引っ込める (政治。politics/support.js。回 SE7)
     if (act === 'grant') {
       const to = Number(d.sys);
-      if (to === this.cap || !this.isColonized(to) || this.realmOf(to) !== this.cap) return fail(`${this.realmName(this.cap)}の星系にだけ送れる`);
+      if (to === this.cap || !this.isColonized(to) || this.realmOf(to) !== this.cap) return fail(JA`${this.realmName(this.cap)}の星系にだけ送れる`);
       return this.sendGrant(this.cap, to, Number(d.amt));
     }
     if (act === 'decide') {
@@ -94,10 +97,15 @@
       if (!BUNDLE_ITEMS.includes(d.item) || !BUNDLE_CODES[d.value]) return fail('不明な項目');
       if (this.known(id)?.lord !== this.cap || (this.known(id)?.realm ?? this.cap) !== this.cap || this.known(id)?.direct) return fail('直属の従属星系 (直轄でないもの) とだけ約定を交わせる');
     }
+    if (act === 'include') { // 直轄の星系の集団の権力への近さ (政治。politics/groups.js。B-020)
+      const id = Number(d.sys);
+      if (!['local', 'other'].includes(d.key) || !GROUP_INCLUDE[d.value]) return fail('不明な集団');
+      if (this.known(id)?.lord !== this.cap || (this.known(id)?.realm ?? this.cap) !== this.cap || !this.known(id)?.direct) return fail('直属の直轄の星系だけ');
+    }
     if (act === 'rule' && d.value === 'direct') {
       const id = Number(d.sys);
       if (this.known(id)?.lord !== this.cap || (this.known(id)?.realm ?? this.cap) !== this.cap) return fail('直属の従属星系だけを直轄にできる');
-      if (!this.isDirect(id) && this.directPlanned() >= this.directMax()) return fail(`直轄は ${this.directMax()} 星系まで`);
+      if (!this.isDirect(id) && this.directPlanned() >= this.directMax()) return fail(JA`直轄は ${this.directMax()} 星系まで`);
     }
     // 集結は、それぞれの出発地への指令に分ける
     if (act === 'rally') {
@@ -117,7 +125,7 @@
     if (target === undefined || target === null || target === this.cap) return this.exec(act, d);
     const arrive = this.year + this.orderYears(act, d, target); // 人を送る指令は船で (politics/policy-decisions.js)
     this.requests.push({ id: this.nextShipId++, kind: 'order', from: this.cap, ...(this.cap !== 0 ? { by: this.cap } : {}), to: target, act, d: { ...d }, label: CMD_LABEL[act] || act, sent: this.year, arrive, state: 'sending' });
-    this.message(`${this.system(target).name} へ指令「${CMD_LABEL[act] || act}」を送った (届くまで ${(arrive - this.year).toFixed(1)} 年)`);
+    this.message(JA`${this.system(target).name} へ指令「${CMD_LABEL[act] || act}」を送った (届くまで ${(arrive - this.year).toFixed(1)} 年)`);
     return { ok: true, queued: true };
   }
   exec(act, d) {
@@ -167,6 +175,7 @@
       case 'peace': return this.offerPeace(sys);
       case 'rule': return this.setRule(sys, d.value);
       case 'bundle': return this.setBundleItem(sys, d.item, d.value);
+      case 'include': return this.setInclude(sys, d.key, d.value);
       case 'jointcut': return this.setJointCut(sys, !!d.value);
       case 'depose': return this.depose(sys);
       case 'mandate': { const gv = this.govs[sys]; if (!gv || !MANDATES[d.value]) return fail('政府がない'); gv.mandate = d.value; return { ok: true }; }

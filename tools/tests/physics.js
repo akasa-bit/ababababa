@@ -152,14 +152,16 @@ if (!pdS || !pdG || !(pdS.pressure === 0 && pdS.stripped && pdG.pressure > 0)) f
 const tG = GL.evaluate('shipTime(20, 0.95)'), T1g = 299792458 / 9.80665 / 31557600, gG95 = 1 / Math.sqrt(1 - 0.95 ** 2);
 const tWant = 2 * T1g * Math.atanh(0.95) + (20 - 2 * T1g * (gG95 - 1)) / (gG95 * 0.95);
 if (Math.abs(tG - tWant) > 1e-9) fails.push(`乗る人の時計 ${tG} (式 ${tWant})`);
-// 進路変更: 止まるまで (c/a)γβ 年 (0.9c・1g で 2.0 年)
+// 進路変更: 止まるまで (c/a)γβ 年 (0.9c・1g で 2.0 年)。止まった点から出直すのは、いちばん近い自国の星系のレーザーの光が届いてから (B-169)
 let flt = null;
 for (let k = 0; k < 40 && !flt; k++) { SL.run(g1S, 2); flt = g1S.fleets.find((f) => f.arrive - g1S.year > 3 && !f.prev); }
 if (flt) {
   const other = g1S.galaxy.systems.find((s) => s.id !== flt.to && s.id !== flt.from).id;
   g1S.redirectFleet(flt.id, other);
   const ts = ((299792458 / 9.80665 / 31557600) * 0.9) / Math.sqrt(1 - 0.81), leg = flt.prev.at(-1);
-  if (!(leg?.toXY && flt.depart > g1S.year && flt.depart - g1S.year <= ts + 1e-6)) fails.push(`進路変更で止まるまで ${flt.depart - g1S.year} 年 (多くて ${ts})`);
+  const stop = leg?.arrive - g1S.year, wait = leg?.toXY ? g1S.laserBase(flt.owner ?? 0, leg.toXY).d : NaN;
+  if (!(leg?.toXY && stop > 0 && stop <= ts + 1e-6)) fails.push(`進路変更で止まるまで ${stop} 年 (多くて ${ts})`);
+  if (!(Math.abs(flt.depart - leg?.arrive - wait) < 1e-6)) fails.push(`止まった点から出直すまで ${flt.depart - leg?.arrive} 年 (レーザーの光が届くまで ${wait} 年)`);
 } else fails.push('進路変更を試す艦隊がない');
 // 3
 const { rows } = P.voyages(seed, Number(years), Number(nations), null, EDITION);

@@ -33,7 +33,7 @@ const Cloud = {
   async init() {
     if (this.api) return true;
     if (!this.available()) return false;
-    try { this.api = window.__FB_FAKE || (await firebaseApi(this.config())); } catch (e) { this.status = `Firebase につなげなかった (${e.message || e})`; this.refresh(); return false; }
+    try { this.api = window.__FB_FAKE || (await firebaseApi(this.config())); } catch (e) { this.status = TR`Firebase につなげなかった (${e.message || e})`; this.refresh(); return false; }
     this.api.onAuth((u) => {
       this.user = u;
       this.saves = null;
@@ -50,11 +50,11 @@ const Cloud = {
   async run(fn, done) {
     this.status = '…';
     this.refresh();
-    try { await fn(); this.status = done || ''; } catch (e) { this.status = `できなかった: ${e.message || e}`; }
+    try { await fn(); this.status = done || ''; } catch (e) { this.status = TR`できなかった: ${e.message || e}`; }
     this.refresh();
   },
-  name() { return this.user?.name || (this.user?.guest ? 'ゲスト' : this.user?.email) || '名前なし'; },
-  setName(n) { return this.run(async () => { await this.api.setName(n); await this.api.set(`users/${this.user.uid}`, { name: n }, true); this.user.name = n; }, '名前を変えた'); },
+  name() { return this.user?.name || (this.user?.guest ? TR('ゲスト') : this.user?.email) || TR('名前なし'); },
+  setName(n) { return this.run(async () => { await this.api.setName(n); await this.api.set(`users/${this.user.uid}`, { name: n }, true); this.user.name = n; }, TR('名前を変えた')); },
   // --- クラウドのセーブ: 1 つのセーブを詰めて (Net.pack)、CLOUD_PART 字ずつの文書に分けて置く ---
   savesPath() { return `users/${this.user.uid}/saves`; },
   async listSaves() { this.saves = (await this.api.list(this.savesPath())).map((x) => ({ id: x.id, ...x.data })).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0)); },
@@ -67,22 +67,22 @@ const Cloud = {
       for (let i = 0; i < n; i++) await this.api.set(`${this.savesPath()}/${id}/parts/${i}`, { s: code.slice(i * CLOUD_PART, (i + 1) * CLOUD_PART) });
       await this.api.set(`${this.savesPath()}/${id}`, JSON.parse(JSON.stringify({ ...saveMeta(d), ed: EDITION, parts: n, size: code.length, savedAt: Date.now() })));
       await this.listSaves();
-    }, 'クラウドに保存した');
+    }, TR('クラウドに保存した'));
   },
   loadGame(id) {
     return this.run(async () => {
       const m = this.saves?.find((x) => x.id === id) || (await this.api.get(`${this.savesPath()}/${id}`));
-      if (!m) throw new Error('セーブがない');
-      if ((m.ed || 'game') !== EDITION) throw new Error(`${EDITION_LABEL[m.ed || 'game']}のセーブ`);
+      if (!m) throw new Error(TR('セーブがない'));
+      if ((m.ed || 'game') !== EDITION) throw new Error(TR`${EDITION_LABEL[m.ed || 'game']}のセーブ`);
       let code = '';
       for (let i = 0; i < m.parts; i++) code += (await this.api.get(`${this.savesPath()}/${id}/parts/${i}`))?.s || '';
       const d = await Net.unpack(code);
-      if (!loadSave(d)) throw new Error('読めないセーブ');
+      if (!loadSave(d)) throw new Error(TR('読めないセーブ'));
       save();
       app.game.message('クラウドのセーブをロードした (一時停止中)。');
       closeHome();
       setSpeed(0);
-    }, 'ロードした');
+    }, TR('ロードした'));
   },
   deleteSave(id) {
     return this.run(async () => {
@@ -90,10 +90,10 @@ const Cloud = {
       for (let i = 0; i < (m?.parts || 0); i++) await this.api.del(`${this.savesPath()}/${id}/parts/${i}`);
       await this.api.del(`${this.savesPath()}/${id}`);
       await this.listSaves();
-    }, '消した');
+    }, TR('消した'));
   },
   // --- 国家の保管庫 (国家づくりで作った国) をアカウントに置く ---
-  pushNations() { return this.run(() => this.api.set(`users/${this.user.uid}/data/nations`, { list: JSON.parse(JSON.stringify(NationLib.list)), savedAt: Date.now() }), `国 ${NationLib.list.length} つをクラウドに送った`); },
+  pushNations() { return this.run(() => this.api.set(`users/${this.user.uid}/data/nations`, { list: JSON.parse(JSON.stringify(NationLib.list)), savedAt: Date.now() }), TR`国 ${NationLib.list.length} つをクラウドに送った`); },
   pullNations() {
     return this.run(async () => {
       const d = await this.api.get(`users/${this.user.uid}/data/nations`);
@@ -101,7 +101,7 @@ const Cloud = {
       const have = new Set(NationLib.list.map((n) => n.id));
       NationLib.parse(JSON.stringify([...NationLib.list, ...(d?.list || []).filter((n) => !have.has(n.id))]));
       NationLib.save();
-      this.status = `クラウドから国 ${NationLib.list.length - before} つを足した`;
+      this.status = TR`クラウドから国 ${NationLib.list.length - before} つを足した`;
     });
   },
   // --- 部屋 (ネット対戦のつなぎ方): ホストが部屋を作り、席ごとの招待 (offer) を Firestore に置く。
@@ -134,8 +134,8 @@ const Cloud = {
   async joinRoom(raw) {
     const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     const room = await this.api.get(`rooms/${code}`);
-    if (!room || !room.open) throw new Error('その部屋はない (コードを確かめて)');
-    if ((room.ed || 'game') !== EDITION) throw new Error(`${EDITION_LABEL[room.ed || 'game']}の部屋。同じ版どうしでしかつなげない`);
+    if (!room || !room.open) throw new Error(TR('その部屋はない (コードを確かめて)'));
+    if ((room.ed || 'game') !== EDITION) throw new Error(TR`${EDITION_LABEL[room.ed || 'game']}の部屋。同じ版どうしでしかつなげない`);
     for (const st of room.seats || []) {
       const path = `rooms/${code}/seats/${st.pi}`;
       const cur = await this.api.get(path);
@@ -145,12 +145,12 @@ const Cloud = {
       Net.room = { code, unsub: [] };
       await Net.join(cur.offer);
       const ans = Net.peers[0]?.answer;
-      if (!ans) throw new Error(Net.status || '返事を作れなかった');
+      if (!ans) throw new Error(Net.status || TR('返事を作れなかった'));
       await this.api.set(path, { answer: ans }, true);
-      Net.status = `部屋 ${code} の席 (${st.realm}) についた。ホストが始めるのを待つ`;
+      Net.status = TR`部屋 ${code} の席 (${st.realm}) についた。ホストが始めるのを待つ`;
       return;
     }
-    throw new Error('あいている席がない');
+    throw new Error(TR('あいている席がない'));
   },
 };
 function accountAction(act, id) {
@@ -159,17 +159,17 @@ function accountAction(act, id) {
   if (act === 'acctcfg') {
     let cfg;
     try { cfg = JSON.parse(val('acct-cfg').replace(/^[^{]*/, '').replace(/[^}]*$/, '').replace(/([{,]\s*)([A-Za-z_]\w*)\s*:/g, '$1"$2":').replace(/'/g, '"')); } catch { cfg = null; }
-    if (!cfg?.apiKey || !cfg?.projectId) { C.status = '設定が読めなかった (apiKey と projectId を含む JSON を貼る)'; return renderHome(); }
+    if (!cfg?.apiKey || !cfg?.projectId) { C.status = TR('設定が読めなかった (apiKey と projectId を含む JSON を貼る)'); return renderHome(); }
     try { localStorage.setItem(C.configKey, JSON.stringify(cfg)); } catch { /* 保存できない環境 */ }
-    C.status = '設定を覚えた。読み込み直すと使われる';
+    C.status = TR('設定を覚えた。読み込み直すと使われる');
     location.reload();
     return;
   }
   if (act === 'acctcfgdel') { try { localStorage.removeItem(C.configKey); } catch { /* 保存できない環境 */ } location.reload(); return; }
-  if (act === 'acctgoogle') return C.run(() => C.api.google(), 'ログインした');
-  if (act === 'acctguest') return C.run(() => C.api.guest(), 'ゲストとしてはじめた');
-  if (act === 'acctlogin' || act === 'acctsignup') { const e = val('acct-email'), pw = $('acct-pw')?.value || ''; return C.run(() => C.api.email(e, pw, act === 'acctsignup'), act === 'acctsignup' ? 'アカウントを作った' : 'ログインした'); } // 描き直す前に読む
-  if (act === 'acctout') return C.run(() => C.api.signOut(), 'ログアウトした');
+  if (act === 'acctgoogle') return C.run(() => C.api.google(), TR('ログインした'));
+  if (act === 'acctguest') return C.run(() => C.api.guest(), TR('ゲストとしてはじめた'));
+  if (act === 'acctlogin' || act === 'acctsignup') { const e = val('acct-email'), pw = $('acct-pw')?.value || ''; return C.run(() => C.api.email(e, pw, act === 'acctsignup'), act === 'acctsignup' ? TR('アカウントを作った') : TR('ログインした')); } // 描き直す前に読む
+  if (act === 'acctout') return C.run(() => C.api.signOut(), TR('ログアウトした'));
   if (act === 'acctname') return C.setName(val('acct-name').slice(0, 20));
   if (act === 'acctsave') return C.saveGame();
   if (act === 'acctload') return C.loadGame(id);

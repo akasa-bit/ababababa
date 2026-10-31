@@ -50,7 +50,8 @@ function overlay(dst, src, where) {
 }
 
 // edition = 'sim' なら、シミュレーション版として読む (src の EDITION の行を書き換える。build.mjs と同じ)
-function load({ src = SRC, params = null, edition = null } = {}) {
+// lang = 画面の言語 (src/outward/i18n.js の LANG。試合の状態は言語によらず同じになる。tools/tests/i18n.js が確かめる)
+function load({ src = SRC, params = null, edition = null, lang = null } = {}) {
   let html = assemble({ file: src }); // 「//#include」のない 1 枚のファイル (組み立てたもの・分ける前のもの) は、そのまま読む
   if (edition) html = html.replace("const EDITION = 'game'; /* EDITION */", `const EDITION = '${edition}';`);
   const js = html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>'));
@@ -74,6 +75,7 @@ function load({ src = SRC, params = null, edition = null } = {}) {
       return (t[k] = stub());
     },
   });
+  base.localStorage.setItem('nlu-lang', lang || 'ja'); // 決めなければ日本語 (Node の navigator は英語を返すため)
   base.window = ctx; base.globalThis = ctx; base.self = ctx;
   vm.createContext(ctx);
   vm.runInContext(`${js}\n;globalThis.__nlu = { Game, generateGalaxy, buildSave, GALAXY_GEN, EDITION, distance, tables: { ${names.join(', ')} } };`, ctx, { filename: 'index.html.js' });
@@ -83,9 +85,9 @@ function load({ src = SRC, params = null, edition = null } = {}) {
     ...N,
     // ページの中で式を評価する (試験用の let の値 MASS_AUDIT・MONEY_AUDIT などを読み書きする)
     evaluate: (code) => vm.runInContext(code, ctx),
-    // 新しい試合 (ゲームの newGame と同じ銀河)。nations を渡すと国家選択のある試合にし、プレイヤーの国も AI に任せる (観戦)
-    newGame(seed, { nations = 0, spectate = true } = {}) {
-      const g = new N.Game(N.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: N.GALAXY_GEN }));
+    // 新しい試合 (ゲームの newGame と同じ銀河)。nations を渡すと国家選択のある試合にし、プレイヤーの国も AI に任せる (観戦)。galaxy = 'real' (実在の星) か 'gen' (自動生成。回 GA10)
+    newGame(seed, { nations = 0, spectate = true, galaxy = 'real' } = {}) {
+      const g = new N.Game(N.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: galaxy, gen: N.GALAXY_GEN }));
       if (nations) { g.foundNations(nations); g.setPlayerNation(g.nations[1].cap); }
       if (spectate) g.setSpectate(true);
       return g;

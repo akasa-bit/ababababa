@@ -76,7 +76,7 @@ if (s.missing.length) {
   process.exit(1);
 }
 if (!s.prompt) {
-  console.log(`止まる: 回 ${label(id)} の前の回は済んでいますが、docs/sessions.md にこの回の最初の文がまだありません (2 波目の回は、回 W1 の見直しで書く)。\n${others()}`);
+  console.log(`止まる: 回 ${label(id)} の前の回は済んでいますが、docs/sessions.md にこの回の最初の文がまだありません (次の波の回は、その前の見直しの回 (W1・W2・W3 …) で書く)。\n${others()}`);
   process.exit(1);
 }
 console.log(`始めてよい: 回 ${label(id)}${DATA.sessions[id].length ? ` (前の回 ${DATA.sessions[id].join('・')} は済んでいる)` : ''}`);

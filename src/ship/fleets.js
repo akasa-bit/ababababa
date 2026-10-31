@@ -4,7 +4,7 @@
   buildWarship(sysId, n = 1) {
     if (!this.hasShipyard(sysId)) return fail('軍事基地がない');
     n = clamp(Math.floor(n) || 1, 1, 100);
-    return this.order(mulCost(WARSHIP_COST, n), sysId, { type: 'warship', n, label: `${this.system(sysId).name} の艦隊${n > 1 ? ` ×${n}` : ''}` });
+    return this.order(mulCost(WARSHIP_COST, n), sysId, { type: 'warship', n, label: JA`${this.system(sysId).name} の艦隊${n > 1 ? ` ×${n}` : ''}` });
   }
   // 補給の拠点: その国の入植星系のうち sys に最も近いところ (sys 自身がその国の星系ならそこ)
   supplyBase(realm, sys) {
@@ -37,12 +37,22 @@
     const owner = this.stackRealm(from);
     const dest = this.isColonized(to) ? this.realmOf(to) : owner;
     const surprise = dest !== owner && !this.atWar(owner, dest);
-    this.pushFleet({ id: this.nextShipId++, from, to, n, owner, start: this.year, depart: this.year, arrive: this.year + years, auto: !!prefix, surprise, route: route?.length ? [...route] : undefined, chain });
-    if (surprise) this.message(`${this.system(to).name} (${this.realmName(dest)}) への奇襲攻撃に ${n} 艦隊が出撃した。到着すると戦争になる`, from);
-    this.message(`${prefix}${this.system(from).name} → ${this.system(to).name} へ ${n} 艦隊が出撃 (到着まで ${years.toFixed(2)} 年)`, from);
+    // 加速するレーザー: 出発する星系が自国の入植星系ならそこ。ほか (入植していない星系・他国の星系) は、いちばん近い自国の星系のレーザーで押すので、
+    // その光が届くまで出発を待つ (光より速くエネルギーを届けない。B-169・監査の 2.8 の m)。払うのもその星系
+    const laser = this.laserBase(owner, this.system(from), from);
+    this.pushFleet({ id: this.nextShipId++, from, to, n, owner, start: this.year, depart: this.year + laser.d, arrive: this.year + laser.d + years, laser: laser.id, auto: !!prefix, surprise, route: route?.length ? [...route] : undefined, chain });
+    if (surprise) this.message(JA`${this.system(to).name} (${this.realmName(dest)}) への奇襲攻撃に ${n} 艦隊が出撃した。到着すると戦争になる`, from);
+    this.message(JA`${prefix}${this.system(from).name} → ${this.system(to).name} へ ${n} 艦隊が出撃 (到着まで ${(laser.d + years).toFixed(2)} 年${laser.d > 0.01 ? JA`。${this.system(laser.id).name} のレーザーの光が届くまで ${laser.d.toFixed(1)} 年待つ` : ''})`, from);
     return { ok: true };
   }
 
+  // 艦隊を押すレーザー: 国 realm の入植星系のうち、点 p (星系 sys にいるなら sys) にいちばん近いところと、その光が届くまでの年数 d (= 光年)
+  laserBase(realm, p, sys = null) {
+    if (sys !== null && this.isColonized(sys) && this.realmOf(sys) === realm) return { id: sys, d: 0 };
+    let best = null;
+    for (const x of this.realmSystems(realm)) { const d = distance(x, p); if (!best || d < best.d) best = { id: x.id, d }; }
+    return best || { id: realm, d: 0 };
+  }
   // 経由地の残りがあれば、着いた星系から次の経由地へ向かう
   continueRoute(sys, n, route, chain) {
     if (!route?.length) return;
@@ -67,7 +77,7 @@
     const p = this.fleetPosition(f, hi);
     this.requests.push({ id: this.nextShipId++, kind: 'order', from: this.cap, ...(this.cap !== 0 ? { by: this.cap } : {}), to: f.to, act: 'redirect', label: CMD_LABEL.redirect,
       d: { fleet: f.id, sys: target, from: f.to, n: f.n, x: p.x, y: p.y, route: route?.length ? [...route] : undefined }, sent: t0, arrive: hi, state: 'sending' });
-    this.message(`移動中の ${f.n} 艦隊 (${this.system(f.from).name} → ${this.system(f.to).name}) へ、${this.system(target).name} への進路変更を命じた (指令が追いつくまで ${(hi - t0).toFixed(1)} 年)`);
+    this.message(JA`移動中の ${f.n} 艦隊 (${this.system(f.from).name} → ${this.system(f.to).name}) へ、${this.system(target).name} への進路変更を命じた (指令が追いつくまで ${(hi - t0).toFixed(1)} 年)`);
     return { ok: true, queued: true };
   }
   // 艦隊への指令の取り消し。移動中の艦隊へは光速の指令が追いついた時点で効く
@@ -77,7 +87,7 @@
     this.requests.push({ id: this.nextShipId++, kind: 'order', from: origin, ...(this.cap !== 0 ? { by: this.cap } : {}), to: f.to, act: 'fleetclear', label: CMD_LABEL.fleetclear,
       d: { fleet: f.chain ?? f.id, sys: f.to }, sent: t0, arrive: hi, state: 'sending' });
     if (origin !== this.cap) return { ok: true, queued: true };
-    this.message(`移動中の ${f.n} 艦隊 (${this.system(f.from).name} → ${this.system(f.to).name}) へ、指令の取り消しを送った (追いつくまで ${(hi - t0).toFixed(1)} 年)`);
+    this.message(JA`移動中の ${f.n} 艦隊 (${this.system(f.from).name} → ${this.system(f.to).name}) へ、指令の取り消しを送った (追いつくまで ${(hi - t0).toFixed(1)} 年)`);
     return { ok: true, queued: true };
   }
   // 取り消しの指令が届いた。移動中の艦隊: この先の経由地をやめ、いまの行き先に着いたら自動防衛配備に任せる (行き先は変えない)。
@@ -124,6 +134,10 @@
         f.prev.push({ from: f.from, fromXY: at, toXY: { x: stop.x, y: stop.y, z: stop.z }, depart: this.year, arrive: stop.t, cut: stop.t });
         at = { x: stop.x, y: stop.y, z: stop.z }; t0 = stop.t;
       }
+      // もう一度加速するレーザーは、止まった点にいちばん近い自国の星系のもの。その光が届くまで待つ (B-169・監査の 2.8 の m)
+      const laser = this.laserBase(f.owner ?? 0, at);
+      t0 += laser.d;
+      f.laser = laser.id;
       f.fromXY = at;
       f.depart = t0;
       f.to = to;
@@ -131,12 +145,12 @@
       f.arrive = t0 + dly / OFFROUTE_SPEED + accelExtra(dly, OFFROUTE_SPEED, ACCEL.crew, this.physics);
     }
     const owner = f.owner ?? 0;
-    // 進路を変えるには、いまの速さを磁気帆と反物質で落として、もう一度加速する (宇宙の途中なので、国の首都の政府が払う)
-    this.bookShip('fleet', f.n * FLEET_KG, OFFROUTE_SPEED, 'free', owner, owner, (f.arrive - this.year) * OFFROUTE_SPEED);
+    // 進路を変えるには、いまの速さを磁気帆と反物質で落として、もう一度加速する (宇宙の途中なので、押すレーザーの星系の政府が払う)
+    this.bookShip('fleet', f.n * FLEET_KG, OFFROUTE_SPEED, 'free', f.laser ?? owner, owner, (f.arrive - f.depart) * OFFROUTE_SPEED);
     const dest = this.isColonized(to) ? this.realmOf(to) : owner;
     f.surprise = dest !== owner && !this.atWar(owner, dest);
     f.auto = false;
-    this.message(`${f.n} 艦隊が進路を ${this.system(to).name} へ変えた (到着まで ${(f.arrive - this.year).toFixed(1)} 年)`, to);
+    this.message(JA`${f.n} 艦隊が進路を ${this.system(to).name} へ変えた (到着まで ${(f.arrive - this.year).toFixed(1)} 年)`, to);
     return { ok: true };
   }
 

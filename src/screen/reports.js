@@ -11,18 +11,19 @@ function govSummary(k) {
   const lv = cols.reduce((a, c) => a + Object.values(c.lv || {}).reduce((x, y) => x + (y || 0), 0), 0);
   return { year: k.year, pop: cols.reduce((a, c) => a + (c.pop || 0), 0), cols: cols.length, lv, credits: k.credits || 0, loyalty: k.loyalty ?? null, mandate: k.mandate || 'balanced', unrest: k.unrest?.stage || 0, garrison: k.garrison || 0 };
 }
-function govReportText(g, id, a, b) {
+function govReportText(g, id, a, b, did = []) {
   const name = g.system(id).name;
   const parts = [];
-  if (Math.abs(b.pop - a.pop) >= 0.5) parts.push(`人口 ${fmtPop(a.pop)} → ${fmtPop(b.pop)}`);
-  if (b.cols !== a.cols) parts.push(`入植地 ${a.cols} → ${b.cols}`);
-  if (b.lv !== a.lv) parts.push(`施設の段 ${b.lv > a.lv ? '+' : ''}${b.lv - a.lv}`);
-  if (Math.round(b.garrison) !== Math.round(a.garrison)) parts.push(`駐留艦隊 ${Math.round(a.garrison)} → ${Math.round(b.garrison)}`);
-  parts.push(`資金 ${fmtAmt(a.credits)} → ${fmtAmt(b.credits)} cr`);
-  const loy = a.loyalty !== null && b.loyalty !== null ? `忠誠度 ${Math.round(a.loyalty)} → ${Math.round(b.loyalty)}` : '';
-  const why = `委任方針「${MANDATES[b.mandate] || MANDATES.balanced}」に従い、${MANDATE_WHY[b.mandate] || MANDATE_WHY.balanced}`;
-  const mood = b.unrest >= 2 ? '。住民の不満が強く、地球の判断を待っている' : b.unrest >= 1 ? '。住民に不満の兆しがある' : '';
-  return `${name} 総督より: ${why}。この ${Math.round(b.year - a.year)} 年で ${parts.join('・')}${loy ? `・${loy}` : ''}${mood}`; // 帯では 2 行で切れるので「なぜ」を先に
+  if (Math.abs(b.pop - a.pop) >= 0.5) parts.push(TR`人口 ${fmtPop(a.pop)} → ${fmtPop(b.pop)}`);
+  if (b.cols !== a.cols) parts.push(TR`入植地 ${a.cols} → ${b.cols}`);
+  if (b.lv !== a.lv) parts.push(TR`施設の段 ${b.lv > a.lv ? '+' : ''}${b.lv - a.lv}`);
+  if (Math.round(b.garrison) !== Math.round(a.garrison)) parts.push(TR`駐留艦隊 ${Math.round(a.garrison)} → ${Math.round(b.garrison)}`);
+  parts.push(TR`資金 ${fmtAmt(a.credits)} → ${fmtAmt(b.credits)} cr`);
+  const loy = a.loyalty !== null && b.loyalty !== null ? TR`忠誠度 ${Math.round(a.loyalty)} → ${Math.round(b.loyalty)}` : '';
+  const why = TR`委任方針「${MANDATES[b.mandate] || MANDATES.balanced}」に従い、${MANDATE_WHY[b.mandate] || MANDATE_WHY.balanced}`;
+  const decided = did.length ? TR`。決めたこと: ${did.slice(-3).map((d) => `${d.what}${d.why ? ` (${d.why})` : ''}`).join(TR('・'))}` : '';
+  const mood = b.unrest >= 2 ? TR('。住民の不満が強く、地球の判断を待っている') : b.unrest >= 1 ? TR('。住民に不満の兆しがある') : '';
+  return TR`${name} 総督より: ${why}${decided}。この ${Math.round(b.year - a.year)} 年で ${parts.join(TR('・'))}${loy ? TR`・${loy}` : ''}${mood}`; // 帯では 2 行で切れるので「なぜ」を先に
 }
 // 0.5 秒ごと (知らせの帯を作るとき) に呼ぶ。新しい 10 年の記録が届いた星系の報告を作る
 function govReportsTick(g) {
@@ -37,7 +38,7 @@ function govReportsTick(g) {
     if (k.year < base.year + GOV_REPORT_YEARS) continue;
     const now = govSummary(k);
     GovReports.hist[s.id] = now;
-    GovReports.list.unshift({ id: `${s.id}-${Math.floor(k.year)}`, sys: s.id, written: k.year, arrived: g.year, text: govReportText(g, s.id, base, now), at: performance.now() });
+    GovReports.list.unshift({ id: `${s.id}-${Math.floor(k.year)}`, sys: s.id, written: k.year, arrived: g.year, text: govReportText(g, s.id, base, now, (k.did || []).filter((d) => d.year > base.year)), at: performance.now() });
     if (GovReports.list.length > 40) GovReports.list.pop();
   }
 }
@@ -46,9 +47,9 @@ function govReportRail(g) {
   const r = GovReports.list[0];
   if (!r || performance.now() - r.at > 20000) return '';
   const n = GovReports.list.filter((x) => performance.now() - x.at <= 20000).length;
-  return `<div class="ri info"><button data-act="fly" data-sys="${r.sys}"><span class="t">${ico('inspect')}${esc(r.text)}</span><span class="m">${Math.floor(r.written)}年に書かれ、${(r.arrived - r.written).toFixed(1)}年かけて届いた${n > 1 ? `・ほかに総督の手紙 ${n - 1} 通 (イベントのタブ)` : ''}</span></button><span></span></div>`;
+  return TR`<div class="ri info"><button data-act="fly" data-sys="${r.sys}"><span class="t">${ico('inspect')}${esc(r.text)}</span><span class="m">${Math.floor(r.written)}年に書かれ、${(r.arrived - r.written).toFixed(1)}年かけて届いた${n > 1 ? TR`・ほかに総督の手紙 ${n - 1} 通 (イベントのタブ)` : ''}</span></button><span></span></div>`;
 }
 function govReportsHtml(g) {
-  if (!GovReports.list.length) return '<p class="note">委任した星系の総督は、10 年ごとに報告を送ってくる (光の遅れで届く)。まだ届いていない。</p>';
-  return GovReports.list.slice(0, 12).map((r) => `<div class="ev"><span class="yr">${r.arrived.toFixed(1)}<br><small>${(r.arrived - r.written).toFixed(1)}年遅れ</small></span><span class="txt">${esc(r.text)}</span><button data-act="goto" data-sys="${r.sys}">地図</button></div>`).join('');
+  if (!GovReports.list.length) return TR('<p class="note">委任した星系の総督は、10 年ごとに報告を送ってくる (光の遅れで届く)。まだ届いていない。</p>');
+  return GovReports.list.slice(0, 12).map((r) => TR`<div class="ev"><span class="yr">${r.arrived.toFixed(1)}<br><small>${(r.arrived - r.written).toFixed(1)}年遅れ</small></span><span class="txt">${esc(r.text)}</span><button data-act="goto" data-sys="${r.sys}">地図</button></div>`).join('');
 }

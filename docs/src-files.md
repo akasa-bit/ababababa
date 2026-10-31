@@ -39,6 +39,8 @@
 
 | ファイル | 持ち主 | 行 | 中身 |
 |---|---|---|---|
+| `outward/lang-en.js` | 外向き (鍵の行は、足したレーンが書いてよい) | 2,414 | 英語の表 (I18N_EN。日本語の文 → 英語。`node tools/i18n.js --sync` がそろえる。回 T1・`docs/i18n.md`) |
+| `outward/i18n.js` | 外向き | 330 | 言語 (LANG)・翻訳の関数 (TR・JA・TX)・名前と数の書き方・画面の骨組みと安全網の訳 (回 T1) |
 | `screen/page.html` | 画面と最初の体験 | 532 | CSS (配色・額縁・書体) と、画面の骨組みの HTML |
 | `core/base.js` | 共通 (世話役: 道具と検証) | 167 | 版 (EDITION・EDITIONS)・決まった計算 (DMath)・乱数 (Rng)・セーブの項目の登録 (saveField) |
 | `core/galaxy.js` | 共通 (世話役: 道具と検証) | 478 | 恒星・惑星・実在の星の表 (STARS の区切り)・銀河の作り方 |
@@ -49,6 +51,7 @@
 | `core/facilities.js` | 共通 (世話役: 道具と検証) | 18 | 施設・奴隷・歩兵の定数 |
 | `politics/nations.js` | 政治 | 56 | 国と種族 (特性・生産性) |
 | `ship/war-consts.js` | 船と戦争 | 30 | 難易度・戦争疲弊・戦勝点・条約・交渉 (BARGAIN)・講和 (PEACE) |
+| `ship/colonists.js` | 船と戦争 | 133 | 入植集団が続くかのモンテカルロ (HERITAGE・COLONY_RISK・COLONY_FAIL)・入植船の設計の値とひな形 (SHIP_DESIGN・SHIP_TEMPLATES)・セーブの項目 designs。回 FU3 で足した (`docs/colony.md`) |
 | `politics/names.js` | 政治 | 27 | 国の名前・母星の選び方・国の数 |
 | `core/game-consts.js` | 共通 (世話役: 道具と検証) | 40 | 船と施設の費用・入植・海賊の始まり・帳簿の名前・忠誠と友好の定数・色・指令の名前 |
 | `economy/market-consts.js` | 経済 | 72 | 市場 (MARKET)・産業構造 (STRUCTURE)・研究 (RESEARCH)・部門 |
@@ -58,13 +61,19 @@
 | `politics/policy-consts.js` | 政治 | 29 | 国家方針の費用・不満と要求・放置・議会・時代・終わりの年・挑戦 |
 | `politics/story.js` | 政治 | 115 | 語り手の出来事 (STORY) |
 | `politics/diplomacy-consts.js` | 政治 | 25 | 遅れて届く外交の協定 (PACT・PACT_KINDS・セーブの項目 diplo。回 SE2) |
+| `politics/groups-consts.js` | 政治 | 22 | 星系の中の集団の値 (GROUPS・GROUP_STATUS・所得の分位と価値観の式)。回 SE6 で足した (`docs/groups.md`) |
 | `core/game-base.js` | 共通 (世話役: 道具と検証) | 333 | Game: 作り方 (constructor)・国の割り当て・星系と入植地の引き方・家臣の連なり |
 | `ship/war-peace.js` | 船と戦争 | 236 | Game: 戦争の状態・戦争疲弊・戦勝点・講和・講和会議 |
 | `politics/loyalty-regime.js` | 政治 | 468 | Game: 忠誠・統治体制・主権の束・共同統治・任免・不満と要求・独立・直轄・政治力 |
+| `politics/groups.js` | 政治 | 89 | Game: 星系の中の集団 (民族の権力への近さ・締め出された人口・集団の忠誠度の差・現地のエリート・直轄の上書き include)。回 SE6 で足した |
+| `politics/support-consts.js` | 政治 | 27 | 利益集団の支持と審議の値 (SUPPORT・POLICY_VALUES・ENACT・BILL_LABEL)。回 SE7 で足した (`docs/support.md`) |
+| `politics/support.js` | 政治 | 113 | Game: 法案の支持 (集団ごとの見込みと声の重さ)・法案を出す・審議の関門・押す・引っ込める・AI の返事。回 SE7 で足した |
+| `politics/support-ui.js` | 政治 | 17 | 審議中の法案の欄 (`billHtml`。財政と国家方針の欄で使う)。回 SE7 で足した |
 | `economy/fiscal.js` | 経済 | 169 | Game: 予算・国債・利子・財政の値 |
 | `economy/demography-consts.js` | 経済 | 48 | 年齢つきの人口の率と値 (DEMO。回 KE2) |
 | `economy/demography.js` | 経済 | 83 | Game: 年齢つきの人口 (コーホート・率の補間・年金と医療。回 KE2) |
 | `economy/central-bank.js` | 経済 | 102 | Game: 中央銀行 (政策金利)・国の物価・長期の利回り・国債の利札と不履行 (回 KE1) |
+| `economy/incidence.js` | 経済 | 80 | Game: 帰着の表 (手段ごとの部門と所得の分位の損得・星系の集団ごとの損得)・家計の損の割合 (回 KE8・B-012) |
 | `politics/policy-decisions.js` | 政治 | 125 | Game: 国家方針・直轄・決めること・語り手・議会 |
 | `screen/eras-score.js` | 画面と最初の体験 | 109 | Game: 時代の課題・挑戦・点数・終わり (手引きにする所。QD-07) |
 | `politics/earth-politics.js` | 政治 | 32 | Game: 主人の関与・地球の政治の自動 |
@@ -72,7 +81,7 @@
 | `ship/strike.js` | 船と戦争 | 95 | Game: 光速に近い艦隊の一撃 (突入・焼く・知らせと報復・AI の一撃)。回 FU2 で足した |
 | `ship/fort.js` | 船と戦争 | 35 | Game: 宇宙要塞 (星系ごとの段・自動の Lv1・手動の強化・地球に届いている段)。2026-10-22 の依頼で足した |
 | `economy/colonize.js` | 経済 | 271 | Game: 調査と先住民・入植の向き不向き・資材の手配・建設の注文 |
-| `ship/settler.js` | 船と戦争 | 46 | Game: 入植船の費用と便・入植の打ち上げ |
+| `ship/settler.js` | 船と戦争 | 100 | Game: 入植船の設計 (designOf・setDesign)・費用と便・入植の打ち上げ・入植団が降りる (settlersLand) |
 | `economy/colonies-routes.js` | 経済 | 90 | Game: 入植地を足す・施設の強化・交易路 |
 | `economy/trade.js` | 経済 | 191 | Game: 交易網の自動輸送・荷 |
 | `ship/fleets.js` | 船と戦争 | 141 | Game: 造船・艦隊の補給・艦隊を出す・進路変更 |
