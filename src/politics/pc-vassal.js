@@ -113,7 +113,7 @@ const pctH = (v) => `${(v * 100).toFixed(v < 0.1 ? 1 : 0)}%`; // 小さな確率
 // 国家方針 (数十年ごとに選ぶ)。効果は、変えた知らせが光速で届いた星系から順に効く
 const POLICIES = {
   expand: { label: '拡張期', good: '星系政府の入植の間隔 −4年・入植船の費用 −25%', bad: '家臣の忠誠度の目標 −5' },
-  consolidate: { label: '整備期', good: '施設の建設費 −25%・家臣の忠誠度の目標 +8・直轄の上限 +2', bad: '星系政府の入植の間隔 +5年' },
+  consolidate: { label: '整備期', good: '施設の建設費 −25%・家臣の忠誠度の目標 +4・直轄の上限 +2', bad: '星系政府の入植の間隔 +5年' },
   military: { label: '軍拡期', good: '艦隊の維持費 −40%・恐怖度の目標 ×1.5', bad: '主人との友好度の目標 −10・家臣の忠誠度の目標 −3' },
 };
-const POLICY_LOYALTY = { expand: -5, consolidate: 8, military: -3 };
+const POLICY_LOYALTY = { expand: -5, consolidate: 4, military: -3 }; // 整備期 +8 → +4 (回 SE9・B-141。W3-Q5 = a: 地球だけの銀河で整備期に固定するのが一強だった。docs/fun.md の 11)
