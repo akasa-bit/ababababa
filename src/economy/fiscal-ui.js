@@ -93,7 +93,14 @@ function ownersHtml(g, f, slider) {
   for (const id of ids) { const gv = g.govs[id], k = Math.max(0, gv.K || 0); K += k; S += k * (gv.soe || 0); F += k * Object.entries(gv.own || {}).filter(([o]) => g.realmOf(Number(o)) !== g.cap).reduce((a, [, s]) => a + s, 0); }
   const div = Math.max(0, g.gov(g.cap).ledger?.dividend || 0);
   return TR`<tr><td>国有の割合</td><td>${slider('soe', SOE_RANGE, SOE_STEP, f.soe || 0, 'pct0', TR('国有の割合'))}</td><td colspan="2" class="muted wrap">国の星系の会社のうち政府が持つ割合 (法なので議会の審議にかける)。上げると持ち主から会社の資本の値で買い取り、補償は国債で払う。下げると地元の家計に同じ値で売る。国有の分の配当は星系の政府に入り (${ME.capName} ${fmtAmt(div)} cr/年)、工業と採掘の生産性は国有の割合 1 割ごとに ${(SOE.eff * 10).toFixed(2)}% 下がる (旧社会主義国の民営化の平均)。いま国の会社の資本 ${fmtAmt(K)} cr のうち政府 ${K > 0 ? pct(S / K) : '—'}・ほかの国 ${K > 0 ? pct(F / K) : '—'}</td></tr>
-      <tr><td>資本規制</td><td>${slider('capctl', CAPCTL_RANGE, CAPCTL_STEP, f.capctl || 0, 'pct0', TR('資本規制'))}</td><td colspan="2" class="muted wrap">ほかの国の会社が国の星系に持つ持ち分の目標と、国の家計が外の会社に持つ投資を、この割合だけ絞る (法なので議会の審議にかける)。持ち分は資本の入れ替わりの速さで (数十年かけて) 動く</td></tr>`;
+      <tr><td>資本規制</td><td>${slider('capctl', CAPCTL_RANGE, CAPCTL_STEP, f.capctl || 0, 'pct0', TR('資本規制'))}</td><td colspan="2" class="muted wrap">ほかの国の会社が国の星系に持つ持ち分の目標と、国の家計が外の会社に持つ投資を、この割合だけ絞る (法なので議会の審議にかける)。持ち分は資本の入れ替わりの速さで (数十年かけて) 動く</td></tr>
+      ${landHtml(g, f, slider, ids)}`;
+}
+// 土地改革 (回 KE11・B-127。docs/fiscal.md の 12)。法なので審議中の値 (f)。国の星系の所得の上位 20% の分け前 (いまと、選んだ割合のとき) を人口で平均して見せる
+function landHtml(g, f, slider, ids) {
+  let P = 0, now = 0, then = 0;
+  for (const id of ids) { const p = g.coloniesIn(id).reduce((a, c) => a + c.pop, 0); P += p; now += p * g.quintOf(id)[4]; then += p * quintShares(g.ineqSigma(id, f.land || 0))[4]; }
+  return TR`<tr><td>土地改革</td><td>${slider('land', LAND_RANGE, LAND_STEP, f.land || 0, 'pct0', TR('土地改革'))}</td><td colspan="2" class="muted wrap">地主の農地のうち、耕す人へ移す割合 (法なので議会の審議にかける。行政の遅れ ${ADMIN_LAG.land} 年)。農業の地代の偏りの分だけ、星系の所得の偏りが下がる (農業で働く人が多い星系ほど大きい)。所得の上の分位の集団は反対し、下の分位は支持する。生産への効きは入れていない (研究によって上がるとも下がるともいう)。国の所得の上位 20% の分け前 いま ${P > 0 ? pct(now / P) : '—'}・この割合のとき ${P > 0 ? pct(then / P) : '—'}</td></tr>`;
 }
 // 価格統制と交易の規制 (回 KE9・B-008。docs/fiscal.md の 8)。値は審議中の法案があればその値 (fiscalDraft)。変えると財政の法案になる
 function ctlHtml(g) {
@@ -155,15 +162,16 @@ function fiscalChartsHtml(g) {
   return TR`<h3>財政のグラフ</h3><p class="note">首都に届いた記録から 1 年に 1 回 (遠い星系の分は光の年数だけ古い)。点線は財政を変えた年 (触れると中身)。伸びと収支は前の年も記録のあった星系だけで比べる。</p>
     <div class="chips">${spans}</div><div class="fcharts">${panels.map(svg).join('')}</div>${table}`;
 }
-const FISCAL_LAG_LABEL = { tax: '所得への税', ctax: '消費税', tariff: '関税', rate: '政策金利', cb: '中央銀行', deficit: '赤字の上限', rdcredit: '研究開発の税額控除', budget: '予算', ceil: '値段の上限', ration: '配給', ban: '輸出禁止', embargo: '禁輸', pistar: '物価の目標', qe: '量的緩和', repress: '金融抑圧', soe: '国有の割合', capctl: '資本規制' };
+const FISCAL_LAG_LABEL = { land: '土地改革', tax: '所得への税', ctax: '消費税', tariff: '関税', rate: '政策金利', cb: '中央銀行', deficit: '赤字の上限', rdcredit: '研究開発の税額控除', budget: '予算', ceil: '値段の上限', ration: '配給', ban: '輸出禁止', embargo: '禁輸', pistar: '物価の目標', qe: '量的緩和', repress: '金融抑圧', soe: '国有の割合', capctl: '資本規制' };
 // 帰着の表 (回 KE8・B-012): 決めた財政を標準の財政と比べた 1 年の損得。部門ごとと、国の家計の所得の 5 分位ごと (分位の所得に対する割合)
 function incidenceHtml(g) {
   if (!g.fiscal) return '';
-  const rows = g.incidenceOf(g.cap, g.fiscal, FISCAL_DEFAULT).filter((r) => Math.abs(r.hh) + Math.abs(r.fm) + Math.abs(r.gov) > 1e-6);
+  const rows = g.incidenceOf(g.cap, g.fiscal, FISCAL_DEFAULT).filter((r) => Math.abs(r.hh) + Math.abs(r.fm) + Math.abs(r.gov) > 1e-6 || r.q.some((v) => Math.abs(v) > 1e-6)); // 土地改革は家計の合計が 0 で分位だけ動く
   if (!rows.length) return '';
-  const Y = g.realmSystems(g.cap).reduce((a, x) => a + g.hhIncomeOf(x.id), 0);
+  const Yq = [0, 0, 0, 0, 0]; // 国の家計の分位ごとの所得 (星系の所得の分け方で。回 KE11)
+  for (const x of g.realmSystems(g.cap)) { const Y = g.hhIncomeOf(x.id), Q = g.quintOf(x.id); for (let q = 0; q < 5; q++) Yq[q] += Y * Q[q]; }
   const amt = (v) => `${v >= 0 ? '+' : '−'}${fmtAmt(Math.abs(v))}`;
-  const qp = (v, q) => (Y > 0 ? `${v >= 0 ? '+' : '−'}${Math.abs((100 * v) / (Y * groupQuint(q))).toFixed(2)}%` : '—');
+  const qp = (v, q) => (Yq[q] > 0 ? `${v >= 0 ? '+' : '−'}${Math.abs((100 * v) / Yq[q]).toFixed(2)}%` : '—');
   return TR`<h3>帰着 (標準の財政と比べた 1 年の損得)</h3>
     <p class="note">いまの帳簿の大きさに率の差を掛けた見込み [cr/年。+ が得]。買い物や輸入の量の変化は入れていない。所得の分位は国の家計の 5 分位 (下 → 上) の、分位の所得に対する割合。家計の分を、現実の国の帰着の調べ (所得税は上に、消費税・関税・福祉は下に重い) で分け、会社の分は持ち主 (ほとんどいちばん上の分位) に分けた。集団の忠誠度の差にも同じ分け方で効く</p>
     <div class="scroll"><table class="tbl"><tr><th>手段</th><th>家計</th><th>会社</th><th>政府</th><th>ほかの国</th><th>所得の分位</th><th>行政の遅れ</th></tr>${rows.map((r) => `<tr><td>${esc(r.label)}</td><td class="num">${amt(r.hh)}</td><td class="num">${amt(r.fm)}</td><td class="num">${amt(r.gov)}</td><td class="num">${amt(r.row)}</td><td class="num">${r.q.map(qp).join(' / ')}</td><td class="num">${r.lag ? TR`${r.lag} 年` : TR('すぐ')}</td></tr>`).join('')}</table></div>`;

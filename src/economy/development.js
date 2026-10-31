@@ -238,6 +238,7 @@
   // 3) 手の届く建設がなくなったら (最も安いものでも収入の15年分を超える、またはすべて最大) far になり、
   //    忠誠度85未満の従属星系があれば最も低いところへ資金援助を送り、なければ遠くの星系 (25光年まで) への入植を目指す
   govDevelopYearly() {
+    this.ineqYearly(); // 星系の所得の素の偏りを決める (回 KE11・B-127。incidence.js)
     for (const s of this.colonizedSystems()) {
       const id = s.id;
       if (this.isHuman(id) && !this.spectate) continue;

@@ -40,10 +40,11 @@ const INCIDENCE = { tax: [3.2, 6.0, 11.1, 19.5, 60.3], ctax: [11.7, 15.2, 18.6, 
 //   ctax = 消費税の率の変更 (英国 2008 年の引き下げは 7 日・ドイツ 2020 年は 28 日の平均)、ctaxNew = 消費税を新しく入れる (準備に 18〜24 か月。Tait 1988・米国会計検査院 1993)。
 //   tariff = 関税の率の変更 (米国 2018 年の鉄鋼の関税は布告から 15 日)。budget = 予算 (次の会計年度から。決める時は年の中で一様とみて平均半年)。
 //   rate・cb = 中央銀行の決定 (次の日から)、deficit = 借りる上限 (首都の政府が決める)
-const ADMIN_LAG = { tax: 0.85, ctax: 0.05, ctaxNew: 1.75, tariff: 0.05, rate: 0, cb: 0, deficit: 0, rdcredit: 0.85, budget: 0.5, ceil: 0, ration: 0.15, ban: 0, embargo: 0, pistar: 0, qe: 0, repress: 0.5, soe: 0.47, capctl: 0 };
+const ADMIN_LAG = { tax: 0.85, ctax: 0.05, ctaxNew: 1.75, tariff: 0.05, rate: 0, cb: 0, deficit: 0, rdcredit: 0.85, budget: 0.5, ceil: 0, ration: 0.15, ban: 0, embargo: 0, pistar: 0, qe: 0, repress: 0.5, soe: 0.47, capctl: 0, land: 1 };
 //   ceil = 値段の上限 (米国 1971 年 8 月 15 日の 90 日の凍結は発表の日から。大統領令 11615)・ration = 配給 (英国の食料の配給は 1939 年 11 月の発表から 1940 年 1 月 8 日の始まりまで約 2 か月)・
 //   ban・embargo = 輸出禁止と禁輸 (大統領の布告で数日。米国 1962 年のキューバの禁輸は 2 月 3 日の布告から 2 月 7 日)
 //   soe = 国有化と民営化 (英国の石炭の国有化法は 1946 年 7 月 12 日に成立し、1947 年 1 月 1 日に移った。0.47 年)・capctl = 資本規制 (マレーシアの 1998 年 9 月 1 日の規制は発表の日から)
+//   land = 土地改革 (台湾の「耕者有其田」は 1953 年 1 月の法から年末までに移した・韓国の農地改革法は 1949 年 6 月から 1950 年の分配。約 1 年。回 KE11)
 //   pistar・qe = 物価の目標と量的緩和 (中央銀行の決定と同じく次の日から。買い入れは QE.speed 年かけて進む)・repress = 金融抑圧 (銀行の預金の利子の上限と国債を持つ義務。法の変更なので予算と同じ半年と置いた仮の値)
 // 価格統制と交易の規制 (回 KE9・B-008。docs/fiscal.md の 8): 国の財政に持つ。ceil = { 資源: 基準の値段の倍率 } (値段の上限。上限で足りない分は不足になる。闇市は入れない)・
 // ration = { 資源: true } (配給: 星系の在庫を、入植地の人口に比べて分ける。不足のとき、先に買った入植地が取りつくさない)・ban = { 資源: true } (輸出禁止: ほかの国の買い手に売らない)・
@@ -104,8 +105,23 @@ const SOE_RANGE = [0, 0.8], SOE_STEP = 0.1, CAPCTL_RANGE = [0, 1], CAPCTL_STEP =
 // eff = 国有の割合 1 あたりの工業と採掘の生産性の下がり (Brown, Earle & Telegdy 2006: 民営化で全要素生産性がルーマニア +15%・ハンガリー +8%・ウクライナ +2%・ロシア −3%。
 //   その平均 5.5%。外国の買い手への民営化は +18〜35% だが、ここでは国の中の家計に売るので入れない)
 const SOE = { eff: 0.055 };
+// 星系ごとの所得の分け方 (回 KE11・B-127。docs/fiscal.md の 12)。所得は対数正規 (ばらつき σ) とみて、5 分位の分け前を σ から出す (WDI の 2,434 国・年で、
+// 上位 20% から解いた σ でほかの分位も平均 0.2〜0.8 点の差で当たる。data/build/build_ineq.py)。
+//   σ = 星系の素の偏り (gv.sgb) + agr × (農業の就業の割合 × 地主の割合 − agrRef)、min より小さくしない
+//   q = 国の首都の素の偏りを引く分布 (WDI の国ごとの σ の平均の 10・25・50・75・90% 点。点のあいだは直線、外は端の傾きで延ばす)
+//   within = 首都でない星系の素の偏りの、首都からのずれの標準偏差 (国の中の年ごとの σ のばらつき。星系の中の地域の差の代わり)
+//   agr = σ を農業の就業の割合に当てた傾き (国・年。土地の偏りの分の目安)・agrRef = そのときの農業の就業の割合の平均 (素の偏りはこの割合のときの値とみる)
+//   土地改革 (land。法) は地主の割合を (1 − land) にする: 農業の地代の偏りの分だけ σ が下がる (農業が 50% の星系で全部なら σ −0.14 = 上位 20% の分け前 約 −5 点)
+const INEQ = { q: [[0.1, 0.5476], [0.25, 0.609], [0.5, 0.7064], [0.75, 0.8237], [0.9, 0.9599]], within: 0.069, agr: 0.2749, agrRef: 0.2014, min: 0.2 };
+// 土地改革の幅 (地主の農地のうち耕す人へ移す割合)。戦後の日本・韓国・台湾は耕地の 3〜4 割を移し、自作の農家が 8〜9 割になった
+const LAND_RANGE = [0, 1], LAND_STEP = 0.25;
+// 標準正規分布の累積 (erfc の有理近似。誤差 1.2e-7。Numerical Recipes の erfcc。GM の exp だけで決まる)
+const normCdf = (x) => { const z = Math.abs(x) / Math.SQRT2, t = 1 / (1 + 0.5 * z), r = t * GM.exp(-z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277))))))))); return x >= 0 ? 1 - r / 2 : r / 2; };
+const INEQ_Z = [-0.8416212335729143, -0.2533471031357997, 0.2533471031357997, 0.8416212335729143]; // 20・40・60・80% 点
+// 対数正規 (ばらつき s) の所得の 5 分位の分け前 (下から。合計 1)
+const quintShares = (s) => { const c = INEQ_Z.map((z) => normCdf(z - s)); return [c[0], c[1] - c[0], c[2] - c[1], c[3] - c[2], 1 - c[3]]; };
 const TARGET_RANGE = [0, 0.2], TARGET_STEP = 0.01, QE_RANGE = [0, 0.6], QE_STEP = 0.05, REPRESS_RANGE = [0, 0.04], REPRESS_STEP = 0.005;
-const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0, soe: 0, capctl: 0 };
+const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0, soe: 0, capctl: 0, land: 0 };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)

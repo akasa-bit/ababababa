@@ -28,7 +28,9 @@ const tax = g.billSupport('fiscal', ff({ tax: 0.25 }));
 res.taxQ = capG(tax, 4).p < capG(tax, 0).p && tax.S < 0.5; // 所得への税: 上の分位ほど損。みな損なので半分より低い
 const tariff = g.billSupport('fiscal', ff({ tariff: 0.1 }));
 res.tariffQ = capG(tariff, 0).p > capG(tariff, 4).p; // 関税: 下の分位ほど働き口を守る保護を支持する
-res.clout = near(capG(welfare, 4).w / capG(welfare, 0).w, Math.pow(GROUPS.quint[4] / GROUPS.quint[0], SUPPORT.clout), 1e-9) && near(Math.pow(GROUPS.quint[4] / GROUPS.quint[0], SUPPORT.clout), 1.31, 0.01);
+// 声の重さは星系の所得の分け前で (回 KE11)。標準の分け前 (GROUPS.quint) なら、いちばん上の分位の 1 人が下の 1.31 倍 (Lupu & Warner 2022)
+const Q = g.quintOf(g.cap);
+res.clout = near(capG(welfare, 4).w / capG(welfare, 0).w, Math.pow(Q[4] / Q[0], SUPPORT.clout), 1e-9) && near(Math.pow(GROUPS.quint[4] / GROUPS.quint[0], SUPPORT.clout), 1.31, 0.01);
 // 声を持つのは権力に加わっている集団だけ (締め出された民族の集団は数えない)
 res.included = welfare.groups.every((x) => { const id = x.sys, k = id === g.cap ? null : g.known(id), G = k ? k.groups : g.groupsOf(id); return GROUP_STATUS[G.eth.find((e) => e.k === x.k).st].incl; });
 // 価値観: 軍事の予算は伝統的な集団ほど支持する (同じ集団の価値観だけを動かして比べる)
