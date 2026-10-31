@@ -15,13 +15,14 @@ const mean = (xs) => (xs.length ? xs.reduce((k, x) => k + x, 0) / xs.length : Na
 const variance = (xs) => { const m = mean(xs); return mean(xs.map((x) => (x - m) ** 2)); };
 // 止める線: [名前, (main, この PR, 探索) → 越えたか, 線の説明]。main と同じ銀河・同じ戦略で比べる (ゲームを変えない PR は差が 0 になる)。
 // 探索の上積みは PR の版だけで回していて main と比べられないので、線にしない (表には出す)。
-// 線の値は 24 銀河の main を別の銀河の組 (1〜24・25〜48・49〜72) で回したときの揺れより大きくしてある (docs/fun.md の 12.1)
+// 線の値は 24 銀河の main を別の銀河の組 (1〜24・25〜48・49〜72) で回したときの揺れの 2 倍ほど外に置いた (回 DO8。いちばん多く勝った戦略 75% → 60%・
+// すべてで上回った戦略がいた銀河 2 → 3。ほかはそのまま。docs/fun.md の 12.1)
 const STOP = [
   ['判断を求められる回数', (a, b) => b.asks < 0.75 * a.asks, 'main より 25% 以上減る'],
   ['待つだけの年の割合', (a, b) => b.quiet - a.quiet >= 0.1, 'main より 10 点以上増える'],
-  ['いちばん多く勝った戦略の割合', (a, b) => b.topShare >= 0.75 && b.topShare > a.topShare, '75% 以上になり、main より増える'],
+  ['いちばん多く勝った戦略の割合', (a, b) => b.topShare >= 0.6 && b.topShare > a.topShare, '60% 以上になり、main より増える'],
   ['10% 以上の銀河で勝った戦略の数', (a, b) => b.over10 < 2 && b.over10 < a.over10, '2 より少なくなり、main より減る'],
-  ['4 つの成績すべてで他を上回った戦略がいた銀河', (a, b) => b.dominant >= 2 && b.dominant > a.dominant, '2 以上になり、main より増える'],
+  ['4 つの成績すべてで他を上回った戦略がいた銀河', (a, b) => b.dominant >= 3 && b.dominant > a.dominant, '3 以上になり、main より増える'],
   ['観戦の AI と同じ値の戦略が放任と同じ筋', (a, b, sr) => !!sr && sr.baseSame < sr.seeds.length, 'すべての銀河で同じでない (tools/strategy.js を合わせ直す)'],
 ];
 // JSON に残す 1 試合の値 (measure と表が使うものだけ)
