@@ -104,6 +104,7 @@ function colonyBox(g, c) {
       ${c.lv.slaveworks ? row(TR('奴隷工房'), TR`稼働 ${pct(c.slaveWork ?? 0)} (奴隷 ${fmtAmt(SLAVEWORKS_USE * c.lv.slaveworks)}人/年を使い、工業品 ${fmtAmt(SLAVEWORKS_OUT * c.lv.slaveworks)}/年)`) : ''}
       ${row(TR('種族'), raceText(c))}
       ${c.inc !== undefined ? row(TR('所得'), `${incomeText(c.inc)} <span class="muted">(${stageName(c.inc)})</span>`) : ''}
+      ${(() => { const s = c.school ?? (c.age ? g.schoolOf(c) : undefined), q = c.learn ?? (c.age ? Math.round(g.learnOf(c)) : undefined); return s !== undefined ? row(TR('学歴'), TR`大人の就学年数 ${s.toFixed(1)} 年・学力 ${q} 点 <span class="muted">(学力は国際比較の試験の物差し。300〜625 点)</span>`) : ''; })()}
     </table>
     ${warn.length ? TR`<p class="note bad">${warn.join(TR('・'))}が足りず人口が減っている。値段が上がれば人がその部門に移る。交易路で運び込むこともできる。</p>` : ''}
     <p class="note">就業 (値段から見た稼ぎの高い部門へ、少しずつ人が移る): ${shareText(c)}</p>

@@ -211,7 +211,7 @@ ul.bodies li:hover, ul.bodies li.sel { background:#16213a; }
 .hz { color:#6fdc96; }
 .grade { padding:0 6px; border-radius:3px; background:#2a2f3d; }
 .grade.g1 { background:#5a4320; } .grade.g2 { background:#2f5a2a; } .grade.g3 { background:#1d6a5d; }
-.field { display:block; font-size:12px; color:var(--muted); } select { width:100%; margin-top:2px; background:#111a2e; color:var(--fg); border:1px solid #2a3a60; border-radius:4px; padding:4px; }
+.field { display:block; font-size:12px; color:var(--muted); margin-top:8px; } /* 上のボタンの枠に名前が食い込まないように (余白は 8 px の倍数。回 GA9) */ select { width:100%; margin-top:2px; background:#111a2e; color:var(--fg); border:1px solid #2a3a60; border-radius:4px; padding:4px; }
 .btns { display:flex; gap:8px; } .btns button { flex:1; text-align:left; }
 .btns.batch { flex-wrap:wrap; } .btns.batch button { flex:1 1 130px; }
 td .btns.batch { flex-wrap:nowrap; } td .btns.batch button { flex:0 0 auto; width:10em; } td .btns.batch button, td .btns.batch button small { white-space:normal; } td .btns.batch button small { display:block; }
@@ -309,7 +309,7 @@ header nav button { padding:8px 16px; }
 @media (max-width: 560px) {
   header { position:relative; }
   header h1 { display:none; }
-  header nav { order:1; flex:1 1 auto; gap:4px; }
+  header nav { order:1; flex:1 1 auto; gap:4px; flex-wrap:wrap; min-width:0; } /* 幅 390 px でタブが 5 つ並ばないときは折り返す (前は「候補地」がはみ出し、ページの幅が 409 px になった。回 GA9) */
   header nav button { flex:1 1 auto; padding:8px 2px; min-width:44px; white-space:nowrap; }
   #memobtn { padding:8px 4px; min-width:44px; }
   #ctrl { display:contents; }
