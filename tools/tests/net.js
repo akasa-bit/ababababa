@@ -67,7 +67,9 @@ const URL = `file://${HTML}?seed=11`;
   // guest asks for faster speed
   await G.click('[data-speed="4"]');
   await G.waitForTimeout(6000);
-  const sync = async () => { await H.evaluate(() => setSpeed(0)); await H.waitForTimeout(500); await G.waitForFunction(() => Net.inbox.length === 0); return [await H.evaluate(() => [Net.k, Net.hash(), __app.game.year.toFixed(2)]), await G.evaluate(() => [Net.k, Net.hash(), __app.game.year.toFixed(2), Net.resyncs])]; };
+  // 参加者が、ホストの送った最後のコマ (Net.k) まで実行し終えるのを待つ (受け箱が空でも、まだ線の上にあるコマがある。CI の重いときにずれて見えた)
+  const caught = async (P) => { const k = await H.evaluate(() => Net.k); await P.waitForFunction((k) => Net.k >= k && Net.inbox.length === 0, k, { timeout: 60000, polling: 200 }); };
+  const sync = async () => { await H.evaluate(() => setSpeed(0)); await H.waitForTimeout(500); await caught(G); return [await H.evaluate(() => [Net.k, Net.hash(), __app.game.year.toFixed(2)]), await G.evaluate(() => [Net.k, Net.hash(), __app.game.year.toFixed(2), Net.resyncs])]; };
   const s1 = await sync();
   const chk = await G.evaluate((gp) => { const g = __app.game; return [g.autoDefense, g.players[Net.pi].autoDefense, g.fleets.some((f) => (f.owner ?? 0) === g.cap) || (g.garrison[gp] || 0) > 0, g.knownLog().slice(0, 3).map((l) => l.text).join(' / ')]; }, gc);
   const hostView = await H.evaluate(() => [__app.game.pi, __app.game.players.map((p) => p.autoDefense).join(','), __app.speed]);
@@ -118,13 +120,16 @@ const URL = `file://${HTML}?seed=11`;
   await H.fill(`#netreans${li}`, await G2.inputValue('#netanswer')); await H.click(`[data-net="reanswer"][data-i="${li}"]`);
   await G2.waitForFunction(() => Net.on, null, { timeout: 20000 });
   await H.evaluate(() => setSpeed(SPEEDS[4])); await G2.waitForTimeout(3000);
-  await H.evaluate(() => setSpeed(0)); await H.waitForTimeout(500); await G2.waitForFunction(() => Net.inbox.length === 0);
+  await H.evaluate(() => setSpeed(0)); await H.waitForTimeout(500); await caught(G2);
   console.log('rejoin', await H.evaluate(() => Net.hash()), await G2.evaluate(() => Net.hash()), await H.evaluate((pi) => __app.game.players[pi].human, gpi));
   // 2400 年の終わりまで進める: 両方の端末で終わりの画面が出て、要約と書き出しの表 (国 × 年) が同じ
   await H.evaluate(() => setSpeed(SPEEDS[6]));
   await H.waitForFunction(() => __app.game.ended, null, { timeout: 300000, polling: 1000 });
   await G2.waitForFunction(() => __app.game.ended && Net.inbox.length === 0, null, { timeout: 60000, polling: 500 });
-  await G2.waitForTimeout(1500);
+  await caught(G2);
+  // 終わりの画面は描くときに出る (後ろのページは描くのが遅れることがあるので、前に出して待つ)
+  for (const P of [H, G2]) { await P.bringToFront(); await P.waitForFunction(() => !$('endbox').hidden, null, { timeout: 30000, polling: 250 }).catch(() => {}); }
+  await G2.waitForTimeout(500);
   const fin = () => [Net.hash(), !$('endbox').hidden, Object.entries(__app.game.xrec?.rows || {}).map(([k, v]) => `${k}:${v.length}`).join(','), xrecCsv(__app.game, 'sna').length];
   const hf = await H.evaluate(fin), gf = await G2.evaluate(fin);
   console.log('end', hf[0], gf[0], hf[1], gf[1], `${hf[2]}/${hf[3]}`, `${gf[2]}/${gf[3]}`);

@@ -1359,6 +1359,8 @@ const I18N_EN = {
 "[自動]": "[Auto]",
 "{0}{1} の{2} Lv{3}": "{0}{2} Lv{3} at {1}",
 "{0}{1} の鉱山 Lv{2}": "{0}Mine Lv{2} at {1}",
+"{0} ⇄ {1} の交易路を国の費用で引いた": "Opened the {0} ⇄ {1} trade route at the realm's expense",
+"{0} に交易路がなく、国の市場から切れていた": "{0} had no trade route and was cut off from the realm's market",
 "{0} へ交易路を引いた": "Opened a trade route to {0}",
 "交易路が {0} 本で、3 本より少なかった": "Had {0} trade routes, fewer than 3",
 "{0} への交易路を見送った": "Held off on a trade route to {0}",
