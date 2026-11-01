@@ -22,7 +22,7 @@
 - 4 波目 (`docs/sessions.md` の 3) は 2026-11-01 に GA11 まで済んだ (#306〜#316。通しのセッション 1 本)。ユーザーの依頼 (`docs/requests/2026-11-01-common.md` の common-1「一回友達と遊んでみたいから、公開用のは後ででいいよ。まずW4やって。」) で、SO4 と GA12 は 5 波目へ回した。
 - 2026-11-01 (回 W4): 4 波目の見直し。数は下の「4 波目の数」。組み方の直す案と 5 波目の案を、返事待ちと一緒に 1 つの Artifact「第五波の組み方」(https://claude.ai/artifact/BYhUtdgCPqFscvWkJ4PJd3) で見せて決めてもらった。返事はどれもおすすめ (`docs/requests/2026-11-01-common.md` の common-2・`docs/decisions.md` の「決まったもの (2026-11-01、回 W4)」)。5 波目 (SO5 → GA12 → SE11 → KE13 → W5。友達とネット対戦で一度遊ぶ準備のあと、外れた目標を直す) を `docs/sessions.md` の 3・4 と `tools/sessions.json` に書き、CI を待つあいだと PR の番号の決まりを `docs/session-start.md` の 3 に足した (#317)。
 - 4 波目は 2026-11-01 に済んだ (#306〜#317)。
-- 2026-11-01 (回 W5): 5 波目の見直し。数は下の「5 波目の数」。組み方の直す案と 6 波目の案 (AI の振る舞いを芯に)・公開の準備 SO4 の置き場所を、返事待ち (KE13-Q4・KE4-Q1・KE4-Q2) と一緒に 1 つの Artifact「第六波の組み方」(https://claude.ai/artifact/7Fv8QkRakM27g9HAj1kX2a) で見せた (返事待ち)。
+- 2026-11-01 (回 W5、#326): 5 波目の見直し。数は下の「5 波目の数」。組み方の直す案と 6 波目の案を、返事待ちと一緒に 1 つの Artifact「第六波の組み方」(https://claude.ai/artifact/7Fv8QkRakM27g9HAj1kX2a) で見せて決めてもらった (`docs/requests/2026-11-01-common.md` の common-10・`docs/decisions.md` の「決まったもの (2026-11-01、回 W5)」): **W5-Q1 = a** (友達と遊ぶのを待たずに 6 波目を始める)・**W5-Q2 = a** (AI の振る舞いの 5 回 AI1〜AI5 と経済の KE14。新しいレーン「AI の振る舞い」`docs/status/AI.md`)・**W5-Q3 = a** (SO4 は 6 波目のあと)・**W5-Q4 = a** (通しのまま。PR の前に手元で翻訳と変えた所の試験・画面を描くときに状態を変えない、を `docs/session-start.md` の 3 に足した)・AI は W5-Q5 = a (人間の国にも宣戦)・Q6 = a (均衡は補正なし)・Q7 = b (指導者の名前と経歴)・Q8 = a。KE13-Q4 = b・KE4-Q1 = c・依頼 GA-3 (政治のタブを経済・政策に) は W5 のあとの依頼の PR で入れる。6 波目は `docs/sessions.md` の 3・4 と `tools/sessions.json`。知らせ `docs/notices/common/2026-11-01-common-ai.md` は 6 波目に入れたので消した。
 - 5 波目は 2026-11-01 に済んだ (#318〜#325)。
 
 ## 5 波目の数 (回 W5、2026-11-01)
@@ -395,6 +395,7 @@
 - W2 (#284)
 - W3 (#304)
 - W4 (#317)
+- W5 (#326)
 
 ## handoff.md から移したもの (2026-10-20、並行に移るときの後片付け。`docs/parallel.md` の 5)
 
