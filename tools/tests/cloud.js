@@ -1,10 +1,11 @@
 // アカウントとクラウド (Firebase) の試験。本物の Firebase の代わりに、試験の側 (Node) にデータを置く偽物 (window.__FB_FAKE) を差しこむ。
 // 確かめること: ゲストでログイン・名前・クラウドのセーブ (保存・一覧・ロード・削除)・国家の保管庫 (送る・足す)・
-// 部屋のコードでのネット対戦 (ホストが部屋を作り、参加者がコードを入れるだけでつながる)・画面 (横と縦)
+// 部屋のコードでのネット対戦 (ホストが部屋を作り、参加者がコードを入れるだけでつながる)・画面 (横と縦)・
+// 試合の途中で切れた参加者が、ホストの開き直した部屋のコードで同じ国に戻る (回 SO5)
 // 使い方: node tools/tests/cloud.js [shots のフォルダ]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
-exports.ci = [{ args: (c) => [c.shots], judge: J.byJson((j) => j.sync[0][1] === j.sync[1][1] && j.roomClosed === true && !j.errs.length, 'クラウドの結果が違う') }];
+exports.ci = [{ args: (c) => [c.shots], judge: J.byJson((j) => j.sync[0][1] === j.sync[1][1] && j.roomClosed === true && j.rejoin?.[0] === j.rejoin?.[1] && j.rejoin?.[2] === true && j.room2Closed === true && !j.errs.length, 'クラウドの結果が違う') }];
 if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`;
@@ -105,7 +106,27 @@ const fake = () => {
   out.sync = [await H.evaluate(() => [Net.k, Net.hash()]), await G.evaluate(() => [Net.k, Net.hash(), ME.realm])];
   out.roomClosed = JSON.parse(DB.get(`rooms/${code}`)).open === false;
   out.wide = [await H.evaluate(() => document.documentElement.scrollWidth <= innerWidth), await G.evaluate(() => document.documentElement.scrollWidth <= innerWidth)];
-  out.errs = [...H.errs, ...G.errs].slice(0, 5);
+  // --- 試合の途中で参加者のタブが閉じた → ホストが部屋を開き直す → 新しく開いた参加者が部屋のコードで同じ国に戻る (回 SO5) ---
+  const gpi = await G.evaluate(() => Net.pi);
+  await G.close();
+  await H.waitForFunction(() => Net.left.length === 1, null, { timeout: 90000 });
+  await H.evaluate(() => Net.render());
+  await H.click('[data-net="room"]');
+  await H.waitForFunction(() => Net.room && Net.left[0]?.offer, null, { timeout: 15000 });
+  const code2 = await H.evaluate(() => Net.room.code);
+  await H.screenshot({ path: `${SHOTS}/cloud-room-rejoin.png` });
+  const G2 = await mk(854, 1200);
+  await G2.evaluate(() => { if ($('home').hidden) openHome(); app.homeTab = 'account'; renderHome(); });
+  await G2.click('[data-home="acctguest"]'); await G2.waitForFunction(() => Cloud.user);
+  await G2.evaluate(() => { app.homeTab = 'multi'; renderHome(); });
+  await G2.click('[data-home="netjoin"]');
+  await G2.fill('#netroom', code2); await G2.click('[data-net="roomjoin"]');
+  await G2.waitForFunction(() => Net.on, null, { timeout: 20000 });
+  await H.evaluate(() => setSpeed(SPEEDS[3])); await G2.waitForTimeout(2000);
+  await H.evaluate(() => setSpeed(0)); await H.waitForTimeout(500); await G2.waitForFunction(() => Net.inbox.length === 0);
+  out.rejoin = [await H.evaluate(() => Net.hash()), await G2.evaluate(() => Net.hash()), await H.evaluate((pi) => __app.game.players[pi].human, gpi), await G2.evaluate(() => ME.realm)];
+  out.room2Closed = JSON.parse(DB.get(`rooms/${code2}`)).open === false;
+  out.errs = [...H.errs, ...G.errs, ...G2.errs].slice(0, 5);
   console.log(JSON.stringify(out, null, 1));
   await b.close();
 })();
