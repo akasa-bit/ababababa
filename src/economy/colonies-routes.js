@@ -82,18 +82,20 @@
   }
   routeCost(a, b) { return { credits: Math.round(100 + 10 * this.sysDist(a, b)) }; } // 両端の発射所と減速設備 (船は別に造る)
   routeUpCost(r) { return { credits: 150 * r.lv, metal: 50 * r.lv }; } // 交易路の拡張 = 港を広げる (船は運送業の会社が足す)
-  openRoute(a, b) {
+  // payer = 費用を払う政府 (ふつうは a の星系の政府。国の交易路網では首都。回 KE13)。govShips = 最初の輸送船を政府が造るか
+  // (国の交易路網では造らず、交易路の持ち主の運送業の会社が次の年に自分の払いで造る。首都の資金を入植に残すため)
+  openRoute(a, b, payer = a, govShips = true) {
     if (a === b || !this.isColonized(a) || !this.isColonized(b)) return fail('両端に入植地が必要');
     if (this.routeBetween(a, b)) return fail('開設済み');
     // 交戦中の国の星系とは新しく結べない (a が開戦の知らせを受け取ってから。既存の交易路は残る)
     if (this.realmOf(a) !== this.realmOf(b) && this.tradeBlocked(a, b)) return fail('交戦中の国とは交易路を結べない');
-    const paid = this.pay(this.routeCost(a, b), undefined, a);
+    const paid = this.pay(this.routeCost(a, b), payer === a ? undefined : a, payer); // 首都が払うときも、建てる賃金は a の星系の家計へ
     if (!paid.ok) return paid;
-    const r = { id: this.nextShipId++, a, b, lv: 1, ships: 0, transit: [zeroRes(), zeroRes()], vol: [0, 0], built: this.year, by: a };
+    const r = { id: this.nextShipId++, a, b, lv: 1, ships: 0, transit: [zeroRes(), zeroRes()], vol: [0, 0], built: this.year, by: payer };
     this.routes.push(r);
     this.message(JA`${this.system(a).name} ⇄ ${this.system(b).name} の交易路を開設した`, a);
     // 最初の船 (片道 base の分) を、開いた星系の政府が造る。船ができるまでは送れない。造れなければ、運送業の会社があとで造る (routesYearly)
-    this.buyShips(r, this.shipsFor(r, SHIPPING.base), { gov: a }, { label: JA`${this.system(a).name} ⇄ ${this.system(b).name} の輸送船` });
+    if (govShips) this.buyShips(r, this.shipsFor(r, SHIPPING.base), { gov: payer }, { label: JA`${this.system(a).name} ⇄ ${this.system(b).name} の輸送船` });
     return { ok: true };
   }
   upgradeRoute(r, tag = '') {

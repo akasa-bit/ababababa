@@ -159,6 +159,30 @@
   //   (同意が要る文明の惑星は避ける)。資金が入植船の費用の1.2倍以上あるとき。星系内の開発より優先する
   // 星系の政府が決めたことを覚える (政治の govDid。総督の手紙の「なぜ」。回 SE4 からの頼み)。見送ったことなど毎年くり返すものは、覚えている中に同じものがあれば足さない
   govDidOnce(id, what, why) { if (!this.govs[id]?.did?.some((d) => d.what === what)) this.govDid(id, what, why); }
+  // 国の交易路網 (回 KE13・B-129。KE13-Q2 = a): AI の国の政府 (首都) は、交易路が 1 本もない自国の星系を、いちばん近い自国の交易路網の星系 (か首都) とつなぐ。
+  // 費用は首都が払う (家臣の星系の政府は資金がほぼ 0 で、自分では交易路を引けず、国の市場から切れて食料の値段が崩れ、自給に落ちていた。R38 の外れの本体。
+  // 現実の国の中の交通網も、多くは国が整える)。国ごとに 1 年 1 本まで。首都の資金が費用の 1.5 倍あるとき (星系の政府と同じ線)。人間の国はプレイヤーが決める。
+  // 入植を先にする: 首都が入植できる時期で入植先があれば、その入植船の費用の 1.2 倍を取っておく (govDevelopYearly と同じ順。入植は首都の資金で止まっている。B-131)
+  realmLinksYearly() {
+    const sys = this.colonizedSystems().map((s) => s.id), linked = new Set();
+    for (const r of this.routes) { linked.add(r.a); linked.add(r.b); }
+    const byRoot = {};
+    for (const id of sys) (byRoot[this.realmOf(id)] ||= []).push(id);
+    for (const [k, ids] of Object.entries(byRoot)) {
+      const root = Number(k);
+      if (ids.length < 2 || !this.isColonized(root) || (this.isHuman(root) && !this.spectate)) continue;
+      const lone = ids.filter((id) => id !== root && !linked.has(id));
+      if (!lone.length) continue;
+      const net = ids.filter((id) => id === root || linked.has(id));
+      let best = null;
+      for (const id of lone) for (const o of net) { const d = this.sysDist(id, o); if (!best || d < best.d) best = { id, o, d }; }
+      if (!best) continue;
+      const cost = this.routeCost(best.id, best.o), col = this.canColonize(root) ? this.colonyTarget(root) : null;
+      const keep = col ? 1.2 * this.shipCost(col.kind, root, col.t.id).credits : 0;
+      if (this.funds(root) < keep + 1.5 * cost.credits) continue;
+      if (this.openRoute(best.id, best.o, root, false).ok) { linked.add(best.id); this.govDid(root, JA`${this.system(best.id).name} ⇄ ${this.system(best.o).name} の交易路を国の費用で引いた`, JA`${this.system(best.id).name} に交易路がなく、国の市場から切れていた`); }
+    }
+  }
   govsYearly() {
     for (const s of this.colonizedSystems()) {
       const id = s.id;
