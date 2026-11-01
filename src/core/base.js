@@ -18,7 +18,7 @@ const EDITIONS = {
   //   demoTotal = 人口の合計は前のロジスティックの増え方のまま、年齢の中身だけ現実の率で動かす (台帳の C13。回 KE2・QD-29)。
 //   battle = 艦隊戦の補正 (BATTLE の pos・luck。ゲーム版は 2 倍の兵力で 75% 勝ち・損害の指数 0.5、シミュレーション版は CDB90 の値。台帳の C27・C28)
 //   shield・accel・pv は試合ごとにセーブに入る (Game.physics。ないセーブは物理なしのまま続ける = PHYSICS_OFF)。flare は銀河を作るときに効くので版の値を使う
-  game: { generation: 100, hazardBase: 0.6, delayExp: 0.33, regimeDelay: true, garrisonWar: true, growthCap: Infinity, declareDamp: true, physics: { shield: true, accel: true, flare: 'show', pv: false }, battle: { pos: 0.3, luck: 1 }, demoTotal: true, aiColonize: { ships: 3, pop: 1, range: 2 }, nationSize: 0 }, // nationSize: 0 = どの国も開始の大きさ 1 (回 SE9・B-143。W3-Q4 のうえで「すべての国を 1 に固定」。前は 0.5 = QD-111 = c)
+  game: { generation: 100, hazardBase: 0.6, delayExp: 0.33, regimeDelay: true, garrisonWar: true, growthCap: Infinity, declareDamp: true, physics: { shield: true, accel: true, flare: 'show', pv: false }, battle: { pos: 0.3, luck: 1 }, demoTotal: true, aiColonize: { ships: 5, pop: 1, range: 2 }, nationSize: 0 }, // aiColonize.ships 3 → 5 (回 KE13・KE13-Q1 = c。版 5 の銀河で R40 が 57.1% → 61.0%。台帳 C20)。 nationSize: 0 = どの国も開始の大きさ 1 (回 SE9・B-143。W3-Q4 のうえで「すべての国を 1 に固定」。前は 0.5 = QD-111 = c)
   sim: { generation: 28, hazardBase: 1.3, delayExp: -0.15, regimeDelay: false, garrisonWar: false, growthCap: 0.042, declareDamp: false, physics: { shield: true, accel: true, flare: true, pv: true }, battle: { pos: 1.6, luck: 1.6 } },
 };
 const ED = EDITIONS[EDITION];
