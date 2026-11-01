@@ -20,7 +20,7 @@ function ageBarHtml(s) {
   return TR`<span class="agebar" style="display:inline-flex;width:8em;vertical-align:middle;border:1px solid var(--line)">${seg(s.young, 'var(--info)', TR('0〜14 歳'))}${seg(s.work, 'var(--fg)', TR('15〜64 歳'))}${seg(s.old, 'var(--warn)', TR('65 歳〜'))}</span>
     <span class="muted">子ども ${pct(s.young)}・働き手 ${pct(s.work)}・高齢 ${pct(s.old)}・扶養比 <span class="${s.dep > DEMO.alert ? 'bad' : ''}">${Math.round(s.dep * 100)}</span></span>`;
 }
-// 帝国 → 目標の「財政」: 税・中央銀行と政策金利・予算。変えると光速で広がる (国家方針と同じ)
+// 帝国 → 経済・政策の「財政」 (依頼 KE-4 で目標のタブから移した): 税・中央銀行と政策金利・予算。変えると光速で広がる (国家方針と同じ)
 // 財政のスライダーの値の見せ方 (data-fmt)
 function fiscalFmt(fmt, v) {
   v = Number(v);

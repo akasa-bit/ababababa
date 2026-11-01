@@ -66,7 +66,7 @@
     const ship = {
       id: this.nextShipId++, from: fromId, to: toId, body: bodyId, kind,
       path: v.path, times: v.times.map((t) => this.year + t), supplies, escort,
-      depart: this.year, arrive: this.year + years, crew: des.crew, ships: des.ships, ages: des.ages,
+      depart: this.year, arrive: this.year + years, crew: des.crew, ships: des.ships, ages: des.ages, ...(job?.regime ? { regime: job.regime } : {}),
     };
     this.ships.push(ship);
     if (job?.seed) { const v = job.seed; this.cash('build', -v, { way: job, f: 'seed' }); this.cash('build', v, { way: ship, f: 'seed' }); }

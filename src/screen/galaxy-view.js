@@ -65,6 +65,8 @@ class GalaxyView {
     this.cam.x = wx - dx;
     this.cam.y = wy - dy;
   }
+  // 1 本指で回すとき、つかんだ所が注目点より手前 (画面の下) なら 1、奥 (上) なら −1
+  grabSide(sy) { return sy >= this.h / 2 ? 1 : -1; }
   // 回す: yaw は自由に、pitch は真上 (0) から 75° まで
   rotateBy(dyaw, dpitch) {
     this.cam.yaw = (this.cam.yaw + dyaw) % (Math.PI * 2);
@@ -112,7 +114,7 @@ class GalaxyView {
         const [x, y] = pos(e);
         // 回す: 「回す」ボタンがオン、マウスの中ボタン、Alt を押しながらのドラッグ
         const rot = this.app.rotateMode || (e.pointerType === 'mouse' && (e.button === 1 || e.altKey));
-        this.drag = { x, y, cx: this.cam.x, cy: this.cam.y, moved: false, rot, yaw: this.cam.yaw, pitch: this.cam.pitch };
+        this.drag = { x, y, cx: this.cam.x, cy: this.cam.y, moved: false, rot, yaw: this.cam.yaw, pitch: this.cam.pitch, side: this.grabSide(y) };
         // タッチの長押し (0.45秒動かさない) で経由地の線引きを始める
         clearTimeout(this.lp);
         if (e.pointerType !== 'mouse') this.lp = setTimeout(() => { if (this.drag && !this.drag.moved && pts.size === 1) this.startPath(x, y); }, 450);
@@ -140,8 +142,8 @@ class GalaxyView {
         // 倍率は指の間隔の比。ピンチを始めたとき指の中点の下にあった地点が、いまの中点の下に来るよう視点を動かす
         // (中身が指に貼りついたまま拡大・移動し、ずれていかない)
         this.cam.zoom = clamp(pinch.zoom * d / pinch.d, 1.5, 80);
-        // 2 本指をひねると回る (3 次元の銀河のとき)
-        if (is3D(this.app.game.galaxy)) this.cam.yaw = pinch.yaw - (Math.atan2(b[1] - a[1], b[0] - a[0]) - pinch.ang);
+        // 2 本指をひねると回る (3 次元の銀河のとき)。指と同じ向きに回す (yaw が増えると画面の上で時計回り。前は逆に回っていた。2026-11-01 の依頼)
+        if (is3D(this.app.game.galaxy)) this.cam.yaw = pinch.yaw + (Math.atan2(b[1] - a[1], b[0] - a[0]) - pinch.ang);
         this.pinWorld(pinch.world[0], pinch.world[1], mx, my);
         return;
       }
@@ -150,8 +152,10 @@ class GalaxyView {
         const dy = y - this.drag.y;
         if (Math.hypot(dx, dy) > 6) { this.drag.moved = true; clearTimeout(this.lp); }
         if (this.drag.moved && this.drag.rot) {
-          this.cam.yaw = this.drag.yaw - dx * 0.008;
-          this.cam.pitch = clamp(this.drag.pitch - dy * 0.008, 0, MAX_PITCH);
+          // 指の下の星が指について動く向きに回す: 注目点 (画面の真ん中) より下 (手前) をつかめば前のまま、上 (奥) をつかめば逆 (2026-11-01 の依頼「指と逆方向に回る」)
+          const k = this.drag.side ?? 1;
+          this.cam.yaw = this.drag.yaw - k * dx * 0.008;
+          this.cam.pitch = clamp(this.drag.pitch - k * dy * 0.008, 0, MAX_PITCH);
         } else if (this.drag.moved) {
           const [wx, wy] = this.screenDelta(dx, dy);
           this.cam.x = this.drag.cx - wx;
@@ -195,7 +199,7 @@ class GalaxyView {
       if (pts.size < 2) pinch = null;
       if (wasPinch && pts.size === 1 && this.drag) {
         const [rx, ry] = [...pts.values()][0];
-        this.drag = { x: rx, y: ry, cx: this.cam.x, cy: this.cam.y, moved: true, rot: this.app.rotateMode, yaw: this.cam.yaw, pitch: this.cam.pitch };
+        this.drag = { x: rx, y: ry, cx: this.cam.x, cy: this.cam.y, moved: true, rot: this.app.rotateMode, yaw: this.cam.yaw, pitch: this.cam.pitch, side: this.grabSide(ry) };
       }
       if (this.drag && !this.drag.moved && !wasPinch && e.type === 'pointerup') {
         const touch = e.pointerType !== 'mouse';

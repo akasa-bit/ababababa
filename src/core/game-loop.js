@@ -162,6 +162,8 @@
         const fresh = !this.govs[s.to];
         if (!this.settlersLand(s, kind, t.name)) { seedTo({ gov: s.from }); continue; } // 乗ってきた人数と年齢で入植地を作る。始まりのうちに絶えたら作らない (船と戦争の ship/settler.js。B-033)
         seedTo(fresh ? { gov: s.to } : { pv: s.to });
+        // 入植のときに選んだ統治体制 (依頼 KE-5): 新しくできた政府の型にする (選ばなければ基本統治形式のまま)
+        if (fresh && s.regime && REGIMES[s.regime] && this.govs[s.to]) { const gv = this.govs[s.to]; delete gv.regime; if (s.regime !== BASE_REGIME) gv.regime = s.regime; }
         joinEscort(this.colonyAt(s.to, s.body, kind));
         if (kind === 'planet' && this.hostileNatives(s.to, s.body)) this.startWar(s.to, s.body);
         const sup = Object.entries(s.supplies || {}).filter(([, v]) => v > 0).map(([r, v]) => `${RES_LABEL[r]} ${fmtAmt(v)}`).join('・');

@@ -73,7 +73,7 @@ const { chromium } = require('playwright');
       const d = JSON.parse(JSON.stringify(buildSave(g)));
       const g2 = new Game(generateGalaxy({ seed: d.seed, starCount: 400, meanSpacing: 4, kind: d.galaxy === 'real' ? 'real' : 'flat', gen: d.gen || 1 }));
       res.saveLoad = g2.restore(d) && JSON.stringify(g2.players[0].fiscal) === JSON.stringify(g.players[0].fiscal) && g2.taxK(far) === g.taxK(far);
-      __app.setView('empire'); __app.empireTab = 'goals'; __app.dirty = true;
+      __app.setView('empire'); __app.empireTab = 'overview'; __app.dirty = true; // 財政は「経済・政策」のタブ (依頼 KE-4)
       return res;
     });
     await p.waitForTimeout(700);

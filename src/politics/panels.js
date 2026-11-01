@@ -204,6 +204,34 @@ function regimePickHtml(g, id, sel) {
     <div class="rgrid"><div class="rlist">${list}</div><div class="rcmp">${card(cur, TR('いまの型'))}${sel === cur ? TR`<div class="rcard hint muted">左の一覧から型を選ぶと、ここに並べて比べる</div>` : card(sel, TR('選んだ型'))}</div></div>
     ${bandLegend()}<p class="muted">離反の起きやすさ = 基準 × 型の倍率 × 通信の遅れ ÷ 1 世代 (${GENERATION_YEARS} 年) × 人口の比 × 忠誠度。型の倍率は法と実態の差から (植民地は COLDAT の推定)。自治を狭める変更は、法の束の点が下がった分だけ忠誠度が下がる (2 点で −${HAZARD.revoke})。</p></div>`;
 }
+// 入植のときに新しい星系の政府の型を選ぶ窓 (依頼 KE-5。2026-11-01): いちばん上の「基本のまま」で、基本統治形式 (帝国 → 従属国で決める型) のまま送る。
+// 一覧から型を選ぶと右に基本統治形式と並べて比べ、「この型で送る」で送る。直轄は入植のときには選べない (直轄には上限があるので、入植してから星系の欄で)
+function colonyPickHtml(g, d, sel) {
+  const base = regimeNorm(g.regime) || BASE_REGIME;
+  sel = REGIMES[sel] && sel !== 'direct' ? sel : base;
+  const send = (r, label) => `<button class="big" data-act="${d.act}" data-sys="${d.sys}" data-body="${esc(d.body)}" data-kind="${d.kind}" data-from="${d.from ?? 0}" data-regime="${r}">${label}</button>`;
+  const item = (r) => { const R = REGIMES[r]; return `<button class="ri${r === sel ? ' on' : ''}${r === base ? ' cur' : ''}" data-rp="${r}"><span class="rn">${ico(`rg-${r}`)}${esc(R.label)}${r === base ? TR(' (基本)') : ''}</span><span class="rv">${bundleBand(R.law, R.fact, true)}<span>${TR`離反 ×${R.hr.toFixed(2)}`}</span></span></button>`; };
+  const fams = Object.entries(VASSAL_FAMILIES).map(([f, label]) => [f, label, REGIME_ORDER.filter((r) => r !== 'direct' && r !== base && REGIMES[r].family === f)]).filter(([, , rs]) => rs.length);
+  const list = `<div class="rf">${TR('基本統治形式')}</div>${item(base)}${fams.map(([f, label, rs]) => `<div class="rf">${ico(`fam-${f}`)}${esc(label)}</div>${rs.map(item).join('')}`).join('')}`;
+  const card = (r, head) => {
+    const R = REGIMES[r], B = REGIMES[base];
+    const diff = (a, b, fmt, good) => (r === base || a === b ? '' : ` <span class="${(good ? a > b : a < b) ? 'hz' : 'bad'}">(${a > b ? '+' : '−'}${fmt(Math.abs(a - b))})</span>`);
+    return TR`<div class="rcard${r === base ? '' : ' sel'}"><div class="muted">${head}</div><h3>${ico(`rg-${r}`)}${esc(R.label)}</h3>${bundleBand(R.law, R.fact)}
+      <table class="tbl"><tr><td>離反の起きやすさ (型の倍率)</td><td>×${R.hr.toFixed(2)}${diff(R.hr, B.hr, (x) => x.toFixed(2), false)}</td></tr>
+      <tr><td>朝貢</td><td>${pct(R.tribute)}${diff(R.tribute, B.tribute, pct, true)}</td></tr>
+      <tr><td>忠誠度 (型の分)</td><td>${R.loyalty > 0 ? '+' : R.loyalty < 0 ? '−' : '±'}${Math.abs(R.loyalty)}</td></tr>
+      <tr><td>独立のうち戦争になる割合</td><td>${pct(R.war)}</td></tr>
+      <tr><td>指令</td><td>${R.noOrders ? TR('受けない') : TR('ふつう')}</td></tr></table>
+      ${r === 'encomienda' ? TR`<p class="note">住民に労役を課す: 採掘 +30%・人口の増え方 ×0.7。やめたあとも税収が長く減る</p>` : ''}
+      <div class="btns">${send(r === base ? '' : r, r === base ? TR`基本のまま送る<small>${esc(R.label)}</small>` : TR`この型で送る<small>入植船の費用は変わらない</small>`)}</div>
+      <details class="note"><summary>数値の根拠</summary><p class="muted">${esc(R.why)}</p></details></div>`;
+  };
+  return TR`<div class="card"><div class="rtop"><h2>${ico('colony')}新しい星系の統治体制 — ${esc(g.system(Number(d.sys))?.name || '')}</h2><button data-rp="close" class="ghost">閉じる</button></div>
+    <p class="muted">入植船が着くと、この星系に政府ができ、${ME.home}の家臣になる。その政府の統治体制 (家臣の型) を、この入植船ごとに選べる。あとから星系の欄の「型を選ぶ」で変えることもできる (光速の指令と政治力が要る)。</p>
+    <div class="btns">${send('', TR`${ico(`rg-${base}`)}基本のまま (${esc(REGIMES[base].label)})<small>基本統治形式は 帝国 → 従属国 で変えられる</small>`)}</div>
+    <div class="rgrid"><div class="rlist">${list}</div><div class="rcmp">${card(base, TR('基本統治形式'))}${sel === base ? TR`<div class="rcard hint muted">左の一覧から型を選ぶと、ここに並べて比べる</div>` : card(sel, TR('選んだ型'))}</div></div>
+    ${bandLegend()}<p class="muted">離反の起きやすさの型の倍率は、法と実態の差から (植民地は COLDAT の推定)。実際の起きやすさは、首都からの通信の遅れ・人口の比・忠誠度でも変わる。</p></div>`;
+}
 // 情報の古さの表示
 function ageBadge(g, id) {
   const age = g.dataAge(id);

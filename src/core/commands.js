@@ -45,7 +45,7 @@
       autoGrant: () => '', autoBuild: () => '',
       autoAwe: (x) => JA`反乱防止のための威圧を${x ? 'オン' : 'オフ'}にした`,
       autoDefense: (x) => JA`自動防衛配備を${x ? 'オン' : 'オフ'}にした`,
-      regime: (x) => JA`新しい入植地の統治体制を「${REGIMES[regimeNorm(x)].label}」にした`,
+      regime: (x) => JA`基本統治形式 (新しい入植地の型) を「${REGIMES[regimeNorm(x)].label}」にした`,
     };
     if (d.key === 'regime' && (!regimeNorm(v) || regimeNorm(v) === 'direct')) return fail('選べない統治体制');
     if (!SET[d.key]) return fail('設定がない');
@@ -75,6 +75,7 @@
     if (act === 'fiscal') return this.setFiscal(d);
     if (act === 'restructure') return this.restructure(d.hc); // 債務の再編 (経済。economy/central-bank.js。回 KE9)
     if (act === 'bill') return this.billAct(d.bill, d.op); // 審議中の法案を押す・引っ込める (政治。politics/support.js。回 SE7)
+    if (act === 'grantset') return this.setStandingGrant(d.sys, d.amt); // 定期の資金援助 (依頼 KE-4)
     if (act === 'grant') {
       const to = Number(d.sys);
       if (to === this.cap || !this.isColonized(to) || this.realmOf(to) !== this.cap) return fail(JA`${this.realmName(this.cap)}の星系にだけ送れる`);
@@ -136,7 +137,7 @@
     const n = d.n === 'all' ? Infinity : Number(d.n);
     const col = d.col ? this.colonyByKey(d.col) : null;
     switch (act) {
-      case 'send': case 'candsend': return this.dispatch(Number(d.from), sys, body, d.kind);
+      case 'send': case 'candsend': return this.dispatch(Number(d.from), sys, body, d.kind, d.regime); // regime = 新しい星系の政府の型 (入植のときに選ぶ。依頼 KE-5)
       case 'upgrade': return col ? this.upgrade(col, d.fac) : fail('入植地がない');
       case 'route': return this.openRoute(sys, Number(d.dest));
       case 'route2': return this.openRoute(Number(d.a), Number(d.b));

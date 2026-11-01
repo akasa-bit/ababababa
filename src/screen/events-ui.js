@@ -4,8 +4,9 @@ const EVENT_TIER = { politics: 3, demand: 3, battle: 3, famine: 3, goal: 3, war:
 const TIER_LABEL = { 3: '重大', 2: '普通', 1: '細事' };
 const MERGE_KINDS = new Set(['shortage', 'migration', 'famine']); // 一覧で、同じ星系の同じ種類をまとめる
 // 種類ごとの表示の好み (見る人ごとなのでブラウザに覚えておく)。未設定なら段で決まる (普通以上を出す)
-const EvPrefs = { kinds: {}, mode: 'list' };
-try { const p = JSON.parse(localStorage.getItem(`${STORE}-evprefs`) || 'null'); if (p && typeof p === 'object') { EvPrefs.kinds = p.kinds || {}; EvPrefs.mode = p.mode === 'year' ? 'year' : 'list'; } } catch { /* 既定値 */ }
+// popup = 重大な知らせを画面の真ん中の窓に出す・popPause = 出しているあいだ時間を止める (2026-11-01 の依頼。どちらも既定はオン)
+const EvPrefs = { kinds: {}, mode: 'list', popup: true, popPause: true };
+try { const p = JSON.parse(localStorage.getItem(`${STORE}-evprefs`) || 'null'); if (p && typeof p === 'object') { EvPrefs.kinds = p.kinds || {}; EvPrefs.mode = p.mode === 'year' ? 'year' : 'list'; EvPrefs.popup = p.popup !== false; EvPrefs.popPause = p.popPause !== false; } } catch { /* 既定値 */ }
 function saveEvPrefs() { try { localStorage.setItem(`${STORE}-evprefs`, JSON.stringify(EvPrefs)); } catch { /* 保存できない環境 */ } }
 const evTier = (kind) => EVENT_TIER[kind] ?? 2;
 function evShown(kind) { const v = EvPrefs.kinds[kind]; return v === undefined ? evTier(kind) >= 2 : !!v; }
@@ -111,6 +112,108 @@ function surpriseHtml(g, w) {
     <div class="opts"><button data-act="fly" data-sys="${w.sys}">${esc(name)}の守りを見る</button>${g.knownGarrison(g.cap) >= 1 && w.sys !== g.cap ? TR`<button data-act="fleetsel" data-sys="${g.cap}">首都の艦隊を選ぶ</button>` : ''}<button class="ghost" data-act="surpriseack" data-id="${w.f.id}">確かめた</button></div></div>`;
 }
 
+// 重大な知らせの窓 (2026-11-01 の依頼「重要通知、paradox interactive系のゲームみたいに、画面中央にでかでかとでるようになってほしい」):
+// 知らせの帯の重大な知らせ (自国に関わるもの・知らせの予算の中)・決めること (要求と出来事)・奇襲のおそれが新しく届いたら、画面の真ん中に大きく 1 件ずつ出す。
+// 出しているあいだは時間を止め、窓がなくなったら止める前の速さに戻す (ネット対戦では止めない。速さはホストが決めるので)。
+// 窓で「あとで」を押したものは、帯とイベントのタブに残る。ゲームを開いた・ロードした時点で出ていたものは窓にしない。観戦では出さない。
+// 設定はイベントのタブ (EvPrefs.popup・popPause)。railHtml から 0.5 秒ごとに呼ぶ
+function newsPopTick(g, majors, decs, surprise) {
+  if (app.popGame !== g) { app.popGame = g; app.popSeen = new Set(); app.popQ = []; app.popPrimed = new Set(); }
+  const off = g.spectate || !EvPrefs.popup; // 切っているあいだに届いたものも「見た」ことにする (入れ直したときにまとめて出さない)
+  if (off) app.popQ = [];
+  const pi = g.pi, k = (x) => `${pi}:${x}`;
+  const items = [
+    ...surprise.map((w) => ({ key: k(`s${w.f.id}`), t: 's', id: w.f.id })),
+    ...decs.map((d) => ({ key: k(`d${d.id}`), t: 'd', id: d.id })),
+    ...majors.map((x) => ({ key: k(`m${x.e.id}`), t: 'm', id: x.e.id, ids: x.ids, fresh: app.railFirst?.has(x.e.id) })),
+  ];
+  const first = !app.popPrimed.has(pi); // この席で初めて見るときは、出ているものを見たことにする (帯にある)
+  app.popPrimed.add(pi);
+  for (const it of items) {
+    if (app.popSeen.has(it.key)) continue;
+    app.popSeen.add(it.key);
+    if (!first && !off && (it.t !== 'm' || it.fresh)) app.popQ.push({ ...it, pi });
+  }
+  newsPopRender(g);
+}
+// いま出せる窓の中身 (届いたあとで帯やタブで済ませたもの・ほかの席のものは飛ばす)
+function newsPopItem(g) {
+  while (app.popQ?.length) {
+    const it = app.popQ[0];
+    const ok = it.pi === g.pi && (it.t === 'm' ? !(g.acked || []).includes(it.id)
+      : it.t === 'd' ? g.visibleDecisions().some((d) => d.id === it.id)
+      : surpriseWarnings(g).some((w) => w.f.id === it.id));
+    if (ok) return it;
+    app.popQ.shift();
+  }
+  return null;
+}
+function newsPopRender(g) {
+  const box = $('newsbox');
+  // ホットシートの幕・ホーム・国家選択・ほかの窓 (講和・型・書き出し・終わり・ネット対戦) が出ているあいだは出さない (待たせておき、閉じたら出す)
+  const busy = app.homeOpen || ['curtain', 'home', 'pick', 'netbox', 'treatybox', 'regimebox', 'xportbox', 'endbox'].some((id) => $(id) && !$(id).hidden);
+  const it = busy ? null : newsPopItem(g);
+  if (!it) {
+    if (!box.hidden) box.hidden = true;
+    app.popShown = null;
+    if (busy) return; // ほかの窓のあいだは、止めた速さもそのまま
+    if (app.popPaused) { const v = app.popPaused; app.popPaused = 0; if (!app.speed && !Net.on) setSpeed(v); } // 止めたのが窓なら、もとの速さに戻す
+    return;
+  }
+  if (app.popShown !== it.key || box.hidden) {
+    app.popShown = it.key;
+    setHtml(box, newsPopHtml(g, it, app.popQ.filter((x) => x.pi === g.pi).length - 1));
+    box.hidden = false;
+    if (EvPrefs.popPause && app.speed && !Net.on && !app.popPaused) { app.popPaused = app.speed; setSpeed(0); }
+  }
+}
+function newsPopHtml(g, it, rest) {
+  const place = (sys) => (sys !== undefined && sys !== null && g.system(sys) ? g.system(sys).name : '');
+  const later = (label) => `<button class="ghost" data-np="later">${label}</button>`;
+  const restTxt = rest > 0 ? TR`<span class="nrest">ほかに ${rest} 件</span>` : '';
+  const head = (tone, kind, label) => `<div class="nh ${tone}">${tagIco(kind)}<span>${label}</span>${restTxt}</div>`;
+  if (it.t === 'm') {
+    const e = g.knownEvents().find((x) => x.id === it.id);
+    if (!e) return '';
+    const ago = g.year - e.year, late = (e.seen ?? e.year) - e.year;
+    const more = it.ids.length > 1 ? TR` (同じ星系の続報 ほか ${it.ids.length - 1} 件)` : '';
+    return TR`<div class="card" role="dialog" aria-modal="true" aria-label="重大な知らせ">${head(EVENT_TONE[e.kind] || '', e.kind, TR`重大な知らせ・${esc(TX(EVENT_KIND[e.kind] || e.kind))}`)}
+      <div class="nb"><span class="nicon ${EVENT_TONE[e.kind] || ''}">${tagIco(e.kind)}</span><div><p class="nt">${esc(e.text)}</p><p class="nm">${esc(place(e.sys))}・${Math.floor(e.year)}年${ago >= 0.5 ? TR` (${Math.round(ago)}年前)` : ''}${late >= 0.5 ? TR`・光が届くまで ${Math.round(late)} 年かかった` : ''}${esc(more)}</p></div></div>
+      <div class="opts">${later(TR('あとで (帯に残す)'))}${e.sys !== undefined && e.sys !== null ? TR`<button data-act="fly" data-sys="${e.sys}" data-ack="${it.ids.join(',')}">${ico('goto')}場所を見る</button>` : ''}<button class="big" data-act="ack" data-id="${it.ids.join(',')}">${ico('ack')}確かめた</button></div></div>`;
+  }
+  if (it.t === 'd') {
+    const d = g.visibleDecisions().find((x) => x.id === it.id);
+    const opts = d.opts.map((o) => {
+      const pc = g.pcCost('decide', { sys: d.sys, id: d.id, opt: o.k });
+      const why = (o.cr || 0) > g.funds(g.cap) ? TR('資金が足りない') : pc > g.pc ? TR('政治力が足りない') : '';
+      return `<button data-act="decide" data-sys="${d.sys}" data-id="${d.id}" data-opt="${o.k}" ${why ? 'disabled' : ''} title="${esc(o.note || '')}">${esc(o.label)}<small>${esc(why || [o.cr ? `${o.cr} cr` : '', pc ? TR`政治力 ${pc}` : ''].filter(Boolean).join(TR('・')) || TR('費用なし'))}</small></button>`;
+    }).join('');
+    return TR`<div class="card" role="dialog" aria-modal="true" aria-label="決めること">${head('warn', d.kind === 'demand' ? 'demand' : 'story', d.kind === 'demand' ? TR`要求・${esc(place(d.sys))}` : TR`出来事・${esc(place(d.sys))}`)}
+      <div class="nb"><span class="nicon warn">${tagIco(d.kind === 'demand' ? 'demand' : 'story')}</span><div><p class="nt">${esc(d.text)}</p><p class="nm">${d.kind === 'demand' ? '' : TR`${Math.round(d.deadline)}年までに返事 (しなければ自動で決まる)。`}${d.sys === g.cap ? '' : TR`返事は ${g.lightDelay(d.sys).toFixed(0)} 年で届く。`}</p></div></div>
+      <div class="opts">${later(TR('あとで決める'))}${opts}</div></div>`;
+  }
+  const w = surpriseWarnings(g).find((x) => x.f.id === it.id);
+  const name = g.system(w.sys).name;
+  return TR`<div class="card" role="dialog" aria-modal="true" aria-label="奇襲のおそれ">${head('enemy', 'war', TR`奇襲のおそれ・${esc(g.realmName(w.f.owner ?? 0))}の艦隊 ${Math.round(w.f.n || 0)}`)}
+    <div class="nb"><span class="nicon enemy">${tagIco('war')}</span><div><p class="nt">${esc(w.from.name)}を出た艦隊が見えた。${esc(name)}に向かっているなら、着くまで <b>あと ${Math.max(0, w.at - g.year).toFixed(1)} 年</b></p><p class="nm">出発の光は ${w.seenLag.toFixed(1)} 年かかって届いた。行き先は見ているだけでは分からないので、いちばん近い自国の星系に向かうとして数えた。</p></div></div>
+    <div class="opts">${later(TR('あとで'))}<button data-act="surpriseack" data-id="${w.f.id}">確かめた</button>${g.knownGarrison(g.cap) >= 1 && w.sys !== g.cap ? TR`<button data-act="fleetsel" data-sys="${g.cap}">首都の艦隊を選ぶ</button>` : ''}<button class="big" data-act="fly" data-sys="${w.sys}">${esc(name)}の守りを見る</button></div></div>`;
+}
+// 窓のボタン: 「あとで」は閉じるだけ。ほかは帯と同じ命令 (確かめた・場所を見る・返事) を出してから閉じ、次の知らせを出す
+function newsPopClick(e) {
+  const b = e.target.closest('button');
+  if (!b || !app.popQ?.length) return;
+  const it = app.popQ[0];
+  PlayLog.add('ui', { act: 'newspop', t: it.t, b: b.dataset.np || b.dataset.act });
+  if (b.dataset.act) {
+    if (b.dataset.ack) issue('set', { key: 'acked', value: b.dataset.ack.split(',').map(Number) }); // 場所を見たら確かめたことにする
+    onPanelClick(e);
+  }
+  app.popQ.shift();
+  app.popShown = null;
+  newsPopRender(app.game);
+  setHtml($('rail'), railHtml(app.game));
+}
+
 // イベントタブ: 決めること、いま起きている問題、重要なイベントの履歴
 function eventsHtml(app) {
   const g = app.game;
@@ -196,6 +299,7 @@ function eventsHtml(app) {
     <h3>履歴</h3>
     <div class="chips"><span class="muted">表示する段</span>${tiers}<span class="muted">表示</span><button data-act="evmode" data-m="list" class="${EvPrefs.mode === 'list' ? 'on' : ''}">一覧</button><button data-act="evmode" data-m="year" class="${EvPrefs.mode === 'year' ? 'on' : ''}">年ごと</button></div>
     <details class="evkinds"><summary class="muted">種類ごとに選ぶ</summary><div class="bulk">${kindBoxes}</div></details>
+    <div class="bulk"><label class="check"><input type="checkbox" data-act="evpopup" ${EvPrefs.popup ? 'checked' : ''}>重大な知らせ・決めることを画面の真ん中に大きく出す</label><label class="check"><input type="checkbox" data-act="evpoppause" ${EvPrefs.popPause ? 'checked' : ''} ${EvPrefs.popup ? '' : 'disabled'}>出しているあいだ時間を止める (ネット対戦では止めない)</label></div>
     <div class="chips">${chips}</div>${list || TR('<p class="note">まだ記録はない。</p>')}
     <p class="note">「すべて」には選んだ段・種類だけを出す (既定では細事 = 資源不足・移民を隠す)。種類のボタンで絞り込めば、隠した種類も見える。資源不足は10年以上続いたものだけを記録し、いまの不足は上の「いま起きている問題」と地図の印で見る。</p>`;
 }

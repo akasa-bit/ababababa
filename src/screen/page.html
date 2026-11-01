@@ -93,6 +93,21 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #netbox[hidden] { display:none; }
 #treatybox { position:fixed; inset:0; z-index:36; background:rgba(5,7,13,.9); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
 #treatybox[hidden] { display:none; }
+/* 重大な知らせの窓 (2026-11-01 の依頼。Paradox のゲームのように画面の真ん中に大きく) */
+#newsbox { position:fixed; inset:0; z-index:35; background:rgba(5,7,13,.55); display:flex; justify-content:center; align-items:center; padding:24px 16px; }
+#newsbox[hidden] { display:none; }
+#newsbox .card { width:min(700px,100%); max-height:calc(100% - 8px); overflow:auto; background:var(--panel); border:2px solid var(--line); border-radius:12px; box-shadow:0 12px 48px rgba(0,0,0,.65); }
+#newsbox .nh { display:flex; align-items:center; gap:8px; padding:12px 20px; border-bottom:1px solid var(--line); font-size:13px; letter-spacing:.04em; background:rgba(120,150,200,.10); }
+#newsbox .nh.enemy { background:rgba(255,90,90,.16); } #newsbox .nh.warn { background:rgba(245,185,70,.16); } #newsbox .nh.info { background:rgba(110,170,255,.14); }
+#newsbox .nh .nrest { margin-left:auto; color:var(--muted); font-size:var(--fs1); }
+#newsbox .nb { padding:22px 24px 6px; display:grid; grid-template-columns:72px minmax(0,1fr); gap:18px; align-items:start; }
+#newsbox .nicon { width:72px; height:72px; border-radius:50%; display:grid; place-items:center; border:2px solid var(--line); background:rgba(120,150,200,.10); }
+#newsbox .nicon .ico { width:40px; height:40px; margin:0; } #newsbox .nicon.enemy { border-color:rgba(255,110,110,.7); color:#ff9c9c; } #newsbox .nicon.warn { border-color:rgba(245,185,70,.7); color:#f5c46a; } #newsbox .nicon.info { border-color:rgba(110,170,255,.7); color:#9cc4ff; }
+#newsbox .nt { font-size:22px; line-height:1.55; margin:0 0 12px; overflow-wrap:anywhere; }
+#newsbox .nm { color:var(--muted); font-size:var(--fs1); margin:0; }
+#newsbox .opts { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; padding:14px 24px 20px; }
+#newsbox .opts button { margin:0; min-height:44px; }
+@media (max-width: 600px) { #newsbox .nt { font-size:17px; } #newsbox .nb { padding:16px 16px 4px; grid-template-columns:48px minmax(0,1fr); gap:12px; } #newsbox .nicon { width:48px; height:48px; } #newsbox .nicon .ico { width:28px; height:28px; } #newsbox .opts { padding:12px 16px 16px; } }
 /* 型を選ぶ窓 (回 GA11・B-197。W3-Q10 = e): 左に型の一覧、右にいまの型と選んだ型。縦の画面では上下 */
 #regimebox { position:fixed; inset:0; z-index:36; background:rgba(5,7,13,.92); overflow:auto; padding:24px max(16px, 3vw); }
 #regimebox[hidden] { display:none; }
@@ -132,6 +147,8 @@ p.legend { display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; }
 #netbox textarea { width:100%; font:var(--fs1) monospace; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; margin:6px 0; padding:6px; word-break:break-all; }
 #netbox section { border-top:1px solid var(--line); margin-top:10px; padding-top:6px; }
 #netbox .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+table.vassals .vsel { width:28px; } table.vassals .vsel input { width:20px; height:20px; margin:0; } /* 一括変更で選ぶ欄 (依頼 KE-5) */
+table.vassals td.vgrant { white-space:nowrap; } table.vassals td.vgrant input { width:6em; min-height:36px; font:inherit; background:#0a0f1a; color:var(--fg); border:1px solid var(--line); border-radius:5px; padding:2px 6px; } table.vassals td.vgrant button { margin:0 0 0 4px; } /* 従属国のタブ (依頼 KE-4) */
 #netbox .nethelp { margin-top:12px; font-size:var(--fs1); color:var(--muted); }
 #netbox .nethelp summary { cursor:pointer; min-height:32px; color:var(--fg); }
 #netbox .nethelp ul { margin:4px 0 0 18px; padding:0; }
@@ -612,6 +629,7 @@ h1, #empire h2, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url(#wo
   <div id="netbox" hidden></div>
   <div id="treatybox" hidden></div>
   <div id="regimebox" hidden></div>
+  <div id="newsbox" hidden></div>
   <div id="xportbox" hidden></div>
   <div id="endbox" hidden></div>
   <div id="memobox" hidden>

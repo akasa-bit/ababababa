@@ -59,7 +59,7 @@ const candRec = (grade, d) => (grade >= 1 ? grade : 0.5) / ((1 + d / 6) * (1 + d
 
 const SHEETS = { empire: empireHtml, events: eventsHtml, cands: candidatesHtml };
 
-// ヘッダーの数字: 資金・政治力・議会の支持 (人口と星系の数は帝国 → 概要へ)。色は意味があるときだけ (赤字・議会が危うい)
+// ヘッダーの数字: 資金・政治力・議会の支持 (人口と星系の数は帝国 → 経済・政策へ)。色は意味があるときだけ (赤字・議会が危うい)
 function treasuryHtml(g) {
   const inc = g.income();
   const pci = g.pcLast || g.pcIncome().total;
