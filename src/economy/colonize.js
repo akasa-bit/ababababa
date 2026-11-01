@@ -20,7 +20,13 @@
     const def = this.target(sysId, bodyId)?.natives;
     if (!def) return null;
     const key = `${sysId}|${bodyId}`;
-    if (!this.natives[key]) this.natives[key] = { rel: def.mood - this.infamy, status: 'independent', pop: def.pop };
+    if (!this.natives[key]) {
+      const st = { rel: def.mood - this.infamy, status: 'independent', pop: def.pop };
+      // 画面からの確かめ (候補地のタブなど) では記録しない (回 KE13): 記録した年の悪名で友好度が決まり、nativesYearly の順も変わるので、
+      // 見ている画面の違うネット対戦の端末どうしで試合の筋が分かれた。記録するのは、試合を進めているあいだと命令を実行しているときだけ
+      if (!this.stepping && !CMD_DEPTH) return { def, st };
+      this.natives[key] = st;
+    }
     return { def, st: this.natives[key] };
   }
   // 制圧に必要な戦力(艦隊の数)

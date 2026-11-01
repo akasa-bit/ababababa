@@ -356,7 +356,10 @@ class Game {
   vassalsOf(id) { return Object.keys(this.govs).map(Number).filter((k) => this.govs[k].lord === id); }
   // 国 = 従属の連鎖の頂点 (首都の星系)。地球の国は 0
   realmOf(id) {
+    // 速い道 (回 KE13): 主人をたどるのに Set を作らない (交易の計算で何十万回も呼ばれる)。64 段で終わらなければ、輪になっているかもしれないので、前の Set の道で同じ答えを出す
     let cur = id;
+    for (let i = 0; i < 64; i++) { const gv = this.govs[cur]; if (!gv || gv.lord === null || gv.lord === undefined) return cur; cur = gv.lord; }
+    cur = id;
     const seen = new Set();
     while (this.govs[cur] && this.govs[cur].lord !== null && this.govs[cur].lord !== undefined && !seen.has(cur)) { seen.add(cur); cur = this.govs[cur].lord; }
     return cur;

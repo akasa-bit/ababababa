@@ -37,3 +37,5 @@ const SEED_FUNDS = { planet: 200, station: 80 }; // 入植船が新しい政府�
 const BASE_TAX = { planet: 5, station: 2 }; // 入植地ごとの基本の税収 [cr/年] (小さな入植地の政府を回すため) // 従属する星系が主人に納める、年間収入の割合
 
 const stockCap = (pop) => 500 + 5 * pop; // 星系の備蓄上限 (資源ごと)
+// 命令 (command) を実行しているあいだの深さ。画面からの確かめ (描くときの呼び出し) と、試合を動かす呼び出しを分ける (nativeOf。ネット対戦の筋のずれ。回 KE13)
+let CMD_DEPTH = 0;

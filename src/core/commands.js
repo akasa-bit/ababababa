@@ -20,11 +20,12 @@
     if (pc > this.pc + 1e-9) return fail(JA`政治力が足りない (${pc} 必要、いま ${Math.floor(this.pc)})`);
     const old = this.msgTo;
     if (this.players.length > 1) this.msgTo = this.pi;
+    CMD_DEPTH++;
     try {
       const r = this.commandRaw(act, d);
       if (r?.ok && pc) this.pc -= pc;
       return r;
-    } finally { this.msgTo = old; }
+    } finally { CMD_DEPTH--; this.msgTo = old; }
   }
   // 設定の切り替え (自動化など)。ネット対戦ではすべての端末で同じ時点に変わるように、これも命令として扱う
   setSetting(d) {
