@@ -214,6 +214,16 @@
 | QD-19 | カプセルの絵 | **案 1** ゲームの星図をもとに文字だけ載せる | ストアの画像 |
 | QD-20 | 字体の同梱 (オフラインの Steam Deck) | **包装の側**で同梱して差し替える (`src/` に触らない) | `desktop/` |
 
+### 決まったもの (2026-11-01、回 SE11 の始め)
+
+返事は `docs/requests/2026-11-01-SE.md` の SE-4 にそのまま残した。聞いたページは Artifact「R31 の合わせ直し」(https://claude.ai/artifact/MqTTMVj4ihqMZrPqxmcUHb)。測った数は `docs/status/SE.md` の回 SE11。
+
+| 番号 | 何を決めたか | 答え | 効く所 |
+|---|---|---|---|
+| SE11-Q1 | R31 の差の測り方 (遊びは変わらない) | **a. 離反の式に合わせる: 書き出す差 = 型の事例の平均の差 + 試合の中で開いた分** (1.151 → 1.188) | `tools/secession.js`・目標の版 30 |
+| SE11-Q2 | 攻め落とした星系・降伏した国の統治の型 | **a. 勝った国の新しい家臣の型で決め直す** (T04 43% → 14%) | `ship/war-ai.js` の攻囲と `surrender`・`politics/loyalty-regime.js` の `newLordRegime` |
+| SE11-Q3 | 帯に少し届かないとき (1.198) | **b. R31 をゲーム版では判定しない (確認用)** | `docs/game-plan.md` の 5・`targets/targets.json` の R31 の note |
+
 ### 決まったもの (2026-11-01、回 W4)
 
 返事は `docs/requests/2026-11-01-common.md` の common-2 にそのまま残した。聞いたページは Artifact「第五波の組み方」(https://claude.ai/artifact/BYhUtdgCPqFscvWkJ4PJd3)。数は `docs/status/common.md` の「4 波目の数」。
