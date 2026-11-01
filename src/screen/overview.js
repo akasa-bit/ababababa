@@ -53,7 +53,7 @@ function empireOverview(app) {
     <tr class="total"><td>合計</td><td></td>${RES.map((r) => `<td>${fmtAmt(totals[r])} <small>${signed(totalNet[r])}</small></td>`).join('')}</tr></table></div>
     <p class="note">増減は生産−需要。交易路での出入りは含まない。</p>`;
 
-  return `${kpi}${ledger}${popTable}${resTable}`;
+  return `${kpi}${ledger}${policyHtml(g)}${popTable}${resTable}`; // 経済・政策のタブ: 収支・国家方針と財政・人口・資源 (依頼 KE-4)
 }
 
 // 惑星ごとの種族数と内訳 (住民の種族・同じ惑星の先住民)

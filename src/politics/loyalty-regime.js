@@ -531,7 +531,8 @@
     if (act === 'fiscal') { const c = this.fiscalDraft(), r = this.fiscal || FISCAL_DEFAULT; return taxRateOf(d.tax ?? c.tax) !== taxRateOf(c.tax) || Number(d.ctax ?? c.ctax ?? 0) !== (c.ctax || 0) || Number(d.tariff ?? c.tariff ?? 0) !== (c.tariff || 0) || Number(d.rate ?? r.rate) !== r.rate || Number(d.deficit ?? c.deficit ?? 0) !== (c.deficit || 0) || ['ceil', 'ration', 'ban', 'embargo', 'reserve', 'floor'].some((k) => d[k] !== undefined && JSON.stringify(d[k]) !== JSON.stringify(c[k] || {}))
       || Number(d.pistar ?? r.pistar ?? FISCAL_DEFAULT.pistar) !== (r.pistar ?? FISCAL_DEFAULT.pistar) || Number(d.qe ?? r.qe ?? 0) !== (r.qe || 0) || Number(d.repress ?? c.repress ?? 0) !== (c.repress || 0) || Number(d.soe ?? c.soe ?? 0) !== (c.soe || 0) || Number(d.capctl ?? c.capctl ?? 0) !== (c.capctl || 0) || Number(d.land ?? c.land ?? 0) !== (c.land || 0) ? FISCAL_COST : 0; } // 審議中なら出した法案と比べる (回 SE7)。価格統制と交易の規制・物価の目標・量的緩和・金融抑圧・国有化・資本規制も (回 KE9)
     const extra = act === 'decide' ? this.decisionOpt(d)?.pc || 0 : 0;
-    const target = act === 'grant' || act === 'decide' ? Number(d.sys) : this.cmdTarget(act, d);
+    if (act === 'grantset' && !(Number(d.amt) >= 1)) return 0; // 定期の資金援助を止めるのは政治力なし
+    const target = act === 'grant' || act === 'grantset' || act === 'decide' ? Number(d.sys) : this.cmdTarget(act, d);
     if (target === undefined || target === null || target === this.cap || Number.isNaN(target)) return extra;
     const c = pcCostOf(this.lightDelay(target));
     return extra + (this.isDirect(target) ? Math.max(1, Math.ceil(c / 2)) : c);

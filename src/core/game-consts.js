@@ -26,6 +26,7 @@ const FRIEND_SAFE = 50; // 主人との友好度がこれ以上なら、威圧�
 const FRIEND_DAMP = 0.6; // 友好度100で、最後通牒の期限に独立を宣言する確率が 1 − FRIEND_DAMP 倍になる
 const GRANT_YEARS = 50; // 入植後この年数のあいだ、主人の星系が自動で資金援助を送る
 const GRANT_MAX = 300; // 自動の資金援助の上限 [cr/年]。主人の資金の3%まで
+const STANDING_MAX = 1e6; // 定期の資金援助で決められる額の上限 [cr/年] (依頼 KE-4)
 const REALM_COLORS = ['#ff9f43', '#ee5aa8', '#a3e635', '#f5d142', '#60a5fa', '#c084fc', '#f87171', '#34d399'];
 const CMD_LABEL = {
   peace: '講和の申し入れ', send: '入植船を送る', candsend: '入植船を送る', upgrade: '施設の拡張', route: '交易路の開設', route2: '交易路の開設', uproute: '交易路の拡張',

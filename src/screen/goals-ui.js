@@ -1,7 +1,5 @@
-// 帝国 → 目標: 国家方針・政治力・議会の支持・時代の課題・挑戦・点数・直轄の星系
-function goalsSheet(app) {
-  const g = app.game;
-  const inc = g.pcIncome();
+// 国家方針と財政 (依頼 KE-4: 「経済・政策」のタブにまとめた。前は「目標」のタブ)
+function policyHtml(g) {
   const pol = g.policy;
   const canChange = !pol || g.year - pol.since >= g.policyYears();
   const polBtns = Object.entries(POLICIES).map(([id, p]) => {
@@ -9,6 +7,15 @@ function goalsSheet(app) {
     const why = cur ? TR('いまの方針') : !canChange ? TR`${Math.ceil(pol.since + g.policyYears() - g.year)}年後から変えられる` : g.pc < POLICY_COST ? TR`政治力が足りない (${POLICY_COST} 必要)` : '';
     return TR`<button data-act="policy" data-value="${id}" class="${cur ? 'on' : ''}" ${why && !cur ? 'disabled' : ''}>${ico(`pol-${id}`)}${p.label}<small>${esc(p.good)}<br>代わりに: ${esc(p.bad)}${why ? `<br>${esc(why)}` : TR`<br>政治力 ${POLICY_COST}`}</small></button>`;
   }).join('');
+  return TR`<h3>国家方針${pol ? TR` — いまは「${POLICIES[pol.id].label}」(${Math.round(pol.since)}年から)` : ''}</h3>
+    <p class="note">国の向きを一つ選ぶ。${g.policyYears()}年に一度だけ変えられる (政治力 ${POLICY_COST})。議会の審議にかけ (国の権力に加わっている集団の支持が ${pct(ENACT.now)} 以上ならすぐ通る)、通ったあと、知らせが光速で届いた星系から順に効く。</p>
+    ${billHtml(g, 'policy')}<div class="btns wrap">${polBtns}</div>
+    ${fiscalHtml(g)}`;
+}
+// 帝国 → 目標: 政治力・議会の支持・時代の課題・挑戦・点数・統治体制・直轄の星系 (国家方針と財政は「経済・政策」のタブへ。依頼 KE-4)
+function goalsSheet(app) {
+  const g = app.game;
+  const inc = g.pcIncome();
   const sc = g.ended && g.finalScore ? g.finalScore : g.score();
   const era = g.era;
   // 最初の年の終わりより前は、最初の時代の課題 (決まっている) をそのまま見せる
@@ -27,10 +34,6 @@ function goalsSheet(app) {
       <div><span>点数${g.ended ? TR(' (確定)') : ''}</span><b>${sc.total}</b><span>${g.endYear ? TR`${Math.round(g.endYear)}年で確定` : TR('終わりなし')}</span></div>
       <div><span>直轄</span><b>${g.directCount()} / ${g.directMax()}</b><span>星系</span></div>
     </div>
-    <h3>国家方針${pol ? TR` — いまは「${POLICIES[pol.id].label}」(${Math.round(pol.since)}年から)` : ''}</h3>
-    <p class="note">国の向きを一つ選ぶ。${g.policyYears()}年に一度だけ変えられる (政治力 ${POLICY_COST})。議会の審議にかけ (国の権力に加わっている集団の支持が ${pct(ENACT.now)} 以上ならすぐ通る)、通ったあと、知らせが光速で届いた星系から順に効く。</p>
-    ${billHtml(g, 'policy')}<div class="btns wrap">${polBtns}</div>
-    ${fiscalHtml(g)}
     <h3>政治力 (${ME.home}の意志)</h3>
     <p class="note">星系の政府への指令 (施設・交易路・方針・要求への返事など) には政治力が要る。遠い星系ほど多く (距離 d 光年で 2 + 0.15d、直轄の星系は半分)。宣戦・講和は ${PC_DIPLOMACY}。${ME.capName}の中の行動 (${ME.capName}からの入植船・施設) と艦隊への指令は要らない。年ごとに貯まり、${g.pcCap()} で頭打ちになる。</p>
     <table class="tbl">${inc.parts.map(([l, v]) => TR`<tr><td>${esc(l)}</td><td class="${v < 0 ? 'bad' : ''}">${v >= 0 ? '+' : ''}${v}/年</td></tr>`).join('')}<tr class="total"><td>合計</td><td>${inc.total >= 0 ? '+' : ''}${inc.total}/年</td></tr></table>
@@ -46,9 +49,7 @@ function goalsSheet(app) {
     <h3>点数${g.ended ? TR(' (確定)') : ` (${g.endYear ? TR`${Math.round(g.endYear)}年に確定` : TR('いまの値')})`}</h3>
     <table class="tbl">${sc.parts.map(([l, v]) => `<tr><td>${esc(l)}</td><td class="${v < 0 ? 'bad' : ''}">${v}</td></tr>`).join('')}<tr class="total"><td>合計</td><td>${sc.total}</td></tr></table>
     <h3>統治体制</h3>
-    <p class="note">家臣の星系ごとに統治体制を選べる (星系の詳細欄の「統治」から。光速の指令)。体制によって、離反の起きやすさ・朝貢・指令の通りやすさが変わる。遠い星系ほど通信の遅れが効くので、現地に任せる体制が保ちやすい。</p>
-    <label class="field">新しい入植地の統治体制<select data-act="regimedefault">${REGIME_ORDER.filter((r) => r !== 'direct').map((r) => `<option value="${r}" ${r === (regimeNorm(g.regime) || BASE_REGIME) ? 'selected' : ''}>${REGIMES[r].label} — ${esc(REGIMES[r].note)}</option>`).join('')}</select></label>
-    ${regimeCounts(g)}
+    <p class="note">基本統治形式 (新しい入植地の型)・家臣の星系の型ごとの数・型の一括変更は、帝国 → 従属国 のタブ (依頼 KE-5)。星系ごとには星系の詳細欄の「型を選ぶ」から。</p>
     <h3>直轄の星系 (${g.directCount()} / ${g.directMax()})</h3>
     <p class="note">${ME.home}の直属の従属星系を、星系の詳細欄の「統治」から直接統治 (直轄) にできる。直轄の星系は自分では動かないので、施設や交易路は${ME.home}が指令で決める。</p>
     ${direct ? `<div class="bulk">${direct}</div>` : TR('<p class="note">なし</p>')}`;
@@ -59,17 +60,5 @@ function guideSheetHtml(g) {
   if (!gd) return '';
   return TR`<p class="note">作戦の手引き: ${gd.steps.map((x, i) => `${'①②③'[i]} ${x.done ? TR('済み') : esc(x.label)}`).join('　')}</p>
     ${app.guideHidden ? TR('<div class="btns"><button data-act="guideshow">手引きを知らせの帯に出す</button></div>') : ''}`;
-}
-// 自分の国の家臣の星系を、統治体制ごとに数える (地球の知る限り)
-function regimeCounts(g) {
-  const n = {};
-  for (const s of g.knownSystems()) {
-    const k = s.id === g.cap ? null : g.known(s.id);
-    if (!k || k.lord === null || k.lord === undefined || (k.realm ?? g.cap) !== g.cap || !k.cols?.length) continue;
-    const r = g.knownRegime(k);
-    n[r] = (n[r] || 0) + 1;
-  }
-  const parts = REGIME_ORDER.filter((r) => n[r]).map((r) => `${ico(`rg-${r}`)}${REGIMES[r].label} ${n[r]}`);
-  return TR`<p class="note">いまの家臣の星系: ${parts.length ? parts.join(TR('・')) : TR('なし')}</p>`;
 }
 

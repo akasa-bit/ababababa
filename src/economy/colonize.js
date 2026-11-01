@@ -283,14 +283,15 @@
     return this.travelYears(fromId, toId) / (onRoute ? SHIP_SPEED : OFFROUTE_SPEED);
   }
 
-  dispatch(fromId, toId, bodyId, kind) {
+  // regime = 新しく政府ができる星系の統治体制 (入植のときに選ぶ。依頼 KE-5。省くと送り元の国の基本統治形式 (defaultRegime))
+  dispatch(fromId, toId, bodyId, kind, regime) {
     const c = this.check(toId, bodyId, kind, fromId);
     if (!c.ok) return c;
     if (!this.isColonized(fromId)) return fail('出発地に入植地がない');
     const label = JA`${this.target(toId, bodyId).name} への入植船 (${KIND_LABEL[kind]})`;
     const des = this.settlerDesign(fromId); // 入植船の設計 (船と戦争。B-033)。注文したときのものを船に持たせる
-    const cost = this.shipCost(kind, fromId, toId, des);
-    return this.order(cost, fromId, { type: 'ship', to: toId, body: bodyId, kind, label, design: des, supplies: { food: cost.food, water: cost.water, ...(des.cargo ? { goods: des.cargo } : {}) }, flight: this.settlerFlight(kind, fromId, toId) });
+    const cost = this.shipCost(kind, fromId, toId, des), reg = regimeNorm(regime);
+    return this.order(cost, fromId, { type: 'ship', to: toId, body: bodyId, kind, label, design: des, ...(reg && reg !== 'direct' ? { regime: reg } : {}), supplies: { food: cost.food, water: cost.water, ...(des.cargo ? { goods: des.cargo } : {}) }, flight: this.settlerFlight(kind, fromId, toId) });
   }
   // 入植船に積む食料と水。交易路を結んで物資移送要求の往復が回り出すまで (5年 + 出発地との往復の年数) を、
   // 人口の伸びも見込んで2倍ぶん積む。到着すると入植先の備蓄になる

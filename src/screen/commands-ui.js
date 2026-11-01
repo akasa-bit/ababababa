@@ -40,12 +40,14 @@ function onPanelClick(e) {
   if (!btn) return;
   rememberAnchor(btn);
   const { act, kind } = btn.dataset;
-  PlayLog.add('act', { ...btn.dataset, ...(btn.dataset.sys === undefined && app.sel.sys !== undefined ? { at: app.sel.sys } : {}) });
+  const pickFirst = (act === 'send' || act === 'candsend') && btn.dataset.regime === undefined; // 入植船の型の窓を開くだけの押し (依頼 KE-5)。判断の数には、窓で送ったときの 1 回だけ数える
+  if (!pickFirst) PlayLog.add('act', { ...btn.dataset, ...(btn.dataset.sys === undefined && app.sel.sys !== undefined ? { at: app.sel.sys } : {}) });
   const g = app.game;
   const sys = btn.dataset.sys !== undefined ? Number(btn.dataset.sys) : app.sel.sys;
   const body = btn.dataset.body ?? app.sel.body;
   if (act === 'open') return app.setView('system');
   if (act === 'regimepick') return openRegimePick(sys); // 型を選ぶ窓 (回 GA11・B-197)
+  if (pickFirst) return openColonyPick({ act, sys, body, kind, from: btn.dataset.from }); // 入植船は、まず新しい星系の統治体制を選ぶ (依頼 KE-5)
   if (act === 'goto') { app.selectSystem(sys); return app.setView('galaxy'); }
   if (act === 'fleetsel') { app.fleetSel = new Set([sys]); app.fleetMove.clear(); app.fleetConfirm = null; app.setView('galaxy'); return renderFleetBar(); }
   if (act === 'gobody') { app.openSystem(sys); return app.selectBody(body); }
@@ -80,10 +82,15 @@ function onPanelClick(e) {
   if (act === 'treatyopen') return openTreaty(Number(btn.dataset.id));
   // 行動はすべて command を通す。太陽系以外が対象なら光速の指令になり、届いた先の政府が実行する
   const d = { ...btn.dataset, sys, body, kind };
+  if (act === 'grantset' && btn.dataset.read) d.amt = Number($(btn.dataset.read)?.value || 0); // 定期の資金援助の額は欄から (依頼 KE-4)
   if (act === 'send' || act === 'candsend') d.from = 0;
   let r;
   if (act === 'bulkfocus') {
     for (const sx of g.knownOwnSystems()) for (const c of g.knownColonies(sx.id)) issue('focus', { col: colKey(c), value: app.bulkFocus || 'balanced' });
+    r = { ok: true };
+  } else if (act === 'bulkrule') { // 従属国のタブの一括変更 (依頼 KE-5): 選んだ星系ごとに型を変える指令
+    for (const id of bulkRuleTargets(g, btn.dataset.value)) issue('rule', { sys: id, value: btn.dataset.value });
+    app.vassalSel = new Set();
     r = { ok: true };
   } else {
     r = issue(act, d);
@@ -119,6 +126,9 @@ function onPanelChange(e) {
   else if (act === 'candsort') app.candSort = v;
   else if (act === 'evkind') { EvPrefs.kinds[e.target.dataset.k] = e.target.checked; saveEvPrefs(); }
   else if (act === 'regimedefault') issue('set', { key: 'regime', value: v });
+  else if (act === 'vsel') { const s = (app.vassalSel ||= new Set()), id = Number(e.target.dataset.sys); if (e.target.checked) s.add(id); else s.delete(id); app.dirty = true; } // 従属国のタブの一括変更で選ぶ星系 (依頼 KE-5。見るだけ)
+  else if (act === 'vselall') { app.vassalSel = new Set(e.target.checked ? ruleableIds(app.game) : []); app.dirty = true; }
+  else if (act === 'vbulkreg') { app.vassalBulk = v; app.dirty = true; }
   else if (act === 'histtype') { app.histType = v; } // 史料の欄で読む型 (見るだけ)
   else if (act === 'fiscalctl') { // 価格統制と交易の規制 (経済。回 KE9・B-008): 選んだ 1 つだけを変えた財政の法案を出す
     const c = app.game.fiscalDraft(), { k, r } = e.target.dataset;
@@ -222,10 +232,12 @@ function setHtmlKeepScroll(el, html) {
 
 // --- 型を選ぶ窓 (回 GA11・B-197。W3-Q10 = e) ---
 function openRegimePick(sys) { app.regimePick = { sys, sel: null }; renderRegimePick(); }
+// 入植船を送るときの型の窓 (依頼 KE-5): 同じ窓を、入植船の行き先 (colony) を持って開く
+function openColonyPick(colony) { app.regimePick = { sys: colony.sys, colony, sel: null }; renderRegimePick(); }
 function renderRegimePick() {
   const box = $('regimebox');
   const p = app.regimePick;
-  const html = p ? regimePickHtml(app.game, p.sys, p.sel) : '';
+  const html = p ? (p.colony ? colonyPickHtml(app.game, p.colony, p.sel) : regimePickHtml(app.game, p.sys, p.sel)) : '';
   if (!html) { box.hidden = true; app.regimePick = null; return; }
   setHtml(box, html);
   box.hidden = false;
@@ -236,5 +248,5 @@ $('regimebox').onclick = (e) => {
   if (!b || !app.regimePick) return;
   if (b.dataset.rp === 'close') { $('regimebox').hidden = true; app.regimePick = null; return; }
   if (b.dataset.rp) { app.regimePick.sel = b.dataset.rp; PlayLog.add('act', { act: 'regimesel', value: b.dataset.rp, sys: app.regimePick.sys }); renderRegimePick(); return $('regimebox').querySelector('.rcmp')?.scrollIntoView({ block: 'nearest' }); } // 縦の画面では比べる欄が一覧の上
-  if (b.dataset.act === 'rule') { onPanelClick(e); $('regimebox').hidden = true; app.regimePick = null; app.dirty = true; }
+  if (b.dataset.act === 'rule' || b.dataset.act === 'send' || b.dataset.act === 'candsend') { onPanelClick(e); $('regimebox').hidden = true; app.regimePick = null; app.dirty = true; }
 };
