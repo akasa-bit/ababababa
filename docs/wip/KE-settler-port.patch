@@ -1,0 +1,90 @@
+diff --git a/src/core/game-loop.js b/src/core/game-loop.js
+index 4abc6ba..9a41114 100644
+--- a/src/core/game-loop.js
++++ b/src/core/game-loop.js
+@@ -162,6 +162,8 @@
+         const fresh = !this.govs[s.to];
+         if (!this.settlersLand(s, kind, t.name)) { seedTo({ gov: s.from }); continue; } // 乗ってきた人数と年齢で入植地を作る。始まりのうちに絶えたら作らない (船と戦争の ship/settler.js。B-033)
+         seedTo(fresh ? { gov: s.to } : { pv: s.to });
++        // 入植船が運んできた港で、送り元との交易路を開く (新しい政府が、運んできた資金で払う。回 KE13)。輸送船は送り元の運送業の会社が次の年から造る
++        if (fresh && s.port && this.isColonized(s.from) && !this.routeBetween(s.to, s.from)) this.openRoute(s.to, s.from, s.to, false);
+         joinEscort(this.colonyAt(s.to, s.body, kind));
+         if (kind === 'planet' && this.hostileNatives(s.to, s.body)) this.startWar(s.to, s.body);
+         const sup = Object.entries(s.supplies || {}).filter(([, v]) => v > 0).map(([r, v]) => `${RES_LABEL[r]} ${fmtAmt(v)}`).join('・');
+diff --git a/src/economy/colonies-routes.js b/src/economy/colonies-routes.js
+index 8dea900..7468f63 100644
+--- a/src/economy/colonies-routes.js
++++ b/src/economy/colonies-routes.js
+@@ -82,18 +82,20 @@
+   }
+   routeCost(a, b) { return { credits: Math.round(100 + 10 * this.sysDist(a, b)) }; } // 両端の発射所と減速設備 (船は別に造る)
+   routeUpCost(r) { return { credits: 150 * r.lv, metal: 50 * r.lv }; } // 交易路の拡張 = 港を広げる (船は運送業の会社が足す)
+-  openRoute(a, b) {
++  // payer = 費用を払う政府 (ふつうは a の星系の政府)。govShips = 最初の輸送船を政府が造るか (入植船が運んだ港で開くときは造らず、
++  // 交易路の持ち主の運送業の会社が次の年に自分の払いで造る。回 KE13)
++  openRoute(a, b, payer = a, govShips = true) {
+     if (a === b || !this.isColonized(a) || !this.isColonized(b)) return fail('両端に入植地が必要');
+     if (this.routeBetween(a, b)) return fail('開設済み');
+     // 交戦中の国の星系とは新しく結べない (a が開戦の知らせを受け取ってから。既存の交易路は残る)
+     if (this.realmOf(a) !== this.realmOf(b) && this.tradeBlocked(a, b)) return fail('交戦中の国とは交易路を結べない');
+-    const paid = this.pay(this.routeCost(a, b), undefined, a);
++    const paid = this.pay(this.routeCost(a, b), payer === a ? undefined : a, payer);
+     if (!paid.ok) return paid;
+-    const r = { id: this.nextShipId++, a, b, lv: 1, ships: 0, transit: [zeroRes(), zeroRes()], vol: [0, 0], built: this.year, by: a };
++    const r = { id: this.nextShipId++, a, b, lv: 1, ships: 0, transit: [zeroRes(), zeroRes()], vol: [0, 0], built: this.year, by: payer };
+     this.routes.push(r);
+     this.message(JA`${this.system(a).name} ⇄ ${this.system(b).name} の交易路を開設した`, a);
+     // 最初の船 (片道 base の分) を、開いた星系の政府が造る。船ができるまでは送れない。造れなければ、運送業の会社があとで造る (routesYearly)
+-    this.buyShips(r, this.shipsFor(r, SHIPPING.base), { gov: a }, { label: JA`${this.system(a).name} ⇄ ${this.system(b).name} の輸送船` });
++    if (govShips) this.buyShips(r, this.shipsFor(r, SHIPPING.base), { gov: payer }, { label: JA`${this.system(a).name} ⇄ ${this.system(b).name} の輸送船` });
+     return { ok: true };
+   }
+   upgradeRoute(r, tag = '') {
+diff --git a/src/economy/colonize.js b/src/economy/colonize.js
+index 849e45c..611d697 100644
+--- a/src/economy/colonize.js
++++ b/src/economy/colonize.js
+@@ -180,7 +180,7 @@
+     if (p.why) return fail(p.why);
+     const eta = Math.max(p.eta, job.delay || 0);
+     // 支払いは建てる星系の民間へ。入植船の開拓資金は船が運び、着いた星系に渡す
+-    const seed = job.type === 'ship' ? SEED_FUNDS[job.kind] || 0 : 0;
++    const seed = job.type === 'ship' ? SEED_FUNDS[job.kind] || 0 : 0; // 入植船が運ぶ港の費用も、開拓資金と一緒に運ぶ (回 KE13)
+     if (cost.credits) { this.cash('build', -cost.credits, payer); this.cash('build', cost.credits - seed, { hh: sysId }); } // 賃金は家計へ
+     if (seed) this.cash('build', seed, { way: job, f: 'seed' });
+     this.invNote(sysId, (cost.credits || 0) - seed); // 投資に数える (回 KE6。入植船の開拓資金は除く)
+@@ -283,8 +283,8 @@
+     if (!this.isColonized(fromId)) return fail('出発地に入植地がない');
+     const label = JA`${this.target(toId, bodyId).name} への入植船 (${KIND_LABEL[kind]})`;
+     const des = this.settlerDesign(fromId); // 入植船の設計 (船と戦争。B-033)。注文したときのものを船に持たせる
+-    const cost = this.shipCost(kind, fromId, toId, des);
+-    return this.order(cost, fromId, { type: 'ship', to: toId, body: bodyId, kind, label, design: des, supplies: { food: cost.food, water: cost.water, ...(des.cargo ? { goods: des.cargo } : {}) }, flight: this.settlerFlight(kind, fromId, toId) });
++    const cost = this.shipCost(kind, fromId, toId, des), port = this.settlerPort(fromId, toId);
++    return this.order(cost, fromId, { type: 'ship', to: toId, body: bodyId, kind, label, design: des, ...(port ? { port } : {}), supplies: { food: cost.food, water: cost.water, ...(des.cargo ? { goods: des.cargo } : {}) }, flight: this.settlerFlight(kind, fromId, toId) });
+   }
+   // 入植船に積む食料と水。交易路を結んで物資移送要求の往復が回り出すまで (5年 + 出発地との往復の年数) を、
+   // 人口の伸びも見込んで2倍ぶん積む。到着すると入植先の備蓄になる
+diff --git a/src/ship/settler.js b/src/ship/settler.js
+index e674900..b993a54 100644
+--- a/src/ship/settler.js
++++ b/src/ship/settler.js
+@@ -28,6 +28,10 @@
+   }
+   // 国家方針が拡張期なら、船の費用 (開拓資金を除く) が25%安い
+   // エネルギーは、船の構造 (住む場所の工業品)・積み荷・積む食料と水・乗る人の質量を、加速はレーザー、減速は磁気帆と反物質で運ぶ分 (同じ星系の中なら要らない)
++  // 入植船が運ぶ港 (回 KE13・B-129。ユーザーの案 2026-11-01「入植の時、交易路代込みで入植船に乗っけたら？」): まだ政府のない星系へ入植するときは、
++  // 送り元との交易路の費用 (両端の発射所と減速設備) を入植船の費用に足し、開拓資金と一緒に運ぶ。着いたら新しい政府がその資金で送り元との交易路を開く。
++  // 開拓星系が交易路なしで国の市場から切れ、食料の値段が崩れて自給に落ちていた (R38 の外れの本体。docs/regions.md の 8)
++  settlerPort(fromId, toId) { return fromId !== toId && !this.govs[toId] && !this.routeBetween(fromId, toId) ? this.routeCost(fromId, toId).credits : 0; }
+   shipCost(kind, fromId, toId, des = this.settlerDesign(fromId)) {
+     const f = this.policyAt(fromId) === 'expand' ? 0.75 : 1;
+     const sup = this.shipSupplies(kind, fromId, toId, des);
+@@ -66,7 +70,7 @@
+     const ship = {
+       id: this.nextShipId++, from: fromId, to: toId, body: bodyId, kind,
+       path: v.path, times: v.times.map((t) => this.year + t), supplies, escort,
+-      depart: this.year, arrive: this.year + years, crew: des.crew, ships: des.ships, ages: des.ages,
++      depart: this.year, arrive: this.year + years, crew: des.crew, ships: des.ships, ages: des.ages, ...(job?.port ? { port: true } : {}),
+     };
+     this.ships.push(ship);
+     if (job?.seed) { const v = job.seed; this.cash('build', -v, { way: job, f: 'seed' }); this.cash('build', v, { way: ship, f: 'seed' }); }
