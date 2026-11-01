@@ -2,7 +2,7 @@
 // ゲームの状態を変える操作は、すべてここを通す。ひとりで遊ぶとき・ホットシートでは、いま操作しているプレイヤーとしてすぐ実行する。
 // ネット対戦ではホストへ送り、全員の端末が同じ時点で runCmd を実行する (Net.issue)
 function issue(act, d) {
-  if (Net.on) return Net.issue(act, d);
+  if (Net.on) { PlayLog.firstAct(act); return Net.issue(act, d); } // 最初の判断の印は、押した時刻で (回 SO5)
   const g = app.game, after = g.nextShipId - 1;
   const r = runCmd(g, g.pi, act, d);
   if (r?.ok) forecastSent(g, after); // 光速の指令になったものは、届く年と見込みを出す (B-056)

@@ -113,14 +113,14 @@ const Cloud = {
   },
   // --- 部屋 (ネット対戦のつなぎ方): ホストが部屋を作り、席ごとの招待 (offer) を Firestore に置く。
   //     参加者は部屋のコードで席を取り、返事 (answer) を置く。ホストは返事を見てつなぐ (手でコードを渡し合わなくてよい) ---
-  async openRoom() {
+  async openRoom(seats = Net.peers) { // seats: 席を出す参加者 (試合の途中は、切れた国だけ。回 SO5)
     const g = app.game;
     let code = '';
     for (let i = 0; i < 6; i++) code += ROOM_CHARS[Math.floor(Math.random() * ROOM_CHARS.length)]; // 画面のための乱数 (試合の乱数は使わない)
     const room = { code, unsub: [] };
     Net.room = room;
-    await this.api.set(`rooms/${code}`, { host: this.user.uid, hostName: this.name(), ed: EDITION, open: true, created: Date.now(), seats: Net.peers.map((p) => ({ pi: p.pi, realm: g.realmName(p.cap) })) });
-    for (const peer of Net.peers) {
+    await this.api.set(`rooms/${code}`, { host: this.user.uid, hostName: this.name(), ed: EDITION, open: true, created: Date.now(), seats: seats.map((p) => ({ pi: p.pi, realm: g.realmName(p.cap) })) });
+    for (const peer of seats) {
       await Net.makeOffer(peer);
       await this.api.set(`rooms/${code}/seats/${peer.pi}`, { offer: peer.offer, realm: g.realmName(peer.cap) });
       room.unsub.push(this.api.watch(`rooms/${code}/seats/${peer.pi}`, (d) => {
