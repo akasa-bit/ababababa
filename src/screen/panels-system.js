@@ -152,7 +152,7 @@ function systemPanel(app) {
   if (isOwnStack(g, id)) acts.push(TR`<button data-act="fleetsel" data-sys="${id}">${ico('fleetsel')}この艦隊を選ぶ<small>地図で移動先を右クリック/タップ</small></button>`);
   if (colonized && realm !== g.cap && realm !== null) {
     acts.push(g.knownAtWar(g.cap, realm) ? TR`<button data-act="peace" data-sys="${realm}">${ico('peace')}講和を申し入れる<small>届くまで ${g.lightDelay(realm).toFixed(1)} 年・政治力 ${PC_DIPLOMACY}</small></button>`
-      : TR`<button data-act="declarewar" data-sys="${realm}">${ico('war')}${esc(g.system(realm).name)} の国に宣戦<small>政治力 ${PC_DIPLOMACY}</small></button>`);
+      : TR`<button data-act="declarewar" data-sys="${realm}">${ico('war')}${esc(g.system(realm).name)} の国に宣戦<small>政治力 ${g.pcCost('declarewar', {})}</small></button>`);
   }
   if (colonized && realm === g.cap && id !== g.cap && k?.lord !== null && k?.lord !== undefined) acts.push(TR`<button data-act="inspect" data-sys="${id}" ${g.pc < g.pcCost('inspect', { sys: id }) ? 'disabled' : ''}>${ico('inspect')}視察団を送る<small>関与になる・政治力 ${g.pcCost('inspect', { sys: id })}・届くまで ${g.lightDelay(id).toFixed(1)} 年</small></button>`);
   const o = colonized && id !== g.cap ? independenceOutlook(g, id) : null;

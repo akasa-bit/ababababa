@@ -8,7 +8,7 @@ const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番
 // loss を渡さなければ、税率から (関税は 0)。
 // 物価の項 (QD-27 = b。回 KE9・B-009): 国の物価の上がり方 infl と目標 2% の差 1 点を、家計の所得の INFL_LOSS 割の損とみて LOSS.loyalty を掛ける
 // 再編の項 (回 KE10・B-125): 国が債務を再編してからの損の割合 rsx (rsxLoss) に LOSS.loyalty を掛ける
-function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = BASE_REGIME, arrears = false, concession = false, policy = null, exhaustion = 0, tax = 'normal', ctax = 0, tariff = 0, loss = null, welfare = 0, infl = null, rsx = 0 }) {
+function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = BASE_REGIME, arrears = false, concession = false, policy = null, exhaustion = 0, tax = 'normal', ctax = 0, tariff = 0, loss = null, welfare = 0, infl = null, rsx = 0, trait = 0 }) {
   const t = taxRateOf(tax), l = loss || { tax: t - MARKET.tax, ctax: (ctax * (1 - t)) / (1 + ctax), tariff: 0 };
   const parts = { tax: LOSS.loyalty * l.tax, ctax: LOSS.loyalty * l.ctax, tariff: LOSS.loyalty * l.tariff };
   return [
@@ -29,6 +29,7 @@ function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, negle
     ...(welfare ? [{ label: '福祉の予算', v: BUDGET.welfare.loyalty * welfare }] : []),
     ...(infl !== null && Math.abs(infl - CB.pistar) > 1e-9 ? [{ label: JA`物価の上がり方 (年 ${(infl * 100).toFixed(1)}%)`, v: LOSS.loyalty * INFL_LOSS * Math.abs(infl - CB.pistar), note: JA`目標 ${(CB.pistar * 100).toFixed(0)}% からの差` }] : []),
     ...(rsx > 0 ? [{ label: '債務の再編', v: LOSS.loyalty * rsx, note: JA`所得の ${(rsx * 100).toFixed(0)}% の損と同じ` }] : []),
+    ...(trait ? [{ label: '種族の特性 (信心深い)', v: trait }] : []), // 回 SE10
   ];
 }
 const RES_LABEL = { food: '食料', water: '水', metal: '金属', fuel: '燃料', rare: '希少元素', goods: '低付加価値物品', slaves: '奴隷', hitech: '高付加価値物品', credits: 'cr' };

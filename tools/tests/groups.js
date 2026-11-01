@@ -52,7 +52,7 @@ for (const id of Object.keys(g.govs).map(Number)) {
   const T = g.secessionTerms(id);
   if (T) {
     const t = T.find((x) => x.label === '政治から締め出された人口');
-    const f = Math.exp(GB * (G.excl - GR));
+    const f = Math.exp(GB * (G.excl - GR) * (G.excl > GR ? G.xk ?? 1 : 1)); // 結束の種族の国は基準より多い分の効きが半分 (回 SE10)
     check(t && Math.abs(t.f - f) < 1e-9, `星系 ${id} の締め出しの項 ${t?.f} (${f} のはず)`);
   }
 }

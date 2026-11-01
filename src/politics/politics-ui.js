@@ -109,7 +109,7 @@ function diplomacyHtml(g, roots) {
     else {
       const o = g.pactOutlook(r, kind);
       cell = `<span class="${o.s >= 0.15 ? 'hz' : o.s >= 0 ? '' : 'bad'}">${o.label}</span><br><span class="muted">${esc(o.why)}${o.s < 0 ? TR`。${o.need.ships ? TR`こちらの艦隊があと ${o.need.ships} 見えるか、` : ''}贈り物 ${fmtAmt(o.need.gift)} cr なら受けそう` : ''}</span>`;
-      act = TR`<button data-act="pact" data-sys="${r}" data-pact="${kind}" data-gift="0">申し入れる<small>政治力 ${PC_DIPLOMACY}</small></button>${o.s < 0 ? TR`<button data-act="pact" data-sys="${r}" data-pact="${kind}" data-gift="${o.need.gift}">贈り物つき<small>${fmtAmt(o.need.gift)} cr (受けたら払う)</small></button>` : ''}`;
+      act = TR`<button data-act="pact" data-sys="${r}" data-pact="${kind}" data-gift="0">申し入れる<small>政治力 ${g.pcCost('pact', {})}</small></button>${o.s < 0 ? TR`<button data-act="pact" data-sys="${r}" data-pact="${kind}" data-gift="${o.need.gift}">贈り物つき<small>${fmtAmt(o.need.gift)} cr (受けたら払う)</small></button>` : ''}`;
     }
     return `<tr>${head}<td>${ico(PACT_ICON[kind])}${PACT_KINDS[kind].label}</td><td class="wrap">${cell}${act ? `<div class="btns">${act}</div>` : ''}</td></tr>`;
   })).join('');

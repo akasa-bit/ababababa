@@ -329,7 +329,7 @@
   // 軍の維持費の重さ (回 KE10・B-175。MIL_BURDEN): その星系に置いた艦隊 (向かっている分・編成中を含む) と兵の年の維持費 ÷ 星系の GDP
   milUpkeep(id) {
     const ships = (this.garrison[id] || 0) + this.incoming(id) + queuedWarships(this.projects, id);
-    return ships * WARSHIP_UPKEEP + this.coloniesIn(id).reduce((a, c) => a + TROOP_UPKEEP * c.troops + SLAVE_TROOP_UPKEEP * c.slaveTroops, 0);
+    return ships * WARSHIP_UPKEEP * this.modsOf(id).upkeep + this.coloniesIn(id).reduce((a, c) => a + TROOP_UPKEEP * c.troops + SLAVE_TROOP_UPKEEP * c.slaveTroops, 0);
   }
   // 人間が動かしていない星系の政府が、年の維持費 add を足しても上限の内か (国が交戦中なら war の上限)
   milAfford(id, add) {
@@ -362,7 +362,7 @@
       if (!this.hasShipyard(id)) {
         const big = this.coloniesIn(id).sort((a, b) => b.pop - a.pop)[0];
         if (big && this.funds(id) >= 1.2 * this.upgradeCost(big, 'shipyard').credits && !this.procure(this.upgradeCost(big, 'shipyard'), id).why) this.upgrade(big, 'shipyard');
-      } else if (this.milAfford(id, WARSHIP_UPKEEP) && this.funds(id) >= 1.2 * WARSHIP_COST.credits && !this.procure(WARSHIP_COST, id).why) this.buildWarship(id);
+      } else if (this.milAfford(id, WARSHIP_UPKEEP * this.modsOf(id).upkeep) && this.funds(id) >= 1.2 * WARSHIP_COST.credits && !this.procure(WARSHIP_COST, id).why) this.buildWarship(id);
     }
   }
   // 独立国の軍備 (年1回、星系政府の自動開発より先): どの独立国も星系ごとに軍事基地を建て、平時は守りの艦隊 (首都5・他3) を保つ。

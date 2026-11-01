@@ -156,12 +156,12 @@
       this.alpha = RESEARCH.g0 / S; // 本星の始めの伸びが g0 になるように (A = 1)
     }
     for (const [key, R] of Object.entries(byRealm)) {
-      const T = this.tech[key];
+      const T = this.tech[key], rm = this.modsOf(Number(key)).research; // 種族の特性: 学究 ×1.25・信心深い ×0.9 (研究者 1 人の生産性。回 SE10)
       const tot = RESEARCH.fields.reduce((k, f) => k + R.va[f], 0);
       for (const f of RESEARCH.fields) {
         T.A[f] ??= 1; // 前の版のセーブの国 (hi がない)
         const Sf = tot > 0 ? (R.S * R.va[f]) / tot : R.S / RESEARCH.fields.length;
-        T.A[f] *= 1 + this.alpha * Sf * GM.pow(T.A[f], -RESEARCH.beta) * h;
+        T.A[f] *= 1 + this.alpha * rm * Sf * GM.pow(T.A[f], -RESEARCH.beta) * h;
       }
       T.S = R.S;
     }
@@ -666,7 +666,7 @@
       if (share > 0) this.earn('upkeep', -x * share, lord, { hh: lord });
     };
     // 国家方針が軍拡期なら、地球の国の艦隊の維持費が40%安い
-    const upk = (p) => WARSHIP_UPKEEP * (this.policy && this.policyAt(p) === 'military' ? 0.6 : 1);
+    const upk = (p) => WARSHIP_UPKEEP * (this.policy && this.policyAt(p) === 'military' ? 0.6 : 1) * this.modsOf(p).upkeep; // 航宙民は ×0.75 (回 SE10)
     for (const [id, n] of Object.entries(this.garrison)) if (n) { const p = payer(Number(id)); pay(p, upk(p) * n * h); }
     for (const f of this.fleets) { const o = f.owner ?? 0, p = this.isColonized(o) ? o : payer(f.to); this.earn('upkeep', -upk(p) * f.n * h, p, { hh: p }); } // 持ち主の国がなくなった艦隊は、前と同じ行き先
     for (const c of this.colonies) {
