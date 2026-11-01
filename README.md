@@ -521,6 +521,14 @@ Hearts of Iron 風に、星間マップから直接動かせる。
   - 特性 鉱夫: `game-icons:mining` — game-icons.net (Lorc)、CC-BY-3.0
   - 特性 商才: `mdi:handshake` — Material Design Icons (Pictogrammers)、Apache-2.0
   - 特性 賢明: `iconoir:brain` — Iconoir (Luca Burgio)、MIT
+  - 特性 学究: `game-icons:open-book` — game-icons.net (Lorc)、CC-BY-3.0
+  - 特性 官僚的: `game-icons:stamper` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 特性 頑強: `game-icons:muscle-up` — game-icons.net (Lorc)、CC-BY-3.0
+  - 特性 航宙民: `mdi:space-station` — Material Design Icons (Pictogrammers)、Apache-2.0
+  - 特性 結束: `game-icons:linked-rings` — game-icons.net (Lorc)、CC-BY-3.0
+  - 特性 遊牧: `game-icons:camel` — game-icons.net (Delapouite)、CC-BY-3.0
+  - 特性 外交的: `game-icons:dove` — game-icons.net (Lorc)、CC-BY-3.0
+  - 特性 信心深い: `game-icons:candle-light` — game-icons.net (Lorc)、CC-BY-3.0
   - 挑戦 60星系: `hugeicons:constellation` — Huge Icons (Hugeicons)、MIT
   - 挑戦 独立を許さない: `material-symbols:lock` — Material Symbols (Google)、Apache-2.0
   - 挑戦 統一: `game-icons:puzzle` — game-icons.net (Delapouite)、CC-BY-3.0

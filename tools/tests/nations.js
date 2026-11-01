@@ -107,6 +107,7 @@ const pi = as(['pious']);
 res.pious = pi.loyalty === 3 && pi.research === 0.9 && near(sumT(3) - sumT(0), 3);
 res.clash = [['cohesive', 'nomadic'], ['warlike', 'diplomatic'], ['prolific', 'hardy'], ['scholarly', 'pious']].every((p) => sim.evaluate(`TRAIT_CLASH`).some((c) => p.every((x) => c.includes(x))));
 res.labels = Object.values(SPECIES_TRAITS).every((t) => t.good && t.bad && t.desc.startsWith(t.good));
+res.icons = Object.keys(SPECIES_TRAITS).every((k) => sim.evaluate('ICONS')[`tr-${k}`]); // どの特性にもアイコン (回 SE10 の 8 つは QD-114 の 2)
 const ok = Object.values(res).every(Boolean);
 console.log(`国ごとの開始 ${ok ? '合格' : '不合格'}`, JSON.stringify(res));
 console.log(`開始の大きさ: ${sizes.map((r) => r.toFixed(2)).join('・')}`);

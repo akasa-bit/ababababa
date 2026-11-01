@@ -252,7 +252,7 @@
 | 番号 | 何を決めたか | 答え | 効く所 |
 |---|---|---|---|
 | QD-114 | 種族の特性をいくつ・どれを足すか | **c. 8 つ全部** (A 学究・B 官僚的・C 頑強・D 航宙民・E 結束・F 遊牧・G 外交的・H 信心深い)。「種族の特性は、全部せ」。遊牧の建設費は測ったあと ×1.25 → ×1.1 (`docs/nations.md` の 5.1) | `SPECIES_TRAITS`・`traitMods` |
-| QD-114 の 2 | 8 つの特性のアイコン | **(返事待ち)** 候補は Artifact「特性アイコン候補 SE10」https://claude.ai/artifact/UuKzifoHBpjn2JsnXAnAJt (特性ごとに 8 つ)。決まるまでは国家選択のカードの特性にアイコンが出ない | `ICONS` の `tr-<特性>` |
+| QD-114 の 2 | 8 つの特性のアイコン | **8 つとも 1 番 (おすすめ)**。「全部で」(`docs/requests/2026-11-01-SE.md` の SE-2)。学究 `game-icons:open-book`・官僚的 `game-icons:stamper`・頑強 `game-icons:muscle-up`・航宙民 `mdi:space-station`・結束 `game-icons:linked-rings`・遊牧 `game-icons:camel`・外交的 `game-icons:dove`・信心深い `game-icons:candle-light`。候補は Artifact「特性アイコン候補 SE10」https://claude.ai/artifact/UuKzifoHBpjn2JsnXAnAJt | `ICONS` の `tr-<特性>`・README の「アイコンの出典」 |
 
 ### 決まったもの (2026-10-30、回 SE8 の始め)
 
