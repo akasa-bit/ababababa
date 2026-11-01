@@ -127,7 +127,7 @@ const LAND_RANGE = [0, 1], LAND_STEP = 0.25;
 const RESERVE_RES = ['food', 'water', 'fuel', 'metal', 'rare'], RESERVE_MONTHS = [0, 3, 6, 9, 12], FLOOR_RANGE = [0.5, 1], FLOOR_STEP = 0.05;
 const GRANARY = { fill: 1 };
 // 闇市 (回 KE12・B-128): 値段の上限が効かない割合。上限で切った値段は、上限 + evasion × (切らない値段 − 上限) になる (上限の外で売り買いされる分の平均)。
-//   第二次大戦の米英の価格統制の研究 (Mills & Rockoff 1987) は、規制と取り締まりの手厚い英国のほうが逃れが少なかったとするが、割合の数はない。0.3 は仮の値 (QD-98。回 W4 で聞く)
+//   第二次大戦の米英の価格統制の研究 (Mills & Rockoff 1987) は、規制と取り締まりの手厚い英国のほうが逃れが少なかったとするが、割合の数はない。0.3 は回 W4 で決めた値 (QD-98 = W4-Q6 = a)
 const BLACK = { evasion: 0.3 };
 // 標準正規分布の累積 (erfc の有理近似。誤差 1.2e-7。Numerical Recipes の erfcc。GM の exp だけで決まる)
 const normCdf = (x) => { const z = Math.abs(x) / Math.SQRT2, t = 1 / (1 + 0.5 * z), r = t * GM.exp(-z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277))))))))); return x >= 0 ? 1 - r / 2 : r / 2; };
