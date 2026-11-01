@@ -241,6 +241,7 @@ function railHtml(g) {
   const surprise = surpriseWarnings(g);
   if (surprise.some((w) => !(app.surpriseSeen ||= new Set()).has(w.f.id))) { for (const w of surprise) app.surpriseSeen.add(w.f.id); Sound.play('warn'); }
   const consent = consentRailHtml(); // プレイ記録の同意 (まだ答えていないとき)
+  newsPopTick(g, majors, decs, surprise); // 重大な知らせの窓 (2026-11-01 の依頼。events-ui.js)
   const n = decs.length + majors.length + diplo.length + (guide ? 1 : 0) + (hungry ? 1 : 0) + surprise.length + (consent ? 1 : 0);
   // 地図が狭いときは、帯を畳んだ形 (件数だけのボタン) から始める。帯が地図を覆ってタップを邪魔しないように
   if (railHidden()) return `<div class="railbar"><button data-act="railtoggle"${decs.length ? ' class="due"' : ''}>${n ? TR`知らせ ${n} 件を出す` : TR('知らせを出す')}</button></div>`;

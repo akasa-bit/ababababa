@@ -19,7 +19,7 @@ const { chromium } = require('playwright');
   for (const [tag, vp] of [['land', { width: 1280, height: 780 }], ['port', { width: 854, height: 1200 }]]) {
     const p = await b.newPage({ viewport: vp }); const errs = []; p.on('pageerror', (e) => errs.push(e.message));
     const until = (fn, arg) => p.waitForFunction(fn, arg, { timeout: 8000 }).catch(() => {}); // 決まった時間ではなく、画面が変わるまで待つ (CI の重いときにも)
-    await p.addInitScript(() => { try { localStorage.clear(); localStorage.setItem('moribin-playlog-consent', 'no'); } catch {} });
+    await p.addInitScript(() => { try { localStorage.clear(); localStorage.setItem('moribin-playlog-consent', 'no'); localStorage.setItem('moribin-evprefs', JSON.stringify({ popup: false })); } catch {} }); // 重大な知らせの窓は newspop で見る
     await p.goto(`file://${HTML}?seed=11&home=0`); await p.waitForFunction(() => window.__app && __app.game); await p.waitForTimeout(600);
     // 家臣を育てる: 観戦で 100 年進め (開始時の生産性は「2300 年の予測」で早く育てる)、プレイヤーに戻す
     await p.evaluate(() => { __app.speed = 0; const g = __app.game; g.productivity = PRODUCTIVITY.forecast.k; g.setSpectate(true); for (let i = 0; i < 400; i++) g.advance(0.25); g.setSpectate(false); g.pc = 100; g.cash('test', 5000, { gov: g.cap }); __app.speed = 0; });

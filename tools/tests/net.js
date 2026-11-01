@@ -26,7 +26,8 @@ const { chromium } = require('playwright');
 const URL = `file://${HTML}?seed=11`;
 (async () => {
   const b = await chromium.launch({ ...(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {}), args: ['--no-sandbox', '--disable-features=WebRtcHideLocalIpsWithMdns'] });
-  const mk = async (vw, vh) => { const c = await b.newContext({ viewport: { width: vw, height: vh } }); const p = await c.newPage(); p.errs = []; p.on('pageerror', (e) => p.errs.push(e.message + ' ' + (e.stack || '').split('\n')[1])); await p.addInitScript(() => { try { localStorage.clear(); } catch {} }); await p.goto(URL); await p.waitForFunction(() => window.__app && __app.game); await p.waitForTimeout(600); return p; };
+  // 重大な知らせの窓 (依頼 GA-2) は切っておく (窓が出ると帯のボタンを押せない。窓そのものは tools/tests/newspop.js で確かめる)
+  const mk = async (vw, vh) => { const c = await b.newContext({ viewport: { width: vw, height: vh } }); const p = await c.newPage(); p.errs = []; p.on('pageerror', (e) => p.errs.push(e.message + ' ' + (e.stack || '').split('\n')[1])); await p.addInitScript(() => { try { localStorage.clear(); localStorage.setItem('moribin-evprefs', JSON.stringify({ popup: false })); } catch {} }); await p.goto(URL); await p.waitForFunction(() => window.__app && __app.game); await p.waitForTimeout(600); return p; };
   const H = await mk(1280, 780), G = await mk(854, 1200);
   await H.evaluate(() => { if ($('home').hidden) openHome(); });
   await H.fill('#home-seed', '5'); await H.selectOption('#home-nat', '5');

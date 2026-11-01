@@ -125,6 +125,7 @@ function onPanelChange(e) {
   }
   else if (act === 'candsort') app.candSort = v;
   else if (act === 'evkind') { EvPrefs.kinds[e.target.dataset.k] = e.target.checked; saveEvPrefs(); }
+  else if (act === 'evpopup' || act === 'evpoppause') { EvPrefs[act === 'evpopup' ? 'popup' : 'popPause'] = e.target.checked; saveEvPrefs(); app.dirty = true; } // 重大な知らせの窓の設定 (見る人ごと)
   else if (act === 'regimedefault') issue('set', { key: 'regime', value: v });
   else if (act === 'vsel') { const s = (app.vassalSel ||= new Set()), id = Number(e.target.dataset.sys); if (e.target.checked) s.add(id); else s.delete(id); app.dirty = true; } // 従属国のタブの一括変更で選ぶ星系 (依頼 KE-5。見るだけ)
   else if (act === 'vselall') { app.vassalSel = new Set(e.target.checked ? ruleableIds(app.game) : []); app.dirty = true; }
@@ -250,3 +251,4 @@ $('regimebox').onclick = (e) => {
   if (b.dataset.rp) { app.regimePick.sel = b.dataset.rp; PlayLog.add('act', { act: 'regimesel', value: b.dataset.rp, sys: app.regimePick.sys }); renderRegimePick(); return $('regimebox').querySelector('.rcmp')?.scrollIntoView({ block: 'nearest' }); } // 縦の画面では比べる欄が一覧の上
   if (b.dataset.act === 'rule' || b.dataset.act === 'send' || b.dataset.act === 'candsend') { onPanelClick(e); $('regimebox').hidden = true; app.regimePick = null; app.dirty = true; }
 };
+$('newsbox').onclick = newsPopClick; // 重大な知らせの窓 (events-ui.js)
