@@ -20,7 +20,8 @@
 - 3 波目 (`docs/sessions.md` の 3) は 2026-10-31 に済んだ (#285〜#301。通しのセッション 1 本)。回 GA10 のあとのユーザーの依頼で、星の密度を 2 倍にした (#302。銀河の版 5。`docs/requests/2026-10-31-GA.md` の GA-2・GA-3)。
 - 2026-10-31 (回 W3): 3 波目の見直し。数は下の「3 波目の数」。組み方の直す案と 4 波目の案を、返事待ちと一緒に 1 つの Artifact「第四波の組み方」(https://claude.ai/artifact/Ly3mA7S4Fc3Pip94wy948L) で見せて決めてもらった (`docs/requests/2026-10-31-common.md` の common-1・`docs/decisions.md` の「決まったもの (2026-10-31、回 W3)」): **W3-Q1 = a** (通しのセッション 1 本のまま。止まらない決まりを `docs/session-start.md` の 3 に足した)・**W3-Q2 = a** (CI の面白さの数を 24 銀河に)・**W3-Q3 = c** (試遊に向けて仕上げる + 星系ごとの所得の分け方と土地改革・政府の倉)・Q4〜Q8 は現実と面白さのぶつかり (すべての国の開始の大きさを 1 に・整備期 +4・物価の損はこのまま・量的緩和の逓減と中央銀行の損・再編の政治の損)・**W3-Q9 = a** (英語の校正は訳者に)。返事に足された依頼: 種族の特性を増やす (B-144)・従属の型を選ぶ欄の作り直し (B-197。W3-Q10 = e の大きな「型を選ぶ」画面・W3-Q11 = c の主権の束の色の帯。Artifact「従属の型の選び方」https://claude.ai/artifact/MDD1X2Zrpq6T9f6k291HRE・「主権の束の見せ方」https://claude.ai/artifact/6W8UMJCv4XnXgrBPLAQmh7。common-2)。
 - 4 波目 (`docs/sessions.md` の 3) は 2026-11-01 に GA11 まで済んだ (#306〜#316。通しのセッション 1 本)。ユーザーの依頼 (`docs/requests/2026-11-01-common.md` の common-1「一回友達と遊んでみたいから、公開用のは後ででいいよ。まずW4やって。」) で、SO4 と GA12 は 5 波目へ回した。
-- 2026-11-01 (回 W4): 4 波目の見直し。数は下の「4 波目の数」。組み方の直す案と 5 波目の案を、返事待ちと一緒に 1 つの Artifact「第五波の組み方」(https://claude.ai/artifact/BYhUtdgCPqFscvWkJ4PJd3) で見せて決めてもらう。
+- 2026-11-01 (回 W4): 4 波目の見直し。数は下の「4 波目の数」。組み方の直す案と 5 波目の案を、返事待ちと一緒に 1 つの Artifact「第五波の組み方」(https://claude.ai/artifact/BYhUtdgCPqFscvWkJ4PJd3) で見せて決めてもらった。返事はどれもおすすめ (`docs/requests/2026-11-01-common.md` の common-2・`docs/decisions.md` の「決まったもの (2026-11-01、回 W4)」)。5 波目 (SO5 → GA12 → SE11 → KE13 → W5。友達とネット対戦で一度遊ぶ準備のあと、外れた目標を直す) を `docs/sessions.md` の 3・4 と `tools/sessions.json` に書き、CI を待つあいだと PR の番号の決まりを `docs/session-start.md` の 3 に足した (#317)。
+- 4 波目は 2026-11-01 に済んだ (#306〜#317)。
 
 ## 4 波目の数 (回 W4、2026-11-01)
 
@@ -350,6 +351,7 @@
 - W1 (#213)
 - W2 (#284)
 - W3 (#304)
+- W4 (#317)
 
 ## handoff.md から移したもの (2026-10-20、並行に移るときの後片付け。`docs/parallel.md` の 5)
 
