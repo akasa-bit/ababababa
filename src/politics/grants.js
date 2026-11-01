@@ -13,22 +13,27 @@
   }
   // 定期の資金援助 (依頼 KE-4。2026-11-01): プレイヤーが自国の星系ごとに「毎年 amt cr」を決めておくと、止めるまで首都が年に 1 回送る
   // (光速で届き、届くと受け手の資金になって忠誠度が上がる。ふつうの資金援助と同じ)。首都の資金が足りない年は、送れる分だけ送る。
-  // 設定はプレイヤーごと (players[i].standing = { 星系: cr/年 })。自国の星系でなくなったら設定を消す
-  setStandingGrant(sys, amt) {
-    const to = Number(sys), v = Math.round(Math.max(0, Math.min(STANDING_MAX, Number(amt) || 0)));
+  // 設定はプレイヤーごと (players[i].standing = { 星系: cr/年 か { pct: 首都の税収の % } })。自国の星系でなくなったら設定を消す。
+  // 額の決め方は、毎年の額 (unit = 'cr') か、首都の税収 (直近 1 年の均し。gv.ledger.tax) の割合 (unit = 'pct') から選ぶ (KE4-Q1 = c)
+  setStandingGrant(sys, amt, unit = 'cr') {
+    const to = Number(sys), pct = unit === 'pct';
+    const v = pct ? Math.round(Math.max(0, Math.min(STANDING_PCT_MAX, Number(amt) || 0)) * 10) / 10 : Math.round(Math.max(0, Math.min(STANDING_MAX, Number(amt) || 0)));
     if (to === this.cap || !this.isColonized(to) || this.realmOf(to) !== this.cap) return fail(JA`${this.realmName(this.cap)}の星系にだけ送れる`);
     const st = (this.me.standing ??= {});
-    if (v < 1) { if (!(to in st)) return fail('定期の資金援助は決めていない'); delete st[to]; return { ok: true, msg: JA`${this.system(to).name} への定期の資金援助を止めた` }; }
-    st[to] = v;
-    return { ok: true, msg: JA`${this.system(to).name} へ毎年 ${fmtAmt(v)} cr の資金援助を送る (止めるまで続ける)` };
+    if (pct ? v <= 0 : v < 1) { if (!(to in st)) return fail('定期の資金援助は決めていない'); delete st[to]; return { ok: true, msg: JA`${this.system(to).name} への定期の資金援助を止めた` }; }
+    st[to] = pct ? { pct: v } : v;
+    return { ok: true, msg: pct ? JA`${this.system(to).name} へ毎年、${ME_TAX_LABEL}の ${v}% の資金援助を送る (止めるまで続ける)` : JA`${this.system(to).name} へ毎年 ${fmtAmt(v)} cr の資金援助を送る (止めるまで続ける)` };
   }
+  // 定期の資金援助のこの年の額 [cr] (割合で決めたものは、首都の税収の均しから)
+  standingAmount(root, s) { return typeof s === 'object' && s ? (s.pct / 100) * Math.max(0, this.gov(root).ledger?.tax || 0) : Number(s) || 0; }
   standingGrantsYearly() {
     this.players.forEach((p, pi) => {
       if (!p.standing) return;
       for (const k of Object.keys(p.standing)) {
         const id = Number(k);
         if (!this.isColonized(id) || this.realmOf(id) !== p.cap || id === p.cap) { delete p.standing[k]; continue; }
-        this.asPlayer(pi, () => this.sendGrant(p.cap, id, p.standing[k], true, true));
+        const amt = this.standingAmount(p.cap, p.standing[k]);
+        if (amt >= 1) this.asPlayer(pi, () => this.sendGrant(p.cap, id, amt, true, true));
       }
     });
   }

@@ -1,12 +1,13 @@
 // 帝国の「従属国」と「経済・政策」のタブ (依頼 KE-4・KE-5。2026-11-01) と、入植のときの型の窓 (KE-5) の試験。公開用の index.html をブラウザで開いて確かめる:
 //   1. 「従属国」のタブに家臣の星系が 1 行ずつ並び (忠誠度の低い順)、欄に額を入れて「決める」を押すと定期の資金援助が決まる
 //   2. 「従属国」のタブに基本統治形式の選択があり、一括変更で 2 つの星系を選んで型を変えると、星系ごとに型を変える指令が出る
-//   3. 「経済・政策」のタブに収支・国家方針・財政・人口・資源があり、「目標」のタブには国家方針と財政・基本統治形式がない
+//   3. 「経済・政策」のタブに収支・国家方針・財政・政治 (忠誠と自立・独立国。前の「政治」のタブ。依頼 GA-3)・人口・資源があり、政治のタブはない。「目標」のタブには国家方針と財政・基本統治形式がない
+//   2'. 定期の資金援助は、単位を「% (税収の)」にすると首都の税収の割合で決まる (KE4-Q1 = c)
 //   4. 候補地のタブで「入植船を送る」を押すと型の窓が開き、「基本のまま」があり、型を選んで送ると入植船がその型を持つ
 //   5. 横 1280×780 と縦 854×1200 で、ページが横にはみ出さない
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
-exports.ci = [{ args: (c) => [c.shots], judge: J.byJson((j) => ['land', 'port'].every((t) => j[t]?.rows > 0 && j[t].sorted && j[t].set === 150 && j[t].base && j[t].bulk >= 1 && j[t].bulk === j[t].two && j[t].econ && j[t].goalsClean && j[t].pick && j[t].shipReg && j[t].wide && !j[t].errs.length), '従属国と経済・政策のタブの結果が違う') }];
+exports.ci = [{ args: (c) => [c.shots], judge: J.byJson((j) => ['land', 'port'].every((t) => j[t]?.rows > 0 && j[t].sorted && j[t].set === 150 && j[t].pct === 5 && j[t].base && j[t].bulk >= 1 && j[t].bulk === j[t].two && j[t].econ && j[t].goalsClean && j[t].pick && j[t].shipReg && j[t].wide && !j[t].errs.length), '従属国と経済・政策のタブの結果が違う') }];
 if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`;
@@ -36,6 +37,11 @@ const { chromium } = require('playwright');
       await p.click(`#empire [data-act="grantset"][data-read="vgrant-${sys}"]`);
       await until((s) => __app.game.me.standing?.[s] !== undefined, sys);
       r.set = await p.evaluate((s) => __app.game.me.standing?.[s], sys);
+      await p.selectOption(`#vunit-${sys}`, 'pct'); await p.fill(`#vgrant-${sys}`, '5');
+      await p.click(`#empire [data-act="grantset"][data-read="vgrant-${sys}"]`);
+      await until((s) => __app.game.me.standing?.[s]?.pct !== undefined, sys);
+      r.pct = await p.evaluate((s) => __app.game.me.standing?.[s]?.pct, sys);
+      await p.evaluate((s) => { __app.game.pc = 100; issue('grantset', { sys: s, amt: 150 }); app.dirty = true; }, sys); // 一括変更の政治力を残すため、額に戻す
     }
     r.base = await p.evaluate(() => !!document.querySelector('#empire select[data-act="regimedefault"]'));
     // 一括変更: 自国の家臣の星系を 2 つ選び、いまの型と違う型 (T08 か T13) に変える
@@ -50,7 +56,7 @@ const { chromium } = require('playwright');
     r.wide = await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
     const heads = async (t) => { await p.evaluate((t) => { app.empireTab = t; app.dirty = true; }, t); await until((t) => document.querySelector(`#empire [data-act="etab"][data-t="${t}"]`)?.classList.contains('on'), t); await p.waitForTimeout(200); return p.evaluate(() => [...document.querySelectorAll('#empire h3')].map((h) => h.textContent)); };
     const econ = await heads('overview');
-    r.econ = ['収支', '国家方針', '財政', '人口と入植地', '資源'].every((w) => econ.some((h) => h.includes(w)));
+    r.econ = ['収支', '国家方針', '財政', '忠誠と自立', '独立国', '人口と入植地', '資源'].every((w) => econ.some((h) => h.includes(w))) && (await p.evaluate(() => !document.querySelector('#empire [data-act="etab"][data-t="politics"]')));
     r.tab = await p.evaluate(() => document.querySelector('#empire [data-act="etab"][data-t="overview"]')?.textContent.trim());
     await p.screenshot({ path: `${SHOTS}/econtab-${tag}.png` });
     const goals = await heads('goals');

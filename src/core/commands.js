@@ -75,7 +75,7 @@
     if (act === 'fiscal') return this.setFiscal(d);
     if (act === 'restructure') return this.restructure(d.hc); // 債務の再編 (経済。economy/central-bank.js。回 KE9)
     if (act === 'bill') return this.billAct(d.bill, d.op); // 審議中の法案を押す・引っ込める (政治。politics/support.js。回 SE7)
-    if (act === 'grantset') return this.setStandingGrant(d.sys, d.amt); // 定期の資金援助 (依頼 KE-4)
+    if (act === 'grantset') return this.setStandingGrant(d.sys, d.amt, d.unit); // 定期の資金援助 (依頼 KE-4。unit = 'cr' か 'pct'。KE4-Q1 = c)
     if (act === 'grant') {
       const to = Number(d.sys);
       if (to === this.cap || !this.isColonized(to) || this.realmOf(to) !== this.cap) return fail(JA`${this.realmName(this.cap)}の星系にだけ送れる`);

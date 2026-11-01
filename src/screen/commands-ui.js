@@ -52,6 +52,7 @@ function onPanelClick(e) {
   if (act === 'fleetsel') { app.fleetSel = new Set([sys]); app.fleetMove.clear(); app.fleetConfirm = null; app.setView('galaxy'); return renderFleetBar(); }
   if (act === 'gobody') { app.openSystem(sys); return app.selectBody(body); }
   if (act === 'etab') { app.empireTab = btn.dataset.t; app.dirty = true; return; }
+  if (act === 'jump') { $(btn.dataset.to)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; } // 経済・政策のタブの中の飛び先 (依頼 GA-3)
   if (act === 'chartspan') { app.chartSpan = Number(btn.dataset.n); app.dirty = true; return; } // 財政のグラフの期間 (経済。回 GA9・B-059)
   if (act === 'evfilter') { app.eventFilter = btn.dataset.f; app.dirty = true; return; }
   // 知らせの帯
@@ -82,7 +83,7 @@ function onPanelClick(e) {
   if (act === 'treatyopen') return openTreaty(Number(btn.dataset.id));
   // 行動はすべて command を通す。太陽系以外が対象なら光速の指令になり、届いた先の政府が実行する
   const d = { ...btn.dataset, sys, body, kind };
-  if (act === 'grantset' && btn.dataset.read) d.amt = Number($(btn.dataset.read)?.value || 0); // 定期の資金援助の額は欄から (依頼 KE-4)
+  if (act === 'grantset' && btn.dataset.read) { d.amt = Number($(btn.dataset.read)?.value || 0); d.unit = $(btn.dataset.unit)?.value || 'cr'; } // 定期の資金援助の額と単位は欄から (依頼 KE-4・KE4-Q1 = c)
   if (act === 'send' || act === 'candsend') d.from = 0;
   let r;
   if (act === 'bulkfocus') {

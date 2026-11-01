@@ -180,7 +180,8 @@
   // job.pay: 払う帳簿 ({ gov: 星系 } か { fm: 星系 })。ないときは建てる星系の政府。輸送船は造船所の星系 sysId で造り、交易路の持ち主が払う (回 KE5)。
   // job.delay: 完成してから使えるまでの年数 (造った輸送船が交易路まで飛ぶ)
   order(cost, sysId, job) {
-    const payer = job.pay ?? { gov: sysId }, firm = payer.fm !== undefined;
+    // 指令で建てるときは、指令を出した国の首都が払う (this.orderBy。依頼 KE-3・KE13-Q4 = b。core/game-loop.js の指令の到着)
+    const payer = job.pay ?? { gov: this.orderBy ?? sysId }, firm = payer.fm !== undefined;
     if (!firm) cost = this.aiCost(cost, payer.gov);
     const p = this.procure(cost, sysId, firm ? Infinity : payer.gov !== sysId ? this.funds(payer.gov) : undefined);
     if (p.why) return fail(p.why);

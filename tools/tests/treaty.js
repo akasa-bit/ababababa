@@ -49,7 +49,7 @@ const { chromium } = require('playwright');
   await p.click('#treatybox [data-tr="send"]');
   await p.waitForTimeout(300);
   const r2 = await p.evaluate(() => { const g = __app.game; const e = g.nations[1].cap; return [g.atWar(0, e), g.conferences.length, g.realmSystems(e).length, Math.round(g.gov(e).credits), g.events.slice(0, 2).map((x) => x.text).join(' / ')]; });
-  await p.evaluate(() => __app.setView('empire')); await p.evaluate(() => { __app.empireTab = 'politics'; __app.dirty = true; }); await p.waitForTimeout(800);
+  await p.evaluate(() => __app.setView('empire')); await p.evaluate(() => { __app.empireTab = 'overview'; /* 政治は経済・政策のタブ (依頼 GA-3) */ __app.dirty = true; }); await p.waitForTimeout(800);
   await p.screenshot({ path: 'shots/war-politics.png' });
   console.log(r1, !!acc, !!op, btns.length, r2, errs.slice(0, 5));
   await b.close();

@@ -71,7 +71,7 @@ function costButton(g, attrs, label, cost, sysId, extraReason = '') {
     const c = pcCostOf(g.lightDelay(sysId));
     const pc = g.isDirect(sysId) ? Math.max(1, Math.ceil(c / 2)) : c;
     const why = extraReason || (pc > g.pc ? TR`政治力が足りない (${pc} 必要)` : '');
-    const sub = why ? esc(why) : TR`指令: 届くまで ${g.lightDelay(sysId).toFixed(1)} 年・${ico('pc')}政治力 ${pc}${cost ? TR`・${costHtml(cost)}` : ''}`;
+    const sub = why ? esc(why) : TR`指令: 届くまで ${g.lightDelay(sysId).toFixed(1)} 年・${ico('pc')}政治力 ${pc}${cost ? TR`・${costHtml(cost)} (${ME.capName}が払う)` : ''}`; // 建設の指令の費用は指令を出した首都が払う (KE13-Q4 = b)
     return `<button ${attrs} ${why ? 'disabled' : ''}>${label}<small>${sub}</small></button>`;
   }
   const p = cost && !extraReason ? g.procure(cost, sysId) : null;
