@@ -4,6 +4,7 @@
 // 1 つのファイル = 1 人 (同じブラウザから何度か書き出したファイルは、セッションの id が重なるので 1 人にまとめる)。
 // 決まり (targets.json の rules): 判定するのは見知らぬ試遊者 30 人以上のとき。少ないときは「参考」と出す。作者や会話の参加者の記録は渡さない。
 // F07 (SUS) はアンケートなので、ここでは測らない。
+// 試遊の感想 (回 GA12。ホームの「友達と遊ぶ」で書いたもの。ファイルの survey) は、別の表にまとめる (判定はしない)。
 // 使い方: node tools/playlog-report.js <記録.json か、記録の入ったフォルダ> … [--players] [--json 結果.json]  → Markdown を標準出力へ
 const fs = require('fs');
 const path = require('path');
@@ -27,18 +28,22 @@ function readLogs(args) {
     let d;
     try { d = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { skipped.push([f, '読めない JSON']); continue; }
     if (d?.kind !== 'playlog' || !Array.isArray(d.sessions)) { skipped.push([f, 'プレイ記録の形でない (kind が playlog でない)']); continue; }
-    logs.push({ file: f, edition: d.edition, sessions: d.sessions.filter((c) => c && Array.isArray(c.entries) && Number.isFinite(c.startedAt)) });
+    logs.push({ file: f, edition: d.edition, sessions: d.sessions.filter((c) => c && Array.isArray(c.entries) && Number.isFinite(c.startedAt)), survey: Array.isArray(d.survey) ? d.survey.filter((x) => x && Number.isFinite(x.at)) : [] });
   }
   // 1 人にまとめる: セッションの id が重なるファイルは同じブラウザ
   const people = [];
   for (const l of logs) {
     const ids = new Set(l.sessions.map((c) => c.id));
     const same = people.find((p) => p.sessions.some((c) => ids.has(c.id)));
-    if (same) { for (const c of l.sessions) if (!same.sessions.some((x) => x.id === c.id)) same.sessions.push(c); same.files.push(l.file); }
-    else people.push({ files: [l.file], edition: l.edition, sessions: [...l.sessions] });
+    if (same) {
+      for (const c of l.sessions) if (!same.sessions.some((x) => x.id === c.id)) same.sessions.push(c);
+      for (const s of l.survey) if (!same.survey.some((x) => x.at === s.at)) same.survey.push(s); // 書き出し直したファイルの感想は重なる
+      same.files.push(l.file);
+    } else people.push({ files: [l.file], edition: l.edition, sessions: [...l.sessions], survey: [...l.survey] });
   }
   for (const p of people) p.sessions.sort((a, b) => a.startedAt - b.startedAt);
-  return { people: people.filter((p) => p.sessions.length), skipped };
+  // 記録を止めていて感想だけのファイルも、感想の表には数える
+  return { people: people.filter((p) => p.sessions.length), surveyOnly: people.filter((p) => !p.sessions.length && p.survey.length), skipped };
 }
 
 // 最初の判断の時刻 (秒)。新しい記録は firsts、古い記録 (GA5 より前) は命令の行から
@@ -137,6 +142,34 @@ function judge(people, minPeople = 30) {
   return { n, rows, extra, people: ps };
 }
 
+// 試遊の感想 (回 GA12): 人ごとにいちばん新しい答えを数え、書いたことはそのまま並べる。判定はしない
+const SURVEY_LABEL = {
+  again: { 5: '5 (とても遊びたい)', 4: '4', 3: '3', 2: '2', 1: '1 (もういい)' },
+  len: { short: '短い', ok: 'ちょうどよい', long: '長い' },
+  net: { quick: 'すぐつながった', retry: '何度かやり直した', fail: 'つながらなかった', none: 'ネット対戦はしていない' },
+};
+function surveys(people) {
+  const latest = people.map((p) => [...(p.survey || [])].sort((a, b) => a.at - b.at)).filter((l) => l.length).map((l) => ({ ...l[l.length - 1], all: l }));
+  const count = (k) => { const c = {}; for (const s of latest) if (s[k]) c[s[k]] = (c[s[k]] || 0) + 1; return c; };
+  const again = latest.map((s) => Number(s.again)).filter((x) => x >= 1 && x <= 5);
+  return { n: latest.length, latest, again: median(again), counts: { again: count('again'), len: count('len'), net: count('net') } };
+}
+function surveyMarkdown(sv) {
+  if (!sv.n) return [];
+  const out = ['', `### 試遊の感想 (${sv.n} 人。いちばん新しい答え。判定はしない)`, '', '| 問い | 答え |', '|---|---|'];
+  const line = (k) => Object.entries(SURVEY_LABEL[k]).filter(([v]) => sv.counts[k][v]).map(([v, l]) => `${l} ${sv.counts[k][v]} 人`).join('・') || '—';
+  out.push(`| また遊びたいか (1〜5) | 中央値 ${sv.again === null ? '—' : sv.again} (${line('again')}) |`);
+  out.push(`| 100 年の長さ | ${line('len')} |`);
+  out.push(`| つながり | ${line('net')} |`);
+  const texts = (k) => sv.latest.flatMap((s) => s.all.map((x) => x[k]).filter(Boolean));
+  const clip = (t) => String(t).replace(/\s+/g, ' ').slice(0, 300);
+  for (const [k, l] of [['fun', 'いちばん面白かったところ'], ['lost', '分からなかった・困ったところ']]) {
+    const ts = texts(k);
+    if (ts.length) { out.push('', `- ${l}:`); for (const t of ts) out.push(`  - ${clip(t)}`); }
+  }
+  return out;
+}
+
 function markdown(r, skipped, withPeople) {
   const pc = (x) => (x === null ? '—' : `${Math.round(x * 100)}%`);
   const f1 = (x) => (x === null ? '—' : x.toFixed(1));
@@ -165,18 +198,20 @@ function markdown(r, skipped, withPeople) {
     out.push('|---|---|---|---|---|---|---|---|---|---|');
     r.people.forEach((p, i) => out.push(`| ${i + 1} (${p.files.map((f) => path.basename(f)).join('・')}) | ${p.sessions} | ${f1(p.f01)} | ${p.f02 ? 'はい' : 'いいえ'} | ${f1(p.f03)} | ${f1(p.f04)} | ${p.f05 === null ? '—' : p.f05.toFixed(0)} | ${f1(p.f20)} | ${f1(p.cmdsPerHour)} | ${pc(p.waitedShare)} |`));
   }
+  if (r.survey) out.push(...surveyMarkdown(r.survey));
   return out.join('\n');
 }
 
-module.exports = { readLogs, measureSession, measurePerson, judge, markdown, STD, WAIT };
+module.exports = { readLogs, measureSession, measurePerson, judge, markdown, surveys, STD, WAIT };
 
 if (require.main === module) {
   const a = process.argv.slice(2);
   const jsonOut = a.includes('--json') ? a[a.indexOf('--json') + 1] : null;
   const inputs = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--json');
   if (!inputs.length) { console.error('使い方: node tools/playlog-report.js <記録.json か フォルダ> … [--players] [--json 結果.json]'); process.exit(2); }
-  const { people, skipped } = readLogs(inputs);
+  const { people, surveyOnly, skipped } = readLogs(inputs);
   const r = judge(people);
+  r.survey = surveys([...people, ...surveyOnly]);
   console.log(markdown(r, skipped, a.includes('--players')));
   if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(r, null, 1));
 }
