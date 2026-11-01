@@ -257,8 +257,8 @@ function showConsent() {
   $('endbox').hidden = false;
 }
 // 帯の一番上 (まだ答えていないとき。国家選択などほかの始め方の人にも出す)
-function consentRailHtml() {
-  if (PlayLog.consent || Net.on || app.homeOpen) return '';
+function consentRailHtml() { // ネット対戦でも聞く (友達と遊んだ記録を残せるように。回 SO5)。帯は端末ごとの画面なので、試合の状態は変わらない
+  if (PlayLog.consent || app.homeOpen) return '';
   return TR`<div class="dec consent"><div class="m">${esc(CONSENT_TEXT.title)}</div><div class="t">${esc(CONSENT_TEXT.lead)} 記録はこの端末の中だけ。いつでも止めて消せる。</div>
     <div class="opts"><button data-consent="yes">記録してよい</button><button class="ghost" data-consent="no">記録しない</button><button class="ghost" data-consent="more">くわしく</button></div></div>`;
 }

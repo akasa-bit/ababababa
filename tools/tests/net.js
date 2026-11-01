@@ -1,11 +1,21 @@
-// ネット対戦: 2 つのページを WebRTC でつなぎ、命令の受け渡し・状態の要約の一致・わざと壊したときの合わせ直し
+// ネット対戦: 2 つのページを WebRTC でつなぎ、命令の受け渡し・状態の要約の一致・わざと壊したときの合わせ直し。
+// 回 SO5 (B-248。友達と遊ぶ準備): 短い版 (100 年) で、ホストが止めたら参加者の速さも止まる・ネット対戦でも記録の同意を聞く・
+// 参加者のタブが閉じたら AI に任せ、招待を作り直すと同じ国に戻れる・2400 年の終わりまで両方の端末でずれない (書き出しの表も同じ)
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
 exports.ci = [{
   judge: (o) => {
     const m = o.match(/sync2 \[ \[ \d+, '(\w+)', '[\d.]+' \], \[ \d+, '(\w+)', '[\d.]+', (\d+) \] \]/);
     const ga = o.match(/^galaxy gen (\d+) gen (\d+)$/m); // 親が自動生成の星図を選び、参加者も同じ星図 (回 GA10)
-    return m && m[1] === m[2] && m[3] === '1' && /errs \[\] \[\]/.test(o) && /^physics true/m.test(o) && ga && ga[1] === ga[2] ? '' : 'ネット対戦の要約か星図が合わない';
+    if (!(m && m[1] === m[2] && m[3] === '1' && /errs \[\] \[\]/.test(o) && /^physics true/m.test(o) && ga && ga[1] === ga[2])) return 'ネット対戦の要約か星図が合わない';
+    if (!/^pause 0 0$/m.test(o)) return 'ホストが止めても参加者の速さが止まらない';
+    if (!/^consent true true$/m.test(o)) return 'ネット対戦で記録の同意を聞いていない';
+    if (!/^late 1 false 1$/m.test(o)) return '始めるときにつながっていない席を、AI に任せて入っていない席に残していない';
+    if (!/^drop false 0 2$/m.test(o)) return '参加者が切れたのに AI に任せていない';
+    const r = o.match(/^rejoin (\w+) (\w+) true$/m);
+    if (!r || r[1] !== r[2]) return '招待を作り直して戻った参加者が、ホストとずれた';
+    const e = o.match(/^end (\w+) (\w+) true true (\S+) (\S+)$/m);
+    return e && e[1] === e[2] && e[3] === e[4] ? '' : '100 年の終わりで、ホストと参加者がずれた (要約か書き出しの表か終わりの画面)';
   },
 }];
 if (require.main !== module) return;
@@ -21,9 +31,11 @@ const URL = `file://${HTML}?seed=11`;
   await H.evaluate(() => { if ($('home').hidden) openHome(); });
   await H.fill('#home-seed', '5'); await H.selectOption('#home-nat', '5');
   await H.selectOption('#home-galaxy', 'gen'); // 自動生成の星図 (回 GA10)。参加者も親のセーブから同じ星図を作り直す
+  await H.selectOption('#home-end', '100'); // 短い試遊の版 (2400 年まで。回 GA11)。最後まで通す (回 SO5)
   await H.click('[data-home="new"]'); await H.waitForTimeout(400);
   const caps = await H.evaluate(() => __app.game.nations.map((n) => n.cap));
   await H.click(`#pick [data-human="${caps[2]}"]`);
+  await H.click(`#pick [data-human="${caps[3]}"]`); // 3 人目の席は、始めるときにつながっていない (遅れて来る人。回 SO5)
   await H.click('#pick [data-pick="net"]'); await H.waitForTimeout(300);
   await H.click('[data-net="offer"]');
   await H.waitForSelector('#netoffer0', { timeout: 15000 });
@@ -41,6 +53,7 @@ const URL = `file://${HTML}?seed=11`;
   await H.click('[data-net="start"]');
   await G.waitForFunction(() => Net.on, null, { timeout: 15000 });
   console.log('codes', offer.length, answer.length);
+  console.log('late', ...(await H.evaluate(() => [Net.left.length, Net.left.map((p) => __app.game.players[p.pi].human).join(','), Net.peers.length]))); // つながっていない席は AI に任せ、入っていない席として残る
   const chart = () => { const g = __app.game.galaxy; let h = 0; for (const ch of JSON.stringify(g.systems.map((s) => [s.name, s.x, s.y, s.z, s.stars.map((t) => t.cls)]))) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return `${g.kind} ${h}`; };
   console.log('galaxy', await H.evaluate(chart), await G.evaluate(chart)); // 親と参加者の星図
   const hook = () => { window.__st = {}; const orig = Net.hash.bind(Net); Net.hash = function () { const d = { ...buildSave(__app.game) }; for (const k of ['pi', 'savedAt', 'endShown', 'spectate', 'credits', ...PLAYER_KEYS]) delete d[k]; window.__st[this.k] = JSON.stringify(d); const ks = Object.keys(window.__st); if (ks.length > 30) delete window.__st[ks[0]]; return orig(); }; };
@@ -78,6 +91,45 @@ const URL = `file://${HTML}?seed=11`;
   const phys = [await H.evaluate(() => JSON.stringify(__app.game.physics)), await G.evaluate(() => JSON.stringify(__app.game.physics))];
   const ed = await H.evaluate(() => JSON.stringify(ED.physics));
   console.log('physics', phys[0] === phys[1] && phys[0] === ed, phys[0]);
-  console.log('guest', gi, 'sys', gc, '\nsync1', s1, '\nguest chk', chk, '\nhost', hostView, '\nsync2', s2, '\nerrs', H.errs.slice(0, 3), G.errs.slice(0, 3));
+  // ホストが止めると、参加者の速さのボタンも止まる (空のコマで知らせる)
+  await H.evaluate(() => setSpeed(SPEEDS[3])); await G.waitForTimeout(800);
+  await H.evaluate(() => setSpeed(0)); await G.waitForTimeout(800);
+  console.log('pause', await H.evaluate(() => app.speed), await G.evaluate(() => app.speed));
+  // ネット対戦でも、記録の同意を帯で聞く (友達と遊んだ記録を残せるように)
+  console.log('consent', await H.evaluate(() => !!document.querySelector('#rail .consent')), await G.evaluate(() => !!document.querySelector('#rail .consent')));
+  await G.click('#rail [data-consent="yes"]');
+  // 参加者のタブが閉じた: ホストはつながりの failed で気づき、その国を AI に任せる
+  const gpi = gi[0];
+  await G.close();
+  await H.waitForFunction(() => Net.left.length === 2, null, { timeout: 90000 });
+  await H.waitForTimeout(500);
+  console.log('drop', ...(await H.evaluate((pi) => [__app.game.players[pi].human, Net.peers.length, Net.left.length], gpi)));
+  // ホストが招待を作り直し、新しく開いた参加者が同じ国に戻る
+  await H.evaluate(() => Net.render());
+  const li = await H.evaluate((pi) => Net.left.findIndex((p) => p.pi === pi), gpi);
+  await H.click(`[data-net="reoffer"][data-i="${li}"]`); await H.waitForSelector(`#netreoffer${li}`, { timeout: 15000 });
+  const offer2 = await H.inputValue(`#netreoffer${li}`);
+  await H.screenshot({ path: 'shots/net-host-rejoin.png' });
+  const G2 = await mk(854, 1200);
+  await G2.evaluate(() => { if ($('home').hidden) openHome(); app.homeTab = 'multi'; renderHome(); });
+  await G2.click('[data-home="netjoin"]');
+  await G2.fill('#netinvite', offer2); await G2.click('[data-net="join"]');
+  await G2.waitForSelector('#netanswer', { timeout: 15000 });
+  await H.fill(`#netreans${li}`, await G2.inputValue('#netanswer')); await H.click(`[data-net="reanswer"][data-i="${li}"]`);
+  await G2.waitForFunction(() => Net.on, null, { timeout: 20000 });
+  await H.evaluate(() => setSpeed(SPEEDS[4])); await G2.waitForTimeout(3000);
+  await H.evaluate(() => setSpeed(0)); await H.waitForTimeout(500); await G2.waitForFunction(() => Net.inbox.length === 0);
+  console.log('rejoin', await H.evaluate(() => Net.hash()), await G2.evaluate(() => Net.hash()), await H.evaluate((pi) => __app.game.players[pi].human, gpi));
+  // 2400 年の終わりまで進める: 両方の端末で終わりの画面が出て、要約と書き出しの表 (国 × 年) が同じ
+  await H.evaluate(() => setSpeed(SPEEDS[6]));
+  await H.waitForFunction(() => __app.game.ended, null, { timeout: 300000, polling: 1000 });
+  await G2.waitForFunction(() => __app.game.ended && Net.inbox.length === 0, null, { timeout: 60000, polling: 500 });
+  await G2.waitForTimeout(1500);
+  const fin = () => [Net.hash(), !$('endbox').hidden, Object.entries(__app.game.xrec?.rows || {}).map(([k, v]) => `${k}:${v.length}`).join(','), xrecCsv(__app.game, 'sna').length];
+  const hf = await H.evaluate(fin), gf = await G2.evaluate(fin);
+  console.log('end', hf[0], gf[0], hf[1], gf[1], `${hf[2]}/${hf[3]}`, `${gf[2]}/${gf[3]}`);
+  await H.screenshot({ path: 'shots/net-host-end.png' }); await G2.screenshot({ path: 'shots/net-guest-end.png' });
+  console.log('guest playlog', await G2.evaluate(() => [PlayLog.on, PlayLog.cur?.net]), 'errs2', G2.errs.slice(0, 3));
+  console.log('guest', gi, 'sys', gc, '\nsync1', s1, '\nguest chk', chk, '\nhost', hostView, '\nsync2', s2, '\nerrs', H.errs.slice(0, 3), [...G.errs, ...G2.errs].slice(0, 3));
   await b.close();
 })();

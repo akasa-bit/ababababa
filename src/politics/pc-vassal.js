@@ -5,7 +5,7 @@ const PC_CAP = 100;
 const PC_START = 30;
 const PC_BASE = 6; // 年あたりの基本の政治力
 const pcCostOf = (d) => Math.max(1, Math.round(2 + 0.15 * d)); // 距離 d 光年の星系への指令に要る政治力
-const PC_FREE_ACTS = new Set(['fleet', 'redirect', 'fleetclear', 'rally', 'troopsrally', 'set', 'sendredirect', 'sendclear', 'drop', 'treaty', 'acceptpeace']);
+const PC_FREE_ACTS = new Set(['fleet', 'redirect', 'fleetclear', 'rally', 'troopsrally', 'set', 'sendredirect', 'sendclear', 'drop', 'rejoin', 'treaty', 'acceptpeace']);
 const PC_DIPLOMACY = 10; // 宣戦・講和の申し入れ
 // 直轄: 地球の直属の従属星系のうち、地球が直接治める星系。星系政府は自分では開発・入植・交易路の開設をせず、地球の指令をかならず実行する。
 // 指令の政治力は半分、朝貢は50%、忠誠度の目標 +10。1星系あたり年 DIRECT_UPKEEP の政治力を使う。直轄でない星系は委任 (委任方針に沿って自分で動く)

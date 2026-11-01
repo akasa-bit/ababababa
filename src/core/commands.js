@@ -59,6 +59,7 @@
     if (act === 'treaty') return this.submitTreaty(d);
     if (act === 'acceptpeace') return this.acceptPeace(d);
     if (act === 'drop') { this.players[this.pi].human = false; return { ok: true }; } // ネット対戦で接続が切れた国は AI に任せる
+    if (act === 'rejoin') { this.players[this.pi].human = true; return { ok: true }; } // 切れた参加者がつながり直した (回 SO5)
     if ((act === 'fleet' || act === 'strike') && !this.ownStackKnown(Number(d.from))) return fail('他国の艦隊には命令できない');
     // 移動中の艦隊への進路変更・指令の取り消し (光速の指令が追いついた地点で効く)
     if (act === 'sendredirect' || act === 'sendclear') {
