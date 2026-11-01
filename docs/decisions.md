@@ -214,6 +214,15 @@
 | QD-19 | カプセルの絵 | **案 1** ゲームの星図をもとに文字だけ載せる | ストアの画像 |
 | QD-20 | 字体の同梱 (オフラインの Steam Deck) | **包装の側**で同梱して差し替える (`src/` に触らない) | `desktop/` |
 
+### 決まったもの (2026-11-01、回 KE13 の始め)
+
+返事は `docs/requests/2026-11-01-KE.md` の KE-1 にそのまま残した。聞いたページは Artifact「R40 の入植の頭打ち」(https://claude.ai/artifact/N7HbVYBn69rHGjF4mPUq5q)。
+
+| 番号 | 何を決めたか | 答え | 効く所 |
+|---|---|---|---|
+| KE13-Q1 | R40 をどう戻すか | **c. 補正 C20 の入植船を 3 → 5 隻にしてこの回で戻し (61.0%)、根 (国の政府の資金が 2400〜2450 年に尽きる) は backlog に足して 6 波目の候補にする** | `EDITIONS.game.aiColonize`・台帳 C20・B-131 |
+| KE13-Q2 | R38 の直し方 | **a. この回で、開拓星系への資本の流れを調べて直す (補正は使わない)** | B-129 |
+
 ### 決まったもの (2026-11-01、回 SE11 の始め)
 
 返事は `docs/requests/2026-11-01-SE.md` の SE-4 にそのまま残した。聞いたページは Artifact「R31 の合わせ直し」(https://claude.ai/artifact/MqTTMVj4ihqMZrPqxmcUHb)。測った数は `docs/status/SE.md` の回 SE11。
