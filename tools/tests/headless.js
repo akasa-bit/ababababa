@@ -28,7 +28,7 @@ const Y = Number(years);
       if (nat) { g.foundNations(nat); g.setPlayerNation(g.nations[1].cap); }
       g.setSpectate(true);
       for (let i = 0; i < Y * 4; i++) g.advance(0.25);
-      const d = { ...buildSave(g) }; delete d.savedAt;
+      const d = { ...buildSave(g) }; delete d.savedAt; delete d.xrec; // xrec = 画面の版だけが持つデータの書き出しの記録 (試合の中身ではない。回 GA11・B-196)
       const t = JSON.stringify(d);
       let h = 0x811c9dc5;
       for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193); }
