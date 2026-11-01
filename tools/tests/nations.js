@@ -4,6 +4,8 @@
 //   特性の規則: 多産 (入植船を出せる人口と数)・長命 (議会のいら立ち半分・国家方針の間隔 45 年)・適応力 (住みにくい惑星の上限 ×3)・水棲 (乾燥した惑星に入植できない)・
 //     好戦的 (宣戦に政治力が要らない・疲弊 ×0.5・不可侵を結べない)・勤勉 (建設費 ×0.75)・鉱夫 (採掘基地の費用 ×0.5)・商才 (関税 5% まで・交易協定を AI が断らない)・
 //     賢明 (政治力の上限 70・法案の支持 +10 点)
+//   回 SE10 の 8 つ: 学究 (研究 ×1.25・人口の増え方 ×0.85)・官僚的 (行政の遅れ ×0.5・政治力の上限 80)・頑強 (飢え ×0.5・上限 ×0.9)・航宙民 (艦隊の維持費 ×0.75・上限 ×0.9)・
+//     結束 (締め出しの効き半分・移民 ×0.5)・遊牧 (移民 ×2・建設費 ×1.25)・外交的 (協定の政治力 ×0.5・宣戦 ×2)・信心深い (家臣の忠誠度 +3・研究 ×0.9)。食い違う特性の組
 // 使い方: node tools/tests/nations.js [シード]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 exports.ci = [{ args: ['3'], judge: (o) => (o.includes('国ごとの開始 合格') ? '' : '国ごとの開始と特性の規則の結果が違う') }];
@@ -74,7 +76,38 @@ as(['industrious']); const u1 = g.upgradeCost(c0, 'factory').credits, ind1 = g.m
 as(['miners']); const o1 = g.outpostCost(null, n.cap).credits;
 res.industrious = Math.abs(u1 - Math.round(u0 * 0.75)) <= 1 && ind1 === 1;
 res.miners = o1 === o0 * 0.5 && g.modsOf(n.cap).ind === 0.95;
+// 回 SE10 (B-144) の 8 つ: 学究・官僚的・頑強・航宙民・結束・遊牧・外交的・信心深い
+const sc = as(['scholarly']);
+res.scholarly = sc.research === 1.25 && sc.growth === 0.85;
+as(['bureaucratic']);
+g.setFiscal({ tax: 0.2 }, true);
+res.bureaucratic = g.pcCap() === 80 && near(g.fiscal.on.tax - g.year, 0.85 * 0.5);
+const capCol = col || null;
+as([]); const cap0 = capCol ? g.capOf(capCol) : 1;
+const hd = as(['hardy']);
+res.hardy = hd.starve === 0.5 && (!capCol || near(g.capOf(capCol) / cap0, 0.9));
+const WU = sim.evaluate('WARSHIP_UPKEEP');
+g.garrison[n.cap] = Math.max(2, g.garrison[n.cap] || 0);
+as([]); const mu0 = g.milUpkeep(n.cap);
+as(['voidborn']); const mu1 = g.milUpkeep(n.cap);
+res.voidborn = near(mu0 - mu1, 0.25 * WU * (g.garrison[n.cap] + g.incoming(n.cap))) && (!capCol || near(g.capOf(capCol) / cap0, 0.9));
+const T0 = sim.evaluate('secessionTermsOf'), GR = sim.evaluate('GROUPS');
+const exf = (k) => T0({ regime: 'feudal', delay: 10, popRatio: 0.1, loyalty: 50, excl: 0.5, exclK: k }).find((x) => x.label === '政治から締め出された人口').f;
+const ch = as(['cohesive']);
+res.cohesive = ch.excl === 0.5 && ch.migrate === 0.5 && near(Math.log(exf(0.5)), 0.5 * Math.log(exf(1))) && near(Math.log(exf(1)), GR.exclBeta * (0.5 - GR.exclRef)) && g.groupsOf(n.cap)?.xk === 0.5;
+as([]); const b0 = g.upgradeCost(c0, 'factory').credits;
+const nm = as(['nomadic']);
+res.nomadic = nm.migrate === 2 && Math.abs(g.upgradeCost(c0, 'factory').credits - Math.round(b0 * 1.1)) <= 1;
+as([]); const pp0 = g.pcCost('pact', { sys: other }), pw0 = g.pcCost('declarewar', { sys: other });
+as(['diplomatic']);
+res.diplomatic = g.pcCost('pact', { sys: other }) === Math.ceil(pp0 / 2) && g.pcCost('declarewar', { sys: other }) === 2 * pw0 && pp0 > 0;
+const LT = sim.evaluate('loyaltyTermsOf'), base = { dLord: 5, dCapital: 5, bigger: false, orders: 0, lordShips: 0, dep: 0 };
+const sumT = (t) => LT({ ...base, trait: t }).reduce((a, x) => a + x.v, 0);
+const pi = as(['pious']);
+res.pious = pi.loyalty === 3 && pi.research === 0.9 && near(sumT(3) - sumT(0), 3);
+res.clash = [['cohesive', 'nomadic'], ['warlike', 'diplomatic'], ['prolific', 'hardy'], ['scholarly', 'pious']].every((p) => sim.evaluate(`TRAIT_CLASH`).some((c) => p.every((x) => c.includes(x))));
 res.labels = Object.values(SPECIES_TRAITS).every((t) => t.good && t.bad && t.desc.startsWith(t.good));
+res.icons = Object.keys(SPECIES_TRAITS).every((k) => sim.evaluate('ICONS')[`tr-${k}`]); // どの特性にもアイコン (回 SE10 の 8 つは QD-114 の 2)
 const ok = Object.values(res).every(Boolean);
 console.log(`国ごとの開始 ${ok ? '合格' : '不合格'}`, JSON.stringify(res));
 console.log(`開始の大きさ: ${sizes.map((r) => r.toFixed(2)).join('・')}`);

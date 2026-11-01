@@ -52,7 +52,7 @@
       const s = (r.sys[id] ??= { hh: 0, fm: 0, own });
       s.hh += hh; s.fm += fm;
     };
-    const lagOf = (k) => adminLag(k, f1, f0);
+    const lagOf = (k) => adminLag(k, f1, f0) * this.modsOf(root).admin; // 官僚的は ×0.5 (回 SE10)
     const t0 = taxRateOf(f0.tax), t1 = taxRateOf(f1.tax), i0 = f0.cb === 0 ? f0.rate : this.cbRateAt(root), i1 = f1.cb === 0 ? f1.rate : this.cbRateAt(root);
     const lc = (f) => { const t = taxRateOf(f.tax), ct = f.ctax || 0; return (ct * (1 - t)) / (1 + ct); };
     // 政策金利: 国の中の借り (家計と会社) と、銀行に置かれたすべての預金 (政府の資金・家計・会社。ほかの国も)

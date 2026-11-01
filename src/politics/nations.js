@@ -17,9 +17,19 @@ const SPECIES_TRAITS = {
   miners: { label: '鉱夫', desc: '採掘基地の費用 ×0.5。代わりに 工業の生産 ×0.95', good: '採掘基地の費用 ×0.5', bad: '工業の生産 ×0.95', outpost: 0.5, ind: 0.95 },
   traders: { label: '商才', desc: '破約をしていなければ、交易協定の申し入れを AI の国は断らない。代わりに 関税を 5% より上げられない', good: '破約をしていなければ、交易協定の申し入れを AI の国は断らない', bad: '関税を 5% より上げられない', tradePacts: true, tariffMax: 0.05 },
   wise: { label: '賢明', desc: '法案の支持 +10 点 (説得がうまい)。代わりに 政治力の上限 70 (ふつう 100)', good: '法案の支持 +10 点 (説得がうまい)', bad: '政治力の上限 70 (ふつう 100)', billBonus: 0.1, pcCap: 70 },
+  // 回 SE10 (B-144。ユーザーの依頼 2026-11-01「種族の特性は、全部せ」= 案の 8 つすべて)
+  scholarly: { label: '学究', desc: '研究者の生産性 ×1.25 (技術の伸び)。代わりに 人口の増え方 ×0.85', good: '研究者の生産性 ×1.25 (技術の伸び)', bad: '人口の増え方 ×0.85', research: 1.25, growth: 0.85 },
+  bureaucratic: { label: '官僚的', desc: '財政の行政の遅れ ×0.5。代わりに 政治力の上限 80 (ふつう 100)', good: '財政の行政の遅れ ×0.5', bad: '政治力の上限 80 (ふつう 100)', admin: 0.5, pcCap: 80 },
+  hardy: { label: '頑強', desc: '食料が足りないと人口の減り方 ×0.5。代わりに 惑星の人口の上限 ×0.9 (母星を除く)', good: '食料が足りないと人口の減り方 ×0.5', bad: '惑星の人口の上限 ×0.9 (母星を除く)', starve: 0.5, cap: 0.9 },
+  voidborn: { label: '航宙民', desc: '艦隊の維持費 ×0.75。代わりに 惑星の人口の上限 ×0.9 (母星を除く)', good: '艦隊の維持費 ×0.75', bad: '惑星の人口の上限 ×0.9 (母星を除く)', upkeep: 0.75, cap: 0.9 },
+  cohesive: { label: '結束', desc: '政治から締め出された人口の不満が半分 (集団の忠誠度の差と、離反の起きやすさへの効き)。代わりに 恒星間移民の数 ×0.5', good: '政治から締め出された人口の不満が半分 (集団の忠誠度の差と、離反の起きやすさへの効き)', bad: '恒星間移民の数 ×0.5', excl: 0.5, migrate: 0.5 },
+  nomadic: { label: '遊牧', desc: '恒星間移民の数 ×2。代わりに 施設の建設費 ×1.1', good: '恒星間移民の数 ×2', bad: '施設の建設費 ×1.1', migrate: 2, build: 1.1 }, // 建設費は 1 回目の測りで勝率の比 0.45 (×1.25) だったので ×1.1 に
+  diplomatic: { label: '外交的', desc: '協定の申し入れの政治力 ×0.5。代わりに 宣戦の政治力 ×2', good: '協定の申し入れの政治力 ×0.5', bad: '宣戦の政治力 ×2', pactPc: 0.5, warPc: 2 },
+  pious: { label: '信心深い', desc: '家臣の忠誠度の目標 +3。代わりに 研究者の生産性 ×0.9 (技術の伸び)', good: '家臣の忠誠度の目標 +3', bad: '研究者の生産性 ×0.9 (技術の伸び)', loyalty: 3, research: 0.9 },
 };
 const HUMAN_TRAITS = ['adaptable', 'traders'];
-const TRAIT_CLASH = [['prolific', 'longlived'], ['aquatic', 'cryophile', 'xerophile'], ['adaptable', 'longlived']];
+const TRAIT_CLASH = [['prolific', 'longlived'], ['aquatic', 'cryophile', 'xerophile'], ['adaptable', 'longlived'],
+  ['cohesive', 'nomadic'], ['warlike', 'diplomatic'], ['prolific', 'hardy'], ['scholarly', 'pious']]; // 回 SE10: 移民の向きが逆・宣戦の政治力が逆・飢えの減り方が逆・研究の向きが逆
 // 種族名から特性を 2〜3 個決める (同じ名前ならいつも同じ。食い違う特性は同時に持たない)
 function speciesTraits(species) {
   if (species === HUMAN) return HUMAN_TRAITS;
@@ -37,11 +47,13 @@ function speciesTraits(species) {
 // 特性をまとめた倍率と規則
 function traitMods(traits) {
   const m = { growth: 1, cap: 1, capBy: {}, fleet: 1, ind: 1, mine: 1, trade: 1, pc: 0,
-    colonizePop: 1, colonyShips: 0, starve: 1, councilDrift: 1, policyYears: POLICY_YEARS, harsh: 1, forbid: [], warFree: false, exhaust: 1, noPacts: [], build: 1, outpost: 1, tradePacts: false, tariffMax: 1, billBonus: 0, pcCap: PC_CAP };
+    colonizePop: 1, colonyShips: 0, starve: 1, councilDrift: 1, policyYears: POLICY_YEARS, harsh: 1, forbid: [], warFree: false, exhaust: 1, noPacts: [], build: 1, outpost: 1, tradePacts: false, tariffMax: 1, billBonus: 0, pcCap: PC_CAP,
+    research: 1, admin: 1, upkeep: 1, excl: 1, migrate: 1, pactPc: 1, warPc: 1, loyalty: 0 }; // 下の 8 つは回 SE10
   for (const k of traits || []) {
     const t = SPECIES_TRAITS[k];
     if (!t) continue;
-    for (const f of ['growth', 'cap', 'fleet', 'ind', 'mine', 'trade', 'colonizePop', 'starve', 'councilDrift', 'exhaust', 'build', 'outpost', 'harsh']) if (t[f] !== undefined) m[f] *= t[f];
+    for (const f of ['growth', 'cap', 'fleet', 'ind', 'mine', 'trade', 'colonizePop', 'starve', 'councilDrift', 'exhaust', 'build', 'outpost', 'harsh', 'research', 'admin', 'upkeep', 'excl', 'migrate', 'pactPc', 'warPc']) if (t[f] !== undefined) m[f] *= t[f];
+    if (t.loyalty) m.loyalty += t.loyalty;
     if (t.colonyShips) m.colonyShips += t.colonyShips;
     if (t.pc) m.pc += t.pc;
     for (const [s, v] of Object.entries(t.capBy || {})) m.capBy[s] = (m.capBy[s] || 1) * v;

@@ -18,7 +18,7 @@
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: distance(this.system(id), this.system(this.realmOf(lord))),
       bigger: pop(id) > pop(lord), orders: gv.orders || 0, lordShips: this.garrison[lord] || 0, dep: gv.dep || 0,
       neglect: this.neglectOf(gv), regime: regimeKey(gv), arrears: (gv.arrears || 0) > 0.01, concession: (gv.taxFree || 0) > this.year || (gv.autonomy || 0) > this.year, policy: this.policyAt(id), exhaustion: this.exhaustion[this.realmOf(id)] || 0,
-      ...(() => { const f = this.fiscalAt(id); return { tax: f.tax, ctax: f.ctax || 0, tariff: f.tariff || 0, loss: this.policyLoss(id, f) }; })(), welfare: this.budgetAt(this.realmOf(id), id, 'welfare'), infl: this.inflOf(id), rsx: this.rsxLoss(this.realmOf(id)) });
+      ...(() => { const f = this.fiscalAt(id); return { tax: f.tax, ctax: f.ctax || 0, tariff: f.tariff || 0, loss: this.policyLoss(id, f) }; })(), welfare: this.budgetAt(this.realmOf(id), id, 'welfare'), infl: this.inflOf(id), rsx: this.rsxLoss(this.realmOf(id)), trait: this.modsOf(id).loyalty });
   }
   // 地球の知る限りの内訳 (地球に届いている記録で。表示用)
   knownLoyaltyTerms(id) {
@@ -30,7 +30,7 @@
     // 放っておかれた年数は、記録の時点から今までの年数を足す (そのあと関与が届いたかは、まだ地球には見えない)
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: this.sysDist(id, capital),
       bigger: pop(id) > pop(lord), orders: k.orders || 0, lordShips: this.knownGarrison(lord), dep: k.dep || 0,
-      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), regime: this.knownRegime(k), arrears: (k.arrears || 0) > 0.01, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0, tax: k.tax || 'normal', ctax: k.ctax || 0, tariff: k.tariff || 0, loss: k.loss || null, welfare: k.welfare || 0, infl: k.infl ?? null, rsx: k.rsx || 0 });
+      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), regime: this.knownRegime(k), arrears: (k.arrears || 0) > 0.01, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0, tax: k.tax || 'normal', ctax: k.ctax || 0, tariff: k.tariff || 0, loss: k.loss || null, welfare: k.welfare || 0, infl: k.infl ?? null, rsx: k.rsx || 0, trait: this.modsOf(capital).loyalty });
   }
   // 統治体制 (主人がいなければ null)
   regimeOf(gv) { return regimeKey(gv); }
@@ -54,7 +54,7 @@
     if (!gv || gv.lord === null || gv.lord === undefined) return null;
     const pop = (x) => this.coloniesIn(x).reduce((k, c) => k + c.pop, 0);
     const b = this.bundleOf(gv);
-    return secessionTermsOf({ regime: regimeKey(gv), delay: this.sysDist(id, this.realmOf(id)), popRatio: pop(id) / Math.max(1e-3, pop(gv.lord)), loyalty: gv.loyalty ?? LOYALTY_START, security: this.budgetAt(this.realmOf(id), id, 'security'), gap: bundleGap(b.law, b.fact), excl: this.groupsOf(id)?.excl ?? null });
+    return secessionTermsOf({ regime: regimeKey(gv), delay: this.sysDist(id, this.realmOf(id)), popRatio: pop(id) / Math.max(1e-3, pop(gv.lord)), loyalty: gv.loyalty ?? LOYALTY_START, security: this.budgetAt(this.realmOf(id), id, 'security'), gap: bundleGap(b.law, b.fact), excl: this.groupsOf(id)?.excl ?? null, exclK: this.modsOf(id).excl });
   }
   // 地球の知る限りの内訳 (表示用)。regime を渡すと、その統治体制にしたときの値 (比べる用。忠誠度の目標の差も入れる)
   knownSecessionTerms(id, regime = null) {
@@ -70,7 +70,7 @@
     // 締め出された人口: 記録の民族の構成を、その統治体制の実態で数え直す (直轄にすると実態はすべて宗。ほかの型は実態を引き継ぐ。setRegime)
     const fact = r === 'direct' ? REGIMES.direct.fact : b.fact;
     const excl = k.groups ? k.groups.eth.reduce((a, e) => a + (GROUP_STATUS[this.groupStatusOf(e.k === 'home' || e.k === 'local' ? e.k : 'other', { fact, regime: r, include: r === 'direct' ? k.include : null })].incl ? 0 : e.share), 0) : null;
-    return secessionTermsOf({ regime: r, delay: this.sysDist(id, capital), popRatio: pop(id) / Math.max(1e-3, pop(k.lord)), loyalty, security: k.security || 0, gap: bundleGap(law, b.fact), excl });
+    return secessionTermsOf({ regime: r, delay: this.sysDist(id, capital), popRatio: pop(id) / Math.max(1e-3, pop(k.lord)), loyalty, security: k.security || 0, gap: bundleGap(law, b.fact), excl, exclK: this.modsOf(capital).excl });
   }
   // 統治体制を変える (指令が届いたとき)。自治の度合いを下げると、下げた段ごとに忠誠度 −HAZARD.revoke
   setRegime(id, regime) {
@@ -518,7 +518,9 @@
   pcCost(act, d) {
     if (d.auto || d.awe || d.aweBack || PC_FREE_ACTS.has(act)) return 0;
     if (act === 'declarewar' && this.modsOf(this.cap).warFree) return 0; // 好戦的は宣戦に政治力が要らない (回 SE8)
-    if (act === 'declarewar' || act === 'peace' || act === 'pact') return PC_DIPLOMACY;
+    if (act === 'declarewar') return PC_DIPLOMACY * this.modsOf(this.cap).warPc; // 外交的は ×2 (回 SE10)
+    if (act === 'pact') return Math.ceil(PC_DIPLOMACY * this.modsOf(this.cap).pactPc); // 外交的は ×0.5 (回 SE10)
+    if (act === 'peace') return PC_DIPLOMACY;
     if (act === 'policy') return POLICY_COST;
     if (act === 'bill') return d.op === 'push' ? this.billPushCost(d.bill) : 0; // 審議中の法案を押す (回 SE7)
     if (act === 'restructure') return RESTRUCTURE.pc; // 債務の再編 (経済。回 KE9)

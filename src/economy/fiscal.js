@@ -321,7 +321,7 @@
     const on = {};
     const obj = new Set(['ceil', 'ration', 'ban', 'embargo', 'reserve', 'floor']);
     const eq = (k, a) => (k === 'budget' ? Object.keys(BUDGET).every((b) => budget[b] === (a.budget?.[b] || 0)) : k === 'tax' ? Math.abs(tax - taxRateOf(a.tax)) < 1e-9 : obj.has(k) ? JSON.stringify(next[k]) === JSON.stringify(a[k] || {}) : next[k] === (a[k] ?? FISCAL_DEFAULT[k]));
-    for (const k of Object.keys(next)) on[k] = eq(k, prev) ? this.year : eq(k, cur) && cur.on?.[k] > this.year ? cur.on[k] : this.year + adminLag(k, next, prev);
+    for (const k of Object.keys(next)) on[k] = eq(k, prev) ? this.year : eq(k, cur) && cur.on?.[k] > this.year ? cur.on[k] : this.year + adminLag(k, next, prev) * this.modsOf(this.cap).admin; // 官僚的は ×0.5 (回 SE10)
     const changed = Object.keys(next).filter((k) => !eq(k, cur));
     if (changed.length) (this.chron[this.cap] ??= { r: [], m: [] }).m.push([Math.round(this.year * 100) / 100, changed]); // 財政のグラフの印 (回 GA9)
     this.fiscal = { ...next, since: this.year, on, done: Math.max(...Object.values(on)), prev };

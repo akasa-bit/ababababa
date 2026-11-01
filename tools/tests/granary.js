@@ -67,6 +67,7 @@ const twin = () => { const h = new sim.Game(sim.generateGalaxy({ seed: String(se
   const h = twin(), cap = h.cap, m = h.market[cap], st = h.stockOf(cap), u = m.u.food, need = u * MARKET.cover.food;
   const base = h.priceAt('food', need, u); // 基準の値段 (在庫が目標の厚さのときの値段)
   h.setFiscal({ floor: { food: 1 } }, true);
+  delete h.absorb[cap]; delete h.unmet[cap]; // 試合の最後の刻みの需要の残りを消す (残すと、短い刻みの marketStep がふだんの消費を残り ÷ 刻みの分動かし、下限からずれる。回 SE10 で特性が変わって表に出た)
   st.food = 10 * need;
   h.marketStep(1e-12);
   const low = h.price(cap, 'food') / base;

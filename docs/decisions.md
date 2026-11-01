@@ -245,6 +245,15 @@
 | W2-Q3 | 経済の返事待ち 4 つ (QD-26・QD-27・QD-28・QD-32) を、いまのままで閉じるか | **b. 1 つずつ決める** (回 KE7 の始めに、それぞれの選択肢を並べて聞く) | 上の 1 の表の 4 行 |
 | (聞かずにおすすめ) | 小さな決まり | 前の PR のブランチは `git merge -s ours` で取り込む・同じレーンで目標の PR と本体の PR を並べるときは `docs/registry.md` と `data/README.md` の行を先の PR だけに書く・合格した PR はセッションを終える前にマージする・ほかのレーンのフォルダは持ち主が止まっていれば数行まで・残っている知らせはそのレーンの 3 波目の最初の回で片付ける・地図の自動生成 (B-195) は画面のレーンの回 GA10 | `docs/parallel.md` の 2〜4・`docs/handoff.md` の 1・`docs/backlog.md` の B-195 |
 
+### 決まったもの (2026-11-01、回 SE10 の始め)
+
+回 SE10 (B-144) の始めに、種族の特性をいくつ・どれを足すかを、得る規則と失う規則の組の案 (A〜H の 8 つ) にして聞いた。返事は `docs/requests/2026-11-01-SE.md` の SE-1 にそのまま。
+
+| 番号 | 何を決めたか | 答え | 効く所 |
+|---|---|---|---|
+| QD-114 | 種族の特性をいくつ・どれを足すか | **c. 8 つ全部** (A 学究・B 官僚的・C 頑強・D 航宙民・E 結束・F 遊牧・G 外交的・H 信心深い)。「種族の特性は、全部せ」。遊牧の建設費は測ったあと ×1.25 → ×1.1 (`docs/nations.md` の 5.1) | `SPECIES_TRAITS`・`traitMods` |
+| QD-114 の 2 | 8 つの特性のアイコン | **8 つとも 1 番 (おすすめ)**。「全部で」(`docs/requests/2026-11-01-SE.md` の SE-2)。学究 `game-icons:open-book`・官僚的 `game-icons:stamper`・頑強 `game-icons:muscle-up`・航宙民 `mdi:space-station`・結束 `game-icons:linked-rings`・遊牧 `game-icons:camel`・外交的 `game-icons:dove`・信心深い `game-icons:candle-light`。候補は Artifact「特性アイコン候補 SE10」https://claude.ai/artifact/UuKzifoHBpjn2JsnXAnAJt | `ICONS` の `tr-<特性>`・README の「アイコンの出典」 |
+
 ### 決まったもの (2026-10-30、回 SE8 の始め)
 
 回 SE8 (B-029) の始めに、国ごとの規則の違いの案 (どの特性が何を得て何を失うか) を表にして聞いた。返事は `docs/requests/2026-10-30-SE.md` の SE-2 にそのまま残した。QD-111 だけおすすめ (a) でなく c。入れたものは `docs/nations.md`。

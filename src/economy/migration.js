@@ -31,7 +31,7 @@
       }
       if (ratio >= 0.9) this.expandHabitat(c);
       if (!this.migrationOn(c.sys) || ratio < 0.9) continue;
-      const want = c.pop * (ratio >= 1 ? 0.05 : 0.03);
+      const want = c.pop * (ratio >= 1 ? 0.05 : 0.03) * this.modsOf(c.sys).migrate; // 遊牧は ×2・結束は ×0.5 (回 SE10)
       // 行き先は、光の遅れのぶん古い記録 (econSeen) で、食べ物と水が足りていて空きのある入植地 (回 KE3。前はいまの様子を見ていた。同じ星系の中はいまの様子)
       const seen = (d) => (d.sys === c.sys ? [(d.sat?.food ?? 1) >= 0.99 && (!this.needsWater(d) || (d.sat?.water ?? 1) >= 0.99) ? 1 : 0, this.capOf(d) * 0.8 - d.pop] : this.econSeen(c.sys, d.sys)?.[2][colKey(d)]);
       const dests = this.colonies
