@@ -10,7 +10,7 @@
       case 'upgrade': case 'train': case 'focus': return colSys(d.col);
       case 'peace': return Number(d.sys);
       case 'policy': case 'fiscal': case 'design': case 'restructure': return this.cap;
-      case 'rule': case 'bundle': case 'jointcut': case 'depose': case 'mandate': case 'governor': case 'inspect': case 'decide': case 'pvdesign': case 'include': return Number(d.sys);
+      case 'rule': case 'bundle': case 'jointcut': case 'depose': case 'mandate': case 'governor': case 'decide': case 'pvdesign': case 'include': return Number(d.sys);
       default: return d.sys;
     }
   }
@@ -181,7 +181,6 @@
       case 'mandate': { const gv = this.govs[sys]; if (!gv || !MANDATES[d.value]) return fail('政府がない'); gv.mandate = d.value; return { ok: true }; }
       case 'pvdesign': return this.setPvDesign(sys, d.value);
       case 'governor': { const gv = this.govs[sys]; if (!gv || !GOVERNOR[d.value]) return fail('政府がない'); gv.governor = d.value; return { ok: true }; }
-      case 'inspect': { const gv = this.govs[sys]; if (!gv) return fail('政府がない'); gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 3); return { ok: true }; }
       case 'decide': return this.resolveDecision(d.id, d.opt);
       case 'policy': return this.setPolicy(d.value);
       default: return fail('不明な指令');

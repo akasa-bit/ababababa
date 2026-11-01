@@ -2,13 +2,12 @@ const RES = ['food', 'water', 'metal', 'fuel', 'rare', 'goods', 'slaves', 'hitec
 const MINED = ['water', 'metal', 'fuel', 'rare'];
 const RES_INDEX = Object.fromEntries(RES.map((r, i) => [r, i])); // 資源の番号 (計算用のキーに使う)
 // 忠誠度の目標の内訳。目標 = 先頭から順に足した値 (0〜100 に収める)
-// 忠誠度の目標の内訳。距離は直接には小さく効き、主人の関与 (指令・援助・艦隊・視察) が途絶えた年数が大きく効く
-// (遠い星系ほど関与が届くのに時間と政治力がかかるので、距離は間接的に効く)
+// 忠誠度の目標の内訳。主人や首都からの距離は小さく効く (主人の関与 (指令・援助・艦隊・視察) が途絶えた年数の項と、視察団は、2026-11-01 のユーザーの依頼で消した)
 // 税の項 (回 KE8・B-012): 家計の損の割合 loss (policyLoss。所得への税・消費税・関税) × LOSS.loyalty。parts = 手段ごとの値 (集団の差 groupDev が分位ごとに分ける)。
 // loss を渡さなければ、税率から (関税は 0)。
 // 物価の項 (QD-27 = b。回 KE9・B-009): 国の物価の上がり方 infl と目標 2% の差 1 点を、家計の所得の INFL_LOSS 割の損とみて LOSS.loyalty を掛ける
 // 再編の項 (回 KE10・B-125): 国が債務を再編してからの損の割合 rsx (rsxLoss) に LOSS.loyalty を掛ける
-function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, neglect = 0, regime = BASE_REGIME, arrears = false, concession = false, policy = null, exhaustion = 0, tax = 'normal', ctax = 0, tariff = 0, loss = null, welfare = 0, infl = null, rsx = 0, trait = 0 }) {
+function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, regime = BASE_REGIME, arrears = false, concession = false, policy = null, exhaustion = 0, tax = 'normal', ctax = 0, tariff = 0, loss = null, welfare = 0, infl = null, rsx = 0, trait = 0 }) {
   const t = taxRateOf(tax), l = loss || { tax: t - MARKET.tax, ctax: (ctax * (1 - t)) / (1 + ctax), tariff: 0 };
   const parts = { tax: LOSS.loyalty * l.tax, ctax: LOSS.loyalty * l.ctax, tariff: LOSS.loyalty * l.tariff };
   return [
@@ -19,7 +18,6 @@ function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, negle
     { label: '最近の指令', v: -(2 * orders) },
     { label: '主人の星系の艦隊', v: Math.min(15, 2 * lordShips) },
     { label: '支援で深まった従属', v: Math.min(40, dep) },
-    ...(NEGLECT_MAX ? [{ label: '放っておかれた年数', v: -Math.min(NEGLECT_MAX, NEGLECT_RATE * Math.max(0, neglect - NEGLECT_GRACE)), note: JA`${Math.floor(neglect)} 年` }] : []), // NEGLECT_MAX = 0 なら効かない
     { label: JA`統治体制 (${REGIMES[regime].label})`, v: REGIMES[regime].loyalty },
     { label: '減税・自治', v: concession ? 15 : 0 },
     ...(arrears ? [{ label: '関税受領官 (滞納)', v: -H33.arrears }] : []),

@@ -1,13 +1,3 @@
-  // 地球の国の外の主人 (と地球の国の家臣の家臣の主人) は、放っておかれた家臣に少額の資金援助を送って関与する (年に半々)
-  lordsAttendYearly() {
-    for (const [k, gv] of Object.entries(this.govs)) {
-      const id = Number(k);
-      const lord = gv.lord;
-      if (lord === null || lord === undefined || this.isSeat(lord) || !this.isColonized(id) || this.neglectOf(gv) < 20) continue; // 席の国は自分で関与する (視察など。earthPoliticsYearly)
-      if (this.gov(lord).credits < 300 || this.rand() < 0.5) continue;
-      this.sendGrant(lord, id, 50, true);
-    }
-  }
   // 家臣 id の要求をのむかの材料 (QD-41 = c・B-142。DEMAND_AI)。主人の国 (主人と、主人を通して従う星系) の中で見る。seen = 席の国の判断 (届いている記録で見る)。
   // 人口の割合 = 家臣の星系 ÷ 主人の国、国の広がり = 主人の国の星系の主人からの距離の 2 乗の平均の 2 倍の平方根 (一様に広がった円の半径)、見込み = 拒んで最後通牒の期限が来たら独立を宣言する見込み
   demandTermsOf(id, seen = false) {
@@ -21,7 +11,7 @@
     return { share: clamp(pop(id) / Math.max(1e-12, all), 1e-12, 1), rel: Math.max(0.01, this.sysDist(id, lord)) / Math.max(0.01, R), risk: k ? this.declareChance(k) : 0.5 };
   }
   demandAcceptP(id, seen = false) { return demandAcceptOf(this.demandTermsOf(id, seen)); }
-  // 観戦モードの地球政府の政治の判断 (年1回): 国家方針、決めること、放っておかれた直属の家臣への視察
+  // 観戦モードの地球政府の政治の判断 (年1回): 国家方針、決めること
   earthPoliticsYearly() {
     const n = this.realmSystems(this.cap).length;
     const want = this.aiPolicy || (this.enemiesOf(this.cap).length ? 'military' : n < 25 ? 'expand' : 'consolidate'); // aiPolicy は実験用 (自動対戦で方針を固定する)
@@ -41,11 +31,5 @@
       }
       if (k) this.command('decide', { sys: dec.sys, id: dec.id, opt: k });
     }
-    const neglected = this.knownSystems().filter((s) => s.id !== this.cap && this.known(s.id)?.lord === this.cap && (this.known(s.id).realm ?? this.cap) === this.cap)
-      .map((s) => ({ s, y: this.year - (this.known(s.id).attended ?? this.known(s.id).founded ?? this.year) }))
-      .filter((x) => x.y > 30 && !this.requests.some((q) => q.kind === 'order' && q.act === 'inspect' && Number(q.d.sys) === x.s.id))
-      .sort((a, b) => b.y - a.y);
-    // 年に1か所まで (政治力に余裕があるとき)
-    for (const { s } of neglected.slice(0, 1)) if (this.pc >= this.pcCost('inspect', { sys: s.id }) + 20) this.command('inspect', { sys: s.id });
   }
 

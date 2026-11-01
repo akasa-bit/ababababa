@@ -6,7 +6,7 @@ function requestsTable(g) {
     const what = q.kind === 'build' ? TR`建設資材 (${esc(q.label)})` : q.kind === 'order' ? TR`指令「${esc(q.label)}」` : q.kind === 'tribute' ? TR`朝貢 ${fmtAmt(q.amt)} cr` : q.kind === 'grant' ? TR`資金援助 ${fmtAmt(q.amt)} cr${q.auto ? TR(' (自動)') : ''}`
       : `${resText(q.res)} ${fmtAmt(q.amt)}${q.shipped ? TR` <span class="muted">(発送済み ${fmtAmt(q.shipped)})</span>` : ''}`;
     const seen = q.arrive + (g.spectate ? 0 : g.lightDelay(q.to)); // 届いたことが地球に見える年
-    const team = q.kind === 'order' && g.orderYears(q.act, q.d, q.to) > g.lightDelay(q.to) + 1e-9; // 人を船で送る指令 (視察団・医療団)
+    const team = q.kind === 'order' && g.orderYears(q.act, q.d, q.to) > g.lightDelay(q.to) + 1e-9; // 人を船で送る指令 (医療団など)
     const st = q.arrive > g.year
       ? TR`<span style="color:#c9a2ff">${team ? TR('船で移動中') : TR('光速で送信中')}</span> あと ${(q.arrive - g.year).toFixed(1)} 年`
       : seen > g.year ? TR`届いた (${ME.home}に知らせが来るまで あと ${(seen - g.year).toFixed(1)} 年)`
@@ -33,10 +33,9 @@ function politicsSheet(app) {
     const status = k.independent && realm === x.id ? TR('<b class="bad">独立国 (首都)</b>') : realm !== g.cap ? TR`<span class="bad">${esc(g.realmName(realm))}に属する</span>` : `${ME.realm}`;
     const loyal = k.lord === null || k.lord === undefined ? '—' : `<span class="${k.loyalty < UNREST_AT ? 'bad' : k.loyalty < 50 ? '' : 'hz'}">${Math.round(k.loyalty ?? LOYALTY_START)}</span>`;
     const vassal = k.lord !== null && k.lord !== undefined;
-    const neglect = vassal ? Math.max(0, g.year - (k.attended ?? k.founded ?? k.year)) : 0;
     const rule = !vassal || realm !== g.cap ? '—' : k.direct ? TR`<b>${ico('rg-direct')}直接統治</b>` : `${ico(`rg-${g.knownRegime(k)}`)}${REGIMES[g.knownRegime(k)].label} (${ico(MANDATE_ICON[k.mandate || 'balanced'])}${MANDATES[k.mandate || 'balanced']})`;
     return `<tr><td><span class="dot" style="background:${realmColor(realm)}"></span>${goto(x)}</td><td>${k.lord === null || k.lord === undefined ? '—' : esc(g.system(k.lord).name)}</td>
-      <td>${rule}</td>${NEGLECT_MAX ? `<td>${vassal ? TR`<span class="${neglect > NEGLECT_GRACE ? 'bad' : 'muted'}">${Math.floor(neglect)} 年</span>` : '—'}</td>` : ''}
+      <td>${rule}</td>
       <td>${k.unrest?.stage ? `<b class="bad">${UNREST_LABEL[k.unrest.stage]}</b>` : vassal ? '<span class="muted">—</span>' : '—'}</td>
       <td>${loyal}</td><td>${k.lord === null || k.lord === undefined ? '—' : Math.round(k.fear || 0)}</td>
       <td>${k.lord === null || k.lord === undefined ? '—' : TR`<span class="${(k.friend || 0) >= FRIEND_SAFE ? 'hz' : ''}">${Math.round(k.friend || 0)}</span> <span class="muted">(貿易 ${fmtAmt(k.lordTrade || 0)} cr/年)</span>`}</td><td>${k.aid > 0.5 ? TR`${fmtAmt(k.aid)} cr/年` : '<span class="muted">—</span>'}</td>
@@ -59,7 +58,7 @@ function politicsSheet(app) {
     <td><span class="dot" style="background:${realmColor(bt.realm)}"></span>${esc(g.system(bt.realm).name)} の国</td><td>${Math.ceil(bt.a)} / ${Math.round(bt.a0)} 艦隊</td>
     <td>${Math.ceil(bt.d)} / ${Math.round(bt.d0)} 艦隊</td><td>攻 ${supplyCell(bt.ea, bt.line)}<br>防 ${supplyCell(bt.ed)}</td><td>${bt.start.toFixed(1)}年から</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
   return TR`<h3>忠誠と自立</h3>
-    <p class="note">星系の政府は忠誠度を持つ。忠誠度の目標は、${NEGLECT_MAX ? TR`主人の関与 (${ME.home}からの指令・主人からの資金援助・${ME.home}が命じた艦隊の来訪・視察団) が途絶えて${NEGLECT_GRACE}年を過ぎると年${NEGLECT_RATE}ずつ下がり (最大 −${NEGLECT_MAX})、` : ''}主人や首都から遠いほど少し下がる (1光年あたり 0.6 と 0.3)。主人より人口が多い、指令が多すぎても下がり、主人の星系の艦隊・支援・統治体制・認めた要求・国家方針で上下する。遠い星系ほど関与が届くのに時間と政治力がかかる。
+    <p class="note">星系の政府は忠誠度を持つ。忠誠度の目標は、主人や首都から遠いほど少し下がる (1光年あたり 0.6 と 0.3)。主人より人口が多い、指令が多すぎても下がり、主人の星系の艦隊・支援・統治体制・認めた要求・国家方針で上下する。遠い星系ほど関与が届くのに時間と政治力がかかる。
       自立を求める動き (<b>不満</b>) は、<b>離反の起きやすさ</b> (年あたりのハザード = 基準 × 統治体制 × 通信の遅れ ÷ 1 世代 (${GENERATION_YEARS} 年) × 主人との人口の比 × 忠誠度) に従って起き、${UNREST_YEARS}年続くと主人へ<b>要求</b> (朝貢の免除か自治) を出す。主人が${ME.home}なら要求は光速で${ME.home}に届き (イベントタブの「決めること」)、返事も光速で戻る。総督の方針を前もって預けておけば、現地ですぐ決まる。のめば不満は収まる。拒めば<b>最後通牒</b>になり、${ULTIMATUM_YEARS}年後に独立を宣言するおそれがある (恐怖度・主人との友好度・忠誠度が高いほど確率が下がる。恐怖度100で 0.1 倍、友好度100で ${1 - FRIEND_DAMP} 倍、忠誠度100で 0.5 倍)。要求を出す前に、忠誠度が${UNREST_CALM}か動きが始まったときの忠誠度 +15 の高いほうまで上がれば収まる。
       恐怖度は、その星系に${ME.home}の艦隊が駐留していると上がる (反乱したときの推定艦隊と同数で50、2倍で100)。主人との友好度は、主人筋との貿易が大きいほど上がる。忠誠度が50未満 (連邦制は70未満) だと指令を拒むことがあり、自治領は指令を受けない。${ME.realm}からの独立は、半々の確率で (${ME.home}の艦隊が駐留していれば必ず) そのまま独立戦争になる (自治領は戦争にならない)。</p>
     <h3>資金援助</h3>
@@ -87,7 +86,7 @@ function politicsSheet(app) {
     <h3>攻囲</h3>
     ${sieges ? TR`<div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻めている国</th><th>艦隊</th><th>進捗</th><th>${ico('supply')}戦力 (兵站)</th><th>情報</th></tr>${sieges}</table></div>` : TR('<p class="note">なし</p>')}
     <h3>星系の政府 (忠誠度の低い順)</h3>
-    ${rows ? TR`<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>統治</th>${NEGLECT_MAX ? TR('<th>放っておかれた</th>') : ''}<th>不満</th><th>${ico('loyalty')}忠誠度</th><th>${ico('fear')}恐怖度</th><th>${ico('friend')}主人との友好度</th><th>主人からの支援</th><th>見通し</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : TR`<p class="note">まだ${ME.home}以外の政府はない。</p>`}`;
+    ${rows ? TR`<div class="scroll"><table class="tbl"><tr><th>星系</th><th>従属先</th><th>統治</th><th>不満</th><th>${ico('loyalty')}忠誠度</th><th>${ico('fear')}恐怖度</th><th>${ico('friend')}主人との友好度</th><th>主人からの支援</th><th>見通し</th><th>所属</th><th>情報</th></tr>${rows}</table></div>` : TR`<p class="note">まだ${ME.home}以外の政府はない。</p>`}`;
 }
 
 

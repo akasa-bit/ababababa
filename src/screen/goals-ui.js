@@ -32,7 +32,7 @@ function goalsSheet(app) {
     ${billHtml(g, 'policy')}<div class="btns wrap">${polBtns}</div>
     ${fiscalHtml(g)}
     <h3>政治力 (${ME.home}の意志)</h3>
-    <p class="note">星系の政府への指令 (施設・交易路・方針・視察・要求への返事など) には政治力が要る。遠い星系ほど多く (距離 d 光年で 2 + 0.15d、直轄の星系は半分)。宣戦・講和は ${PC_DIPLOMACY}。${ME.capName}の中の行動 (${ME.capName}からの入植船・施設) と艦隊への指令は要らない。年ごとに貯まり、${g.pcCap()} で頭打ちになる。</p>
+    <p class="note">星系の政府への指令 (施設・交易路・方針・要求への返事など) には政治力が要る。遠い星系ほど多く (距離 d 光年で 2 + 0.15d、直轄の星系は半分)。宣戦・講和は ${PC_DIPLOMACY}。${ME.capName}の中の行動 (${ME.capName}からの入植船・施設) と艦隊への指令は要らない。年ごとに貯まり、${g.pcCap()} で頭打ちになる。</p>
     <table class="tbl">${inc.parts.map(([l, v]) => TR`<tr><td>${esc(l)}</td><td class="${v < 0 ? 'bad' : ''}">${v >= 0 ? '+' : ''}${v}/年</td></tr>`).join('')}<tr class="total"><td>合計</td><td>${inc.total >= 0 ? '+' : ''}${inc.total}/年</td></tr></table>
     <h3>${ico('council')}議会の支持</h3>
     ${councilChart(g.council)}

@@ -17,7 +17,7 @@
     const pop = (x) => this.coloniesIn(x).reduce((k, c) => k + c.pop, 0);
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: distance(this.system(id), this.system(this.realmOf(lord))),
       bigger: pop(id) > pop(lord), orders: gv.orders || 0, lordShips: this.garrison[lord] || 0, dep: gv.dep || 0,
-      neglect: this.neglectOf(gv), regime: regimeKey(gv), arrears: (gv.arrears || 0) > 0.01, concession: (gv.taxFree || 0) > this.year || (gv.autonomy || 0) > this.year, policy: this.policyAt(id), exhaustion: this.exhaustion[this.realmOf(id)] || 0,
+      regime: regimeKey(gv), arrears: (gv.arrears || 0) > 0.01, concession: (gv.taxFree || 0) > this.year || (gv.autonomy || 0) > this.year, policy: this.policyAt(id), exhaustion: this.exhaustion[this.realmOf(id)] || 0,
       ...(() => { const f = this.fiscalAt(id); return { tax: f.tax, ctax: f.ctax || 0, tariff: f.tariff || 0, loss: this.policyLoss(id, f) }; })(), welfare: this.budgetAt(this.realmOf(id), id, 'welfare'), infl: this.inflOf(id), rsx: this.rsxLoss(this.realmOf(id)), trait: this.modsOf(id).loyalty });
   }
   // 地球の知る限りの内訳 (地球に届いている記録で。表示用)
@@ -27,10 +27,9 @@
     const lord = k.lord;
     const pop = (x) => this.knownColonies(x).reduce((a, c) => a + c.pop, 0);
     const capital = lord === this.cap ? this.cap : this.known(lord)?.realm ?? k.realm ?? this.cap;
-    // 放っておかれた年数は、記録の時点から今までの年数を足す (そのあと関与が届いたかは、まだ地球には見えない)
     return loyaltyTermsOf({ dLord: this.sysDist(id, lord), dCapital: this.sysDist(id, capital),
       bigger: pop(id) > pop(lord), orders: k.orders || 0, lordShips: this.knownGarrison(lord), dep: k.dep || 0,
-      neglect: Math.max(0, this.year - (k.attended ?? k.founded ?? k.year)), regime: this.knownRegime(k), arrears: (k.arrears || 0) > 0.01, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0, tax: k.tax || 'normal', ctax: k.ctax || 0, tariff: k.tariff || 0, loss: k.loss || null, welfare: k.welfare || 0, infl: k.infl ?? null, rsx: k.rsx || 0, trait: this.modsOf(capital).loyalty });
+      regime: this.knownRegime(k), arrears: (k.arrears || 0) > 0.01, concession: (k.taxFree || 0) > this.year || (k.autonomy || 0) > this.year, policy: k.policy ?? null, exhaustion: this.exhaustion[capital] || 0, tax: k.tax || 'normal', ctax: k.ctax || 0, tariff: k.tariff || 0, loss: k.loss || null, welfare: k.welfare || 0, infl: k.infl ?? null, rsx: k.rsx || 0, trait: this.modsOf(capital).loyalty });
   }
   // 統治体制 (主人がいなければ null)
   regimeOf(gv) { return regimeKey(gv); }
@@ -214,7 +213,7 @@
     const gv = this.govs[id];
     const old = this.realmOf(id);
     for (const f of ['direct', 'regime', 'law', 'fact', 'elite', 'lord2', 'jointCut', 'grudge', 'jointSolo', 'arrears', 'patron', 'include']) delete gv[f];
-    Object.assign(gv, { lord: winner, independent: false, loyalty: PUPPET.loyalty, friend: 0, fear: 0, orders: 0, attended: this.year, unrest: { stage: 0 } });
+    Object.assign(gv, { lord: winner, independent: false, loyalty: PUPPET.loyalty, friend: 0, fear: 0, orders: 0, unrest: { stage: 0 } });
     const reg = this.defaultRegime(winner, id);
     if (reg === 'direct') gv.direct = true; else if (reg !== BASE_REGIME) gv.regime = reg;
     for (const p of this.players) for (const d of p.decisions || []) if (d.sys === id && d.state !== 'done') this.voidDecision(d);
@@ -406,14 +405,12 @@
     if (u.kind === 'autonomy') { gv.autonomy = this.year + CONCESSION_YEARS; delete gv.direct; } else gv.taxFree = this.year + CONCESSION_YEARS;
     gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 20);
     gv.unrest = { stage: 0 };
-    this.attend(id);
     this.event('politics', id, JA`${this.system(id).name} の要求 (${this.demandText(u.kind || 'tax')}) が認められ、不満が収まった`, true);
   }
   refuseDemand(id, gv, why, mode = 'refuse') {
     gv.unrest = { stage: 3, since: this.year, end: this.year + ULTIMATUM_YEARS, kind: gv.unrest?.kind };
     gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - (mode === 'refuse' ? 10 : 5));
     if (mode === 'suppress') gv.fear = Math.min(100, (gv.fear || 0) + ((this.garrison[id] || 0) > 0 ? 25 : 10));
-    // 拒むことは関与にならない (放っておかれた年数は戻らない。最後通牒を収めるには、別に関与を届けて忠誠度を戻す)
     this.event('politics', id, JA`${this.system(id).name}: ${why}。最後通牒を突きつけた — ${Math.round(this.year + ULTIMATUM_YEARS)}年までに態度が変わらなければ独立を宣言する`);
   }
   // 国 r に請求権を持つ国 (RECLAIM。r が独立する前に属していた国で、まだ国として残り、1 世代たっていない)。なければ null
@@ -550,6 +547,3 @@
     this.pcLast = this.pcIncome().total;
     this.pc = clamp(this.pc + this.pcLast, 0, this.pcCap());
   }
-  // 主人の関与 (指令・援助・艦隊・視察・回答) が届いた: 放っておかれた年数が0に戻る
-  attend(id) { if (!this.isHuman(id) && this.govs[id]) this.govs[id].attended = this.year; }
-  neglectOf(gv) { return Math.max(0, this.year - (gv.attended ?? gv.founded ?? this.year)); }

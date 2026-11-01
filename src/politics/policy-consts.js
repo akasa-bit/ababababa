@@ -16,9 +16,6 @@ const CONCESSION_YEARS = 30; // 要求をのんだときの減税・自治の期
 // 基準 ref はゲームの AI の要求の材料の平均 (のむ割合の平均を、席を持つ前の AI の国の半々にそろえる。12 銀河 × 300 年で 2 回合わせた。tools/demands-panel.js・docs/demands.md の 3)
 const DEMAND_AI = { size: 0.246, dist: 0.363, risk: 0.712, ref: { size: -8.57, dist: -0.568, risk: 0.475 } };
 const demandAcceptOf = ({ share, rel, risk }) => 1 / (1 + GM.exp(-(DEMAND_AI.size * (GM.log(share) - DEMAND_AI.ref.size) + DEMAND_AI.dist * (GM.log(rel) - DEMAND_AI.ref.dist) + DEMAND_AI.risk * (risk - DEMAND_AI.ref.risk))));
-const NEGLECT_GRACE = 10; // 主人の関与 (指令・援助・艦隊・視察) が途絶えてこの年数を過ぎると、忠誠度の目標が年 NEGLECT_RATE ずつ下がる (最大 −NEGLECT_MAX)
-const NEGLECT_RATE = 1.5;
-const NEGLECT_MAX = 0; // 2026-10-23 のユーザーの決定で、放っておかれても忠誠度は下がらない (前は 60。この値を戻せば元に戻る)
 // 星系の政府が決めたこと (gv.did。総督の手紙の「なぜ」。回 SE4): 直近 years 年ぶん、多くて max 件だけ持つ
 const GOV_DID = { years: 10, max: 8 };
 // 議会の支持 (0〜100)。毎年0.25ずつ下がり (いら立ち)、時代の課題を果たすと上がる。政治力の増え方を左右し、15を割ると政権交代

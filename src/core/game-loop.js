@@ -68,7 +68,6 @@
 
   // 政治力・議会・時代の課題・挑戦・語り手・決めること・終わりの年 (年1回)。AI が動かす席 (国家選択の AI の国) も同じ仕組みで動き、観戦モードと同じ AI が決める (回 SE5)
   politicsYearly() {
-    this.lordsAttendYearly();
     this.diplomacyYearly(); // 遅れて届く外交 (政治。politics/diplomacy.js)
     this.eachSeat(() => {
       this.pcYearly();
@@ -119,7 +118,6 @@
       if (!this.govs[q.to]) { this.release('grant', q, 'amt', q.from, q.from); continue; }
       const amt = this.release('grant', q, 'amt', q.to, q.from);
       this.receiveAid(q.to, amt);
-      if (this.govs[q.to]?.lord === q.from) this.attend(q.to); // 主人からの資金援助は関与になる
       if (!q.auto) this.message(JA`資金援助 ${fmtAmt(amt)} cr が ${this.system(q.to).name} に届いた`, q.to);
     }
     for (const q of this.requests) {
@@ -128,11 +126,9 @@
       if (pi < 0) continue;
       if (this.players.length > 1) this.msgTo = pi;
       this.asPlayer(pi, () => {
-      // 艦隊は地球の国の軍なので、その星系の政府の忠誠度に関係なく命令に従う。要求への返事と視察はかならず受け取る
-      const ob = ['peace', 'fleet', 'redirect', 'fleetclear', 'decide', 'inspect'].includes(q.act) ? { ok: true } : this.obeys(q.to, q.act);
+      // 艦隊は地球の国の軍なので、その星系の政府の忠誠度に関係なく命令に従う。要求への返事はかならず受け取る
+      const ob = ['peace', 'fleet', 'redirect', 'fleetclear', 'decide'].includes(q.act) ? { ok: true } : this.obeys(q.to, q.act);
       const r = ob.ok ? this.exec(q.act, q.d) : ob;
-      // 地球からの指令が届いたことは関与になる (放っておかれた年数が0に戻る)
-      if (ob.ok && !['fleet', 'redirect', 'fleetclear', 'peace'].includes(q.act)) this.attend(q.to);
       this.message(r.ok ? JA`指令「${q.label}」が ${this.system(q.to).name} に届き、実行された` : JA`指令「${q.label}」は ${this.system(q.to).name} で実行できなかった: ${r.reason}`, q.to);
       });
       this.msgTo = undefined;

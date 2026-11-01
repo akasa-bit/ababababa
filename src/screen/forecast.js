@@ -3,7 +3,7 @@
 // (設計の柱の「すぐ返る手応えと、遅れて届く本当の結果」)。画面だけの記録 (セーブには入らない。読み込み直すと消える)
 const Forecast = { list: [] };
 const forecastOf = (id) => Forecast.list.find((x) => x.id === id);
-const ORDER_ALWAYS = ['peace', 'fleet', 'redirect', 'fleetclear', 'decide', 'inspect', 'strike']; // 届いた所でかならず実行されるもの (obeys と同じ)
+const ORDER_ALWAYS = ['peace', 'fleet', 'redirect', 'fleetclear', 'decide', 'strike']; // 届いた所でかならず実行されるもの (obeys と同じ)
 // 従う見込み: 地球が知っている忠誠度・統治体制・自治から、届いた星系の obeys と同じ式で
 function obeyChance(g, sys, act, arrive) {
   if (sys === g.cap || ORDER_ALWAYS.includes(act)) return 1;
