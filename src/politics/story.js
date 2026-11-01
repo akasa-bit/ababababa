@@ -67,7 +67,7 @@ const STORY = {
     resolve(g, dec, k, local) {
       const gv = g.govs[dec.sys];
       if (!gv || !g.isColonized(dec.sys)) return;
-      if (k === 'aid') { g.release('grant', dec, 'cr', dec.sys, dec.payer ?? 0); gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 10); g.attend(dec.sys); g.councilAdd(-1, '遠くの復興に資金を出した'); g.message(JA`${g.system(dec.sys).name} に復興支援が届いた`, dec.sys); }
+      if (k === 'aid') { g.release('grant', dec, 'cr', dec.sys, dec.payer ?? 0); gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 10); g.councilAdd(-1, '遠くの復興に資金を出した'); g.message(JA`${g.system(dec.sys).name} に復興支援が届いた`, dec.sys); }
       else { gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - 8); if (!local) g.councilAdd(2, '復興を現地に任せた'); g.message(JA`${g.system(dec.sys).name} は復興支援が来なかったことを恨んでいる (忠誠度 −8)`, dec.sys); }
     },
     weigh(g, dec, k) {
@@ -156,7 +156,7 @@ const STORY = {
       const c = g.colonyByKey(dec.col);
       const gv = g.govs[dec.sys];
       if (!c || !gv) return;
-      if (k === 'cure') { g.spendDecision(dec, { pv: dec.sys }); c.plague = 0; gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 5); g.attend(dec.sys); g.message(JA`${c.name} に医療団が着き、疫病が収まった`, dec.sys); }
+      if (k === 'cure') { g.spendDecision(dec, { pv: dec.sys }); c.plague = 0; gv.loyalty = Math.min(100, (gv.loyalty ?? LOYALTY_START) + 5); g.message(JA`${c.name} に医療団が着き、疫病が収まった`, dec.sys); }
       else if (local) { if (dec.sys !== g.cap) gv.loyalty = Math.max(0, (gv.loyalty ?? LOYALTY_START) - 5); } // 返事がなかった: 疫病は 15 年続く
       else {
         c.plague = Math.min(c.plague || 0, g.year + 5);

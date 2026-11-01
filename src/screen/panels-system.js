@@ -104,8 +104,6 @@ function sysFlags(g, sys, k, cols) {
     const o = independenceOutlook(g, id);
     if (o?.stage) flags.push([o.stage >= 3 ? 'enemy' : 'warn', UNREST_LABEL[o.stage], outlookText(o, true)]);
     else if (o?.warn) flags.push(['warn', TR('不満の兆し'), outlookText(o, true)]);
-    const neglect = Math.max(0, g.year - (k.attended ?? k.founded ?? k.year));
-    if (NEGLECT_MAX && neglect > NEGLECT_GRACE) flags.push(['warn', TR`放っておかれて ${Math.floor(neglect)} 年`, TR('視察団・指令・資金援助で戻る')]);
     if ((k.autonomy || 0) > g.year) flags.push(['info', TR`自治を認めている (${Math.round(k.autonomy)}年まで)`]);
     else if ((k.taxFree || 0) > g.year) flags.push(['info', TR`朝貢を免除している (${Math.round(k.taxFree)}年まで)`]);
     if (k.direct) flags.push(['own', TR('直轄'), '', 'rg-direct']);
@@ -154,7 +152,6 @@ function systemPanel(app) {
     acts.push(g.knownAtWar(g.cap, realm) ? TR`<button data-act="peace" data-sys="${realm}">${ico('peace')}講和を申し入れる<small>届くまで ${g.lightDelay(realm).toFixed(1)} 年・政治力 ${PC_DIPLOMACY}</small></button>`
       : TR`<button data-act="declarewar" data-sys="${realm}">${ico('war')}${esc(g.system(realm).name)} の国に宣戦<small>政治力 ${g.pcCost('declarewar', {})}</small></button>`);
   }
-  if (colonized && realm === g.cap && id !== g.cap && k?.lord !== null && k?.lord !== undefined) acts.push(TR`<button data-act="inspect" data-sys="${id}" ${g.pc < g.pcCost('inspect', { sys: id }) ? 'disabled' : ''}>${ico('inspect')}視察団を送る<small>関与になる・政治力 ${g.pcCost('inspect', { sys: id })}・届くまで ${g.lightDelay(id).toFixed(1)} 年</small></button>`);
   const o = colonized && id !== g.cap ? independenceOutlook(g, id) : null;
   const pop = cols.reduce((a, c) => a + c.pop, 0);
   const st = k?.stock;

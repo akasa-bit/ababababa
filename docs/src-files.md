@@ -76,7 +76,7 @@
 | `economy/incidence.js` | 経済 | 80 | Game: 帰着の表 (手段ごとの部門と所得の分位の損得・星系の集団ごとの損得)・家計の損の割合 (回 KE8・B-012) |
 | `politics/policy-decisions.js` | 政治 | 125 | Game: 国家方針・直轄・決めること・語り手・議会 |
 | `screen/eras-score.js` | 画面と最初の体験 | 109 | Game: 時代の課題・挑戦・点数・終わり (手引きにする所。QD-07) |
-| `politics/earth-politics.js` | 政治 | 32 | Game: 主人の関与・地球の政治の自動 |
+| `politics/earth-politics.js` | 政治 | 32 | Game: 地球の政治の自動 (主人の関与は 2026-11-01 に消した) |
 | `ship/war-ai.js` | 船と戦争 | 385 | Game: 宣戦・講和の申し入れ・艦隊の到着・艦隊戦・包囲・海賊の防衛・AI の軍備と交渉・AI の国の年ごとの判断 |
 | `ship/strike.js` | 船と戦争 | 95 | Game: 光速に近い艦隊の一撃 (突入・焼く・知らせと報復・AI の一撃)。回 FU2 で足した |
 | `ship/fort.js` | 船と戦争 | 35 | Game: 宇宙要塞 (星系ごとの段・自動の Lv1・手動の強化・地球に届いている段)。2026-10-22 の依頼で足した |

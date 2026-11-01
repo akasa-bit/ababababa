@@ -89,8 +89,6 @@
       const sg = this.sieges.find((g) => g.sys === f.to && g.realm === owner);
       if (sg) { sg.ships += f.n; if (f.route?.length) sg.route ??= f.route; return; }
       this.garrison[f.to] = (this.garrison[f.to] || 0) + f.n;
-      // 席の国 (人間の国と AI の国) が命じて送った艦隊の来訪は関与になる (自動防衛配備・威圧の艦隊は数えない)
-      if (this.isSeat(owner) && !f.auto && !f.awe && !f.aweBack && this.isColonized(f.to)) this.attend(f.to);
       if (f.awe) this.awe[f.to] = (this.awe[f.to] || 0) + f.n;
       else if (!f.auto) this.held[f.to] = (this.held[f.to] || 0) + f.n;
       this.message(JA`${f.n} 艦隊が ${name} に到着した${f.route?.length ? JA` (経由地。次は ${this.system(f.route[0]).name})` : ''}`, f.to);
@@ -393,7 +391,6 @@
     gv.loyalty = 30;
     gv.friend = 0;
     gv.orders = 0;
-    gv.attended = this.year;
     gv.unrest = { stage: 0 };
     this.asRealm(winner, () => { this.stats.subjugated++; this.councilAdd(10); });
     this.cleanWars();

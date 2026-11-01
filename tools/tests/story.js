@@ -4,7 +4,7 @@
 // 3. 続きの星系が自国でなくなったら、連作はそこで切れる
 // 4. 同じ種類 (頭の出来事) は 1 試合に STORY_MAX 回まで。種類は 20 以上
 // 5. どの選択肢にも観戦の AI の重み (weigh) があり、セーブで予約が残る
-// 7. 人を送る指令 (視察団・医療団) は光速でなく船で届く (B-171)
+// 7. 人を送る指令 (医療団) は光速でなく船で届く (B-171)。視察団の指令はない (2026-11-01 のユーザーの依頼で消した)
 // 6. 星系の政府が決めたこと (gv.did。回 SE4): 期限切れで現地が決めた・総督が方針で要求に答えた、を覚え、光の遅れで地球に届く
 // 使い方: node tools/tests/story.js
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
@@ -109,9 +109,7 @@ check(g3.restore(JSON.parse(JSON.stringify(sim.buildSave(g)))) && g3.govs[far].d
 
 // 7
 g.pc = 100;
-g.command('inspect', { sys: far });
-const qi = g.requests.at(-1);
-check(qi?.act === 'inspect' && qi.arrive - g.year > g.lightDelay(far) + 0.1, `視察団が光速で届く (${(qi?.arrive - g.year).toFixed(2)} 年・光 ${g.lightDelay(far).toFixed(2)} 年)`);
+{ const L0 = g.govs[far].loyalty; check(!sim.evaluate('CMD_LABEL').inspect && !g.exec('inspect', { sys: far }).ok && g.govs[far].loyalty === L0, '視察団の指令が残っている (2026-11-01 のユーザーの依頼で消した)'); }
 g.decisions = [];
 const big = g.coloniesIn(far).sort((a, b) => b.pop - a.pop)[0];
 if (big) big.pop = Math.max(big.pop, 1); // 疫病は 50 万人以上の入植地で起きる

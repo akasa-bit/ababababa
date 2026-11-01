@@ -75,7 +75,7 @@ function groupsBox(g, id, k, o) {
       <p class="muted">世俗は宗教と法への従い方、自己表現は人の信頼・暮らしの心配のなさ・幸福から作った近い形 (世界価値観調査の 2 軸の項目の一部にあたる)。所得の上の分位ほど暮らしの心配が少なく自己表現寄り、よそ生まれは少し伝統寄り (国の中の差。民族の間の所得の差は入れていない)。</p></details>
     ${own ? `${inc('local', TR`${sp} (ここ生まれ)`)}${inc('other', TR('ほかの種族'))}` : ''}`;
 }
-// 統治: 直轄・委任と委任方針、総督の方針、視察団 (地球の国の家臣)
+// 統治: 直轄・委任と委任方針、総督の方針 (地球の国の家臣。視察団は 2026-11-01 のユーザーの依頼で消した)
 function ruleBox(g, id, k) {
   if (id === g.cap || !k || (k.realm ?? g.cap) !== g.cap || k.lord === null || k.lord === undefined) return '';
   const delay = g.lightDelay(id).toFixed(1);
@@ -88,18 +88,15 @@ function ruleBox(g, id, k) {
   const sel = (act, map, cur, notes) => `<select data-act="${act}" data-sys="${id}">${Object.entries(map).map(([v, l]) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${l} — ${notes[v]}</option>`).join('')}</select>`;
   const direct = !!k.direct;
   const autonomy = (k.autonomy || 0) > g.year;
-  const neglect = Math.max(0, g.year - (k.attended ?? k.founded ?? k.year));
   const regime = g.knownRegime(k);
   const ruleBtn = k.lord !== g.cap ? '' : regimeBox(g, id, k, regime, pending('rule'), autonomy);
   const concession = [(k.taxFree || 0) > g.year ? TR`朝貢の免除 (${Math.round(k.taxFree)}年まで)` : '', autonomy ? TR`自治 (${Math.round(k.autonomy)}年まで。指令を受けない)` : ''].filter(Boolean).join(TR('・'));
   return TR`<h3>統治</h3>
     <p class="note">${direct ? TR`<b>直接統治 (直轄)</b>: 星系政府は自分では開発・入植・交易路の開設をせず、${ME.home}の指令をかならず実行する (指令の政治力は半分・朝貢50%・忠誠度の目標 +10・年に政治力 1)。`
-      : TR`<b>${ico(`rg-${regime}`)}${REGIMES[regime].label}</b> (委任方針「${ico(MANDATE_ICON[k.mandate || 'balanced'])}${MANDATES[k.mandate || 'balanced']}」): 星系政府が自分の資金で動く。${esc(REGIMES[regime].note)}。`}${k.scar ? TR` 強制労働の後遺症 <b class="bad">${pct(k.scar)}</b> (税収 −${pct(FORCED.scarTax * k.scar)})。` : ''}
-      ${NEGLECT_MAX ? TR`主人の関与 (指令・資金援助・${ME.home}が命じた艦隊の来訪・視察) が途絶えて <b class="${neglect > NEGLECT_GRACE ? 'bad' : ''}">${Math.floor(neglect)} 年</b> (${ME.home}の知る限り。${NEGLECT_GRACE}年を過ぎると忠誠度の目標が年${NEGLECT_RATE}ずつ下がる)。` : ''}${concession ? TR`認めている要求: ${concession}。` : ''}</p>
+      : TR`<b>${ico(`rg-${regime}`)}${REGIMES[regime].label}</b> (委任方針「${ico(MANDATE_ICON[k.mandate || 'balanced'])}${MANDATES[k.mandate || 'balanced']}」): 星系政府が自分の資金で動く。${esc(REGIMES[regime].note)}。`}${k.scar ? TR` 強制労働の後遺症 <b class="bad">${pct(k.scar)}</b> (税収 −${pct(FORCED.scarTax * k.scar)})。` : ''}${concession ? TR`認めている要求: ${concession}。` : ''}</p>
     ${ruleBtn}
     ${direct ? '' : TR`<label class="field">委任方針${pending('mandate') ? TR(' (変更の指令を送信中)') : ''} — 変えると指令 (政治力 ${g.pcCost('mandate', { sys: id })})${sel('mandate', MANDATES, k.mandate || 'balanced', MANDATE_NOTE)}</label>`}
-    ${k.lord === g.cap ? TR`<label class="field">総督の方針 (不満が要求になったとき)${pending('governor') ? TR(' (変更の指令を送信中)') : ''} — 変えると指令 (政治力 ${g.pcCost('governor', { sys: id })})${sel('governor', GOVERNOR, k.governor || 'ask', GOVERNOR_NOTE)}</label>` : ''}
-    ${pcBtn(`data-act="inspect" data-sys="${id}"`, TR('視察団を送る'), 'inspect', TR`船で ${g.orderYears('inspect', { sys: id }, id).toFixed(1)} 年。着くと関与になり、忠誠度 +3`, pending('inspect') ? TR('視察団を送っている') : '')}`;
+    ${k.lord === g.cap ? TR`<label class="field">総督の方針 (不満が要求になったとき)${pending('governor') ? TR(' (変更の指令を送信中)') : ''} — 変えると指令 (政治力 ${g.pcCost('governor', { sys: id })})${sel('governor', GOVERNOR, k.governor || 'ask', GOVERNOR_NOTE)}</label>` : ''}`;
 }
 
 // 史料の欄 (H4-1): 型ごとの当時の言葉・法と実態の差・事例・一次史料の出典・研究者の論争・ゲームで省いたこと。
