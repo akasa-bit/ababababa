@@ -60,7 +60,7 @@
 | B-028 | AI の国が入植を急ぎ、銀河を取り合う。構造転換 (#152) のあとで入植が増えたので、先に測り直す | `aiOrdersYearly`・`colonize` | Q2・B-068 | M | 政治 | `critique/04-plan.md` の 2-1・2.3 の 9・2.1 の注意。**済み (#274・#275。回 SE5。R40 73.4%・R41 9。AI の国にも席を持たせた)** |
 | B-029 | **済み (回 SE8。`docs/nations.md`。QD-110〜QD-113)** 国ごとに規則が違う開始: 種族の特性を倍率から規則の違いへ。開始の人口と星系も国ごとに | `SPECIES_TRAITS`・`HUMAN_TRAITS`・`NATION_COUNTS`・`NationLib` | Q2 | M | 政治 | `critique/04-plan.md` の 2-4・2.3 の 15 |
 | B-143 | **済み (#312。地球の国の勝率 37.5% → 28.1%。`nations.md` の 3)**。どの国も開始の大きさを 1 (中央値) に固定する (W3-Q4 のうえで「すべての国を 1 に固定しよう」。QD-111 = c を取り消す。`docs/nations.md` の開始の大きさ・補正の台帳の C21) | `politics/nations.js`・`core/game-base.js` | B-029 | S | 政治 | `docs/requests/2026-10-31-common.md` の common-1 |
-| B-144 | 種族の特性を増やす (いまは 10 個。得る規則と失う規則を 1 つずつ)。いくつ・どんな特性かは回 SE10 の始めに聞く | `politics/nations.js`・`traits` | B-029 | M | 政治 | 同上 |
+| B-144 | **済み (回 SE10。QD-114 = c: 8 つ足して 18 個。`docs/nations.md` の 2.1。アイコンは QD-114 の 2 の返事待ち)** 種族の特性を増やす (いまは 10 個。得る規則と失う規則を 1 つずつ)。いくつ・どんな特性かは回 SE10 の始めに聞く | `politics/nations.js`・`traits` | B-029 | M | 政治 | 同上 |
 
 ## 船と戦争
 
