@@ -234,6 +234,16 @@
 | SE11-Q2 | 攻め落とした星系・降伏した国の統治の型 | **a. 勝った国の新しい家臣の型で決め直す** (T04 43% → 14%) | `ship/war-ai.js` の攻囲と `surrender`・`politics/loyalty-regime.js` の `newLordRegime` |
 | SE11-Q3 | 帯に少し届かないとき (1.198) | **b. R31 をゲーム版では判定しない (確認用)** | `docs/game-plan.md` の 5・`targets/targets.json` の R31 の note |
 
+### 決まったもの (2026-11-01、回 AI1)
+
+チャットで聞いた (回 W5 のあとの依頼の PR の CI を待つあいだ)。返事は「all recommendation please.」(`docs/requests/2026-11-01-AI.md` の AI-1)。
+
+| 番号 | 何を決めたか | 答え | 効く所 |
+|---|---|---|---|
+| AI1-Q1 | 現実の目標をどこまで登録するか | **a. 5 つすべて** (協定の数・共通の脅威・破られる協定・指導者の不規則な退き方・在任期間。協定の 3 つは AI2・AI3 から、指導者の 2 つは AI3 から判定) | R90〜R94 (目標の版 31) |
+| AI1-Q2 | AI の国から人間の国への宣戦の合格線 | **a. 組あたりの宣戦が AI どうしの 0.5〜2 倍** (人間を特別扱いしない) | F28 |
+| AI1-Q3 | 先頭の国への重り | **a. 先頭の国が受ける宣戦と対抗同盟が、ほかの国の平均の 1.25 倍以上** | F29 |
+
 ### 決まったもの (2026-11-01、回 W5)
 
 返事は `docs/requests/2026-11-01-common.md` の common-10 にそのまま残した。聞いたページは Artifact「第六波の組み方」(https://claude.ai/artifact/7Fv8QkRakM27g9HAj1kX2a)。数は `docs/status/common.md` の「5 波目の数」。KE13-Q4 と KE4-Q1・KE4-Q2 も同じページで聞いた。
