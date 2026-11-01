@@ -104,9 +104,21 @@
   }
   // 交易路を通る荷 (貨物船・資材輸送船・移民船) を送れる量 [100 万 t]。ふつうは送る側が加速、受ける側が減速を払う。
   // 受ける側が払えなければ (入植したばかりの星系など)、送る側が磁気帆と反物質の分も払う
-  routeRoom(from, to, eF = this.energyOf(from), eT = this.energyOf(to)) {
+  // 回 FU6 (B-173): 受け手 (to) の蓄えは、送り手から光の遅れのぶん古い記録 (energySeen) で見る (前は受け手のいまの蓄えを見ていた。光より速い)
+  routeRoom(from, to, eF = this.energyOf(from), eT = this.energySeen(from, to)) {
     eF = Math.max(0, eF); eT = Math.max(0, eT);
     return Math.max(Math.min(eF / E_UNIT, eT / decUnit()), eF / E_UNIT_FREE);
   }
-  routeMode(from, to, mt) { return this.energyOf(from) >= mt * E_UNIT && this.energyOf(to) >= mt * decUnit() ? 'route' : 'free'; }
+  routeMode(from, to, mt) { return this.energyOf(from) >= mt * E_UNIT && this.energySeen(from, to) >= mt * decUnit() ? 'route' : 'free'; }
+  // 星系 viewer から見えている、星系 id の蓄えのエネルギー (経済の記録 econIntel。光がまだ届いていなければ 0。自分の星系はいまの値)
+  energySeen(viewer, id) { return viewer === id ? this.energyOf(id) : this.econSeen(viewer, id)?.[3] ?? 0; }
+  // 交易路の荷 (貨物・移民) の推進: 送り手の加速の分だけいま記帳し、受け手の減速の分は返す (荷に持たせ、着いたときに受け手が払う。回 FU6・B-173)。
+  // 'free' の便はいまのまま全部を送り手が払う (返すのは 0)
+  bookShipDefer(kind, m, beta, mode, from, to, ly = from === to ? 0 : this.sysDist(from, to)) {
+    if (mode !== 'route') { this.bookShip(kind, m, beta, mode, from, to, ly); return 0; }
+    const sh = shieldOf(kind, m, beta, ly, this.physics), p = propulsion(m + sh.kg, beta, mode);
+    this.bookE(kind, -p.acc, from);
+    if (ENERGY_AUDIT) ENERGY_AUDIT.push({ kind, m, beta, mode, E: p.acc + p.dec, year: this.year, ly, shield: sh.kg, depth: sh.depth, side: sh.side, share: sh.share });
+    return p.dec;
+  }
 

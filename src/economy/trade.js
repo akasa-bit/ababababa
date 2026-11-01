@@ -57,8 +57,9 @@
       }
       if (TRADE_AUDIT) TRADE_AUDIT.push([q.to, q.from, this.year, amt * PRICE[q.res], 't', q.res]);
       const cMode = this.routeMode(q.to, q.from, (amt * RES_KG[q.res]) / UNIT_KG);
-      if (SIM_ONLY) this.bookPath('cargo', amt * RES_KG[q.res], [q.to, ...legs.map((l) => l.next)], cMode); else this.bookShip('cargo', amt * RES_KG[q.res], SHIP_SPEED, cMode, q.to, q.from);
-      this.shipCargo(q.to, legs, q.res, amt);
+      const dec = SIM_ONLY ? (this.bookPath('cargo', amt * RES_KG[q.res], [q.to, ...legs.map((l) => l.next)], cMode), 0) : this.bookShipDefer('cargo', amt * RES_KG[q.res], SHIP_SPEED, cMode, q.to, q.from);
+      const cp = this.shipCargo(q.to, legs, q.res, amt);
+      if (dec > 0) cp.dE = (cp.dE || 0) + dec; // 受け手の減速の分は着いたときに (回 FU6・B-173)
       q.amt -= amt;
       q.shipped = (q.shipped || 0) + amt;
     }
@@ -219,6 +220,7 @@
       this.cargo.push(p);
     }
     p.load[res] = (p.load[res] || 0) + amt;
+    return p;
   }
   // 区間 (path[i] → path[i+1]) の交易路と向き
   legsOf(path) {

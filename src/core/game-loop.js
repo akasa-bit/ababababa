@@ -176,6 +176,7 @@
       const due = this.migrants.filter((m) => m.arrive <= this.year);
       this.migrants = this.migrants.filter((m) => m.arrive > this.year);
       for (const m of due) {
+        if (m.dE) this.bookE('migrant', -m.dE, m.toSys); // 受け手の減速の分 (回 FU6・B-173)
         const d = this.colonyByKey(m.to);
         const from = this.colonyByKey(m.from);
         if (!d) continue;
@@ -212,6 +213,7 @@
       this.cargo = this.cargo.filter((p) => p.arrive > this.year);
       for (const p of due) {
         const dest = p.path[p.path.length - 1];
+        if (p.dE) this.bookE('cargo', -p.dE, dest); // 受け手の減速の分 (回 FU6・B-173)
         const st = this.stockOf(dest);
         const inb = (this.inbound[dest] ??= zeroRes());
         const legs = this.legsOf(p.path);

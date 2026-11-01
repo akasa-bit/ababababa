@@ -2,14 +2,24 @@
 // 国家間戦争の多さ: 国どうしの戦争 (独立戦争を除く) への参加の始まり (1 つの戦争で 2) ÷ 国・年 × 100。国 = 毎年の独立した国 (国の首都) の数
 // tools/wars.js (ブラウザ) と同じ数え方。main と比べるときは、比べる元の src を 2 つめに渡す
 // 使い方: node tools/wars-headless.js <src/index.html> [比べる元の src] [銀河の数] [年数] [国の数]
+//   --seeds a-b = 銀河 a〜b だけを回す・--json p.json = 数えた生の値を書く・--params 値.json = 値を上書きして回す (headless の params。例 {"BARGAIN":{"warDist":20}})
+//   --merge p1.json,p2.json,… = 分けて回した結果をまとめて表にする (回 FU6。.github/workflows/measure.yml で実行機に分ける用)
+const fs = require('fs');
 const H = require('./headless');
-const [src, baseSrc, nS = '12', yS = '300', natS = '6'] = process.argv.slice(2);
-function measure(file) {
-  const sim = H.load({ src: file });
+const argv = process.argv.slice(2);
+const opt = (name) => { const i = argv.indexOf(name); if (i < 0) return null; const v = argv[i + 1]; argv.splice(i, 2); return v; };
+const seedsS = opt('--seeds'), jsonOut = opt('--json'), mergeS = opt('--merge'), paramsF = opt('--params');
+const [src, baseSrc, nS = '12', yS = '300', natS = '6'] = argv;
+const params = paramsF ? JSON.parse(fs.readFileSync(paramsF, 'utf8')) : null;
+const seedList = () => { if (seedsS) { const [lo, hi] = seedsS.split('-').map(Number); return Array.from({ length: hi - lo + 1 }, (_, i) => lo + i); } return Array.from({ length: Number(nS) }, (_, i) => i + 1); };
+// 数える (生の値)。summarize で表の数にする
+function count(file) {
+  const sim = H.load({ src: file, params });
   const done = [];
   let gamesYears = 0, realmYears = 0, interstate = 0, sieged = 0;
   const battles = []; // 試合の中の艦隊戦 [ln(攻撃 ÷ 防衛), 攻撃側の勝ち] (B-168)
-  for (let seed = 1; seed <= Number(nS); seed++) {
+  const seeds = seedList();
+  for (const seed of seeds) {
     const g = sim.newGame(String(seed), { nations: Number(natS) });
     const wars = new Map();
     const wrap = (name, fn) => { const orig = g[name].bind(g); g[name] = (...a) => fn(orig, ...a); };
@@ -29,6 +39,9 @@ function measure(file) {
     for (const k of [...wars.keys()]) finish(k, 'ongoing');
     gamesYears += Number(yS);
   }
+  return { games: seeds.length, years: Number(yS), done, battles, gamesYears, realmYears, interstate, sieged };
+}
+function summarize({ done, battles, gamesYears, realmYears, interstate, sieged }) {
   const ended = done.filter((d) => d.how !== 'ongoing');
   const durs = ended.map((d) => d.dur).sort((a, b) => a - b);
   const med = durs[Math.floor(durs.length / 2)] || 0, mean = durs.reduce((k, x) => k + x, 0) / (durs.length || 1);
@@ -62,7 +75,16 @@ function powerTail(xs) {
   }
   return best;
 }
-const rows = [['この版', measure(src)], ...(baseSrc && baseSrc !== '-' ? [['比べる元', measure(baseSrc)]] : [])];
+let raws;
+if (mergeS) {
+  const parts = mergeS.split(',').map((f) => JSON.parse(fs.readFileSync(f, 'utf8')));
+  const join = (k) => { const ps = parts.map((p) => p[k]).filter(Boolean); return ps.length ? { games: 0, years: ps[0].years, done: [], battles: [], gamesYears: 0, realmYears: 0, interstate: 0, sieged: 0, ...ps.reduce((m, p) => ({ games: (m.games || 0) + p.games, years: p.years, done: [...(m.done || []), ...p.done], battles: [...(m.battles || []), ...p.battles], gamesYears: (m.gamesYears || 0) + p.gamesYears, realmYears: (m.realmYears || 0) + p.realmYears, interstate: (m.interstate || 0) + p.interstate, sieged: (m.sieged || 0) + p.sieged }), {}) } : null; };
+  raws = [['この版', join('cur')], ['比べる元', join('base')]].filter(([, r]) => r);
+} else {
+  raws = [['この版', count(src)], ...(baseSrc && baseSrc !== '-' && baseSrc !== '' ? [['比べる元', count(baseSrc)]] : [])];
+  if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify({ cur: raws[0][1], base: raws[1]?.[1] }));
+}
+const rows = raws.map(([n, r]) => [n, { ...summarize(r), games: r.games, years: r.years }]);
 const pc = (x) => `${(x * 100).toFixed(0)}%`;
 const f = (x) => (typeof x === 'number' ? (Math.abs(x) < 1 && x !== 0 ? `${(x * 100).toFixed(0)}%` : x.toFixed(1)) : String(x));
 console.log('| | 国 100 年あたりの国家間戦争 (R29: COW 2.34、±30% は 1.64〜3.04) | 100 年あたりの戦争 | 終わった / 続いている | 長さの平均 / 中央値 (年) | 平均 ÷ 中央値 (R13: 1.80〜3.33) | 白紙講和 | 条約 | 降伏 | 滅亡 |');
@@ -73,4 +95,4 @@ console.log('|---|---|---|---|---|---|');
 for (const [n, r] of rows) console.log(`| ${n} | ${r.r15 ? r.r15.alpha.toFixed(2) : '—'} | ${r.r15 ? Math.round(r.r15.xmin) : '—'} | ${r.r15 ? r.r15.n : '—'} | ${r.r15 ? r.r15.D.toFixed(3) : '—'} | ${r.deadWars} |`);
 console.log('\n| | 試合の中の艦隊戦 (100 年あたり、1 つの銀河) | うち入植星系の艦隊戦 | その戦いで測った勝ちの傾き (R16 のゲーム版の補正: 作った戦いで 1.80) |');
 console.log('|---|---|---|---|');
-for (const [n, r] of rows) console.log(`| ${n} | ${(r.battles / Number(nS) / Number(yS) * 100).toFixed(1)} | ${(r.sieged / Number(nS) / Number(yS) * 100).toFixed(1)} | ${r.slope === null ? '— (30 戦より少ない)' : r.slope.toFixed(2)} |`);
+for (const [n, r] of rows) console.log(`| ${n} | ${(r.battles / r.games / r.years * 100).toFixed(1)} | ${(r.sieged / r.games / r.years * 100).toFixed(1)} | ${r.slope === null ? '— (30 戦より少ない)' : r.slope.toFixed(2)} |`);
