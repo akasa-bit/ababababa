@@ -264,7 +264,9 @@ def game(dirs):
     if len(G) >= 30:
         b, se = cox([t['dur'] for t in G], [t['event'] for t in G], [[t['gap'], math.log(max(t['dCap'], 0.5))] for t in G])
         c = coef(b, se, 0, 'gap', exp=True); band = tg['R31']['band']
-        out['R31'] = {'hr': c['hr'], 'hr_ci95': c['hr_ci95'], 'n': len(G), 'band': band, 'pass': band[0] <= c['hr'] <= band[1]}
+        # ゲーム版では判定しない (確認用。目標の版 30 の note。回 SE11 の SE11-Q3 = b): 帯の中かは in_band に出し、pass は付けない。
+        # 差は tools/secession.js が離反の式と同じ量 (型の事例の平均の差 + 試合の中で開いた分) で書き出す (SE11-Q1 = a)。生の差は gapRaw
+        out['R31'] = {'hr': c['hr'], 'hr_ci95': c['hr_ci95'], 'n': len(G), 'band': band, 'in_band': band[0] <= c['hr'] <= band[1], 'pass': None, 'judge': 'ゲーム版では判定しない (確認用)'}
     print(json.dumps(out, ensure_ascii=False, indent=1))
     return 0
 

@@ -1,6 +1,8 @@
 // 離反の自動対戦: 国家選択のある試合 (N か国) を、プレイヤーの国も AI に任せて Y 年進め、
 // 主従の結びつき (家臣の星系 → 主人) ごとに、始まった年・統治体制・首都との距離・不満が始まった回数・終わった年と終わり方を記録する。
 // 生存時間の分析 (Kaplan–Meier・Cox モデル) で、歴史の実データ (目標 R08・R09) と形を比べるための材料。ゲームの結果は変えない
+// 法と実態の差 gap は、離反の式と同じ量で書き出す (回 SE11・SE11-Q1 = a): 型の事例の平均の差 (REGIMES の gap。型の倍率 hr の元) + 試合の中で型の始めの束から開いた分の年平均。
+// 型の始めの束の食い違いの数から数えた生の年平均は gapRaw
 // 使い方: node secession.js <html の絶対パス> <outdir> <年数> <シード(カンマ区切り)> [国の数] [版ごとの値を差し替える JSON (例: '{"hazardBase":0.1}')]
 const { chromium } = require('playwright');
 const fs = require('fs');
@@ -53,7 +55,7 @@ const fs = require('fs');
       };
       for (let y = 0; y < years; y++) { g.advance(1); scan(); }
       for (const id of [...ties.keys()]) close(id, 'censored');
-      return { seed, years, nations: n, edition: typeof EDITION === 'undefined' ? null : EDITION, set, ties: done.map(({ inUnrest, gapSum, gapN, ...x }) => ({ ...x, gap: gapN ? +(gapSum / gapN).toFixed(3) : null })) };
+      return { seed, years, nations: n, edition: typeof EDITION === 'undefined' ? null : EDITION, set, ties: done.map(({ inUnrest, gapSum, gapN, ...x }) => { const raw = gapN ? gapSum / gapN : null; const rg = typeof REGIMES !== 'undefined' ? REGIMES[x.regime0]?.gap : undefined; return { ...x, gapRaw: raw === null ? null : +raw.toFixed(3), gap: raw === null ? null : +(rg === undefined || x.gap0 === null ? raw : rg + raw - x.gap0).toFixed(3) }; }) };
     }, [seed, Number(yearsS), Number(nS), JSON.parse(setS)]);
     res.errs = errs.slice(0, 5); res.secs = Math.round((Date.now() - t0) / 1000);
     fs.writeFileSync(out, JSON.stringify(res));

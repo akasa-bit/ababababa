@@ -208,6 +208,13 @@
       if (regimeKey(gv) === 'T10' && gv.lord !== null && gv.lord !== undefined && this.isColonized(id) && this.realmOf(id) === loser) this.puppetFalls(id, winner);
     }
   }
+  // 新しい主人に従属した星系の統治体制を、主人の新しい家臣の型で決め直す (攻め落とした・降伏した。前の型と束の欄は消す)
+  newLordRegime(id, winner) {
+    const gv = this.gov(id);
+    for (const f of ['direct', 'regime', 'law', 'fact', 'elite', 'lord2', 'jointCut', 'grudge', 'jointSolo', 'arrears', 'patron', 'include']) delete gv[f];
+    const reg = this.defaultRegime(winner, id);
+    if (reg === 'direct') gv.direct = true; else if (reg !== BASE_REGIME) gv.regime = reg;
+  }
   // 傀儡政権が倒れる: 傀儡国は winner の家臣になり、統治体制は winner の新しい家臣の型になる。家臣の家臣はそのままついて行く
   puppetFalls(id, winner) {
     const gv = this.govs[id];

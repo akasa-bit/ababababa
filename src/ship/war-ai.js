@@ -305,6 +305,7 @@
       const oldRealm = this.realmOf(g.sys);
       this.warTake(g.realm, oldRealm, g.sys);
       const gv = this.gov(g.sys);
+      this.newLordRegime(g.sys, g.realm);
       gv.lord = g.realm;
       gv.independent = false;
       gv.loyalty = 30;
@@ -386,6 +387,7 @@
     const n = this.realmSystems(root).length;
     this.endWar(root, winner, root);
     const gv = this.gov(root);
+    this.newLordRegime(root, winner);
     gv.lord = winner;
     gv.independent = false;
     gv.loyalty = 30;

@@ -63,7 +63,7 @@
 | B-029 | **済み (回 SE8。`docs/nations.md`。QD-110〜QD-113)** 国ごとに規則が違う開始: 種族の特性を倍率から規則の違いへ。開始の人口と星系も国ごとに | `SPECIES_TRAITS`・`HUMAN_TRAITS`・`NATION_COUNTS`・`NationLib` | Q2 | M | 政治 | `critique/04-plan.md` の 2-4・2.3 の 15 |
 | B-143 | **済み (#312。地球の国の勝率 37.5% → 28.1%。`nations.md` の 3)**。どの国も開始の大きさを 1 (中央値) に固定する (W3-Q4 のうえで「すべての国を 1 に固定しよう」。QD-111 = c を取り消す。`docs/nations.md` の開始の大きさ・補正の台帳の C21) | `politics/nations.js`・`core/game-base.js` | B-029 | S | 政治 | `docs/requests/2026-10-31-common.md` の common-1 |
 | B-144 | **済み (回 SE10。QD-114 = c: 8 つ足して 18 個。`docs/nations.md` の 2.1。アイコンは QD-114 の 2 = 8 つとも 1 番)** 種族の特性を増やす (いまは 10 個。得る規則と失う規則を 1 つずつ)。いくつ・どんな特性かは回 SE10 の始めに聞く | `politics/nations.js`・`traits` | B-029 | M | 政治 | 同上 |
-| B-145 | R31 (法と実態の差 1 項目ごとの、従属関係の終わりのハザード比) を版 5 の銀河で合わせ直す: main 1.17・依頼 SE-3 のあと 1.14 (幅 1.21〜1.54。版 4 では 1.30) | `pc-vassal.js` の `GAP_HR`・`secessionTermsOf`・`tools/secession.js` | — | M | 政治 | 回 W4 の W4-Q4 = a (`docs/status/SE.md`) |
+| B-145 | **済み (回 SE11・#321・#322。R31 の差を離反の式と同じ量で数え (目標の版 30)、攻め落とした星系の型を決め直して 1.151 → 1.198。帯に届かず、ゲーム版では判定しない確認用にした (SE11-Q3 = b)。`docs/status/SE.md`)** R31 (法と実態の差 1 項目ごとの、従属関係の終わりのハザード比) を版 5 の銀河で合わせ直す: main 1.17・依頼 SE-3 のあと 1.14 (幅 1.21〜1.54。版 4 では 1.30) | `pc-vassal.js` の `GAP_HR`・`secessionTermsOf`・`tools/secession.js` | — | M | 政治 | 回 W4 の W4-Q4 = a (`docs/status/SE.md`) |
 
 ## 船と戦争
 
