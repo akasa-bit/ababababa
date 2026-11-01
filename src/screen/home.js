@@ -9,8 +9,8 @@ function saveInfo(m) {
 }
 // ホームは全画面のページで進む (B-194): 最初のメニュー → シングルプレイの設定 → (国が 2 つ以上なら) 国家選択 → 地図。
 // 銀河の番号つきの URL で開いたときは、その番号が見えるように設定のページから (試験が銀河の番号の欄を使う)
-const HOME_ICON = { single: 'single', load: 'load', multi: 'multi', nations: 'nations', credits: 'copyright' };
-const HOME_PAGES = { single: 'シングルプレイ', load: 'ロード', multi: 'マルチプレイ', nations: '国家制作', credits: '著作権関連', account: 'アカウント' };
+const HOME_ICON = { single: 'single', load: 'load', multi: 'multi', friends: 'friend', nations: 'nations', credits: 'copyright' };
+const HOME_PAGES = { single: 'シングルプレイ', load: 'ロード', multi: 'マルチプレイ', friends: '友達と遊ぶ', nations: '国家制作', credits: '著作権関連', account: 'アカウント' };
 function homePage() {
   if (app.homeTab === undefined) app.homeTab = params.get('seed') !== null ? 'single' : 'menu';
   return app.homeTab === 'game' ? 'single' : HOME_PAGES[app.homeTab] ? app.homeTab : 'menu';
@@ -27,7 +27,7 @@ function homeHtml() {
       </div><div class="langs" translate="no">${Object.entries(LANGS).map(([k, l]) => `<button class="ghost${k === LANG ? ' on' : ''}" data-home="lang" data-l="${k}" lang="${k}">${l}</button>`).join('')}</div></div>`;
   }
   const head = TR`<div class="phead"><button class="ghost" data-home="tab" data-t="${page === 'account' ? app.homeFrom || 'menu' : 'menu'}">戻る</button><h2>${HOME_PAGES[page]}</h2></div>${note}`;
-  const body = { single: singleHtml, load: loadHtml, multi: multiHtml, nations: nationsTabHtml, credits: creditsHtml, account: accountTabHtml }[page]();
+  const body = { single: singleHtml, load: loadHtml, multi: multiHtml, friends: friendsHtml, nations: nationsTabHtml, credits: creditsHtml, account: accountTabHtml }[page]();
   return `<div class="hpage">${head}${body}</div>`;
 }
 // シングルプレイの設定。決めてから地図を作る (国が 2 つ以上なら、その前に全画面の国家選択)
@@ -78,6 +78,46 @@ function multiHtml() {
       <div class="row"><div class="info">別の端末の人と、サーバーなしでつないで遊ぶ。ホストは国家選択で「＋人間」を 2 つ以上にして「ネット対戦」を選ぶ (いまのゲームに人間が 2 人以上いれば、ここからもホストになれる)。参加する人は、ホストの招待コードを貼る。</div>
         ${app.game.humans().length > 1 ? TR('<button data-home="nethost">ホストになる</button>') : ''}<button data-home="netjoin">参加する</button></div>
       <div class="row"><div class="info">ログインしていれば、ホストは「部屋を作る」でコードを出し、参加する人はそのコードを入れるだけでつながる。</div><button data-home="tab" data-t="account" data-from="multi">アカウント${Cloud.user ? TR(' (ログイン中)') : ''}</button></div></section>`;
+}
+// 友達と遊ぶ (回 GA12・B-063。回 W4 の W4-Q1 = b・W4-Q2 = a): はじめての友達に渡す 1 枚の遊び方。短い版 (100 年) をネット対戦で 1 回遊び、
+// 終わったら感想を書いて「記録を書き出す」のファイルを送ってもらう (感想もそのファイルに入る)
+function friendsHtml() {
+  const sv = Survey.list();
+  const opt = (id, q) => `<select id="${id}"><option value="">—</option>${Object.entries(q).map(([k, l]) => `<option value="${k}">${esc(TX(l))}</option>`).join('')}</select>`;
+  return TR`<section><h3>はじめに</h3>
+      <p>短い版 (100 年。2300 年から 2400 年まで) を、ネット対戦で 1 回遊ぶ。30 分から 1 時間くらい。終わったら、下の 6 で感想を書き、「記録を書き出す」のファイルを、誘ってくれた人に送る。</p></section>
+    <section><h3>1. 用意 (全員)</h3><ul class="steps">
+      <li>それぞれの端末で、同じ URL のゲームを開く (タブレットかパソコンの Chrome・Edge・Safari)。</li>
+      <li>できれば家の Wi-Fi で (スマートフォンの回線では、つながらないことがある)。</li>
+      <li>地図の右の帯の「遊び方の記録にご協力ください」で「記録してよい」を押す。記録はその端末の中だけに残り、送るのは自分で書き出したファイルだけ。名前・メール・場所は記録しない。</li></ul></section>
+    <section><h3>2. ホスト (誘った人) のすること</h3><ol class="steps">
+      <li>下のボタンで、終わりの年を「100 年」・国の数を 4 か国にした設定のページを開き、「次へ (国家選択)」。</li>
+      <li>国家選択で、友達の国を「＋人間」にして「ネット対戦」を押す。</li>
+      <li>友達ごとに「招待コードを作る」→「コピー」してメッセージアプリで送る → 返ってきた返事コードを貼って「つなぐ」。全員つながったら「はじめる」。アカウントにログインしていれば、「部屋を作る」で出る 6 文字の部屋のコードを伝えるだけでもよい。</li>
+      <li>速さはホストが決める。はじめは「1 年」(1 秒に 1 年) がよい。だれかが考えたいときは止める。</li></ol>
+      <div class="row"><div class="info">遅れて来た人・途中で切れた人は、メニューの「ホーム」で開くネット対戦の画面の「入っていない国」から招待を作り直すと、その国に入れる。</div><button data-home="friendsetup">100 年の版の設定へ</button></div></section>
+    <section><h3>3. 参加する人のすること</h3><ol class="steps">
+      <li>ホーム → マルチプレイ →「参加する」(下のボタンでもよい)。</li>
+      <li>ホストからもらった招待コードを貼って「返事コードを作る」→ できた返事コードを「コピー」してホストに送る。</li>
+      <li>つながったら、ホストが始めるのを待つ。速さのボタンを押すと、ホストに頼む形で変わる。</li></ol>
+      <div class="row"><div class="info">つながらないときは、ネット対戦の画面の「つながらないとき」を見る。</div><button data-home="netjoin">参加する</button></div></section>
+    <section><h3>4. 最初の 10 分</h3><ol class="steps">
+      <li>左の手引き (時代の課題) のとおりに、候補地のタブから入植船を送る。</li>
+      <li>入植地ができたら、帝国 → 交易路で母星と結ぶ。</li>
+      <li>遠い星系ほど、命令が届くのが遅い (光の速さ)。星系の欄の「型を選ぶ」で、遠い星系をどう治めるかを決める。</li>
+      <li>右の「決めること」に答える。分からなければ、ボタンの「説明」を開く。</li></ol></section>
+    <section><h3>5. 遊んでいるあいだ</h3>
+      <p>上の帯の「メモ」で、退屈・分からない・迷う・面白い と感じた瞬間を残す (その時点の状態も残る)。思ったことをそのまま書いてよい。</p></section>
+    <section><h3>6. 終わったら (2400 年)</h3>
+      <div class="survey">
+        <label>いちばん面白かったところ<textarea id="sv-fun" rows="2" maxlength="1000"></textarea></label>
+        <label>分からなかった・困ったところ<textarea id="sv-lost" rows="2" maxlength="1000"></textarea></label>
+        <div class="row"><label>また遊びたいか ${opt('sv-again', SURVEY_Q.again)}</label><label>100 年の長さ ${opt('sv-len', SURVEY_Q.len)}</label><label>つながり ${opt('sv-net', SURVEY_Q.net)}</label></div>
+        <div class="row"><div class="info">${sv.length ? TR`残した感想: ${sv.length} 件 (いちばん新しいもの: ${esc(new Date(sv[sv.length - 1].at).toLocaleString(LOCALE, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))})` : TR('まだ感想を残していない')}</div>
+          <button data-home="survey">感想を残す</button><button class="big" data-home="logexport">記録を書き出す (感想も入る)</button></div>
+        ${app.surveyNote ? `<p class="note"><b>${esc(app.surveyNote)}</b></p>` : ''}
+        <p class="note">書き出したファイル (nolongerubiquitous-playlog-日付.json) を、誘ってくれた人に送る。感想とプレイ記録はこの端末の中だけにあり、ファイルを送らなければだれにも届かない。</p>
+      </div></section>`;
 }
 function creditsHtml() {
   return TR`<section><h3>この版</h3><p>${EDITION_LABEL[EDITION]} (<a href="${EDITION_FILE[EDITION === 'sim' ? 'game' : 'sim']}">${EDITION_LABEL[EDITION === 'sim' ? 'game' : 'sim']}を開く</a>)</p></section>

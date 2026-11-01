@@ -6,3 +6,5 @@ export-out/
 
 # 写しの出力先を渡さずに回した試験 (tools/tests/regime.js など) が書く画像
 undefined/
+# 友達と遊んだときに届いたプレイ記録 (公開のリポジトリに入れない。docs/playtest-friends.md の 3)
+playtest/

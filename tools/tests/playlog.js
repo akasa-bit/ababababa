@@ -1,6 +1,7 @@
 // プレイ記録から楽しさの目標を測る道具 (tools/playlog-report.js) の試験 (回 DO3・B-065)
 // 1. 答えの分かっている作り物の記録で、F01〜F05・F20・F21 と待つだけの時間・判断の数を確かめる
 // 2. 公開用の index.html をブラウザで開き、同意して少し遊んだことにして「記録を書き出す」(exportPlayLog) のファイルを取り、道具がその形を読めるかを見る
+// 3. 試遊の感想 (回 GA12。ホームの「友達と遊ぶ」): 作り物の感想を数える・ブラウザで書いた感想が書き出したファイルに入り、道具が読める
 //    (画面と最初の体験が記録の形を変えたら、ここで分かる)
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
@@ -40,10 +41,12 @@ const p2 = [
   ses(11, t0 + 8 * day, 10, []),
 ];
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nlu-playlog-'));
-const write = (name, sessions) => { const f = path.join(dir, name); fs.writeFileSync(f, JSON.stringify({ app: 'nolongerubiquitous', edition: 'game', kind: 'playlog', exportedAt: t0, sessions })); return f; };
-write('a.json', p1);
-write('a-again.json', [p1[1]]); // 同じブラウザから書き出し直したもの (セッションの id が重なる) → 1 人
-write('b.json', p2);
+const write = (name, sessions, survey) => { const f = path.join(dir, name); fs.writeFileSync(f, JSON.stringify({ app: 'nolongerubiquitous', edition: 'game', kind: 'playlog', exportedAt: t0, sessions, ...(survey ? { survey } : {}) })); return f; };
+// 感想: 1 人目は 2 回書いた (書き出し直したファイルにも同じものが入る)。2 人目は 1 回
+const sa = [{ at: t0 + 1, fun: '交易路', again: '3', len: 'long', net: 'retry' }, { at: t0 + 2, fun: '独立された', lost: '光の遅れ', again: '4', len: 'ok', net: 'quick' }];
+write('a.json', p1, sa);
+write('a-again.json', [p1[1]], sa); // 同じブラウザから書き出し直したもの (セッションの id が重なる) → 1 人
+write('b.json', p2, [{ at: t0 + 3, again: '5', len: 'ok', net: 'quick' }]);
 fs.writeFileSync(path.join(dir, 'save.json'), JSON.stringify({ year: 2100 })); // プレイ記録でないファイルは飛ばす
 const { people, skipped } = R.readLogs([dir]);
 near(people.length, 2, '人の数');
@@ -72,6 +75,15 @@ near(row('F20').value, Infinity, 'F20 の 90% 点 (送らなかった人がい�
 if (!/参考/.test(row('F01').verdict)) fails.push('30 人より少ないのに判定した');
 const md = R.markdown(r, skipped, true);
 if (!md.includes('| F05 |') || !md.includes('save.json')) fails.push('表の形が違う');
+// 3. 感想: 人ごとにいちばん新しい答えを数える (1 人目は 4・ちょうどよい・すぐ、2 人目は 5・ちょうどよい・すぐ)。書いたことは全部並べる (重ならない)
+const sv = R.surveys(people);
+near(sv.n, 2, '感想の人数');
+near(sv.again, 4.5, '「また遊びたいか」の中央値');
+near(sv.counts.len.ok, 2, '「100 年の長さ: ちょうどよい」の人数');
+near(sv.counts.net.quick, 2, '「つながり: すぐ」の人数');
+r.survey = sv;
+const md2 = R.markdown(r, skipped, false);
+if (!md2.includes('### 試遊の感想 (2 人') || (md2.match(/  - 交易路/g) || []).length !== 1 || !md2.includes('  - 光の遅れ')) fails.push('感想の表の形が違う (書き出し直したファイルの感想が重なったか、抜けた)');
 
 // --- 2. ブラウザで書き出したファイル ---
 (async () => {
@@ -91,6 +103,10 @@ if (!md.includes('| F05 |') || !md.includes('save.json')) fails.push('表の形�
     PlayLog.add('idle', { s: 80 });
     PlayLog.add('memo', { tag: 'confused', text: '試験', view: 'events' });
     PlayLog.tick(2000); PlayLog.cur.y1 = app.game.year;
+    // 試遊の感想 (回 GA12): ホームの「友達と遊ぶ」の欄に書いて「感想を残す」を押す
+    openHome(); app.homeTab = 'friends'; renderHome();
+    $('sv-fun').value = '試験の感想'; $('sv-again').value = '4'; $('sv-len').value = 'ok'; $('sv-net').value = 'none';
+    document.querySelector('#home [data-home="survey"]').click();
     // 書き出したファイルを、ダウンロードの代わりに受け取る
     let blob = null;
     const orig = URL.createObjectURL;
@@ -115,6 +131,8 @@ if (!md.includes('| F05 |') || !md.includes('save.json')) fails.push('表の形�
       if (!(m.f05 > 0)) fails.push(`ブラウザの記録から F05 が出ない (${m.f05})`);
       if (m.lost.length !== 2) fails.push(`ブラウザの記録の迷った回数が 2 でない (${m.lost.length})`);
       console.log('ブラウザの記録:', JSON.stringify({ f04: m.f04, f05: m.f05, lost: m.lost, cmds: c.entries.filter((e) => e.k === 'act').length }));
+      const s = R.surveys(got.people);
+      if (s.n !== 1 || s.latest[0].fun !== '試験の感想' || s.latest[0].again !== '4' || s.latest[0].len !== 'ok' || s.latest[0].net !== 'none' || !s.latest[0].seed) fails.push(`ブラウザで書いた感想が書き出したファイルに入っていない (${JSON.stringify(s.latest[0] || null)})`);
     }
   }
   if (errs.length) fails.push(`ページの誤り: ${errs.join(' / ')}`);

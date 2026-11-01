@@ -75,6 +75,18 @@ $('home').onclick = (e) => {
   if (act === 'logstoperase' || act === 'logstopkeep') { PlayLog.setConsent('no', act === 'logstoperase'); app.homeArmed = null; return renderHome(); }
   if (act === 'logcancel') { app.homeArmed = null; return renderHome(); }
   if (act === 'logexport') return exportPlayLog();
+  // 試遊の感想 (回 GA12): 書いた答えを、この端末に残す (記録の同意とは別。書いて押したものだけ)
+  if (act === 'survey') {
+    const v = (id) => ($(id)?.value || '').trim().slice(0, 1000);
+    const a = { at: Date.now(), fun: v('sv-fun'), lost: v('sv-lost'), again: v('sv-again'), len: v('sv-len'), net: v('sv-net') };
+    if (!a.fun && !a.lost && !a.again && !a.len && !a.net) { app.surveyNote = TR('感想が空だった (どれか 1 つ書くか選ぶ)'); return renderHome(); }
+    const g = app.game;
+    Object.assign(a, { seed: String(g.galaxy?.seed ?? ''), year: Math.round(g.year * 100) / 100, end: g.endYear ?? null, role: Net.role || null, humans: g.humans().length, vw: window.innerWidth, vh: window.innerHeight, ed: EDITION });
+    app.surveyNote = Survey.add(a) ? TR('感想を残した。下の「記録を書き出す」で、ファイルに入る') : TR('感想を残せなかった (このブラウザでは保存できない)');
+    return renderHome();
+  }
+  // 友達と遊ぶ (回 GA12): ホストの設定を短い版 (100 年・4 か国) にして、シングルプレイの設定のページへ
+  if (act === 'friendsetup') { app.homeEnd = 100; if ((app.homeNat ?? 1) < 4) app.homeNat = 4; app.homeTab = 'single'; renderHome(); $('home').scrollTop = 0; return; }
   if (act === 'logclear') {
     if (!confirm2('logclear')) return;
     PlayLog.eraseAll();

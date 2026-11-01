@@ -134,9 +134,24 @@ async function saveMemo() {
   PlayLog.persist();
   uiNote(TR`メモを記録した${tag ? ` (${MEMO_TAGS[tag]})` : ''}`);
 }
+// 試遊の感想 (回 GA12・B-063): ホームの「友達と遊ぶ」で書いた答え。この端末にだけ置き (新しい 20 件まで)、「記録を書き出す」のファイルに入れる。
+// 選ぶ問いの答えは鍵で残す (表示の言語によらない)。tools/playlog-report.js が数える
+const SURVEY_KEY = `${STORE}-survey`;
+const SURVEY_Q = {
+  again: { 5: '5 (とても遊びたい)', 4: '4', 3: '3', 2: '2', 1: '1 (もういい)' },
+  len: { short: '短い', ok: 'ちょうどよい', long: '長い' },
+  net: { quick: 'すぐつながった', retry: '何度かやり直した', fail: 'つながらなかった', none: 'ネット対戦はしていない' },
+};
+const Survey = {
+  list() { try { const l = JSON.parse(localStorage.getItem(SURVEY_KEY) || '[]'); return Array.isArray(l) ? l : []; } catch { return []; } },
+  add(a) {
+    const l = [...this.list(), a].slice(-20);
+    try { localStorage.setItem(SURVEY_KEY, JSON.stringify(l)); return true; } catch { return false; }
+  },
+};
 function exportPlayLog() {
   const sessions = PlayLog.all().map((c) => ({ ...c, summary: PlayLog.summary(c) }));
-  const blob = new Blob([JSON.stringify({ app: 'nolongerubiquitous', edition: EDITION, kind: 'playlog', exportedAt: Date.now(), sessions }, null, 1)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'nolongerubiquitous', edition: EDITION, kind: 'playlog', exportedAt: Date.now(), sessions, survey: Survey.list() }, null, 1)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `nolongerubiquitous${EDITION === 'sim' ? '-sim' : ''}-playlog-${new Date().toISOString().slice(0, 10)}.json`;
