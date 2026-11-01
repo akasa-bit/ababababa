@@ -97,7 +97,7 @@ const ch = as(['cohesive']);
 res.cohesive = ch.excl === 0.5 && ch.migrate === 0.5 && near(Math.log(exf(0.5)), 0.5 * Math.log(exf(1))) && near(Math.log(exf(1)), GR.exclBeta * (0.5 - GR.exclRef)) && g.groupsOf(n.cap)?.xk === 0.5;
 as([]); const b0 = g.upgradeCost(c0, 'factory').credits;
 const nm = as(['nomadic']);
-res.nomadic = nm.migrate === 2 && Math.abs(g.upgradeCost(c0, 'factory').credits - Math.round(b0 * 1.25)) <= 1;
+res.nomadic = nm.migrate === 2 && Math.abs(g.upgradeCost(c0, 'factory').credits - Math.round(b0 * 1.1)) <= 1;
 as([]); const pp0 = g.pcCost('pact', { sys: other }), pw0 = g.pcCost('declarewar', { sys: other });
 as(['diplomatic']);
 res.diplomatic = g.pcCost('pact', { sys: other }) === Math.ceil(pp0 / 2) && g.pcCost('declarewar', { sys: other }) === 2 * pw0 && pp0 > 0;
