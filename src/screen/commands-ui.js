@@ -45,6 +45,7 @@ function onPanelClick(e) {
   const sys = btn.dataset.sys !== undefined ? Number(btn.dataset.sys) : app.sel.sys;
   const body = btn.dataset.body ?? app.sel.body;
   if (act === 'open') return app.setView('system');
+  if (act === 'regimepick') return openRegimePick(sys); // 型を選ぶ窓 (回 GA11・B-197)
   if (act === 'goto') { app.selectSystem(sys); return app.setView('galaxy'); }
   if (act === 'fleetsel') { app.fleetSel = new Set([sys]); app.fleetMove.clear(); app.fleetConfirm = null; app.setView('galaxy'); return renderFleetBar(); }
   if (act === 'gobody') { app.openSystem(sys); return app.selectBody(body); }
@@ -218,3 +219,22 @@ function setHtmlKeepScroll(el, html) {
   el.innerHTML = html;
   el.querySelectorAll('.scroll').forEach((x, i) => { if (xs[i]) x.scrollLeft = xs[i]; });
 }
+
+// --- 型を選ぶ窓 (回 GA11・B-197。W3-Q10 = e) ---
+function openRegimePick(sys) { app.regimePick = { sys, sel: null }; renderRegimePick(); }
+function renderRegimePick() {
+  const box = $('regimebox');
+  const p = app.regimePick;
+  const html = p ? regimePickHtml(app.game, p.sys, p.sel) : '';
+  if (!html) { box.hidden = true; app.regimePick = null; return; }
+  setHtml(box, html);
+  box.hidden = false;
+}
+$('regimebox').onclick = (e) => {
+  if (e.target === $('regimebox')) { $('regimebox').hidden = true; app.regimePick = null; return; } // 窓の外を押すと閉じる
+  const b = e.target.closest('button');
+  if (!b || !app.regimePick) return;
+  if (b.dataset.rp === 'close') { $('regimebox').hidden = true; app.regimePick = null; return; }
+  if (b.dataset.rp) { app.regimePick.sel = b.dataset.rp; PlayLog.add('act', { act: 'regimesel', value: b.dataset.rp, sys: app.regimePick.sys }); renderRegimePick(); return $('regimebox').querySelector('.rcmp')?.scrollIntoView({ block: 'nearest' }); } // 縦の画面では比べる欄が一覧の上
+  if (b.dataset.act === 'rule') { onPanelClick(e); $('regimebox').hidden = true; app.regimePick = null; app.dirty = true; }
+};

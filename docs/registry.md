@@ -168,6 +168,7 @@
 - saveField: exhaustSent・bargainSent (船と戦争。src/ship/war-consts.js。届く途中の損失の知らせと AI どうしの講和の申し入れ。回 FU4)
 - EDITIONS.game.battle (pos・luck。艦隊戦の補正。台帳の C27・C28。回 FU2)。EDITIONS.sim.battle も同じ名前で CDB90 の値
 - saveField: designs (船と戦争。src/ship/colonists.js。国ごとの入植船団の設計 { speed, cargo, ages } (船団は 400 隻 × 500 人に固定。FU-1 の版の ships は読み捨てる)。回 FU3・B-033・FU-2。`docs/colony.md`)
+- saveField: xrec (画面と最初の体験 (core に置く)。src/core/export-rec.js。データの書き出しの記録: 国 × 年などの表の行と、その年の途中の足し上げ。画面の版の試合だけ。回 GA11・B-196)
 
 ### 画面と最初の体験
 

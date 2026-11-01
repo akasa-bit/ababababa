@@ -329,6 +329,7 @@ function updateSpeedButtons() {
 }
 window.addEventListener('keydown', (e) => {
   if (app.homeOpen) { if (e.key === 'Escape') closeHome(); return; }
+  if (app.regimePick) { if (e.key === 'Escape') { $('regimebox').hidden = true; app.regimePick = null; } return; } // 型を選ぶ窓 (回 GA11)
   if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
   if (e.key === ' ') { setSpeed(app.speed ? 0 : app.lastSpeed || 1); e.preventDefault(); }
   else if (e.key >= '1' && e.key <= String(SPEEDS.length)) setSpeed(SPEEDS[Number(e.key) - 1]);

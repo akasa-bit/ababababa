@@ -46,6 +46,7 @@
     let changed = false;
     this.stepping = true; // 試合を進めているあいだ (受注残の記録など、画面からの確かめでは動かさないものに使う)
     while (dt > 1e-9) {
+      if (this.xrec) xrecTick(this); // データの書き出しの記録 (画面の版だけ。年の切れ目で 1 年の表の行を足す。core/export-rec.js・回 GA11・B-196)
       const h = Math.min(STEP, dt);
       dt -= h;
       // 1歩の前の一覧 (写しは取らず、配列と件数を覚える。これらの一覧は末尾への追加か、別の配列への置き換えでしか変わらないので、

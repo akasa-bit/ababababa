@@ -93,6 +93,37 @@ label.check.auto { display:inline-flex; gap:4px; align-items:center; font-size:1
 #netbox[hidden] { display:none; }
 #treatybox { position:fixed; inset:0; z-index:36; background:rgba(5,7,13,.9); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
 #treatybox[hidden] { display:none; }
+/* 型を選ぶ窓 (回 GA11・B-197。W3-Q10 = e): 左に型の一覧、右にいまの型と選んだ型。縦の画面では上下 */
+#regimebox { position:fixed; inset:0; z-index:36; background:rgba(5,7,13,.92); overflow:auto; padding:24px max(16px, 3vw); }
+#regimebox[hidden] { display:none; }
+/* データを書き出す窓 (回 GA11・B-196) */
+#xportbox { position:fixed; inset:0; z-index:36; background:rgba(5,7,13,.92); overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
+#xportbox[hidden] { display:none; }
+#xportbox .card { width:min(620px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 22px; }
+#xportbox .tbls { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:6px; margin:8px 0; } #xportbox .tbls button { text-align:left; margin:0; min-height:44px; } #xportbox .tbls small { display:block; opacity:.8; font-size:var(--fs1); }
+#xportbox .row { display:flex; gap:8px; flex-wrap:wrap; }
+#regimebox .card { max-width:1180px; margin:0 auto; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 18px; }
+#regimebox .rtop { display:flex; justify-content:space-between; align-items:center; gap:8px; } #regimebox h2 { margin:0; font-size:16px; } #regimebox h3 { margin:2px 0 6px; font-size:14px; }
+#regimebox .rgrid { display:grid; grid-template-columns:minmax(260px, 380px) minmax(0, 1fr); gap:14px; margin-top:8px; }
+#regimebox .rlist { display:flex; flex-direction:column; gap:2px; max-height:70vh; overflow-y:auto; padding-right:4px; }
+#regimebox .rf { color:var(--muted); font-size:var(--fs1); margin:8px 0 2px; display:flex; align-items:center; gap:4px; }
+#regimebox .ri { display:flex; justify-content:space-between; align-items:center; gap:8px; text-align:left; min-height:40px; padding:4px 8px; margin:0; }
+#regimebox .ri .rn { flex:1; min-width:0; font-size:12px; } #regimebox .ri .rv { display:flex; align-items:center; gap:6px; font-size:var(--fs1); color:var(--muted); white-space:nowrap; }
+#regimebox .ri.on { outline:2px solid var(--accent); outline-offset:-2px; } #regimebox .ri.cur .rn { color:var(--accent); }
+#regimebox .rcmp { display:grid; grid-template-columns:1fr 1fr; gap:12px; align-content:start; min-width:0; }
+#regimebox .rcard { border:1px solid var(--line); border-radius:8px; padding:10px 12px; min-width:0; } #regimebox .rcard.sel { border-color:var(--accent); } #regimebox .rcard.hint { display:flex; align-items:center; justify-content:center; text-align:center; }
+#regimebox .rcard .tbl td:last-child { text-align:right; white-space:nowrap; }
+@media (max-width: 900px), (orientation: portrait) { #regimebox .rgrid { grid-template-columns:minmax(0, 1fr); } #regimebox .rcmp { order:-1; } #regimebox .rlist { max-height:none; } }
+@media (max-width: 600px) { #regimebox .rcmp { grid-template-columns:minmax(0, 1fr); } }
+/* 主権の束の色の帯 (W3-Q11 = c): 宗 = 宗主 (白)・従 = 従属国 (青)・分 = 半々。約定と実際がずれたマスは赤い枠 */
+.band { display:inline-flex; flex-direction:column; gap:2px; vertical-align:middle; } .band .bl { display:inline-flex; align-items:center; gap:2px; }
+.band .bn { font-size:var(--fs1); color:var(--muted); width:2.8em; } .band.sm .bn { display:none; }
+.band .bd { display:inline-block; width:14px; height:12px; border-radius:2px; border:1px solid var(--line); box-sizing:border-box; }
+.band.sm .bd { width:8px; height:7px; }
+.bd.S { background:var(--own); } .bd.V { background:var(--info); } .bd.M { background:linear-gradient(135deg, var(--own) 50%, var(--info) 50%); }
+.bd.x { outline:2px solid var(--enemy); outline-offset:0; }
+.regimes .rcur { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; }
+p.legend { display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; }
 #treatybox .card { width:min(560px,100%); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 22px; }
 #treatybox .terms { display:flex; flex-direction:column; gap:4px; margin:8px 0; }
 #treatybox .terms button { text-align:left; min-height:40px; } #treatybox .terms button.on { outline:2px solid var(--accent); }
@@ -519,6 +550,7 @@ h1, #empire h2, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url(#wo
       <div id="menu" hidden>
         <button id="homebtn">ホーム</button>
         <button id="savenow">セーブ</button>
+        <button id="xportbtn" title="この試合の統計の表 (国 × 年など) を CSV でこの端末に保存する">データを書き出す</button>
         <button id="sigbtn" title="地図に光速の通信 (物資移送要求・指令・朝貢・送金) をどう描くか">通信: 表示しない</button>
         <button id="spectatebtn" title="光の遅れなしに実際の様子を見る。地球政府も自動で動く">観戦</button>
         <button id="fxbtn" title="文字がときどき色ずれしてぶれる">画面の動き: 入</button>
@@ -573,6 +605,8 @@ h1, #empire h2, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url(#wo
   <div id="curtain" hidden></div>
   <div id="netbox" hidden></div>
   <div id="treatybox" hidden></div>
+  <div id="regimebox" hidden></div>
+  <div id="xportbox" hidden></div>
   <div id="endbox" hidden></div>
   <div id="memobox" hidden>
     <div class="tags"><button data-tag="bored">退屈</button><button data-tag="confused">分からない</button><button data-tag="torn">迷う</button><button data-tag="fun">面白い</button></div>

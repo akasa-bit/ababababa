@@ -51,6 +51,7 @@ const app = {
 function newGame(seed, kind = 'real', gen = GALAXY_GEN) {
   const galaxy = generateGalaxy({ seed, starCount: 400, meanSpacing: 4, kind, gen });
   app.game = new Game(galaxy);
+  app.game.xrec = xrecNew(); // データの書き出しの記録 (回 GA11・B-196。セーブを読むときは restore がセーブの記録に置き換える)
   app.sel = { sys: 0, body: null };
   try { const q = new URLSearchParams(location.search); q.set('seed', seed); history.replaceState(null, '', `?${q}`); } catch { /* 埋め込み環境では無視 */ }
   galaxyView.fit();

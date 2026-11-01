@@ -129,22 +129,31 @@ function typeExtras(g, id, k, cur, B) {
   if (B.fact[BUNDLE_ITEMS.indexOf('appt')] !== 'V') out.push(TR`統治者の任免: 実態で任免が「${BUNDLE_CODES[B.fact[BUNDLE_ITEMS.indexOf('appt')]]}」なので、現地の統治者を替えられる (実態は約定どおりに戻り、エリートは協力から。忠誠度 −${H33.depose})。${btn('depose', '1', TR('統治者を替える (改易・廃位)'))}`);
   return out.length ? `<br>${out.join('<br>')}<br>` : '';
 }
-// 統治体制を選ぶ表: いまの型と、型ごとの離反の起きやすさ (いま変えたら)・朝貢・忠誠度の目標の差を、家族ごとに畳んで並べる
+// 主権の束の色の帯 (B-197。W3-Q11 = c): 約定と実際の 2 本を 8 マスで描き、握る側の色で塗る (宗 = 宗主・分 = 分け合う・従 = 従属国)。約定と実際がずれたマスは赤い枠
+function bundleBand(law, fact, small = false) {
+  const cell = (c, i, other) => `<i class="bd ${c}${other !== undefined && other !== c ? ' x' : ''}" title="${esc(TX(BUNDLE_LABELS[BUNDLE_ITEMS[i]]))}: ${esc(TX(BUNDLE_HOLDER[c]))}"></i>`;
+  const line = (label, b, o) => `<span class="bl"><span class="bn">${label}</span>${[...b].map((c, i) => cell(c, i, o?.[i])).join('')}</span>`;
+  return `<span class="band${small ? ' sm' : ''}">${line(TR('約定'), law, fact)}${line(TR('実際'), fact, law)}</span>`;
+}
+const BUNDLE_HOLDER = { S: '宗主が握る', M: '分け合う', V: '従属国が握る' };
+function bandLegend() {
+  return TR`<p class="muted legend"><span class="band sm"><span class="bl"><i class="bd S"></i></span></span>宗主が握る <span class="band sm"><span class="bl"><i class="bd M"></i></span></span>分け合う <span class="band sm"><span class="bl"><i class="bd V"></i></span></span>従属国が握る <span class="band sm"><span class="bl"><i class="bd S x"></i></span></span>約定と実際がずれている。8 マスは左から ${BUNDLE_ITEMS.map((it) => BUNDLE_LABELS[it]).join('・')}</p>`;
+}
+// 型ごとの数 (いまの型・選んだ型を比べる): 離反の起きやすさ (いま変えたときの見込み)・朝貢・忠誠度・変える損・独立のうち戦争・指令。実態は直轄にするとすべて宗、ほかの型はいまの実態を引き継ぐ (setRegime)
+function regimeFacts(g, id, k, cur, r) {
+  const R = REGIMES[r], B = g.bundleOf(k);
+  const t = g.knownSecessionTerms(id, r);
+  const hp = t ? hazardYear(hazardOf(t)) : 0;
+  const drop = Math.max(0, REGIMES[cur].rank - R.rank);
+  const law = r === cur ? B.law : R.law, fact = r === cur ? B.fact : r === 'direct' ? REGIMES.direct.fact : B.fact;
+  return { R, hp, drop, law, fact, loy: `${R.loyalty > 0 ? '+' : R.loyalty < 0 ? '−' : '±'}${Math.abs(R.loyalty)}` };
+}
+// 星系の欄の統治体制: いまの型 (数と束の帯) と「型を選ぶ」ボタン。主権の束の表・型ごとの仕組み・現地のエリート・史料は「詳しく」に畳む (B-197。W3-Q10 = e)
 function regimeBox(g, id, k, cur, sending, autonomy) {
   const c = g.pcCost('rule', { sys: id });
-  const full = g.directPlanned() >= g.directMax();
-  const row = (r) => {
-    const R = REGIMES[r];
-    const t = g.knownSecessionTerms(id, r);
-    const hp = t ? hazardYear(hazardOf(t)) : 0;
-    const drop = Math.max(0, REGIMES[cur].rank - R.rank);
-    const why = r === cur ? TR('選択中') : sending ? TR('送信中') : c > g.pc ? TR('政治力不足') : r === 'direct' && autonomy ? TR('自治中') : r === 'direct' && full ? TR`上限 ${g.directMax()}` : '';
-    const loy = `${R.loyalty > 0 ? '+' : R.loyalty < 0 ? '−' : '±'}${Math.abs(R.loyalty)}`;
-    return TR`<div class="rg"><div class="rh"><div><b>${ico(`rg-${r}`)}${esc(R.label)}</b><br><span>離反 年${pctH(hp)}・朝貢 ${pct(R.tribute)}・忠誠度 ${loy}</span>${drop ? TR`<br><span class="bad">変えると忠誠度 −${Math.round(HAZARD.revoke * drop)} (自治を狭める)</span>` : ''}</div>
-      <button data-act="rule" data-sys="${id}" data-value="${r}" ${why ? 'disabled' : ''}>${why || TR('変える')}</button></div><p>${esc(R.note)}</p></div>`;
-  };
   const C = REGIMES[cur];
   const B = g.bundleOf(k);
+  const F = regimeFacts(g, id, k, cur, cur);
   const talk = !k.direct && !g.requests.some((q) => q.kind === 'order' && q.act === 'bundle' && Number(q.d.sys) === id);
   const pick = (it, i) => `<select data-act="bundle" data-sys="${id}" data-item="${it}" ${talk && g.pcCost('bundle', { sys: id }) <= g.pc ? '' : 'disabled'}>${['S', 'M', 'V'].map((x) => `<option value="${x}" ${x === B.law[i] ? 'selected' : ''}>${BUNDLE_CODES[x]}</option>`).join('')}</select>`;
   const gap = bundleGap(B.law, B.fact);
@@ -152,10 +161,48 @@ function regimeBox(g, id, k, cur, sending, autonomy) {
     <p class="muted">宗 = 宗主が握る・分 = 分け合う・従 = 従属国が握る。法 = 約定の文、実態 = 実際の力関係。法と実態の差 <b class="${gap > C.gap0 ? 'bad' : ''}">${gap} 項目</b> (この型の始め ${C.gap0}・歴史の平均 ${C.gap.toFixed(1)})。型の始めより 1 項目増えるごとに離反が ${GAP_HR.toFixed(2)} 倍起きやすい (事例 131 件)。
     ${k.direct ? '' : typeExtras(g, id, k, cur, B)}
     ${k.direct ? '' : TR`現地のエリート: <b class="${k.elite === 'resist' ? 'bad' : ''}">${ELITE_LABEL[k.elite || 'bargain']}</b> (忠誠度 ${BUNDLE.coop} 以上で協力して実態が約定へ寄り、${BUNDLE.resist} 未満で抵抗して従属国の側へ寄る)。約定の項目を変えるのは光速の指令 (政治力 ${g.pcCost('bundle', { sys: id })})`}</p>`;
-  const groups = [[TR('いまの型と直轄'), ['direct', 'encomienda', cur].filter((r, i, a) => a.indexOf(r) === i)], ...Object.entries(VASSAL_FAMILIES).map(([f, label]) => [label, REGIME_ORDER.filter((r) => /^T\d\d$/.test(r) && REGIMES[r].family === f && r !== cur), f])].filter(([, rs]) => rs.length);
-  const rows = groups.map(([label, rs, f], i) => (i === 0 ? rs.map(row).join('') : `<details class="note" data-h="fam-${esc(label)}" ${app.helpOpen?.has(`fam-${label}`) ? 'open' : ''}><summary>${ico(`fam-${f}`)}${esc(label)} (${rs.length})</summary>${rs.map(row).join('')}</details>`)).join('');
-  return TR`${histBox(g, cur)}<div class="regimes"><p class="muted">統治体制 (従属国の型) — いまは <b>${esc(C.label)}</b>。変えるのは光速の指令 (政治力 ${c}・届くまで ${g.lightDelay(id).toFixed(1)} 年)。離反は、いま変えたときの見込み</p>${bundle}${rows}</div>
-    <details class="note"><summary>数値の根拠</summary>${REGIME_ORDER.map((r) => `<p><b>${ico(`rg-${r}`)}${esc(REGIMES[r].label)}</b>: ${esc(REGIMES[r].why)}</p>`).join('')}<p class="muted">離反の起きやすさ = 基準 × 型の倍率 × 通信の遅れ ÷ 1 世代 (${GENERATION_YEARS} 年) × 人口の比 × 忠誠度。型の倍率は法と実態の差から (植民地は COLDAT の推定)。自治を狭める変更は、法の束の点が下がった分だけ忠誠度が下がる (2 点で −${HAZARD.revoke})。</p></details>`;
+  const why = sending ? TR('送信中') : '';
+  return TR`<div class="regimes"><div class="rcur"><div><b>${ico(`rg-${cur}`)}${esc(C.label)}</b><br><span class="muted">離反 年${pctH(F.hp)}・朝貢 ${pct(C.tribute)}・忠誠度 ${F.loy}</span></div>${bundleBand(B.law, B.fact)}</div>
+    <div class="btns"><button data-act="regimepick" data-sys="${id}">${ico(`fam-${C.family}`)}型を選ぶ<small>${why || TR`21 の型を比べる・変えるのは光速の指令 (政治力 ${c}・届くまで ${g.lightDelay(id).toFixed(1)} 年)`}</small></button></div>
+    <details class="note" data-h="regime-more" ${app.helpOpen?.has('regime-more') ? 'open' : ''}><summary>詳しく (主権の束・現地のエリート・史料)</summary>${bundle}${histBox(g, cur)}</details></div>`;
+}
+// 型を選ぶ窓 (B-197。W3-Q10 = e): 左に型の一覧 (家族ごと)、右にいまの型と選んだ型を並べる。縦の画面では上下
+function regimePickHtml(g, id, sel) {
+  const k = g.known(id);
+  if (!k || k.lord === null || k.lord === undefined) return '';
+  const cur = g.knownRegime(k);
+  const sending = g.requests.some((q) => q.kind === 'order' && q.act === 'rule' && Number(q.d.sys) === id);
+  const autonomy = (k.autonomy || 0) > g.year;
+  const c = g.pcCost('rule', { sys: id });
+  const full = g.directPlanned() >= g.directMax();
+  sel = REGIMES[sel] ? sel : cur;
+  const item = (r) => {
+    const F = regimeFacts(g, id, k, cur, r);
+    return `<button class="ri${r === sel ? ' on' : ''}${r === cur ? ' cur' : ''}" data-rp="${r}"><span class="rn">${ico(`rg-${r}`)}${esc(F.R.label)}${r === cur ? TR(' (いま)') : ''}</span><span class="rv">${bundleBand(F.law, F.fact, true)}<span>${TR`離反 ${pctH(F.hp)}`}</span></span></button>`;
+  };
+  const fams = [['now', TR('いまの型と直轄'), ['direct', 'encomienda', cur].filter((r, i, a) => a.indexOf(r) === i)], ...Object.entries(VASSAL_FAMILIES).map(([f, label]) => [f, label, REGIME_ORDER.filter((r) => /^T\d\d$/.test(r) && REGIMES[r].family === f && r !== cur)])].filter(([, , rs]) => rs.length);
+  const list = fams.map(([f, label, rs]) => `<div class="rf">${f === 'now' ? '' : ico(`fam-${f}`)}${esc(label)}</div>${rs.map(item).join('')}`).join('');
+  const card = (r, head) => {
+    const F = regimeFacts(g, id, k, cur, r);
+    const whyNot = r === cur ? TR('いまの型') : sending ? TR('送信中') : c > g.pc ? TR('政治力不足') : r === 'direct' && autonomy ? TR('自治中') : r === 'direct' && full ? TR`直轄の上限 ${g.directMax()}` : '';
+    const D = REGIMES[cur];
+    const diff = (a, b, fmt, good) => (r === cur || a === b ? '' : ` <span class="${(good ? a > b : a < b) ? 'hz' : 'bad'}">(${a > b ? '+' : '−'}${fmt(Math.abs(a - b))})</span>`);
+    const Fc = regimeFacts(g, id, k, cur, cur);
+    return TR`<div class="rcard${r === cur ? '' : ' sel'}"><div class="muted">${head}</div><h3>${ico(`rg-${r}`)}${esc(F.R.label)}</h3>${bundleBand(F.law, F.fact)}
+      <table class="tbl"><tr><td>離反の起きやすさ (年)</td><td>${pctH(F.hp)}${diff(F.hp, Fc.hp, pctH, false)}</td></tr>
+      <tr><td>朝貢</td><td>${pct(F.R.tribute)}${diff(F.R.tribute, D.tribute, pct, true)}</td></tr>
+      <tr><td>忠誠度 (型の分)</td><td>${F.loy}</td></tr>
+      ${F.drop ? TR`<tr><td>変えると忠誠度</td><td class="bad">−${Math.round(HAZARD.revoke * F.drop)}</td></tr>` : ''}
+      <tr><td>独立のうち戦争になる割合</td><td>${pct(F.R.war)}</td></tr>
+      <tr><td>指令</td><td>${F.R.noOrders ? TR('受けない') : r === 'direct' ? TR('かならず従う') : TR('ふつう')}</td></tr></table>
+      ${r === 'encomienda' ? TR`<p class="note">住民に労役を課す: 採掘 +30%・人口の増え方 ×0.7。やめたあとも税収が長く減る</p>` : ''}
+      ${r === cur ? '' : `<div class="btns"><button class="big" data-act="rule" data-sys="${id}" data-value="${r}" ${whyNot ? 'disabled' : ''}>${whyNot || TR`この型に変える<small>光速の指令 (政治力 ${c}・届くまで ${g.lightDelay(id).toFixed(1)} 年)</small>`}</button></div>`}
+      <details class="note"><summary>数値の根拠</summary><p class="muted">${esc(F.R.why)}</p></details></div>`;
+  };
+  return TR`<div class="card"><div class="rtop"><h2>${ico(`fam-${REGIMES[cur].family}`)}型を選ぶ — ${esc(g.system(id).name)}</h2><button data-rp="close" class="ghost">閉じる</button></div>
+    <p class="muted">離反の起きやすさは、この星系をいまその型にしたときの見込み (地球に届いている記録で)。帯は変えたあとの約定と実際 (直轄にすると実際はすべて宗主、ほかの型はいまの実際を引き継ぐ)</p>
+    <div class="rgrid"><div class="rlist">${list}</div><div class="rcmp">${card(cur, TR('いまの型'))}${sel === cur ? TR`<div class="rcard hint muted">左の一覧から型を選ぶと、ここに並べて比べる</div>` : card(sel, TR('選んだ型'))}</div></div>
+    ${bandLegend()}<p class="muted">離反の起きやすさ = 基準 × 型の倍率 × 通信の遅れ ÷ 1 世代 (${GENERATION_YEARS} 年) × 人口の比 × 忠誠度。型の倍率は法と実態の差から (植民地は COLDAT の推定)。自治を狭める変更は、法の束の点が下がった分だけ忠誠度が下がる (2 点で −${HAZARD.revoke})。</p></div>`;
 }
 // 情報の古さの表示
 function ageBadge(g, id) {

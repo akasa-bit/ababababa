@@ -7,6 +7,7 @@
 // 4. 貸借: 銀行の預金 (負債) = 部門の預金の合計、銀行の準備 = 預金 − 貸出 − 国債
 // 5. 政策の出来事: わざと消費税を変えた年に、地球の国の ctax の行が 1 つ出る
 // 6. 戦争: どの戦争も参加国が 2 つ、始まり ≤ 終わり
+// 7. ゲームの中の記録 (回 GA11・B-196。core/export-rec.js の xrec): 道具と同じ銀河を 15 年回して、表の行が道具の行と同じ。セーブして読み込んでも続きが足される
 // 使い方: node tools/tests/export.js [シード] [年数]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
@@ -19,7 +20,7 @@ const X = require('../export');
 
 const [seed = '2', years = '120'] = process.argv.slice(2);
 const sim = H.load(process.env.HTML ? { src: process.env.HTML } : {});
-const rows = Object.fromEntries(Object.keys(X.COLS).map((k) => [k, []]));
+const rows = Object.fromEntries(Object.keys(X.cols(sim)).map((k) => [k, []]));
 const g = X.play(sim, seed, Number(years), 6, (t, r) => rows[t].push(r), (gg, y) => { if (y === 10) gg.setFiscal({ ctax: 0.05 }, true); if (y === 30) { gg.setSpectate(false); gg.setFiscal({ soe: 0.3 }, true); } if (y === 70) gg.setFiscal({ soe: 0.1 }, true); });
 const fails = [];
 const check = (ok, msg) => { if (!ok) fails.push(msg); };
@@ -29,7 +30,7 @@ const sum = (xs) => xs.reduce((a, v) => a + v, 0);
 
 // 1. コードブック
 const book = fs.readFileSync(path.join(__dirname, '..', '..', 'docs', 'export.md'), 'utf8');
-const cols = { ...X.COLS, prices: ['galaxy', 'year', 'system', 'country', ...sim.tables.RES] };
+const cols = X.cols(sim);
 const missing = Object.entries(cols).flatMap(([t, cs]) => cs.filter((c) => !book.includes(`\`${c}\``)).map((c) => `${t}.${c}`));
 check(!missing.length, `コードブックにない列: ${missing.join('・')}`);
 
@@ -63,6 +64,27 @@ for (const w of rows.wars) {
   if (ps.length !== 2 || (w.EndYear !== '' && w.EndYear < w.StartYear)) { fails.push(`戦争 ${w.WarNum} の形が違う`); break; }
 }
 
+// 7. ゲームの中の記録
+{
+  const sim2 = H.load(process.env.HTML ? { src: process.env.HTML } : {});
+  const C = X.cols(sim2), Y = 15, want = Object.fromEntries(Object.keys(C).map((k) => [k, []]));
+  X.play(sim2, seed, Y, 6, (t, r) => want[t].push(r));
+  const sim3 = H.load(process.env.HTML ? { src: process.env.HTML } : {});
+  const gg = sim3.newGame(seed, { nations: 6 });
+  gg.xrec = sim3.evaluate('xrecNew')();
+  sim3.run(gg, 10);
+  const d = JSON.parse(JSON.stringify(sim3.buildSave(gg)));
+  const g2 = new sim3.Game(sim3.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: sim3.GALAXY_GEN }));
+  g2.restore(d);
+  sim3.run(g2, Y - 10);
+  sim3.run(g2, 0.25); // 最後の年の切れ目は、次の 1 歩の始めに足す
+  for (const t of ['sna', 'gfs', 'balance', 'rates', 'prices', 'trade', 'policy']) {
+    const a = want[t].map((r) => JSON.stringify(C[t].map((c) => r[c] ?? null))), b = (g2.xrec.rows[t] || []).map((r) => JSON.stringify(r));
+    check(a.length === b.length && a.every((x, i) => x === b[i]), `ゲームの中の記録の ${t} が道具と違う (道具 ${a.length} 行・ゲーム ${b.length} 行)`);
+  }
+  const wantWars = want.wars.length, gotWars = sim3.evaluate('xrecCsv')(g2, 'wars').trim().split('\n').length - 1;
+  check(wantWars === gotWars, `ゲームの中の記録の戦争 ${gotWars} が道具 ${wantWars} と違う`);
+}
 console.log(`表の行: ${Object.entries(rows).map(([k, v]) => `${k} ${v.length}`).join('・')}`);
 console.log(`輸出の合計 ${P6.toFixed(1)} cr・戦争 ${rows.wars.length}・政策の出来事 ${rows.policy.length}`);
 console.log(fails.length ? `データの書き出し 不合格\n${fails.join('\n')}` : 'データの書き出し 合格');
