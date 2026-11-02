@@ -1,0 +1,30 @@
+[
+ {
+  "file": "atop5_1a.csv",
+  "url": "http://www.atopdata.org/uploads/6/9/1/3/69134503/atop_5.1__.csv_.zip#ATOP 5.1 (.csv)/atop5_1a.csv",
+  "fetched": "2026-11-01T23:27:06Z",
+  "sha256": "eafd146fa5c5bc2737ae829288c87d01c990a55fbc82dcc2dc08b94c0d7b5b7d",
+  "lines": 790
+ },
+ {
+  "file": "atop5_1m.csv",
+  "url": "http://www.atopdata.org/uploads/6/9/1/3/69134503/atop_5.1__.csv_.zip#ATOP 5.1 (.csv)/atop5_1m.csv",
+  "fetched": "2026-11-01T23:27:06Z",
+  "sha256": "0e3c803f65275c3cb9309d08c04710416dff16aee936c8b4f887c7b67ee5b55b",
+  "lines": 2511
+ },
+ {
+  "file": "atop_5_1_codebook.pdf",
+  "url": "http://www.atopdata.org/uploads/6/9/1/3/69134503/atop_5_1_codebook.pdf",
+  "fetched": "2026-11-01T23:27:06Z",
+  "sha256": "10143c69d152cc4a4360c9056faa869b401251dbc30d86c01e90619cfb47add7",
+  "lines": 4434
+ },
+ {
+  "file": "Archigos_4.1_stata14.dta",
+  "url": "https://www.rochester.edu/college/faculty/hgoemans/Archigos_4.1_stata14.dta",
+  "fetched": "2026-11-01T23:27:07Z",
+  "sha256": "3e3b4092a7ac5a7e78cd86df6e6287c69027bf6fe60c9396adf136a39b1943ad",
+  "lines": 390
+ }
+]
