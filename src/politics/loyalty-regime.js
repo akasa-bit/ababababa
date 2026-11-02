@@ -351,7 +351,7 @@
     const p = this.declareChance(gv);
     if (this.rand() < p) this.declareIndependence(id);
     else {
-      gv.unrest = { stage: 1, since: this.year, at: Math.round(loyal) };
+      gv.unrest = { stage: 1, since: this.year + BACKOFF_YEARS, at: Math.round(loyal) }; // 要求は since + UNREST_YEARS 年 (補正 C22)
       this.event('politics', id, JA`${name} は最後通牒の期限が来たが、独立を思いとどまった (恐怖度 ${Math.round(gv.fear || 0)}・友好度 ${Math.round(gv.friend || 0)}・忠誠度 ${Math.round(loyal)})。不満はまだ残っている`);
     }
   }
