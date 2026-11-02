@@ -10,7 +10,7 @@ const { chromium } = require('playwright');
 (async () => {
   const b = await chromium.launch({ ...(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {}), args: ['--no-sandbox'] });
   const p = await b.newPage({ viewport: { width: 1280, height: 780 } }); const errs = []; p.on('pageerror', (e) => errs.push(e.message + ' ' + (e.stack || '').split('\n')[1]));
-  await p.addInitScript(() => { try { localStorage.clear(); } catch {} });
+  await p.addInitScript(() => { try { localStorage.clear(); localStorage.setItem('moribin-evprefs', JSON.stringify({ popup: false })); } catch {} }); // 重大な知らせの窓は切る (出ると時間が止まり、自動の交代が来ない。窓は newspop で見る)
   await p.goto(`file://${HTML}?seed=11`); await p.waitForFunction(() => window.__app && __app.game);
   await p.waitForTimeout(800);
   await p.evaluate(() => { if ($('home').hidden) openHome(); });

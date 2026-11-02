@@ -3,6 +3,7 @@
 //   2. 首都の資金が足りない年は、送れる分だけ送る
 //   3. 0 を決めると止まる。ほかの国の星系には決められない
 //   4. 決めるときは政治力 (ふつうの資金援助と同じ)、止めるときは要らない。セーブと読み込みで設定が残る
+//   5. 首都の税収の割合 (%) でも決められ、その年の額は税収の均し (gv.ledger.tax) × 割合 (KE4-Q1 = c)
 // 使い方: node tools/tests/standing.js [シード]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 exports.ci = [{ args: ['3'], judge: (o) => (o.includes('定期の資金援助 合格') ? '' : '定期の資金援助の結果が違う') }];
@@ -56,6 +57,17 @@ const n2 = sent().length;
 g.grantsYearly();
 if (sent().length !== n2) fails.push('止めたのに送った');
 if (other !== undefined && g.command('grantset', { sys: other, amt: 100 }).ok) fails.push('ほかの国の星系に決められた');
-console.log(JSON.stringify({ to, sent: [q.length, q2.length] }));
+// 5. 税収の割合で決める
+g.cash('test', 1e5, { gov: g.cap });
+g.pc = 100;
+const rp = g.command('grantset', { sys: to, amt: 5, unit: 'pct' });
+if (!rp.ok || g.me.standing?.[to]?.pct !== 5) fails.push(`税収の割合で決められない (${rp.reason || JSON.stringify(g.me.standing?.[to])})`);
+const tax = Math.max(0, g.gov(g.cap).ledger?.tax || 0);
+const n3 = sent().length;
+g.grantsYearly();
+const q3 = sent().slice(n3);
+if (tax >= 20 && (q3.length !== 1 || Math.abs(q3[0].amt - 0.05 * tax) > 1e-6)) fails.push(`税収の 5% を送っていない (税収 ${tax.toFixed(1)}・送った ${q3.map((x) => x.amt.toFixed(1)).join(',')})`);
+if (g.command('grantset', { sys: to, amt: 80, unit: 'pct' }).ok && g.me.standing?.[to]?.pct > 50) fails.push('税収の割合の上限 (50%) を超えて決められた');
+console.log(JSON.stringify({ to, sent: [q.length, q2.length, q3.length], tax: Math.round(tax), pct5: q3[0]?.amt }));
 console.log(fails.length ? `定期の資金援助 不合格: ${fails.join('・')}` : '定期の資金援助 合格');
 process.exit(fails.length ? 1 : 0);

@@ -129,7 +129,12 @@
       this.asPlayer(pi, () => {
       // 艦隊は地球の国の軍なので、その星系の政府の忠誠度に関係なく命令に従う。要求への返事はかならず受け取る
       const ob = ['peace', 'fleet', 'redirect', 'fleetclear', 'decide'].includes(q.act) ? { ok: true } : this.obeys(q.to, q.act);
-      const r = ob.ok ? this.exec(q.act, q.d) : ob;
+      // 建設の指令 (採掘基地・施設・交易路・軍艦・要塞) の費用は、指令を出した国の首都が払う (依頼 KE-3「不足物資の購入資金を指令を出した側が」・KE13-Q4 = b)。
+      // 人間のプレイヤーの指令だけ (AI の国の指令は前のまま、届いた先の政府が払う)。届いた先がもう同じ国でなければ、届いた先の政府が払う (前と同じ)
+      const by = BUILD_ORDERS.has(q.act) && this.players[pi]?.human && this.isColonized(q.from) && this.realmOf(q.to) === this.realmOf(q.from) ? q.from : undefined;
+      this.orderBy = by;
+      let r;
+      try { r = ob.ok ? this.exec(q.act, q.d) : ob; } finally { this.orderBy = undefined; }
       this.message(r.ok ? JA`指令「${q.label}」が ${this.system(q.to).name} に届き、実行された` : JA`指令「${q.label}」は ${this.system(q.to).name} で実行できなかった: ${r.reason}`, q.to);
       });
       this.msgTo = undefined;

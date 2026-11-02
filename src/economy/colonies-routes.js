@@ -84,7 +84,7 @@
   routeUpCost(r) { return { credits: 150 * r.lv, metal: 50 * r.lv }; } // 交易路の拡張 = 港を広げる (船は運送業の会社が足す)
   // payer = 費用を払う政府 (ふつうは a の星系の政府。国の交易路網では首都。回 KE13)。govShips = 最初の輸送船を政府が造るか
   // (国の交易路網では造らず、交易路の持ち主の運送業の会社が次の年に自分の払いで造る。首都の資金を入植に残すため)
-  openRoute(a, b, payer = a, govShips = true) {
+  openRoute(a, b, payer = this.orderBy ?? a, govShips = true) { // 指令で引くときは、指令を出した国の首都が払う (依頼 KE-3)
     if (a === b || !this.isColonized(a) || !this.isColonized(b)) return fail('両端に入植地が必要');
     if (this.routeBetween(a, b)) return fail('開設済み');
     // 交戦中の国の星系とは新しく結べない (a が開戦の知らせを受け取ってから。既存の交易路は残る)
