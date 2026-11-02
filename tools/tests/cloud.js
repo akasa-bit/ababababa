@@ -43,7 +43,7 @@ const fake = () => {
     const c = await b.newContext({ viewport: { width: vw, height: vh } });
     await c.exposeFunction('__fbStore', store);
     const p = await c.newPage(); p.errs = []; p.on('pageerror', (e) => p.errs.push(e.message));
-    await p.addInitScript(() => { try { localStorage.clear(); } catch {} });
+    await p.addInitScript(() => { try { localStorage.clear(); localStorage.setItem('moribin-evprefs', JSON.stringify({ popup: false })); } catch {} }); // 重大な知らせの窓は切る (窓は newspop で見る)
     await p.addInitScript(fake);
     await p.goto(URL); await p.waitForFunction(() => window.__app && __app.game); await p.waitForTimeout(500);
     return p;
