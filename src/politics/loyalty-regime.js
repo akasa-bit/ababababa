@@ -280,7 +280,9 @@
   // 最後通牒の期限に独立を宣言する確率 = 恐怖度 × 友好度 × 忠誠度の倍率 (忠誠度100で半分)
   loyaltyFactor(loyalty) { return 1 - 0.5 * clamp(loyalty ?? LOYALTY_START, 0, 100) / 100; }
   // シミュレーション版は恐怖度だけで決める (忠誠度は離反のハザードにもう入っている。友好度 (貿易) が独立を妨げる大きさは測られていない)
-  declareChance(k) { return this.fearFactor(k.fear) * (ED.declareDamp ? this.friendFactor(k.friend) * this.loyaltyFactor(k.loyalty) : 1); }
+  // 型の行き着く先 (回 SE12・B-070): 史実の事例で、従属国と宗主のあいだの決着 (独立か併合) のうち独立だった割合の、事例全体との比 (REGIMES の indepK) を掛ける。
+  // 幕藩制の藩 (併合 6 件・独立 0) は 0.25 倍、植民地・委任統治領 B・C は 1.36 倍。k は星系の政府 (gv) か地球の知る記録 (known)
+  declareChance(k) { return Math.min(1, this.fearFactor(k.fear) * (ED.declareDamp ? this.friendFactor(k.friend) * this.loyaltyFactor(k.loyalty) : 1) * (REGIMES[regimeKey(k)]?.indepK ?? 1)); }
   // 主人との友好度 (0〜100): 主人筋 (主人、その主人…首都まで) との貿易 (両方向。支援として無償で受け取った物資も含む) の大きさで上下する。
   // 目標 = 50 × log10(1 + 貿易額[cr/年、ここ5年ほどの平均] / 2) (5 cr/年で約27、10で約39、20で約52、50で約71、100で約85)。年に最大10ずつ目標へ動く。
   // 反乱の確率は友好度に比例して下がる (× (1 − FRIEND_DAMP × 友好度/100)。友好度100で 0.4 倍。経済の結びつきが強くても独立した植民地はある)
