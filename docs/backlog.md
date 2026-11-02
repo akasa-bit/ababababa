@@ -65,6 +65,7 @@
 | B-143 | **済み (#312。地球の国の勝率 37.5% → 28.1%。`nations.md` の 3)**。どの国も開始の大きさを 1 (中央値) に固定する (W3-Q4 のうえで「すべての国を 1 に固定しよう」。QD-111 = c を取り消す。`docs/nations.md` の開始の大きさ・補正の台帳の C21) | `politics/nations.js`・`core/game-base.js` | B-029 | S | 政治 | `docs/requests/2026-10-31-common.md` の common-1 |
 | B-144 | **済み (回 SE10。QD-114 = c: 8 つ足して 18 個。`docs/nations.md` の 2.1。アイコンは QD-114 の 2 = 8 つとも 1 番)** 種族の特性を増やす (いまは 10 個。得る規則と失う規則を 1 つずつ)。いくつ・どんな特性かは回 SE10 の始めに聞く | `politics/nations.js`・`traits` | B-029 | M | 政治 | 同上 |
 | B-145 | **済み (回 SE11・#321・#322。R31 の差を離反の式と同じ量で数え (目標の版 30)、攻め落とした星系の型を決め直して 1.151 → 1.198。帯に届かず、ゲーム版では判定しない確認用にした (SE11-Q3 = b)。`docs/status/SE.md`)** R31 (法と実態の差 1 項目ごとの、従属関係の終わりのハザード比) を版 5 の銀河で合わせ直す: main 1.17・依頼 SE-3 のあと 1.14 (幅 1.21〜1.54。版 4 では 1.30) | `pc-vassal.js` の `GAP_HR`・`secessionTermsOf`・`tools/secession.js` | — | M | 政治 | 回 W4 の W4-Q4 = a (`docs/status/SE.md`) |
+| B-254 | **(6 波目の回 SE13。2026-11-02 のユーザーの依頼 common-11)** ゲーム版の従属国の数値を練り直す (遊びやすさ): 「独立要求が多すぎてプレイしてて快適じゃない」。人間の国に届く独立の要求の数を物差しにする (2026-11-02 の main: 地球だけ 4 銀河 × 300 年で 100 年あたり 15 件・家臣 1 つあたり 100 年に約 3 回・世紀ごとに増える)。案 (補正 C02 の hazardBase・不満から要求までの年数・のんだ/拒んだあとの間・総督の方針の既定・続報を束ねる など) ごとに効き目を測り、表にして選んでもらってから EDITIONS.game と補正の台帳に入れる。シミュレーション版の値は変えない | `politics/loyalty-regime.js` (`raiseDemand`・`unrestYearly`)・`core/base.js` の `EDITIONS.game`・`docs/game-plan.md` の 4 | B-070・B-110 | M | 政治 | `docs/requests/2026-11-01-common.md` の common-11 |
 
 ## 船と戦争
 
@@ -201,7 +202,7 @@
 | B-107 | 複数の形の目標の事前登録・ABC-SMC・エミュレータ・Sobol で、結果を分布で出す | `tools/`・`targets/` | B-006 (手法を共有) | L | 道具と検証 | `game-plan.md` の 6 |
 | B-108 | 較正に使わないデータと、電信・蒸気船の自然実験で確かめる | `tools/`・`data/` | 公開のあと | L | 道具と検証 | `game-plan.md` の 6 |
 | B-109 | 通信の遅れを連続に動かす事前登録の実験と報告書 | `tools/headless.js`・`EDITIONS` | B-072 | M | 道具と検証 | `game-plan.md` の 6 |
-| B-110 | 台帳の補正を外したシミュレーション版を組み立て、2 つの版の違いを測り直す。ゲーム版で入れた仕組みの使い方を決める | `EDITIONS` (`sim`)・`tools/build.mjs --sim` | 公開のあと | M | 道具と検証 | `game-plan.md` の 6・`reality-check.md` |
+| B-110 | **(6 波目の回 FU7 に前倒し。2026-11-02 のユーザーの依頼 common-11「シミュレーションにも同じシステムを導入」。従属国の目標をシミュレーション版でも測る)** 台帳の補正を外したシミュレーション版を組み立て、2 つの版の違いを測り直す。ゲーム版で入れた仕組みの使い方を決める | `EDITIONS` (`sim`)・`tools/build.mjs --sim` | B-070 (回 SE12) | M | 道具と検証 | `game-plan.md` の 6・`reality-check.md` |
 | B-111 | ODD・TRACE の文書 | 新しい (`docs/`) | 公開のあと | M | 外向き | `game-plan.md` の 6・`status/common.md` の 12 の 4 |
 | B-112 | ライセンス・`CITATION.cff`・DOI | 新しい | 公開のあと | S | 外向き | `game-plan.md` の 1 と 6 (G6) |
 
