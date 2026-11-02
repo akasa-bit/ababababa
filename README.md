@@ -353,7 +353,7 @@ Hearts of Iron 風に、星間マップから直接動かせる。
 
 - 作業を引き継ぐときは [docs/handoff.md](docs/handoff.md) を読む (約束・決めたこと・いまの状態・次にやること)
 - 読みやすい元のファイルは `src/index.html`。手を入れるのはこちら
-- 公開用の `index.html` (ゲーム版) は `node tools/build.mjs`、`simulation.html` (シミュレーション版) は `node tools/build.mjs --sim` で作る (シミュレーション版はレーン P だけ。最初に `cd tools && npm ci`。圧縮に python3 を使う)
+- 公開用の `index.html` (ゲーム版) は `node tools/build.mjs`、`simulation.html` (シミュレーション版) は `node tools/build.mjs --sim` で作る (どちらもリポジトリには入れず、公開のときに組み立てる。最初に `cd tools && npm ci`。圧縮に python3 を使う)
   - 版の違いは、`src/index.html` の `EDITION` の値だけ。build がこの行を版ごとに書き換えて 2 枚作る。版ごとに違う値は `EDITIONS` の表にまとめる
   - JavaScript (terser)・CSS (esbuild)・HTML を最小化し、LZMA で圧縮して、7ビットずつ文字にした 1 枚の HTML にする。開くと中の小さな展開器 (`tools/unlzma.js`) が元に戻して表示する
   - 書き出す前に、展開したものが最小化した HTML と 1 バイトずつ一致することを確かめる

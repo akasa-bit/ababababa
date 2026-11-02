@@ -35,6 +35,8 @@ jobs:
           cd tools && npm ci
           npm i --no-save playwright@1.56.1
           npx playwright install --with-deps chromium
+          # シミュレーション版の従属国の目標 (tools/tests/simvassal.js) は data/build/analyze_vassal.py で測る (numpy を使う。回 FU7)
+          python3 -c 'import numpy' 2>/dev/null || python3 -m pip install --quiet --break-system-packages numpy
       - name: 試験
         id: tests
         continue-on-error: true

@@ -394,8 +394,10 @@ const GALAXY_GEN = 5;
 // 版 3 で ±2 光年にしたのは、±17 光年の 600 系では星が多すぎて地図を操作できなかったため (ユーザーの指示)。版 5 から ±4 光年 (上)
 // ゲームの中の板はどの版でも ±GAME_SLAB 光年: 星の高さ z に GAME_SLAB ÷ slabOf(版) を掛けて詰める。地図に描く位置も、距離・光の遅れ・船の行き来も、詰めたあとの z を使う
 // (見かけの厚さと、ゲームの中の実際の厚さは同じ)
+// 縦を詰めるのはゲーム性の補正 (台帳の C07。EDITIONS.game.squashSlab)。値がなければ (シミュレーション版) 詰めず、星を取った板の高さのまま置く (回 FU7・FU7-Q2 = b)
 const GAME_SLAB = 2;
 const slabOf = (gen) => (gen >= 5 ? 4 : GAME_SLAB);
+const inSlabOf = (gen) => (ED.squashSlab ? GAME_SLAB : slabOf(gen)); // 星を置く板 (版 4 まではどちらも ±GAME_SLAB)
 const ETA_EXTRA = 0.45;
 // 星系の天体に記号 (b, c, …) と名前を付け、FGK 型の主星にはハビタブルゾーンの地球型惑星を確率 ETA_EXTRA で足す (etaKey = その乱数列の名前。null なら足さない)。
 // 実在の銀河と自動生成の銀河が使う。既知の惑星は自分の記号のまま
@@ -445,7 +447,7 @@ function generateRealGalaxy(seed, gen = 1) {
   const systems = [{ id: 0, name: sol.name, x: 0, y: 0, z: 0, stars: [{ id: 's0', name: '太陽', ...sol.star, sep: 0, phase: 0 }], bodies: sol.bodies }];
   REAL_STARS.s.forEach(([x, y, z, ja, cat, rows, pls], i) => {
     if (gen >= 3 && Math.abs(z) > slabOf(gen)) return; // 板の外の星は使わない (名前も乱数も使わない)
-    if (gen >= 3) z *= GAME_SLAB / slabOf(gen); // 縦を詰めて、ゲームの中の板 (±GAME_SLAB 光年) に入れる (版 4 までは 1 倍)
+    if (gen >= 3) z *= inSlabOf(gen) / slabOf(gen); // 縦を詰めて、ゲームの中の板 (±GAME_SLAB 光年) に入れる (版 4 までと、シミュレーション版は 1 倍)
     const name = ja || namer();
     const stars = starsOf(rng, name, rows, cat);
     const primary = stars[0];
@@ -459,7 +461,7 @@ function generateRealGalaxy(seed, gen = 1) {
     systems.push({ id: systems.length, name, cat, x, y, z, stars, bodies, real: true }); // 番号は並びの位置 (版 2 までは i + 1 と同じ)
   });
   const thin = gen >= 3;
-  const galaxy = { seed, kind: 'real', gen, systems, radius: thin ? Math.max(...systems.map((s) => GM.hypot(s.x, s.y))) : REAL_STARS.radius, slab: thin ? GAME_SLAB : REAL_STARS.slab, ...(gen >= 5 ? { srcSlab: slabOf(gen) } : {}), meanSpacing: 4 };
+  const galaxy = { seed, kind: 'real', gen, systems, radius: thin ? Math.max(...systems.map((s) => GM.hypot(s.x, s.y))) : REAL_STARS.radius, slab: thin ? inSlabOf(gen) : REAL_STARS.slab, ...(gen >= 5 ? { srcSlab: slabOf(gen) } : {}), meanSpacing: 4 };
   addExtras(galaxy);
   return galaxy;
 }
@@ -488,7 +490,7 @@ function generateGenGalaxy(seed, gen) {
     let x, y, z;
     for (let t = 0; t < 50; t++) {
       const r = R * Math.sqrt(rng.next()), th = rng.range(0, 2 * Math.PI);
-      x = r * GM.cos(th); y = r * GM.sin(th); z = rng.range(-slab, slab) * (GAME_SLAB / slab); // 実在の銀河と同じく、取る板 (±slab) から縦を詰める
+      x = r * GM.cos(th); y = r * GM.sin(th); z = rng.range(-slab, slab) * (inSlabOf(gen) / slab); // 実在の銀河と同じく、取る板 (±slab) から縦を詰める (シミュレーション版は詰めない)
       if (systems.every((o) => GM.hypot(o.x - x, o.y - y, o.z - z) >= GEN_MIN)) break;
     }
     const [, , , , cat, rows] = rng.pick(byCls[c]);
@@ -498,7 +500,7 @@ function generateGenGalaxy(seed, gen) {
     const bodies = nameBodies(name, stars, primary, maxA, generatePlanets(rng, primary, name, maxA), [], gen >= 2 ? `${seed}/gen-eta/${i}` : null);
     systems.push({ id: systems.length, name, x, y, z, stars, bodies });
   });
-  const galaxy = { seed, kind: 'gen', gen, systems, radius: Math.max(...systems.map((s) => GM.hypot(s.x, s.y))), slab: GAME_SLAB, ...(gen >= 5 ? { srcSlab: slab } : {}), meanSpacing: 4 }; // srcSlab = 星を取った板 (版 5 から。版 4 までの銀河の中身は前のまま)
+  const galaxy = { seed, kind: 'gen', gen, systems, radius: Math.max(...systems.map((s) => GM.hypot(s.x, s.y))), slab: inSlabOf(gen), ...(gen >= 5 ? { srcSlab: slab } : {}), meanSpacing: 4 }; // srcSlab = 星を取った板 (版 5 から。版 4 までの銀河の中身は前のまま)
   addExtras(galaxy);
   return galaxy;
 }

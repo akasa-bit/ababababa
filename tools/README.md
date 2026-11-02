@@ -261,7 +261,7 @@ python3 tools/gravity-analyze.py gravity.csv      # 実データと同じ data/b
 
 ## 試験 (tools/tests)
 
-シミュレーション版 (`simulation.html`) は凍結中で組み立て直さないので、`HTML=$PWD/simulation.html` の行は凍結した版を試すだけです (ゲーム版の変更は入りません)。
+シミュレーション版 (`simulation.html`) は、`node tools/build.mjs --sim` でいまの `src/` から組み立ててから `HTML=$PWD/simulation.html` で試します (回 FU7 から凍結を解いた。リポジトリには入れない)。CI の「シミュレーション版・参考」の行は `energy`・`conserve`・`physics`・`simvassal` (従属国の目標 R08・R30〜R32。`node tools/tests/simvassal.js <simulation.html> <書き出しのフォルダ> [銀河の数] [年数]`)。画面なしの道具 (`wars-headless.js`・`galaxy-race.js` など) は、環境変数 `HEADLESS_EDITION=sim` でシミュレーション版として回ります。
 
 機能が壊れていないかを確かめる試験です。どれも Playwright で公開用の HTML を開いて動かします。画面の写しは、いまのフォルダの `shots/` に書きます。
 

@@ -25,7 +25,7 @@
 - **決めたこと**: ゲーム版の `index.html` は、リポジトリに入れず (`.gitignore`)、公開 (`.github/workflows/pages.yml`) のときに `node tools/build.mjs` で組み立てる。
 - **理由**: 衝突した 20 回の取り込みのうち 16 回に組み立てた `index.html` があり、7 回はそれだけがぶつかった (`docs/conflicts.md` の 2)。直し方はいつも「組み立て直す」だけで、考える所がない。公開は GitHub Actions でしているので、公開の手順に組み立てを 1 段足せばよい (Node と `tools/` の `npm ci`、圧縮の python3 は GitHub の機械に入っている)。
 - 変わること: `src/` を直したあとに組み立てた `index.html` をコミットしなくてよい (しても `.gitignore` で入らない)。手元で試験や画面を見るときは、前と同じく `node tools/build.mjs` で作る (`node tools/ci-tests.js` は最初に組み立てる)。`desktop/` の包装も、先に組み立てる (前と同じ)。
-- シミュレーション版の `simulation.html` は凍結中なので、いまのままリポジトリに入れておく (組み立て直すのはレーン「船と戦争」が `--sim` を付けたときだけ)。
+- シミュレーション版の `simulation.html` も、回 FU7 (2026-11-02。FU7-Q1 = a) からリポジトリに入れず、公開のときに `node tools/build.mjs --sim` で組み立てる (前は凍結してリポジトリに入れていた)。
 
 ## 4. 確かめたこと (回 R3)
 
@@ -131,4 +131,4 @@
 | `core/main-loop.js` | 共通 (世話役: 道具と検証) | 129 | メインループ |
 
 - ほかのレーンの画面の部品 (`politics/panels.js`・`economy/fiscal-ui.js`・`ship/military-ui.js` など) は、その仕組みのレーンが持つ。画面と最初の体験のレーンは、見た目の決まり (`screen/page.html` の CSS) とタブ・地図・手引きを持ち、ほかのレーンの部品の見た目を変えたいときは、そのレーンと突き合わせる (`docs/parallel.md`)。
-- `core/base.js` の `EDITIONS` のうち、`physics` の切り替えと `EDITIONS.sim` は「船と戦争」が持つ (シミュレーション版を一旦無視する決まりは続く)。補正の値 (`EDITIONS.game` の値) を足すときは、`docs/registry.md` の 4 に名前を書く。
+- `core/base.js` の `EDITIONS` のうち、`physics` の切り替えと `EDITIONS.sim` は「船と戦争」が持つ (シミュレーション版は回 FU7 から同じ src で保つ。`docs/parallel.md` の 6)。補正の値 (`EDITIONS.game` の値) を足すときは、`docs/registry.md` の 4 に名前を書く。

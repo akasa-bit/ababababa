@@ -9,9 +9,11 @@ require('fs').mkdirSync('shots', { recursive: true }); // 画面の写しは、�
 const { chromium } = require('playwright');
 (async () => {
   const b = await chromium.launch({ ...(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {}), args: ['--no-sandbox'] });
-  for (const f of ['index.html', 'simulation.html']) {
+  // シミュレーション版は、CI では試験の作業場所 (写しの出力先) に組み立てたもの、なければリポジトリの直下 (node tools/build.mjs --sim)。回 FU7 からリポジトリに入れない
+  const fs = require('fs'), sim = [require('path').join(process.argv[2] || '.', 'simulation.html'), `${ROOT}/simulation.html`].find((x) => fs.existsSync(x));
+  for (const [f, file] of [['index.html', `${ROOT}/index.html`], ...(sim ? [['simulation.html', require('path').resolve(sim)]] : [])]) {
     const p = await b.newPage({ viewport: { width: 1280, height: 780 } }); const errs = []; p.on('pageerror', (e) => errs.push(e.message));
-    await p.goto(`file://${ROOT}/${f}?seed=4`); await p.waitForFunction(() => window.__app && __app.game);
+    await p.goto(`file://${file}?seed=4`); await p.waitForFunction(() => window.__app && __app.game);
     await p.waitForTimeout(1500);
     await p.screenshot({ path: `${process.argv[2]}/home-${f}.png` });
     const r = await p.evaluate(async () => { await __app.storeReady; const g = __app.game; for (let i = 0; i < 40; i++) g.advance(0.25); return [document.title, $('brand').textContent, EDITION, STORE, GENERATION_YEARS, SAVE_KEY, Object.keys(localStorage).join(',')]; });

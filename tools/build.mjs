@@ -1,8 +1,9 @@
 // 公開用の HTML を作る: src/index.html (分けたファイルを tools/src.js で組み立てたもの) を最小化し、LZMA で圧縮して、自分で展開する 1 枚の HTML にする。
 // 版ごとに作る: index.html (ゲーム版) と simulation.html (シミュレーション版)。違いは src の EDITION の値だけ
-// ふだんはゲーム版だけを作る。シミュレーション版はレーン P (物理) が --sim を付けたときだけ作る。ほかのレーンはシミュレーション版を無視する (docs/parallel.md の 6)
+// ふだんはゲーム版だけを作る (手元の試験はゲーム版を開くため)。シミュレーション版は --sim を付けたときに作る。どちらもリポジトリに入れず、公開のとき (.github/workflows/pages.yml) に両方を組み立てる
+// (回 FU7・FU7-Q1 = a で凍結を解いた。前は simulation.html を凍結してリポジトリに入れていた。docs/parallel.md の 6)
 // 使い方: (cd tools && npm ci) のあと node tools/build.mjs   (シミュレーション版も: node tools/build.mjs --sim)
-//   --sim-to <ファイル>: シミュレーション版だけを、そのファイルに作る (CI の試験用。リポジトリの simulation.html は変えない)
+//   --sim-to <ファイル>: シミュレーション版だけを、そのファイルに作る (CI の試験用。tools/ci-tests.js が試験の作業場所に作る)
 // 圧縮は python3 の lzma を使う。できあがりは展開して元の最小化 HTML と 1 バイトずつ照らし合わせてから書き出す
 import fs from 'fs';
 import path from 'path';
