@@ -49,6 +49,23 @@ python3 data/build/analyze_history.py  # 統計量を計算する (numpy が要�
 
 出典: Becker, B. (2019) COLDAT, Harvard Dataverse・Hensel, P. R. ICOW Colonial History Data Set 1.1・Sarkees & Wayman (2010) Resort to War (COW 4.0)・Kreutz, J. (2010) UCDP Conflict Termination・CAA (1990) CDB90 / Arnold, J. B. CDB90 (ODC-By)・Google DSPL countries.csv (Apache 2.0)
 
+## AI の国の振る舞いのデータ (目標 R90〜R94。回 AI1)
+
+| 段 | 場所 | 中身 |
+|---|---|---|
+| 取得 | `data/fetch/fetch_ai.py` → `data/raw/ai/` | ATOP 5.1 (Leeds ほか 2002。1815〜2018 年の同盟 789 件の中身 `atop5_1a.csv` と加盟国ごとの出入り `atop5_1m.csv`・コードブック)・Archigos 4.1 (Goemans・Gleditsch・Chiozza 2009。指導者 3,409 人の就任と退任。Stata の形のまま。コードブックの PDF は大きいので置かず、同じ所から読む) |
+| 加工 | `data/build/build_ai.py` → `data/derived/ai.json` | 国ごとの同盟に加わった回数 (R90)・防衛同盟のうち特定の脅威を名指しする割合 (R91)・期限の前に破られた割合 (R92)・指導者の不規則な退き方の割合 (R93)・在任期間の中央値 (R94)。国の数は COW の国家の一覧 (`data/raw/history/cow_states2016.csv`) |
+
+```sh
+python3 data/fetch/fetch_ai.py   # 生データを取り直す
+python3 data/build/build_ai.py   # 統計量を計算する (numpy と pandas が要る)
+```
+
+- **国の年数**: 1816〜2016 年に COW の国家の一覧に入っていた年数 (途中で抜けた国は、入っていた期間の合計)。20 年未満の国は R90 の分布から外す。
+- **限界**: ATOP は文書になった約束だけを数える (口約束の連携は入らない)。特定の脅威の名指し (SPECTHRT) は、脅威への均衡のおおよその目安で、名指しのない同盟にも脅威に向けたものはある。Archigos の「不規則」は、法と慣例によらない退き方 (クーデター・反乱・暗殺・外国の干渉でない強制) で、外国に退かされたもの (Foreign) は別に数える。
+
+出典: Leeds, B. A., Ritter, J. M., Mitchell, S. M., & Long, A. G. (2002) Alliance Treaty Obligations and Provisions, 1815-1944. International Interactions 28: 237-260 (ATOP 5.1)・Goemans, H. E., Gleditsch, K. S., & Chiozza, G. (2009) Introducing Archigos. Journal of Peace Research 46(2): 269-283 (Archigos 4.1)・Correlates of War Project (2017) State System Membership List v2016。
+
 ## 交易のデータ
 
 | 段 | 場所 | 中身 |
