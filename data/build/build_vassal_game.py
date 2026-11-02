@@ -11,6 +11,9 @@ src/politics/pc-vassal.js の /* VASSAL:BEGIN … VASSAL:END */ のあいだを�
     exp(b_gap × (gap − gap_基準))。基準は藩王国 (T04 = いまの間接統治)。植民地 (直轄、T20) は前に COLDAT の英仏の植民地で
     推定した 1.39 (目標 R08。data/derived/history.json) をそのまま使う
   - war (独立が戦争になる確率): 型の事例の暴力の割合を、家族の割合へ 4 件分寄せたもの ((k + 4 p_家族) ÷ (n + 4))。
+  - indep・indepK (不満の行き着く先。回 SE12・B-070): 型の事例の終わりのうち、従属国と宗主のあいだで決まったもの (独立 indep か併合 annexed) に占める
+    独立の割合を、家族の割合へ 4 件分寄せたもの。indepK = indep ÷ 事例全体の割合 (最後通牒の期限で独立を宣言する見込みに掛ける。
+    ほかの国へ移った・宗主が倒れた・合併・続いているは、宗主と従属国のあいだの決着ではないので数えない)
     藩王国 (T04 = 間接統治) と植民地 (T20 = 直接統治) は、前に ICOW の 128 件で推定した英 9%・仏 32% をそのまま使う (標本が大きい)
   - tribute (朝貢): 実態の課税と朝貢が 宗 50%・分 25%・従 5% (いまの直接統治・間接統治・自治領の値)
   - rank (自治の度合い 0〜4): 法の束の点 (宗 0・分 0.5・従 1) の合計 ÷ 2
@@ -47,6 +50,7 @@ def main():
     b, se = cox(t, d, X)
     model = [coef(b, se, k, n, exp=True) for k, n in enumerate(['law_fact_gap', 'start_century'])]
     bt = S['by_type']; bf = S['by_family']
+    P_INDEP = sum(1 for c in cases if c['end_kind'] == 'indep') / sum(1 for c in cases if c['end_kind'] in ('indep', 'annexed'))  # 事例全体の独立の割合 (回 SE12)
     def dipnum(tid):
         cs = [c for c in cases if c['type_id'] == tid]
         return float(np.mean([NUM[c['bundle']['fact']['dip']] for c in cs]))
@@ -63,6 +67,10 @@ def main():
         fact_pts = sum(NUM[x] for x in fact)
         hr = math.exp(b[0] * (r['mean_gap'] - base_gap))
         war = (k + SHRINK * p_fam) / (n + SHRINK)
+        fam_cs = [c for c in cases if bt[c['type_id']]['family'] == r['family']]
+        ki, kb = sum(1 for c in cs if c['end_kind'] == 'indep'), sum(1 for c in cs if c['end_kind'] in ('indep', 'annexed'))
+        fi, fb = sum(1 for c in fam_cs if c['end_kind'] == 'indep'), sum(1 for c in fam_cs if c['end_kind'] in ('indep', 'annexed'))
+        indep = (ki + SHRINK * (fi / fb if fb else P_INDEP)) / (kb + SHRINK)
         if tid == 'T20':
             hr = H['colonies']['hazard_britain_france']['model3_direct_vs_indirect'][0]['hr']
             war = H_VIOL['france']['share']
@@ -70,7 +78,7 @@ def main():
             war = H_VIOL['britain']['share']
         types[tid] = {
             'label': r['name'], 'family': r['family'], 'law': law, 'fact': fact, 'gap': r['mean_gap'],
-            'hr': round(hr, 3), 'war': round(war, 3),
+            'hr': round(hr, 3), 'war': round(war, 3), 'indep': round(indep, 3), 'indepK': round(indep / P_INDEP, 3),
             'tribute': {'S': 0.5, 'M': 0.25, 'V': 0.05}[fact[ITEMS.index('tax')]],
             'rank': round(sum(NUM[x] for x in law) / 2, 2), 'delay': round(1.6 * 0.88 ** fact_pts, 3),
             'loyalty': 0, 'noOrders': fact[0] == 'V' and fact[4] == 'V',
@@ -126,7 +134,7 @@ def main():
     open(SRC, 'w', encoding='utf-8').write(src)
     print('model', [(m['name'], m['hr'], m['hr_ci95'], m['p']) for m in model])
     for tid, x in types.items():
-        print(tid, x['label'][:10], x['law'], x['fact'], 'hr', x['hr'], 'war', x['war'], 'trib', x['tribute'], 'rank', x['rank'], 'delay', x['delay'], 'loy', x['loyalty'], 'noOrd', x['noOrders'], 'ref', x['refuseAt'])
+        print(tid, x['label'][:10], x['law'], x['fact'], 'hr', x['hr'], 'war', x['war'], 'indep', x['indep'], x['indepK'], 'trib', x['tribute'], 'rank', x['rank'], 'delay', x['delay'], 'loy', x['loyalty'], 'noOrd', x['noOrders'], 'ref', x['refuseAt'])
 
 if __name__ == '__main__':
     sys.exit(main())
