@@ -1,23 +1,23 @@
 // シミュレーション版の従属国の目標 (回 FU7・B-110。ユーザーの依頼 common-11「シミュレーションにも同じシステムを導入」):
-// シミュレーション版を国家選択 6 か国の観戦で 12 銀河 × 300 年回し (6 銀河では R08 の中央値が ±10 年ほど揺れる。CI で約 3 分) (tools/secession.js)、主従の結びつきの記録を、実データと同じ関数で測る。
+// シミュレーション版を国家選択 6 か国の観戦で 24 銀河 × 300 年回し (12 銀河では R08 の中央値がシードの組で 96〜110 年と揺れ、帯の上端 106.2 年をまたぐ。手元で約 5 分) (tools/secession.js)、主従の結びつきの記録を、実データと同じ関数で測る。
 //   R08 = 存続年数の中央値 (Kaplan–Meier。独立を出来事。tools/secession-analyze.js)。シミュレーション版は補正 C02・C03 がないので、英仏の植民地の帯 (63.8〜106.2 年) で判定する
 //   R32 = 独立が戦争になる割合の型の家族ごと (data/build/analyze_vassal.py --game)。判定する
 //   R30 = 存続の比の型の家族ごと。時代の効き (始まりの世紀) がまだないので判定しない (docs/game-plan.md の 6)。数だけ出す
 //   R31 = 法と実態の差のハザード比。確認用 (目標の版 30 の note)。数だけ出す
 // 1 行目に「従属国 合格」か「従属国 不合格」と、数の要約を出す。CI の表のメモの欄にも、合否によらず同じ要約を出す (note)
-// 使い方: node tools/tests/simvassal.js <simulation.html> <書き出しのフォルダ> [銀河の数 = 12] [年数 = 300]
+// 使い方: node tools/tests/simvassal.js <simulation.html> <書き出しのフォルダ> [銀河の数 = 24] [年数 = 300]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
 const summary = (o) => o.trim().split('\n')[0].replace(/^従属国 (不)?合格: /, '');
 exports.ci = [
   // シミュレーション版 (参考。落ちても CI は止めない。docs/parallel.md の 6)。組み立てに失敗して simulation.html がなければ回さない
-  { args: (c) => [c.path.join(c.shots, 'simulation.html'), c.path.join(c.shots, 'simvassal'), '12', '300'], judge: J.firstLine('従属国', '従属国の目標 不合格 (シミュレーション版)'), note: summary, optional: true, needs: (c) => c.path.join(c.shots, 'simulation.html') },
+  { args: (c) => [c.path.join(c.shots, 'simulation.html'), c.path.join(c.shots, 'simvassal'), '24', '300'], judge: J.firstLine('従属国', '従属国の目標 不合格 (シミュレーション版)'), note: summary, optional: true, needs: (c) => c.path.join(c.shots, 'simulation.html') },
 ];
 if (require.main !== module) return;
 const path = require('path');
 const { spawnSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '../..');
-const [html, out, nS = '12', yS = '300'] = process.argv.slice(2);
+const [html, out, nS = '24', yS = '300'] = process.argv.slice(2);
 if (!html || !out) { console.log('使い方: node tools/tests/simvassal.js <simulation.html> <書き出しのフォルダ> [銀河の数] [年数]'); process.exit(2); }
 const seeds = Array.from({ length: Number(nS) }, (_, i) => i + 1).join(',');
 const run = (cmd, args) => {
