@@ -8,7 +8,12 @@
 // 使い方: node tools/tests/conserve.js [シード] [年数]   (NAT=1 で国家選択あり、HTML=… で版を選ぶ)
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
-exports.ci = [{ args: ['5', '150'], judge: (o) => (o.trim().split('\n')[0].includes('R03 合格') && o.includes('決まっていない出入り: なし') ? '' : 'R03 不合格') }];
+const r03 = (why) => (o) => (o.trim().split('\n')[0].includes('R03 合格') && o.includes('決まっていない出入り: なし') ? '' : why);
+exports.ci = [
+  { args: ['5', '150'], judge: r03('R03 不合格') },
+  // シミュレーション版 (参考。落ちても CI は止めない。回 FU7。docs/parallel.md の 6)。組み立てに失敗して simulation.html がなければ回さない
+  { args: ['5', '150'], judge: r03('R03 不合格 (シミュレーション版)'), optional: true, env: (c) => ({ HTML: c.path.join(c.shots, 'simulation.html') }), needs: (c) => c.path.join(c.shots, 'simulation.html') },
+];
 if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
 const HTML = process.env.HTML || `${ROOT}/index.html`;
@@ -59,7 +64,10 @@ const [seed = '5', years = '150'] = process.argv.slice(2);
           if (res === 'goods' || res === 'hitech') make += (fl.make || 0) * RES_KG[res];
           if (res === 'metal' || res === 'goods' || res === 'rare') use -= (fl.use || 0) * RES_KG[res];
           const d = (s1[sys]?.[res] || 0) - (s0[sys]?.[res] || 0);
-          const q = abs ? Math.abs(sum - d) / abs : Math.abs(d);
+          // 分母は取扱量。ただし備蓄の大きさ × 1e-6 を下限にする (回 FU7: シミュレーション版の 6 か国の銀河 6 で、2371 年に 5e-26 の採掘が 1.15 の備蓄に足されて浮動小数点の桁に埋もれ、
+          // 比が 1.0 になった。備蓄の 1e-16 ほどの丸めは 1e-10 以下に収まり、備蓄の 1e-15 より大きい穴は前と同じく拾う)
+          const floor = 1e-6 * Math.max(Math.abs(s0[sys]?.[res] || 0), Math.abs(s1[sys]?.[res] || 0));
+          const q = abs ? Math.abs(sum - d) / Math.max(abs, floor) : Math.abs(d);
           through += abs;
           if (q > worst) { worst = q; worstAt = `${g.year.toFixed(0)} 星系 ${sys} ${res}`; }
         }

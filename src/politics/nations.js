@@ -78,7 +78,7 @@ function nationSizeOf(u) {
   let i = 0;
   while (i < Q.length - 2 && x > Q[i + 1][0]) i++;
   const [u0, r0] = Q[i], [u1, r1] = Q[i + 1], t = (x - u0) / (u1 - u0);
-  return GM.exp((GM.log(r0) + t * (GM.log(r1) - GM.log(r0))) * (ED.nationSize ?? 0));
+  return GM.exp((GM.log(r0) + t * (GM.log(r1) - GM.log(r0))) * (ED.nationSize ?? 1)); // 値がなければ (シミュレーション版) 現実の散らばりのまま (回 FU7)
 }
 let NO_MODS_ = null;
 const noMods = () => (NO_MODS_ ??= traitMods([])); // 特性なし (国家選択のない試合)。政治力の上限などの値が読み込まれてから作る

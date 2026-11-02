@@ -50,8 +50,9 @@ function overlay(dst, src, where) {
 }
 
 // edition = 'sim' なら、シミュレーション版として読む (src の EDITION の行を書き換える。build.mjs と同じ)
+// 環境変数 HEADLESS_EDITION=sim を付けると、edition を渡さない道具 (wars-headless・galaxy-race など) もシミュレーション版で回る (回 FU7)
 // lang = 画面の言語 (src/outward/i18n.js の LANG。試合の状態は言語によらず同じになる。tools/tests/i18n.js が確かめる)
-function load({ src = SRC, params = null, edition = null, lang = null } = {}) {
+function load({ src = SRC, params = null, edition = process.env.HEADLESS_EDITION || null, lang = null } = {}) {
   let html = assemble({ file: src }); // 「//#include」のない 1 枚のファイル (組み立てたもの・分ける前のもの) は、そのまま読む
   if (edition) html = html.replace("const EDITION = 'game'; /* EDITION */", `const EDITION = '${edition}';`);
   const js = html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>'));

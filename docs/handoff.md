@@ -114,7 +114,7 @@
 - `main` にプッシュすると、`.github/workflows/pages.yml` がリポジトリの根をそのまま GitHub Pages に公開する。
   - ゲーム版: https://akasa-bit.github.io/ababababa/
   - シミュレーション版: https://akasa-bit.github.io/ababababa/simulation.html
-- 公開されるのは、組み立てた `index.html` と `simulation.html` (と `assets/`)。**ゲーム版の `index.html` は、公開の手順 (`pages.yml`) が `src/` から組み立てる**ので、コミットしない (回 R3 から。`docs/src-files.md` の 3)。シミュレーション版 (凍結中) はリポジトリに入っているものを載せる。
+- 公開されるのは、組み立てた `index.html` と `simulation.html` (と `assets/`)。**ゲーム版の `index.html` は、公開の手順 (`pages.yml`) が `src/` から組み立てる**ので、コミットしない (回 R3 から。`docs/src-files.md` の 3)。シミュレーション版の `simulation.html` も、回 FU7 (2026-11-02) から同じ `src/` で組み立てる (`node tools/build.mjs --sim`。`docs/parallel.md` の 6)。
 
 ## 9. 文書の地図
 

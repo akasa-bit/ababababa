@@ -53,8 +53,8 @@ const PEACE = { minYears: 3, sueEx: 60, sueWs: -50, stalemate: 0.35, stalemateHa
 // 戦機 = exp(luck × 正規乱数)・士気 = exp(morale × 正規乱数): 戦いごとに両軍に引く (索敵・先に撃つ側・指揮)。勝ち負けの偶然。
 // どちらかの戦っている艦がいなくなれば終わり。沈んだ艦の乗員 (crew 人) を戦死者に数える (仮の値。B-033 の船の設計で差し替える)。
 // 攻囲の住民は年 siegeDead ずつ亡くなる (補給を断たれた星系の飢えと病)。
-// pos と luck は補正 (台帳の C27・C28)。版の値 ED.battle で上書きする
-const BATTLE = { rounds: 24, hit: 0.2, dmg: 0.45, org: 0.55, orgRet: 0.5, retRounds: 2, pos: 0.3, luck: 1, morale: 1.15, crew: 1e5, siegeDead: 0.01, reports: 20, ...(ED.battle || {}) };
+// pos と luck は補正 (台帳の C27・C28)。版の値 ED.battle で上書きする。値がなければ CDB90 に合う値 (pos 1.6・luck 1.6 = 補正なし。回 FU7 で、前の既定のゲーム版の値から直した)
+const BATTLE = { rounds: 24, hit: 0.2, dmg: 0.45, org: 0.55, orgRet: 0.5, retRounds: 2, pos: 1.6, luck: 1.6, morale: 1.15, crew: 1e5, siegeDead: 0.01, reports: 20, ...(ED.battle || {}) };
 // 光速に近い艦隊の一撃 (B-035。QD-04 = b): 減速せずに星系へ突っ込む艦隊。0.9c の 1 艦隊の運動エネルギー (FLEET_KE) は惑星の表面を焼くので、
 // 1 艦隊で 1 つの天体の入植地を焼く (人口の survive だけが地下に残り、施設・備蓄・歩兵はなくなる)。艦隊は使い切る。光の遅れで、守る側には着く直前まで見えず、止められない。
 // 釣り合い: 使った国の悪名 (atrocity) が増え、知らせが光速で届いた国は、使った国へ宣戦する (撃たれた国は retaliateHit、reach 光年以内の国は retaliate の確率)。

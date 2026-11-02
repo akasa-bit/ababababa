@@ -17,8 +17,11 @@ const EDITIONS = {
   //   pv = フレアの陽子でスウォームの太陽電池が傷む (ゲーム版は保留。docs/physics.md の P10)。
   //   demoTotal = 人口の合計は前のロジスティックの増え方のまま、年齢の中身だけ現実の率で動かす (台帳の C13。回 KE2・QD-29)。
 //   battle = 艦隊戦の補正 (BATTLE の pos・luck。ゲーム版は 2 倍の兵力で 75% 勝ち・損害の指数 0.5、シミュレーション版は CDB90 の値。台帳の C27・C28)
+//   squashSlab = 星を取った板 (±4 光年) の高さを詰めて、ゲームの中では ±2 光年の板に置く (台帳の C07。銀河の版 5 から。値がなければ詰めない = シミュレーション版。回 FU7・FU7-Q2 = b)
+//   nationSize = 国ごとの開始の大きさの散らばりの指数 (台帳の C21。値がなければ 1 = 現実の散らばり)。aiColonize = AI の国の入植の急ぎ方 (台帳の C20。値がなければ人間の国と同じ)
+//   補正の値はゲーム版にだけ書き、値がないときに補正なし (現実の値) になるようにコードを書く (docs/game-plan.md の 2。どの行がそうなっているかは docs/reality-check.md の 5)
 //   shield・accel・pv は試合ごとにセーブに入る (Game.physics。ないセーブは物理なしのまま続ける = PHYSICS_OFF)。flare は銀河を作るときに効くので版の値を使う
-  game: { generation: 100, hazardBase: 0.6, delayExp: 0.33, regimeDelay: true, garrisonWar: true, growthCap: Infinity, declareDamp: true, physics: { shield: true, accel: true, flare: 'show', pv: false }, battle: { pos: 0.3, luck: 1 }, demoTotal: true, aiColonize: { ships: 6, pop: 1, range: 2 }, nationSize: 0 }, // aiColonize.ships 3 → 5 → 6 (回 KE13・KE13-Q1 = c・Q3 = a。版 5 の銀河で R40 が 57.1% → 61.0%、国の交易路網を入れて 59.9% → 61.9%。台帳 C20)。 nationSize: 0 = どの国も開始の大きさ 1 (回 SE9・B-143。W3-Q4 のうえで「すべての国を 1 に固定」。前は 0.5 = QD-111 = c)
+  game: { generation: 100, hazardBase: 0.6, delayExp: 0.33, regimeDelay: true, garrisonWar: true, growthCap: Infinity, declareDamp: true, physics: { shield: true, accel: true, flare: 'show', pv: false }, battle: { pos: 0.3, luck: 1 }, demoTotal: true, aiColonize: { ships: 6, pop: 1, range: 2 }, nationSize: 0, squashSlab: true }, // aiColonize.ships 3 → 5 → 6 (回 KE13・KE13-Q1 = c・Q3 = a。版 5 の銀河で R40 が 57.1% → 61.0%、国の交易路網を入れて 59.9% → 61.9%。台帳 C20)。 nationSize: 0 = どの国も開始の大きさ 1 (回 SE9・B-143。W3-Q4 のうえで「すべての国を 1 に固定」。前は 0.5 = QD-111 = c)
   sim: { generation: 28, hazardBase: 1.3, delayExp: -0.15, regimeDelay: false, garrisonWar: false, growthCap: 0.042, declareDamp: false, physics: { shield: true, accel: true, flare: true, pv: true }, battle: { pos: 1.6, luck: 1.6 } },
 };
 const ED = EDITIONS[EDITION];
