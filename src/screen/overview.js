@@ -53,7 +53,9 @@ function empireOverview(app) {
     <tr class="total"><td>合計</td><td></td>${RES.map((r) => `<td>${fmtAmt(totals[r])} <small>${signed(totalNet[r])}</small></td>`).join('')}</tr></table></div>
     <p class="note">増減は生産−需要。交易路での出入りは含まない。</p>`;
 
-  return `${kpi}${ledger}${policyHtml(g)}${popTable}${resTable}`; // 経済・政策のタブ: 収支・国家方針と財政・人口・資源 (依頼 KE-4)
+  // 経済・政策のタブ: 収支・国家方針と財政・政治 (忠誠と自立・独立国・戦争。前の「政治」のタブ。依頼 GA-3)・人口・資源 (依頼 KE-4)。長いので頭に飛び先のボタン
+  const jump = TR`<div class="chips jump"><span class="muted">飛ぶ</span><button data-act="jump" data-to="sec-ledger">${ico('credits')}収支</button><button data-act="jump" data-to="sec-policy">${ico('goal')}国家方針と財政</button><button data-act="jump" data-to="sec-politics">${ico('politics')}政治 (忠誠・戦争)</button><button data-act="jump" data-to="sec-pop">${ico('pop')}人口と資源</button></div>`;
+  return `${jump}${kpi}<div id="sec-ledger">${ledger}</div><div id="sec-policy">${policyHtml(g)}</div><div id="sec-politics">${politicsSheet(app)}</div><div id="sec-pop">${popTable}${resTable}</div>`;
 }
 
 // 惑星ごとの種族数と内訳 (住民の種族・同じ惑星の先住民)

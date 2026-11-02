@@ -81,5 +81,5 @@ function shipsHtml(game) {
 }
 
 // 帝国タブ: 全星系の人口・資源・経済・軍事を一覧で管理する
-const EMPIRE_TABS = { overview: '経済・政策', goals: '目標', vassals: '従属国', routes: '交易路', migration: '移民', military: '軍事', politics: '政治' };
+const EMPIRE_TABS = { overview: '経済・政策', goals: '目標', vassals: '従属国', routes: '交易路', migration: '移民', military: '軍事' }; // 政治のタブは経済・政策に一緒にした (依頼 GA-3)
 

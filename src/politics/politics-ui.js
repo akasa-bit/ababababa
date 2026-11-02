@@ -24,7 +24,7 @@ const OWN = { hex: '#4de3d0', rgb: '77,227,208' };
 const TERRITORY_LY = 5; // 入植星系が領土にするまわりの距離 [光年] (星間マップの国の塗り分け)
 function realmColor(root) { return root === 0 || root === null || root === undefined ? OWN.hex : REALM_COLORS[root % REALM_COLORS.length]; }
 
-// 帝国 → 政治: 各星系の政府の忠誠度、独立国と戦争
+// 帝国 → 経済・政策の「政治」の節 (前の「政治」のタブ。依頼 GA-3): 各星系の政府の忠誠度、独立国と戦争
 function politicsSheet(app) {
   const g = app.game;
   const goto = (s) => `<button data-act="goto" data-sys="${s.id}">${esc(s.name)}</button>`;
