@@ -157,6 +157,8 @@
 ### 政治
 
 - saveField: diplo (政治。src/politics/diplomacy-consts.js。協定・届く途中の申し入れ・破約の年。回 SE2)
+- saveField: aiLog (AI の振る舞い。src/politics/ai-consts.js。AI の国ごとの最近の判断と理由の内訳 { 国: [{ y, t }] }。星系の欄に光の遅れで出す。回 AI2)
+- 協定の項目 th・mode (AI の振る舞い。diplo.pacts の 1 つ。防衛同盟を結んだとき受け手の判断に入っていた共通の脅威の国と、均衡 balance か便乗 bandwagon か。R91・F29 で数える。回 AI2)
 - EDITIONS.game.aiColonize (AI の国の星系の政府の入植の急ぎ方 { ships, pop, range }。台帳の C20。回 SE5)
 - EDITIONS.game.nationSize (国ごとの開始の大きさの散らばりの縮め方。比の何乗か。台帳の C21。回 SE8)
 - 星系の政府の項目 gv.include (直轄の星系の民族の権力への近さの上書き { local, other }。セーブの govs にそのまま入る。回 SE6・B-020。`docs/groups.md`)
