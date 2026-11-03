@@ -207,8 +207,10 @@
       if (!best) continue;
       const cost = this.shipCost(best.kind, id, best.t.id);
       const why = gv.mandate === 'expand' ? '委任方針「拡張」に従った' : '入植できる時期になり、資金があった';
-      if (this.funds(id) < (gv.mandate === 'expand' ? 1 : 1.2) * cost.credits || this.procure(cost, id).why) { this.govDidOnce(id, JA`${best.t.name} への入植船を見送った`, '資金か資材が足りなかった'); continue; }
-      if (this.dispatch(id, best.t.id, best.b.id, best.kind).ok) { gv.lastColony = this.year; this.govDid(id, JA`${best.t.name} へ入植船を出した`, why); }
+      const need = (gv.mandate === 'expand' ? 1 : 1.2) * cost.credits;
+      // 足りなければ、入植船の分を行政サービスに回さずに取っておく (投資が先。fiscal.js の debtStep。回 KE14・B-131)
+      if (this.funds(id) < need || this.procure(cost, id).why) { gv.saveFor = { c: need, y: this.year }; this.govDidOnce(id, JA`${best.t.name} への入植船を見送った`, '資金か資材が足りなかった'); continue; }
+      if (this.dispatch(id, best.t.id, best.b.id, best.kind).ok) { gv.lastColony = this.year; delete gv.saveFor; this.govDid(id, JA`${best.t.name} へ入植船を出した`, why); }
     }
   }
   // 入植できる状態か: 人口300万以上、入植船を準備・航行中でなく、前の入植から10年 (観戦モードの地球政府は5年) たっている。

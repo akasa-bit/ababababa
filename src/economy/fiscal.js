@@ -69,9 +69,12 @@
       else if (gv.credits + x < 0) x = -gv.credits;
       if (x) { gv.credits += x; gv.bond = Math.max(0, (gv.bond || 0) + x); }
       const T = Math.max(0, (gv.ledger?.tax || 0) + (gv.ledger?.natives || 0));
-      const pub = Math.min(Math.max(0, gv.credits), Math.max(0, T - s * fr.y - (fr.d ?? 0)) * h);
+      // 入植船を出したいのに資金が足りない政府は、その額を行政サービスに使わずに取っておく (資本の予算。投資が先、行政サービスが後。回 KE14・B-131)。
+      // 前は行政サービスが刻みごとに使える額を使いきり、まとまった買い物 (入植船 500 cr) の資金がたまらなかった
+      const res = gv.saveFor && this.year - gv.saveFor.y < INVEST_PLAN.years ? gv.saveFor.c : 0;
+      const pub = Math.min(Math.max(0, gv.credits - res), Math.max(0, T - s * fr.y - (fr.d ?? 0)) * h);
       if (pub > 0) this.earn('public', -pub, id, { hh: id });
-      const extra = gv.credits - keepCash;
+      const extra = gv.credits - Math.max(keepCash, res);
       // 手元の資金が多すぎれば、行政サービスに使う。前は国債があれば先に返していた (DEBT.repay = 1。国債のある政府だけが余りで黒字になり、財政の反応 R28 が
       // 式の 0.034 よりずっと強く 0.08 になった。返すのは式 s* の分だけにした。回 KE1・B-003。QD-28)
       if (extra > 0 && DEBT.repay && gv.bond > 0) { const r = Math.min(gv.bond, extra * out); gv.credits -= r; gv.bond -= r; }
