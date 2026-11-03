@@ -36,17 +36,27 @@
     const ships = view || ((t) => (t === r ? this.realmShips(r) : this.seenShips(r, t)));
     const mine = ships(r);
     const seen = ships(p) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(r, p)));
-    let s, why;
+    let s, why, info = {};
     if (kind === 'nap') { s = PACT.napBase + (seen - mine) / (seen + mine + 1); why = JA`${this.realmName(p)}の艦隊を ${Math.round(seen)}、自分を ${Math.round(mine)} と見ている`; }
     else if (kind === 'ally') {
-      const th = this.pactThreat(r, p, ships);
-      s = PACT.allyBase + th.v + PACT.allyHelp * seen / (seen + mine + 1);
-      why = th.t === null ? '共通の脅威が見えない' : JA`${this.realmName(th.t)}を脅威と見ている`;
+      // 脅威への均衡と便乗 (回 AI2。politics/threat.js の alignOf): いちばん脅威な国 al.t に、味方を集めて届くなら均衡 (al.t に対して組む)、届かなければ便乗 (al.t と組む)
+      const al = this.alignOf(r, ships);
+      if (al.t === p && al.mode === 'bandwagon') {
+        s = PACT.allyBase + al.v + PACT.allyHelp * seen / (seen + mine + 1);
+        why = JA`便乗: ${this.threatText(r, p, ships)}。味方になりそうな国と合わせても艦隊 ${Math.round(al.coal)} で届かない`;
+        info = { mode: 'bandwagon' };
+      } else {
+        const th = this.pactThreat(r, p, ships);
+        s = PACT.allyBase + th.v + PACT.allyHelp * seen / (seen + mine + 1) - (al.t === p ? al.v : 0); // いちばん脅威な国とは、均衡なら組まない向き
+        why = th.t === null ? '共通の脅威が見えない' : JA`共通の脅威: ${this.threatText(r, th.t, ships)}`;
+        if (al.t === p) why += JA`。${this.realmName(p)}こそいちばんの脅威 (均衡: 味方になりそうな国と合わせて艦隊 ${Math.round(al.coal)})`;
+        if (th.t !== null) info = { th: th.t, mode: 'balance' };
+      }
     } else { s = PACT.tradeBase; why = '交易の得を見ている'; }
     const b = this.pactBreaches(p);
     if (b) { s -= PACT.distrust * b; why += JA`。${this.realmName(p)}の破約 ${b} 回`; }
     s += gift / PACT.giftScale;
-    return { s, why, seen, mine };
+    return { s, why, seen, mine, ...info };
   }
   // プレイヤーの国 (cap) が r へ協定 kind を申し入れたときの見込み (地球に届いている記録で。「何なら受けるか」)。
   // 相手が見ているこちらの艦隊は seenByRival、相手とほかの国の艦隊は、地球が把握している数
@@ -77,8 +87,11 @@
     return { ok: true };
   }
   // 協定を結ぶ。a が申し入れた国、b が受けた国。b は今から、a は返事が届いてから縛られる。贈り物は a から b へ (払えるだけ)
-  makePact(a, b, kind, gift = 0) {
+  // info = 受けた国の判断 (pactScore): th = 共通の脅威の国・mode = 均衡 (balance) か便乗 (bandwagon)。R91・F29 で数える (回 AI2)
+  makePact(a, b, kind, gift = 0, info = null) {
     const p = { id: this.nextShipId++, kind, a, b, since: this.year, until: this.year + PACT.years, onA: this.year + this.sysDist(a, b), onB: this.year, called: [] };
+    if (info?.th !== undefined && info.th !== null) p.th = info.th;
+    if (info?.mode) p.mode = info.mode;
     this.diplo.pacts.push(p);
     const g = Math.min(gift, Math.max(0, this.gov(a).credits));
     if (g > 0) { this.cash('treaty', -g, { gov: a }); this.cash('treaty', g, { gov: b }); }
@@ -96,7 +109,8 @@
   pactAllowed(a, b, kind) { return !this.modsOf(a).noPacts.includes(kind) && !this.modsOf(b).noPacts.includes(kind); }
   pactAnswerAi(o) {
     const sc = this.pactScore(o.to, o.from, o.kind, { gift: o.gift, z: this.misread() });
-    if (sc.s >= 0) return this.makePact(o.from, o.to, o.kind, o.gift);
+    this.aiNote(o.to, JA`${this.realmName(o.from)}からの${PACT_KINDS[o.kind].label}の協定を${sc.s >= 0 ? '受けた' : '断った'} (${sc.why})`); // 理由の内訳 (回 AI2)
+    if (sc.s >= 0) return this.makePact(o.from, o.to, o.kind, o.gift, sc);
     if (this.isHuman(o.from)) {
       const need = Math.ceil((-sc.s * PACT.giftScale) / 100) * 100;
       this.event('politics', o.to, JA`${this.realmName(o.to)}は${PACT_KINDS[o.kind].label}の協定を断った (${sc.why}。贈り物があと ${fmtAmt(need)} cr ほどあれば受けたかもしれない)`);
@@ -120,7 +134,7 @@
     }
     if (k !== 'accept') { this.event('politics', this.cap, JA`${this.realmName(dec.from)}からの${PACT_KINDS[dec.type].label}の協定を断った`); return; }
     if (!this.realmAlive(dec.from) || this.atWar(this.cap, dec.from) || this.pactBetween(dec.from, this.cap, dec.type)) return;
-    this.makePact(dec.from, this.cap, dec.type, dec.gift || 0);
+    this.makePact(dec.from, this.cap, dec.type, dec.gift || 0, this.pactScore(this.cap, dec.from, dec.type)); // 記録の共通の脅威は、地球に届いている記録での見立て
   }
   // 観戦の地球が、決めること (協定) に答える (earthPoliticsYearly から)
   pactAiReply(dec) {
@@ -188,11 +202,12 @@
         if (t === r || this.realmOf(t) !== t || this.sysDist(r, t) > BARGAIN.warDist || this.seenBy(r, t)?.[1] !== t || this.atWar(r, t)) continue;
         for (const kind of Object.keys(PACT_KINDS)) {
           if (this.pactBetween(r, t, kind) || D.sent.some((o) => o.from === r && o.to === t && o.kind === kind)) continue;
-          const v = Math.min(this.pactScore(r, t, kind).s, this.pactScore(t, r, kind, { view: (u) => (u === t ? this.seenShips(r, t) : u === r ? this.realmShips(r) : this.seenShips(r, u)) }).s); // 自分の得と、相手が受けそうか (自分の見ている数で)
-          if (v > 0) cands.push({ t, kind });
+          const own = this.pactScore(r, t, kind);
+          const v = Math.min(own.s, this.pactScore(t, r, kind, { view: (u) => (u === t ? this.seenShips(r, t) : u === r ? this.realmShips(r) : this.seenShips(r, u)) }).s); // 自分の得と、相手が受けそうか (自分の見ている数で)
+          if (v > 0) cands.push({ t, kind, why: own.why });
         }
       }
       const pick = cands.length ? cands[Math.floor(this.rand() * cands.length)] : null;
-      if (pick) this.proposePact({ sys: pick.t, pact: pick.kind }, r);
+      if (pick && this.proposePact({ sys: pick.t, pact: pick.kind }, r).ok) this.aiNote(r, JA`${this.realmName(pick.t)}に${PACT_KINDS[pick.kind].label}の協定を申し入れた (${pick.why})`);
     }
   }
