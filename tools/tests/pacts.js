@@ -74,12 +74,15 @@ g.diplo.pacts.push({ id: 9001, kind: 'ally', a: g.cap, b: h, since: g.year, unti
 g.diplo.pacts.push({ id: 9002, kind: 'ally', a: al, b: h, since: g.year, until: g.year + 300, onA: g.year, onB: g.year, called: [] });
 g.bargain = () => false; g.peaceChance = () => 0; // 知らせが届くまで戦争が続くように (AI どうしの講和を止める)
 g.garrison[f2] = (g.garrison[f2] || 0) + 200; g.garrison[h] = (g.garrison[h] || 0) + 200; // 知らせが届く前に、どちらかが滅ばないように
+const honor0 = T.PACT.honorLine;
+T.PACT.honorLine = -1e9; // 参戦するかの判断 (回 AI2 の aiHonor) でなく知らせの遅れを見るので、AI の同盟国は必ず応じる (試合の形が変わっても揺れないように)
 g.beginWar(f2, h, h);
 g.diplomacyYearly();
 const dhe = g.sysDist(h, al), dhme = g.sysDist(h, g.cap), t0 = g.year;
 if (dhe > 1.5) check(!g.atWar(al, f2), '開戦の知らせが届く前に、AI の同盟国が参戦した');
 for (let i = 0; i < 4 * (dhe + 2) && !g.atWar(al, f2) && g.atWar(f2, h); i++) g.advance(0.25);
 check(g.atWar(al, f2) && g.year >= t0 + dhe - 1e-9, `AI の同盟国が、知らせが届いたあとも参戦しない、か光より速く参戦した (${(g.year - t0).toFixed(1)} 年・${dhe.toFixed(1)} 光年)`);
+T.PACT.honorLine = honor0;
 // f2 の宣戦の知らせを待つ (待つあいだに別の国が h に宣戦することがあるので、相手で選ぶ。待つ年は宣戦した年 t0 から数える。銀河の版 5 で国どうしが遠くなった)
 const callOf = () => g.decisions.find((x) => x.kind === 'pact' && x.type === 'call' && x.state === 'open' && x.enemy === f2 && x.ally === h);
 let call = callOf();

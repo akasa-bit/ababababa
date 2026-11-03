@@ -1,6 +1,6 @@
 // 建設の指令の費用の払い手 (依頼 KE-3。KE13-Q4 = b。2026-11-01): 人間のプレイヤーがほかの自国の星系へ送った建設の指令 (採掘基地・施設・交易路・軍艦・要塞) は、
 // 届いて実行されるとき、費用をまるごと指令を出した国の首都が払う (前は届いた先の星系の政府が払い、資金がほぼ 0 の開拓地では実行できなかった)。画面なしの版で回す:
-//   1. 資金 0 の自国の家臣の星系に施設の拡張の指令を送ると、届いて実行され、首都の資金が減り、家臣の資金は減らない
+//   1. 資金 0 の自国の家臣の星系に施設の拡張の指令を送ると、届いて実行され、首都が費用を払い、家臣は払わない (指令の実行のなかの建設の支払いで見る)
 //   2. 同じ星系で、指令でなく星系の政府が自分で建てるとき (this.orderBy なし) は、前のとおり星系の政府が払う (資金 0 なら建てられない)
 //   3. AI の国の指令は前のまま (届いた先の政府が払う)
 // 使い方: node tools/tests/orderpay.js [シード]
@@ -43,13 +43,20 @@ const pick = (h) => {
     h.cash('test', -h.funds(c.sys), { gov: c.sys });
     const fc = h.funds(h.cap), fv = h.funds(c.sys);
     const cost = h.upgradeCost(c, 'mine').credits;
+    // 払い手は、指令の実行のなかの建設の支払いで見る (首都の資金の差には、同じ半年の収入や財政の支出も入り、試合の形で揺れる)
+    let capBuild = 0, vasBuild = 0;
+    h.cash = function (k, v, a) {
+      if (k === 'build' && v < 0 && this.orderBy !== undefined) { if (a.gov === this.cap) capBuild -= v; if (a.gov === c.sys) vasBuild -= v; }
+      return Object.getPrototypeOf(this).cash.call(this, k, v, a);
+    };
     h.advance(0.5);
+    delete h.cash;
     const done = !h.requests.includes(q);
     const job = h.projects.find((j) => j.type === 'upgrade' && j.col === colKey(c) && j.fac === 'mine') || c.lv.mine > lv0;
     if (!done || !job) fails.push('資金 0 の家臣で、指令が実行されなかった');
-    if (!(fc - h.funds(h.cap) >= cost * 0.9)) fails.push(`首都が費用を払っていない (首都の減り ${(fc - h.funds(h.cap)).toFixed(0)}・費用 ${cost})`);
-    if (h.funds(c.sys) < fv - 1e-6) fails.push(`家臣の資金が減った (${fv.toFixed(1)} → ${h.funds(c.sys).toFixed(1)})`);
-    console.log('人間の指令:', JSON.stringify({ sys: c.sys, cost, capPaid: Math.round(fc - h.funds(h.cap)), vassal: [Math.round(fv), Math.round(h.funds(c.sys))] }));
+    if (!(capBuild >= cost * 0.9)) fails.push(`首都が費用を払っていない (指令の実行で首都が払った ${capBuild.toFixed(0)}・費用 ${cost})`);
+    if (vasBuild > 1e-6) fails.push(`家臣が費用を払った (${vasBuild.toFixed(1)})`);
+    console.log('人間の指令:', JSON.stringify({ sys: c.sys, cost, capBuild: Math.round(capBuild), vasBuild: Math.round(vasBuild), capNet: Math.round(fc - h.funds(h.cap)), vassal: [Math.round(fv), Math.round(h.funds(c.sys))] }));
   }
 }
 // 2. 指令でないとき (星系の政府が自分で建てる) は前のまま

@@ -55,6 +55,8 @@
     } else { s = PACT.tradeBase; why = '交易の得を見ている'; }
     const b = this.pactBreaches(p);
     if (b) { s -= PACT.distrust * b; why += JA`。${this.realmName(p)}の破約 ${b} 回`; }
+    const mv = this.memView(r, p); // 記憶 (回 AI3。politics/memory.js): 恩は受けやすく、恨みは受けにくく
+    if (mv.text) { s += MEM.thank * mv.thanks - MEM.grudge * mv.grudge; why += JA`。${mv.text}`; }
     s += gift / PACT.giftScale;
     // 共通の脅威に向けた同盟 (R91・F29 で数える) は、脅威がなければ結ばなかったもの (ATOP の「特定の脅威を名指しする同盟」に当たる。回 AI2)
     const { thv, ...rest } = info;
@@ -97,12 +99,14 @@
     if (info?.mode) p.mode = info.mode;
     this.diplo.pacts.push(p);
     const g = Math.min(gift, Math.max(0, this.gov(a).credits));
-    if (g > 0) { this.cash('treaty', -g, { gov: a }); this.cash('treaty', g, { gov: b }); }
+    if (g > 0) { this.cash('treaty', -g, { gov: a }); this.cash('treaty', g, { gov: b }); this.memAdd(a, b, 'gift', a, g / MEM.giftUnit); } // 贈り物の記憶 (回 AI3)
+    for (const [x, y] of [[a, b], [b, a]]) { const c = this.claimBy(y); if (c !== null && c !== x) this.memAdd(x, c, 'indep', x); } // 分かれた国と組んだ = 独立の支援 (回 AI3)
     if (this.isHuman(a) || this.isHuman(b)) this.event('politics', b, JA`${this.realmName(b)}が${this.realmName(a)}との${PACT_KINDS[kind].label}の協定を受けた (${Math.round(p.until)}年まで。${this.realmName(a)}は返事が届く ${p.onA.toFixed(0)} 年から縛られる${g ? JA`・贈り物 ${fmtAmt(g)} cr` : ''})`, true);
     return p;
   }
   // 国 r が協定を破った (協定の相手に宣戦した・同盟の参戦を断った)
-  pactBreach(r, why) {
+  pactBreach(r, why, victim = null) {
+    this.memAdd(r, victim, 'betray', r); // 裏切りの記憶 (回 AI3)
     (this.diplo.breach[r] ??= []).push(this.year);
     this.diplo.breach[r] = this.diplo.breach[r].filter((y) => this.year - y < PACT.distrustYears);
     this.asRealm(r, () => this.councilAdd(-PACT.breachCouncil, why)); // 席の国 (AI の国も) は議会の支持が下がる
@@ -131,8 +135,8 @@
   resolvePact(dec, k) {
     if (dec.type === 'call') {
       const p = this.diplo.pacts.find((x) => x.id === dec.pact);
-      if (k === 'join') { if (this.realmAlive(dec.enemy) && !this.atWar(this.cap, dec.enemy)) { this.beginWar(this.cap, dec.enemy, this.cap); this.warBy[this.warKey(this.cap, dec.enemy)] = dec.enemy; this.event('war', this.cap, JA`同盟に従い、${this.realmName(dec.enemy)}に宣戦した (${this.realmName(dec.ally)}を守る)`); } }
-      else if (p) { this.diplo.pacts = this.diplo.pacts.filter((x) => x !== p); this.pactBreach(this.cap, '同盟の参戦を断った'); this.event('politics', this.cap, JA`${this.realmName(dec.ally)}との防衛同盟の参戦を断り、同盟は切れた (破約)`); }
+      if (k === 'join') { if (this.realmAlive(dec.enemy) && !this.atWar(this.cap, dec.enemy)) { this.beginWar(this.cap, dec.enemy, this.cap); this.warBy[this.warKey(this.cap, dec.enemy)] = dec.enemy; this.memAdd(this.cap, dec.ally, 'rescue', this.cap); this.event('war', this.cap, JA`同盟に従い、${this.realmName(dec.enemy)}に宣戦した (${this.realmName(dec.ally)}を守る)`); } }
+      else if (p) { this.diplo.pacts = this.diplo.pacts.filter((x) => x !== p); this.pactBreach(this.cap, '同盟の参戦を断った', dec.ally); this.event('politics', this.cap, JA`${this.realmName(dec.ally)}との防衛同盟の参戦を断り、同盟は切れた (破約)`); }
       return;
     }
     if (k !== 'accept') { this.event('politics', this.cap, JA`${this.realmName(dec.from)}からの${PACT_KINDS[dec.type].label}の協定を断った`); return; }
@@ -173,7 +177,7 @@
       const by = this.warBy[this.warKey(p.a, p.b)];
       D.pacts = D.pacts.filter((x) => !((x.a === p.a && x.b === p.b) || (x.a === p.b && x.b === p.a)));
       if ((by === p.a || by === p.b) && this.pactBound(p, by) && (this.realmWars[this.warKey(p.a, p.b)] ?? 0) >= Math.min(p.onA, p.onB) - 1e-9) {
-        this.pactBreach(by, JA`${this.realmName(by === p.a ? p.b : p.a)}との協定を破って宣戦した`);
+        this.pactBreach(by, JA`${this.realmName(by === p.a ? p.b : p.a)}との協定を破って宣戦した`, by === p.a ? p.b : p.a);
         if (this.isHuman(p.a) || this.isHuman(p.b)) this.event('politics', by === p.a ? p.b : p.a, JA`${this.realmName(by)}が${PACT_KINDS[p.kind].label}の協定を破って宣戦した (破約。ほかの国も協定を受けにくくなる)`);
       }
     }
@@ -185,6 +189,7 @@
         for (const e of this.enemiesOf(y)) {
           const key = this.warKey(y, e);
           if (e === x || this.warBy[key] !== e || this.atWar(x, e) || p.called.includes(`${x}|${key}`)) continue;
+          if (this.pactBars(x, e)) continue; // 仕掛けた国とも不可侵か同盟で結ばれていれば呼ばない (どちらの約束も破らない。前は仕掛けた国 e に宣戦し、守りの記録で e の破約にされていた。回 AI3)
           const news = this.warNews[key];
           if (news && this.year < news.year + this.sysDist(news.from, x) - 1e-9) continue; // 開戦の知らせがまだ届いていない
           p.called.push(`${x}|${key}`);
@@ -196,12 +201,13 @@
             const h = this.aiHonor(x, y, e); // 参戦に応じるか (回 AI2。politics/threat.js)
             if (h.join) {
               this.beginWar(x, e, x);
+              this.memAdd(x, y, 'rescue', x); // 救援の記憶 (回 AI3)
               this.warBy[this.warKey(x, e)] = e; // 同盟に従った参戦は守り: 仕掛けたのは e のまま (e の防衛同盟は呼ばれない。三国同盟のイタリアは 1914 年に参戦しなかった。回 AI2)
               this.event('war', x, JA`${this.realmName(x)}が、同盟国の${this.realmName(y)}を守るため${this.realmName(e)}に宣戦した (${h.why})`);
               this.aiNote(x, JA`同盟国の${this.realmName(y)}を守るため${this.realmName(e)}に宣戦した (${h.why})`);
             } else {
               D.pacts = D.pacts.filter((q) => q !== p);
-              this.pactBreach(x, JA`${this.realmName(y)}との防衛同盟の参戦を断った`);
+              this.pactBreach(x, JA`${this.realmName(y)}との防衛同盟の参戦を断った`, y);
               this.event('politics', x, JA`${this.realmName(x)}は、${this.realmName(e)}に宣戦された同盟国の${this.realmName(y)}を助けず、防衛同盟は切れた (破約。${h.why})`, false);
               this.aiNote(x, JA`${this.realmName(y)}との防衛同盟の参戦を断った (${h.why})`);
               break;
@@ -210,6 +216,7 @@
         }
       }
     }
+    this.leadersYearly(); // 指導者の交代 (回 AI3。politics/memory.js)
     // AI の国 (と観戦の地球) の申し入れ: 首都に届いている記録で、自分の得があり相手も受けそうな相手と種類から、くじで 1 つ
     for (const x of this.colonizedSystems()) {
       const r = x.id;

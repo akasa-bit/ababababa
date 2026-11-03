@@ -62,6 +62,7 @@
 | `politics/story.js` | 政治 | 115 | 語り手の出来事 (STORY) |
 | `politics/diplomacy-consts.js` | 政治 | 25 | 遅れて届く外交の協定 (PACT・PACT_KINDS・セーブの項目 diplo。回 SE2) |
 | `politics/ai-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 11 | AI の国の判断の記録 (AI_LOG・セーブの項目 aiLog)。回 AI2 |
+| `politics/memory-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 39 | 国と国のあいだの記憶 (MEM)・指導者 (LEADER の経歴)・セーブの項目 mem・leaders。回 AI3 |
 | `politics/groups-consts.js` | 政治 | 22 | 星系の中の集団の値 (GROUPS・GROUP_STATUS・所得の分位と価値観の式)。回 SE6 で足した (`docs/groups.md`) |
 | `core/game-base.js` | 共通 (世話役: 道具と検証) | 333 | Game: 作り方 (constructor)・国の割り当て・星系と入植地の引き方・家臣の連なり |
 | `ship/war-peace.js` | 船と戦争 | 236 | Game: 戦争の状態・戦争疲弊・戦勝点・講和・講和会議 |
@@ -89,6 +90,7 @@
 | `economy/development.js` | 経済 | 206 | Game: 前哨・自動の開発・政府の年ごとの処理・入植の目標・奴隷・ステーション |
 | `politics/grants.js` | 政治 | 50 | Game: 資金援助・朝貢 |
 | `politics/diplomacy.js` | 政治 | 213 | Game: 遅れて届く外交 (協定の申し入れ・受けるか・破約・同盟の参戦。回 SE2。防衛同盟の均衡と便乗・理由の記録は回 AI2) |
+| `politics/memory.js` | 政治 (レーン「AI の振る舞い」が足した) | 75 | Game: 記憶の帳簿 (memAdd・memSum・memView)・宣戦の見込みのずれ (aiWarBias)・指導者 (newLeader・leadersYearly・leaderChange・leaderSeen)。回 AI3 |
 | `politics/threat.js` | 政治 (レーン「AI の振る舞い」が足した) | 54 | Game: 脅威への均衡と便乗 (alignOf)・AI の国の宣戦 (aiDeclare)・判断の記録 (aiNote)・講和の理由 (peaceWhy)。回 AI2 |
 | `ship/defense.js` | 船と戦争 | 94 | Game: 海賊・防衛・威圧の艦隊 |
 | `economy/migration.js` | 経済 | 71 | Game: 居住区・恒星間移民・集結・方針の一括 |

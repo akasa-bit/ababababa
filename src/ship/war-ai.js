@@ -2,6 +2,7 @@
   declareWar(root) {
     if (root === this.cap || this.realmOf(root) !== root || this.atWar(this.cap, root)) return fail('宣戦できない');
     this.beginWar(this.cap, root, this.cap);
+    this.memAdd(this.cap, root, 'agg', this.cap); // 侵略の記憶 (回 AI3)
     this.event('politics', this.cap, JA`${this.realmName(root)}に宣戦した (相手は攻め落とされるまで降伏しない)`);
     return { ok: true };
   }
@@ -557,7 +558,7 @@
         for (const r of targets) {
           if (r === root || this.seenBy(root, r)?.[1] !== r || this.realmOf(r) !== r || this.sysDist(r, root) > BARGAIN.warDist) continue;
           if (this.pactBars(root, r)) continue; // 不可侵と同盟の相手には宣戦しない (政治。B-026。協定の知らせが届いてから)
-          const z = this.misread(), v = this.reservation(root, r, z, 0) + this.claimBonus(root, r); // 自分から独立した国には請求権のぶん上乗せ (政治の RECLAIM。回 SE5・B-028)
+          const z = this.misread(), v = this.reservation(root, r, z, 0) + this.claimBonus(root, r) + this.aiWarBias(root, r); // 自分から独立した国には請求権のぶん上乗せ (政治の RECLAIM。回 SE5・B-028)。記憶と指導者のずれ (回 AI3。politics/memory.js)
           if (v > BARGAIN.declare && (!best || v > best.v)) best = { r, v, z };
         }
         if (best) this.aiDeclare(root, best.r, best.z); // 宣戦と、理由の内訳の知らせ (政治の politics/threat.js。回 AI2)
