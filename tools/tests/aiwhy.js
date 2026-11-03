@@ -58,10 +58,11 @@ g.pactAnswerAi({ from: c, to: d, kind: 'ally', gift: 100000 });
 const al = g.pactBetween(c, d, 'ally');
 judged(d, /からの防衛同盟の協定を受けた \((共通の脅威|便乗|共通の脅威が見えない)/, '防衛同盟の返事');
 check(al && (al.th === undefined || g.realmAlive(al.th)) && (al.mode === undefined || ['balance', 'bandwagon'].includes(al.mode)), `防衛同盟に共通の脅威と均衡か便乗かが残らない (${JSON.stringify(al)})`);
+const propose0 = sim.evaluate('PACT.aiPropose');
 sim.evaluate('PACT.aiPropose = 1');
 const before = Object.fromEntries(Object.entries(g.aiLog).map(([k, v]) => [k, v.length]));
 g.diplomacyYearly();
-sim.evaluate('PACT.aiPropose = 0.04');
+sim.evaluate(`PACT.aiPropose = ${propose0}`);
 const proposer = Object.keys(g.aiLog).find((k) => (g.aiLog[k].length > (before[k] || 0)) && /の協定を申し入れた \(/.test(last(Number(k))));
 if (proposer !== undefined) judged(Number(proposer), /の協定を申し入れた \(/, '協定の申し入れ');
 
