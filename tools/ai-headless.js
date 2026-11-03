@@ -43,8 +43,8 @@ function count(file) {
       if (p !== 'indep') recvd(target);
       return r;
     });
-    wrap('makePact', (orig, a, b, kind, gift) => {
-      const p = orig(a, b, kind, gift);
+    wrap('makePact', (orig, a, b, kind, gift, info) => {
+      const p = orig(a, b, kind, gift, info);
       if (kind === 'nap' || kind === 'ally') { nation(a).pacts++; nation(b).pacts++; }
       if (kind === 'ally') { out.ally++; if (p.th !== undefined && p.th !== null) out.allyThreat++; if (p.mode === 'bandwagon') out.allyBandwagon++; if (p.th !== undefined && p.th !== null) recvd(p.th); }
       return p;
