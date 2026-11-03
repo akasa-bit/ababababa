@@ -16,10 +16,11 @@ const PACT_KINDS = {
 //   giftScale = 贈り物 giftScale cr で s が 1 上がる
 //   breachCouncil = 人間の国が破約したときの議会の支持の減り
 //   aiPropose = AI の国が年に申し入れる確率 (見込みがいちばん良い相手と種類に)
+//   honorLine = AI の国が防衛同盟の参戦に応じる、見込む戦勝点の下限 (politics/threat.js の aiHonor。下回れば断って破約。回 AI2)
 // 較正 (回 AI2。tools/ai-headless.js の 8 銀河 × 300 年): aiPropose 0.04 → 0.3・napBase 0.2 → 0.4 で、国が新しく結ぶ協定の数 (R90。ATOP 5.1 の国の 25〜75% 点 6.13〜15.79) が
 //   1.05 → 7.67。allyBase −0.3 → −0.05 で、共通の脅威に向けた防衛同盟 (R91。帯 15.7〜73.9%) が 84.4 → 74.1%。allyBase が 0 では 8.9% に落ちる
 //   (艦隊の見えない相手との同盟は、脅威があるときしか結ばれないので、−0.1〜−0.05 で 74〜76% にとどまる)
-const PACT = { years: 30, napBase: 0.4, allyBase: -0.05, allyHelp: 0.5, atWar: 0.5, tradeBase: 0.5, distrust: 0.5, distrustYears: 30, giftScale: 2000, breachCouncil: 10, aiPropose: 0.3, replyYears: 10 };
+const PACT = { years: 30, napBase: 0.4, allyBase: -0.05, allyHelp: 0.5, atWar: 0.5, tradeBase: 0.5, distrust: 0.5, distrustYears: 30, giftScale: 2000, breachCouncil: 10, aiPropose: 0.3, replyYears: 10, honorLine: -30 };
 saveField('diplo', (game) => game.diplo, {
   init: (game) => { game.diplo = { pacts: [], sent: [], breach: {} }; },
   read: (game, d) => {

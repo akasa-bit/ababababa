@@ -1,7 +1,7 @@
 // AI の国の判断の理由 (回 AI2・B-301。F30「AI の判断の理由の表示」= 100%) の試験。画面なしの版で回す
 // 1. AI の国の宣戦 (AI どうし・人間の国へ) は、知らせと記録に理由の内訳 (首都に届いた記録の艦隊・勝つ見込み・見込む戦勝点・戦費) が付く。人間の国にも自分の判断で宣戦できる
 // 2. 講和: AI どうしの申し入れに答えたとき・人間の国からの申し入れを受けた/断ったとき・AI が講和を申し入れたときに、受け入れる線の内訳が付く (断られた人間には返事にも出る)
-// 3. 協定: 受けた・断った・申し入れたときに、理由 (共通の脅威・便乗・艦隊の見え方・破約) が付く。防衛同盟は、共通の脅威 (th) と均衡か便乗か (mode) を覚える
+// 3. 協定: 受けた・断った・申し入れたとき、防衛同盟の参戦に応じた・断ったときに、理由 (共通の脅威・便乗・艦隊の見え方・破約・勝つ見込み) が付く。防衛同盟は、共通の脅威 (th) と均衡か便乗か (mode) を覚える
 // 4. 星系の欄 (その国の首都の節「この国の判断と理由」) に出る。プレイヤーの首都に光が届くまでは出ない
 // 5. 便乗と均衡の分かれ目: いちばん脅威な国に、味方を集めて届けば均衡、届かなければ便乗
 // 6. セーブと読み込みで記録が残る
@@ -58,6 +58,10 @@ g.pactAnswerAi({ from: c, to: d, kind: 'ally', gift: 100000 });
 const al = g.pactBetween(c, d, 'ally');
 judged(d, /からの防衛同盟の協定を受けた \((共通の脅威|便乗|共通の脅威が見えない)/, '防衛同盟の返事');
 check(al && (al.th === undefined || g.realmAlive(al.th)) && (al.mode === undefined || ['balance', 'bandwagon'].includes(al.mode)), `防衛同盟に共通の脅威と均衡か便乗かが残らない (${JSON.stringify(al)})`);
+// 同盟の参戦: 勝つ見込みで応じるか決め、理由を記録する (席の国も席のない国も aiHonor)
+const reply = g.asRealm(b, () => g.pactAiReply({ type: 'call', ally: d, enemy: a }));
+check(['join', 'refuse'].includes(reply), `同盟の参戦の返事の形が違う (${reply})`);
+judged(b, /(同盟国の.*を守るため.*に宣戦した|との防衛同盟の参戦を断った) \(首都に届いた記録で: 艦隊 自分と/, '同盟の参戦の返事');
 const propose0 = sim.evaluate('PACT.aiPropose');
 sim.evaluate('PACT.aiPropose = 1');
 const before = Object.fromEntries(Object.entries(g.aiLog).map(([k, v]) => [k, v.length]));

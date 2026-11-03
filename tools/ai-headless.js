@@ -20,7 +20,7 @@ const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.lengt
 
 function count(file) {
   const sim = H.load({ src: file, params });
-  const out = { galaxies: 0, years: Number(yS), decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, lead: { leader: 0, others: 0, n: 0 } };
+  const out = { galaxies: 0, years: Number(yS), decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, honor: { join: 0, refuse: 0 }, lead: { leader: 0, others: 0, n: 0 } };
   for (const seed of seedList()) {
     const g = sim.newGame(String(seed), { nations: Number(natS) });
     out.galaxies++;
@@ -49,6 +49,7 @@ function count(file) {
       if (kind === 'ally') { out.ally++; if (p.th !== undefined && p.th !== null) out.allyThreat++; if (p.mode === 'bandwagon') out.allyBandwagon++; if (p.th !== undefined && p.th !== null) recvd(p.th); }
       return p;
     });
+    if (g.aiHonor) wrap('aiHonor', (orig, ...a) => { const h = orig(...a); out.honor[h.join ? 'join' : 'refuse']++; return h; });
     const Y = Number(yS);
     for (let y = 0; y < Y; y++) {
       const rs = alive();
@@ -73,12 +74,13 @@ function count(file) {
   return out;
 }
 function merge(list) {
-  const o = { galaxies: 0, years: list[0].years, decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, lead: { leader: 0, others: 0, n: 0 } };
+  const o = { galaxies: 0, years: list[0].years, decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, honor: { join: 0, refuse: 0 }, lead: { leader: 0, others: 0, n: 0 } };
   for (const x of list) {
     o.galaxies += x.galaxies;
     for (const [k, v] of Object.entries(x.decl)) o.decl[k] = (o.decl[k] || 0) + v;
     o.pairYears.aiHuman += x.pairYears.aiHuman; o.pairYears.aiAi += x.pairYears.aiAi;
     o.pactsPerNation.push(...x.pactsPerNation);
+    o.honor.join += x.honor?.join || 0; o.honor.refuse += x.honor?.refuse || 0;
     o.ally += x.ally; o.allyThreat += x.allyThreat; o.allyBandwagon += x.allyBandwagon;
     o.lead.leader += x.lead.leader; o.lead.others += x.lead.others; o.lead.n += x.lead.n;
   }
@@ -90,7 +92,7 @@ function summarize(o) {
   const f28 = rateAA ? rateAH / rateAA : null;
   const f29 = o.lead.others ? o.lead.leader / o.lead.others : null;
   const r90 = median(o.pactsPerNation), r91 = o.ally ? o.allyThreat / o.ally : null;
-  return { f28, rateAH, rateAA, f29, r90, r91, ally: o.ally, allyThreat: o.allyThreat, allyBandwagon: o.allyBandwagon, nations: o.pactsPerNation.length, decl: o.decl, galaxies: o.galaxies };
+  return { f28, rateAH, rateAA, f29, r90, r91, ally: o.ally, allyThreat: o.allyThreat, allyBandwagon: o.allyBandwagon, honor: o.honor, nations: o.pactsPerNation.length, decl: o.decl, galaxies: o.galaxies };
 }
 function table(s) {
   const f = (v, d = 2) => (v === null || v === undefined ? '—' : v.toFixed(d));
@@ -103,6 +105,7 @@ function table(s) {
     `| F29 先頭への重り (先頭が受けた宣戦と先頭に向けた防衛同盟 ÷ ほかの国の平均) | ${f(s.f29)}${ok(s.f29, 1.25, null)} | 1.25 以上 |`,
     `| R90 国が新しく結ぶ協定の数 (国・100 年。${s.nations} か国の中央値) | ${f(s.r90)}${ok(s.r90, 6.13, 15.79)} | 6.13〜15.79 |`,
     `| R91 共通の脅威に向けた防衛同盟 (${s.allyThreat} / ${s.ally}。うち便乗 ${s.allyBandwagon}) | ${s.r91 === null ? '—' : `${(100 * s.r91).toFixed(1)}%`}${ok(s.r91, 0.1571, 0.7386)} | 15.7〜73.9% |`,
+    `| 防衛同盟の参戦に応じた割合 (AI の国。Leeds ほか 2000 の 74.5% に較正) | ${s.honor.join + s.honor.refuse ? `${(100 * s.honor.join / (s.honor.join + s.honor.refuse)).toFixed(1)}% (${s.honor.join} / ${s.honor.join + s.honor.refuse})` : '—'} | — |`,
     '', `宣戦の向きと道 (A = AI の国・H = 人間の国。own = 自分の判断・ally = 同盟の参戦・indep = 独立・strike = 一撃・human = 人間の席): ${decl}`,
   ].join('\n');
 }

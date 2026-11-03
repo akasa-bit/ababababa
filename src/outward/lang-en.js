@@ -1435,7 +1435,11 @@ const I18N_EN = {
 "参戦する": "Join the war",
 "{0}と戦争になる": "War with {0}",
 "同盟は切れ、破約になる (議会の支持 −{0}・ほかの国が協定を受けにくくなる)": "The alliance ends in breach (council support −{0}; other realms less willing to sign pacts)",
-"{0}が、同盟国の{1}を守るため{2}に宣戦した": "{0} declared war on {2} to defend its ally {1}",
+"{0}が、同盟国の{1}を守るため{2}に宣戦した ({3})": "{0} declared war on {2} to defend its ally {1} ({3})",
+"同盟国の{0}を守るため{1}に宣戦した ({2})": "Declared war on {1} to defend its ally {0} ({2})",
+"{0}との防衛同盟の参戦を断った": "Refused to join the war under the defense alliance with {0}",
+"{0}は、{1}に宣戦された同盟国の{2}を助けず、防衛同盟は切れた (破約。{3})": "{0} did not help its ally {2}, attacked by {1}, and the defense alliance ended (breach. {3})",
+"{0}との防衛同盟の参戦を断った ({1})": "Refused to join the war under the defense alliance with {0} ({1})",
 "{0}に{1}の協定を申し入れた ({2})": "Proposed a {1} pact to {0} ({2})",
 // == politics/threat.js
 "・交戦中": " · at war",
@@ -1450,6 +1454,7 @@ const I18N_EN = {
 "降伏まで戦う": "fight to surrender",
 "・勝つ見込み {0}%": " · chance to win {0}%",
 "戦勝点 {0}・受け入れる線 {1} (艦隊 自分 {2}・相手 {3}{4})・戦争疲弊 {5}": "war score {0} · acceptable line {1} (fleets own {2} · theirs {3}{4}) · war exhaustion {5}",
+"首都に届いた記録で: 艦隊 自分と{0} {1}・{2} {3}{4}・勝つ見込み {5}%・見込む戦勝点 {6}": "From the records that reached the capital: fleets own and {0} {1} · {2} {3}{4} · chance to win {5}% · expected war score {6}",
 // == ship/defense.js
 "[自動防衛] {0} の艦隊": "[Auto-defense] {0} fleet",
 "[威圧] {0} の艦隊": "[Intimidation] {0} fleet",

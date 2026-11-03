@@ -52,3 +52,15 @@
     const res = this.reservation(r, e, undefined, undefined, o);
     return JA`戦勝点 ${Math.round(this.warScore(r, e))}・受け入れる線 ${res >= 100 ? JA`降伏まで戦う` : Math.round(res)} (艦隊 自分 ${Math.round(o.ours ?? this.realmShips(r))}・相手 ${Math.round(o.theirs ?? this.seenShips(r, e))}${o.p !== undefined ? JA`・勝つ見込み ${Math.round(100 * o.p)}%` : ''})・戦争疲弊 ${Math.round(this.exhaustion[r] || 0)}`;
   }
+  // 防衛同盟の参戦に応じるか (回 AI2): x の首都に届いている記録で、同盟国 y と合わせて e と戦う見込み。交渉の模型 (reservation) と同じ式で、
+  // 味方に y の艦隊を足し、相手に e の同盟国の艦隊を足す (読み違いはその場で引く)。見込む戦勝点が PACT.honorLine 以上なら参戦する。
+  // 線は、戦争で同盟の約束が守られた割合 74.5% (Leeds・Long・Mitchell 2000) に合わせて較正した
+  aiHonor(x, y, e) {
+    const z = this.misread();
+    const ours = this.realmShips(x) + this.seenShips(x, y), allies = this.pactAllyShips(x, e);
+    const theirs = (this.seenShips(x, e) + allies) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(x, e)));
+    const p = (ours + 0.5) / (ours + theirs + 1);
+    const v = (2 * p - 1) * BARGAIN.swing - (BARGAIN.cost + BARGAIN.costEx * (this.exhaustion[x] || 0)) * BARGAIN.horizon;
+    const why = JA`首都に届いた記録で: 艦隊 自分と${this.realmName(y)} ${Math.round(ours)}・${this.realmName(e)} ${Math.round(theirs)}${allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * p)}%・見込む戦勝点 ${Math.round(v)}`;
+    return { join: v >= PACT.honorLine, why, v };
+  }

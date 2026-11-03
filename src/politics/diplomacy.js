@@ -141,7 +141,11 @@
   }
   // 観戦の地球が、決めること (協定) に答える (earthPoliticsYearly から)
   pactAiReply(dec) {
-    if (dec.type === 'call') return 'join';
+    if (dec.type === 'call') { // 同盟の参戦: 勝つ見込みで決める (回 AI2。politics/threat.js の aiHonor)
+      const h = this.aiHonor(this.cap, dec.ally, dec.enemy);
+      this.aiNote(this.cap, h.join ? JA`同盟国の${this.realmName(dec.ally)}を守るため${this.realmName(dec.enemy)}に宣戦した (${h.why})` : JA`${this.realmName(dec.ally)}との防衛同盟の参戦を断った (${h.why})`);
+      return h.join ? 'join' : 'refuse';
+    }
     return this.pactScore(this.cap, dec.from, dec.type, { gift: dec.gift || 0 }).s >= 0 ? 'accept' : 'refuse';
   }
   // 年 1 回: 申し入れが届く・期限切れ・破約・同盟の参戦・AI の申し入れ
@@ -174,10 +178,10 @@
       }
     }
     // 防衛同盟: 相手が宣戦されたら、その知らせが首都に届いた年に参戦する
-    for (const p of D.pacts) {
+    for (const p of [...D.pacts]) {
       if (p.kind !== 'ally') continue;
       for (const [x, y] of [[p.a, p.b], [p.b, p.a]]) {
-        if (!this.pactBound(p, x)) continue;
+        if (!this.pactBound(p, x) || !D.pacts.includes(p)) continue;
         for (const e of this.enemiesOf(y)) {
           const key = this.warKey(y, e);
           if (e === x || this.warBy[key] !== e || this.atWar(x, e) || p.called.includes(`${x}|${key}`)) continue;
@@ -189,9 +193,19 @@
               text: JA`同盟国の${this.realmName(y)}が${this.realmName(e)}に宣戦された。防衛同盟に従って参戦するか。`,
               opts: [{ k: 'join', label: '参戦する', note: JA`${this.realmName(e)}と戦争になる` }, { k: 'refuse', label: '断る', note: JA`同盟は切れ、破約になる (議会の支持 −${PACT.breachCouncil}・ほかの国が協定を受けにくくなる)` }] }));
           } else {
-            this.beginWar(x, e, x);
-            this.warBy[this.warKey(x, e)] = e; // 同盟に従った参戦は守り: 仕掛けたのは e のまま (e の防衛同盟は呼ばれない。三国同盟のイタリアは 1914 年に参戦しなかった。回 AI2)
-            this.event('war', x, JA`${this.realmName(x)}が、同盟国の${this.realmName(y)}を守るため${this.realmName(e)}に宣戦した`);
+            const h = this.aiHonor(x, y, e); // 参戦に応じるか (回 AI2。politics/threat.js)
+            if (h.join) {
+              this.beginWar(x, e, x);
+              this.warBy[this.warKey(x, e)] = e; // 同盟に従った参戦は守り: 仕掛けたのは e のまま (e の防衛同盟は呼ばれない。三国同盟のイタリアは 1914 年に参戦しなかった。回 AI2)
+              this.event('war', x, JA`${this.realmName(x)}が、同盟国の${this.realmName(y)}を守るため${this.realmName(e)}に宣戦した (${h.why})`);
+              this.aiNote(x, JA`同盟国の${this.realmName(y)}を守るため${this.realmName(e)}に宣戦した (${h.why})`);
+            } else {
+              D.pacts = D.pacts.filter((q) => q !== p);
+              this.pactBreach(x, JA`${this.realmName(y)}との防衛同盟の参戦を断った`);
+              this.event('politics', x, JA`${this.realmName(x)}は、${this.realmName(e)}に宣戦された同盟国の${this.realmName(y)}を助けず、防衛同盟は切れた (破約。${h.why})`, false);
+              this.aiNote(x, JA`${this.realmName(y)}との防衛同盟の参戦を断った (${h.why})`);
+              break;
+            }
           }
         }
       }

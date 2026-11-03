@@ -1,5 +1,6 @@
 // 戦争の自動対戦 (画面なしの版): 国家選択のある試合を観戦で回し、戦争の始まり・終わり方・長さと、国家間戦争の多さを数える。
 // 国家間戦争の多さ: 国どうしの戦争 (独立戦争を除く) への参加の始まり (1 つの戦争で 2) ÷ 国・年 × 100。国 = 毎年の独立した国 (国の首都) の数
+//   防衛同盟に従った参戦は、すでに戦っている戦争に 1 国が加わるので参加は 1 (COW と同じく、国が新しく戦争に入る回数。回 AI2 で同盟が増えて差が出た)
 // tools/wars.js (ブラウザ) と同じ数え方。main と比べるときは、比べる元の src を 2 つめに渡す
 // 使い方: node tools/wars-headless.js <src/index.html> [比べる元の src] [銀河の数] [年数] [国の数]
 //   --seeds a-b = 銀河 a〜b だけを回す・--json p.json = 数えた生の値を書く・--params 値.json = 値を上書きして回す (headless の params。例 {"BARGAIN":{"warDist":20}})
@@ -16,18 +17,20 @@ const seedList = () => { if (seedsS) { const [lo, hi] = seedsS.split('-').map(Nu
 function count(file) {
   const sim = H.load({ src: file, params });
   const done = [];
-  let gamesYears = 0, realmYears = 0, interstate = 0, sieged = 0;
+  let gamesYears = 0, realmYears = 0, interstate = 0, joins = 0, sieged = 0;
   const battles = []; // 試合の中の艦隊戦 [ln(攻撃 ÷ 防衛), 攻撃側の勝ち] (B-168)
   const seeds = seedList();
   for (const seed of seeds) {
     const g = sim.newGame(String(seed), { nations: Number(natS) });
     const wars = new Map();
     const wrap = (name, fn) => { const orig = g[name].bind(g); g[name] = (...a) => fn(orig, ...a); };
-    let mode = null, inIndep = false;
+    let mode = null, inIndep = false, inJoin = false;
     wrap('declareIndependence', (orig, ...a) => { inIndep = true; try { return orig(...a); } finally { inIndep = false; } });
     wrap('recordSnapshots', (orig) => { realmYears += new Set(g.colonizedSystems().map((x) => g.realmOf(x.id))).size; return orig(); });
     const finish = (key, how) => { const w = wars.get(key); if (!w) return; wars.delete(key); done.push({ dur: g.year - w.start, how, dead: g.warStats[key]?.dead || 0 }); };
-    wrap('beginWar', (orig, by, target, from) => { const r = orig(by, target, from); wars.set(g.warKey(by, target), { start: g.year }); if (!inIndep) interstate++; return r; });
+    wrap('diplomacyYearly', (orig, ...a) => { inJoin = true; try { return orig(...a); } finally { inJoin = false; } }); // 同盟の参戦 (AI の国)
+    wrap('resolvePact', (orig, dec, k) => { inJoin = dec?.type === 'call'; try { return orig(dec, k); } finally { inJoin = false; } }); // 同盟の参戦 (席の国の返事)
+    wrap('beginWar', (orig, by, target, from) => { const r = orig(by, target, from); wars.set(g.warKey(by, target), { start: g.year }); if (!inIndep) { interstate++; if (inJoin) joins++; } return r; });
     wrap('makePeace', (orig, a, c, from) => { mode = Math.abs(g.warScore(a, c)) < 5 ? 'white' : 'treaty'; const r = orig(a, c, from); mode = null; return r; });
     wrap('startConference', (orig, loser, winners, from) => { const m = mode || (winners.length && winners[0].pts >= 100 ? 'capitulation' : 'treaty'); for (const w of winners) finish(g.warKey(w.realm, loser), m); return orig(loser, winners, from); });
     wrap('endWar', (orig, a, c, from) => { finish(g.warKey(a, c), mode || 'white'); return orig(a, c, from); });
@@ -39,9 +42,9 @@ function count(file) {
     for (const k of [...wars.keys()]) finish(k, 'ongoing');
     gamesYears += Number(yS);
   }
-  return { games: seeds.length, years: Number(yS), done, battles, gamesYears, realmYears, interstate, sieged };
+  return { games: seeds.length, years: Number(yS), done, battles, gamesYears, realmYears, interstate, joins, sieged };
 }
-function summarize({ done, battles, gamesYears, realmYears, interstate, sieged }) {
+function summarize({ done, battles, gamesYears, realmYears, interstate, joins = 0, sieged }) {
   const ended = done.filter((d) => d.how !== 'ongoing');
   const durs = ended.map((d) => d.dur).sort((a, b) => a - b);
   const med = durs[Math.floor(durs.length / 2)] || 0, mean = durs.reduce((k, x) => k + x, 0) / (durs.length || 1);
@@ -58,7 +61,7 @@ function summarize({ done, battles, gamesYears, realmYears, interstate, sieged }
     slope = b1;
   }
   const r15 = powerTail(done.map((d) => d.dead).filter((x) => x > 0));
-  return { battles: battles.length, sieged, slope, r15, deadWars: done.filter((d) => d.dead > 0).length, r19: (2 * interstate / (realmYears || 1)) * 100, per100y: (done.length / gamesYears) * 100, ended: ended.length, ongoing: done.length - ended.length, meanYears: mean, medianYears: med, meanOverMedian: med ? mean / med : null,
+  return { battles: battles.length, sieged, slope, r15, deadWars: done.filter((d) => d.dead > 0).length, r19: ((2 * interstate - joins) / (realmYears || 1)) * 100, joins, per100y: (done.length / gamesYears) * 100, ended: ended.length, ongoing: done.length - ended.length, meanYears: mean, medianYears: med, meanOverMedian: med ? mean / med : null,
     white: share('white'), treaty: share('treaty'), capitulation: share('capitulation'), conquest: share('conquest') };
 }
 // 戦死者数の裾のべき指数 (R15。Clauset–Shalizi–Newman の方法の連続版: xmin ごとに最尤の α を出し、KS 距離が一番小さい xmin を選ぶ。p 値のブートストラップはしない)
@@ -78,7 +81,7 @@ function powerTail(xs) {
 let raws;
 if (mergeS) {
   const parts = mergeS.split(',').map((f) => JSON.parse(fs.readFileSync(f, 'utf8')));
-  const join = (k) => { const ps = parts.map((p) => p[k]).filter(Boolean); return ps.length ? { games: 0, years: ps[0].years, done: [], battles: [], gamesYears: 0, realmYears: 0, interstate: 0, sieged: 0, ...ps.reduce((m, p) => ({ games: (m.games || 0) + p.games, years: p.years, done: [...(m.done || []), ...p.done], battles: [...(m.battles || []), ...p.battles], gamesYears: (m.gamesYears || 0) + p.gamesYears, realmYears: (m.realmYears || 0) + p.realmYears, interstate: (m.interstate || 0) + p.interstate, sieged: (m.sieged || 0) + p.sieged }), {}) } : null; };
+  const join = (k) => { const ps = parts.map((p) => p[k]).filter(Boolean); return ps.length ? { games: 0, years: ps[0].years, done: [], battles: [], gamesYears: 0, realmYears: 0, interstate: 0, joins: 0, sieged: 0, ...ps.reduce((m, p) => ({ games: (m.games || 0) + p.games, years: p.years, done: [...(m.done || []), ...p.done], battles: [...(m.battles || []), ...p.battles], gamesYears: (m.gamesYears || 0) + p.gamesYears, realmYears: (m.realmYears || 0) + p.realmYears, interstate: (m.interstate || 0) + p.interstate, joins: (m.joins || 0) + (p.joins || 0), sieged: (m.sieged || 0) + p.sieged }), {}) } : null; };
   raws = [['この版', join('cur')], ['比べる元', join('base')]].filter(([, r]) => r);
 } else {
   raws = [['この版', count(src)], ...(baseSrc && baseSrc !== '-' && baseSrc !== '' ? [['比べる元', count(baseSrc)]] : [])];
