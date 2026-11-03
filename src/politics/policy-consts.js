@@ -6,7 +6,10 @@ const POLICY_YEARS = 30; // 国家方針を変えられる間隔
 const UNREST_LABEL = { 1: '不満', 2: '要求', 3: '最後通牒' };
 const UNREST_AT = 30; // 忠誠度がこれ未満なら、画面で低いと示す
 const UNREST_CALM = 40; // 不満が収まる忠誠度の下限 (calmAtOf)
-const UNREST_YEARS = 10;
+// ゲーム版は不満から要求まで 20 年・最後通牒の期限に思いとどまった家臣は 40 年たってから不満に戻る (補正の台帳の C22。回 SE13・SE13-Q1)。
+// 値がなければ (シミュレーション版) 10 年・すぐ不満に戻る
+const UNREST_YEARS = ED.unrestYears ?? 10;
+const BACKOFF_YEARS = ED.backoffYears ?? 0; // 最後通牒の期限に思いとどまったあと、不満の数え始めを遅らせる年数
 const ULTIMATUM_YEARS = 10;
 const CONCESSION_YEARS = 30; // 要求をのんだときの減税・自治の期間
 // AI の主人が家臣の要求をのむか (QD-41 = c・B-142。docs/demands.md)。のむ見込み = 1 ÷ (1 + exp(−z))、
