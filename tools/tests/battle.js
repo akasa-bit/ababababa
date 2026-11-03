@@ -27,6 +27,9 @@ check(g.battleOdds(20, 10) === p2 && g.rs === rs, '見込みが試合の乱数�
 check(g.battleOdds(0, 5) === 0 && g.battleOdds(5, 0) === 1, '片方が 0 艦隊のときの見込みが違う');
 
 // 2
+// 30 年の試合で、相手の首都がもう攻められていることがある (回 AI2 から。協定と同盟の参戦が増えた)。決まった形から始めるため、戦争・艦隊戦・攻囲・協定を片づける
+for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+g.battles = []; g.sieges = []; g.diplo.pacts = [];
 const e = g.nations.map((n) => n.cap).find((c) => c !== g.cap);
 const eSys = g.realmSystems(e).map((x) => x.id);
 g.beginWar(g.cap, e, g.cap);

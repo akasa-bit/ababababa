@@ -15,7 +15,8 @@ const H = require('../headless');
 const sim = H.load({ edition: 'game' });
 const fails = [];
 const check = (ok, msg) => { if (!ok) fails.push(msg); };
-const g = sim.newGame('4', { nations: 6 });
+// シード 7 (回 AI2 から。AI の国が人間の国にも宣戦するようになり、シード 4 では 120 年までに人間の国が滅んで家臣の星系がなくなった)
+const g = sim.newGame('7', { nations: 6 });
 const GB = sim.evaluate('GROUPS.exclBeta'), GR = sim.evaluate('GROUPS.exclRef');
 
 // 1. 権力への近さ
