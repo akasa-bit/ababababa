@@ -131,7 +131,7 @@
   resolvePact(dec, k) {
     if (dec.type === 'call') {
       const p = this.diplo.pacts.find((x) => x.id === dec.pact);
-      if (k === 'join') { if (this.realmAlive(dec.enemy) && !this.atWar(this.cap, dec.enemy)) { this.beginWar(this.cap, dec.enemy, this.cap); this.event('war', this.cap, JA`同盟に従い、${this.realmName(dec.enemy)}に宣戦した (${this.realmName(dec.ally)}を守る)`); } }
+      if (k === 'join') { if (this.realmAlive(dec.enemy) && !this.atWar(this.cap, dec.enemy)) { this.beginWar(this.cap, dec.enemy, this.cap); this.warBy[this.warKey(this.cap, dec.enemy)] = dec.enemy; this.event('war', this.cap, JA`同盟に従い、${this.realmName(dec.enemy)}に宣戦した (${this.realmName(dec.ally)}を守る)`); } }
       else if (p) { this.diplo.pacts = this.diplo.pacts.filter((x) => x !== p); this.pactBreach(this.cap, '同盟の参戦を断った'); this.event('politics', this.cap, JA`${this.realmName(dec.ally)}との防衛同盟の参戦を断り、同盟は切れた (破約)`); }
       return;
     }
@@ -190,6 +190,7 @@
               opts: [{ k: 'join', label: '参戦する', note: JA`${this.realmName(e)}と戦争になる` }, { k: 'refuse', label: '断る', note: JA`同盟は切れ、破約になる (議会の支持 −${PACT.breachCouncil}・ほかの国が協定を受けにくくなる)` }] }));
           } else {
             this.beginWar(x, e, x);
+            this.warBy[this.warKey(x, e)] = e; // 同盟に従った参戦は守り: 仕掛けたのは e のまま (e の防衛同盟は呼ばれない。三国同盟のイタリアは 1914 年に参戦しなかった。回 AI2)
             this.event('war', x, JA`${this.realmName(x)}が、同盟国の${this.realmName(y)}を守るため${this.realmName(e)}に宣戦した`);
           }
         }
