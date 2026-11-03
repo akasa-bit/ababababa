@@ -32,9 +32,10 @@
     const o = {};
     this.reservation(root, e, z, 0, o);
     const claim = this.claimBonus(root, e);
-    const al = this.alignOf(root);
+    const al = this.alignOf(root), mw = this.aiWarWhy(root, e);
     this.beginWar(root, e, root);
-    const why = JA`首都に届いた記録で: 艦隊 自分 ${Math.round(o.ours)}・相手 ${Math.round(o.theirs)}${o.allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(o.allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * o.p)}%・見込む戦勝点 ${Math.round(o.expect)}・戦費 −${Math.round(o.cost)}${o.shift >= 0.5 ? JA`・相手の伸び +${Math.round(o.shift)}` : ''}${claim ? JA`・請求権 +${Math.round(claim)}` : ''}${al.t === e ? JA`・いちばんの脅威` : ''}`;
+    this.memAdd(root, e, 'agg', root); // 侵略の記憶 (回 AI3)
+    const why = JA`首都に届いた記録で: 艦隊 自分 ${Math.round(o.ours)}・相手 ${Math.round(o.theirs)}${o.allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(o.allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * o.p)}%・見込む戦勝点 ${Math.round(o.expect)}・戦費 −${Math.round(o.cost)}${o.shift >= 0.5 ? JA`・相手の伸び +${Math.round(o.shift)}` : ''}${claim ? JA`・請求権 +${Math.round(claim)}` : ''}${al.t === e ? JA`・いちばんの脅威` : ''}${mw ? JA`・${mw}` : ''}`;
     this.event('politics', root, JA`${this.realmName(root)}が${this.realmName(e)}に宣戦した (${why})`, false);
     this.aiNote(root, JA`${this.realmName(e)}に宣戦した (${why})`);
   }
