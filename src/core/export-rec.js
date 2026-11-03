@@ -19,6 +19,8 @@ const EXPORT_GOV_BUY = { public: 'GF01', upkeep: 'GF02', military: 'GF02', secur
 const EXPORT_GOV_FN = { pension: 'GF10', research: 'GF01' };
 // 政府の金融の取引 (株の売り買い。純貸出に入れない。回 KE9 の国有化・民営化)
 const EXPORT_FIN = new Set(['nationalize', 'privatize']);
+// 政府の取引でない出入り (純貸出に入れない。GFS 2014 の 10 章の「その他の経済フロー」): 国債の不履行で預金が目減りした分 (種類 default。回 SE13 で、不履行の多い銀河で GNLB との差が 1% を越えた)
+const EXPORT_OEF = new Set(['default']);
 const xr6 = (v) => (typeof v === 'number' && !Number.isInteger(v) ? Number(v.toPrecision(8)) : v);
 
 function exportRecorder(g, emit, st = {}, galaxy = '') {
@@ -104,7 +106,7 @@ function exportRecorder(g, emit, st = {}, galaxy = '') {
       cof.GF04 += -G('granary'); // 政府の倉の正味の買い入れ (売れば負。COFOG 04.2 の市場の安定。在庫の積み増しなので GDP の政府の買い付けには足さない。回 KE12)
       const GE_TR = Math.max(0, -G('grant')) + Math.max(0, -G('tribute'));
       const GE = Object.values(cof).reduce((a, v) => a + v, 0) + intOut + GE_TR;
-      const B9 = Object.entries(f).filter(([k]) => !k.startsWith('bond:') && !EXPORT_FIN.has(k)).reduce((a, [, by]) => a + (by.gov || 0), 0);
+      const B9 = Object.entries(f).filter(([k]) => !k.startsWith('bond:') && !EXPORT_FIN.has(k) && !EXPORT_OEF.has(k)).reduce((a, [, by]) => a + (by.gov || 0), 0);
       emit('sna', { galaxy, year, country: r, name: name(r), POP: xr6(pop[r] || 0), B1GQ: xr6(B1GQ), P3_S14: xr6(-S('spend', 'hh')), P3_S13: xr6(P3_S13), P51G_S13: xr6(P51G), P51G_S11: xr6(Math.max(0, -S('invest', 'fm'))), P6: xr6(P6[r] || 0), P7: xr6(P7[r] || 0), D1: xr6(S('wages', 'hh')), D2: xr6(ctax + tariff), D5: xr6(tax), B9_S13: xr6(B9) });
       emit('gfs', { galaxy, year, country: r, GR: xr6(GR), GR11: xr6(GR11), GR111: xr6(tax), GR114: xr6(ctax), GR115: xr6(tariff), GR13: xr6(grants), GR14: xr6(GR14), GR141: xr6(intIn), GE: xr6(GE), ...Object.fromEntries(Object.entries(cof).map(([k, v]) => [k, xr6(v)])), GF0107: xr6(intOut), GE_TR: xr6(GE_TR), GNLB: xr6(GR - GE) });
       const b = B(r), dep = b.hh[0] + b.fm[0] + b.gov[0] + b.nat[0], loan = b.hh[1] + b.fm[1] + b.gov[1] + b.nat[1];
