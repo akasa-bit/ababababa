@@ -3,10 +3,11 @@
 // 使い方: node tools/tests/strategy.js [年数] [シード(カンマ区切り)]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
-exports.ci = [{ args: ['60', '1,2'], judge: J.passes('戦略ボット') }];
+// シードは 3 つ (回 AI3 から): 人間に近いボットの遅れが効く判断 (協定の申し入れへの返事など) が 60 年のうちに来ない銀河があり、シード 1・2 だけでは、試合の形が変わると放任と同じ筋になった
+exports.ci = [{ args: ['60', '1,2,3'], judge: J.passes('戦略ボット') }];
 if (require.main !== module) return;
 const S = require('../strategy');
-const [years = '60', seedsS = '1,2'] = process.argv.slice(2);
+const [years = '60', seedsS = '1,2,3'] = process.argv.slice(2);
 const Y = Number(years), seeds = seedsS.split(',');
 (async () => {
   const cases = [
