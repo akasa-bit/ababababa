@@ -7,18 +7,19 @@
 //   R91 = 防衛同盟のうち、結んだとき受け手の判断に共通の脅威が入っていたもの (協定の th) の割合 (15.7〜73.9%)
 // 宣戦の道: own = AI の国が自分の判断で (realmsYearly の宣戦)・ally = 同盟の参戦 (diplomacyYearly)・indep = 独立・strike = 光速の一撃・human = 人間の席 (観戦の AI) の宣戦
 // 使い方: node tools/ai-headless.js <src/index.html> [銀河の数] [年数] [国の数]
-//   --seeds a-b = 銀河 a〜b だけを回す・--json p.json = 数えた生の値を書く・--merge p1.json,p2.json,… = 分けて回した結果をまとめて表にする
+//   --seeds a-b = 銀河 a〜b だけを回す・--json p.json = 数えた生の値を書く・--merge p1.json,p2.json,… = 分けて回した結果をまとめて表にする・--params 値.json = 値を上書きして回す (headless の params。例 {"PACT":{"aiPropose":0.1}})
 const fs = require('fs');
 const H = require('./headless');
 const argv = process.argv.slice(2);
 const opt = (name) => { const i = argv.indexOf(name); if (i < 0) return null; const v = argv[i + 1]; argv.splice(i, 2); return v; };
-const seedsS = opt('--seeds'), jsonOut = opt('--json'), mergeS = opt('--merge');
+const seedsS = opt('--seeds'), jsonOut = opt('--json'), mergeS = opt('--merge'), paramsF = opt('--params');
+const params = paramsF ? JSON.parse(fs.readFileSync(paramsF, 'utf8')) : null;
 const [src, nS = '8', yS = '300', natS = '6'] = argv;
 const seedList = () => { if (seedsS) { const [lo, hi] = seedsS.split('-').map(Number); return Array.from({ length: hi - lo + 1 }, (_, i) => lo + i); } return Array.from({ length: Number(nS) }, (_, i) => i + 1); };
 const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
 
 function count(file) {
-  const sim = H.load({ src: file });
+  const sim = H.load({ src: file, params });
   const out = { galaxies: 0, years: Number(yS), decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, lead: { leader: 0, others: 0, n: 0 } };
   for (const seed of seedList()) {
     const g = sim.newGame(String(seed), { nations: Number(natS) });
