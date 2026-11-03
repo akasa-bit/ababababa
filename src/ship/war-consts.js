@@ -43,7 +43,7 @@ const WAREND = { lapse: 10, decisiveP: 0.98, yieldAt: -40 };
 // declareChance は回 FU2 で 0.08 → 0.05 (光の遅れ・艦隊戦・光速の一撃のあと、32 の銀河 × 300 年で R29 が 3.07 → 2.45)
 // warDist は回 SE5 で 25 → 40 (AI の国にも席ができて家臣が割れにくくなり、近くの小さな独立国が減って、宣戦の相手の候補がいなくなった。R29 2.64 → 1.32。docs/negotiation.md の 4.5)。
 // QD-41 = c (AI の主人が要求を半々ほど拒む) で家臣がまた割れるようになったので 25 に戻した (32 の銀河 × 300 年で R29 40 光年 3.20・35 光年 3.27・30 光年 3.06・25 光年 2.69)
-const BARGAIN = { on: true, sigma0: 0.8, sigmaAge: 0.01, learn: 30, swing: 60, cost: 0.2, costEx: 0.02, horizon: 5, shift: 1, shiftYears: 10, capitulate: 90, declare: 20, declareChance: 0.05, warDist: 25 };
+const BARGAIN = { on: true, sigma0: 0.8, sigmaAge: 0.01, learn: 30, swing: 60, cost: 0.2, costEx: 0.02, horizon: 5, shift: 1, shiftYears: 10, capitulate: 90, declare: 20, declareChance: 0.04, warDist: 25 }; // declareChance 0.05 → 0.04 (回 AI2。協定と同盟の参戦が増えたぶん、R29 を帯 1.64〜3.04 の中に戻す)
 const PEACE = { minYears: 3, sueEx: 60, sueWs: -50, stalemate: 0.35, stalemateHalf: 4, offerEvery: 5, offerYears: 10, base: 0.15, loseWs: 80, exLose: 120, winBase: 0.05, exWin: 100, winWs: 400, min: 0.03, max: 0.95 };
 // 艦隊戦 (B-034。HOI4 の海戦を元にした形。docs/proposals/13-battle.md・docs/requests/2026-10-22-FU.md の FU-2)。
 // 1 艦隊 = 耐久 (hp) と組織力 (org) を持つ 1 つの単位。1 年を rounds 回の撃ち合いに分け、戦っている艦は毎回 1 発撃つ:
