@@ -35,7 +35,7 @@
     const al = this.alignOf(root), mw = this.aiWarWhy(root, e);
     this.beginWar(root, e, root);
     this.memAdd(root, e, 'agg', root); // 侵略の記憶 (回 AI3)
-    const why = JA`首都に届いた記録で: 艦隊 自分 ${Math.round(o.ours)}・相手 ${Math.round(o.theirs)}${o.allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(o.allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * o.p)}%・見込む戦勝点 ${Math.round(o.expect)}・戦費 −${Math.round(o.cost)}${o.shift >= 0.5 ? JA`・相手の伸び +${Math.round(o.shift)}` : ''}${claim ? JA`・請求権 +${Math.round(claim)}` : ''}${al.t === e ? JA`・いちばんの脅威` : ''}${mw ? JA`・${mw}` : ''}`;
+    const why = JA`首都に届いた記録で: 艦隊 自分 ${Math.round(o.ours)}・相手 ${Math.round(o.theirs)}${o.allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(o.allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * o.p)}%・見込む戦勝点 ${Math.round(o.expect)}・戦費 −${Math.round(o.cost)}${o.shift >= 0.5 ? JA`・相手の伸び +${Math.round(o.shift)}` : ''}${claim ? JA`・請求権 +${Math.round(claim)}` : ''}${al.t === e ? JA`・いちばんの脅威` : ''}${mw ? JA`・${mw}` : ''}${o.inner && this.innerText(o.inner) ? JA`・${this.innerText(o.inner)}` : ''}`;
     this.event('politics', root, JA`${this.realmName(root)}が${this.realmName(e)}に宣戦した (${why})`, false);
     this.aiNote(root, JA`${this.realmName(e)}に宣戦した (${why})`);
   }
@@ -51,7 +51,8 @@
   peaceWhy(r, e) {
     const o = {};
     const res = this.reservation(r, e, undefined, undefined, o);
-    return JA`戦勝点 ${Math.round(this.warScore(r, e))}・受け入れる線 ${res >= 100 ? JA`降伏まで戦う` : Math.round(res)} (艦隊 自分 ${Math.round(o.ours ?? this.realmShips(r))}・相手 ${Math.round(o.theirs ?? this.seenShips(r, e))}${o.p !== undefined ? JA`・勝つ見込み ${Math.round(100 * o.p)}%` : ''})・戦争疲弊 ${Math.round(this.exhaustion[r] || 0)}`;
+    const it = o.inner ? this.innerText(o.inner) : '';
+    return JA`戦勝点 ${Math.round(this.warScore(r, e))}・受け入れる線 ${res >= 100 ? JA`降伏まで戦う` : Math.round(res)} (艦隊 自分 ${Math.round(o.ours ?? this.realmShips(r))}・相手 ${Math.round(o.theirs ?? this.seenShips(r, e))}${o.p !== undefined ? JA`・勝つ見込み ${Math.round(100 * o.p)}%` : ''})・${it || JA`戦争疲弊 ${Math.round(this.exhaustion[r] || 0)}`}`;
   }
   // 防衛同盟の参戦に応じるか (回 AI2): x の首都に届いている記録で、同盟国 y と合わせて e と戦う見込み。交渉の模型 (reservation) と同じ式で、
   // 味方に y の艦隊を足し、相手に e の同盟国の艦隊を足す (読み違いはその場で引く)。見込む戦勝点が PACT.honorLine 以上なら参戦する。
@@ -61,7 +62,9 @@
     const ours = this.realmShips(x) + this.seenShips(x, y), allies = this.pactAllyShips(x, e);
     const theirs = (this.seenShips(x, e) + allies) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(x, e)));
     const p = (ours + 0.5) / (ours + theirs + 1);
-    const v = (2 * p - 1) * BARGAIN.swing - (BARGAIN.cost + BARGAIN.costEx * (this.exhaustion[x] || 0)) * BARGAIN.horizon;
-    const why = JA`首都に届いた記録で: 艦隊 自分と${this.realmName(y)} ${Math.round(ours)}・${this.realmName(e)} ${Math.round(theirs)}${allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * p)}%・見込む戦勝点 ${Math.round(v)}`;
+    const oi = {}, ic = this.innerCost(x, e, oi); // 中の事情 (回 AI4。politics/inner.js): 議会の支持が低い国は参戦を選びにくい (Putnam 1988)
+    const v = (2 * p - 1) * BARGAIN.swing - (BARGAIN.cost + BARGAIN.costEx * (this.exhaustion[x] || 0)) * BARGAIN.horizon - ic;
+    const it = this.innerText(oi.inner);
+    const why = JA`首都に届いた記録で: 艦隊 自分と${this.realmName(y)} ${Math.round(ours)}・${this.realmName(e)} ${Math.round(theirs)}${allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * p)}%・見込む戦勝点 ${Math.round(v)}${it ? JA`・${it}` : ''}`;
     return { join: v >= PACT.honorLine, why, v };
   }

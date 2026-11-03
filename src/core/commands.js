@@ -70,6 +70,7 @@
     }
     if (act === 'declarewar') return this.declareWar(Number(d.sys));
     if (act === 'pact') return this.proposePact(d); // 遅れて届く外交 (政治。politics/diplomacy.js)
+    if (act === 'meddle') return this.sendMeddle(d); // 外の国の中の勢力を支える・揺さぶる (AI の振る舞い。politics/inner.js。回 AI4)
     if (act === 'design') return this.setDesign(d); // 入植船の設計 (船と戦争。ship/settler.js。B-033)
     if (act === 'policy') return this.setPolicy(d.value);
     if (act === 'fiscal') return this.setFiscal(d);

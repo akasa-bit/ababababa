@@ -8,18 +8,18 @@
   }
   // 観る国 o が asOf 年に知っている、a が b にしたことの重み (光が届いたものだけ。半減 half 年で薄れる)
   memSum(o, a, b, asOf = this.year) {
-    const out = { agg: 0, betray: 0, rescue: 0, gift: 0, indep: 0 };
+    const out = { agg: 0, betray: 0, rescue: 0, gift: 0, indep: 0, meddle: 0 };
     for (const e of this.mem[`${a}|${b}`] || []) {
       if (asOf < e.y + (e.at === o ? 0 : this.sysDist(e.at, o)) - 1e-9) continue;
       out[e.k] = (out[e.k] || 0) + e.w * GM.pow(0.5, (asOf - e.y) / MEM.half);
     }
     return out;
   }
-  // r から見た p への恩 (p が r を救った・贈った) と恨み (p が r を侵略した・裏切った・r から分かれた国を支えた)。r の首都に届いた分だけ
+  // r から見た p への恩 (p が r を救った・贈った) と恨み (p が r を侵略した・裏切った・r から分かれた国を支えた・r の内政に干渉した (回 AI4))。r の首都に届いた分だけ
   memView(r, p, asOf = this.year) {
     const m = this.memSum(r, p, r, asOf);
-    const thanks = m.rescue + m.gift, grudge = m.agg + m.betray + m.indep;
-    const L = { agg: '侵略', betray: '裏切り', indep: '独立の支援', rescue: '救援', gift: '贈り物' };
+    const thanks = m.rescue + m.gift, grudge = m.agg + m.betray + m.indep + m.meddle;
+    const L = { agg: '侵略', betray: '裏切り', indep: '独立の支援', meddle: '内政への干渉', rescue: '救援', gift: '贈り物' };
     const parts = Object.keys(L).filter((k) => m[k] >= 0.05).map((k) => JA`${L[k]} ${m[k].toFixed(1)}`);
     return { thanks, grudge, m, text: parts.length ? JA`${this.realmName(p)}の記憶: ${parts.join('・')}` : '' };
   }

@@ -166,6 +166,7 @@ function systemPanel(app) {
     ${colonized ? sec('energy', TR('エネルギー'), TR`蓄え ${fmtJ(id === g.cap ? g.energyOf(id) : k?.energy || 0)}`, energyBox(g, id, k)) : ''}
     ${o ? sec('loyal', TR`${ico('loyalty')}忠誠と統治`, outlookText(o, true), loyaltyBox(g, id), o.warn ? 'warn' : '') : ''}
     ${colonized && realm === id && id !== g.cap ? aiLogSec(g, id) : ''}
+    ${colonized && id !== g.cap ? meddleSec(g, id, realm) : ''}
     ${colonized ? sec('cols', TR`${ico('colony')}入植地と採掘基地`, TR`${cols.length} か所・${fmtPop(pop)}`, `<ul>${cols.map((c) => TR`<li>${esc(c.name)} — ${KIND_LABEL[c.kind]} <span class="muted">人口 ${fmtPop(c.pop)}</span></li>`).join('')}</ul>${outpostList(g, sys)}${id === 0 ? TR`${autoToggle(g, id)}<p class="note">オンにすると、生産が需要に届かない資源を年に1回選び、惑星上の施設 (農場・鉱山・工場) や採掘基地を自動で建てる。過密な入植地では居住区も拡張し、${ME.capName}の空いている天体には宇宙ステーションも建てる (10年に1つまで。資金が費用の2倍以上あるとき)。</p>` : ''}`) : ''}
     ${colonized ? sec('stock', TR`${ico('goods')}備蓄`, lacking.length ? TR`足りない: ${lacking.join(TR('・'))}` : TR('足りている'), stockBox(g, id), lacking.length ? 'warn' : '') : ''}
     ${colonized ? sec('routes', TR`${ico('route')}交易路`, TR`${nRoutes} 本`, routeBox(app, sys)) : ''}

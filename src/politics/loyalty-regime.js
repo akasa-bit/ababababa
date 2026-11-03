@@ -527,6 +527,7 @@
     if (act === 'declarewar') return PC_DIPLOMACY * this.modsOf(this.cap).warPc; // 外交的は ×2 (回 SE10)
     if (act === 'pact') return Math.ceil(PC_DIPLOMACY * this.modsOf(this.cap).pactPc); // 外交的は ×0.5 (回 SE10)
     if (act === 'peace') return PC_DIPLOMACY;
+    if (act === 'meddle') return INNER.meddle.pc; // 揺さぶり (回 AI4。politics/inner-consts.js)
     if (act === 'policy') return POLICY_COST;
     if (act === 'bill') return d.op === 'push' ? this.billPushCost(d.bill) : 0; // 審議中の法案を押す (回 SE7)
     if (act === 'restructure') return RESTRUCTURE.pc; // 債務の再編 (経済。回 KE9)
