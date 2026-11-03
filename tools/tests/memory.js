@@ -1,6 +1,7 @@
 // 国と国のあいだの記憶と評判・指導者 (回 AI3・B-302。politics/memory.js) の試験。画面なしの版で回す
 // 1. 帳簿: a が b にしたこと (侵略・裏切り・救援・贈り物・独立の支援) は、出来事の星系から観る国の首都へ光が届いた年から効き、半減 MEM.half 年で薄れる
-// 2. 記録の入口: AI の国の宣戦 (aiDeclare) は侵略、協定の相手への宣戦と同盟の参戦を断るのは裏切り (pactBreach)、同盟に従った参戦は救援、協定の贈り物は贈り物
+// 2. 記録の入口: AI の国の宣戦 (aiDeclare) は侵略、協定の相手への宣戦と同盟の参戦を断るのは裏切り (pactBreach)、同盟に従った参戦は救援、協定の贈り物は贈り物。
+//    仕掛けた国とも同盟している国は、参戦に呼ばれない (どちらの約束も破らない)
 // 3. 効き: 恩があると協定を受けやすく (pactScore)、恨みがあると協定を受けにくく、宣戦の見込みが上がる (aiWarBias)。理由の文に記憶が出る
 // 4. 指導者: 人間が動かしていない国ごとに、カタカナの名前 (英語の画面ではローマ字) と経歴がある。年がたつと代わり、前の指導者と退き方を覚える
 // 5. 星系の欄 (その国の首都の節) に指導者と、プレイヤーの国についての記憶が出る (光の遅れで届いた分)
@@ -68,6 +69,21 @@ sim.evaluate('PACT.honorLine = -1e9'); // 必ず応じる
 if (g.isSeat(c)) g.asRealm(c, () => g.resolvePact({ type: 'call', pact: pc.id, ally: b, enemy: a }, 'join')); else g.diplomacyYearly();
 sim.evaluate(`PACT.honorLine = ${honor}`);
 check((g.mem[`${c}|${b}`] || []).some((e) => e.k === 'rescue') || g.isSeat(c), '同盟に従った参戦が救援として残らない');
+// 同盟の板ばさみ: c が b とも a とも同盟なら、a が b に宣戦しても c は呼ばれない (どちらの約束も破らない。前は c が a に宣戦し、a の破約にされていた)
+for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+g.diplo.pacts = [];
+const pb = g.makePact(c, b, 'ally', 0), pa = g.makePact(c, a, 'ally', 0);
+pb.onA = pb.onB = pa.onA = pa.onB = g.year - 1;
+const br0 = g.pactBreaches(a) + g.pactBreaches(c);
+g.beginWar(a, b, a);
+g.warNews[g.warKey(a, b)] = { year: g.year - 100, from: b };
+sim.evaluate('PACT.honorLine = -1e9');
+g.diplomacyYearly();
+sim.evaluate(`PACT.honorLine = ${honor}`);
+const callAB = g.asRealm(c, () => g.decisions.some((x) => x.kind === 'pact' && x.type === 'call' && x.state === 'open' && x.enemy === a)); // 席の国には「参戦するか」が届く (その国の決めること)
+check(!g.atWar(c, a) && !callAB && g.diplo.pacts.includes(pa) && g.pactBreaches(a) + g.pactBreaches(c) === br0, `両方と同盟の国が、仕掛けた同盟国に宣戦した、か破約にされた (交戦 ${g.atWar(c, a)}・呼ばれた ${callAB}・同盟 ${g.diplo.pacts.includes(pa)})`);
+for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+g.diplo.pacts = [];
 
 // 4. 指導者
 g.leaders = {};

@@ -189,6 +189,7 @@
         for (const e of this.enemiesOf(y)) {
           const key = this.warKey(y, e);
           if (e === x || this.warBy[key] !== e || this.atWar(x, e) || p.called.includes(`${x}|${key}`)) continue;
+          if (this.pactBars(x, e)) continue; // 仕掛けた国とも不可侵か同盟で結ばれていれば呼ばない (どちらの約束も破らない。前は仕掛けた国 e に宣戦し、守りの記録で e の破約にされていた。回 AI3)
           const news = this.warNews[key];
           if (news && this.year < news.year + this.sysDist(news.from, x) - 1e-9) continue; // 開戦の知らせがまだ届いていない
           p.called.push(`${x}|${key}`);
