@@ -172,6 +172,15 @@ node tools/wars-analyze.js wout > wars-summary.json
 node tools/wars-headless.js src/index.html <main の src> 12 300 6
 ```
 
+AI の国の振る舞い (回 AI2・B-301。`docs/fun.md` の 13): 宣戦の向きと道 (自分の判断・同盟の参戦・独立・一撃・人間の席)、先頭への重り、協定の数と共通の脅威に向けた防衛同盟を数え、F28・F29・R90・R91 の表にする (1 銀河 × 300 年で 1 分ほど)。
+
+```sh
+node tools/ai-headless.js src/index.html 8 300 6
+# 分けて回してまとめる
+node tools/ai-headless.js src/index.html 8 300 6 --seeds 1-4 --json a.json; node tools/ai-headless.js src/index.html 8 300 6 --seeds 5-8 --json b.json
+node tools/ai-headless.js --merge a.json,b.json 300 6
+```
+
 プレイヤーの国 (くじで決まった最初の異星の国) も観戦の AI に任せ、講和の判断だけを方針で差し替える。
 
 | 方針 | 中身 |

@@ -16,11 +16,14 @@
       this.event('politics', root, JA`${this.realmName(this.cap)}が${this.realmName(root)}に講和を申し入れた (戦勝点 ${this.warScore(this.cap, root)})`, true);
       return { ok: true };
     }
+    const why = this.peaceWhy(root, this.cap); // 相手の理由の内訳 (回 AI2。politics/threat.js)
     if (this.rand() < this.peaceChance(root, this.cap)) {
+      this.aiNote(root, JA`${this.realmName(this.cap)}からの講和の申し入れを受けた (${why})`);
       this.makePeace(this.cap, root, root); // 講和の申し入れを受けた相手の首都で結ばれる
       return { ok: true };
     }
-    return fail(JA`講和を拒否された (戦勝点 ${this.warScore(this.cap, root)}・相手の戦争疲弊 ${Math.round(this.exhaustion[root] || 0)})`);
+    this.aiNote(root, JA`${this.realmName(this.cap)}からの講和の申し入れを断った (${why})`);
+    return fail(JA`講和を拒否された (相手の見立て: ${why})`);
   }
   // AI の国 r が、敵 e からの講和に応じる確率
   peaceChance(r, e) {
@@ -419,9 +422,9 @@
     return v;
   }
   // 国 r が戦争 (相手 e) で受け入れる線 (r の取り分の戦勝点、−100〜100)。z を渡せば、その読み違いで (宣戦の見込み)
-  reservation(r, e, z = this.warStats[this.warKey(r, e)]?.z?.[r] ?? 0, ws = this.warScore(r, e)) {
-    const ours = this.realmShips(r);
-    const theirs = (this.seenShips(r, e) + this.pactAllyShips(r, e)) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(r, e))); // 相手の同盟国の艦隊も (政治。B-026)
+  reservation(r, e, z = this.warStats[this.warKey(r, e)]?.z?.[r] ?? 0, ws = this.warScore(r, e), out = null) { // out: 理由の内訳を書き込む (回 AI2。politics/threat.js の aiDeclare)
+    const ours = this.realmShips(r), allies = this.pactAllyShips(r, e);
+    const theirs = (this.seenShips(r, e) + allies) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(r, e))); // 相手の同盟国の艦隊も (政治。B-026)
     let p = (ours + 0.5) / (ours + theirs + 1);
     const st = this.warSeen(r, this.warKey(r, e)); // 首都に届いた戦果で
     if (st && this.atWar(r, e)) {
@@ -432,6 +435,7 @@
     const expect = clamp(ws + (2 * p - 1) * BARGAIN.swing, -100, 100);
     const cost = (BARGAIN.cost + BARGAIN.costEx * (this.exhaustion[r] || 0)) * BARGAIN.horizon;
     const shift = BARGAIN.shift * Math.max(0, this.seenGrowth(r, e) - this.seenGrowth(r, r)) * 100;
+    if (out) Object.assign(out, { ours, theirs, allies, p, expect, cost, shift });
     return expect - cost + shift;
   }
   // AI の国どうしの講和の交渉 (B-167): r が自分の受け入れる線を添えて申し入れを送り、光速で e の首都に届いてから e が答える。
@@ -460,6 +464,7 @@
       this.startConference(l, [{ realm: w, pts: 100 }], from);
       return true;
     }
+    this.aiNote(e, JA`${this.realmName(r)}からの講和の申し入れを${lr + le > 0 ? '断った' : '受けた'} (${this.peaceWhy(e, r)})`); // 理由の内訳 (回 AI2。politics/threat.js)
     if (lr + le > 0) return false;
     const x = Math.round((lr - le) / 2); // r の取り分
     const [w, l] = x >= 0 ? [r, e] : [e, r];
@@ -481,6 +486,7 @@
     this.bargainArrive(); // 届いた AI どうしの講和の申し入れ (B-167)
     this.cleanWars();
     const roots = this.colonizedSystems().map((x) => x.id).filter((r) => !this.isHuman(r) && this.realmOf(r) === r && this.gov(r).independent);
+    const targets = this.colonizedSystems().map((x) => x.id).filter((r) => this.realmOf(r) === r && (this.isHuman(r) || this.gov(r).independent)); // 宣戦の相手 (人間の国も。回 AI2)
     for (const root of roots) {
       if (this.realmOf(root) !== root) continue; // この年のうちに降伏した
       const enemies = this.aiEnemiesOf(root); // 開戦の知らせが首都に届いた戦争だけ
@@ -520,9 +526,11 @@
             if (res >= 100 && !this.peaceOfferedRecently(key)) {
               this.postPeaceOffer(key, root, e, undefined, true);
               this.event('politics', root, JA`${this.realmName(root)}が降伏を求めてきた (応じると、${this.realmName(root)}が持ち点 100 で条件を選ぶ講和会議になる)`, true);
+              this.aiNote(root, JA`${this.realmName(e)}に降伏を求めた (${this.peaceWhy(root, e)})`);
             } else if (this.warScore(root, e) >= res && !this.peaceOfferedRecently(key)) {
               this.postPeaceOffer(key, root, e); // 光速で相手の首都に届いてから見える
               this.event('politics', root, JA`${this.realmName(root)}が講和を申し入れてきた (戦勝点 ${this.warScoreAt(root, e, root)}・相手の戦争疲弊 ${Math.round(this.exhaustion[root] || 0)})`, true);
+              this.aiNote(root, JA`${this.realmName(e)}に講和を申し入れた (${this.peaceWhy(root, e)})`);
             }
           } else if (this.aiKnowsWar(e, key)) this.sendBargain(root, e, key); // 相手も開戦を知っていれば、申し入れを送る (届いてから相手が答える)
           continue;
@@ -544,18 +552,15 @@
       }
       if (BARGAIN.on) {
         if (enemies.length || this.rand() >= (roots.some((r) => this.claimBy(r) === root) ? RECLAIM.chance : BARGAIN.declareChance)) continue; // 請求権のある国があれば、取り返しを考える確率 (政治の RECLAIM。回 SE5・B-028)
-        // 首都に届いている記録で、まだ独立国の相手のうち、開戦の見込みがいちばん良いもの (読み違いはその場で引く)
+        // 首都に届いている記録で、まだ独立国の相手 (人間の国も。回 AI2・W5-Q5 = a) のうち、開戦の見込みがいちばん良いもの (読み違いはその場で引く)
         let best = null;
-        for (const r of roots) {
+        for (const r of targets) {
           if (r === root || this.seenBy(root, r)?.[1] !== r || this.realmOf(r) !== r || this.sysDist(r, root) > BARGAIN.warDist) continue;
           if (this.pactBars(root, r)) continue; // 不可侵と同盟の相手には宣戦しない (政治。B-026。協定の知らせが届いてから)
-          const v = this.reservation(root, r, this.misread(), 0) + this.claimBonus(root, r); // 自分から独立した国には請求権のぶん上乗せ (政治の RECLAIM。回 SE5・B-028)
-          if (v > BARGAIN.declare && (!best || v > best.v)) best = { r, v };
+          const z = this.misread(), v = this.reservation(root, r, z, 0) + this.claimBonus(root, r); // 自分から独立した国には請求権のぶん上乗せ (政治の RECLAIM。回 SE5・B-028)
+          if (v > BARGAIN.declare && (!best || v > best.v)) best = { r, v, z };
         }
-        if (best) {
-          this.beginWar(root, best.r, root);
-          this.event('politics', root, JA`${this.realmName(root)}が${this.realmName(best.r)}に宣戦した`);
-        }
+        if (best) this.aiDeclare(root, best.r, best.z); // 宣戦と、理由の内訳の知らせ (政治の politics/threat.js。回 AI2)
         continue;
       }
       if (!enemies.length && this.rand() < 0.03) {

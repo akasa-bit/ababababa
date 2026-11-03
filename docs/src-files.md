@@ -61,6 +61,7 @@
 | `politics/policy-consts.js` | 政治 | 29 | 国家方針の費用・不満と要求・放置・議会・時代・終わりの年・挑戦 |
 | `politics/story.js` | 政治 | 115 | 語り手の出来事 (STORY) |
 | `politics/diplomacy-consts.js` | 政治 | 25 | 遅れて届く外交の協定 (PACT・PACT_KINDS・セーブの項目 diplo。回 SE2) |
+| `politics/ai-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 11 | AI の国の判断の記録 (AI_LOG・セーブの項目 aiLog)。回 AI2 |
 | `politics/groups-consts.js` | 政治 | 22 | 星系の中の集団の値 (GROUPS・GROUP_STATUS・所得の分位と価値観の式)。回 SE6 で足した (`docs/groups.md`) |
 | `core/game-base.js` | 共通 (世話役: 道具と検証) | 333 | Game: 作り方 (constructor)・国の割り当て・星系と入植地の引き方・家臣の連なり |
 | `ship/war-peace.js` | 船と戦争 | 236 | Game: 戦争の状態・戦争疲弊・戦勝点・講和・講和会議 |
@@ -87,7 +88,8 @@
 | `ship/fleets.js` | 船と戦争 | 141 | Game: 造船・艦隊の補給・艦隊を出す・進路変更 |
 | `economy/development.js` | 経済 | 206 | Game: 前哨・自動の開発・政府の年ごとの処理・入植の目標・奴隷・ステーション |
 | `politics/grants.js` | 政治 | 50 | Game: 資金援助・朝貢 |
-| `politics/diplomacy.js` | 政治 | 200 | Game: 遅れて届く外交 (協定の申し入れ・受けるか・破約・同盟の参戦。回 SE2) |
+| `politics/diplomacy.js` | 政治 | 213 | Game: 遅れて届く外交 (協定の申し入れ・受けるか・破約・同盟の参戦。回 SE2。防衛同盟の均衡と便乗・理由の記録は回 AI2) |
+| `politics/threat.js` | 政治 (レーン「AI の振る舞い」が足した) | 54 | Game: 脅威への均衡と便乗 (alignOf)・AI の国の宣戦 (aiDeclare)・判断の記録 (aiNote)・講和の理由 (peaceWhy)。回 AI2 |
 | `ship/defense.js` | 船と戦争 | 94 | Game: 海賊・防衛・威圧の艦隊 |
 | `economy/migration.js` | 経済 | 71 | Game: 居住区・恒星間移民・集結・方針の一括 |
 | `ship/war-troops.js` | 船と戦争 | 350 | Game: 海賊の襲撃・贈り物・統合・征服・奴隷化・解放・先住民との戦争・歩兵 |
@@ -104,6 +106,7 @@
 | `screen/system-view.js` | 画面と最初の体験 | 272 | 星系マップ (SystemView) |
 | `screen/panels-system.js` | 画面と最初の体験 | 230 | 星系の画面の部品 (星の行・数の書式・研究・費用のボタン・左の帯) |
 | `politics/panels.js` | 政治 | 167 | 独立の見通し・忠誠・統治・歴史・統治体制・政府の欄 |
+| `politics/threat-ui.js` | 政治 (レーン「AI の振る舞い」が足した) | 9 | 星系の欄「この国の判断と理由」(aiLogSec。光の遅れで届いた分)。回 AI2 |
 | `screen/panels-body.js` | 画面と最初の体験 | 90 | 自動の切り替え・天体の一覧・備蓄・交易路の欄 |
 | `ship/fleet-ui.js` | 船と戦争 | 158 | 星間マップでの艦隊の操作・軍事の欄・補給 |
 | `screen/panels-colony.js` | 画面と最初の体験 | 194 | 先住民・天体・前哨・入植地・歩兵・先住民の欄 |
