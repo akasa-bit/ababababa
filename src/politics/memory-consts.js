@@ -12,16 +12,17 @@ const MEM = { half: 30, thank: 0.3, grudge: 0.3, revenge: 8, mercy: 8, giftUnit:
 //   exit = 年に退く確率 (Archigos 4.1 の在任の年数の中央値 1.979 年 → 1 − 0.5^(1 ÷ 1.979))
 //   irregular = 退いたうち不規則 (政変・反乱・暗殺など) の割合 (Archigos 4.1 の 18.5%)。交戦中で戦勝点が負けていれば × war (Goemans 2000: 負けた指導者は不規則に退きやすい。仮の値)
 //   careers = 経歴の割合 w と、宣戦の見込みのずれ war (仮の値。向きは Horowitz・Stam・Ellis 2015『Why Leaders Fight』: 戦ったことのない軍人と反乱の指導者がいちばん宣戦しやすく、
-//   戦ったことのある軍人は控えめ。割合は同書の LEAD の軍歴のある指導者がおよそ 3 割から)
+//   戦ったことのある軍人は控えめ。割合は同書の LEAD の軍歴のある指導者がおよそ 3 割から)。ずれは割合で重みを付けた平均が 0 (+0.1) になるように置く
+//   (国全体の戦争の多さは変えず、国ごとの差だけを作る。R29 を全体で保つ)
 const LEADER = {
-  exit: 0.2951, irregular: 0.185, war: 2,
+  exit: 0.2955, irregular: 0.185, war: 2,
   careers: {
-    mil: { label: '軍人 (戦ったことがない)', w: 0.15, war: 6 },
-    vet: { label: '軍人 (戦ったことがある)', w: 0.15, war: 2 },
-    rebel: { label: '反乱の指導者', w: 0.1, war: 6 },
-    bureau: { label: '官僚', w: 0.25, war: 0 },
-    merchant: { label: '実業家', w: 0.2, war: -2 },
-    scholar: { label: '学者', w: 0.15, war: -2 },
+    mil: { label: '軍人 (戦ったことがない)', w: 0.15, war: 5 },
+    vet: { label: '軍人 (戦ったことがある)', w: 0.15, war: 1 },
+    rebel: { label: '反乱の指導者', w: 0.1, war: 5 },
+    bureau: { label: '官僚', w: 0.25, war: -1 },
+    merchant: { label: '実業家', w: 0.2, war: -3 },
+    scholar: { label: '学者', w: 0.15, war: -3 },
   },
 };
 saveField('mem', (game) => (Object.keys(game.mem).length ? game.mem : undefined), {
