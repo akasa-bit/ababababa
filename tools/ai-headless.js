@@ -25,7 +25,7 @@ const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.lengt
 
 function count(file) {
   const sim = H.load({ src: file, params });
-  const out = { galaxies: 0, years: Number(yS), decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, honor: { join: 0, refuse: 0 }, lead: { leader: 0, others: 0, n: 0 }, pactEnd: { breach: 0, other: 0 }, leaderStats: [], inner: { endorse: 0, disavow: 0, undermine: 0, back: 0 } };
+  const out = { galaxies: 0, years: Number(yS), decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, honor: { join: 0, refuse: 0 }, lead: { leader: 0, others: 0, n: 0 }, pactEnd: { breach: 0, other: 0 }, leaderStats: [], inner: { endorse: 0, disavow: 0, undermine: 0, back: 0, lobby: 0, trade: 0, thank: 0, grudge: 0, fund: 0, lobYears: 0, lobW: 0 } };
   for (const seed of seedList()) {
     const g = sim.newGame(String(seed), { nations: Number(natS) });
     out.galaxies++;
@@ -36,7 +36,10 @@ function count(file) {
     if (g.governorsYearly) {
       within('governorsYearly', 'gov');
       wrap('governorReview', (orig) => { const was = Object.fromEntries(Object.entries(g.inner.gov).map(([k, v]) => [k, v.ok])); const r = orig(); for (const [k, v] of Object.entries(g.inner.gov)) if (was[k] === null && v.ok !== null) out.inner[v.ok ? 'endorse' : 'disavow']++; return r; });
-      wrap('sendMeddle', (orig, d, from) => { const r = orig(d, from); if (r.ok && !g.isHuman(from ?? g.cap)) out.inner[d.mode === 'back' ? 'back' : 'undermine']++; return r; });
+      wrap('sendMeddle', (orig, d, from) => { const r = orig(d, from); if (r.ok && !g.isHuman(from ?? g.cap)) out.inner[d.mode === 'undermine' ? 'undermine' : d.mode === 'lobby' ? 'lobby' : 'back']++; return r; });
+      // 外の国への派閥 (回 AI4): できた数 (きっかけごと) と、いまある派閥の国・年あたりの数と重みの平均 (年の終わりに数える)
+      wrap('lobbyForm', (orig, ...a) => { const l = orig(...a); if (l) out.inner[l.why]++; return l; });
+      wrap('lobbyYearly', (orig) => { const r = orig(); for (const l of g.inner.lob) if (l.end === null) { out.inner.lobYears++; out.inner.lobW += g.lobbyClout(l); } return r; });
     }
     const life = new Map(); // 国 → { from, to, pacts }
     const alive = () => g.colonizedSystems().map((x) => x.id).filter((r) => g.realmOf(r) === r && (g.isHuman(r) || g.gov(r).independent));
@@ -95,7 +98,7 @@ function count(file) {
   return out;
 }
 function merge(list) {
-  const o = { galaxies: 0, years: list[0].years, decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, honor: { join: 0, refuse: 0 }, lead: { leader: 0, others: 0, n: 0 }, pactEnd: { breach: 0, other: 0 }, leaderStats: [], inner: { endorse: 0, disavow: 0, undermine: 0, back: 0 } };
+  const o = { galaxies: 0, years: list[0].years, decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, honor: { join: 0, refuse: 0 }, lead: { leader: 0, others: 0, n: 0 }, pactEnd: { breach: 0, other: 0 }, leaderStats: [], inner: { endorse: 0, disavow: 0, undermine: 0, back: 0, lobby: 0, trade: 0, thank: 0, grudge: 0, fund: 0, lobYears: 0, lobW: 0 } };
   for (const x of list) {
     o.galaxies += x.galaxies;
     for (const [k, v] of Object.entries(x.decl)) o.decl[k] = (o.decl[k] || 0) + v;
@@ -135,7 +138,8 @@ function table(s) {
     `| R94 指導者の在任期間 (年。同じ国の中央値) | ${f(s.r94)}${ok(s.r94, 1.49, 3.94)} | 1.49〜3.94 |`,
     `| 防衛同盟の参戦に応じた割合 (AI の国。Leeds ほか 2000 の 74.5% に較正) | ${s.honor.join + s.honor.refuse ? `${(100 * s.honor.join / (s.honor.join + s.honor.refuse)).toFixed(1)}% (${s.honor.join} / ${s.honor.join + s.honor.refuse})` : '—'} | — |`,
     '', `宣戦の向きと道 (A = AI の国・H = 人間の国。own = 自分の判断・ally = 同盟の参戦・indep = 独立・strike = 一撃・human = 人間の席・gov = 遠い総督の独断): ${decl}`,
-    ...(s.inner ? ['', (() => { const gw = (s.decl['A>A|gov'] || 0) + (s.decl['A>H|gov'] || 0), ow = (s.decl['A>A|own'] || 0) + (s.decl['A>H|own'] || 0), i = s.inner; return `中の事情 (回 AI4): 遠い総督の独断 ${gw} (自分の判断の宣戦との合計の ${ow + gw ? (100 * gw / (ow + gw)).toFixed(1) : '—'}%)・首都の追認 ${i.endorse}・否認 ${i.disavow}・AI の国の揺さぶり ${i.undermine}・支え ${i.back} (銀河・100 年あたり ${(100 * (i.undermine + i.back) / Math.max(1, s.galaxies * Number(yS))).toFixed(1)})`; })()] : []),
+    ...(s.inner ? ['', (() => { const gw = (s.decl['A>A|gov'] || 0) + (s.decl['A>H|gov'] || 0), ow = (s.decl['A>A|own'] || 0) + (s.decl['A>H|own'] || 0), i = s.inner; return `中の事情 (回 AI4): 遠い総督の独断 ${gw} (自分の判断の宣戦との合計の ${ow + gw ? (100 * gw / (ow + gw)).toFixed(1) : '—'}%)・首都の追認 ${i.endorse}・否認 ${i.disavow}・AI の国の揺さぶり ${i.undermine}・派閥への資金 ${i.lobby || 0}・主人の側への支え ${i.back} (銀河・100 年あたり ${(100 * (i.undermine + i.back + (i.lobby || 0)) / Math.max(1, s.galaxies * Number(yS))).toFixed(1)})`; })(),
+      (() => { const i = s.inner, f = (i.trade || 0) + (i.thank || 0) + (i.grudge || 0) + (i.fund || 0); return `派閥 (回 AI4。Victoria 3 の形): できた数 ${f} (交易 ${i.trade || 0}・恩 ${i.thank || 0}・恨み ${i.grudge || 0}・外からの資金 ${i.fund || 0}。銀河・100 年あたり ${(100 * f / Math.max(1, s.galaxies * Number(yS))).toFixed(1)})・いまある派閥 銀河・年あたり ${((i.lobYears || 0) / Math.max(1, s.galaxies * Number(yS))).toFixed(1)}・重みの平均 ${i.lobYears ? (100 * i.lobW / i.lobYears).toFixed(0) : '—'}%`; })()] : []),
   ].join('\n');
 }
 if (mergeS) {

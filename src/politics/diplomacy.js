@@ -100,6 +100,7 @@
     if (info?.th !== undefined && info.th !== null) p.th = info.th;
     if (info?.mode) p.mode = info.mode;
     this.diplo.pacts.push(p);
+    this.lobbyAct(a, b, 'pact'); this.lobbyAct(b, a, 'pact'); // 協定への派閥の満足 (回 AI4。politics/lobby.js)
     const g = Math.min(gift, Math.max(0, this.gov(a).credits));
     if (g > 0) { this.cash('treaty', -g, { gov: a }); this.cash('treaty', g, { gov: b }); this.memAdd(a, b, 'gift', a, g / MEM.giftUnit); } // 贈り物の記憶 (回 AI3)
     for (const [x, y] of [[a, b], [b, a]]) { const c = this.claimBy(y); if (c !== null && c !== x) this.memAdd(x, c, 'indep', x); } // 分かれた国と組んだ = 独立の支援 (回 AI3)

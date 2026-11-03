@@ -62,7 +62,7 @@
     const ours = this.realmShips(x) + this.seenShips(x, y), allies = this.pactAllyShips(x, e);
     const theirs = (this.seenShips(x, e) + allies) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(x, e)));
     const p = (ours + 0.5) / (ours + theirs + 1);
-    const oi = {}, ic = this.innerCost(x, e, oi); // 中の事情 (回 AI4。politics/inner.js): 議会の支持が低い国は参戦を選びにくい (Putnam 1988)
+    const oi = {}, ic = this.innerCost(x, e, oi, y); // 中の事情 (回 AI4。politics/inner.js): 議会の支持が低い国は参戦を選びにくい (Putnam 1988)。親 y 派は参戦を後押しする
     const v = (2 * p - 1) * BARGAIN.swing - (BARGAIN.cost + BARGAIN.costEx * (this.exhaustion[x] || 0)) * BARGAIN.horizon - ic;
     const it = this.innerText(oi.inner);
     const why = JA`首都に届いた記録で: 艦隊 自分と${this.realmName(y)} ${Math.round(ours)}・${this.realmName(e)} ${Math.round(theirs)}${allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * p)}%・見込む戦勝点 ${Math.round(v)}${it ? JA`・${it}` : ''}`;

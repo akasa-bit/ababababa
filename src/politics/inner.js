@@ -2,16 +2,20 @@
   // 国 r の席の議会の支持 (席のない国は null)
   innerCouncil(r) { const i = this.playerOf(r); return i < 0 ? null : this.players[i].council ?? null; }
   // 国 r の、権力に加わっている集団の軍備の国家方針への支持 (0〜1。席のない国は null)。同じ刻みのうちは覚えておく
-  innerGroups(r) {
+  // 同じ刻みのうちの覚え (集団の支え g・交易 t・派閥の集団の行 rows・国どうしの派閥の重み st)
+  innerC() {
     const c = (this.innerCache ??= {});
-    if (c.y !== this.year) { c.y = this.year; c.g = {}; c.t = null; }
+    if (c.y !== this.year) { c.y = this.year; c.g = {}; c.t = null; c.rows = {}; c.st = {}; }
+    return c;
+  }
+  innerGroups(r) {
+    const c = this.innerC();
     if (!(r in c.g)) c.g[r] = this.isSeat(r) ? this.asRealm(r, () => this.billSupport('policy', 'military').S) : null;
     return c.g[r];
   }
   // 国 r の交易路の輸送量のうち、国 e との交易路の割合 (両方の向き)。同じ刻みのうちは覚えておく
   innerTrade(r, e) {
-    this.innerGroups(r); // 刻みの覚えをそろえる
-    const c = this.innerCache;
+    const c = this.innerC();
     if (!c.t) {
       const vol = {}, tot = {};
       for (const x of this.routes) {
@@ -28,16 +32,17 @@
     const tot = c.t.tot[r] || 0;
     return tot > 0 ? (c.t.vol[r < e ? `${r}|${e}` : `${e}|${r}`] || 0) / tot : 0;
   }
-  // 中の事情の重さ (戦勝点。受け入れる線から引く。正 = 戦いたくない)。人間の国 (観戦でないとき) には 0。out に内訳を書く
-  innerCost(r, e, out = null) {
+  // 中の事情の重さ (戦勝点。受け入れる線から引く。正 = 戦いたくない)。人間の国 (観戦でないとき) には 0。out に内訳を書く。
+  // ally = 同盟の参戦で守る国 (親 ally 派は参戦を後押しし、反 ally 派は引き止める)
+  innerCost(r, e, out = null, ally = null) {
     if (this.isHuman(r) && !this.spectate) return 0;
-    const c = this.innerCouncil(r), S = this.innerGroups(r), t = this.innerTrade(r, e);
+    const c = this.innerCouncil(r), S = this.innerGroups(r), st = this.lobbyStance(r, e), sa = ally === null ? null : this.lobbyStance(r, ally);
     const vc = c === null ? 0 : INNER.council * (INNER.councilRef - c) / INNER.councilRef;
     const vg = S === null ? 0 : INNER.groups * (INNER.groupsRef - S) * 2;
-    const vt = INNER.trade * Math.min(1, t / INNER.tradeRef);
+    const vl = INNER.lob.war * (st.pro - st.anti), va = sa ? -INNER.lob.war * (sa.pro - sa.anti) : 0;
     const dis = this.inner.gov[this.warKey(r, e)]?.ok === 0 && this.warBy[this.warKey(r, e)] === r ? INNER.disavow : 0;
-    const v = vc + vg + vt + dis;
-    if (out) out.inner = { c, S, t, vc, vg, vt, dis, ex: this.exhaustion[r] || 0, v };
+    const v = vc + vg + vl + va + dis;
+    if (out) out.inner = { c, S, e, lob: st.list, vl, ally, lobA: sa ? sa.list : [], va, vc, vg, dis, ex: this.exhaustion[r] || 0, v };
     return v;
   }
   // 中の事情の理由の文 (o = innerCost の内訳)
@@ -46,28 +51,30 @@
     const sg = (x) => `${Math.round(x) > 0 ? '+' : Math.round(x) < 0 ? '−' : '±'}${Math.abs(Math.round(x))}`, parts = [];
     if (o.c !== null && o.c !== undefined) parts.push(JA`議会の支持 ${Math.round(o.c)} (${sg(-o.vc)})`);
     if (o.S !== null && o.S !== undefined) parts.push(JA`軍備への集団の支え ${Math.round(100 * o.S)}% (${sg(-o.vg)})`);
-    if (o.t >= 0.005) parts.push(JA`相手との交易 ${Math.round(100 * o.t)}% (${sg(-o.vt)})`);
+    if (o.lob?.length) parts.push(JA`${o.lob.map((x) => this.lobbyName(x.l, x.w)).join('・')} (${sg(-o.vl)})`);
+    if (o.lobA?.length) parts.push(JA`${o.lobA.map((x) => this.lobbyName(x.l, x.w)).join('・')} (${sg(-o.va)})`);
     if (o.ex >= 1) parts.push(JA`戦争疲弊 ${Math.round(o.ex)}`);
     if (o.dis) parts.push(JA`総督の独断を否認 (${sg(-o.dis)})`);
     return parts.length ? JA`中の事情: ${parts.join('・')}` : '';
   }
-  // 協定の受けやすさのずれ (pactScore から): 議会の支持が低いと批准しにくい。交易の深い相手との交易協定は受けやすい (商人の利害)
+  // 協定の受けやすさのずれ (pactScore から): 議会の支持が低いと批准しにくい。親 p 派は受けやすく、反 p 派は受けにくくする
   innerPact(r, p, kind) {
     if (this.isHuman(r) && !this.spectate) return null;
-    const c = this.innerCouncil(r), t = kind === 'trade' ? this.innerTrade(r, p) : 0;
-    const dc = c === null ? 0 : -INNER.pactCouncil * (INNER.councilRef - c) / INNER.councilRef, dt = INNER.pactTrade * Math.min(1, t / INNER.tradeRef);
+    const c = this.innerCouncil(r), st = this.lobbyStance(r, p);
+    const dc = c === null ? 0 : -INNER.pactCouncil * (INNER.councilRef - c) / INNER.councilRef, dl = INNER.lob.pact * (st.pro - st.anti);
     const parts = [];
     if (c !== null) parts.push(JA`議会の支持 ${Math.round(c)}`);
-    if (t >= 0.005) parts.push(JA`相手との交易 ${Math.round(100 * t)}%`);
-    return { ds: dc + dt, text: parts.length ? JA`中の事情: ${parts.join('・')}` : '' };
+    for (const x of st.list) parts.push(this.lobbyName(x.l, x.w));
+    return { ds: dc + dl, text: parts.length ? JA`中の事情: ${parts.join('・')}` : '' };
   }
-  // 年 1 回 (diplomacyYearly から): 遠い総督の独断・首都の追認と否認・揺さぶりの到着・AI の国の揺さぶり
+  // 年 1 回 (diplomacyYearly から): 遠い総督の独断・首都の追認と否認・資金の到着・AI の国の資金・派閥 (politics/lobby.js)
   innerYearly() {
     for (const [k, v] of Object.entries(this.inner.gov)) if (this.realmWars[k] === undefined) delete this.inner.gov[k];
     this.governorsYearly();
     this.governorReview();
     this.meddleArrive();
     this.aiMeddleYearly();
+    this.lobbyYearly();
   }
   // 遠い総督の独断 (INNER の説明)。AI の国の、首都から遠い星系の政府が、近くに見える外の国に、首都の指令より先に国の名で宣戦する
   governorsYearly() {
@@ -127,61 +134,68 @@
       }
     }
   }
-  // --- 揺さぶり (INNER.meddle の説明) ---
-  // 国 from が、外の国の星系 to へ資金を送る (mode = back: 政府・主人の側を支える / undermine: 反対派・分離派を支える)。届くまで光速
+  // --- 中の勢力への手 (INNER.meddle の説明) ---
+  // 国 from が、外の国の星系 to へ資金を送る。届くまで光速。相手の首都へは lobby (親 from 派に資金) か undermine (反対派を支える)、
+  // 相手の家臣の星系へは back (主人の側を支える) か undermine (分離派を支える)。前の版の back は、首都へなら lobby と読む
   sendMeddle(d, from = this.cap) {
-    const to = Number(d.sys), mode = d.mode === 'back' ? 'back' : 'undermine', M = INNER.meddle;
+    const to = Number(d.sys), M = INNER.meddle;
     if (!this.isColonized(to)) return fail('入植地のない星系');
     const R = this.isHuman(from) ? this.known(to)?.realm ?? this.realmOf(to) : this.realmOf(to);
     if (R === from || this.realmOf(to) === from) return fail('自分の国の星系');
     if (to !== R && !this.isColonized(R)) return fail('相手の国がない');
+    const mode = d.mode === 'undermine' ? 'undermine' : to === R ? 'lobby' : 'back';
     if (this.inner.sent.some((x) => x.from === from && x.to === to)) return fail('同じ星系への資金が届く途中');
     if (this.gov(from).credits < M.cost) return fail(JA`資金が足りない (${M.cost} cr)`);
     const at = this.year + this.sysDist(from, to); // 資金は届いた年に払う (協定の贈り物と同じ。払えるだけ)
     this.inner.sent.push({ id: this.nextShipId++, from, to, mode, amt: M.cost, sent: this.year, at });
-    if (this.isHuman(from)) this.event('politics', from, JA`${this.system(to).name}へ、${mode === 'back' ? '政府の側を支える' : '反対派を支える'}資金 ${M.cost} cr を送った (届くまで ${(at - this.year).toFixed(1)} 年。届いた年に払う)`, true);
+    const what = mode === 'lobby' ? JA`親${this.realmName(from)}派に` : mode === 'back' ? '主人の側を支える' : to === R ? '反対派を支える' : '分離派を支える';
+    if (this.isHuman(from)) this.event('politics', from, JA`${this.system(to).name}へ、${what}資金 ${M.cost} cr を送った (届くまで ${(at - this.year).toFixed(1)} 年。届いた年に払う)`, true);
     return { ok: true };
   }
-  // 届いた揺さぶりの資金: 相手の首都なら議会の支持、家臣の星系なら主人への忠誠度を動かす。揺さぶりは exposed の確率で知られる
+  // 届いた資金: 相手の首都なら親 from 派を育てるか議会の支持を下げ、家臣の星系なら主人への忠誠度を動かす。主人の側への資金のほかは exposed の確率で知られる
   meddleArrive() {
     const M = INNER.meddle, due = this.inner.sent.filter((x) => x.at <= this.year + 1e-9);
     if (!due.length) return;
     this.inner.sent = this.inner.sent.filter((x) => x.at > this.year + 1e-9);
     for (const x of due) {
       if (!this.isColonized(x.to)) continue;
-      const R = this.realmOf(x.to);
-      if (R === x.from || !this.realmAlive(x.from) || (x.to === R && !this.isSeat(R))) continue; // 議会のない国 (分かれたばかりの国) の首都には効かない
-      // 届いた年に、送った国の資金から払う (払えるだけ。半分に届かなければ取りやめ)。支えは相手の政府へ、揺さぶりは反対派 (その星系の家計) へ
+      const R = this.realmOf(x.to), mode = x.mode === 'back' && x.to === R ? 'lobby' : x.mode; // 前の版の、首都への back は lobby
+      if (R === x.from || !this.realmAlive(x.from)) continue;
+      if (x.to === R && mode === 'undermine' && !this.isSeat(R)) continue; // 議会のない国 (分かれたばかりの国) の首都は揺さぶれない
+      if (x.to !== R && mode === 'lobby') continue; // 家臣になった星系 (送ったあとに) への派閥の資金は取りやめ
+      // 届いた年に、送った国の資金から払う (払えるだけ。半分に届かなければ取りやめ)。主人の側への資金は相手の政府へ、ほかはその星系の家計へ
       const amt = Math.min(x.amt, Math.max(0, this.gov(x.from).credits));
       if (amt < x.amt / 2) continue;
       this.cash('grant', -amt, { gov: x.from });
-      this.cash('grant', amt, x.mode === 'back' ? { gov: x.to } : { hh: x.to });
-      const k = amt / x.amt, sign = x.mode === 'back' ? 1 : -1;
+      this.cash('grant', amt, mode === 'back' ? { gov: x.to } : { hh: x.to });
+      const k = amt / x.amt;
       let what;
-      if (x.to === R) {
-        this.asRealm(R, () => this.councilAdd(sign * k * M.council, x.mode === 'back' ? '外の国の支え' : '外の国の揺さぶり'));
-        what = JA`議会の支持 ${sign > 0 ? '+' : '−'}${(k * M.council).toFixed(1)}`;
+      if (mode === 'lobby') what = this.lobbyFund(R, x.from, k);
+      else if (x.to === R) {
+        this.asRealm(R, () => this.councilAdd(-k * M.council, '外の国の揺さぶり'));
+        what = JA`議会の支持 −${(k * M.council).toFixed(1)}`;
       } else {
-        const gv = this.gov(x.to);
+        const gv = this.gov(x.to), sign = mode === 'back' ? 1 : -1;
         gv.loyalty = clamp((gv.loyalty ?? 50) + sign * k * M.loyalty, 0, 100);
         what = JA`主人への忠誠度 ${sign > 0 ? '+' : '−'}${(k * M.loyalty).toFixed(1)}`;
       }
-      const known = x.mode === 'back' || this.rand() < M.exposed; // 支えは相手の政府が受け取るので知られる。揺さぶりは exposed の確率で
-      if (known) this.memAdd(x.from, R, x.mode === 'back' ? 'gift' : 'meddle', x.to, x.mode === 'back' ? amt / MEM.giftUnit : k); // 恩 (贈り物) か、内政への干渉の恨み (回 AI3 の帳簿)
-      const t = x.mode === 'back' ? JA`${this.system(x.to).name}に${this.realmName(x.from)}から政府を支える資金が届いた (${what})`
-        : known ? JA`${this.system(x.to).name}で、${this.realmName(x.from)}からの資金が反対派に流れている (${what}。内政への干渉として覚えられた)`
-          : JA`${this.system(x.to).name}で、出どころの分からない外の資金が反対派に流れている (${what})`;
+      const known = mode === 'back' || this.rand() < M.exposed; // 主人の側への資金は相手の政府が受け取るので知られる。ほかは exposed の確率で
+      if (known) this.memAdd(x.from, R, mode === 'back' ? 'gift' : 'meddle', x.to, mode === 'back' ? amt / MEM.giftUnit : k); // 恩 (贈り物) か、内政への干渉の恨み (回 AI3 の帳簿)
+      const src = known ? this.realmName(x.from) : '出どころの分からない外の国', tail = known && mode !== 'back' ? '。内政への干渉として覚えられた' : '';
+      const t = mode === 'back' ? JA`${this.system(x.to).name}に${src}から主人の側を支える資金が届いた (${what})`
+        : mode === 'lobby' ? JA`${this.system(x.to).name}で、${src}からの資金が国の中の集団に流れている (${what}${tail})`
+          : JA`${this.system(x.to).name}で、${src}からの資金が${x.to === R ? '反対派' : '分離派'}に流れている (${what}${tail})`;
       this.event('politics', x.to, t, this.isHuman(R) || this.isHuman(x.from));
     }
   }
-  // AI の国の揺さぶり: 年 aiChance の確率で、政治力と資金があれば、いちばんの脅威の首都を揺さぶるか、同盟国の首都の政府を支える (命令として。政治力を払う)
+  // AI の国の資金: 年 aiChance の確率で、政治力と資金があれば、いちばんの脅威の首都を揺さぶるか、協定の相手の首都に親 (自分の国) 派を育てる (命令として。政治力を払う)
   aiMeddleYearly() {
     const M = INNER.meddle;
     this.players.forEach((p, i) => {
       const r = p.cap;
       if (p.human || !this.realmAlive(r) || p.pc < M.aiPc || this.gov(r).credits < M.cost || this.rand() >= M.aiChance) return;
-      const al = this.alignOf(r), allies = this.diplo.pacts.filter((x) => x.kind === 'ally' && (x.a === r || x.b === r)).map((x) => (x.a === r ? x.b : x.a)).filter((y) => this.realmAlive(y) && this.isSeat(y));
-      const d = al.t !== null && this.isSeat(al.t) && !this.pactBars(r, al.t) ? { sys: al.t, mode: 'undermine' } : allies.length ? { sys: allies[Math.floor(this.rand() * allies.length)], mode: 'back' } : null;
+      const al = this.alignOf(r), part = [...new Set(this.diplo.pacts.filter((x) => x.a === r || x.b === r).map((x) => (x.a === r ? x.b : x.a)))].filter((y) => this.realmAlive(y));
+      const d = al.t !== null && this.isSeat(al.t) && !this.pactBars(r, al.t) ? { sys: al.t, mode: 'undermine' } : part.length ? { sys: part[Math.floor(this.rand() * part.length)], mode: 'lobby' } : null;
       if (d) this.asPlayer(i, () => this.command('meddle', d));
     });
   }

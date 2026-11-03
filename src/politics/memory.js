@@ -5,6 +5,7 @@
     const key = `${a}|${b}`, list = (this.mem[key] ??= []);
     list.push({ k, y: this.year, at, w: Math.round(w * 1000) / 1000 });
     this.mem[key] = list.filter((e) => this.year - e.y < MEM.keep).slice(-MEM.max);
+    this.lobbyAct(a, b, k); // a の国の、b に向けた派閥の満足 (回 AI4。politics/lobby.js)
   }
   // 観る国 o が asOf 年に知っている、a が b にしたことの重み (光が届いたものだけ。半減 half 年で薄れる)
   memSum(o, a, b, asOf = this.year) {
