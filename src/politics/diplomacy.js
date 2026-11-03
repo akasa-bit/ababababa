@@ -50,13 +50,16 @@
         s = PACT.allyBase + th.v + PACT.allyHelp * seen / (seen + mine + 1) - (al.t === p ? al.v : 0); // いちばん脅威な国とは、均衡なら組まない向き
         why = th.t === null ? '共通の脅威が見えない' : JA`共通の脅威: ${this.threatText(r, th.t, ships)}`;
         if (al.t === p) why += JA`。${this.realmName(p)}こそいちばんの脅威 (均衡: 味方になりそうな国と合わせて艦隊 ${Math.round(al.coal)})`;
-        if (th.t !== null) info = { th: th.t, mode: 'balance' };
+        if (th.t !== null) info = { th: th.t, mode: 'balance', thv: th.v };
       }
     } else { s = PACT.tradeBase; why = '交易の得を見ている'; }
     const b = this.pactBreaches(p);
     if (b) { s -= PACT.distrust * b; why += JA`。${this.realmName(p)}の破約 ${b} 回`; }
     s += gift / PACT.giftScale;
-    return { s, why, seen, mine, ...info };
+    // 共通の脅威に向けた同盟 (R91・F29 で数える) は、脅威がなければ結ばなかったもの (ATOP の「特定の脅威を名指しする同盟」に当たる。回 AI2)
+    const { thv, ...rest } = info;
+    if (rest.th !== undefined && s - thv >= 0) delete rest.th;
+    return { s, why, seen, mine, ...rest };
   }
   // プレイヤーの国 (cap) が r へ協定 kind を申し入れたときの見込み (地球に届いている記録で。「何なら受けるか」)。
   // 相手が見ているこちらの艦隊は seenByRival、相手とほかの国の艦隊は、地球が把握している数
