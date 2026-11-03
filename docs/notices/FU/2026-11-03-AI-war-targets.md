@@ -6,6 +6,8 @@
 - `reservation` に 5 つ目の引数 `out` (理由の内訳を書き込む物。艦隊・同盟国の艦隊・勝つ見込み・見込む戦勝点・戦費・伸び)。値は前と同じ。
 - `bargain`・`offerPeace`・人間の国への講和と降伏の申し入れ: 答えと申し入れに理由を記録 (`aiNote`・`peaceWhy`)。乱数は引かない。人間が断られたときの返事は「講和を拒否された (相手の見立て: 戦勝点・受け入れる線・艦隊・勝つ見込み・戦争疲弊)」。
 - 攻める先の `!this.isHuman(x.id)` (人間の国の首都は攻めない) は前のまま残した。
-- 測り (`tools/ai-headless.js`): F28 (人間に向けた AI の宣戦 ÷ AI どうし) 0 → 1.04。R29 は PR の本文と `docs/ai-behavior.md` の 9。
+- `war-consts.js` の `BARGAIN.declareChance` 0.05 → 0.04 (協定と同盟の参戦が増えたぶん、R29 を帯に戻す)。
+- `tools/wars-headless.js` の R29: 防衛同盟に従った参戦 (`diplomacyYearly`・席の国の返事 `resolvePact`) は、すでに戦っている戦争に 1 国が加わるので参加 1 と数える (前は 2)。出力の生の値に `joins` を足した。
+- 測り (30 銀河 × 300 年。`tools/ai-headless.js`): F28 (人間に向けた AI の宣戦 ÷ AI どうし) 0 → 1.19。戦争 (24 銀河): R29 2.20 → 2.82・R15 1.64 → 1.60・R13 1.06 → 1.14。`docs/ai-behavior.md` の 9.2。
 
 読んだら消してよい。
