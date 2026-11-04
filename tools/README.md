@@ -179,6 +179,15 @@ node tools/ai-headless.js src/index.html 8 300 6
 # 分けて回してまとめる
 node tools/ai-headless.js src/index.html 8 300 6 --seeds 1-4 --json a.json; node tools/ai-headless.js src/index.html 8 300 6 --seeds 5-8 --json b.json
 node tools/ai-headless.js --merge a.json,b.json 300 6
+# マルチの点検 (回 AI5): 人間の席を 2〜3 にする・難易度を変える
+node tools/ai-headless.js src/index.html 8 300 6 --humans 2 --hc hard
+```
+
+人間の代わり (観戦の AI) の公平さ (回 AI6。`docs/ai-behavior.md` の 13.3): 同じ国 (国家選択の 2 番目と 3 番目) を、人間の席にした試合と AI の国の席にした試合で回し、終わりの星系の数を 1 行の JSON に書く (1 シード × 300 年 × 2 試合で 3 分ほど)。`--c20` で、人間の席にも AI の国と同じ入植の補正 (台帳の C20) をかける。
+
+```sh
+node tools/human-seat.js 1 300 normal
+node tools/human-seat.js 1 300 normal src/index.html --c20
 ```
 
 プレイヤーの国 (くじで決まった最初の異星の国) も観戦の AI に任せ、講和の判断だけを方針で差し替える。
