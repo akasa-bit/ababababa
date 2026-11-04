@@ -100,11 +100,14 @@ function apply(g, s, sim) {
     const ordered = (act, sys) => this.requests.some((q) => q.kind === 'order' && q.act === act && Number(q.d.sys) === sys);
     const atWarAny = this.enemiesOf(this.cap).length > 0;
     if (!atWarAny && s.peaceArm && this.gov(this.cap).credits > s.peaceArm && this.hasShipyard(this.cap)) this.buildWarship(this.cap);
-    if (s.warRatio === 'model') this.spectateDeclare(); // 観戦の AI と同じ宣戦 (回 AI6。ゲームの earthWarYearly と同じ順で)
+    // 'model' = 観戦の AI と同じ宣戦 (回 AI6。ゲームの earthWarYearly と同じ順で)。CI の面白さの数は main の src も同じ道具で回すので、
+    // spectateDeclare がない前の src では、そのころの観戦の AI と同じ値 (艦隊 5 倍・年 5%・25 光年) で数える
+    const model = s.warRatio === 'model' && typeof this.spectateDeclare === 'function', ratio = s.warRatio === 'model' ? (model ? 0 : 5) : s.warRatio;
+    if (model) this.spectateDeclare();
     for (const root of V.roots()) {
       const theirs = V.ships(root);
       if (!V.atWar(root)) {
-        if (s.warRatio !== 'model' && s.warRatio && ours > s.warRatio * Math.max(1, theirs) && (!s.warRange || this.sysDist(this.cap, root) <= s.warRange) && this.rand() < s.warChance) this.declareWar(root);
+        if (ratio && ours > ratio * Math.max(1, theirs) && (!s.warRange || this.sysDist(this.cap, root) <= s.warRange) && this.rand() < s.warChance) this.declareWar(root);
         continue;
       }
       if (this.hasShipyard(this.cap) && this.funds(this.cap) >= 2 * sim.tables.WARSHIP_COST.credits) this.buildWarship(this.cap);
