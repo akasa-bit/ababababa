@@ -10,7 +10,7 @@ const H = require('./headless');
 // 探索で変える値と、その候補。0 の宣戦の比は「宣戦しない」
 const SPACE = {
   policy: ['auto', 'expand', 'consolidate', 'military'], // 国家方針 (auto = 観戦の AI のまま、戦争中は軍備・25 星系までは拡張・そのあと整備)
-  warRatio: [0, 1.2, 1.5, 2, 3, 5, 10], // 自分の艦隊が相手の何倍を超えたら宣戦を考えるか
+  warRatio: ['model', 0, 1.2, 1.5, 2, 3, 5, 10], // 自分の艦隊が相手の何倍を超えたら宣戦を考えるか ('model' = 観戦の AI と同じ交渉の模型。ゲームの spectateDeclare。回 AI6)
   warChance: [0.02, 0.05, 0.1, 0.3], // そのとき 1 年に宣戦する確率
   warRange: [10, 15, 25, 40, 0], // 首都からこの光年までの国にだけ宣戦する (0 = 遠さを問わない)
   sueRatio: [0.3, 0.5, 0.7, 1, 1.5], // 戦争中、自分の艦隊が相手の何倍を下回ったら講和を求めるか
@@ -34,7 +34,7 @@ const SPACE = {
 //   every: 判断を何年に 1 回するか (人がずっと見ていない分の遅れ。1 = 毎年)
 const HUMAN = { delay: 1, every: 1 };
 // 観戦の AI と同じ値 (探索の出発点)
-const BASE = { policy: 'auto', warRatio: 5, warChance: 0.05, warRange: 25, sueRatio: 0.7, sueEx: 60, acceptEx: 40, acceptWs: 10, mandate: 'none', grantBelow: 0, peaceArm: 0, colWait: 'auto', colRange: 20, colPick: 'grade', routes: 3, routeRange: 12, regime: 'auto', direct: 0 };
+const BASE = { policy: 'auto', warRatio: 'model', warChance: 0.05, warRange: 25, sueRatio: 0.7, sueEx: 60, acceptEx: 40, acceptWs: 10, mandate: 'none', grantBelow: 0, peaceArm: 0, colWait: 'auto', colRange: 20, colPick: 'grade', routes: 3, routeRange: 12, regime: 'auto', direct: 0 };
 // 決めた 6 つの戦略 (F06 の「6 つ以上の戦略ボット」の最小の組)
 const PRESETS = {
   passive: { label: '放任', s: null },
@@ -100,10 +100,11 @@ function apply(g, s, sim) {
     const ordered = (act, sys) => this.requests.some((q) => q.kind === 'order' && q.act === act && Number(q.d.sys) === sys);
     const atWarAny = this.enemiesOf(this.cap).length > 0;
     if (!atWarAny && s.peaceArm && this.gov(this.cap).credits > s.peaceArm && this.hasShipyard(this.cap)) this.buildWarship(this.cap);
+    if (s.warRatio === 'model') this.spectateDeclare(); // 観戦の AI と同じ宣戦 (回 AI6。ゲームの earthWarYearly と同じ順で)
     for (const root of V.roots()) {
       const theirs = V.ships(root);
       if (!V.atWar(root)) {
-        if (s.warRatio && ours > s.warRatio * Math.max(1, theirs) && (!s.warRange || this.sysDist(this.cap, root) <= s.warRange) && this.rand() < s.warChance) this.declareWar(root);
+        if (s.warRatio !== 'model' && s.warRatio && ours > s.warRatio * Math.max(1, theirs) && (!s.warRange || this.sysDist(this.cap, root) <= s.warRange) && this.rand() < s.warChance) this.declareWar(root);
         continue;
       }
       if (this.hasShipyard(this.cap) && this.funds(this.cap) >= 2 * sim.tables.WARSHIP_COST.credits) this.buildWarship(this.cap);
