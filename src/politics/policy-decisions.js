@@ -80,6 +80,7 @@
       return { ok: true };
     }
     if (dec.kind === 'pact') { this.resolvePact(dec, k); return { ok: true }; } // 遅れて届く外交 (politics/diplomacy.js)
+    if (dec.kind === 'coerce') { this.coerceDecided(dec, k); return { ok: true }; } // 国どうしの威圧 (回 AI7。politics/coerce.js)
     if (dec.kind === 'bill') { if (k !== 'wait' && this.bill(dec.type)?.since === dec.since) this.billAct(dec.type, k); return { ok: true }; } // 審議で押し戻された法案 (politics/support.js)
     const s = STORY[dec.type];
     if (s) {

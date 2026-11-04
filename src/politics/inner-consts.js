@@ -42,7 +42,7 @@ const INNER = {
 };
 // 派閥のきっかけの名前と、帳簿の行いごとの親 X 派の満足の動き (反 X 派は逆。pact は協定を結んだとき)
 const LOBBY_WHY = { trade: '交易', thank: '恩', grudge: '恨み', fund: '外からの資金' };
-const LOBBY_ACT = { agg: -1, betray: -1, indep: -1, meddle: -1, rescue: 1, gift: 0.5, pact: 0.5 };
+const LOBBY_ACT = { agg: -1, betray: -1, indep: -1, meddle: -1, coerce: -0.5, rescue: 1, gift: 0.5, pact: 0.5 }; // coerce = 威圧 (回 AI7。親 X 派は、自分の国が X を威圧すると不満)
 // inner = { gov: { 戦争の鍵: { s: 独断した星系, y: 年, ok: null (首都に届く前)・1 (追認)・0 (否認) } }, sent: [資金の届く途中 { id, from, to, mode, amt, sent, at }],
 //   lob: [派閥 { r: 国, to: 相手の国, pro: 親か, why, y: できた年, end: 消えた年 (null = いまある), ap: 満足, fund: 資金が効く年まで }] }
 saveField('inner', (game) => (Object.keys(game.inner.gov).length || game.inner.sent.length || game.inner.lob.length ? game.inner : undefined), {

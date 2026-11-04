@@ -164,6 +164,7 @@
 - saveField: leaders (AI の振る舞い。src/politics/memory-consts.js。国ごとの指導者 { 国: { name, career, since, prev } }。回 AI3)
 - saveField: inner (AI の振る舞い。src/politics/inner-consts.js。中の事情 { gov: { 戦争の鍵: 遠い総督の独断 { s, y, ok } }, sent: [届く途中の資金], lob: [外の国への派閥 { r, to, pro, why, y, end, ap, fund }] }。回 AI4)
 - saveField: aiLog (AI の振る舞い。src/politics/ai-consts.js。AI の国ごとの最近の判断と理由の内訳 { 国: [{ y, t }] }。星系の欄に光の遅れで出す。回 AI2)
+- saveField: coerce (AI の振る舞い。src/politics/coerce-consts.js。届く途中と返事待ちの国どうしの威圧 [{ id, st, from, to, year, at, terms, pts, ships, ok, dec }]。帳簿 mem の種類 coerce と、決めることの種類 coerce も。回 AI7・B-305)
 - 協定の項目 th・mode (AI の振る舞い。diplo.pacts の 1 つ。防衛同盟を結んだとき受け手の判断に入っていた共通の脅威の国と、均衡 balance か便乗 bandwagon か。R91・F29 で数える。回 AI2)
 - EDITIONS.game.aiColonize (AI の国の星系の政府の入植の急ぎ方 { ships, pop, range }。台帳の C20。回 SE5)
 - EDITIONS.game.nationSize (国ごとの開始の大きさの散らばりの縮め方。比の何乗か。台帳の C21。回 SE8)

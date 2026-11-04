@@ -44,6 +44,6 @@
       const z = this.misread(), v = this.reservation(this.cap, r, z, 0) + this.claimBonus(this.cap, r) + this.aiWarBias(this.cap, r);
       if (v > BARGAIN.declare && (!best || v > best.v)) best = { r, v, z };
     }
-    if (best) this.aiDeclare(this.cap, best.r, best.z); // 宣戦と、理由の内訳の知らせ (politics/threat.js。AI の国と同じ)
+    if (best) this.aiPress(this.cap, best); // 先に威圧するか、宣戦する (politics/coerce.js。AI の国と同じ。回 AI7)
   }
 
