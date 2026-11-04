@@ -182,6 +182,7 @@ function playLogHtml() {
 }
 // セーブデータを読み込んで現在のゲームに反映する。失敗時は現在の状態を保つ。
 function loadSave(d) {
+  if (!trialSaveOk(d)) { app.homeNote = TR('体験版では、最初の時代 (2400 年まで) のセーブだけを読める'); return false; } // 回 SO4 (outward/trial.js)
   const prev = app.game;
   newGame(d.seed, galaxyKindOf(d.galaxy), d.gen || 1); // 銀河の作り方はセーブのまま (自動生成の銀河も、ネット対戦の参加者も同じ銀河を作り直す。回 GA10)
   if (app.game.restore(d)) {

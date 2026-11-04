@@ -2,11 +2,11 @@
 // 1. 撮るためのセーブを、人の操作で遊んで作る (desktop/shots/play.mjs。ストアのスクリーンショットと同じ筋)。
 // 2. 場面ごとに、ゲームを 1 コマずつ進めて (g.advance) 画面を撮る。大きさは CSS 1280×720 を 1.5 倍 (= 1920×1080。QD-18 と同じ)、30 コマ/秒。
 // 3. ffmpeg で H.264 + AAC (無音) の mp4 にする (Steam のトレーラーの決まり: 1920×1080 まで・16:9・30 か 60 コマ・5000 kbps 以上)。
-// ゲームの中身は変えない (ページの関数を呼ぶだけ)。字幕は日本語 (いまはゲームが日本語だけ)。音楽はまだない (音の素材が入ってから)。
+// ゲームの中身は変えない (ページの関数を呼ぶだけ)。字幕は日本語。--lang en で英語の画面と英語の字幕 (回 SO4。英語のストアのページ用)。音楽はまだない (音の素材が入ってから)。
 // 書き出したものはリポジトリに入れない (既定は desktop/trailer/out/。.gitignore 済み)。
-// 使い方: node tools/build.mjs && node desktop/trailer/trailer.mjs [--seed 20261020] [--spec 80] [--out <フォルダ>]
+// 使い方: node tools/build.mjs && node desktop/trailer/trailer.mjs [--seed 7] [--spec 80] [--out <フォルダ>]
 //         [--saves <フォルダ>] (desktop/shots/shoot.mjs が書いた save-<銀河>-<名前>.json と play-<銀河>.json を使い、遊び直さない)
-//         [--fps 30] [--keep] (撮ったコマの PNG を消さずに残す)
+//         [--fps 30] [--keep] (撮ったコマの PNG を消さずに残す) [--lang en] (英語。書き出しは trailer-<銀河>-en.mp4)
 import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +17,9 @@ import { playInPage } from '../shots/play.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
 const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; };
-const SEED = arg('seed', '20261020');
+const SEED = arg('seed', '7'); // 回 SO4 で 20261020 → 7 (いまのゲームでは 20261020 で地球の国が勝つ講和会議が起きなくなった。store/images.md の 2)
+const LANG = arg('lang', 'ja');
+const EN = LANG === 'en';
 const SPEC = Number(arg('spec', 80));
 const OUT = resolve(arg('out', join(here, 'out')));
 const FPS = Number(arg('fps', 30));
@@ -48,10 +50,10 @@ async function openPage(b) {
   p.errs = [];
   p.on('pageerror', (e) => p.errs.push(e.message));
   // 遊び方の記録の同意は「記録しない」にしておく (画面に同意の欄を出さない。shoot.mjs と同じ)
-  await p.addInitScript(() => { try { localStorage.clear(); localStorage.setItem('moribin-playlog-consent', 'no'); } catch { /* 使えない環境 */ } });
-  await p.goto(`file://${HTML}?seed=${SEED}&home=0`);
+  await p.addInitScript(() => { try { localStorage.clear(); localStorage.setItem('moribin-playlog-consent', 'no'); localStorage.setItem('moribin-evprefs', JSON.stringify({ popup: false })); } catch { /* 使えない環境 */ } }); // 重大な知らせの窓 (2026-11-01 の依頼で足した。既定はオン) は撮る画面を隠すので切る (回 SO4)
+  await p.goto(`file://${HTML}?seed=${SEED}&home=0&lang=${LANG}`);
   await p.waitForFunction(() => window.__app && __app.game);
-  await p.evaluate(() => setSpeed(0));
+  await p.evaluate(() => { setSpeed(0); window.__tn = (x) => (LANG === 'ja' ? x : TX(x)); }); // 字幕の名前を画面と同じ言葉に
   return p;
 }
 
@@ -86,7 +88,7 @@ const SCENES = (info) => [
       const g = __app.game, q = g.requests.filter((x) => x.kind === 'order' && x.act === 'peace').pop();
       __app.deselect(); __app.setView('galaxy'); $('rail').hidden = true;
       const b = g.system(q.to);
-      return { foe: g.realmName(g.realmOf(q.to)), to: b.name, ly: (q.arrive - q.sent).toFixed(0), arrive: Math.floor(q.arrive), sent: Math.floor(q.sent) };
+      return { foe: __tn(g.realmName(g.realmOf(q.to))), to: __tn(b.name), ly: (q.arrive - q.sent).toFixed(0), arrive: Math.floor(q.arrive), sent: Math.floor(q.sent) };
     },
     // 地球と相手の首都の真ん中を見る
     cam: () => {
@@ -96,8 +98,9 @@ const SCENES = (info) => [
       v.cam.x = (a.x + b.x) / 2; v.cam.y = (a.y + b.y) / 2; v.cam.z = ((a.z || 0) + (b.z || 0)) / 2;
       v.cam.zoom = Math.min(v.w, v.h * 1.4) * 0.5 / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0)));
     },
-    caps: (s) => [[0.3, 4.4, '命令は、光の速さでしか届かない。'],
-      [4.6, 8.8, `${s.sent}年、地球は${s.foe}に講和を申し入れた。<small>${s.ly} 光年先の ${s.to} に届くのは ${s.arrive}年</small>`]],
+    caps: (s) => (EN ? [[0.3, 4.4, 'Orders travel no faster than light.'],
+      [4.6, 8.8, `In ${s.sent}, Earth offered peace to ${s.foe}.<small>It reaches ${s.to}, ${s.ly} light-years away, in ${s.arrive}</small>`]] : [[0.3, 4.4, '命令は、光の速さでしか届かない。'],
+      [4.6, 8.8, `${s.sent}年、地球は${s.foe}に講和を申し入れた。<small>${s.ly} 光年先の ${s.to} に届くのは ${s.arrive}年</small>`]]),
     step: ({ k }) => { galaxyView.rotateBy(0.0016, 0); },
   },
   { // 講和のあとも戦う艦隊: 講和のあとに起きた艦隊戦の知らせが、地球に届く
@@ -106,7 +109,7 @@ const SCENES = (info) => [
       const g = __app.game;
       __app.deselect(); __app.setView('galaxy'); $('rail').hidden = true;
       const s = g.system(front.sys);
-      return { peace: Math.floor(front.peace), year: Math.floor(front.year), seen: Math.floor(front.seen), sys: s.name };
+      return { peace: Math.floor(front.peace), year: Math.floor(front.year), seen: Math.floor(front.seen), sys: __tn(s.name) };
     },
     // 前線の星系に寄せて、字幕より上に置く
     cam: (front) => {
@@ -114,8 +117,9 @@ const SCENES = (info) => [
       v.cam.yaw = 0; v.cam.pitch = 0.35; v.centerOn(s); v.cam.zoom = Math.min(v.w, v.h) / 2 / 11;
       v.pinWorld(s.x, s.y, v.w / 2, v.h * 0.4);
     },
-    caps: (s) => [[0.3, 4.4, `講和は ${s.peace}年に、もう結ばれていた。<small>知らせが前線に届くまで、艦隊は戦い続ける</small>`],
-      [4.6, 8.8, `${s.year}年、講和を知らない艦隊が ${s.sys} を攻めた。<small>地球がその戦いを知ったのは ${s.seen}年</small>`]],
+    caps: (s) => (EN ? [[0.3, 4.4, `Peace had already been signed in ${s.peace}.<small>Until the news reaches the front, the fleets keep fighting</small>`],
+      [4.6, 8.8, `In ${s.year}, a fleet that knew nothing of the peace attacked ${s.sys}.<small>Earth learned of the battle in ${s.seen}</small>`]] : [[0.3, 4.4, `講和は ${s.peace}年に、もう結ばれていた。<small>知らせが前線に届くまで、艦隊は戦い続ける</small>`],
+      [4.6, 8.8, `${s.year}年、講和を知らない艦隊が ${s.sys} を攻めた。<small>地球がその戦いを知ったのは ${s.seen}年</small>`]]),
     step: ({ k }) => { galaxyView.rotateBy(-0.0012, 0); },
   },
   { // 講和会議の知らせが、ようやく地球に届く (条件を押した順に選ぶ)
@@ -126,10 +130,10 @@ const SCENES = (info) => [
       __app.setView('galaxy'); $('rail').hidden = false; __app.selectSystem(c.loser);
       window.__trConf = c.id;
       window.__trPicks = g.aiTreatyPicks(c, c.bids.find((b) => b.realm === g.cap));
-      return { year: Math.floor(g.year), late: Math.round(g.year - c.year), foe: g.realmName(c.loser) };
+      return { year: Math.floor(g.year), late: Math.round(g.year - c.year), foe: __tn(g.realmName(c.loser)) };
     },
     cam: () => { const v = galaxyView; v.fitColonies(); v.cam.zoom *= 1.3; v.centerOn(__app.game.system(__app.sel.sys)); },
-    caps: (s) => [[0.3, 2.9, `${s.year}年、講和会議の知らせが地球に届いた。<small>${s.late} 年遅れで、${s.foe}から何を取るかを選ぶ</small>`]],
+    caps: (s) => (EN ? [[0.3, 2.9, `In ${s.year}, news of the peace conference reached Earth.<small>${s.late} years late, choose what to take from ${s.foe}</small>`]] : [[0.3, 2.9, `${s.year}年、講和会議の知らせが地球に届いた。<small>${s.late} 年遅れで、${s.foe}から何を取るかを選ぶ</small>`]]),
     step: ({ t }) => {
       if (t < 3.1) return;
       if (!__app.treaty) openTreaty(window.__trConf);
@@ -146,7 +150,7 @@ const SCENES = (info) => [
       window.__trY0 = START_YEAR + ERA_YEARS * window.__trEra;
       return { n: window.__trEra, y0: window.__trY0 };
     },
-    caps: (s) => [[0.3, 2.9, `時代の終わりに、答え合わせ。<small>${s.y0}〜${s.y0 + 100}年に、本当は何が起きていたか</small>`]],
+    caps: (s) => (EN ? [[0.3, 2.9, `At the end of the era, the review.<small>What really happened in ${s.y0}–${s.y0 + 100}</small>`]] : [[0.3, 2.9, `時代の終わりに、答え合わせ。<small>${s.y0}〜${s.y0 + 100}年に、本当は何が起きていたか</small>`]]),
     step: ({ t }) => {
       if (t < 3.1) return;
       if ($('endbox').hidden) { showEraReview(__app.game, window.__trEra); __app.reviewAnim = null; } // 早回しはここで 1 コマずつ動かす (撮るのは実時間より遅いので)
@@ -163,7 +167,7 @@ const SCENES = (info) => [
     save: null, dur: 5, rate: 0,
     setup: () => {
       const el = document.getElementById('tr-title');
-      el.innerHTML = '<b>NoLongerUbiquitous</b><span>命令は、光の速さでしか届かない。</span>';
+      el.innerHTML = `<b>NoLongerUbiquitous</b><span>${LANG === 'ja' ? '命令は、光の速さでしか届かない。' : 'Orders travel no faster than light.'}</span>`;
       el.style.display = 'flex';
       return {};
     },
@@ -222,7 +226,7 @@ try {
 }
 
 // 3. mp4 (H.264 の High・yuv420p・12 Mbps。音は AAC の無音。Steam の決まりは store/images.md の 1)
-const file = join(OUT, `trailer-${SEED}.mp4`);
+const file = join(OUT, `trailer-${SEED}${EN ? '-en' : ''}.mp4`);
 execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', String(FPS), '-i', join(FRAMES, '%05d.png'),
   '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo', '-shortest',
   '-c:v', 'libx264', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-b:v', '12M', '-maxrate', '16M', '-bufsize', '24M', '-r', String(FPS),
