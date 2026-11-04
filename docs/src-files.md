@@ -137,6 +137,7 @@
 | `screen/hotseat.js` | 画面と最初の体験 | 273 | ホットシート |
 | `outward/cloud.js` | 外向き | 180 | アカウントとクラウド (Firebase) |
 | `outward/net.js` | 外向き | 275 | ネット対戦 (WebRTC) |
+| `outward/trial.js` | 外向き | 26 | 体験版 (回 SO4・B-082。`docs/trial.md`): 出さないホームの頁・終わりの年の選び (endChoices)・読めるセーブ (trialSaveOk)・終わりの画面の案内 (trialEndPatch)。`TRIAL` は core/base.js |
 | `ship/treaty-ui.js` | 船と戦争 | 32 | 講和会議で条件を選ぶ画面 |
 | `screen/commands-ui.js` | 画面と最初の体験 | 200 | 命令の入口 (ボタンから指令へ) |
 | `core/main-loop.js` | 共通 (世話役: 道具と検証) | 129 | メインループ |

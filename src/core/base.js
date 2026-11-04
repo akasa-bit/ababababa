@@ -1,12 +1,15 @@
 // 版: game = ゲーム版 (遊びやすさを保ったまま、なるべく現実に近づける)、sim = シミュレーション版 (なるべく現実のまま)。
 // tools/build.mjs が版ごとに書き換えて、index.html と simulation.html を作る
 const EDITION = 'game'; /* EDITION */
+// 体験版 (回 SO4・B-082。outward/trial.js): tools/build.mjs --trial が true にして demo.html を作る。中身はゲーム版と同じで、最初の時代 (TRIAL_YEARS 年) だけ遊べる
+const TRIAL = false; /* TRIAL */
+const TRIAL_YEARS = 100;
 const GAME_NAME = 'NoLongerUbiquitous';
 const EDITION_LABEL = { game: 'ゲーム版', sim: 'シミュレーション版' };
 const EDITION_FILE = { game: 'index.html', sim: 'simulation.html' };
 // 保存の名前 (版ごとに分ける。ゲーム版は前の名前 Moribin のころのセーブをそのまま読む)
-const STORE = EDITION === 'sim' ? 'nlu-sim' : 'moribin';
-const brandHtml = () => `${GAME_NAME}${EDITION === 'sim' ? `<span class="ed">${EDITION_LABEL.sim}</span>` : ''}`;
+const STORE = EDITION === 'sim' ? 'nlu-sim' : TRIAL ? 'nlu-trial' : 'moribin'; // 体験版も分ける (製品版のセーブを読まない)
+const brandHtml = () => `${GAME_NAME}${EDITION === 'sim' ? `<span class="ed">${EDITION_LABEL.sim}</span>` : TRIAL ? `<span class="ed">${TR('体験版')}</span>` : ''}`;
 // 版ごとに違う値 (ここにあるものだけが違う)。根拠は docs/reality-check.md
 const EDITIONS = {
   // hazardBase = 離反のハザードの基準 [/年] (植民地の存続年数の中央値に合わせて自動対戦で決めた)、delayExp = 通信の遅れ ÷ 1 世代のべき指数 (Cox モデル)、

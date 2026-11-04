@@ -23,14 +23,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # ゲーム版 (index.html) とシミュレーション版 (simulation.html) は、リポジトリに入れずに、ここで src から組み立てる (回 R3。docs/restart.md の 5)。
-      # シミュレーション版は回 FU7 (FU7-Q1 = a) で凍結を解き、ゲーム版と同じ src から毎回組み立てる
+      # シミュレーション版は回 FU7 (FU7-Q1 = a) で凍結を解き、ゲーム版と同じ src から毎回組み立てる。体験版 (demo.html。回 SO4・docs/trial.md) も同じ src から
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: ゲーム版とシミュレーション版を組み立てる
+      - name: ゲーム版とシミュレーション版と体験版を組み立てる
         run: |
           cd tools && npm ci && cd ..
-          node tools/build.mjs --sim
+          node tools/build.mjs --sim --trial
       - uses: actions/configure-pages@v5
         with:
           enablement: true

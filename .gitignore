@@ -3,6 +3,7 @@ shots/
 __pycache__/
 /index.html
 /simulation.html
+/demo.html
 export-out/
 
 # 写しの出力先を渡さずに回した試験 (tools/tests/regime.js など) が書く画像

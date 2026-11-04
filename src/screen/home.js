@@ -23,7 +23,7 @@ function homeHtml() {
     return TR`<div class="hmenu"><h1>${brandHtml()}</h1><p class="tag">光速の壁の向こうへ広がる恒星間植民</p>${note}
       <div class="items">
         ${going ? `<button class="resume" data-home="resume">${app.started ? TR('ゲームに戻る') : TR('続きから')}<small>${saveInfo(saveMeta(buildSave(app.game)))}</small></button>` : ''}
-        ${Object.entries(HOME_PAGES).filter(([k]) => k !== 'account').map(([k, l]) => `<button data-home="tab" data-t="${k}">${ico(HOME_ICON[k])}${l}${k === 'nations' && NationLib.list.length ? ` (${NationLib.list.length})` : ''}</button>`).join('')}
+        ${Object.entries(HOME_PAGES).filter(([k]) => k !== 'account' && !(TRIAL && TRIAL_HIDE.includes(k))).map(([k, l]) => `<button data-home="tab" data-t="${k}">${ico(HOME_ICON[k])}${l}${k === 'nations' && NationLib.list.length ? ` (${NationLib.list.length})` : ''}</button>`).join('')}
       </div><div class="langs" translate="no">${Object.entries(LANGS).map(([k, l]) => `<button class="ghost${k === LANG ? ' on' : ''}" data-home="lang" data-l="${k}" lang="${k}">${l}</button>`).join('')}</div></div>`;
   }
   const head = TR`<div class="phead"><button class="ghost" data-home="tab" data-t="${page === 'account' ? app.homeFrom || 'menu' : 'menu'}">戻る</button><h2>${HOME_PAGES[page]}</h2></div>${note}`;
@@ -51,7 +51,7 @@ function singleHtml() {
       ${ED.physics.pv ? TR`<div class="row"><label>スウォームの素子の作り (全部の星系の既定) <select id="home-pv">${['auto', ...Object.keys(PV_DESIGNS)].map((k) => `<option value="${k}" ${k === (app.homePv ?? 'auto') ? 'selected' : ''}>${k === 'auto' ? TR('星系ごとに自動') : `${k}. ${PV_DESIGNS[k].label} — ${PV_DESIGNS[k].note}`}</option>`).join('')}</select></label></div>` : ''}
       ${homeHelp(TR`生産性: 1 人あたりの産出 (農業・鉱業・工業・採掘基地) の倍率。「現代のまま」は 2023 年の最前線の国の生産性。「2300 年の予測」は、1890〜2023 年の米国の労働生産性の伸び (年 2.0%) とコンドラチェフの波から延ばした値で、最近の伸び (年 1.3%) が続くなら ×33。「自分で決める」は ${PRODUCTIVITY_RANGE[0]}〜${PRODUCTIVITY_RANGE[1]} 倍。`)}</section>
     <section><h3>試合</h3>
-      <div class="row"><label>終わりの年 <select id="home-end">${END_CHOICES.map(([y, l]) => `<option value="${y}" ${y === (app.homeEnd ?? 500) ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+      <div class="row"><label>終わりの年 <select id="home-end">${endChoices().map(([y, l]) => `<option value="${y}" ${y === (app.homeEnd ?? (TRIAL ? TRIAL_YEARS : 500)) ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
       <div class="row"><span class="muted">挑戦 (選ばなくてもよい)</span>${Object.entries(CHALLENGES).map(([k, c]) => `<label title="${esc(c.desc)}"><input type="checkbox" class="home-ch" value="${k}" ${(app.homeCh || []).includes(k) ? 'checked' : ''}> ${ico(`ch-${k}`)}${c.label}</label>`).join('')}</div>
       ${homeHelp(TR`挑戦: ${Object.values(CHALLENGES).map((c) => `${c.label} = ${esc(c.desc)}`).join('。')}。「60星系」と「独立を許さない」は引っ張り合う (広げるほど遠い家臣が増える)。終わりの年に点数が確定する (そのあとも続けて遊べる)。`)}</section>
     <div class="hgo">${homeGoing() ? TR('<span class="muted">いまのゲームは、スロットにセーブしておかないと上書きされる</span>') : ''}
@@ -120,6 +120,8 @@ function friendsHtml() {
       </div></section>`;
 }
 function creditsHtml() {
+  if (TRIAL) return TR`<section><h3>この版</h3><p>${trialAbout()}</p></section>
+    <section><h3>画像・アイコンの出典</h3><p>${$('credits')?.innerHTML || ''}</p></section>`;
   return TR`<section><h3>この版</h3><p>${EDITION_LABEL[EDITION]} (<a href="${EDITION_FILE[EDITION === 'sim' ? 'game' : 'sim']}">${EDITION_LABEL[EDITION === 'sim' ? 'game' : 'sim']}を開く</a>)</p></section>
     <section><h3>画像・アイコンの出典</h3><p>${$('credits')?.innerHTML || ''}</p></section>`;
 }

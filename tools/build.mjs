@@ -1,5 +1,6 @@
 // 公開用の HTML を作る: src/index.html (分けたファイルを tools/src.js で組み立てたもの) を最小化し、LZMA で圧縮して、自分で展開する 1 枚の HTML にする。
-// 版ごとに作る: index.html (ゲーム版) と simulation.html (シミュレーション版)。違いは src の EDITION の値だけ
+// 版ごとに作る: index.html (ゲーム版) と simulation.html (シミュレーション版)。違いは src の EDITION の値だけ。
+// 体験版 demo.html (回 SO4・B-082。src/outward/trial.js) は、ゲーム版の src の TRIAL を true にしたもの。--trial を付けたときに作る (--trial-to <ファイル>: 体験版だけを、そのファイルに。CI の試験用)
 // ふだんはゲーム版だけを作る (手元の試験はゲーム版を開くため)。シミュレーション版は --sim を付けたときに作る。どちらもリポジトリに入れず、公開のとき (.github/workflows/pages.yml) に両方を組み立てる
 // (回 FU7・FU7-Q1 = a で凍結を解いた。前は simulation.html を凍結してリポジトリに入れていた。docs/parallel.md の 6)
 // 使い方: (cd tools && npm ci) のあと node tools/build.mjs   (シミュレーション版も: node tools/build.mjs --sim)
@@ -19,9 +20,12 @@ const unlzma = require('./unlzma.js');
 const source = require('./src.js').assemble();
 const EDITION_LINE = "const EDITION = 'game'; /* EDITION */";
 if (!source.includes(EDITION_LINE)) throw new Error('src/index.html に EDITION の行がない');
-const ALL_EDITIONS = [['game', 'index.html', 'NoLongerUbiquitous'], ['sim', 'simulation.html', 'NoLongerUbiquitous シミュレーション版']];
-const simTo = process.argv.includes('--sim-to') ? path.resolve(process.argv[process.argv.indexOf('--sim-to') + 1]) : null;
-const EDITIONS = simTo ? ALL_EDITIONS.filter(([e]) => e === 'sim') : ALL_EDITIONS.filter(([e]) => e === 'game' || process.argv.includes('--sim')); // シミュレーション版は --sim のときだけ
+const TRIAL_LINE = 'const TRIAL = false; /* TRIAL */';
+if (!source.includes(TRIAL_LINE)) throw new Error('src/index.html に TRIAL の行がない');
+const ALL_EDITIONS = [['game', 'index.html', 'NoLongerUbiquitous'], ['sim', 'simulation.html', 'NoLongerUbiquitous シミュレーション版'], ['game', 'demo.html', 'NoLongerUbiquitous 体験版', true]];
+const argTo = (k) => (process.argv.includes(k) ? path.resolve(process.argv[process.argv.indexOf(k) + 1]) : null);
+const simTo = argTo('--sim-to'), trialTo = argTo('--trial-to');
+const EDITIONS = simTo ? ALL_EDITIONS.filter(([e]) => e === 'sim') : trialTo ? ALL_EDITIONS.filter((x) => x[3]) : ALL_EDITIONS.filter(([e, , , t]) => (t ? process.argv.includes('--trial') : e === 'game' || process.argv.includes('--sim'))); // シミュレーション版は --sim・体験版は --trial のときだけ
 // LZMA の圧縮 (文脈のビット数を変えて、いちばん小さいものを使う)
 const py = `import lzma,sys,json
 b=sys.stdin.buffer.read();best=None
@@ -32,8 +36,8 @@ for lc in range(5):
 sys.stdout.buffer.write(bytes([best[0]])+best[1])`;
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 
-for (const [edition, file, title] of EDITIONS) {
-  const src = source.replace(EDITION_LINE, `const EDITION = '${edition}';`).replace('<title>NoLongerUbiquitous</title>', `<title>${title}</title>`);
+for (const [edition, file, title, trial] of EDITIONS) {
+  const src = source.replace(EDITION_LINE, `const EDITION = '${edition}';`).replace(TRIAL_LINE, `const TRIAL = ${trial ? 'true' : 'false'};`).replace('<title>NoLongerUbiquitous</title>', `<title>${title}</title>`);
 
   // 1. 最小化: CSS は esbuild、JS は terser (プロパティ名は変えない。セーブの形が変わらないように)、HTML はタグの間の空白を詰める
   let html = src;
@@ -85,6 +89,6 @@ for (const [edition, file, title] of EDITIONS) {
   const loader = (await minify(loaderSrc, { ecma: 2022, compress: { passes: 2 }, mangle: { toplevel: true }, format: { comments: false } })).code;
   // 展開器の名前はゲーム本体の名前とぶつからないよう、関数の中に閉じ込める
   const out = `<!doctype html><meta charset="utf-8"><title>${title}</title><script>(()=>{const D=\`${text}\`;${loader}})()</script>`;
-  fs.writeFileSync(simTo || path.join(root, file), out);
+  fs.writeFileSync((trial ? trialTo : simTo) || path.join(root, file), out);
   console.log(`${edition}: src ${kb(Buffer.byteLength(src))} → 最小化 ${kb(page.length)} → LZMA ${kb(packed.length)} (lc=${lc}) → ${file} ${kb(Buffer.byteLength(out))}`);
 }

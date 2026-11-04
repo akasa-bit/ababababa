@@ -39,6 +39,7 @@ function showEraReview(g, n) {
     <div class="btns"><button id="rvgo">次の時代へ</button><button id="rvagain" class="ghost">もう一度早回し</button></div></div>`;
   $('endbox').hidden = false;
   $('rvgo').onclick = () => { $('endbox').hidden = true; app.reviewAnim = null; };
+  if (g.ended) { $('rvgo').textContent = TR('結果へ'); $('rvgo').onclick = () => { app.reviewAnim = null; g.endShown = true; setSpeed(0); showEnd(); }; } // 終わりの年の答え合わせのあとは、終わりの画面へ (回 SO4)
   $('rvagain').onclick = () => playEraReview(r);
   PlayLog.add('ui', { act: 'review', n });
   playEraReview(r);

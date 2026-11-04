@@ -1,4 +1,5 @@
 // 組み立てたゲーム (リポジトリの根の index.html と assets/) を desktop/game/ に写す。
+// --trial: 体験版 (根の demo.html。node tools/build.mjs --trial で作る。回 SO4・docs/trial.md) を desktop/game/index.html として写す (体験版の包装。Steam の体験版のアプリは QD-21 のあと)
 // 包装はこれを外から包むだけ。ゲームの中身は変えない (docs/parallel.md の外向きの決まり)。
 // 字体 (B-088・QD-20): ゲームは Google Fonts をネットから読む。オフラインの Steam Deck でも同じ字体になるよう、
 // 同じ字体を npm の @fontsource から desktop/game/fonts/ に写し、fonts.css を作る。包装 (electron/main.js) が
@@ -10,10 +11,11 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
 const dest = join(here, 'game');
-if (!existsSync(join(root, 'index.html'))) throw new Error('index.html がない (先に node tools/build.mjs)');
+const page = process.argv.includes('--trial') ? 'demo.html' : 'index.html';
+if (!existsSync(join(root, page))) throw new Error(`${page} がない (先に node tools/build.mjs${page === 'demo.html' ? ' --trial' : ''})`);
 rmSync(dest, { recursive: true, force: true });
 mkdirSync(dest, { recursive: true });
-cpSync(join(root, 'index.html'), join(dest, 'index.html'));
+cpSync(join(root, page), join(dest, 'index.html'));
 cpSync(join(root, 'assets'), join(dest, 'assets'), { recursive: true });
 
 // ゲームが読む字体と太さ (src/index.html の頭の Google Fonts の <link> と同じにする)

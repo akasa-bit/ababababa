@@ -115,7 +115,7 @@ $('home').onclick = (e) => {
     if (homeGoing() && !confirm2('new')) return;
     newGame(app.homeSeed || String(Math.floor(Math.random() * 1e6)), app.homeGalaxy === 'gen' ? 'gen' : 'real'); // 星間マップの作り方 (回 GA10・B-195)
     if (app.homeSpectate) app.game.setSpectate(true);
-    app.game.endYear = app.homeEnd === 0 ? null : START_YEAR + (app.homeEnd ?? 500);
+    app.game.endYear = TRIAL ? START_YEAR + TRIAL_YEARS : app.homeEnd === 0 ? null : START_YEAR + (app.homeEnd ?? 500); // 体験版は最初の時代で終わる (回 SO4)
     app.game.challenges = (app.homeCh || []).filter((k) => CHALLENGES[k]).map((id) => ({ id, status: 'active' }));
     app.game.handicap = HANDICAP[app.homeHc] ? app.homeHc : 'normal';
     app.game.productivity = productivityOf(app.homeProd, app.homeProdK);
@@ -250,6 +250,7 @@ $('memoclose').onclick = closeMemo;
 $('memosave').onclick = saveMemo;
 document.querySelectorAll('#memobox [data-tag]').forEach((b) => { b.onclick = () => { const on = !b.classList.contains('on'); document.querySelectorAll('#memobox [data-tag]').forEach((x) => x.classList.remove('on')); b.classList.toggle('on', on); }; });
 const setSpeed = (v, keepSkip = false) => {
+  if (TRIAL && v && app.game?.ended) { app.speed = 0; updateSpeedButtons(); if ($('endbox').hidden) showEnd(); return; } // 体験版は終わりの年から先へ進めない (回 SO4)
   if (Net.on && Net.role === 'guest') { if (v !== app.speed) Net.send(Net.peers[0], { t: 'speed', v }); return; } // 速さはホストが決める
   if (v) app.awaitFirst = false; // 自分で時間を動かしたら、最初の入植船を待たない
   if (app.speed) app.lastSpeed = app.speed;
@@ -333,6 +334,7 @@ function showEnd() {
   $('endbox').hidden = false;
   $('endgo').onclick = () => { $('endbox').hidden = true; };
   $('endhome').onclick = () => { $('endbox').hidden = true; openHome(); };
+  if (TRIAL) trialEndPatch(); // 体験版は続けて遊べない。答え合わせ・書き出し・製品版への案内 (回 SO4。outward/trial.js)
 }
 document.querySelectorAll('[data-speed]').forEach((b) => {
   b.onclick = () => setSpeed(SPEEDS[Number(b.dataset.speed)]);

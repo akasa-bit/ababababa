@@ -76,7 +76,7 @@ function frame(now) {
     setHtml($('sec-ledger').firstElementChild, TR`${ico('credits')}${ME.gov}の収支`);
     if (hasFleetSelection()) renderFleetBar();
     $('skipbtn').classList.toggle('on', !!app.skip);
-    if (game.ended && !game.endShown) { game.endShown = true; setSpeed(0); showEnd(); }
+    if (game.ended && !game.endShown && $('endbox').hidden) { game.endShown = true; setSpeed(0); showEnd(); } // 時代の答え合わせを開いていれば、閉じてから (回 SO4)
     if (app.view === 'events') app.seenTime = game.year;
     const unseen = game.knownEvents().filter((e) => !e.good && evShown(e.kind) && (e.seen ?? e.year) > (app.seenTime ?? -Infinity)).length;
     // 決めることがあれば、イベントのタブに印 (⚑) をつける
@@ -96,7 +96,7 @@ function frame(now) {
 }
 
 $('brand').innerHTML = brandHtml();
-document.title = EDITION === 'sim' ? `${GAME_NAME} ${EDITION_LABEL.sim}` : GAME_NAME;
+document.title = EDITION === 'sim' ? `${GAME_NAME} ${EDITION_LABEL.sim}` : TRIAL ? `${GAME_NAME} ${TR('体験版')}` : GAME_NAME;
 resize();
 // 起動: 古い版の localStorage のセーブがあればすぐ読む。なければ仮のゲームで始め、IndexedDB のセーブが読めたら差し替える
 const legacy = readLegacySave();
