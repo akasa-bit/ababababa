@@ -225,10 +225,12 @@
     return pop >= ai.pop * this.modsOf(id).colonizePop && !busy && this.year - (gv.lastColony ?? gv.founded) >= wait; // 多産は 3 分の 1 の人口から (回 SE8)
   }
   // 入植を急ぐか (ゲーム性の補正。台帳の C20。回 SE5・B-028。政治のレーンが足した): AI の国の星系の政府は、入植船を同時に ships 隻まで飛ばし、人口 pop 百万人から、
-  // range 倍の光年まで入植先を探す。人間の国の星系の政府 (と補正なし) は、前のまま 1 隻ずつ・300 万人から・ふだん 10 光年
+  // range 倍の光年まで入植先を探す。人間の国の星系の政府 (と補正なし) は、前のまま 1 隻ずつ・300 万人から・ふだん 10 光年。
+  // 観戦の AI (人間の代わり) が動かす人間の国の首都も、AI の国と同じ (QD-116 = a。回 AI6 の 13.3: 人は首都から手で何隻でも入植船を出せるが、
+  // 人間の代わりは 1 隻ずつしか出さず、同じ国が人間の席だと小さく終わっていた)。人間の国のほかの星系の政府は、実際の遊びと同じ 1 隻ずつ
   aiColonize(id) {
-    const a = ED.aiColonize;
-    return a && !this.isHuman(this.realmOf(id)) ? a : { ships: 1, pop: 3, range: 1 };
+    const a = ED.aiColonize, r = this.realmOf(id);
+    return a && (!this.isHuman(r) || (this.spectate && id === r)) ? a : { ships: 1, pop: 3, range: 1 };
   }
   // 入植先: 未入植で入植できる惑星のうち、適性が高く近いところ。ふだんは10光年以内 (観戦モードの地球政府は20)、
   // 星系内に手の届く建設がなくなった政府 (far) は25光年まで探す。

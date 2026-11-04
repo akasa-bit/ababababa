@@ -1,6 +1,7 @@
 // 国ごとに規則が違う開始 (回 SE8・B-029) の試験。画面なしの版で回す:
 //   開始の大きさ: ゲーム版はどの国も 1 (回 SE9・B-143)・散らばりの値 (nationSize 0.5) なら 10・50・90% 点で 0.30・1・2.50 で国ごとに違う・母星の人口と艦隊と資金が大きさに合う・大きな国は星系を足す・保存と読み込みで残る・
 //     国家選択のない試合はどの規則もない
+//   置き場所のくじ (依頼 GA-5 = a): 画面から始めるたびにくじの番号を変えるので、同じ銀河の番号でも置き場所が変わる。番号を渡さなければ前のまま
 //   特性の規則: 多産 (入植船を出せる人口と数)・長命 (議会のいら立ち半分・国家方針の間隔 45 年)・適応力 (住みにくい惑星の上限 ×3)・水棲 (乾燥した惑星に入植できない)・
 //     好戦的 (宣戦に政治力が要らない・疲弊 ×0.5・不可侵を結べない)・勤勉 (建設費 ×0.75)・鉱夫 (採掘基地の費用 ×0.5)・商才 (関税 5% まで・交易協定を AI が断らない)・
 //     賢明 (政治力の上限 70・法案の支持 +10 点)
@@ -108,6 +109,10 @@ res.pious = pi.loyalty === 3 && pi.research === 0.9 && near(sumT(3) - sumT(0), 3
 res.clash = [['cohesive', 'nomadic'], ['warlike', 'diplomatic'], ['prolific', 'hardy'], ['scholarly', 'pious']].every((p) => sim.evaluate(`TRAIT_CLASH`).some((c) => p.every((x) => c.includes(x))));
 res.labels = Object.values(SPECIES_TRAITS).every((t) => t.good && t.bad && t.desc.startsWith(t.good));
 res.icons = Object.keys(SPECIES_TRAITS).every((k) => sim.evaluate('ICONS')[`tr-${k}`]); // どの特性にもアイコン (回 SE10 の 8 つは QD-114 の 2)
+// 置き場所のくじ (依頼 GA-5 = a): くじの番号を渡さなければ銀河の番号だけで決まる (前と同じ)。番号を変えると置き場所が変わり、同じ番号なら同じ
+const capsOf = (draw) => { const h = sim.newGame(seed, { nations: 0 }); h.foundNations(6, 'normal', [], draw); return h.nations.map((n) => n.cap).join(','); };
+const caps0 = g.nations.map((n) => n.cap).join(','), drawn = ['1', '2', '3', '4'].map(capsOf);
+res.draw = capsOf(null) === caps0 && capsOf('1') === drawn[0] && new Set(drawn).size >= 3 && drawn.every((c) => c !== caps0 && c.split(',')[0] === '0');
 const ok = Object.values(res).every(Boolean);
 console.log(`国ごとの開始 ${ok ? '合格' : '不合格'}`, JSON.stringify(res));
 console.log(`開始の大きさ: ${sizes.map((r) => r.toFixed(2)).join('・')}`);

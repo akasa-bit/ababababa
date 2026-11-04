@@ -108,13 +108,16 @@ class Game {
   isHome(sys, body) { return this.nations ? this.nations.some((n) => n.cap === sys && n.body === body) : sys === 0 && body === 'earth'; }
   // 開始時に宇宙へ出ている国を作る: 地球 (人類) と、異星の種族の母星 count−1 か国。
   // 母星は、住みやすい岩石惑星から重みつきのくじで選ぶ (同じシードなら同じ)
-  foundNations(count, handicap = 'normal', customs = []) { this.applyNations(this.planNations(count, customs), handicap); }
+  // natDraw = 置き場所のくじの番号 (依頼 GA-5「AIの国、スポーン位置ランダムにしてほしい」= a)。画面から新しい試合を始めるときは毎回ちがう番号を渡すので、
+  // 同じ銀河の番号でも試合ごとに置き場所が変わる。渡さなければ銀河の番号だけで決まる (画面なしの道具と試験の測りは前のまま再現できる)。
+  // 決まった国はセーブの項目 nations に入るので、読み込みとネット対戦の参加者は同じ置き場所になる
+  foundNations(count, handicap = 'normal', customs = [], natDraw = null) { this.applyNations(this.planNations(count, customs, natDraw), handicap); }
   // customs = ホーム画面の「国家づくり」で作った国 ({ name, species, traits, env, dist })。先に置き、残りをくじで埋める
-  planNations(count, customs = []) {
+  planNations(count, customs = [], natDraw = null) {
     // size = 開始の大きさ (回 SE8・QD-111 = c。nationSizeOf)。種族の名前から別のくじで引く (国の置き場所のくじを変えないように)
     const sizeOf = (species, cu) => (cu && Number.isFinite(cu.size) ? cu.size : nationSizeOf(new Rng(hashSeed(`${this.galaxy.seed}/size/${species}`)).next()));
     const list = [{ cap: 0, body: 'earth', species: HUMAN, traits: HUMAN_TRAITS, name: '地球の国', size: sizeOf(HUMAN) }];
-    const rng = new Rng(hashSeed(`${this.galaxy.seed}/nations`));
+    const rng = new Rng(hashSeed(natDraw === null ? `${this.galaxy.seed}/nations` : `${this.galaxy.seed}/nations/${natDraw}`));
     // 候補: 太陽系から 10 光年より遠い、住みやすい岩石惑星 (銀河のどこでも)。
     // 文明の進んだ先住民の星や住みやすい星ほど選ばれやすいが、選ぶのは重みつきのくじ (毎回ちがう配置になる)
     const cands = [];
