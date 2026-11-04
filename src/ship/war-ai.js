@@ -437,7 +437,7 @@
     const cost = (BARGAIN.cost + BARGAIN.costEx * (this.exhaustion[r] || 0)) * BARGAIN.horizon;
     const shift = BARGAIN.shift * Math.max(0, this.seenGrowth(r, e) - this.seenGrowth(r, r)) * 100;
     if (out) Object.assign(out, { ours, theirs, allies, p, expect, cost, shift });
-    return expect - cost + shift;
+    return expect - cost + shift - this.innerCost(r, e, out); // 中の事情 (議会の支持・集団・交易・総督の独断の否認。回 AI4。politics/inner.js)
   }
   // AI の国どうしの講和の交渉 (B-167): r が自分の受け入れる線を添えて申し入れを送り、光速で e の首都に届いてから e が答える。
   // 届く途中の申し入れは、同じ戦争・同じ送り手で 1 つまで

@@ -57,6 +57,8 @@
     if (b) { s -= PACT.distrust * b; why += JA`。${this.realmName(p)}の破約 ${b} 回`; }
     const mv = this.memView(r, p); // 記憶 (回 AI3。politics/memory.js): 恩は受けやすく、恨みは受けにくく
     if (mv.text) { s += MEM.thank * mv.thanks - MEM.grudge * mv.grudge; why += JA`。${mv.text}`; }
+    const iv = this.innerPact(r, p, kind); // 中の事情 (回 AI4。politics/inner.js): 議会の支持が低いと批准しにくく、交易の深い相手との交易協定は受けやすい
+    if (iv) { s += iv.ds; if (iv.text) why += JA`。${iv.text}`; }
     s += gift / PACT.giftScale;
     // 共通の脅威に向けた同盟 (R91・F29 で数える) は、脅威がなければ結ばなかったもの (ATOP の「特定の脅威を名指しする同盟」に当たる。回 AI2)
     const { thv, ...rest } = info;
@@ -98,6 +100,7 @@
     if (info?.th !== undefined && info.th !== null) p.th = info.th;
     if (info?.mode) p.mode = info.mode;
     this.diplo.pacts.push(p);
+    this.lobbyAct(a, b, 'pact'); this.lobbyAct(b, a, 'pact'); // 協定への派閥の満足 (回 AI4。politics/lobby.js)
     const g = Math.min(gift, Math.max(0, this.gov(a).credits));
     if (g > 0) { this.cash('treaty', -g, { gov: a }); this.cash('treaty', g, { gov: b }); this.memAdd(a, b, 'gift', a, g / MEM.giftUnit); } // 贈り物の記憶 (回 AI3)
     for (const [x, y] of [[a, b], [b, a]]) { const c = this.claimBy(y); if (c !== null && c !== x) this.memAdd(x, c, 'indep', x); } // 分かれた国と組んだ = 独立の支援 (回 AI3)
@@ -217,6 +220,7 @@
       }
     }
     this.leadersYearly(); // 指導者の交代 (回 AI3。politics/memory.js)
+    this.innerYearly(); // 遠い総督の独断・首都の追認と否認・揺さぶり (回 AI4。politics/inner.js)
     // AI の国 (と観戦の地球) の申し入れ: 首都に届いている記録で、自分の得があり相手も受けそうな相手と種類から、くじで 1 つ
     for (const x of this.colonizedSystems()) {
       const r = x.id;

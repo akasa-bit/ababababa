@@ -19,10 +19,12 @@ const PACT_KINDS = {
 //   honorLine = AI の国が防衛同盟の参戦に応じる、見込む戦勝点の下限 (politics/threat.js の aiHonor。下回れば断って破約。回 AI2)。
 //     戦争で同盟の約束が守られた割合 74.5% (Leeds・Long・Mitchell 2000) に較正: −15 で 35.4%・−30 で 45.3%・−45 で 51.6%・−55 で 69.7% (8 銀河 × 300 年)。
 //     −57 にすると 30 銀河では 64.1% だったので、別の 8 銀河の判断 588 回の見込む戦勝点の 25.5% 点 (−58.8) にした
+//     回 AI4 で中の事情 (politics/inner.js の innerCost。議会の支持・集団・敵と守る国への派閥) を引くようになったので、引く前の割合を保つ線にした:
+//     8 銀河の判断 578 回で、引く前 (−58.8) 63.67% = 引いたあと −58.5 で 63.67% (派閥は守る国への親 X 派と敵への反 X 派で参戦を後押しする向きが強い。docs/ai-behavior.md の 11.1)
 // 較正 (回 AI2。tools/ai-headless.js の 8 銀河 × 300 年): aiPropose 0.04 → 0.3・napBase 0.2 → 0.4 で、国が新しく結ぶ協定の数 (R90。ATOP 5.1 の国の 25〜75% 点 6.13〜15.79) が
 //   1.05 → 7.67。allyBase −0.3 → −0.05 で、共通の脅威に向けた防衛同盟 (R91。帯 15.7〜73.9%) が 84.4 → 74.1%。allyBase が 0 では 8.9% に落ちる
 //   (艦隊の見えない相手との同盟は、脅威があるときしか結ばれないので、−0.1〜−0.05 で 74〜76% にとどまる)
-const PACT = { years: 30, napBase: 0.4, allyBase: -0.05, allyHelp: 0.5, atWar: 0.5, tradeBase: 0.5, distrust: 0.5, distrustYears: 30, giftScale: 2000, breachCouncil: 10, aiPropose: 0.3, replyYears: 10, honorLine: -58.8 };
+const PACT = { years: 30, napBase: 0.4, allyBase: -0.05, allyHelp: 0.5, atWar: 0.5, tradeBase: 0.5, distrust: 0.5, distrustYears: 30, giftScale: 2000, breachCouncil: 10, aiPropose: 0.3, replyYears: 10, honorLine: -58.5 };
 saveField('diplo', (game) => game.diplo, {
   init: (game) => { game.diplo = { pacts: [], sent: [], breach: {} }; },
   read: (game, d) => {
