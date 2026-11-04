@@ -79,7 +79,8 @@ jobs:
     # 表と止める線は、最後のジョブ test が 3 つの結果をまとめて出す (tools/fun-report.js --merge)
     name: 面白さの代わりの数と必勝法を探す AI (main と比べる・${{ matrix.part }}/3)
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    # 探索を回す 1 番目がいちばん長い (#340 で 49.1 分)。人間の代わりの首都に入植の補正をかけて (QD-116) 1 試合が 1 割ほど長くなり、50 分で切れたので 75 分に
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
