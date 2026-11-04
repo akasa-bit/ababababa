@@ -91,6 +91,27 @@ o3 = g.coerce[0];
 g.year = o3.at + 0.01; g.coerceYearly();
 check(!g.atWar(b, a) && /に威圧を断られ、引き下がった \(見込む点 -?\d+・引き下がる面目 \+\d+・宣戦の線 \d+\)/.test(last(b)), `見込みが線に届かないのに引き下がらない (${last(b)})`);
 
+// 4b. 返事を待つ国は、その相手と不可侵も同盟も結ばない。ほかの国と交戦中なら、holdYears 年まで待ってから考え直す
+for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+g.coerce = [];
+fix((r) => (r === a ? B.declare - C.audience + 5 : 60));
+g.coerceSend(a, b, 30, 0);
+check(g.pactScore(a, b, 'nap').s < 0 && /への威圧の返事を待っている/.test(g.pactScore(a, b, 'nap').why) && g.pactScore(a, b, 'ally').s < 0, '威圧の返事を待つ国が、その相手と協定を結べる');
+let o7 = g.coerce[0];
+g.year = o7.at + 0.01; g.coerceYearly();
+o7 = g.coerce[0];
+g.beginWar(a, c, a); // ほかの国と交戦中 (開戦を知っている)
+const known = g.aiKnowsWar; g.aiKnowsWar = () => true;
+g.year = o7.at + 0.01; g.coerceYearly();
+const held = g.coerce.find((o) => o.from === a && o.to === b);
+check(held && held.st === 'back' && Number.isFinite(held.hold) && !g.atWar(a, b), `交戦中の国が、待たずに決めた (${JSON.stringify(held)})`);
+delete g.realmWars[g.warKey(a, c)];
+g.year = held.at + 0.01; g.coerceYearly();
+check(g.atWar(a, b) && !g.coerce.some((o) => o.from === a && o.to === b), 'ほかの戦争が終わっても、待っていた考え直しをしない');
+g.aiKnowsWar = known;
+for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+g.coerce = [];
+
 // 6. 返事を待つ国は重ねない
 fix(60);
 g.coerce = [];

@@ -1409,6 +1409,7 @@ const I18N_EN = {
 // == politics/diplomacy.js
 "好戦的な種族の国とは{0}の協定を結べない": "Cannot sign a {0} pact with a warlike species nation",
 "商才の種族の国からの交易協定": "Trade pact from a trader species nation",
+"{0}への威圧の返事を待っている": "waiting for the reply to its coercion of {0}",
 "{0}の艦隊を {1}、自分を {2} と見ている": "Sees {0}'s fleet strength as {1} and its own as {2}",
 "便乗: {0}。味方になりそうな国と合わせても艦隊 {1} で届かない": "Bandwagoning: {0}. Even with likely partners the fleets total only {1}, not enough",
 "共通の脅威が見えない": "Sees no common threat",
