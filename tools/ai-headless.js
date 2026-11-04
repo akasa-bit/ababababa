@@ -116,7 +116,10 @@ function count(file) {
     const all = g.colonizedSystems().length, roots = alive();
     const fin = [...hs.keys()].map((r) => ({ r, sc: hscore(r) })).sort((a, b) => b.sc - a.sc);
     fin.forEach(({ r, sc }, i) => M.seats.push({ seed, rank: i + 1, alive: g.realmAlive(r), sys: g.realmAlive(r) ? g.realmSystems(r).length : 0, score: sc, share: all ? (g.realmAlive(r) ? g.realmSystems(r).length : 0) / all : 0, ...hs.get(r) }));
-    M.games.push({ seed, humanShare: all ? fin.reduce((k, x) => k + (g.realmAlive(x.r) ? g.realmSystems(x.r).length : 0), 0) / all : 0, aiAlive: roots.filter((r) => !g.isHuman(r)).length, fleetSum, fleetN });
+    // 国家選択で始まった AI の国 (人間の席でない国) の、終わりの星系の数の平均 (消えた国は 0)。人間の席の星系の数の平均と比べる (難易度の見直し)
+    const fsys = g.nations.map((n) => n.cap).filter((c) => !hs.has(c)).map((c) => (g.realmAlive(c) ? g.realmSystems(c).length : 0));
+    M.games.push({ seed, humanShare: all ? fin.reduce((k, x) => k + (g.realmAlive(x.r) ? g.realmSystems(x.r).length : 0), 0) / all : 0, aiAlive: roots.filter((r) => !g.isHuman(r)).length, fleetSum, fleetN,
+      humanSys: fin.reduce((k, x) => k + (g.realmAlive(x.r) ? g.realmSystems(x.r).length : 0), 0) / Math.max(1, fin.length), founderSys: fsys.length ? fsys.reduce((a, b) => a + b, 0) / fsys.length : null });
     for (const w of hwin) {
       const others = w.alive.filter((r) => r !== w.leader);
       M.lead.hostL += w.host.get(w.leader) || 0; M.lead.supL += w.sup.get(w.leader) || 0;
@@ -176,6 +179,8 @@ function multiSummary(m, years) {
     humans: m.humans, hc: m.hc, seats: S.length, games: G.length,
     humanShare: mean(G.map((x) => x.humanShare)), humanShareSE: se(G.map((x) => x.humanShare)),
     aiAlive: mean(G.map((x) => x.aiAlive)), aiFleet: sum(G, (x) => x.fleetSum) / Math.max(1, sum(G, (x) => x.fleetN)),
+    // 人間の席の星系の数 ÷ 国家選択で始まった AI の国の星系の数 (試合ごとの比の平均。記録のある試合だけ)
+    vsFounder: (() => { const r = G.filter((x) => x.founderSys > 0).map((x) => x.humanSys / x.founderSys); return r.length ? { mean: mean(r), se: se(r), n: r.length } : null; })(),
     alive: S.length ? S.filter((x) => x.alive).length / S.length : null,
     declOwn: per(sum(S, (x) => x.decl.own || 0), S.length), declGov: per(sum(S, (x) => x.decl.gov || 0), S.length), declAlly: per(sum(S, (x) => (x.decl.ally || 0) + (x.decl.other || 0)), S.length),
     offer: per(sum(S, (x) => x.offer), S.length), ally: per(sum(S, (x) => x.ally), S.length), rescue: per(sum(S, (x) => x.rescue), S.length),
@@ -195,6 +200,7 @@ function multiTable(u) {
     '| 数 | 値 |', '|---|---|',
     `| 人間の国の入植星系の割合 (人間の席の合計。± 標準誤差) | ${pc(u.humanShare)} (± ${u.humanShareSE === null ? '—' : (100 * u.humanShareSE).toFixed(1)}) |`,
     `| 終わりの年の AI の国の数・AI の国の艦隊 (国あたり、毎年の平均) | ${f(u.aiAlive, 1)}・${f(u.aiFleet, 1)} |`,
+    `| 人間の席の星系 ÷ 国家選択で始まった AI の国の星系 (試合ごとの比の平均。± 標準誤差) | ${u.vsFounder ? `${f(u.vsFounder.mean)} (± ${f(u.vsFounder.se)}。${u.vsFounder.n} 試合)` : '—'} |`,
     `| 終わりの年に生き残った人間の席 (1 位でない席) | ${pc(u.alive)} (${pc(u.restAlive)}) |`,
     `| AI の国から受けた宣戦 (席・100 年。自分の判断・総督・同盟の参戦ほか) | ${f(u.declOwn)}・${f(u.declGov)}・${f(u.declAlly)} |`,
     `| AI の国からの協定の申し入れ・防衛同盟・救援・贈り物 (席・100 年) | ${f(u.offer)}・${f(u.ally)}・${f(u.rescue)}・${f(u.gift)} |`,
