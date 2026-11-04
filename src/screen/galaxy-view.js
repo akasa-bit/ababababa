@@ -16,10 +16,10 @@ class GalaxyView {
 
   fit() {
     const g = this.app.game.galaxy;
-    const r = g.radius + 6;
+    const r = (g.span ?? g.radius) + 6; // 自動生成の銀河 (版 6 から) は、星の円盤の中心 (cx, cy) から見た半径 (太陽系が端にもなる。依頼 GA-6)
     this.cam.zoom = clamp(Math.min(this.w, this.h) / 2 / r, 1.5, 80);
-    this.cam.x = 0;
-    this.cam.y = 0;
+    this.cam.x = g.cx ?? 0;
+    this.cam.y = g.cy ?? 0;
     this.cam.z = 0;
     // 3 次元の銀河は、少し斜めから見下ろして始める (平面の銀河は真上から)
     if (this.camKind !== g.kind) { this.camKind = g.kind; this.cam.yaw = 0; this.cam.pitch = is3D(g) ? DEFAULT_PITCH : 0; }

@@ -183,7 +183,7 @@ node tools/ai-headless.js --merge a.json,b.json 300 6
 node tools/ai-headless.js src/index.html 8 300 6 --humans 2 --hc hard
 ```
 
-人間の代わり (観戦の AI) の公平さ (回 AI6。`docs/ai-behavior.md` の 13.3): 同じ国 (国家選択の 2 番目と 3 番目) を、人間の席にした試合と AI の国の席にした試合で回し、終わりの星系の数を 1 行の JSON に書く (1 シード × 300 年 × 2 試合で 3 分ほど)。`--c20` で、人間の席にも AI の国と同じ入植の補正 (台帳の C20) をかける。
+人間の代わり (観戦の AI) の公平さ (回 AI6。`docs/ai-behavior.md` の 13.3): 同じ国 (国家選択の 2 番目と 3 番目) を、人間の席にした試合と AI の国の席にした試合で回し、終わりの星系の数を 1 行の JSON に書く (1 シード × 300 年 × 2 試合で 3 分ほど)。`--c20` で、人間の席の星系すべてに AI の国と同じ入植の補正 (台帳の C20) をかける (つけなくても、人間の席の首都には C20 がかかる。QD-116 = a)。
 
 ```sh
 node tools/human-seat.js 1 300 normal

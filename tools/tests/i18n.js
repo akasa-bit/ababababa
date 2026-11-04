@@ -41,7 +41,7 @@ for (const lang of ['ja', 'en']) {
   await p.addInitScript(() => { try { localStorage.clear(); } catch {} });
   await p.goto(`file://${HTML}?lang=${lang}&seed=3`);
   await p.waitForFunction(() => window.__app && __app.game);
-  await p.evaluate(() => { if ($('home').hidden) openHome(); app.homeTab = 'single'; app.homeNat = 6; app.homeSeed = '3'; renderHome(); });
+  await p.evaluate(() => { if ($('home').hidden) openHome(); app.homeTab = 'single'; app.homeNat = 6; app.homeSeed = '3'; app.homeNatDraw = '1'; renderHome(); }); // 国の置き場所のくじを決めて、2 つの言語で同じ試合にする (依頼 GA-5)
   await p.click('[data-home="new"]');
   await p.waitForSelector('#pick [data-pick="go"]');
   await p.click('#pick [data-pick="go"]');

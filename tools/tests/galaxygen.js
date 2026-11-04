@@ -2,7 +2,8 @@
 //   同じ銀河の番号なら同じ銀河・違えば違う・実在の星の表と同じ密度 (±10%) と主星の型の割合 (±2 ポイント。目標 R04 の「手続き的に作る範囲」の幅)・
 //   板 (版 5 から ±4 光年の板から取って、縦を詰めてゲームの中では ±2 光年) と半径の中・星系どうしが 1 光年以上離れる・実在の星の番号や名前を持たない・惑星がある・
 //   セーブに作り方 (gen) が入り、読み込み (ネット対戦の参加者と同じ道) で同じ銀河になる・古いセーブ (作り方なし) は平面の銀河・試合が進む・
-//   実在の銀河は版 4 (板 ±2 光年) の古いセーブなら前と同じ・版 5 は ±4 光年の板の実在の星をすべて使い、高さを半分に詰める (星系がおよそ 2 倍。2026-10-31 の依頼 GA-2)
+//   実在の銀河は版 4 (板 ±2 光年) の古いセーブなら前と同じ・版 5 は ±4 光年の板の実在の星をすべて使い、高さを半分に詰める (星系がおよそ 2 倍。2026-10-31 の依頼 GA-2)・
+//   版 6 は自動生成の銀河だけ、星の円盤の中心を太陽系からずらす (太陽系が端にもなる。2026-11-04 の依頼 GA-6。実在の銀河は版 5 と同じ)
 // 使い方: node tools/tests/galaxygen.js [銀河の番号]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 exports.ci = [{ args: ['3'], judge: (o) => (o.includes('自動生成の銀河 合格') ? '' : '自動生成の銀河が違う') }];
@@ -32,7 +33,13 @@ res.density = Math.abs(st.dens / rho - 1) <= 0.1;
 res.types = st.worst <= 0.02;
 let minD = Infinity;
 for (let i = 0; i < a.systems.length; i++) for (let j = i + 1; j < a.systems.length; j++) { const p = a.systems[i], q = a.systems[j]; minD = Math.min(minD, Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z)); }
-res.shape = gameSlab === 2 && a.systems.every((s) => Math.abs(s.z) <= gameSlab + 1e-9) && a.systems.some((s) => Math.abs(s.z) > 1) && a.systems.every((s) => Math.hypot(s.x, s.y) <= S.radius + 1e-9) && minD >= GEN_MIN - 1e-9;
+res.shape = gameSlab === 2 && a.systems.every((s) => Math.abs(s.z) <= gameSlab + 1e-9) && a.systems.some((s) => Math.abs(s.z) > 1) && a.systems.every((s) => Math.hypot(s.x - (a.cx ?? 0), s.y - (a.cy ?? 0)) <= S.radius + 1e-9) && minD >= GEN_MIN - 1e-9;
+// 版 6 (依頼 GA-6): 太陽系は原点のまま、星の円盤の中心 (cx, cy) がずれる。太陽系は円盤の中の一様な場所 (中心からの距離 ÷ 半径の中央値は √0.5)。端にもなる。
+// 版 5 の自動生成の銀河は前のまま (中心は原点)。地図の初めの視点は円盤の中心、半径 span
+const offs = Array.from({ length: 60 }, (_, k) => make(`e${k}`)).map((g) => Math.hypot(g.cx, g.cy) / S.radius).sort((x, y) => x - y);
+const g5 = make(seed, 'gen', 5);
+res.solOffset = sim.GALAXY_GEN >= 6 && a.systems[0].x === 0 && a.systems[0].y === 0 && offs.every((d) => d <= 1 + 1e-9) && offs.filter((d) => d >= 0.8).length >= 10 && Math.abs(offs[30] - Math.SQRT1_2) < 0.15
+  && g5.cx === undefined && g5.systems.every((s) => Math.hypot(s.x, s.y) <= S.radius + 1e-9) && Math.abs(a.span - Math.max(...a.systems.map((s) => Math.hypot(s.x - a.cx, s.y - a.cy)))) < 1e-9;
 res.names = a.systems.slice(1).every((s) => !s.cat && !s.real) && new Set(a.systems.map((s) => s.name)).size === a.systems.length && a.systems.slice(1).some((s) => s.bodies.length > 0);
 // セーブと読み込み (ネット対戦の参加者も、親のセーブから同じ道で銀河を作り直す)
 const g = sim.newGame(seed, { galaxy: 'gen' });
@@ -48,7 +55,7 @@ res.plays = g.colonies.length > 1 && g.year > 2329;
 // 実在の銀河: 版 4 (板 ±2 光年) は前と同じ (回 GA10 で星の作りを共用にした。番号 1 の銀河の要約)。版 5 は ±4 光年の板の実在の星をすべて使い、高さ z を半分にする (x・y はそのまま)
 const r4 = make('1', 'real', 4), r5 = make('1', 'real');
 const inSlab = S.s.filter((r) => Math.abs(r[2]) <= slab).length;
-res.realSame = hash(r4) === 'a326b463d44aa81a' && r4.slab === 2 && make('1', 'gen', 4).slab === 2;
+res.realSame = hash(r4) === 'a326b463d44aa81a' && r4.slab === 2 && make('1', 'gen', 4).slab === 2 && hash(chart(make('1', 'real', 5))) === hash(chart(r5)); // 実在の銀河は版 5 と版 6 で同じ星図
 const src5 = S.s.filter((r) => Math.abs(r[2]) <= 4);
 res.realThick = sim.GALAXY_GEN >= 5 && slab === 4 && r5.slab === 2 && r5.srcSlab === 4 && r5.systems.length - 1 === inSlab
   && r5.systems.slice(1).every((s, k) => s.x === src5[k][0] && s.y === src5[k][1] && Math.abs(s.z - src5[k][2] / 2) < 1e-12);

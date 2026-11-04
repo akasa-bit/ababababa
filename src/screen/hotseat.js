@@ -122,7 +122,8 @@ $('home').onclick = (e) => {
     if (ED.physics.pv) app.game.pvPolicy = PV_DESIGNS[app.homePv] ? app.homePv : null;
     const customs = (app.homeLib || []).map((id) => NationLib.get(id)).filter(Boolean);
     if ((app.homeNat ?? 1) > 1 || customs.length) {
-      app.game.foundNations(Math.max(app.homeNat ?? 1, customs.length + 1), app.homeHc, customs);
+      // 置き場所のくじは試合ごとに引き直す (依頼 GA-5 = a。app.homeNatDraw は試験で決めるとき)
+      app.game.foundNations(Math.max(app.homeNat ?? 1, customs.length + 1), app.homeHc, customs, app.homeNatDraw ?? String(Math.floor(Math.random() * 1e9)));
       // 自作の国を出したら、最初の自作の国を人間の国にしておく (国家選択の画面で変えられる)
       const first = customs.length ? app.game.nations.find((n) => n.species === customs[0].species) : null;
       return openPick(first ? first.cap : 0);
