@@ -560,7 +560,7 @@
           if (r === root || this.seenBy(root, r)?.[1] !== r || this.realmOf(r) !== r || this.sysDist(r, root) > BARGAIN.warDist) continue;
           if (this.pactBars(root, r)) continue; // 不可侵と同盟の相手には宣戦しない (政治。B-026。協定の知らせが届いてから)
           const z = this.misread(), v = this.reservation(root, r, z, 0) + this.claimBonus(root, r) + this.aiWarBias(root, r); // 自分から独立した国には請求権のぶん上乗せ (政治の RECLAIM。回 SE5・B-028)。記憶と指導者のずれ (回 AI3。politics/memory.js)
-          if (v > BARGAIN.declare && (!best || v > best.v)) best = { r, v, z };
+          if (v > this.pressLine() && (!best || v > best.v)) best = { r, v, z }; // 威圧の線 (宣戦の線と同じか下。回 AI7。politics/coerce.js)
         }
         if (best) this.aiPress(root, best); // 先に威圧するか、宣戦する (理由の内訳の知らせつき。政治の politics/coerce.js。回 AI7)
         continue;

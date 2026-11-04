@@ -1,14 +1,18 @@
   // --- 国どうしの威圧 (回 AI7・B-305・W6-Q3 = a。COERCE は politics/coerce-consts.js。docs/ai-behavior.md の 14) ---
-  // 宣戦の見込みが線を越えた国 (ship/war-ai.js の realmsYearly と ship/earth-war.js の spectateDeclare から。best = { r, v, z }):
+  // 宣戦の見込みが線を越えた国 (ship/war-ai.js の realmsYearly と ship/earth-war.js の spectateDeclare から。best = { r, v, z }。v > pressLine()):
   // 届く途中か返事待ちの威圧がなければ、年 chance の確率で先に威圧する。その相手への威圧の返事を待っていれば、何もしない。ほかの相手への返事を待っていれば、前のとおり宣戦する
+  // 見込みが宣戦の線に届かず威圧の線 (pressLine) だけを越えた国は、威圧だけをする (断られたら、引き下がる面目のぶん宣戦に寄る。Fearon 1994)
   aiPress(root, best) {
     if (COERCE.on) {
       const open = this.coerce.filter((o) => o.from === root);
       if (open.some((o) => o.to === best.r)) return;
+      if (best.v <= BARGAIN.declare) { if (!open.length) this.coerceSend(root, best.r, best.v, best.z); return; }
       if (!open.length && this.rand() < COERCE.chance && this.coerceSend(root, best.r, best.v, best.z)) return;
     }
     this.aiDeclare(root, best.r, best.z); // 宣戦と、理由の内訳の知らせ (politics/threat.js。回 AI2)
   }
+  // 宣戦の見込みで相手を選ぶ線: 威圧を入れていれば COERCE.line (宣戦の線より上には置かない)、なければ宣戦の線
+  pressLine() { return COERCE.on ? Math.min(BARGAIN.declare, COERCE.line) : BARGAIN.declare; }
   // 点 d で求める条件 (r の首都に届いた記録の、e の星系): 従属 (点が足りて近ければ、それだけ) → r の首都に近い星系 → 交易協定 → 資金。値段は講和会議と同じ (ship/war-peace.js の treatyTerms)
   coerceTerms(r, e, d) {
     const c = { loser: e, bids: [{ realm: r, pts: d }] };

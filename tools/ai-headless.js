@@ -95,7 +95,7 @@ function count(file) {
     if (g.coerceSend) {
       wrap('coerceSend', (orig, r, e, ...a) => { const x = orig(r, e, ...a); if (x) cadd(cdir(r, e), 'sent').pts += g.coerce[g.coerce.length - 1].pts; return x; });
       wrap('coerceReply', (orig, o, ok) => { cadd(cdir(o.from, o.to), ok ? 'ok' : 'no'); return orig(o, ok); });
-      wrap('coerceBack', (orig, o) => { const r = orig(o); if (!o.ok) cadd(cdir(o.from, o.to), g.atWar(o.from, o.to) ? 'follow' : 'back'); return r; });
+      wrap('coerceBack', (orig, o) => { const r = orig(o); if (!o.ok && !g.coerce.some((x) => x.id === o.id)) cadd(cdir(o.from, o.to), g.atWar(o.from, o.to) ? 'follow' : 'back'); return r; }); // 交戦中で待っているもの (返事が首都に留まる) は、決めた年に数える
     }
     if (g.aiHonor) wrap('aiHonor', (orig, ...a) => { const h = orig(...a); out.honor[h.join ? 'join' : 'refuse']++; return h; });
     const Y = Number(yS);

@@ -123,6 +123,11 @@ g.aiPress(a, { r: b, v: 30, z: 0 });
 check(g.coerce.length === n0 && g.atWar(a, b), 'ほかの相手への返事を待つ国が、前のとおり宣戦しない');
 for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
 g.coerce = [];
+// 威圧の線: 宣戦の線に届かない見込みなら、威圧だけ (宣戦しない)
+check(g.pressLine() <= B.declare, '威圧の線が宣戦の線より上');
+g.aiPress(a, { r: c, v: B.declare, z: 0 });
+check(!g.atWar(a, c) && g.coerce.some((o) => o.from === a && o.to === c), '宣戦の線に届かない見込みで、威圧せずに宣戦したか、何もしない');
+g.coerce = [];
 sim.evaluate('COERCE.on = false');
 g.aiPress(a, { r: c, v: 30, z: 0 });
 sim.evaluate('COERCE.on = true');
