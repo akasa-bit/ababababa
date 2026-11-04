@@ -134,7 +134,9 @@
 - F28〜F31: 人間に向けた AI の宣戦・先頭への重り・AI の判断の理由の表示・平和の一強。目標の版 31 (回 AI1)
 - B-300〜B-304: AI の回 AI1〜AI5 (回 W5 で足したときは B-249〜B-253 と書いたが、外向きの範囲だったので回 AI1 で付け直した)
 - B-305〜B-307: 威圧 (回 AI7)・人間の代わりの宣戦 (回 AI6)・人間の代わりの公平さの残り (入植の補正 C20。回 AI6 で見つけた)
+- B-308: 人間の国から威圧する手 (回 AI7 で足した)
 - QD-115・QD-116: 人間の代わりの宣戦をそろえるか (W6-Q4 = a)・人間の側に入植の補正 C20 をかけるか (回 AI6 で聞いた。a = 人間の代わりの首都だけ)
+- QD-117: F28 の物差しをどうするか (回 AI7 で足した。強さをそろえて比べる・威圧を足す・いまのまま)
 
 ### common
 
@@ -164,6 +166,7 @@
 - saveField: leaders (AI の振る舞い。src/politics/memory-consts.js。国ごとの指導者 { 国: { name, career, since, prev } }。回 AI3)
 - saveField: inner (AI の振る舞い。src/politics/inner-consts.js。中の事情 { gov: { 戦争の鍵: 遠い総督の独断 { s, y, ok } }, sent: [届く途中の資金], lob: [外の国への派閥 { r, to, pro, why, y, end, ap, fund }] }。回 AI4)
 - saveField: aiLog (AI の振る舞い。src/politics/ai-consts.js。AI の国ごとの最近の判断と理由の内訳 { 国: [{ y, t }] }。星系の欄に光の遅れで出す。回 AI2)
+- saveField: coerce (AI の振る舞い。src/politics/coerce-consts.js。届く途中と返事待ちの国どうしの威圧 [{ id, st, from, to, year, at, terms, pts, ships, ok, dec }]。帳簿 mem の種類 coerce と、決めることの種類 coerce も。回 AI7・B-305)
 - 協定の項目 th・mode (AI の振る舞い。diplo.pacts の 1 つ。防衛同盟を結んだとき受け手の判断に入っていた共通の脅威の国と、均衡 balance か便乗 bandwagon か。R91・F29 で数える。回 AI2)
 - EDITIONS.game.aiColonize (AI の国の星系の政府の入植の急ぎ方 { ships, pop, range }。台帳の C20。回 SE5)
 - EDITIONS.game.nationSize (国ごとの開始の大きさの散らばりの縮め方。比の何乗か。台帳の C21。回 SE8)

@@ -27,15 +27,20 @@
   threatText(r, t, ships = this.threatView(r)) {
     return JA`${this.realmName(t)}の艦隊 ${Math.round(ships(t))}・自分 ${Math.round(ships(r))}・${this.sysDist(r, t).toFixed(0)} 光年${this.atWar(r, t) ? JA`・交戦中` : ''}`;
   }
-  // AI の国の宣戦 (realmsYearly から。船と戦争へ頼んだ 1 行)。z = 判断のときに引いた読み違い。理由の内訳を知らせと記録に付ける
-  aiDeclare(root, e, z) {
+  // 宣戦と威圧 (politics/coerce.js) の理由の内訳 (root の首都に届いた記録で。z = 判断のときに引いた読み違い)
+  aiWarReason(root, e, z) {
     const o = {};
     this.reservation(root, e, z, 0, o);
     const claim = this.claimBonus(root, e);
     const al = this.alignOf(root), mw = this.aiWarWhy(root, e);
+    return JA`首都に届いた記録で: 艦隊 自分 ${Math.round(o.ours)}・相手 ${Math.round(o.theirs)}${o.allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(o.allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * o.p)}%・見込む戦勝点 ${Math.round(o.expect)}・戦費 −${Math.round(o.cost)}${o.shift >= 0.5 ? JA`・相手の伸び +${Math.round(o.shift)}` : ''}${claim ? JA`・請求権 +${Math.round(claim)}` : ''}${al.t === e ? JA`・いちばんの脅威` : ''}${mw ? JA`・${mw}` : ''}${o.inner && this.innerText(o.inner) ? JA`・${this.innerText(o.inner)}` : ''}`;
+  }
+  // AI の国の宣戦 (realmsYearly から。船と戦争へ頼んだ 1 行)。z = 判断のときに引いた読み違い。理由の内訳を知らせと記録に付ける。
+  // pre = 理由の頭に足す文 (威圧を断られて脅しを実行するとき。回 AI7)
+  aiDeclare(root, e, z, pre = '') {
+    const r0 = this.aiWarReason(root, e, z), why = pre ? JA`${pre}・${r0}` : r0;
     this.beginWar(root, e, root);
     this.memAdd(root, e, 'agg', root); // 侵略の記憶 (回 AI3)
-    const why = JA`首都に届いた記録で: 艦隊 自分 ${Math.round(o.ours)}・相手 ${Math.round(o.theirs)}${o.allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(o.allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * o.p)}%・見込む戦勝点 ${Math.round(o.expect)}・戦費 −${Math.round(o.cost)}${o.shift >= 0.5 ? JA`・相手の伸び +${Math.round(o.shift)}` : ''}${claim ? JA`・請求権 +${Math.round(claim)}` : ''}${al.t === e ? JA`・いちばんの脅威` : ''}${mw ? JA`・${mw}` : ''}${o.inner && this.innerText(o.inner) ? JA`・${this.innerText(o.inner)}` : ''}`;
     this.event('politics', root, JA`${this.realmName(root)}が${this.realmName(e)}に宣戦した (${why})`, false);
     this.aiNote(root, JA`${this.realmName(e)}に宣戦した (${why})`);
   }

@@ -485,6 +485,7 @@
   }
   realmsYearly() {
     this.bargainArrive(); // 届いた AI どうしの講和の申し入れ (B-167)
+    this.coerceYearly(); // 届いた威圧と返事 (回 AI7。politics/coerce.js)
     this.cleanWars();
     const roots = this.colonizedSystems().map((x) => x.id).filter((r) => !this.isHuman(r) && this.realmOf(r) === r && this.gov(r).independent);
     const targets = this.colonizedSystems().map((x) => x.id).filter((r) => this.realmOf(r) === r && (this.isHuman(r) || this.gov(r).independent)); // 宣戦の相手 (人間の国も。回 AI2)
@@ -559,9 +560,9 @@
           if (r === root || this.seenBy(root, r)?.[1] !== r || this.realmOf(r) !== r || this.sysDist(r, root) > BARGAIN.warDist) continue;
           if (this.pactBars(root, r)) continue; // 不可侵と同盟の相手には宣戦しない (政治。B-026。協定の知らせが届いてから)
           const z = this.misread(), v = this.reservation(root, r, z, 0) + this.claimBonus(root, r) + this.aiWarBias(root, r); // 自分から独立した国には請求権のぶん上乗せ (政治の RECLAIM。回 SE5・B-028)。記憶と指導者のずれ (回 AI3。politics/memory.js)
-          if (v > BARGAIN.declare && (!best || v > best.v)) best = { r, v, z };
+          if (v > this.pressLine() && (!best || v > best.v)) best = { r, v, z }; // 威圧の線 (宣戦の線と同じか下。回 AI7。politics/coerce.js)
         }
-        if (best) this.aiDeclare(root, best.r, best.z); // 宣戦と、理由の内訳の知らせ (政治の politics/threat.js。回 AI2)
+        if (best) this.aiPress(root, best); // 先に威圧するか、宣戦する (理由の内訳の知らせつき。政治の politics/coerce.js。回 AI7)
         continue;
       }
       if (!enemies.length && this.rand() < 0.03) {

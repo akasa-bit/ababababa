@@ -33,6 +33,7 @@
   pactScore(r, p, kind, { gift = 0, z = 0, view = null } = {}) {
     if (!this.pactAllowed(r, p, kind)) return { s: -Infinity, why: JA`好戦的な種族の国とは${PACT_KINDS[kind].label}の協定を結べない` }; // 回 SE8
     if (kind === 'trade' && this.modsOf(p).tradePacts && !this.pactBreaches(p)) return { s: 1, why: '商才の種族の国からの交易協定' }; // 商才: 破約をしていなければ、AI の国は断らない (回 SE8)
+    if (kind !== 'trade' && this.coerce?.some((o) => o.from === r && o.to === p)) return { s: -1, why: JA`${this.realmName(p)}への威圧の返事を待っている` }; // 威圧している相手とは、不可侵も同盟も結ばない (回 AI7。politics/coerce.js)
     const ships = view || ((t) => (t === r ? this.realmShips(r) : this.seenShips(r, t)));
     const mine = ships(r);
     const seen = ships(p) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(r, p)));
