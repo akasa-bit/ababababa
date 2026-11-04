@@ -21,7 +21,7 @@ function lobbySec(g, id) {
   if (!list.length) return '';
   const own = id === g.cap || g.spectate;
   const rows = list.map((l) => {
-    const w = g.lobbyClout(l), ap = Math.round(10 * l.ap) / 10;
+    const w = g.lobbyClout(l, false), ap = Math.round(10 * l.ap) / 10; // 画面からは試合の計算の覚えに触らない (ネット対戦の筋)
     return TR`<li>${esc(g.lobbyName(l, w))}${own && ap ? TR`・満足 ${ap > 0 ? '+' : '−'}${Math.abs(ap)}` : ''}・${Math.floor(l.y)}年から</li>`;
   }).join('');
   return sec('lobby', TR`${ico('council')}国の中の派閥`, TR`${list.length} つ`,

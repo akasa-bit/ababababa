@@ -1,6 +1,7 @@
 // ネット対戦: 2 つのページを WebRTC でつなぎ、命令の受け渡し・状態の要約の一致・わざと壊したときの合わせ直し。
 // 回 SO5 (B-248。友達と遊ぶ準備): 短い版 (100 年) で、ホストが止めたら参加者の速さも止まる・ネット対戦でも記録の同意を聞く・
 // 参加者のタブが閉じたら AI に任せ、招待を作り直すと同じ国に戻れる・2400 年の終わりまで両方の端末でずれない (書き出しの表も同じ)
+// 回 AI5 (B-304): 参加者が外の国の首都の派閥に資金を出す命令 (meddle。回 AI4 の中の勢力への手) も、ホストと参加者の両方で同じく通り、筋がずれない
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
 exports.ci = [{
@@ -8,6 +9,7 @@ exports.ci = [{
     const m = o.match(/sync2 \[ \[ \d+, '(\w+)', '[\d.]+' \], \[ \d+, '(\w+)', '[\d.]+', (\d+) \] \]/);
     const ga = o.match(/^galaxy gen (\d+) gen (\d+)$/m); // 親が自動生成の星図を選び、参加者も同じ星図 (回 GA10)
     if (!(m && m[1] === m[2] && m[3] === '1' && /errs \[\] \[\]/.test(o) && /^physics true/m.test(o) && ga && ga[1] === ga[2])) return 'ネット対戦の要約か星図が合わない';
+    if (!/^meddle \[true\] \[true\]$/m.test(o)) return '参加者の派閥への資金 (命令 meddle) が、ホストと参加者の両方で通っていない';
     if (!/^pause 0 0$/m.test(o)) return 'ホストが止めても参加者の速さが止まらない';
     if (!/^consent true true$/m.test(o)) return 'ネット対戦で記録の同意を聞いていない';
     if (!/^late 1 false 1$/m.test(o)) return '始めるときにつながっていない席を、AI に任せて入っていない席に残していない';
@@ -64,7 +66,12 @@ const URL = `file://${HTML}?seed=11`;
   await H.evaluate(() => setSpeed(SPEEDS[3]));
   await G.waitForTimeout(1500);
   // guest orders a fleet and toggles a setting
-  const gc = await G.evaluate(() => { const g = __app.game; const t = g.nearSystems(g.cap).find(([id, d]) => id !== g.cap && d > 2)[0]; issue('fleet', { from: g.cap, sys: t, n: 1 }); issue('set', { key: 'autoDefense', value: true }); return t; });
+  // 派閥への資金 (回 AI4 の命令 meddle) が両方の端末で通ったかを数える (包むだけで、試合の状態は変えない)
+  const mdHook = () => { window.__md = []; const gm = __app.game, o = gm.sendMeddle.bind(gm); gm.sendMeddle = (d, f) => { const r = o(d, f); window.__md.push(!!r?.ok); return r; }; };
+  await H.evaluate(mdHook); await G.evaluate(mdHook);
+  const gc = await G.evaluate(() => { const g = __app.game; const t = g.nearSystems(g.cap).find(([id, d]) => id !== g.cap && d > 2)[0]; issue('fleet', { from: g.cap, sys: t, n: 1 }); issue('set', { key: 'autoDefense', value: true });
+    const cap2 = g.nations.map((n) => n.cap).filter((c) => c !== g.cap && g.realmAlive(c)).sort((a, b) => g.sysDist(g.cap, a) - g.sysDist(g.cap, b))[0];
+    issue('meddle', { sys: cap2, mode: 'lobby' }); return t; });
   // guest asks for faster speed
   await G.click('[data-speed="4"]');
   await G.waitForTimeout(6000);
@@ -72,6 +79,7 @@ const URL = `file://${HTML}?seed=11`;
   const caught = async (P) => { const k = await H.evaluate(() => Net.k); await P.waitForFunction((k) => Net.k >= k && Net.inbox.length === 0, k, { timeout: 60000, polling: 200 }); };
   const sync = async () => { await H.evaluate(() => setSpeed(0)); await H.waitForTimeout(500); await caught(G); return [await H.evaluate(() => [Net.k, Net.hash(), __app.game.year.toFixed(2)]), await G.evaluate(() => [Net.k, Net.hash(), __app.game.year.toFixed(2), Net.resyncs])]; };
   const s1 = await sync();
+  console.log('meddle', JSON.stringify(await H.evaluate(() => window.__md)), JSON.stringify(await G.evaluate(() => window.__md)));
   const chk = await G.evaluate((gp) => { const g = __app.game; return [g.autoDefense, g.players[Net.pi].autoDefense, g.fleets.some((f) => (f.owner ?? 0) === g.cap) || (g.garrison[gp] || 0) > 0, g.knownLog().slice(0, 3).map((l) => l.text).join(' / ')]; }, gc);
   const hostView = await H.evaluate(() => [__app.game.pi, __app.game.players.map((p) => p.autoDefense).join(','), __app.speed]);
   const gb = await G.evaluate(() => window.__gbad);
@@ -85,8 +93,12 @@ const URL = `file://${HTML}?seed=11`;
   }
   // corrupt the guest, run until next checksum -> resync
   await G.evaluate(() => { __app.game.colonies[0].pop += 1; });
+  const kc = await G.evaluate(() => Net.k);
   await H.evaluate(() => setSpeed(SPEEDS[4]));
   await G.waitForTimeout(6000);
+  // 重いときは 6 秒で次の要約のコマ (NET_HASH_EVERY ごと) に届かず、合わせ直しの前に比べてしまう: 次の要約のコマを越えるまで待つ (回 AI5)
+  await G.waitForFunction((kc) => Net.k >= (Math.floor(kc / NET_HASH_EVERY) + 1) * NET_HASH_EVERY + 5, kc, { timeout: 120000, polling: 200 });
+  await G.waitForTimeout(1000);
   const s2 = await sync();
   await H.screenshot({ path: 'shots/net-host-play.png' }); await G.screenshot({ path: 'shots/net-guest-play.png' });
   console.log('all resyncs', await G.evaluate(() => window.__gbad.map((x) => x.k)));
