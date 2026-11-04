@@ -198,6 +198,8 @@ sim.evaluate(`INNER.meddle.exposed = ${M.exposed}`);
 sim.evaluate('INNER.meddle.aiChance = 1');
 for (const r of ai) { seat(r).pc = 100; g.cash('test', 1e4, { gov: r }); }
 g.inner.sent = [];
+// いちばんの脅威が見えなくても、協定の相手に親 (自分の国) 派を育てる道があるように、a と b に協定を結ばせる (試合の道によらない試験にする)
+if (!g.diplo.pacts.some((p) => (p.a === a && p.b === b) || (p.a === b && p.b === a))) g.makePact(a, b, 'nap');
 g.aiMeddleYearly();
 sim.evaluate(`INNER.meddle.aiChance = ${M.aiChance}`);
 check(g.inner.sent.some((x) => ai.includes(x.from)), 'AI の国が揺さぶりも派閥への資金も出さない');
