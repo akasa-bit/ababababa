@@ -1,8 +1,9 @@
   // --- 外の国への派閥 (回 AI4・B-303。ユーザーの依頼 AI-1: 内政は Victoria 3 を参考に。値は politics/inner-consts.js の INNER.lob。docs/ai-behavior.md の 11) ---
   // 国 r の、権力に加わっている集団の行 ({ w: 声の重さ, q: 所得の分位, sec: 伝統 ↔ 世俗, se: 生存 ↔ 自己表現 })。
-  // 声の重さと記録の見え方は billSupport と同じ (席の国は、遠い星系を首都に届いている記録で数える)。同じ刻みのうちは覚えておく
-  lobbyRows(r) {
-    const c = this.innerC();
+  // 声の重さと記録の見え方は billSupport と同じ (席の国は、遠い星系を首都に届いている記録で数える)。同じ刻みのうちは覚えておく。
+  // keep = false (画面から) は覚えに触らない (画面を描く呼び出しが、試合の計算の覚えを変えると、ネット対戦の端末どうしで筋が分かれる。回 AI5)
+  lobbyRows(r, keep = true) {
+    const c = keep ? this.innerC() : { rows: {} };
     if (!(r in c.rows)) {
       const seat = this.isSeat(r);
       const make = () => {
@@ -30,8 +31,8 @@
     return c.rows[r];
   }
   // 派閥の重み (0〜1): 派閥に入る集団の声の重さ ÷ 国の声の重さ。入る集団はきっかけで決まる (INNER.lob の説明)
-  lobbyClout(l) {
-    const rows = this.lobbyRows(l.r), W = rows.reduce((a, x) => a + x.w, 0);
+  lobbyClout(l, keep = true) {
+    const rows = this.lobbyRows(l.r, keep), W = rows.reduce((a, x) => a + x.w, 0);
     if (!(W > 0)) return 0;
     let inIt;
     if (l.why === 'trade') inIt = (x) => x.q >= 3;
