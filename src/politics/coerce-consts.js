@@ -13,8 +13,10 @@
 //     威圧の返事を待つ国は、その相手と不可侵も同盟も結ばない (politics/diplomacy.js の pactScore)
 //   威圧された国は、威圧した国を mem の重さで恨む (帳簿の coerce。politics/memory.js)
 // 較正の的 (目標は足さない。W6-Q3 の回の文の「目標を足すなら、作る前に目標の変更の PR で」): 威圧が飲まれる割合を、
-//   1918〜2001 年の強要の脅し 210 件 (Sechser・Fuhrmann 2017『Nuclear Weapons and Coercive Diplomacy』) のおよそ 3 割に合わせる。値は docs/ai-behavior.md の 14
-const COERCE = { on: true, line: 20, chance: 1, ask: 1, face: 30, audience: 10, holdYears: 10, mem: 0.5, replyYears: 5, tradePts: 10 };
+//   1918〜2001 年の強要の脅し 210 件 (Sechser・Fuhrmann 2017『Nuclear Weapons and Coercive Diplomacy』) のおよそ 3 割に合わせる (face 30 で 29.5%)。
+//   chance は R29 (国家間戦争の多さ。COW に較正ずみ) を保つように決めた: 飲まれた威圧のぶん戦争が減るので、宣戦の判断のすべてで先に威圧すると (1) R29 が 2.37 → 1.75 に下がる。
+//   0.5 で 2.22 (main と組にした差 −0.14 ± 0.11)。line は宣戦の線と同じ (下げても戦争の数はあまり変わらなかった)。値と測りは docs/ai-behavior.md の 14
+const COERCE = { on: true, line: 20, chance: 0.5, ask: 1, face: 30, audience: 10, holdYears: 10, mem: 0.5, replyYears: 5, tradePts: 10 };
 // 届く途中と返事待ちの威圧: [{ id, st, from (威圧した国), to (相手), year (送った年), at (届く年), terms: [{ k, c }], pts, ships, z (送ったときの読み違い), ok? (返事), dec? (人間の決めることの番号), hold? (交戦中で考え直しを待つ期限) }]
 //   st = go (相手の首都へ届く途中)・ask (人間の国の返事待ち)・back (返事が威圧した国の首都へ届く途中)。k = v (従属)・s<星系> (明け渡し)・t (交易協定)・c<口> (資金)。c = 点
 saveField('coerce', (game) => (game.coerce.length ? game.coerce : undefined), {

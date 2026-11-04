@@ -64,7 +64,7 @@
 | `politics/ai-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 11 | AI の国の判断の記録 (AI_LOG・セーブの項目 aiLog)。回 AI2 |
 | `politics/inner-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 59 | 中の事情の値 (INNER: 議会の支持・集団・外の国への派閥 lob・遠い総督・中の勢力への手)・派閥のきっかけ LOBBY_WHY と満足の動き LOBBY_ACT・セーブの項目 inner。回 AI4 |
 | `politics/memory-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 39 | 国と国のあいだの記憶 (MEM)・指導者 (LEADER の経歴)・セーブの項目 mem・leaders。回 AI3 |
-| `politics/coerce-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 21 | 国どうしの威圧 (COERCE: 先に威圧する確率・求める点・譲る面目・引き下がる面目・記憶の重さ・人間の返事の期限・交易協定の点)・セーブの項目 coerce。回 AI7 |
+| `politics/coerce-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 25 | 国どうしの威圧 (COERCE: 威圧の線・先に威圧する確率・求める点・譲る面目・引き下がる面目・記憶の重さ・人間の返事の期限・交易協定の点)・セーブの項目 coerce。回 AI7 |
 | `politics/groups-consts.js` | 政治 | 22 | 星系の中の集団の値 (GROUPS・GROUP_STATUS・所得の分位と価値観の式)。回 SE6 で足した (`docs/groups.md`) |
 | `core/game-base.js` | 共通 (世話役: 道具と検証) | 333 | Game: 作り方 (constructor)・国の割り当て・星系と入植地の引き方・家臣の連なり |
 | `ship/war-peace.js` | 船と戦争 | 236 | Game: 戦争の状態・戦争疲弊・戦勝点・講和・講和会議 |
@@ -94,7 +94,7 @@
 | `politics/diplomacy.js` | 政治 | 213 | Game: 遅れて届く外交 (協定の申し入れ・受けるか・破約・同盟の参戦。回 SE2。防衛同盟の均衡と便乗・理由の記録は回 AI2) |
 | `politics/inner.js` | 政治 (レーン「AI の振る舞い」が足した) | 201 | Game: 中の事情の重さ (innerCost・innerPact・innerText)・遠い総督の独断と首都の追認と否認 (governorsYearly・governorReview)・中の勢力への手 (sendMeddle・meddleArrive・aiMeddleYearly)。回 AI4 |
 | `politics/lobby.js` | 政治 (レーン「AI の振る舞い」が足した) | 142 | Game: 外の国への派閥 (Victoria 3 の派閥の形。ユーザーの依頼 AI-1): 集団の行と重み (lobbyRows・lobbyClout・lobbyStance)・できる、消える (lobbyForm・lobbyEnd・lobbyYearly)・満足 (lobbyAct)・外からの資金 (lobbyFund)・見えている派閥 (lobbiesSeen)。回 AI4 |
-| `politics/coerce.js` | 政治 (レーン「AI の振る舞い」が足した) | 143 | Game: 国どうしの威圧 (B-305): 先に威圧するか宣戦するか (aiPress)・求める条件 (coerceTerms・coerceText・coerceValid)・送る・届く・答える (coerceSend・coerceYearly・coerceArrive・coerceJudge)・人間の国の決めること (coerceAsk・coerceDecided)・条件を果たす (coerceReply・coerceYield)・脅しの実行か引き下がり (coerceBack)。回 AI7 |
+| `politics/coerce.js` | 政治 (レーン「AI の振る舞い」が足した) | 152 | Game: 国どうしの威圧 (B-305): 先に威圧するか宣戦するか (aiPress)・求める条件 (coerceTerms・coerceText・coerceValid)・送る・届く・答える (coerceSend・coerceYearly・coerceArrive・coerceJudge)・人間の国の決めること (coerceAsk・coerceDecided)・条件を果たす (coerceReply・coerceYield)・脅しの実行か引き下がり (coerceBack)・威圧の線 (pressLine)。回 AI7 |
 | `politics/memory.js` | 政治 (レーン「AI の振る舞い」が足した) | 75 | Game: 記憶の帳簿 (memAdd・memSum・memView)・宣戦の見込みのずれ (aiWarBias)・指導者 (newLeader・leadersYearly・leaderChange・leaderSeen)。回 AI3 |
 | `politics/threat.js` | 政治 (レーン「AI の振る舞い」が足した) | 75 | Game: 脅威への均衡と便乗 (alignOf)・宣戦と威圧の理由 (aiWarReason。回 AI7)・AI の国の宣戦 (aiDeclare)・判断の記録 (aiNote)・講和の理由 (peaceWhy)。回 AI2 |
 | `ship/defense.js` | 船と戦争 | 94 | Game: 海賊・防衛・威圧の艦隊 |
