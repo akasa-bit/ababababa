@@ -64,7 +64,7 @@
 | `politics/ai-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 11 | AI の国の判断の記録 (AI_LOG・セーブの項目 aiLog)。回 AI2 |
 | `politics/inner-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 59 | 中の事情の値 (INNER: 議会の支持・集団・外の国への派閥 lob・遠い総督・中の勢力への手)・派閥のきっかけ LOBBY_WHY と満足の動き LOBBY_ACT・セーブの項目 inner。回 AI4 |
 | `politics/memory-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 39 | 国と国のあいだの記憶 (MEM)・指導者 (LEADER の経歴)・セーブの項目 mem・leaders。回 AI3 |
-| `politics/coerce-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 27 | 国どうしの威圧 (COERCE: 威圧の線・先に威圧する確率・求める点・譲る面目・引き下がる面目・記憶の重さ・人間の返事の期限・交易協定の点・引き下がったときの議会の支持)・セーブの項目 coerce。回 AI7 |
+| `politics/coerce-consts.js` | 政治 (レーン「AI の振る舞い」が足した) | 34 | 国どうしの威圧 (COERCE: 威圧の線・先に威圧する確率・求める点・譲る面目・引き下がる面目・記憶の重さ・人間の返事の期限・交易協定の点・引き下がったときの議会の支持)・不可侵を破る重さ (PACT_BREAK。回 AI9)・人間の代わりの講和 (STANDIN。回 AI9)・セーブの項目 coerce。回 AI7 |
 | `politics/groups-consts.js` | 政治 | 22 | 星系の中の集団の値 (GROUPS・GROUP_STATUS・所得の分位と価値観の式)。回 SE6 で足した (`docs/groups.md`) |
 | `core/game-base.js` | 共通 (世話役: 道具と検証) | 333 | Game: 作り方 (constructor)・国の割り当て・星系と入植地の引き方・家臣の連なり |
 | `ship/war-peace.js` | 船と戦争 | 236 | Game: 戦争の状態・戦争疲弊・戦勝点・講和・講和会議 |
@@ -81,7 +81,7 @@
 | `politics/policy-decisions.js` | 政治 | 125 | Game: 国家方針・直轄・決めること・語り手・議会 |
 | `screen/eras-score.js` | 画面と最初の体験 | 109 | Game: 時代の課題・挑戦・点数・終わり (手引きにする所。QD-07) |
 | `politics/earth-politics.js` | 政治 | 32 | Game: 地球の政治の自動 (主人の関与は 2026-11-01 に消した) |
-| `ship/war-ai.js` | 船と戦争 | 385 | Game: 宣戦・講和の申し入れ・艦隊の到着・艦隊戦・包囲・海賊の防衛・AI の軍備と交渉・AI の国の年ごとの判断 |
+| `ship/war-ai.js` | 船と戦争 | 580 | Game: 宣戦・講和の申し入れ・艦隊の到着・艦隊戦・包囲・海賊の防衛・AI の軍備と交渉・AI の国の年ごとの判断 |
 | `ship/strike.js` | 船と戦争 | 95 | Game: 光速に近い艦隊の一撃 (突入・焼く・知らせと報復・AI の一撃)。回 FU2 で足した |
 | `ship/fort.js` | 船と戦争 | 35 | Game: 宇宙要塞 (星系ごとの段・自動の Lv1・手動の強化・地球に届いている段)。2026-10-22 の依頼で足した |
 | `economy/colonize.js` | 経済 | 271 | Game: 調査と先住民・入植の向き不向き・資材の手配・建設の注文 |
@@ -94,9 +94,9 @@
 | `politics/diplomacy.js` | 政治 | 213 | Game: 遅れて届く外交 (協定の申し入れ・受けるか・破約・同盟の参戦。回 SE2。防衛同盟の均衡と便乗・理由の記録は回 AI2) |
 | `politics/inner.js` | 政治 (レーン「AI の振る舞い」が足した) | 201 | Game: 中の事情の重さ (innerCost・innerPact・innerText)・遠い総督の独断と首都の追認と否認 (governorsYearly・governorReview)・中の勢力への手 (sendMeddle・meddleArrive・aiMeddleYearly)。回 AI4 |
 | `politics/lobby.js` | 政治 (レーン「AI の振る舞い」が足した) | 142 | Game: 外の国への派閥 (Victoria 3 の派閥の形。ユーザーの依頼 AI-1): 集団の行と重み (lobbyRows・lobbyClout・lobbyStance)・できる、消える (lobbyForm・lobbyEnd・lobbyYearly)・満足 (lobbyAct)・外からの資金 (lobbyFund)・見えている派閥 (lobbiesSeen)。回 AI4 |
-| `politics/coerce.js` | 政治 (レーン「AI の振る舞い」が足した) | 205 | Game: 国どうしの威圧 (B-305): 先に威圧するか宣戦するか (aiPress)・求める条件 (coerceTerms・coerceText・coerceValid)・送る・届く・答える (coerceSend・coerceYearly・coerceArrive・coerceJudge)・人間の国の決めること (coerceAsk・coerceDecided)・人間の国から威圧する (coerceOptions・coerceIssue・coerceHumanReply・coerceHumanBack。回 AI8)・条件を果たす (coerceReply・coerceYield)・脅しの実行か引き下がり (coerceBack)・威圧の線 (pressLine)。回 AI7 |
+| `politics/coerce.js` | 政治 (レーン「AI の振る舞い」が足した) | 206 | Game: 国どうしの威圧 (B-305): 先に威圧するか宣戦するか (aiPress)・求める条件 (coerceTerms・coerceText・coerceValid)・送る・届く・答える (coerceSend・coerceYearly・coerceArrive・coerceJudge)・人間の国の決めること (coerceAsk・coerceDecided)・人間の国から威圧する (coerceOptions・coerceIssue・coerceHumanReply・coerceHumanBack。回 AI8)・条件を果たす (coerceReply・coerceYield)・脅しの実行か引き下がり (coerceBack)・威圧の線 (pressLine)。回 AI7 |
 | `politics/memory.js` | 政治 (レーン「AI の振る舞い」が足した) | 75 | Game: 記憶の帳簿 (memAdd・memSum・memView)・宣戦の見込みのずれ (aiWarBias)・指導者 (newLeader・leadersYearly・leaderChange・leaderSeen)。回 AI3 |
-| `politics/threat.js` | 政治 (レーン「AI の振る舞い」が足した) | 75 | Game: 脅威への均衡と便乗 (alignOf)・宣戦と威圧の理由 (aiWarReason。回 AI7)・AI の国の宣戦 (aiDeclare)・判断の記録 (aiNote)・講和の理由 (peaceWhy)。回 AI2 |
+| `politics/threat.js` | 政治 (レーン「AI の振る舞い」が足した) | 80 | Game: 脅威への均衡と便乗 (alignOf)・宣戦と威圧の理由 (aiWarReason。回 AI7)・協定を破って宣戦する重さ (pactWarCost。回 AI9)・AI の国の宣戦 (aiDeclare)・判断の記録 (aiNote)・講和の理由 (peaceWhy)。回 AI2 |
 | `ship/defense.js` | 船と戦争 | 94 | Game: 海賊・防衛・威圧の艦隊 |
 | `economy/migration.js` | 経済 | 71 | Game: 居住区・恒星間移民・集結・方針の一括 |
 | `ship/war-troops.js` | 船と戦争 | 350 | Game: 海賊の襲撃・贈り物・統合・征服・奴隷化・解放・先住民との戦争・歩兵 |
@@ -106,7 +106,7 @@
 | `economy/market-economy.js` | 経済 | 378 | Game: 市場・値段・賃金・研究・労働・経済の 1 刻み (economy) |
 | `core/restore.js` | 共通 (世話役: 道具と検証) | 168 | Game: セーブの復元 (restore) |
 | `core/knowledge.js` | 共通 (世話役: 道具と検証) | 275 | Game: 光の遅れと記録 (known・snapshot)・AI の知っていること |
-| `ship/earth-war.js` | 船と戦争 | 34 | Game: 観戦の地球政府の戦争の判断 (earthWarYearly。tools/strategy.js が写している) |
+| `ship/earth-war.js` | 船と戦争 | 53 | Game: 観戦の地球政府の戦争の判断 (earthWarYearly。tools/strategy.js が写している)・講和は AI の国と同じ交渉の模型 (回 AI9・STANDIN) |
 | `core/commands.js` | 共通 (世話役: 道具と検証) | 293 | Game: 指令 (command・commandRaw・exec)・届く範囲・道のり・船の位置 |
 | `screen/labels.js` | 画面と最初の体験 | 61 | 天体の名前と色・星のアイコン |
 | `screen/galaxy-view.js` | 画面と最初の体験 | 1025 | 星間マップ (GalaxyView) |
