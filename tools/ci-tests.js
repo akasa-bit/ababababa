@@ -10,7 +10,7 @@ const SHOTS = fs.mkdtempSync(path.join(require('os').tmpdir(), 'nlu-shots-'));
 // 試験の一覧は tools/tests の *.js を自動で拾う (回 DO4・B-221)。各ファイルが先頭で exports.ci に回し方と合否を書く:
 //   exports.ci = [{ args, judge, env, optional, needs, note }];   (書き方は docs/parallel.md の 7 の道具と検証)
 //   args = 引数の配列か (c) => 配列、judge = (出力, 終了コード) → 理由の文字列 (合格なら空)、env = 足す環境変数 (か (c) => …)、
-//   optional = シミュレーション版の試験 (表に「参考」と出し、落ちても CI は止めない。docs/parallel.md の 6)、needs = (c) → このファイルがなければ回さない、
+//   optional = 参考の試験 (落ちても CI は止めない)。true ならシミュレーション版の試験として表に「シミュレーション版・参考」と出す (docs/parallel.md の 6)。文字ならその文字を出す (回 DO9。撮る台本の点検 shots は '参考')、needs = (c) → このファイルがなければ回さない、
 //   note = (出力) → 表のメモの欄に、合否によらず出す短い文 (回 FU7。シミュレーション版の従属国の目標の数など)
 //   c = { root, shots, path }。exports.ci がないファイルは、引数なしで回して終了コード 0 なら合格
 const CTX = { root: ROOT, shots: SHOTS, path };
@@ -66,7 +66,7 @@ for (const [name, args, judge, opt = {}] of TESTS) {
   const out = `${r.stdout || ''}`;
   const why = r.error ? String(r.error.message) : judge(out, r.status);
   if (why) { if (!opt.optional) failed++; process.stderr.write(`--- ${name}\n${out}\n${r.stderr || ''}\n`); }
-  const label = opt.optional ? `${name} (シミュレーション版・参考)` : name;
+  const label = opt.optional ? `${name} (${typeof opt.optional === 'string' ? opt.optional : 'シミュレーション版・参考'})` : name;
   let note = ''; try { note = opt.note ? `${opt.note(out)}。` : ''; } catch {}
   rows.push([label, why ? (opt.optional ? '不合格 (参考。無視してよい)' : '**不合格**') : '合格', `${why ? `${why}。` : ''}${note}${((Date.now() - t0) / 1000).toFixed(0)} 秒`]);
 }

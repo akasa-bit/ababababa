@@ -80,6 +80,7 @@ A (戦争) と Q (下準備) は済んだので閉じた。前のレーンの状
 
 - **公開のとき (`.github/workflows/pages.yml`) に、ゲーム版とシミュレーション版を同じ `src/` から組み立てる** (`node tools/build.mjs --sim`)。`simulation.html` は `index.html` と同じくリポジトリに入れない (`.gitignore`)。手元でシミュレーション版を見るときは `node tools/build.mjs --sim`。
 - **ほかのレーンの手間は増やさない**: 補正は前と同じく `EDITIONS.game` にだけ書き、値がないときに補正なし (現実の値) になるようにコードを書く (`ED.foo ?? 現実の値`。`docs/game-plan.md` の 2)。そうすればシミュレーション版は直さなくても補正なしになる。補正の台帳の行ごとに、シミュレーション版が現実の値になっているかの表は `docs/reality-check.md` の 5。
+- 撮る台本の点検 `shots` (回 DO9・B-225) も参考の行 (落ちても止めない)。撮る台本の遊びの筋 (`desktop/shots/play.mjs`) は観戦で進めるので、AI や戦争の回で筋が変わると講和会議に届かなくなることがある。落ちたら、変えた回が `desktop/shots/shoot.mjs`・`desktop/trailer/trailer.mjs` の既定の銀河を選び直す (`SEED=… node tools/tests/shots.js` で試せる)。
 - CI は試験の作業場所にシミュレーション版を作り、表の「シミュレーション版・参考」の行 (`energy` = R07・`conserve` = R03・`physics`・`simvassal` = 従属国の目標 R08・R30〜R32) を回す。**落ちても CI を止めない** (FU7-Q1 = a。c の「止める」は選ばなかった)。落ちたときは、その仕組みの持ち主のレーンが次の回で見る。
 - 物理の所 (`src/ship/physics.js`・`src/ship/energy.js`、`ED.physics`・`this.physics` を見ている所、`EDITIONS.<版>.physics`) と `EDITIONS.sim` は船と戦争が持つ。ほかのレーンは、`bookShip` などを呼ぶ所を直すときに、航路の長さ `ly` を渡す所・`withAccel` を掛ける所・`this.physics` を渡す所を消さずに残す。シミュレーション版だけの物理は `SIM_ONLY` で分けてある (#173)。
 - ゲーム版の物理の切り替え `Game.physics` はセーブに入り、ないセーブは物理なしで読む。
@@ -118,7 +119,7 @@ A (戦争) と Q (下準備) は済んだので閉じた。前のレーンの状
   if (require.main !== module) return;   // ここから下が試験の本体 (CI が読むときは回さない)
   ```
 
-  - `exports.ci` は配列で、1 つが CI の表の 1 行 (同じファイルを引数を変えて 2 回回すなら 2 つ)。`args` = 引数 (配列か `(c) => 配列`。`c = { root, shots, path }`、`shots` は画面の写しを書く作業場所)、`judge(出力, 終了コード)` = 落ちた理由の文字列 (合格なら空)、`env` = 足す環境変数、`optional: true` = シミュレーション版の試験 (表に「参考」と出し、落ちても止めない)、`needs` = このファイルがなければ回さない。
+  - `exports.ci` は配列で、1 つが CI の表の 1 行 (同じファイルを引数を変えて 2 回回すなら 2 つ)。`args` = 引数 (配列か `(c) => 配列`。`c = { root, shots, path }`、`shots` は画面の写しを書く作業場所)、`judge(出力, 終了コード)` = 落ちた理由の文字列 (合格なら空)、`env` = 足す環境変数、`optional: true` = シミュレーション版の試験 (表に「シミュレーション版・参考」と出し、落ちても止めない)、`optional: '参考'` のように文字を渡すと、その文字を出す (回 DO9。撮る台本の点検 `shots`)、`needs` = このファイルがなければ回さない。
   - 合否の小道具は `tools/ci-judge.js`: `J.passes('語り手')` = 終了コード 0 で「語り手 合格」が出る、`J.firstLine('R07', 理由)` = 1 行目に「R07 合格」、`J.noPageErrors(出力)`・`J.byJson(良いか, 理由)` (出力の JSON を読む)。
   - `exports.ci` を書かないファイルは、引数なしで回して終了コード 0 なら合格 (`exports.ci =` は行の頭に書く。`ci-tests.js` はそれがあるファイルだけを読み込む。ないファイルを読むと、試験の本体がその場で動いてしまうため)。CI で回さない試験は `exports.ci = false`。
   - 表は名前の順。手元では `node tools/ci-tests.js story` で 1 本だけ回せる。新しい試験は、落ちたら止めるか参考にするかを PR の本文に書く (`optional` を付けない = 止める)。
