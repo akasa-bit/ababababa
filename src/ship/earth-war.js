@@ -40,8 +40,9 @@
     if (this.rand() >= (roots.some((r) => this.claimBy(r) === this.cap) ? RECLAIM.chance : BARGAIN.declareChance)) return;
     let best = null;
     for (const r of roots) {
-      if (r === this.cap || this.seenBy(this.cap, r)?.[1] !== r || this.sysDist(r, this.cap) > BARGAIN.warDist || this.pactBars(this.cap, r)) continue;
-      const z = this.misread(), v = this.reservation(this.cap, r, z, 0) + this.claimBonus(this.cap, r) + this.aiWarBias(this.cap, r);
+      const pc = this.pactWarCost(this.cap, r); // 不可侵の相手は破約の重さを引く (AI の国と同じ。回 AI9・B-309)
+      if (r === this.cap || this.seenBy(this.cap, r)?.[1] !== r || this.sysDist(r, this.cap) > BARGAIN.warDist || pc === null) continue;
+      const z = this.misread(), v = this.reservation(this.cap, r, z, 0) + this.claimBonus(this.cap, r) + this.aiWarBias(this.cap, r) - pc;
       if (v > this.pressLine() && (!best || v > best.v)) best = { r, v, z }; // 威圧の線 (回 AI7。politics/coerce.js)
     }
     if (best) this.aiPress(this.cap, best); // 先に威圧するか、宣戦する (politics/coerce.js。AI の国と同じ。回 AI7)
