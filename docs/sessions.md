@@ -854,7 +854,7 @@ docs/backlog.md の B-310 (W7-Q2 = QD-117 = a) を、まず「目標の変更」
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 DO9 (道具と検証。8 波目)。
 最初に node tools/session-check.js DO9 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
-docs/backlog.md の B-225 (W7-Q3 = a): 撮る台本の遊びの筋 (desktop/shots/play.mjs。銀河 7) が講和会議まで届くか、画面を隠す窓が出ていないかを、CI の「参考」の行で見る (落ちても止めない)。B-226: ネット対戦の試験が、ときどき戻った参加者で筋が合わない元を探して直す。
+docs/backlog.md の B-225 (W7-Q3 = a): 撮る台本の遊びの筋 (desktop/shots/play.mjs。銀河 3 (回 AI9 で 7 から変えた)) が講和会議まで届くか、画面を隠す窓が出ていないかを、CI の「参考」の行で見る (落ちても止めない)。B-226: ネット対戦の試験が、ときどき戻った参加者で筋が合わない元を探して直す。
 ```
 
 ### 回 W8
