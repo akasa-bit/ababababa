@@ -1,6 +1,7 @@
 // AI の国の振る舞いの自動対戦 (画面なしの版。回 AI2・B-301): 国家選択のある試合を観戦で回し、宣戦の向きと道・協定・先頭への重りを数える。
 // 物差しは docs/fun.md の 13 と targets/targets.json の R90・R91・F28・F29:
-//   F28 = 組 (AI の国 → 人間の国) あたり 100 年の、AI の国が自分の判断で始めた宣戦の数 ÷ 組 (AI の国 → AI の国) あたりの数 (0.5〜2 倍)
+//   F28 = AI の国が自分の判断で始めた人間の国への宣戦の数 ÷ 強さをそろえた見込みの数 (0.5〜2 倍。目標の版 32・回 AI9)。組と年を、AI の国から見た相手の艦隊の比の 6 つの段に分け、
+//         見込み = 段ごとの (AI → 人間の組と年) × (AI → AI の段の宣戦の率)。前の形 (組あたりの数の比) も参考に出す
 //   F29 = 50 年ごとに点数が先頭の国が、次の 50 年に受けた宣戦と先頭に向けた防衛同盟 (結んだとき受け手の判断に先頭が脅威として入っていたもの) の数 ÷ ほかの国の平均 (1.25 倍以上)
 //         点数は画面の点数の大きな 2 項 (星系 ×10 + 人口 200 百万人ごとに 1)。席のない国 (独立した国) も同じ式で比べるため
 //   R90 = 国ごとの、結んだ不可侵と防衛同盟の協定の数 ÷ 国である年数 × 100 (20 年以上続いた国) の中央値 (6.13〜15.79)
@@ -32,7 +33,7 @@ const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.lengt
 
 function count(file) {
   const sim = H.load({ src: file, params });
-  const out = { galaxies: 0, years: Number(yS), decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, honor: { join: 0, refuse: 0 }, lead: { leader: 0, others: 0, n: 0 }, pactEnd: { breach: 0, other: 0 }, leaderStats: [], inner: { endorse: 0, disavow: 0, undermine: 0, back: 0, lobby: 0, trade: 0, thank: 0, grudge: 0, fund: 0, lobYears: 0, lobW: 0 }, coerce: {} };
+  const out = { galaxies: 0, years: Number(yS), decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, sbin: { pyAH: [0, 0, 0, 0, 0, 0], pyAA: [0, 0, 0, 0, 0, 0], dAH: [0, 0, 0, 0, 0, 0], dAA: [0, 0, 0, 0, 0, 0] }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, honor: { join: 0, refuse: 0 }, lead: { leader: 0, others: 0, n: 0 }, pactEnd: { breach: 0, other: 0 }, leaderStats: [], inner: { endorse: 0, disavow: 0, undermine: 0, back: 0, lobby: 0, trade: 0, thank: 0, grudge: 0, fund: 0, lobYears: 0, lobW: 0 }, coerce: {} };
   for (const seed of seedList()) {
     const g = sim.newGame(String(seed), { nations: Number(natS) });
     const NH = Math.max(1, Number(humansS || 1));
@@ -43,6 +44,9 @@ function count(file) {
     const M = (out.multi ??= { humans: NH, hc: hcS || 'normal', seats: [], games: [], lead: { hostL: 0, hostO: 0, supL: 0, supO: 0, n: 0 } });
     const hs = new Map(g.humans().map((p) => [p.cap, { decl: {}, offer: 0, ally: 0, rescue: 0, gift: 0, lobby: 0, undermine: 0 }]));
     const hseat = (r) => (g.isHuman(r) ? hs.get(r) : null);
+    // F28 の強さの段 (目標の版 32): 国 r (の首都) に届いた記録の、ほかの国ごとの艦隊 (seenShips と同じ数え方を 1 回でまとめて) と、比 (相手 + 0.5) ÷ (自分 + 0.5) の段
+    const seenAll = (r) => { const m = new Map(); for (const id of Object.keys(g.intel)) { const v = g.seenBy(r, Number(id)); if (!v) continue; if (v[1] !== null && v[1] !== undefined) m.set(v[1], (m.get(v[1]) || 0) + (v[2] || 0)); for (const [e, k] of Object.entries(v[3] || {})) m.set(Number(e), (m.get(Number(e)) || 0) + (k || 0)); } return m; };
+    const sbinOf = (theirs, ours) => { const q = (theirs + 0.5) / (ours + 0.5); return q < 0.25 ? 0 : q < 0.5 ? 1 : q < 1 ? 2 : q < 2 ? 3 : q < 4 ? 4 : 5; };
     const hwin = []; // { from, leader, alive: [人間], host: Map, sup: Map }
     const hgot = (r, kind) => { for (const w of hwin) if (g.year < w.from + 50 && w.alive.includes(r)) w[kind].set(r, (w[kind].get(r) || 0) + 1); };
     const hscore = (r) => (g.realmAlive(r) ? 10 * g.realmSystems(r).length + g.realmPop(r) / 200 : 0);
@@ -65,12 +69,14 @@ function count(file) {
     const window = []; // 先頭への重り: { from, leader, alive: Set } と、その 50 年に受けた数
     const recvd = (r, k = 1) => { for (const w of window) if (g.year < w.from + 50 && w.alive.has(r)) w.got.set(r, (w.got.get(r) || 0) + k); };
     wrap('beginWar', (orig, by, target, from) => {
+      const bin = g.isHuman(by) ? -1 : sbinOf(g.seenShips(by, target), g.realmShips(by)); // 宣戦した年 (始まる前) の比
       const r = orig(by, target, from);
       let p = path[path.length - 1] || 'other';
       if (p === 'own' && g.isHuman(by)) p = 'human';
       if (g.isHuman(by) && p !== 'indep') p = 'human';
       const dir = `${g.isHuman(by) ? 'H' : 'A'}>${g.isHuman(target) ? 'H' : 'A'}`;
       out.decl[`${dir}|${p}`] = (out.decl[`${dir}|${p}`] || 0) + 1;
+      if (p === 'own' && bin >= 0) out.sbin[g.isHuman(target) ? 'dAH' : 'dAA'][bin]++;
       if (p !== 'indep') recvd(target);
       const h = hseat(target);
       if (h && !g.isHuman(by)) { h.decl[p] = (h.decl[p] || 0) + 1; if (p !== 'indep') hgot(target, 'host'); }
@@ -104,6 +110,11 @@ function count(file) {
       for (const r of rs) nation(r).to = g.year + 1;
       const ai = rs.filter((r) => !g.isHuman(r)).length, hu = rs.length - ai;
       out.pairYears.aiHuman += ai * hu; out.pairYears.aiAi += ai * (ai - 1);
+      for (const r of rs) {
+        if (g.isHuman(r)) continue;
+        const seen = seenAll(r), ours = g.realmShips(r);
+        for (const e of rs) if (e !== r) out.sbin[g.isHuman(e) ? 'pyAH' : 'pyAA'][sbinOf(seen.get(e) || 0, ours)]++;
+      }
       for (const r of rs) if (!g.isHuman(r)) { fleetSum += g.realmShips(r); fleetN++; }
       if (y % 50 === 0 && y + 50 <= Y) {
         const ha = [...hs.keys()].filter((r) => g.realmAlive(r));
@@ -146,11 +157,12 @@ function count(file) {
   return out;
 }
 function merge(list) {
-  const o = { galaxies: 0, years: list[0].years, decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, honor: { join: 0, refuse: 0 }, lead: { leader: 0, others: 0, n: 0 }, pactEnd: { breach: 0, other: 0 }, leaderStats: [], inner: { endorse: 0, disavow: 0, undermine: 0, back: 0, lobby: 0, trade: 0, thank: 0, grudge: 0, fund: 0, lobYears: 0, lobW: 0 }, coerce: {} };
+  const o = { galaxies: 0, years: list[0].years, decl: {}, pairYears: { aiHuman: 0, aiAi: 0 }, sbin: { pyAH: [0, 0, 0, 0, 0, 0], pyAA: [0, 0, 0, 0, 0, 0], dAH: [0, 0, 0, 0, 0, 0], dAA: [0, 0, 0, 0, 0, 0] }, pactsPerNation: [], ally: 0, allyThreat: 0, allyBandwagon: 0, honor: { join: 0, refuse: 0 }, lead: { leader: 0, others: 0, n: 0 }, pactEnd: { breach: 0, other: 0 }, leaderStats: [], inner: { endorse: 0, disavow: 0, undermine: 0, back: 0, lobby: 0, trade: 0, thank: 0, grudge: 0, fund: 0, lobYears: 0, lobW: 0 }, coerce: {} };
   for (const x of list) {
     o.galaxies += x.galaxies;
     for (const [k, v] of Object.entries(x.decl)) o.decl[k] = (o.decl[k] || 0) + v;
     o.pairYears.aiHuman += x.pairYears.aiHuman; o.pairYears.aiAi += x.pairYears.aiAi;
+    for (const k of Object.keys(o.sbin)) for (let i = 0; i < 6; i++) o.sbin[k][i] += x.sbin?.[k]?.[i] || 0;
     o.pactsPerNation.push(...x.pactsPerNation);
     o.pactEnd.breach += x.pactEnd?.breach || 0; o.pactEnd.other += x.pactEnd?.other || 0; o.leaderStats.push(...(x.leaderStats || []));
     o.honor.join += x.honor?.join || 0; o.honor.refuse += x.honor?.refuse || 0;
@@ -169,12 +181,16 @@ function merge(list) {
 function summarize(o) {
   const own = (d) => o.decl[`${d}|own`] || 0;
   const rateAH = (100 * own('A>H')) / Math.max(1, o.pairYears.aiHuman), rateAA = (100 * own('A>A')) / Math.max(1, o.pairYears.aiAi);
-  const f28 = rateAA ? rateAH / rateAA : null;
+  const f28raw = rateAA ? rateAH / rateAA : null; // 前の形 (版 31 まで): 組あたりの数の比
+  // 版 32: 強さの段ごとに AI → AI の率を AI → 人間の組と年に当てた見込み。AI → AI の組と年がない段は外す
+  const sb = o.sbin, use = [0, 1, 2, 3, 4, 5].filter((i) => sb.pyAA[i] > 0);
+  const f28obs = use.reduce((k, i) => k + sb.dAH[i], 0), f28exp = use.reduce((k, i) => k + (sb.pyAH[i] * sb.dAA[i]) / sb.pyAA[i], 0);
+  const f28 = f28exp > 0 ? f28obs / f28exp : null;
   const f29 = o.lead.others ? o.lead.leader / o.lead.others : null;
   const r90 = median(o.pactsPerNation), r91 = o.ally ? o.allyThreat / o.ally : null;
   const ends = o.pactEnd.breach + o.pactEnd.other, r92 = ends ? o.pactEnd.breach / ends : null;
   const r93 = o.leaderStats.length ? median(o.leaderStats.map((x) => x[1])) : null, r94 = o.leaderStats.length ? median(o.leaderStats.map((x) => x[0])) : null;
-  return { r92, r93, r94, pactEnd: o.pactEnd, leaderNations: o.leaderStats.length, f28, rateAH, rateAA, f29, r90, r91, ally: o.ally, allyThreat: o.allyThreat, allyBandwagon: o.allyBandwagon, honor: o.honor, nations: o.pactsPerNation.length, decl: o.decl, coerce: o.coerce, pairYears: o.pairYears, galaxies: o.galaxies, inner: o.inner, multi: o.multi ? multiSummary(o.multi, o.years) : null };
+  return { r92, r93, r94, pactEnd: o.pactEnd, leaderNations: o.leaderStats.length, f28, f28raw, f28obs, f28exp, sbin: o.sbin, rateAH, rateAA, f29, r90, r91, ally: o.ally, allyThreat: o.allyThreat, allyBandwagon: o.allyBandwagon, honor: o.honor, nations: o.pactsPerNation.length, decl: o.decl, coerce: o.coerce, pairYears: o.pairYears, galaxies: o.galaxies, inner: o.inner, multi: o.multi ? multiSummary(o.multi, o.years) : null };
 }
 // マルチの点検の数 (回 AI5)。席・100 年あたりの数と、人間の中の先頭・終わりの順位ごとの比べ
 function multiSummary(m, years) {
@@ -238,7 +254,8 @@ function table(s) {
   return [
     `### AI の国の振る舞い (画面なしの版。${s.galaxies} 銀河 × ${yS} 年 × ${natS} か国、観戦)`, '',
     '| 物差し | 値 | 合格の幅 |', '|---|---|---|',
-    `| F28 人間に向けた AI の宣戦 (AI → 人間 ÷ AI → AI。組・100 年あたりの自分の判断の宣戦) | ${f(s.f28)} (${f(s.rateAH, 3)} ÷ ${f(s.rateAA, 3)})${ok(s.f28, 0.5, 2)} | 0.5〜2 |`,
+    `| F28 人間に向けた AI の宣戦 (版 32: 強さの段をそろえた見込みとの比。自分の判断の宣戦 ${s.f28obs} 件 ÷ 見込み ${f(s.f28exp, 1)} 件) | ${f(s.f28)}${ok(s.f28, 0.5, 2)} | 0.5〜2 |`,
+    `| (参考) F28 の前の形 (版 31 まで。AI → 人間 ÷ AI → AI。組・100 年あたり) | ${f(s.f28raw)} (${f(s.rateAH, 3)} ÷ ${f(s.rateAA, 3)}) | — |`,
     `| F29 先頭への重り (先頭が受けた宣戦と先頭に向けた防衛同盟 ÷ ほかの国の平均) | ${f(s.f29)}${ok(s.f29, 1.25, null)} | 1.25 以上 |`,
     `| R90 国が新しく結ぶ協定の数 (国・100 年。${s.nations} か国の中央値) | ${f(s.r90)}${ok(s.r90, 6.13, 15.79)} | 6.13〜15.79 |`,
     `| R91 共通の脅威に向けた防衛同盟 (${s.allyThreat} / ${s.ally}。うち便乗 ${s.allyBandwagon}) | ${s.r91 === null ? '—' : `${(100 * s.r91).toFixed(1)}%`}${ok(s.r91, 0.1571, 0.7386)} | 15.7〜73.9% |`,
