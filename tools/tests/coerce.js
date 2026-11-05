@@ -163,6 +163,61 @@ g.decisionsYearly();
 o6 = g.coerce.find((o) => o.from === b);
 check(o6 && o6.st === 'back' && o6.ok === 0, `期限切れで断らない (${JSON.stringify(o6)})`);
 
+// 9. 人間の国から威圧する (回 AI8・B-308): 命令 coerce → 届く → AI の国が答える → 返事が戻る → 断られたら人が宣戦するか引き下がるかを決める
+const keepCo = g.coerce; // 前の節の威圧は、7 のセーブの試験で使うので取っておく
+for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+g.coerce = [];
+for (const r of ai) g.gov(r).credits = Math.max(g.gov(r).credits, 10 * T.cash);
+const PCD = sim.evaluate('PC_DIPLOMACY');
+const hOpts = g.coerceOptions(g.cap, a);
+check(hOpts.length >= 2 && hOpts.every((t) => t.c > 0 && t.label), `人間の国が求められる条件の一覧が違う (${JSON.stringify(hOpts)})`);
+const pick = hOpts.filter((t) => t.k !== 'v').slice(0, 2).map((t) => t.k);
+const hAsk = (r) => { g.pc = 100; const r0 = g.command('coerce', { sys: r, terms: pick.filter((k) => g.coerceOptions(g.cap, r).some((t) => t.k === k)).length ? pick : [g.coerceOptions(g.cap, r).find((t) => t.k !== 'v').k] }); return { r0, used: 100 - g.pc }; };
+const h1 = hAsk(a);
+const oh = g.coerce.find((o) => o.from === g.cap && o.to === a);
+check(h1.r0.ok && h1.used === PCD && oh && oh.st === 'go' && Math.abs(oh.at - (g.year + g.sysDist(g.cap, a))) < 1e-9, `人間の国の威圧が光速で送られない (${JSON.stringify(h1)}・${JSON.stringify(oh)})`);
+g.pc = 100;
+check(!g.command('coerce', { sys: a, terms: pick }).ok, '同じ国に重ねて威圧できる');
+check(!g.command('coerce', { sys: b, terms: [] }).ok, '条件なしで威圧できる');
+if (g.coerceOptions(g.cap, b).some((t) => t.k === 'v')) check(!g.command('coerce', { sys: b, terms: ['v', g.coerceOptions(g.cap, b).find((t) => t.k !== 'v').k] }).ok, '従属とほかの条件を一緒に求められる');
+// 断られて、引き下がる (議会の支持が下がる)
+fix(60);
+g.year = oh.at + 0.01; g.coerceYearly();
+let ob = g.coerce.find((o) => o.id === oh.id);
+check(ob && ob.st === 'back' && ob.ok === 0, `AI の国が人間の国の威圧に答えない (${JSON.stringify(ob)})`);
+g.year = ob.at + 0.01; g.coerceYearly();
+const ow = g.coerce.find((o) => o.id === oh.id), dh = g.decisions.find((d) => d.kind === 'coerce' && d.type === 'back' && d.cid === oh.id);
+check(ow && ow.st === 'wait' && dh && dh.opts.map((x) => x.k).join() === 'war,back' && dh.def === 'back', `断られた人間の国に、宣戦するか引き下がるかの決めることが届かない (${JSON.stringify(ow)}・${dh?.text})`);
+const council0 = g.council;
+g.pc = 100;
+check(g.command('decide', { sys: g.cap, id: dh.id, opt: 'back' }).ok, '引き下がる返事を送れない');
+g.advance(0.25);
+check(!g.coerce.some((o) => o.id === oh.id) && !g.atWar(g.cap, a) && g.council <= council0 - sim.evaluate('COERCE.backCouncil') + 1, `引き下がっても議会の支持が下がらない (${council0} → ${g.council})`);
+// 断られて、宣戦する
+g.coerce = [];
+hAsk(a);
+const oh2 = g.coerce.find((o) => o.from === g.cap && o.to === a);
+g.year = oh2.at + 0.01; g.coerceYearly();
+g.year = g.coerce.find((o) => o.id === oh2.id).at + 0.01; g.coerceYearly();
+const dh2 = g.decisions.find((d) => d.kind === 'coerce' && d.type === 'back' && d.cid === oh2.id);
+g.pc = 100;
+check(dh2 && g.command('decide', { sys: g.cap, id: dh2.id, opt: 'war' }).ok, '宣戦する返事を送れない');
+g.advance(0.25);
+check(g.atWar(g.cap, a), '断られたあと「宣戦する」を選んでも戦争にならない');
+// 飲まれる (星系が人間の国のものになる・知らせが届く)
+for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+g.coerce = [];
+fix(-80);
+const h3 = hAsk(a), oh3 = g.coerce.find((o) => o.from === g.cap && o.to === a);
+g.year = oh3.at + 0.01; g.coerceYearly();
+const gotSys3 = oh3.terms.filter((t) => t.k[0] === 's').map((t) => Number(t.k.slice(1)));
+check(h3.r0.ok && gotSys3.every((sx) => g.realmOf(sx) === g.cap), '人間の国の威圧を飲んでも、星系が人間の国のものにならない');
+const ev0h = g.events.length;
+g.year = g.coerce.find((o) => o.id === oh3.id).at + 0.01; g.coerceYearly();
+check(!g.coerce.some((o) => o.id === oh3.id) && g.events.slice(0, g.events.length - ev0h + 1).some((e) => /が威圧 \(.*\) を飲んだと知らせが届いた/.test(e.text)), '飲まれた知らせが人間の国に届かない');
+g.coerce = keepCo;
+for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+
 // 7. セーブ
 g.coerceSend(c, a, 30, 0);
 const saved = JSON.parse(JSON.stringify(sim.buildSave(g)));

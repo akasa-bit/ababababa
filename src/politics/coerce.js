@@ -56,7 +56,7 @@
   // 年 1 回 (realmsYearly の始め): 届いた威圧と返事
   coerceYearly() {
     if (!this.coerce.length) return;
-    const due = this.coerce.filter((o) => o.st !== 'ask' && o.at <= this.year + 1e-9);
+    const due = this.coerce.filter((o) => (o.st === 'go' || o.st === 'back') && o.at <= this.year + 1e-9); // ask・wait は人間の国の返事待ち
     if (!due.length) return;
     this.coerce = this.coerce.filter((o) => !due.includes(o));
     for (const o of due) { if (o.st === 'go') this.coerceArrive(o); else this.coerceBack(o); }
@@ -95,8 +95,9 @@
     o.st = 'ask';
     this.coerce.push(o);
   }
-  // 人間の国の返事 (policy-decisions.js の resolveDecision から)
+  // 人間の国の返事 (policy-decisions.js の resolveDecision から)。type = back は、人間の国の威圧が断られたあとの、宣戦するか引き下がるか (回 AI8)
   coerceDecided(dec, k) {
+    if (dec.type === 'back') return this.coerceHumanBack(dec, k);
     const o = this.coerce.find((x) => x.id === dec.cid && x.st === 'ask');
     if (!o) return;
     this.coerce = this.coerce.filter((x) => x !== o);
@@ -139,6 +140,7 @@
   coerceBack(o) {
     const { from: r, to: e } = o;
     if (!this.realmAlive(r)) return;
+    if (this.isHuman(r) && !this.spectate) return this.coerceHumanReply(o); // 人間の国が送った威圧の返事 (回 AI8)
     if (o.ok) { this.aiNote(r, JA`${this.realmName(e)}が威圧 (${this.coerceText(o)}) を飲んだと知らせが届いた`); return; }
     if (!this.realmAlive(e) || this.atWar(r, e)) return;
     const z = Number.isFinite(o.z) ? o.z : 0, v = this.reservation(r, e, z, 0) + this.claimBonus(r, e) + this.aiWarBias(r, e);
@@ -149,4 +151,55 @@
     if (!bar && v + COERCE.audience > BARGAIN.declare) { this.aiDeclare(r, e, z, JA`威圧を断られた・引き下がる面目 +${COERCE.audience}`); return; }
     this.aiNote(r, JA`${this.realmName(e)}に威圧を断られ、引き下がった (${bar || JA`見込む点 ${Math.round(v)}・引き下がる面目 +${COERCE.audience}・宣戦の線 ${BARGAIN.declare}`})`);
     this.event('politics', r, JA`${this.realmName(r)}が${this.realmName(e)}への威圧を引っ込めた`, this.isHuman(e));
+  }
+  // --- 人間の国から威圧する (回 AI8・B-308。画面は politics/coerce-ui.js) ---
+  // 求められる条件の一覧 (r の首都に届いた記録の e の星系・交易協定・資金・従属)。値段は講和会議と同じ (ship/war-peace.js の treatyTerms)。従属は近い国 (30 光年まで) だけ
+  coerceOptions(r, e) {
+    const c = { loser: e, bids: [{ realm: r, pts: 100 }] };
+    c.sys = this.galaxy.systems.filter((x) => x.id !== e && this.seenBy(r, x.id)?.[1] === e).map((x) => x.id);
+    c.cash = Math.min(TREATY.cashMax, Math.floor(Math.max(0, this.gov(e).credits) / TREATY.cash));
+    const all = this.treatyTerms(c);
+    const out = all.filter((t) => t.id === 'v' && this.sysDist(r, e) <= 30).map((t) => ({ k: t.id, c: t.cost, label: t.label }));
+    out.push(...all.filter((t) => t.sys !== undefined).sort((x, y) => this.sysDist(r, x.sys) - this.sysDist(r, y.sys)).map((t) => ({ k: t.id, c: t.cost, label: JA`${this.system(t.sys).name} を明け渡させる` })));
+    if (!this.pactBetween(r, e, 'trade') && this.pactAllowed(r, e, 'trade')) out.push({ k: 't', c: COERCE.tradePts, label: JA`交易協定 (関税 0) を結ばせる` });
+    out.push(...all.filter((t) => t.id[0] === 'c').map((t) => ({ k: t.id, c: t.cost, label: t.label })));
+    return out;
+  }
+  // 命令 coerce (人間の国): d = { sys: 相手の国, terms: [条件の k] }。光速で相手の首都に届き、AI の国は AI どうしと同じ線で答える (coerceJudge)
+  coerceIssue(d, from = this.cap) {
+    const e = Number(d.sys);
+    if (e === from || !this.realmAlive(e) || !this.realmAlive(from)) return fail('相手の国がない');
+    if (this.atWar(from, e) || this.knownAtWar(from, e)) return fail('交戦中の国には威圧できない (講和が先)');
+    if (this.coerce.some((o) => o.from === from && o.to === e)) return fail('この国への威圧の返事を待っている');
+    const opts = new Map(this.coerceOptions(from, e).map((t) => [t.k, t]));
+    const ks = [...new Set(Array.isArray(d.terms) ? d.terms : [])].filter((k) => opts.has(k));
+    if (!ks.length) return fail('求める条件を選んでいない');
+    if (ks.includes('v') && ks.length > 1) return fail('従属は、ほかの条件と一緒には求められない');
+    const terms = ks.map((k) => ({ k, c: opts.get(k).c }));
+    const o = { id: this.nextShipId++, st: 'go', from, to: e, year: this.year, at: this.year + this.sysDist(from, e), terms, pts: terms.reduce((n, t) => n + t.c, 0), ships: Math.round(this.realmShips(from)), z: 0 };
+    this.coerce.push(o);
+    this.event('politics', from, JA`${this.realmName(e)}に艦隊 ${o.ships} を見せて、${this.coerceText(o)}を求めた (${o.pts} 点。届くまで ${(o.at - this.year).toFixed(1)} 年)`, true);
+    return { ok: true };
+  }
+  // 人間の国が送った威圧の返事が首都に届いた。飲まれたら知らせだけ。断られたら「決めること」: 宣戦するか、引き下がるか (議会の支持 −backCouncil。Fearon 1994 の観衆の費用)
+  coerceHumanReply(o) {
+    const { from: r, to: e } = o, list = this.coerceText(o);
+    if (o.ok) { this.asRealm(r, () => this.event('politics', r, JA`${this.realmName(e)}が威圧 (${list}) を飲んだと知らせが届いた`, true)); return; }
+    if (!this.realmAlive(e) || this.atWar(r, e)) return;
+    this.asRealm(r, () => {
+      const dec = this.addDecision({ kind: 'coerce', type: 'back', sys: r, to: e, cid: o.id, deadline: this.year + COERCE.replyYears, def: 'back',
+        text: JA`${this.realmName(e)}が威圧 (${list}) をはねつけた (返事は光速で ${this.sysDist(e, r).toFixed(1)} 年かけて届いた)。脅しのとおり宣戦するか、引き下がるか。引き下がると、威圧を引っ込めた面目で議会の支持 −${COERCE.backCouncil}。${COERCE.replyYears} 年のうちに決めなければ引き下がる。`,
+        opts: [{ k: 'war', label: '宣戦する', note: JA`${this.realmName(e)}と戦争になる`, pc: this.pcCost('declarewar', {}) }, { k: 'back', label: '引き下がる', note: JA`議会の支持 −${COERCE.backCouncil}` }] });
+      o.dec = dec.id;
+    });
+    this.coerce.push({ ...o, st: 'wait' });
+  }
+  coerceHumanBack(dec, k) {
+    const o = this.coerce.find((x) => x.id === dec.cid && x.st === 'wait');
+    if (!o) return;
+    this.coerce = this.coerce.filter((x) => x !== o);
+    if (!this.realmAlive(o.to) || this.atWar(o.from, o.to)) return;
+    if (k === 'war' && this.declareWar(o.to).ok) return;
+    this.councilAdd(-COERCE.backCouncil, JA`${this.realmName(o.to)}への威圧を引っ込めた`);
+    this.event('politics', o.from, JA`${this.realmName(o.to)}への威圧を引っ込めた (議会の支持 −${COERCE.backCouncil})`, false);
   }
