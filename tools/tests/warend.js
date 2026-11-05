@@ -3,6 +3,8 @@
 // 2. 小さな勝ち: 戦勝点の差が TREATY.white より小さい講和は白紙講和 (講和会議を開かない)
 // 3. 大きく勝っている国: 勝つ見込みが WAREND.decisiveP 以上なら受け入れる線は 100 (降伏を求める)。相手に見込みがなければ全面降伏の講和会議
 // 4. 人間の国への降伏の求め: 応じると、求めた国が持ち点 100 で条件を選ぶ講和会議になる
+// 5. 観戦の人間の代わりは、AI の国どうしと同じ交渉の模型で講和する (回 AI9・B-307): 申し入れを送り、AI の国からも申し入れ (人間の国への講和の申し入れではなく) が来る。
+//    線が重なれば講和会議で、人間の代わりは条件をおまかせで選ぶ。STANDIN.bargain = false なら前の形
 // 使い方: node tools/tests/warend.js
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
@@ -66,6 +68,48 @@ g.postPeaceOffer(hk, c, g.cap, g.year, true);
 let conf = null;
 g.startConference = (l, w, f) => { conf = { l, w }; return orig(l, w, f); };
 check(g.acceptPeace({ key: hk }).ok && conf && conf.l === g.cap && conf.w[0].realm === c && conf.w[0].pts === 100, '降伏の求めに応じても、持ち点 100 の講和会議にならない');
+
+// 5
+{
+  const ST = sim.tables.STANDIN;
+  const e = ai.find((x) => x !== a && x !== b && g.realmOf(x) === x && x !== c) ?? c;
+  for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+  g.peaceOffers = []; g.bargainSent = []; g.conferences = []; g.confSent = [];
+  g.setSpectate(true);
+  const knows = g.aiKnowsWar;
+  g.aiKnowsWar = () => true;
+  g.beginWar(e, g.cap, e);
+  const sk = g.warKey(g.cap, e);
+  g.earthWarYearly();
+  check(g.bargainSent.some((o) => o.key === sk && o.from === g.cap && o.to === e), `人間の代わりが交渉の申し入れを送らない (${JSON.stringify(g.bargainSent)})`);
+  g.realmsYearly();
+  check(!g.peaceOffers.some((o) => o.key === sk) && g.bargainSent.some((o) => o.key === sk && o.from === e), `AI の国が人間の代わりへ交渉でなく講和の申し入れを送る (${JSON.stringify(g.peaceOffers)})`);
+  // 線が重なれば講和会議 (人間の代わりが勝ち)。条件は次の年の earthWarYearly でおまかせに選ぶ
+  const res0 = g.reservation;
+  g.reservation = (r, x) => (r === g.cap ? 40 : -50);
+  let opened = null;
+  const sc = g.startConference.bind(g);
+  g.startConference = (l, w, f) => { opened = { l, w }; return sc(l, w, f); };
+  check(g.bargain(g.cap, e, e) && opened && opened.l === e && opened.w[0].realm === g.cap && opened.w[0].pts === 45, `人間の代わりとの交渉が講和会議にならない (${JSON.stringify(opened)})`);
+  g.startConference = sc;
+  g.reservation = res0;
+  for (const cf of g.confSent) cf.at = g.year;
+  g.conferencesArrive();
+  const open = g.conferences.find((cf) => cf.loser === e);
+  g.earthWarYearly();
+  check(open && !g.conferences.includes(open), '人間の代わりが講和会議の条件を選ばない');
+  // 前の形
+  for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+  g.bargainSent = [];
+  ST.bargain = false;
+  g.beginWar(e, g.cap, e);
+  g.earthWarYearly();
+  g.realmsYearly();
+  check(!g.bargainSent.some((o) => o.key === sk), 'STANDIN.bargain = false でも交渉の申し入れを送る');
+  ST.bargain = true;
+  g.aiKnowsWar = knows;
+  g.setSpectate(false);
+}
 
 console.log(fails.length ? `戦争の終わり方 不合格\n${fails.join('\n')}` : '戦争の終わり方 合格');
 process.exit(fails.length ? 1 : 0);
