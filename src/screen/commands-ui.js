@@ -81,6 +81,7 @@ function onPanelClick(e) {
   if (act === 'view') return app.setView(btn.dataset.v);
   if (act === 'surpriseack') { (app.surpriseAck ||= new Set()).add(Number(btn.dataset.id)); setHtml($('rail'), railHtml(g)); return; } // 奇襲の警告を確かめた (画面だけ)
   if (act === 'treatyopen') return openTreaty(Number(btn.dataset.id));
+  if (act === 'coerceopen') return openCoerce(Number(btn.dataset.sys)); // 威圧の条件を選ぶ窓 (回 AI8。politics/coerce-ui.js)
   // 行動はすべて command を通す。太陽系以外が対象なら光速の指令になり、届いた先の政府が実行する
   const d = { ...btn.dataset, sys, body, kind };
   if (act === 'grantset' && btn.dataset.read) { d.amt = Number($(btn.dataset.read)?.value || 0); d.unit = $(btn.dataset.unit)?.value || 'cr'; } // 定期の資金援助の額と単位は欄から (依頼 KE-4・KE4-Q1 = c)

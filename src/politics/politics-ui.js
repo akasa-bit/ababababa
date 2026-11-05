@@ -118,5 +118,5 @@ function diplomacyHtml(g, roots) {
       相手は、首都に届いている古い光で見た${ME.realm}の艦隊 (読み違いつき) と、近くの国の艦隊から決める。下の見込みは、地球に届いている記録での見立て。協定の相手に宣戦するか、同盟の参戦を断ると<b>破約</b>になり、議会の支持 −${PACT.breachCouncil}、${PACT.distrustYears} 年のあいだ、どの国も協定を受けにくくなる${breaches ? TR` (いま破約 <b class="bad">${breaches}</b> 回)` : ''}。</p>
     ${mine ? TR`<div class="scroll"><table class="tbl"><tr><th>相手</th><th>協定</th><th>期限</th><th>縛られる時期</th></tr>${mine}</table></div>` : TR('<p class="note">結んでいる協定はない。</p>')}
     ${sent ? TR`<div class="scroll"><table class="tbl"><tr><th>相手</th><th>申し入れ</th><th>状況</th></tr>${sent}</table></div>` : ''}
-    ${rows ? TR`<div class="scroll"><table class="tbl"><tr><th>国</th><th>協定</th><th>見込み (地球に届いた記録で)</th></tr>${rows}</table></div>` : ''}`;
+    ${rows ? TR`<div class="scroll"><table class="tbl"><tr><th>国</th><th>協定</th><th>見込み (地球に届いた記録で)</th></tr>${rows}</table></div>` : ''}` + coerceHtml(g, roots); // 威圧 (回 AI8。politics/coerce-ui.js)
 }
