@@ -7,7 +7,7 @@
 // 使い方: node tools/tests/shots.js   (組み立てた index.html。HTML=…・SEED=…・POPUP=1 で変えられる)
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)。参考の行 (落ちても CI は止めない)
 exports.ci = [{
-  optional: true,
+  optional: '参考', // 表の行は「shots (参考)」 (シミュレーション版の参考の行とは別)
   judge: (o, code) => (code === 0 && /^撮る台本 合格/m.test(o) ? '' : (o.match(/^撮る台本 不合格[^\n]*/m) || ['撮る台本の点検が終わらない'])[0]),
   note: (o) => (o.match(/^撮る台本 (?:合格|不合格) \(([^)]*)\)/m) || [])[1] || '',
 }];
