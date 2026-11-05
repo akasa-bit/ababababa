@@ -522,7 +522,7 @@
         const key = this.warKey(root, e);
         if (this.realmWars[key] === undefined) continue;
         if (BARGAIN.on) {
-          if (this.isHuman(e)) {
+          if (this.isHuman(e) && !(this.spectate && STANDIN.bargain)) { // 観戦の人間の代わりとは、AI の国どうしと同じ交渉で講和する (回 AI9・B-307。ship/earth-war.js)
             // 人間の国へは、いまの戦勝点で講和してよいときに申し入れる (offerEvery 年に 1 回まで)。大きく勝っていれば降伏を求める (WAREND)
             const res = this.reservation(root, e);
             if (res >= 100 && !this.peaceOfferedRecently(key)) {

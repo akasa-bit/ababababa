@@ -25,6 +25,9 @@ const COERCE = { on: true, line: 20, chance: 0.5, ask: 1, face: 30, audience: 10
 // ほかの国が協定を受けにくくなる: politics/diplomacy.js の pactBreach・pactScore)。同盟の相手には宣戦しない。nap = null で前の形 (不可侵の相手にも宣戦しない)。
 // 現実の破約の形 (Leeds 2003: 防衛同盟の義務の 3 割ほどは果たされない。不可侵の協定を破って攻めた例は 1941 年のバルバロッサ作戦など)
 const PACT_BREAK = { nap: 25 };
+// 観戦の人間の代わり (ship/earth-war.js) の講和 (回 AI9・B-307。docs/ai-behavior.md の 16): bargain = true なら、AI の国どうしと同じ交渉の模型 (ship/war-ai.js の bargain) で講和する。
+// false なら前の形 (AI の国の申し入れを、疲れているか勝っていれば受け、実際の戦勝点で講和する)
+const STANDIN = { bargain: true };
 saveField('coerce', (game) => (game.coerce.length ? game.coerce : undefined), {
   init: (game) => { game.coerce = []; },
   read: (game, d) => { game.coerce = Array.isArray(d.coerce) ? d.coerce.filter((o) => o && ['go', 'ask', 'back', 'wait'].includes(o.st) && Number.isFinite(o.from) && Number.isFinite(o.to) && Number.isFinite(o.at) && Array.isArray(o.terms)) : []; },

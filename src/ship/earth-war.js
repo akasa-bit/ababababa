@@ -5,7 +5,10 @@
   // declare を超えていちばん良い相手に宣戦する (ship/war-ai.js の realmsYearly と同じ)。前は 25 光年以内の独立国ごとに、艦隊が 5 倍なら年 5% で宣戦し、
   // AI の国の 17〜31 倍宣戦していたので、人間の代わりとして測りが偏っていた (docs/ai-behavior.md の 12.2)
   earthWarYearly() {
-    // 講和の申し入れ・講和会議は、疲れているか勝っていれば応じ、条件はおまかせで選ぶ
+    // 講和は AI の国どうしと同じ交渉の模型 (受け入れる線が重なれば、その真ん中で講和する。ship/war-ai.js の bargain) で決める (回 AI9・B-307)。
+    // 前は、AI の国の申し入れを疲れているか勝っていれば受け、実際の戦勝点 (沈めた艦隊と攻め落とした星系) で講和していたので、にらみ合いの戦争は
+    // 白紙講和になり、同じ国が AI の国の席なら交渉で取れる星系を取れなかった (docs/ai-behavior.md の 16)。講和会議の条件はおまかせで選ぶ
+    if (BARGAIN.on && STANDIN.bargain) for (const e of this.aiEnemiesOf(this.cap)) { const key = this.warKey(this.cap, e); if (!this.isHuman(e) && this.aiKnowsWar(e, key)) this.sendBargain(this.cap, e, key); }
     for (const o of this.peaceOffers.filter((x) => x.to === this.cap)) if ((this.exhaustion[this.cap] || 0) > 40 || this.warScore(this.cap, o.from) > 10) this.acceptPeace(o);
     for (const c of [...this.conferences]) { const b = c.bids.find((x) => x.realm === this.cap && !x.picks); if (b) this.submitTreaty({ id: c.id, picks: this.aiTreatyPicks(c, b) }); }
     const ours = this.realmShips(this.cap);
@@ -17,7 +20,7 @@
       const theirs = this.realmShips(root);
       if (!this.atWar(this.cap, root)) continue;
       if (this.hasShipyard(this.cap) && this.funds(this.cap) >= 2 * WARSHIP_COST.credits) this.buildWarship(this.cap);
-      if (ours < 0.7 * theirs || (this.exhaustion[this.cap] || 0) > 60) { if (!ordered('peace', root)) this.command('peace', { sys: root }); continue; }
+      if (ours < 0.7 * theirs || (this.exhaustion[this.cap] || 0) > 60) { if (!(BARGAIN.on && STANDIN.bargain) && !ordered('peace', root)) this.command('peace', { sys: root }); continue; } // 交渉の模型のときは上の申し入れで
       let best = null;
       for (const t of this.realmSystems(root)) {
         if (ordered('fleet', t.id) || this.fleets.some((f) => f.to === t.id && (f.owner ?? 0) === this.cap)) continue;
