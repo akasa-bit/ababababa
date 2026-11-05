@@ -27,13 +27,18 @@
   threatText(r, t, ships = this.threatView(r)) {
     return JA`${this.realmName(t)}の艦隊 ${Math.round(ships(t))}・自分 ${Math.round(ships(r))}・${this.sysDist(r, t).toFixed(0)} 光年${this.atWar(r, t) ? JA`・交戦中` : ''}`;
   }
+  // 協定を破って宣戦する重さ (回 AI9・B-309。PACT_BREAK): 協定がなければ 0、同盟の相手か nap = null なら null (宣戦しない)、不可侵の相手なら PACT_BREAK.nap 点
+  pactWarCost(r, e) {
+    if (!this.pactBars(r, e)) return 0;
+    return this.pactBinds(r, e, 'ally') || PACT_BREAK.nap === null || PACT_BREAK.nap === undefined ? null : PACT_BREAK.nap;
+  }
   // 宣戦と威圧 (politics/coerce.js) の理由の内訳 (root の首都に届いた記録で。z = 判断のときに引いた読み違い)
   aiWarReason(root, e, z) {
     const o = {};
     this.reservation(root, e, z, 0, o);
     const claim = this.claimBonus(root, e);
     const al = this.alignOf(root), mw = this.aiWarWhy(root, e);
-    return JA`首都に届いた記録で: 艦隊 自分 ${Math.round(o.ours)}・相手 ${Math.round(o.theirs)}${o.allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(o.allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * o.p)}%・見込む戦勝点 ${Math.round(o.expect)}・戦費 −${Math.round(o.cost)}${o.shift >= 0.5 ? JA`・相手の伸び +${Math.round(o.shift)}` : ''}${claim ? JA`・請求権 +${Math.round(claim)}` : ''}${al.t === e ? JA`・いちばんの脅威` : ''}${mw ? JA`・${mw}` : ''}${o.inner && this.innerText(o.inner) ? JA`・${this.innerText(o.inner)}` : ''}`;
+    return JA`首都に届いた記録で: 艦隊 自分 ${Math.round(o.ours)}・相手 ${Math.round(o.theirs)}${o.allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(o.allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * o.p)}%・見込む戦勝点 ${Math.round(o.expect)}・戦費 −${Math.round(o.cost)}${o.shift >= 0.5 ? JA`・相手の伸び +${Math.round(o.shift)}` : ''}${claim ? JA`・請求権 +${Math.round(claim)}` : ''}${al.t === e ? JA`・いちばんの脅威` : ''}${mw ? JA`・${mw}` : ''}${o.inner && this.innerText(o.inner) ? JA`・${this.innerText(o.inner)}` : ''}${this.pactWarCost(root, e) ? JA`・不可侵の協定を破る重さ −${this.pactWarCost(root, e)}` : ''}`;
   }
   // AI の国の宣戦 (realmsYearly から。船と戦争へ頼んだ 1 行)。z = 判断のときに引いた読み違い。理由の内訳を知らせと記録に付ける。
   // pre = 理由の頭に足す文 (威圧を断られて脅しを実行するとき。回 AI7)

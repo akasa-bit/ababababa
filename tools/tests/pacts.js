@@ -4,6 +4,7 @@
 // 3. AI の国からの申し入れは「決めること」として届き、受けると協定になる
 // 4. 防衛同盟: 同盟国が宣戦されると、知らせが届いた年に AI の同盟国は参戦し、人間の国には「参戦するか」が届く。断ると破約 (議会の支持が下がる)
 // 5. 不可侵の相手に宣戦すると破約。破約の多い国の申し入れは受けにくい
+// 5b. AI の国も、見込みが破約の重さ (PACT_BREAK.nap) を越えれば不可侵の相手に宣戦し、破約になる。同盟の相手には宣戦しない (回 AI9・B-309)
 // 6. セーブと読み込みで協定が残る
 // 使い方: node tools/tests/pacts.js
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
@@ -108,6 +109,44 @@ if (q2) {
 }
 const o = g.pactOutlook(e, 'nap');
 check(['受けそう', '五分', '断りそう'].includes(o.label) && (o.s >= 0 || o.need.gift > 0), `見込みの形が違う (${JSON.stringify(o)})`);
+
+// 5b
+{
+  const PB = sim.evaluate('PACT_BREAK'), BG = sim.evaluate('BARGAIN'), CO = sim.evaluate('COERCE');
+  const reach = (x, y) => g.sysDist(x, y) <= BG.warDist && g.seenBy(x, y)?.[1] === y;
+  const pr = others.flatMap((x) => others.map((y) => [x, y])).find(([x, y]) => x !== y && reach(x, y) && reach(y, x));
+  check(pr, '互いに届く AI の国の組がない');
+  if (pr) {
+    const [x, y] = pr;
+    const keep = { res: g.reservation, mis: g.misread, bias: g.aiWarBias, claim: g.claimBonus, dc: BG.declareChance, ch: CO.chance, nap: PB.nap, diplo: JSON.parse(JSON.stringify(g.diplo)), wars: { ...g.realmWars }, coerce: g.coerce }; // 6 のセーブの試験のために、前の協定と戦争は戻す
+    for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+    g.diplo = { pacts: [], sent: [], breach: {} };
+    const pact = (kind) => { g.diplo.pacts = []; const p = g.makePact(x, y, kind, 0); p.onA = p.onB = g.year - 1; return p; };
+    let val = 0;
+    g.misread = () => 0; g.aiWarBias = () => 0; g.claimBonus = () => 0;
+    g.reservation = (r, e2, z, ws, out) => { if (out) Object.assign(out, { ours: 30, theirs: 10, allies: 0, p: 0.73, expect: 28, cost: 1, shift: 0 }); return r === x && e2 === y ? val : -100; };
+    BG.declareChance = 1; CO.chance = 0;
+    const tryWar = (v) => { for (const k of Object.keys(g.realmWars)) delete g.realmWars[k]; g.coerce = []; val = v; g.realmsYearly(); return g.atWar(x, y); };
+    pact('nap');
+    check(g.pactWarCost(x, y) === PB.nap && g.pactWarCost(x, others.find((u) => u !== x && u !== y) ?? g.cap) === 0, `破約の重さが違う (${g.pactWarCost(x, y)})`);
+    check(!tryWar(PB.nap + BG.declare - 1), '見込みが破約の重さを越えないのに、不可侵の相手に宣戦した');
+    pact('nap');
+    check(tryWar(PB.nap + BG.declare + 5), '見込みが破約の重さを越えても、不可侵の相手に宣戦しない');
+    const log = (g.aiLog[x] || []).map((l) => l.t).join(' / ');
+    check(/不可侵の協定を破る重さ −/.test(log), `宣戦の理由に破約の重さが出ない (${log.slice(-200)})`);
+    g.diplomacyYearly();
+    check(g.pactBreaches(x) >= 1 && !g.pactBetween(x, y, 'nap'), `不可侵を破った宣戦が破約にならない (${JSON.stringify(g.diplo.breach)})`);
+    pact('ally');
+    check(g.pactWarCost(x, y) === null && !tryWar(100), '同盟の相手に宣戦した');
+    PB.nap = null; pact('nap');
+    check(g.pactWarCost(x, y) === null && !tryWar(100), 'PACT_BREAK.nap = null でも不可侵の相手に宣戦した (前の形に戻らない)');
+    Object.assign(g, { reservation: keep.res, misread: keep.mis, aiWarBias: keep.bias, claimBonus: keep.claim });
+    BG.declareChance = keep.dc; CO.chance = keep.ch; PB.nap = keep.nap;
+    for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+    Object.assign(g.realmWars, keep.wars);
+    g.diplo = keep.diplo; g.coerce = keep.coerce;
+  }
+}
 
 // 6
 const saved = JSON.parse(JSON.stringify(sim.buildSave(g)));

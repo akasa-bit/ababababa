@@ -5,7 +5,7 @@
 // 2. そのセーブを新しいページで読み込み、場面ごとに撮る。大きさは CSS 1280×720 を 1.5 倍 (= 1920×1080。QD-18 の案 1)。
 // 3. カプセル: 星図だけを残して、ゲームの名前の文字を載せる (QD-19 の案 1)。大きさは store/images.md の 1。
 // ゲームの中身は変えない (ページの関数を呼ぶだけ)。書き出したものはリポジトリに入れない (既定は desktop/shots/out/。.gitignore 済み)。
-// 使い方: node tools/build.mjs && node desktop/shots/shoot.mjs [--seed 7] [--lang en] [--spec 80] [--out <フォルダ>] [--only shots|capsules]
+// 使い方: node tools/build.mjs && node desktop/shots/shoot.mjs [--seed 3] [--lang en] [--spec 80] [--out <フォルダ>] [--only shots|capsules]
 //         [--save <セーブ.json>] (作らずに、そのセーブを読んで撮る。手で遊んだセーブ。場面 3・6 は、そのセーブに決めることと講和会議があれば使う)
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -17,7 +17,7 @@ import { playInPage } from './play.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
 const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; };
-const SEED = arg('seed', '7'); // 回 SO4 で 20261020 → 7 (いまのゲームでは 20261020 で地球の国が勝つ講和会議が起きなくなった。store/images.md の 2)
+const SEED = arg('seed', '3'); // 回 AI9 で 7 → 3 (人間の代わりの講和を交渉の模型にそろえたあと、銀河 7 では観戦の 80 年の筋が変わり、講和会議が起きなくなった。store/images.md の 2)。回 SO4 で 20261020 → 7
 const LANG = arg('lang', 'ja'); // --lang en で英語の画面 (回 SO4。英語のストアのページ用)
 const SPEC = Number(arg('spec', 80));
 const OUT = resolve(arg('out', join(here, 'out')));

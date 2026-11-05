@@ -4,7 +4,7 @@
 // 3. ffmpeg で H.264 + AAC (無音) の mp4 にする (Steam のトレーラーの決まり: 1920×1080 まで・16:9・30 か 60 コマ・5000 kbps 以上)。
 // ゲームの中身は変えない (ページの関数を呼ぶだけ)。字幕は日本語。--lang en で英語の画面と英語の字幕 (回 SO4。英語のストアのページ用)。音楽はまだない (音の素材が入ってから)。
 // 書き出したものはリポジトリに入れない (既定は desktop/trailer/out/。.gitignore 済み)。
-// 使い方: node tools/build.mjs && node desktop/trailer/trailer.mjs [--seed 7] [--spec 80] [--out <フォルダ>]
+// 使い方: node tools/build.mjs && node desktop/trailer/trailer.mjs [--seed 3] [--spec 80] [--out <フォルダ>]
 //         [--saves <フォルダ>] (desktop/shots/shoot.mjs が書いた save-<銀河>-<名前>.json と play-<銀河>.json を使い、遊び直さない)
 //         [--fps 30] [--keep] (撮ったコマの PNG を消さずに残す) [--lang en] (英語。書き出しは trailer-<銀河>-en.mp4)
 import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
@@ -17,7 +17,7 @@ import { playInPage } from '../shots/play.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
 const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; };
-const SEED = arg('seed', '7'); // 回 SO4 で 20261020 → 7 (いまのゲームでは 20261020 で地球の国が勝つ講和会議が起きなくなった。store/images.md の 2)
+const SEED = arg('seed', '3'); // 回 AI9 で 7 → 3 (人間の代わりの講和を交渉の模型にそろえたあと、銀河 7 では観戦の 80 年の筋が変わり、講和会議が起きなくなった。store/images.md の 2)。回 SO4 で 20261020 → 7
 const LANG = arg('lang', 'ja');
 const EN = LANG === 'en';
 const SPEC = Number(arg('spec', 80));

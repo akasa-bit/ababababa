@@ -21,6 +21,13 @@
 const COERCE = { on: true, line: 20, chance: 0.5, ask: 1, face: 30, audience: 10, holdYears: 10, mem: 0.5, replyYears: 5, tradePts: 10, backCouncil: 10 };
 // 届く途中と返事待ちの威圧: [{ id, st, from (威圧した国), to (相手), year (送った年), at (届く年), terms: [{ k, c }], pts, ships, z (送ったときの読み違い), ok? (返事), dec? (人間の決めることの番号), hold? (交戦中で考え直しを待つ期限) }]
 //   st = go (相手の首都へ届く途中)・ask (人間の国の返事待ち)・back (返事が威圧した国の首都へ届く途中)・wait (人間の国が、断られたあと宣戦するか引き下がるかを決めるのを待つ。回 AI8)。k = v (従属)・s<星系> (明け渡し)・t (交易協定)・c<口> (資金)。c = 点
+// 協定を破って宣戦する重さ (回 AI9・B-309。docs/ai-behavior.md の 16): 不可侵の協定に縛られた国も、宣戦の見込みから nap 点を引いて考える (破約。評判を失い、
+// ほかの国が協定を受けにくくなる: politics/diplomacy.js の pactBreach・pactScore)。同盟の相手には宣戦しない。nap = null で前の形 (不可侵の相手にも宣戦しない)。
+// 現実の破約の形 (Leeds 2003: 防衛同盟の義務の 3 割ほどは果たされない。不可侵の協定を破って攻めた例は 1941 年のバルバロッサ作戦など)
+const PACT_BREAK = { nap: 25 };
+// 観戦の人間の代わり (ship/earth-war.js) の講和 (回 AI9・B-307。docs/ai-behavior.md の 16): bargain = true なら、AI の国どうしと同じ交渉の模型 (ship/war-ai.js の bargain) で講和する。
+// false なら前の形 (AI の国の申し入れを、疲れているか勝っていれば受け、実際の戦勝点で講和する)
+const STANDIN = { bargain: true };
 saveField('coerce', (game) => (game.coerce.length ? game.coerce : undefined), {
   init: (game) => { game.coerce = []; },
   read: (game, d) => { game.coerce = Array.isArray(d.coerce) ? d.coerce.filter((o) => o && ['go', 'ask', 'back', 'wait'].includes(o.st) && Number.isFinite(o.from) && Number.isFinite(o.to) && Number.isFinite(o.at) && Array.isArray(o.terms)) : []; },

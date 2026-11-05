@@ -522,7 +522,7 @@
         const key = this.warKey(root, e);
         if (this.realmWars[key] === undefined) continue;
         if (BARGAIN.on) {
-          if (this.isHuman(e)) {
+          if (this.isHuman(e) && !(this.spectate && STANDIN.bargain)) { // 観戦の人間の代わりとは、AI の国どうしと同じ交渉で講和する (回 AI9・B-307。ship/earth-war.js)
             // 人間の国へは、いまの戦勝点で講和してよいときに申し入れる (offerEvery 年に 1 回まで)。大きく勝っていれば降伏を求める (WAREND)
             const res = this.reservation(root, e);
             if (res >= 100 && !this.peaceOfferedRecently(key)) {
@@ -558,8 +558,9 @@
         let best = null;
         for (const r of targets) {
           if (r === root || this.seenBy(root, r)?.[1] !== r || this.realmOf(r) !== r || this.sysDist(r, root) > BARGAIN.warDist) continue;
-          if (this.pactBars(root, r)) continue; // 不可侵と同盟の相手には宣戦しない (政治。B-026。協定の知らせが届いてから)
-          const z = this.misread(), v = this.reservation(root, r, z, 0) + this.claimBonus(root, r) + this.aiWarBias(root, r); // 自分から独立した国には請求権のぶん上乗せ (政治の RECLAIM。回 SE5・B-028)。記憶と指導者のずれ (回 AI3。politics/memory.js)
+          const pc = this.pactWarCost(root, r); // 同盟の相手には宣戦しない。不可侵の相手は破約の重さを引く (政治。B-026・回 AI9 の B-309。協定の知らせが届いてから)
+          if (pc === null) continue;
+          const z = this.misread(), v = this.reservation(root, r, z, 0) + this.claimBonus(root, r) + this.aiWarBias(root, r) - pc; // 自分から独立した国には請求権のぶん上乗せ (政治の RECLAIM。回 SE5・B-028)。記憶と指導者のずれ (回 AI3。politics/memory.js)
           if (v > this.pressLine() && (!best || v > best.v)) best = { r, v, z }; // 威圧の線 (宣戦の線と同じか下。回 AI7。politics/coerce.js)
         }
         if (best) this.aiPress(root, best); // 先に威圧するか、宣戦する (理由の内訳の知らせつき。政治の politics/coerce.js。回 AI7)

@@ -143,11 +143,12 @@
     if (this.isHuman(r) && !this.spectate) return this.coerceHumanReply(o); // 人間の国が送った威圧の返事 (回 AI8)
     if (o.ok) { this.aiNote(r, JA`${this.realmName(e)}が威圧 (${this.coerceText(o)}) を飲んだと知らせが届いた`); return; }
     if (!this.realmAlive(e) || this.atWar(r, e)) return;
-    const z = Number.isFinite(o.z) ? o.z : 0, v = this.reservation(r, e, z, 0) + this.claimBonus(r, e) + this.aiWarBias(r, e);
+    const pc = this.pactWarCost(r, e); // 返事を待つあいだに不可侵を結んでいれば、破約の重さを引く (回 AI9・B-309)
+    const z = Number.isFinite(o.z) ? o.z : 0, v = this.reservation(r, e, z, 0) + this.claimBonus(r, e) + this.aiWarBias(r, e) - (pc || 0);
     const busy = this.aiEnemiesOf(r).length > 0;
     // ほかの国と交戦中なら、その戦争が終わるまで holdYears 年まで待ってから考え直す (返事は首都に留める)
-    if (busy && !this.pactBars(r, e) && this.year < (o.hold ??= this.year + COERCE.holdYears) - 1e-9) { this.coerce.push({ ...o, at: this.year + 1 }); return; }
-    const bar = this.pactBars(r, e) ? JA`協定で宣戦できない` : busy ? JA`ほかの国と交戦中` : this.sysDist(r, e) > BARGAIN.warDist || this.seenBy(r, e)?.[1] !== e ? JA`届かない` : '';
+    if (busy && pc !== null && this.year < (o.hold ??= this.year + COERCE.holdYears) - 1e-9) { this.coerce.push({ ...o, at: this.year + 1 }); return; }
+    const bar = pc === null ? JA`協定で宣戦できない` : busy ? JA`ほかの国と交戦中` : this.sysDist(r, e) > BARGAIN.warDist || this.seenBy(r, e)?.[1] !== e ? JA`届かない` : '';
     if (!bar && v + COERCE.audience > BARGAIN.declare) { this.aiDeclare(r, e, z, JA`威圧を断られた・引き下がる面目 +${COERCE.audience}`); return; }
     this.aiNote(r, JA`${this.realmName(e)}に威圧を断られ、引き下がった (${bar || JA`見込む点 ${Math.round(v)}・引き下がる面目 +${COERCE.audience}・宣戦の線 ${BARGAIN.declare}`})`);
     this.event('politics', r, JA`${this.realmName(r)}が${this.realmName(e)}への威圧を引っ込めた`, this.isHuman(e));
