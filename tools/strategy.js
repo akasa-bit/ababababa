@@ -13,6 +13,7 @@ const SPACE = {
   warRatio: ['model', 0, 1.2, 1.5, 2, 3, 5, 10], // 自分の艦隊が相手の何倍を超えたら宣戦を考えるか ('model' = 観戦の AI と同じ交渉の模型。ゲームの spectateDeclare。回 AI6)
   warChance: [0.02, 0.05, 0.1, 0.3], // そのとき 1 年に宣戦する確率
   warRange: [10, 15, 25, 40, 0], // 首都からこの光年までの国にだけ宣戦する (0 = 遠さを問わない)
+  peace: ['model', 'offers'], // 講和の仕方 ('model' = 観戦の AI と同じ交渉の模型。ゲームの earthWarYearly。回 AI9・B-307。'offers' = 下の sueRatio・sueEx で講和を求め、acceptEx・acceptWs で申し入れに応じる前の形)
   sueRatio: [0.3, 0.5, 0.7, 1, 1.5], // 戦争中、自分の艦隊が相手の何倍を下回ったら講和を求めるか
   sueEx: [30, 45, 60, 80, 95], // 戦争疲弊がいくつを超えたら講和を求めるか
   acceptEx: [10, 25, 40, 60, 90], // 講和の申し入れに応じる戦争疲弊
@@ -34,15 +35,15 @@ const SPACE = {
 //   every: 判断を何年に 1 回するか (人がずっと見ていない分の遅れ。1 = 毎年)
 const HUMAN = { delay: 1, every: 1 };
 // 観戦の AI と同じ値 (探索の出発点)
-const BASE = { policy: 'auto', warRatio: 'model', warChance: 0.05, warRange: 25, sueRatio: 0.7, sueEx: 60, acceptEx: 40, acceptWs: 10, mandate: 'none', grantBelow: 0, peaceArm: 0, colWait: 'auto', colRange: 20, colPick: 'grade', routes: 3, routeRange: 12, regime: 'auto', direct: 0 };
+const BASE = { policy: 'auto', warRatio: 'model', peace: 'model', warChance: 0.05, warRange: 25, sueRatio: 0.7, sueEx: 60, acceptEx: 40, acceptWs: 10, mandate: 'none', grantBelow: 0, peaceArm: 0, colWait: 'auto', colRange: 20, colPick: 'grade', routes: 3, routeRange: 12, regime: 'auto', direct: 0 };
 // 決めた 6 つの戦略 (F06 の「6 つ以上の戦略ボット」の最小の組)
 const PRESETS = {
   passive: { label: '放任', s: null },
   expand: { label: '拡張', s: { ...BASE, policy: 'expand', mandate: 'expand' } },
   develop: { label: '内政', s: { ...BASE, policy: 'consolidate', mandate: 'develop', grantBelow: 50 } },
   arm: { label: '軍備', s: { ...BASE, policy: 'military', mandate: 'arm', peaceArm: 3000 } },
-  peaceful: { label: '平和', s: { ...BASE, warRatio: 0, sueRatio: 10, sueEx: 0, acceptEx: 0, acceptWs: -1000 } },
-  warlike: { label: '好戦', s: { ...BASE, warRatio: 1.5, warChance: 0.3, sueRatio: 0.3, sueEx: 95, acceptEx: 90, acceptWs: 30 } },
+  peaceful: { label: '平和', s: { ...BASE, warRatio: 0, peace: 'offers', sueRatio: 10, sueEx: 0, acceptEx: 0, acceptWs: -1000 } },
+  warlike: { label: '好戦', s: { ...BASE, warRatio: 1.5, warChance: 0.3, peace: 'offers', sueRatio: 0.3, sueEx: 95, acceptEx: 90, acceptWs: 30 } },
 };
 // 決めた 6 つのほかに、拡張の一強を測り直すときに足す戦略 (tools/delay-report.js)。地球だけの試合で 1 位だった bots.js の「拡張に振る」(入植の間隔なし) を、値で書いたもの
 const EXTRA = {
@@ -94,6 +95,10 @@ function apply(g, s, sim) {
   // 戦争の判断 (観戦の AI の earthWarYearly と同じ形で、境目を値にしたもの)
   g.earthWarYearly = seeing(function () {
     if (!awake()) return;
+    // 'model' = 観戦の AI と同じ講和 (回 AI9・B-307。ゲームの earthWarYearly と同じ順で): 交戦中の AI の国へ交渉の申し入れを送り、命令 peace は送らない。
+    // CI の面白さの数は main の src も同じ道具で回すので、STANDIN がない前の src では前の形 ('offers' と同じ) で数える
+    const T = sim.tables, bargain = s.peace !== 'offers' && !!T.STANDIN?.bargain && !!T.BARGAIN?.on;
+    if (bargain) for (const e of this.aiEnemiesOf(this.cap)) { const key = this.warKey(this.cap, e); if (!this.isHuman(e) && this.aiKnowsWar(e, key)) this.sendBargain(this.cap, e, key); }
     for (const o of V.offers()) if ((this.exhaustion[this.cap] || 0) > s.acceptEx || this.warScore(this.cap, o.from) > s.acceptWs) this.acceptPeace(o);
     for (const c of [...this.conferences]) { const b = c.bids.find((x) => x.realm === this.cap && !x.picks); if (b) this.submitTreaty({ id: c.id, picks: this.aiTreatyPicks(c, b) }); }
     const ours = this.realmShips(this.cap);
@@ -111,7 +116,7 @@ function apply(g, s, sim) {
         continue;
       }
       if (this.hasShipyard(this.cap) && this.funds(this.cap) >= 2 * sim.tables.WARSHIP_COST.credits) this.buildWarship(this.cap);
-      if (ours < s.sueRatio * theirs || (this.exhaustion[this.cap] || 0) > s.sueEx) { if (!ordered('peace', root)) this.command('peace', { sys: root }); continue; }
+      if (ours < s.sueRatio * theirs || (this.exhaustion[this.cap] || 0) > s.sueEx) { if (!bargain && !ordered('peace', root)) this.command('peace', { sys: root }); continue; }
       let best = null;
       for (const t of V.systems(root)) {
         if (ordered('fleet', t.id) || this.fleets.some((f) => f.to === t.id && (f.owner ?? 0) === this.cap)) continue;
