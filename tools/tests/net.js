@@ -148,6 +148,20 @@ const URL = `file://${HTML}?seed=11`;
   await H.evaluate(() => setSpeed(SPEEDS[4])); await G2.waitForTimeout(3000);
   await H.evaluate(() => setSpeed(0)); await H.waitForTimeout(500); await caught(G2);
   console.log('rejoin', await H.evaluate(() => Net.hash()), await G2.evaluate(() => Net.hash()), await H.evaluate((pi) => __app.game.players[pi].human, gpi));
+  // 戻った参加者がずれたときは、どの項目が違うかを出す (回 DO9・B-226。ずれは前にときどき出たが、12 回回して出ず、元が分からないため)
+  {
+    const dump = () => { const d = { ...buildSave(app.game) }; for (const k of ['pi', 'savedAt', 'endShown', 'spectate', 'credits', ...PLAYER_KEYS]) delete d[k]; return JSON.stringify(d); };
+    const a = await H.evaluate(dump), b2 = await G2.evaluate(dump);
+    if (a !== b2) {
+      const A = JSON.parse(a), B = JSON.parse(b2), keys = [...new Set([...Object.keys(A), ...Object.keys(B)])];
+      const diff = keys.filter((k) => JSON.stringify(A[k]) !== JSON.stringify(B[k])).map((k) => {
+        const x = A[k], y = B[k];
+        if (x && y && typeof x === 'object' && typeof y === 'object' && !Array.isArray(x)) { const sub = [...new Set([...Object.keys(x), ...Object.keys(y)])].filter((j) => JSON.stringify(x[j]) !== JSON.stringify(y[j])); return `${k} (${sub.slice(0, 8).join(',')}${sub.length > 8 ? ` ほか ${sub.length - 8}` : ''})`; }
+        return k;
+      });
+      console.log('rejoin diff', diff.join(' / '), await H.evaluate(() => [Net.k, __app.game.year]), await G2.evaluate(() => [Net.k, __app.game.year]));
+    }
+  }
   // 2400 年の終わりまで進める: 両方の端末で終わりの画面が出て、要約と書き出しの表 (国 × 年) が同じ
   await H.evaluate(() => setSpeed(SPEEDS[6]));
   await H.waitForFunction(() => __app.game.ended, null, { timeout: 300000, polling: 1000 });
