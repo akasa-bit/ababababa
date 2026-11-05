@@ -20,7 +20,7 @@ jobs:
   tests:
     name: 試験
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50 # 回 DO9 で 40 → 50 (撮る台本の点検 tools/tests/shots.js がブラウザで 3〜5 分。CI 全体の待ち時間は面白さの数のジョブで決まる)
     outputs:
       outcome: ${{ steps.tests.outcome }}
     steps:

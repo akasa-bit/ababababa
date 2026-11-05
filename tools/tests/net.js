@@ -2,6 +2,7 @@
 // 回 SO5 (B-248。友達と遊ぶ準備): 短い版 (100 年) で、ホストが止めたら参加者の速さも止まる・ネット対戦でも記録の同意を聞く・
 // 参加者のタブが閉じたら AI に任せ、招待を作り直すと同じ国に戻れる・2400 年の終わりまで両方の端末でずれない (書き出しの表も同じ)
 // 回 AI5 (B-304): 参加者が外の国の首都の派閥に資金を出す命令 (meddle。回 AI4 の中の勢力への手) も、ホストと参加者の両方で同じく通り、筋がずれない
+// 回 DO9 (B-226): 参加者の威圧 (命令 coerce。回 AI8) も同じく。命令を数えるのは参加者の国から出た分だけ (AI の国の席の分は数えない)
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
 exports.ci = [{
@@ -10,6 +11,7 @@ exports.ci = [{
     const ga = o.match(/^galaxy gen (\d+) gen (\d+)$/m); // 親が自動生成の星図を選び、参加者も同じ星図 (回 GA10)
     if (!(m && m[1] === m[2] && m[3] === '1' && /errs \[\] \[\]/.test(o) && /^physics true/m.test(o) && ga && ga[1] === ga[2])) return 'ネット対戦の要約か星図が合わない';
     if (!/^meddle \[true\] \[true\]$/m.test(o)) return '参加者の派閥への資金 (命令 meddle) が、ホストと参加者の両方で通っていない';
+    if (!/^coerce \[true\] \[true\]$/m.test(o)) return '参加者の威圧 (命令 coerce) が、ホストと参加者の両方で通っていない';
     if (!/^pause 0 0$/m.test(o)) return 'ホストが止めても参加者の速さが止まらない';
     if (!/^consent true true$/m.test(o)) return 'ネット対戦で記録の同意を聞いていない';
     if (!/^late 1 false 1$/m.test(o)) return '始めるときにつながっていない席を、AI に任せて入っていない席に残していない';
@@ -66,12 +68,22 @@ const URL = `file://${HTML}?seed=11`;
   await H.evaluate(() => setSpeed(SPEEDS[3]));
   await G.waitForTimeout(1500);
   // guest orders a fleet and toggles a setting
-  // 派閥への資金 (回 AI4 の命令 meddle) が両方の端末で通ったかを数える (包むだけで、試合の状態は変えない)
-  const mdHook = () => { window.__md = []; const gm = __app.game, o = gm.sendMeddle.bind(gm); gm.sendMeddle = (d, f) => { const r = o(d, f); window.__md.push(!!r?.ok); return r; }; };
-  await H.evaluate(mdHook); await G.evaluate(mdHook);
+  // 派閥への資金 (回 AI4 の命令 meddle) が両方の端末で通ったかを数える (包むだけで、試合の状態は変えない)。
+  // 数えるのは参加者の国の首都から出た分だけ (AI の国の席も年ごとに命令 meddle を出す (politics/inner.js の aiMeddleYearly) ので、前は同じ間の
+  // AI の国の分も数えて [true,true] などになり、ときどき落ちていた。回 DO9・B-226)
+  const mdHook = (gcap) => { window.__md = []; const gm = __app.game, o = gm.sendMeddle.bind(gm); gm.sendMeddle = (d, f) => { const from = f ?? gm.cap, r = o(d, f); if (from === gcap) window.__md.push(!!r?.ok); return r; }; };
+  await H.evaluate(mdHook, gi[1]); await G.evaluate(mdHook, gi[1]);
+  // 威圧 (回 AI8 の命令 coerce) も同じく、参加者の国から出た分が両方の端末で通ったかを数える (回 DO9)
+  const coHook = (gcap) => { window.__co = []; const gm = __app.game, o = gm.coerceIssue.bind(gm); gm.coerceIssue = (d, f) => { const from = f ?? gm.cap, r = o(d, f); if (from === gcap) window.__co.push(!!r?.ok); return r; }; };
+  await H.evaluate(coHook, gi[1]); await G.evaluate(coHook, gi[1]);
   const gc = await G.evaluate(() => { const g = __app.game; const t = g.nearSystems(g.cap).find(([id, d]) => id !== g.cap && d > 2)[0]; issue('fleet', { from: g.cap, sys: t, n: 1 }); issue('set', { key: 'autoDefense', value: true });
     const cap2 = g.nations.map((n) => n.cap).filter((c) => c !== g.cap && g.realmAlive(c)).sort((a, b) => g.sysDist(g.cap, a) - g.sysDist(g.cap, b))[0];
-    issue('meddle', { sys: cap2, mode: 'lobby' }); return t; });
+    issue('meddle', { sys: cap2, mode: 'lobby' });
+    // 威圧は、交戦中でなく条件のある国のうち近いものへ (従属でない最初の条件)
+    const co = g.nations.map((n) => n.cap).filter((c) => c !== g.cap && g.realmAlive(c) && !g.knownAtWar(g.cap, c)).sort((a, b) => g.sysDist(g.cap, a) - g.sysDist(g.cap, b))
+      .map((c) => ({ c, t: g.coerceOptions(g.cap, c).find((x) => x.k !== 'v') })).find((x) => x.t);
+    if (co) issue('coerce', { sys: co.c, terms: [co.t.k] });
+    return t; });
   // guest asks for faster speed
   await G.click('[data-speed="4"]');
   await G.waitForTimeout(6000);
@@ -80,6 +92,7 @@ const URL = `file://${HTML}?seed=11`;
   const sync = async () => { await H.evaluate(() => setSpeed(0)); await H.waitForTimeout(500); await caught(G); return [await H.evaluate(() => [Net.k, Net.hash(), __app.game.year.toFixed(2)]), await G.evaluate(() => [Net.k, Net.hash(), __app.game.year.toFixed(2), Net.resyncs])]; };
   const s1 = await sync();
   console.log('meddle', JSON.stringify(await H.evaluate(() => window.__md)), JSON.stringify(await G.evaluate(() => window.__md)));
+  console.log('coerce', JSON.stringify(await H.evaluate(() => window.__co)), JSON.stringify(await G.evaluate(() => window.__co)));
   const chk = await G.evaluate((gp) => { const g = __app.game; return [g.autoDefense, g.players[Net.pi].autoDefense, g.fleets.some((f) => (f.owner ?? 0) === g.cap) || (g.garrison[gp] || 0) > 0, g.knownLog().slice(0, 3).map((l) => l.text).join(' / ')]; }, gc);
   const hostView = await H.evaluate(() => [__app.game.pi, __app.game.players.map((p) => p.autoDefense).join(','), __app.speed]);
   const gb = await G.evaluate(() => window.__gbad);
