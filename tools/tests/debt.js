@@ -19,7 +19,11 @@ res.someBonds = govs.some((v) => v.bond > 0);
 res.nonNegative = Object.values(g.govs).every((v) => !(v.bond < 0) && !(v.due < 0));
 // できて 10 年までの政府は開拓資金 (200 cr) を持っていてよい。人口 100 万人未満の政府 (自給だけで市場の所得と税がなく、国債の式が働かない) は見ない
 const govs2 = Object.entries(g.govs).filter(([k]) => g.isColonized(Number(k)) && g.coloniesIn(Number(k)).reduce((a, c) => a + c.pop, 0) >= 1).map(([, v]) => v);
-const over = govs2.filter((v) => g.year - (v.founded ?? 0) > 10 && v.credits > 2 * DEBT.cash * Math.max(0, (v.ledger?.tax || 0) + (v.ledger?.natives || 0)) + 50);
+// 入植船のために取っておく資金 (資本の予算 gv.saveFor・国の入植の予算 gv.colFund。回 KE14・KE15) は、使わずに持っていてよい (economy/fiscal.js の debtStep の res と同じ)。
+// 回 FU8 で太陽電池の劣化を入れると、M 型星の小さな政府が入植船の資金を取っておいたまま試験の終わりを迎え、数えてしまっていた
+const { INVEST_PLAN } = sim.tables;
+const reserve = (v) => (v.saveFor && g.year - v.saveFor.y < INVEST_PLAN.years ? v.saveFor.c : 0) + (v.colFund || []).reduce((k, x) => k + (g.year - x.y < INVEST_PLAN.years ? x.amt : 0), 0);
+const over = govs2.filter((v) => g.year - (v.founded ?? 0) > 10 && v.credits - reserve(v) > 2 * DEBT.cash * Math.max(0, (v.ledger?.tax || 0) + (v.ledger?.natives || 0)) + 50);
 res.cashSpent = over.length <= Math.max(1, 0.1 * govs2.length); // 1 つまでは、ならしている途中 (超えた分は 1 年ほどで使う) として許す
 // 人間でない国の財政: AI_FISCAL.vary = 0 (既定。C-22) なら標準のまま、1 なら国ごとに現実の分布から引かれ幅の中にある
 const { AI_FISCAL, FISCAL_DEFAULT } = sim.tables;
