@@ -92,6 +92,17 @@ for (const k of Object.keys(sig)) if (Math.abs(D[k].sigma - sig[k]) > 0.002) fai
 
 const gD = sim.newGame(seed, { nations: Number(nations) });
 const barnard = gD.galaxy.systems.find((s) => s.name === 'バーナード星');
+// フレアの表の M 型星は表の値、表にない M 型星 (表を作ったあとに銀河を広げて足した星系) は測れた M 型星の中央値 (回 FU8。前は 0 で、フレアのない星になっていた)
+{
+  const FL = sim.evaluate('FLARES');
+  let inT = 0, outT = 0, bad = 0;
+  for (const s of gD.galaxy.systems) s.stars.forEach((x, k) => {
+    if (x.cls !== 'M') return;
+    const t = FL.stars[s.cat]?.[k];
+    if (t > 0) { inT++; if (x.flare !== t) bad++; } else { outT++; if (x.flare !== FL.mMedian) bad++; }
+  });
+  if (bad || !inT || !outT) fails.push(`M 型星のフレア (表にある ${inT}・表にない ${outT}・値が違う ${bad})`);
+}
 let pvM = {}, autoM = null;
 if (EDITION === 'sim') {
   // 7. 素子の作り: 太陽は今の標準 (a) を自動で選び、バーナード星 (M 型星) は集光 (c) を選ぶ。作りを変える指令は届いた星系で効く
