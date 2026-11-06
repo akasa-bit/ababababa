@@ -73,7 +73,9 @@
     const cap = this.cap;
     const own = this.knownOwnSystems().filter((s) => s.id !== cap);
     const sent = own.length > 0 || this.ships.some((s) => s.body !== undefined && this.realmOf(s.from) === cap) || this.knownProjects().some((j) => j.type === 'ship');
-    const routed = this.routes.some((r) => r.a === cap || r.b === cap) || this.requests.some((q) => q.state === 'sending' && /^route/.test(q.act));
+    // 結んだのは自分の国の星系どうしの交易路だけ (回 GA13: よその国が首都へ引いた交易路も数えていて、始めたときから 2 つめに ✓ がついていた)
+    const ownEnd = (r) => (r.a === cap || r.b === cap) && this.realmOf(r.a) === cap && this.realmOf(r.b) === cap;
+    const routed = this.routes.some(ownEnd) || this.requests.some((q) => q.from === cap && q.state === 'sending' && /^route/.test(q.act));
     const answered = this.decisions.some((d) => d.sentAt !== undefined); // 自分で返事を送ったもの (期限切れで現地が決めたものは数えない)
     const pick = sent ? null : this.guidePick();
     const col = own[0];
