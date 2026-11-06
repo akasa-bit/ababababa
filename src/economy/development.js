@@ -247,8 +247,7 @@
     const own = cg.saveFor && this.year - cg.saveFor.y < INVEST_PLAN.years ? cg.saveFor.c : 0;
     while (cg.colFund.length && cg.credits - own >= cg.colFund[0].amt) {
       const x = cg.colFund.shift();
-      if (!this.sendGrant(root, x.to, x.amt, true).ok) break;
-      this.govDid(root, JA`${this.system(x.to).name} の入植船の資金 ${fmtAmt(x.amt)} cr を送った`, '家臣の星系が入植船の資金を願い出て、国の入植の予算に余裕があった');
+      if (!this.sendGrant(root, x.to, x.amt, true).ok) break; // 要求の一覧には自動の資金援助として出る
     }
     if (!cg.colFund.length) delete cg.colFund;
   }

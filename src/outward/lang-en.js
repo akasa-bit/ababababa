@@ -1395,8 +1395,6 @@ const I18N_EN = {
 "{0} への入植船を見送った": "Held off on a colony ship to {0}",
 "資金か資材が足りなかった": "Not enough funds or materials",
 "{0} へ入植船を出した": "Sent a colony ship to {0}",
-"{0} の入植船の資金 {1} cr を送った": "Sent {1} cr for a colony ship to {0}",
-"家臣の星系が入植船の資金を願い出て、国の入植の予算に余裕があった": "A vassal system asked for colony-ship funds, and the realm's colonization budget had room",
 "天体": "unnamed body",
 "の拡張": " (expansion)",
 "{0} の採掘基地{1}": "Mining outpost at {0}{1}",
