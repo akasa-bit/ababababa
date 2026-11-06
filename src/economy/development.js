@@ -186,9 +186,9 @@
   govsYearly() {
     for (const s of this.colonizedSystems()) {
       const id = s.id;
+      if (this.govs[id]?.colFund?.length) this.colonyFundPay(id); // 国の入植の予算: 取っておいた家臣の入植船の資金を送る (人間の首都も。回 KE15)
       if (this.isHuman(id) && !this.spectate) continue; // 地球政府はプレイヤー (観戦モードでは自動で動く)
       const gv = this.gov(id);
-      if (gv.colFund?.length) this.colonyFundPay(id); // 国の入植の予算: 取っておいた家臣の入植船の資金を送る (回 KE15)
       if (gv.direct) continue; // 直轄の星系は地球が動かす
       const mine = this.routes.filter((r) => r.a === id || r.b === id);
       if (mine.length < 3) {
@@ -208,31 +208,38 @@
       if (!best) continue;
       const cost = this.shipCost(best.kind, id, best.t.id);
       const why = gv.mandate === 'expand' ? '委任方針「拡張」に従った' : '入植できる時期になり、資金があった';
-      const need = (gv.mandate === 'expand' ? 1 : 1.2) * cost.credits;
+      // 要る資金: 入植船の代金と、取り寄せる資材の代金 (品薄なら値段が上がる。回 KE15)。委任方針が拡張でなければ 1.2 倍のゆとり
+      const pm = this.procureFrom(cost, id, undefined, Infinity);
+      const need = (gv.mandate === 'expand' ? 1 : 1.2) * (pm.total ?? cost.credits);
+      // 首都から届いて取っておいた入植船の資金は、資材がそろい、合わせて足りるときに資金に入れて使う (回 KE15)
+      const held = this.heldColony(id);
+      if (held > 0 && !pm.why && this.funds(id) + held >= need) this.releaseHeldColony(id);
       // 足りなければ、入植船の分を行政サービスに回さずに取っておく (投資が先。fiscal.js の debtStep。回 KE14・B-131)
       if (this.funds(id) < need || this.procure(cost, id).why) {
         gv.saveFor = { c: need, y: this.year };
         this.govDidOnce(id, JA`${best.t.name} への入植船を見送った`, '資金か資材が足りなかった');
-        if (this.funds(id) < need) this.askColonyFunds(id, need - Math.max(0, gv.credits)); // 足りない資金を国の首都に願い出る (回 KE15)
+        const short = need - Math.max(0, this.funds(id)) - this.heldColony(id);
+        if (!pm.why && short >= 1) this.askColonyFunds(id, short); // 資材は買えるのに資金が足りなければ、足りない分を国の首都に願い出る (回 KE15)
         continue;
       }
       if (this.dispatch(id, best.t.id, best.b.id, best.kind).ok) { gv.lastColony = this.year; delete gv.saveFor; this.govDid(id, JA`${best.t.name} へ入植船を出した`, why); }
     }
   }
   // 国の入植の予算 (回 KE15・B-069。fiscal-consts.js の COLONY_FUND): 家臣の星系の政府が、入植船の足りない資金を国の首都へ光速で願い出る。
-  // 人間が動かす首都には願わない (プレイヤーの資金を勝手に使わない。資金援助は手で送れる)。願いは、往復の光の時間と取っておく年数のあいだに 1 度まで
+  // 人間が動かす首都には、プレイヤーが「自動の資金援助」を入れているときだけ願う (切れば願わない)。願いは、往復の光の時間と取っておく年数のあいだに 1 度まで
+  colonyFundOn(root) { return !(this.isHuman(root) && !this.spectate) || !!this.asRealm(root, () => this.autoGrant); }
   askColonyFunds(id, amt) {
     const root = this.realmOf(id), gv = this.gov(id);
-    if (root === id || !this.govs[root] || !(amt >= 1) || (this.isHuman(root) && !this.spectate)) return;
+    if (root === id || !this.govs[root] || !(amt >= 1) || !this.colonyFundOn(root)) return;
     if (gv.colAsk !== undefined && this.year - gv.colAsk < 2 * this.travelYears(id, root) + INVEST_PLAN.years) return;
     gv.colAsk = this.year;
     this.requests.push({ id: this.nextShipId++, kind: 'colask', from: id, to: root, amt, sent: this.year, arrive: this.year + this.travelYears(id, root), state: 'sending' });
   }
-  // 願いが首都に届いた: まだ同じ国の家臣で、首都を人間が動かしていなければ、取っておく願いに入れる (同じ家臣の前の願いは置き換える)。
-  // 願いの合計は首都の税収の COLONY_FUND.share 年分まで。すぐ払えれば払う
+  // 願いが首都に届いた: まだ同じ国の家臣で、首都が願いに答える (人間の首都は自動の資金援助を入れている) なら、取っておく願いに入れる
+  // (同じ家臣の前の願いは置き換える)。願いの合計は首都の税収の COLONY_FUND.share 年分まで。すぐ払えれば払う
   colonyAskArrived(q) {
     const root = q.to, cg = this.govs[root];
-    if (!cg || !this.isColonized(q.from) || this.realmOf(q.from) !== root || (this.isHuman(root) && !this.spectate)) return;
+    if (!cg || !this.isColonized(q.from) || this.realmOf(q.from) !== root || !this.colonyFundOn(root)) return;
     const list = (cg.colFund || []).filter((x) => x.to !== q.from && this.year - x.y < INVEST_PLAN.years);
     const T = Math.max(0, (cg.ledger?.tax || 0) + (cg.ledger?.natives || 0));
     if (list.reduce((k, x) => k + x.amt, 0) + q.amt > COLONY_FUND.share * T) { cg.colFund = list; return; }
@@ -240,14 +247,26 @@
     cg.colFund = list;
     this.colonyFundPay(root);
   }
-  // 取っておいた願いを、古い順に、首都の手元の資金 (自分の入植船の取り置きを除く) で払える分だけ資金援助で送る (光速で届く)
+  // 家臣に届いて取っておいてある入植船の資金 (回 KE15) と、それを家臣の資金に入れる (入植船を買う直前)
+  heldColony(id) { return this.requests.reduce((k, q) => k + (q.kind === 'grant' && q.col && q.to === id && q.held !== undefined ? q.amt || 0 : 0), 0); }
+  releaseHeldColony(id) {
+    for (const q of this.requests) {
+      if (q.kind !== 'grant' || !q.col || q.to !== id || q.held === undefined || !(q.amt > 0)) continue;
+      this.receiveAid(id, this.release('grant', q, 'amt', id, q.from));
+    }
+  }
+  // 取っておいた願いを、古い順に、首都の手元の資金 (自分の入植船の取り置きを除く) で払える分だけ資金援助で送る (光速で届く)。
+  // 人間の首都は、税収の COLONY_FUND.keep 年分を超えた手元の資金からだけ払う (プレイヤーが自分で使う分を残す)。自動の資金援助を切っていれば払わない
   colonyFundPay(root) {
     const cg = this.govs[root];
     cg.colFund = (cg.colFund || []).filter((x) => this.year - x.y < INVEST_PLAN.years && this.isColonized(x.to) && this.realmOf(x.to) === root);
-    const own = cg.saveFor && this.year - cg.saveFor.y < INVEST_PLAN.years ? cg.saveFor.c : 0;
+    const human = this.isHuman(root) && !this.spectate;
+    if (!this.colonyFundOn(root)) cg.colFund = [];
+    const own = human ? COLONY_FUND.keep * Math.max(0, (cg.ledger?.tax || 0) + (cg.ledger?.natives || 0))
+      : cg.saveFor && this.year - cg.saveFor.y < INVEST_PLAN.years ? cg.saveFor.c : 0;
     while (cg.colFund.length && cg.credits - own >= cg.colFund[0].amt) {
       const x = cg.colFund.shift();
-      if (!this.sendGrant(root, x.to, x.amt, true).ok) break; // 要求の一覧には自動の資金援助として出る
+      if (!this.sendGrant(root, x.to, x.amt, true, false, true).ok) break; // 入植船のための資金援助 (届いたら家臣が入植船を買うまで取っておく)
     }
     if (!cg.colFund.length) delete cg.colFund;
   }
@@ -265,10 +284,13 @@
   // 入植を急ぐか (ゲーム性の補正。台帳の C20。回 SE5・B-028。政治のレーンが足した): AI の国の星系の政府は、入植船を同時に ships 隻まで飛ばし、人口 pop 百万人から、
   // range 倍の光年まで入植先を探す。人間の国の星系の政府 (と補正なし) は、前のまま 1 隻ずつ・300 万人から・ふだん 10 光年。
   // 観戦の AI (人間の代わり) が動かす人間の国の首都も、AI の国と同じ (QD-116 = a。回 AI6 の 13.3: 人は首都から手で何隻でも入植船を出せるが、
-  // 人間の代わりは 1 隻ずつしか出さず、同じ国が人間の席だと小さく終わっていた)。人間の国のほかの星系の政府は、実際の遊びと同じ 1 隻ずつ
+  // 人間の代わりは 1 隻ずつしか出さず、同じ国が人間の席だと小さく終わっていた)。人間の国のほかの星系の政府は、実際の遊びと同じ 1 隻ずつ・ふだん 10 光年。
+  // ただし入植の人口の線は AI の国と同じ pop 百万人から (回 KE15・QD-102 = 100 万人に下げる。前は 300 万人で、属領の多くが届かず勝手に膨張しなかった)
   aiColonize(id) {
     const a = ED.aiColonize, r = this.realmOf(id);
-    return a && (!this.isHuman(r) || (this.spectate && id === r)) ? a : { ships: 1, pop: 3, range: 1 };
+    if (!a) return { ships: 1, pop: 3, range: 1 };
+    if (!this.isHuman(r) || (this.spectate && id === r)) return a;
+    return { ships: 1, pop: id === r ? 3 : a.pop, range: 1 };
   }
   // 入植先: 未入植で入植できる惑星のうち、適性が高く近いところ。ふだんは10光年以内 (観戦モードの地球政府は20)、
   // 星系内に手の届く建設がなくなった政府 (far) は25光年まで探す。

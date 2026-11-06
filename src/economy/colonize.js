@@ -146,12 +146,24 @@
         .map((s) => ({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id), spare: Math.min(this.spareSeen(sysId, s.id, r), this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) * (MARKET.buy ? MARKET.cover[r] : 1)) }))
         .filter((x) => x.spare > 0)
         .sort((a, b) => a.d - b.d);
-      for (const x of sources) {
+      // 品薄でも買える 2 段目 (回 KE15・QD-101 = 市場で値段を上げて買える): 目標の在庫を超える余りで足りなければ、交易路でつながった売り手
+      // (光の遅れのぶん古い記録が届いている星系) から、目標を割る分も 1 回の注文で売り手のいまの在庫の SCARCE.share まで買う。値段は
+      // 買ったあとの在庫で決まる品薄の値段 (bulkPrice。在庫が目標の半分なら基準の 2 倍)。主人の援助 (onlyFrom) は前のとおり余りからだけ
+      const took = new Map();
+      const tier2 = MARKET.buy && SCARCE.share > 0 && onlyFrom === undefined
+        ? this.colonizedSystems()
+          .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !this.tradeBlocked(sysId, s.id) && !this.tradeBarred(sysId, s.id, r) && this.econSeen(sysId, s.id) && this.stockOf(s.id)[r] > 0)
+          .map((s) => ({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id), spare: SCARCE.share * this.stockOf(s.id)[r], scarce: true }))
+          .sort((a, b) => a.d - b.d)
+        : [];
+      for (const x of [...sources, ...tier2]) {
         const eF = this.energyOf(x.id) - (eUsed.get(x.id) || 0), eT = eHave - eIn;
         const kg = RES_KG[r] / UNIT_KG; // 1 単位の質量 [100 万 t]
         const amt = Math.min(x.spare, need, this.routeRoom(x.id, sysId, eF, eT) / kg);
         if (amt <= 1e-9) continue;
-        plan.push({ from: x.id, r, amt, price: this.tradePrice(x.id, r, x.t, this.rateAt(sysId), amt) }); // 売り手の値段に、航行の年数ぶんの利子を乗せた値段
+        const q = (took.get(x.id) || 0) + amt; // 同じ売り手から 1 段目で買った分も、値段を押し上げる
+        took.set(x.id, q);
+        plan.push({ from: x.id, r, amt, price: this.tradePrice(x.id, r, x.t, this.rateAt(sysId), x.scarce ? q : amt) }); // 売り手の値段に、航行の年数ぶんの利子を乗せた値段
         const both = eF >= amt * kg * E_UNIT && eT >= amt * kg * decUnit();
         eUsed.set(x.id, (eUsed.get(x.id) || 0) + amt * kg * (both ? E_UNIT : E_UNIT_FREE));
         if (both) eIn += amt * kg * decUnit();
@@ -168,8 +180,9 @@
     }
     const imp = plan.filter((x) => x.from !== sysId).reduce((k, x) => k + x.amt * x.price, 0);
     const local = plan.filter((x) => x.from === sysId).reduce((k, x) => k + x.amt * (x.price || 0), 0); // 地元で買う資材の代金 (MARKET.buy)
-    if (onlyFrom === undefined && imp + local > 0 && (cost.credits || 0) + imp + local > funds) return { why: JA`資金不足 (資材の代金 ${Math.ceil(imp + local)} cr を含む)`, poor: true };
-    return { why: '', eta, plan, imp };
+    const total = (cost.credits || 0) + imp + local; // 要る資金の合計 (船や建物の代金 + 資材の代金。入植船の取り置きと願いの額に使う。回 KE15)
+    if (onlyFrom === undefined && imp + local > 0 && total > funds) return { why: JA`資金不足 (資材の代金 ${Math.ceil(imp + local)} cr を含む)`, poor: true, total };
+    return { why: '', eta, plan, imp, total };
   }
   // 建設を発注する。費用はその場で払い、資材が届いた時点で完成する。
   // ハンディキャップ: AI の国の建設費の倍率 (資金の分だけ)

@@ -116,6 +116,9 @@
     for (const q of this.requests) if (q.kind === 'tribute' && q.arrive <= this.year) this.release('tribute', q, 'amt', q.to, q.from);
     for (const q of this.requests) {
       if (q.kind !== 'grant' || q.arrive > this.year) continue;
+      // 入植船のための資金援助 (回 KE15) は、届いても COLONY_FUND.hold 年は家臣の資金に入れずに取っておく (借りや赤字の穴埋めに消えないように)。
+      // 家臣が入植船を買えるときに releaseHeldColony で資金に入れる。使われずに年がたったら、ふつうの資金援助として入れる
+      if (q.col && this.govs[q.to] && this.year - (q.held ??= this.year) < COLONY_FUND.hold) continue;
       if (!this.govs[q.to]) { this.release('grant', q, 'amt', q.from, q.from); continue; }
       const amt = this.release('grant', q, 'amt', q.to, q.from);
       this.receiveAid(q.to, amt);
@@ -140,7 +143,7 @@
       });
       this.msgTo = undefined;
     }
-    this.requests = this.requests.filter((q) => !['build', 'tribute', 'order', 'grant', 'colask'].includes(q.kind) || q.arrive > this.year);
+    this.requests = this.requests.filter((q) => !['build', 'tribute', 'order', 'grant', 'colask'].includes(q.kind) || q.arrive > this.year || (q.kind === 'grant' && q.col && q.amt > 0 && q.held !== undefined && this.year - q.held < COLONY_FUND.hold));
     const done = this.projects.filter((j) => j.ready <= this.year);
     if (done.length) {
       changed = true;
