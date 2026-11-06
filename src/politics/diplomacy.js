@@ -30,10 +30,11 @@
   }
   // r が、p からの協定 kind を受けるかの点 (0 以上で受ける) と理由。
   // view: r の見ている艦隊 (既定は r の首都に届いている記録)。z: 読み違い。gift: 添えた贈り物 [cr]
-  pactScore(r, p, kind, { gift = 0, z = 0, view = null } = {}) {
+  // keep = 続けている協定の見直し (回 AI10。politics/threat.js の pactsRegimeReview): 相手のよその破約 (新しく結ぶときの不信) と、威圧の返事待ちの印は見ない
+  pactScore(r, p, kind, { gift = 0, z = 0, view = null, keep = false } = {}) {
     if (!this.pactAllowed(r, p, kind)) return { s: -Infinity, why: JA`好戦的な種族の国とは${PACT_KINDS[kind].label}の協定を結べない` }; // 回 SE8
     if (kind === 'trade' && this.modsOf(p).tradePacts && !this.pactBreaches(p)) return { s: 1, why: '商才の種族の国からの交易協定' }; // 商才: 破約をしていなければ、AI の国は断らない (回 SE8)
-    if (kind !== 'trade' && this.coerce?.some((o) => o.from === r && o.to === p)) return { s: -1, why: JA`${this.realmName(p)}への威圧の返事を待っている` }; // 威圧している相手とは、不可侵も同盟も結ばない (回 AI7。politics/coerce.js)
+    if (!keep && kind !== 'trade' && this.coerce?.some((o) => o.from === r && o.to === p)) return { s: -1, why: JA`${this.realmName(p)}への威圧の返事を待っている` }; // 威圧している相手とは、不可侵も同盟も結ばない (回 AI7。politics/coerce.js)
     const ships = view || ((t) => (t === r ? this.realmShips(r) : this.seenShips(r, t)));
     const mine = ships(r);
     const seen = ships(p) * GM.exp(z * (BARGAIN.sigma0 + BARGAIN.sigmaAge * this.sysDist(r, p)));
@@ -54,7 +55,7 @@
         if (th.t !== null) info = { th: th.t, mode: 'balance', thv: th.v };
       }
     } else { s = PACT.tradeBase; why = '交易の得を見ている'; }
-    const b = this.pactBreaches(p);
+    const b = keep ? 0 : this.pactBreaches(p);
     if (b) { s -= PACT.distrust * b; why += JA`。${this.realmName(p)}の破約 ${b} 回`; }
     const mv = this.memView(r, p); // 記憶 (回 AI3。politics/memory.js): 恩は受けやすく、恨みは受けにくく
     if (mv.text) { s += MEM.thank * mv.thanks - MEM.grudge * mv.grudge; why += JA`。${mv.text}`; }
