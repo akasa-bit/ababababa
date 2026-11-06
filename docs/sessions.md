@@ -903,7 +903,7 @@ docs/backlog.md の B-277 (W8-Q3 = a・Q4 = a): 公開した版 (akasa-bit.githu
 ```text
 docs/session-start.md の 3 に従って。docs/sessions.md の回 W9 (9 波目の見直しと、友達との試遊のあと)。
 最初に node tools/session-check.js W9 を回す。「止まる」と出たら、その表示をそのまま伝えて止まる。
-友達と遊んだ記録と感想 (docs/requests/ か、回 SO6 で決めた置き場) が届いていなければ、そう伝えて待つ。届いていたら、docs/status/common.md の「8 波目の数」と同じやり方で 9 波目の PR を数え、試遊の記録を tools/playlog-report.js で数えて感想と並べる。公開の段取り (QD-15・QD-16・QD-21・QD-22・QD-73 と QD-17 の見積もり・音の QD-53・QD-54) と 10 波目の案を 1 つの Artifact で見せて決めてもらう。返事を docs/requests/ に残し、docs/sessions.md と tools/sessions.json に 10 波目を書いて PR にする。
+友達と遊んだ記録 (「記録を書き出す」のファイル) と感想は、ユーザーがチャットに添えるか、Google ドライブのフォルダで渡す (回 SO6 で決めた置き場。docs/playtest-friends.md の 5)。届いていなければ、そう伝えて待つ。届いていたら、docs/status/common.md の「8 波目の数」と同じやり方で 9 波目の PR を数え、試遊の記録を playtest/<遊んだ日>/ に置いて tools/playlog-report.js で数え、感想と並べる (元のファイルはコミットしない。まとめは docs/requests/<遊んだ日>-playtest.md)。公開の段取り (QD-15・QD-16・QD-21・QD-22・QD-73 と QD-17 の見積もり・音の QD-53・QD-54) と 10 波目の案を 1 つの Artifact で見せて決めてもらう。返事を docs/requests/ に残し、docs/sessions.md と tools/sessions.json に 10 波目を書いて PR にする。
 ```
 
 ### 回 AI8
