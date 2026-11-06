@@ -30,6 +30,8 @@ const step = (years) => { for (let i = 0; i < Math.ceil(years * 4); i++) g.advan
 
 // 1
 g.pc = 100;
+// 贈り物の資金は試験の中で持たせる (回 KE15 の手元の資金の上限 QD-99 で、人間の首都の資金は税収の 1 年分ほどに保たれる)
+g.govs[g.cap].credits = Math.max(g.govs[g.cap].credits, 5000);
 const r1 = g.command('pact', { sys: e, pact: 'trade', gift: 3000 });
 check(r1.ok && g.pc < 100, `申し入れが送れない、か政治力が減らない (${JSON.stringify(r1)}・${g.pc})`);
 check(g.diplo.sent.length === 1 && Math.abs(g.diplo.sent[0].at - (g.year + d)) < 1e-9, '申し入れの届く年が光速と違う');
@@ -112,20 +114,20 @@ check(['受けそう', '五分', '断りそう'].includes(o.label) && (o.s >= 0 
 
 // 5b
 {
-  const PB = sim.evaluate('PACT_BREAK'), BG = sim.evaluate('BARGAIN'), CO = sim.evaluate('COERCE');
+  const PB = sim.evaluate('PACT_BREAK'), BG = sim.evaluate('BARGAIN'), CO = sim.evaluate('COERCE'), RC = sim.evaluate('RECLAIM');
   const reach = (x, y) => g.sysDist(x, y) <= BG.warDist && g.seenBy(x, y)?.[1] === y;
   const pr = others.flatMap((x) => others.map((y) => [x, y])).find(([x, y]) => x !== y && reach(x, y) && reach(y, x));
   check(pr, '互いに届く AI の国の組がない');
   if (pr) {
     const [x, y] = pr;
-    const keep = { res: g.reservation, mis: g.misread, bias: g.aiWarBias, claim: g.claimBonus, dc: BG.declareChance, ch: CO.chance, nap: PB.nap, diplo: JSON.parse(JSON.stringify(g.diplo)), wars: { ...g.realmWars }, coerce: g.coerce }; // 6 のセーブの試験のために、前の協定と戦争は戻す
+    const keep = { res: g.reservation, mis: g.misread, bias: g.aiWarBias, claim: g.claimBonus, dc: BG.declareChance, rc: RC.chance, ch: CO.chance, nap: PB.nap, diplo: JSON.parse(JSON.stringify(g.diplo)), wars: { ...g.realmWars }, coerce: g.coerce }; // 6 のセーブの試験のために、前の協定と戦争は戻す
     for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
     g.diplo = { pacts: [], sent: [], breach: {} };
     const pact = (kind) => { g.diplo.pacts = []; const p = g.makePact(x, y, kind, 0); p.onA = p.onB = g.year - 1; return p; };
     let val = 0;
     g.misread = () => 0; g.aiWarBias = () => 0; g.claimBonus = () => 0;
     g.reservation = (r, e2, z, ws, out) => { if (out) Object.assign(out, { ours: 30, theirs: 10, allies: 0, p: 0.73, expect: 28, cost: 1, shift: 0 }); return r === x && e2 === y ? val : -100; };
-    BG.declareChance = 1; CO.chance = 0;
+    BG.declareChance = 1; RC.chance = 1; CO.chance = 0; // 自分から独立した国 (請求権) があると、宣戦を考える確率は RECLAIM.chance になる
     const tryWar = (v) => { for (const k of Object.keys(g.realmWars)) delete g.realmWars[k]; g.coerce = []; val = v; g.realmsYearly(); return g.atWar(x, y); };
     pact('nap');
     check(g.pactWarCost(x, y) === PB.nap && g.pactWarCost(x, others.find((u) => u !== x && u !== y) ?? g.cap) === 0, `破約の重さが違う (${g.pactWarCost(x, y)})`);
@@ -141,7 +143,7 @@ check(['受けそう', '五分', '断りそう'].includes(o.label) && (o.s >= 0 
     PB.nap = null; pact('nap');
     check(g.pactWarCost(x, y) === null && !tryWar(100), 'PACT_BREAK.nap = null でも不可侵の相手に宣戦した (前の形に戻らない)');
     Object.assign(g, { reservation: keep.res, misread: keep.mis, aiWarBias: keep.bias, claimBonus: keep.claim });
-    BG.declareChance = keep.dc; CO.chance = keep.ch; PB.nap = keep.nap;
+    BG.declareChance = keep.dc; RC.chance = keep.rc; CO.chance = keep.ch; PB.nap = keep.nap;
     for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
     Object.assign(g.realmWars, keep.wars);
     g.diplo = keep.diplo; g.coerce = keep.coerce;
