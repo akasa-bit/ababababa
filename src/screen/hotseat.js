@@ -322,6 +322,8 @@ function showEnd() {
   const sc = g.finalScore || g.score();
   const ch = g.challenges.map((c) => `<li>${ico(`ch-${c.id}`)}${CHALLENGES[c.id].label}: ${c.status === 'done' ? TR('<span class="hz">果たした</span>') : TR('<span class="bad">果たせなかった</span>')}</li>`).join('');
   const en = g.ending(); // 結末の型と原因の内訳 (B-058)。終わったので、光の遅れのない本当の銀河で決める
+  // 100 年の版 (友達と遊ぶの版) の終わりには、感想と記録の書き出しへの案内 (回 GA13。終わりの画面からは、友達と遊ぶの頁の 6 に行けなかった)
+  const short = !TRIAL && Math.round(g.endYear - START_YEAR) === 100;
   $('endbox').innerHTML = TR`<div class="card"><h2>${Math.round(g.endYear)}年 — このゲームの終わり</h2>
     <p class="ending"><span class="muted">結末</span><b>${esc(en.label)}</b></p>
     <p>${esc(en.line)}。</p>
@@ -330,10 +332,13 @@ function showEnd() {
     <table class="tbl">${sc.parts.map(([l, v]) => `<tr><td>${esc(l)}</td><td class="${v < 0 ? 'bad' : ''}">${v}</td></tr>`).join('')}<tr class="total"><td><b>合計</b></td><td><b>${sc.total}</b></td></tr></table>
     ${ch ? TR`<h3>挑戦</h3><ul>${ch}</ul>` : ''}
     <p class="note">このまま続けて遊べる (点数はこの時点で確定)。</p>
-    <div class="btns"><button id="endgo">続けて遊ぶ</button><button id="endhome" class="ghost">ホームへ</button></div></div>`;
+    ${short ? TR('<p class="note">友達と遊んだなら、ホームの「友達と遊ぶ」の 6 で感想を書き、「記録を書き出す」のファイルを、誘ってくれた人に送る。</p>') : ''}
+    <div class="btns">${short ? TR('<button id="endsurvey">感想を書く</button>') : ''}<button id="endgo">続けて遊ぶ</button><button id="endhome" class="ghost">ホームへ</button></div></div>`;
   $('endbox').hidden = false;
   $('endgo').onclick = () => { $('endbox').hidden = true; };
   $('endhome').onclick = () => { $('endbox').hidden = true; openHome(); };
+  // 「友達と遊ぶ」の 6 (感想と書き出し) を開く
+  if (short) $('endsurvey').onclick = () => { $('endbox').hidden = true; app.homeTab = 'friends'; openHome(); document.querySelector('#home .survey')?.scrollIntoView({ block: 'center' }); };
   if (TRIAL) trialEndPatch(); // 体験版は続けて遊べない。答え合わせ・書き出し・製品版への案内 (回 SO4。outward/trial.js)
 }
 document.querySelectorAll('[data-speed]').forEach((b) => {

@@ -110,7 +110,8 @@ function updateMapButtons() {
   const real = is3D(app.game?.galaxy);
   $('rotbtn').hidden = $('topbtn').hidden = !real || app.view !== 'galaxy';
   $('rotbtn').classList.toggle('on', !!app.rotateMode);
-  setHtml($('topbtn'), galaxyView.cam.pitch < 0.01 ? TR('斜め') : TR('真上'));
+  // 回 GA13: ほかの札 (全体・回す・従属) と同じ小さい字に (英語の「Top view」だけ大きい字で、列の幅を広げていた。この札のアイコンはまだ選んでもらっていない)
+  setHtml($('topbtn'), `<small>${galaxyView.cam.pitch < 0.01 ? TR('斜め') : TR('真上')}</small>`);
 }
 $('rotbtn').onclick = () => { app.rotateMode = !app.rotateMode; updateMapButtons(); };
 $('topbtn').onclick = () => {
