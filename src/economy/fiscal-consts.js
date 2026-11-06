@@ -6,6 +6,9 @@ const TAX_RANGE = [0.02, 0.34], TAX_STEP = 0.005;
 const RATE_RANGE = [-0.01, 0.5], RATE_STEP = 0.0025;
 const BUDGET_RANGE = [0, 0.6], BUDGET_STEP = 0.01, BUDGET_TOTAL = 1;
 const DEFICIT_RANGE = [0, 0.15], DEFICIT_STEP = 0.005;
+// 人間が動かす首都が手元に置く資金の上限 (税収の何年分。回 KE15・B-069・QD-99 = 上限 1 年分・変えられる)。超えた分は行政サービスに使う (AI の国の政府の DEBT.cash と同じ形)。
+// 0 = 上限なし (前の形。いくらでも貯める)。前は人間の首都の政府が税を集めるだけで使わず、何もしないと 100 年で GDP の 9 倍、300 年で 53 倍まで積もった
+const CASHCAP_CHOICES = [0.5, 1, 2, 5, 0];
 // セッション 20 の 2: 消費税 (家計の買い物の値段に掛ける。OECD の付加価値税の標準税率の最低 5%・最高 27% と、ない国の 0) と関税 (ほかの国からの輸入の値段に掛ける。WDI の加重平均の実行関税率の 1〜99% 点)
 const CTAX_RANGE = [0, 0.27], CTAX_STEP = 0.005;
 const TARIFF_RANGE = [0, 0.29], TARIFF_STEP = 0.005;
@@ -40,7 +43,7 @@ const INCIDENCE = { tax: [3.2, 6.0, 11.1, 19.5, 60.3], ctax: [11.7, 15.2, 18.6, 
 //   ctax = 消費税の率の変更 (英国 2008 年の引き下げは 7 日・ドイツ 2020 年は 28 日の平均)、ctaxNew = 消費税を新しく入れる (準備に 18〜24 か月。Tait 1988・米国会計検査院 1993)。
 //   tariff = 関税の率の変更 (米国 2018 年の鉄鋼の関税は布告から 15 日)。budget = 予算 (次の会計年度から。決める時は年の中で一様とみて平均半年)。
 //   rate・cb = 中央銀行の決定 (次の日から)、deficit = 借りる上限 (首都の政府が決める)
-const ADMIN_LAG = { tax: 0.85, ctax: 0.05, ctaxNew: 1.75, tariff: 0.05, rate: 0, cb: 0, deficit: 0, rdcredit: 0.85, budget: 0.5, ceil: 0, ration: 0.15, ban: 0, embargo: 0, pistar: 0, qe: 0, repress: 0.5, soe: 0.47, capctl: 0, land: 1, reserve: 0.5, floor: 0 };
+const ADMIN_LAG = { tax: 0.85, ctax: 0.05, ctaxNew: 1.75, tariff: 0.05, rate: 0, cb: 0, deficit: 0, cashcap: 0, rdcredit: 0.85, budget: 0.5, ceil: 0, ration: 0.15, ban: 0, embargo: 0, pistar: 0, qe: 0, repress: 0.5, soe: 0.47, capctl: 0, land: 1, reserve: 0.5, floor: 0 };
 //   ceil = 値段の上限 (米国 1971 年 8 月 15 日の 90 日の凍結は発表の日から。大統領令 11615)・ration = 配給 (英国の食料の配給は 1939 年 11 月の発表から 1940 年 1 月 8 日の始まりまで約 2 か月)・
 //   ban・embargo = 輸出禁止と禁輸 (大統領の布告で数日。米国 1962 年のキューバの禁輸は 2 月 3 日の布告から 2 月 7 日)
 //   soe = 国有化と民営化 (英国の石炭の国有化法は 1946 年 7 月 12 日に成立し、1947 年 1 月 1 日に移った。0.47 年)・capctl = 資本規制 (マレーシアの 1998 年 9 月 1 日の規制は発表の日から)
@@ -135,7 +138,7 @@ const INEQ_Z = [-0.8416212335729143, -0.2533471031357997, 0.2533471031357997, 0.
 // 対数正規 (ばらつき s) の所得の 5 分位の分け前 (下から。合計 1)
 const quintShares = (s) => { const c = INEQ_Z.map((z) => normCdf(z - s)); return [c[0], c[1] - c[0], c[2] - c[1], c[3] - c[2], 1 - c[3]]; };
 const TARGET_RANGE = [0, 0.2], TARGET_STEP = 0.01, QE_RANGE = [0, 0.6], QE_STEP = 0.05, REPRESS_RANGE = [0, 0.04], REPRESS_STEP = 0.005;
-const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0, soe: 0, capctl: 0, land: 0, reserve: {}, floor: {} };
+const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, cashcap: 1, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0, soe: 0, capctl: 0, land: 0, reserve: {}, floor: {} };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)
@@ -147,6 +150,12 @@ const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算�
 // repay = 1 なら、手元の資金が多すぎる分で国債を先に返す (前の版)。0 なら行政サービスに使い、国債は式の分だけ返す (回 KE1。R28 が 0.08 → 0.045 で幅に入る。QD-28)
 // 資本の予算 (回 KE14・B-131): 入植船を出したいのに資金が足りない政府 (gv.saveFor) は、その額を行政サービスに使わずに取っておく。years = 最後に足りなかった年から取っておく年数
 const INVEST_PLAN = { years: 2 };
+// 国の入植の予算 (回 KE15・B-069。ユーザーの選び「首都が属領の入植を出す」): 入植できるのに資金が足りない家臣の星系の政府は、国の首都へ光速で資金を願い出る。
+// 願いが届いた首都 (人間が動かしていない首都) は、その額を行政サービスに使わずに取っておき (資本の予算と同じ。INVEST_PLAN.years のあいだ)、たまったら資金援助で送る。
+// share = 取っておく願いの合計の上限 (首都の税収の何年分)。超える願いは受けない (家臣はあとで願い直す)
+// keep = 人間の首都 (自動の資金援助を入れているとき) が払わずに残す手元の資金 (税収の何年分)。hold = 届いた入植船の資金を取っておく年数
+// (家臣は入植できる時に願い出るので、ふつうはすぐ使う。資材がそろわず使えないまま年がたったら、ふつうの資金援助として資金に入れる)
+const COLONY_FUND = { share: 0.25, keep: 0.5, hold: 5 };
 const DEBT = { a: -0.0023, rho: 0.0336, beta: 0.056, war: -0.0171, sd: 0.0269, ar: 0.6971, trend: 10, gap: [-0.1756, 0.1451], cash: 0.1613, spend: 1, limit: 0.4687, repay: 0 };
 // 中央銀行・国の物価・利回り・国債の信用の危険 (回 KE1・B-001。docs/money.md の 5)。帳簿は前のまま基準の値段 (実質の cr) で持ち、物価の水準 P は国ごとの数として持つ。
 // 利子の受け払いは実質の利子率 (名目 − 物価の上がり方。Fisher) で行うので、思ったより物価が上がれば国債の重さが減り、預金が目減りする (インフレ税の入口)。

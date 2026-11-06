@@ -1,10 +1,11 @@
   // 朝貢: 年に1回、従属する星系は年間収入の25%を主人の星系へ送る (光速の送金。主人がさらに上へ納めるので連鎖する)
   // 資金援助: 主人の星系から従属星系へ光速で送金する。届くと受け手の資金になり、支援物資と同じく忠誠度が上がる
   // standing = 定期の資金援助で送ったもの (依頼 KE-4。届いた知らせと一覧で分ける)
-  sendGrant(from, to, amt, auto = false, standing = false) {
+  // col = 入植船のための資金援助 (回 KE15。国の入植の予算)。届いても家臣の資金に入れず、入植船を買えるときまで取っておく (core/game-loop.js の arrivals)
+  sendGrant(from, to, amt, auto = false, standing = false, col = false) {
     amt = Math.min(amt, Math.max(0, this.gov(from).credits));
     if (from === to || amt < 1) return fail('送れる資金がない');
-    const q = { id: this.nextShipId++, kind: 'grant', from, to, amt: 0, auto, ...(standing ? { standing: true } : {}), sent: this.year, arrive: this.year + this.travelYears(from, to), state: 'sending' };
+    const q = { id: this.nextShipId++, kind: 'grant', from, to, amt: 0, auto, ...(standing ? { standing: true } : {}), ...(col ? { col: true } : {}), sent: this.year, arrive: this.year + this.travelYears(from, to), state: 'sending' };
     this.requests.push(q);
     this.earn('grant', -amt, from);
     this.cash('grant', amt, { way: q, f: 'amt' });

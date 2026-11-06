@@ -9,6 +9,11 @@
 // 競争的な貯蔵 (Williams & Wright 1991・Deaton & Laroque 1992): 倉に空きがあるあいだは、値段が戻ると見込んで蓄える人がいるので、
 // 値段は「ならした値段 (long 年) × (1 − 貯蔵の年の費用 store)」より下がらない。人は、expect 年でならした稼ぎを見て部門を移る。
 // eta・smooth・mobility・tau・store・long・expect は仮の値で、目標 R23〜R26 に合わせて決める (docs/market.md)。buy: 1 なら、政府は建設の資材を市場の値段で民間から買う
+// 品薄でも買える (回 KE15・B-069・QD-101 = 市場で値段を上げて買える): 資材を取り寄せるとき、目標の在庫を超える余りで足りなければ、
+// 目標を割る分も 1 回の注文で売り手のいまの在庫の share まで、品薄の値段 (bulkPrice) で買える (economy/colonize.js の procureFrom)。
+// 前は目標の在庫を割る分は売らず、首都の在庫が目標を割っている国の家臣は、資金を持っていても入植船の資材 (低付加価値物品 100 など) を買えなかった。
+// 0 にすると前の形。share は 1 回の注文で売り手の在庫を減らせる上限 (値段は在庫で上がるが、AI の政府は値段より資金で決めるので、売り手の在庫を守る)
+const SCARCE = { share: 0.1 };
 const MARKET = { eta: 1, smooth: 1, min: 0.1, max: 10, cover: { food: 0.28, water: 0.28, metal: 0.28, fuel: 0.28, rare: 0.28, goods: 1.39 / 12, slaves: 0.28, hitech: 1.39 / 12 },
   mobility: 0.2, buy: 1, tau: { goods: 0.5, hitech: 0.5 }, store: 1, long: 5, expect: 0.25, anchor: 0, fill: 1, // fill: 在庫の目標への不足を埋める年数 (需要で決まる生産。economy の 1) // anchor: 1 なら、値段はならした値段 (long 年) からの在庫によるずれ (priceAt の説明。試したら値段の揺れ R23 が 0.27 → 0.54、食料の在庫 R25 が 3.7 年になったのでやめた)
   // 人の消費の短期の値段の弾力性 (消費 = 必要な量 × (値段 ÷ 基準価格)^(−弾力性)、0.3〜2 倍に収める)。食料: Andreyeva, Long & Brownell 2010 のメタ分析、

@@ -3,7 +3,7 @@ function requestsTable(g) {
   const name = (id) => esc(g.system(id).name);
   const vis = g.requests.filter((q) => g.departSeen(q.from, q.sent));
   const rows = [...vis].sort((a, b) => a.arrive - b.arrive).slice(0, 40).map((q) => {
-    const what = q.kind === 'build' ? TR`建設資材 (${esc(q.label)})` : q.kind === 'order' ? TR`指令「${esc(q.label)}」` : q.kind === 'tribute' ? TR`朝貢 ${fmtAmt(q.amt)} cr` : q.kind === 'grant' ? TR`資金援助 ${fmtAmt(q.amt)} cr${q.auto ? TR(' (自動)') : ''}`
+    const what = q.kind === 'build' ? TR`建設資材 (${esc(q.label)})` : q.kind === 'order' ? TR`指令「${esc(q.label)}」` : q.kind === 'tribute' ? TR`朝貢 ${fmtAmt(q.amt)} cr` : q.kind === 'grant' ? TR`資金援助 ${fmtAmt(q.amt)} cr${q.col ? TR(' (入植船の分。家臣が入植船を買うまで取っておく)') : q.auto ? TR(' (自動)') : ''}` : q.kind === 'colask' ? TR`入植船の資金の願い ${fmtAmt(q.amt)} cr`
       : `${resText(q.res)} ${fmtAmt(q.amt)}${q.shipped ? TR` <span class="muted">(発送済み ${fmtAmt(q.shipped)})</span>` : ''}`;
     const seen = q.arrive + (g.spectate ? 0 : g.lightDelay(q.to)); // 届いたことが地球に見える年
     const team = q.kind === 'order' && g.orderYears(q.act, q.d, q.to) > g.lightDelay(q.to) + 1e-9; // 人を船で送る指令 (医療団など)
@@ -63,7 +63,7 @@ function politicsSheet(app) {
       恐怖度は、その星系に${ME.home}の艦隊が駐留していると上がる (反乱したときの推定艦隊と同数で50、2倍で100)。主人との友好度は、主人筋との貿易が大きいほど上がる。忠誠度が50未満 (連邦制は70未満) だと指令を拒むことがあり、自治領は指令を受けない。${ME.realm}からの独立は、半々の確率で (${ME.home}の艦隊が駐留していれば必ず) そのまま独立戦争になる (自治領は戦争にならない)。</p>
     <h3>資金援助</h3>
     <p class="note">入植して${GRANT_YEARS}年以内の星系には、主人の星系が毎年、資金の3% (最大 ${GRANT_MAX} cr) を自動で送る。資金援助は支援物資と同じく忠誠度を上げる。チェックを外すと${ME.home}からの自動送金だけが止まる (ほかの星系どうしは続く)。個別の資金援助は星系の詳細欄から送れる。</p>
-    <label class="check auto"><input type="checkbox" data-act="autogrant" ${g.autoGrant ? 'checked' : ''}> ${ico('grant')}入植後${GRANT_YEARS}年の自動資金援助 (${ME.home}から)</label>
+    <label class="check auto"><input type="checkbox" data-act="autogrant" ${g.autoGrant ? 'checked' : ''}> ${ico('grant')}自動の資金援助 (${ME.home}から。入植後${GRANT_YEARS}年の星系と、入植船の資金を願い出た家臣へ。願いには税収の半年分を超えた手元の資金から)</label>
     <h3>独立国</h3>
     <div class="kpi"><div><span>${ico('war')}${esc(ME.realm)}の戦争疲弊</span><b class="${myEx >= 40 ? 'bad' : ''}">${myEx}</b><span>税収 −${Math.round(EXHAUST.tax * myEx * 100)}%・家臣の忠誠度 −${Math.round(EXHAUST.loyalty * myEx)}${myEx > 20 ? TR`・議会の支持 −${(EXHAUST.council * (myEx - 20)).toFixed(1)}/年` : ''}</span></div></div>
     ${realms ? TR`<div class="scroll"><table class="tbl"><tr><th>首都</th><th>規模 (把握分)</th><th>状態</th><th>戦況</th><th></th></tr>${realms}</table></div>` : TR('<p class="note">いまのところ独立国はない。</p>')}
