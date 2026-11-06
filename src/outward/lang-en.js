@@ -1476,6 +1476,9 @@ const I18N_EN = {
 "戦争疲弊 {0}": "war exhaustion {0}",
 "戦勝点 {0}・受け入れる線 {1} (艦隊 自分 {2}・相手 {3}{4})・{5}": "war score {0} · acceptable line {1} (fleets own {2} · theirs {3}{4}) · {5}",
 "首都に届いた記録で: 艦隊 自分と{0} {1}・{2} {3}{4}・勝つ見込み {5}%・見込む戦勝点 {6}{7}": "From the records that reached the capital: fleets own and {0} {1} · {2} {3}{4} · chance to win {5}% · expected war score {6}{7}",
+"政変のあとの新しい政府が、{0}との{1}の協定を期限の前に抜けた": "After a coup, the new government left the {1} pact with {0} before its term ended",
+"{0}。いま申し入れられたら受けない (点 {1})": "{0}. It would not accept the pact if offered now (score {1})",
+"{0}の新しい政府が{1}の協定を期限の前に抜けた (破約。{2})": "The new government of {0} left the {1} pact before its term ended (breach. {2})",
 // == politics/memory.js
 "侵略": "aggression",
 "裏切り": "betrayal",

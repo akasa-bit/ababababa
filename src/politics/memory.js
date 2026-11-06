@@ -60,6 +60,7 @@
     const old = this.leaders[r], L = this.newLeader();
     L.prev = { name: old.name, career: old.career, since: old.since, until: this.year, irr: irregular ? 1 : 0 };
     this.leaders[r] = L;
+    if (irregular) this.pactsRegimeReview(r); // 政変のあとの新しい政府は、前の政府の協定を見直す (回 AI10。politics/threat.js)
     this.aiNote(r, JA`指導者が${old.name} (${LEADER.careers[old.career].label}・${Math.max(1, Math.round(this.year - old.since))} 年) から${L.name} (${LEADER.careers[L.career].label}) に代わった (${irregular ? '政変・反乱など不規則な退き方' : '任期・選挙など決まった退き方'})`);
   }
   // 光の遅れで観る国に届いている指導者 (asOf 年に知っている人)

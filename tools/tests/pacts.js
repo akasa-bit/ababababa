@@ -17,6 +17,8 @@ const fails = [];
 const check = (ok, msg) => { if (!ok) fails.push(msg); };
 const T = sim.tables;
 
+// 政変のあとの協定の見直し (回 AI10) は、1〜5 で作った協定を試合の途中で外すことがあるので切っておき、5c でだけ入れる
+sim.evaluate('PACT_BREAK').regime = false;
 const g = sim.newGame('7', { nations: 5, spectate: false });
 g.setPlayerNation(0);
 sim.run(g, 30);
@@ -147,6 +149,49 @@ check(['受けそう', '五分', '断りそう'].includes(o.label) && (o.s >= 0 
     for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
     Object.assign(g.realmWars, keep.wars);
     g.diplo = keep.diplo; g.coerce = keep.coerce;
+  }
+}
+
+// 5c. 政変のあとの協定の見直し (回 AI10・B-309): 指導者が不規則に代わった AI の国は、いま申し入れられたら受けない (続ける点 < 0) 不可侵と防衛同盟を、
+// 期限の前に抜ける (破約)。決まった代わり方・点が 0 以上・同じ敵と戦っている・席の国・PACT_BREAK.regime = false では抜けない
+{
+  const PB = sim.evaluate('PACT_BREAK');
+  const pr = others.flatMap((x) => others.map((y) => [x, y])).find(([x, y]) => x !== y && g.realmAlive(x) && g.realmAlive(y));
+  check(pr, '協定を試す AI の国の組がない');
+  if (pr) {
+    const [x, y] = pr;
+    const keep = { score: g.pactScore, diplo: JSON.parse(JSON.stringify(g.diplo)), wars: { ...g.realmWars }, leaders: JSON.parse(JSON.stringify(g.leaders || {})), regime: PB.regime };
+    for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+    let val = 0, keepSeen = false;
+    g.pactScore = (r, q, kind, o = {}) => { if (r === x && q === y && o.keep) keepSeen = true; return { s: val, why: '試験' }; };
+    const fresh = (kind) => { g.diplo = { pacts: [], sent: [], breach: {} }; const p = g.makePact(x, y, kind, 0); p.onA = p.onB = g.year - 1; return p; };
+    if (!g.leaders[x]) g.leaders[x] = g.newLeader();
+    const has = (kind) => !!g.pactBetween(x, y, kind);
+    PB.regime = true;
+    fresh('nap'); val = -0.1; g.leaderChange(x, true);
+    check(!has('nap') && g.pactBreaches(x) === 1 && keepSeen, `政変のあと、受けない不可侵の協定を抜けない (残る ${has('nap')}・破約 ${g.pactBreaches(x)}・続ける点で見た ${keepSeen})`);
+    fresh('ally'); val = -0.1; g.leaderChange(x, true);
+    check(!has('ally') && g.pactBreaches(x) === 1, '政変のあと、受けない防衛同盟を抜けない');
+    fresh('nap'); val = 0.1; g.leaderChange(x, true);
+    check(has('nap') && !g.pactBreaches(x), '政変のあと、受ける協定まで抜けた');
+    fresh('nap'); val = -0.1; g.leaderChange(x, false);
+    check(has('nap') && !g.pactBreaches(x), '決まった代わり方 (任期・選挙) で協定を抜けた');
+    fresh('nap'); val = -0.1; PB.regime = false; g.leaderChange(x, true); PB.regime = true;
+    check(has('nap') && !g.pactBreaches(x), 'PACT_BREAK.regime = false でも協定を抜けた (前の形に戻らない)');
+    const z = others.find((u) => u !== x && u !== y);
+    if (z !== undefined) {
+      fresh('ally'); val = -0.1; g.beginWar(z, x, z); g.beginWar(z, y, z);
+      g.leaderChange(x, true);
+      check(has('ally'), '同じ敵と戦っているあいだに、同盟を抜けた');
+      for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+    }
+    g.diplo = { pacts: [], sent: [], breach: {} }; const ph = g.makePact(g.cap, x, 'nap', 0); ph.onA = ph.onB = g.year - 1; val = -0.1;
+    g.pactsRegimeReview(g.cap);
+    check(!!g.pactBetween(g.cap, x, 'nap'), '席の国 (人間) の協定を、政変の見直しで抜けた');
+    g.pactScore = keep.score;
+    for (const k of Object.keys(g.realmWars)) delete g.realmWars[k];
+    Object.assign(g.realmWars, keep.wars);
+    g.diplo = keep.diplo; g.leaders = keep.leaders;
   }
 }
 

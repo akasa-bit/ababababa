@@ -78,3 +78,24 @@
     const why = JA`首都に届いた記録で: 艦隊 自分と${this.realmName(y)} ${Math.round(ours)}・${this.realmName(e)} ${Math.round(theirs)}${allies >= 0.5 ? JA` (相手の同盟国 ${Math.round(allies)} を含む)` : ''}・勝つ見込み ${Math.round(100 * p)}%・見込む戦勝点 ${Math.round(v)}${it ? JA`・${it}` : ''}`;
     return { join: v >= PACT.honorLine, why, v };
   }
+  // 政変のあとの協定の見直し (回 AI10・B-309。docs/ai-behavior.md の 17。Leeds & Savun 2007: 国の中の政治が大きく変わった国は、協定を期限の前に破りやすい):
+  // 指導者が政変・反乱など不規則に代わった AI の国 (人間が動かしていない国) の新しい政府は、前の政府が結んだ不可侵と防衛同盟を、いま申し入れられたら受けるか
+  // (pactScore の keep。続けている協定なので、相手のよその破約と威圧の返事待ちは見ない) で見直し、受けない協定 (点 < 0) は期限の前に抜ける (破約。
+  // 評判と記憶に残る)。同じ敵と戦っているあいだは抜けない (politics/memory.js の leaderChange から)
+  pactsRegimeReview(r) {
+    if (!PACT_BREAK.regime || this.isHuman(r)) return; // 人間が動かす国は自分で決める (国家選択の AI の国の席は見直す)
+    const D = this.diplo;
+    for (const p of [...D.pacts]) {
+      if (p.kind === 'trade' || (p.a !== r && p.b !== r)) continue;
+      const y = p.a === r ? p.b : p.a;
+      if (!this.pactBound(p, r) || this.atWar(r, y) || this.enemiesOf(r).some((e) => this.atWar(y, e))) continue;
+      const sc = this.pactScore(r, y, p.kind, { keep: true });
+      if (!(sc.s < 0)) continue;
+      D.pacts = D.pacts.filter((q) => q !== p);
+      const what = JA`政変のあとの新しい政府が、${this.realmName(y)}との${PACT_KINDS[p.kind].label}の協定を期限の前に抜けた`;
+      this.pactBreach(r, what, y);
+      const why = JA`${sc.why}。いま申し入れられたら受けない (点 ${sc.s.toFixed(2)})`;
+      this.aiNote(r, JA`${what} (${why})`);
+      if (this.isHuman(y)) this.event('politics', r, JA`${this.realmName(r)}の新しい政府が${PACT_KINDS[p.kind].label}の協定を期限の前に抜けた (破約。${why})`, true);
+    }
+  }

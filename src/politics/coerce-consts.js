@@ -24,7 +24,10 @@ const COERCE = { on: true, line: 20, chance: 0.5, ask: 1, face: 30, audience: 10
 // 協定を破って宣戦する重さ (回 AI9・B-309。docs/ai-behavior.md の 16): 不可侵の協定に縛られた国も、宣戦の見込みから nap 点を引いて考える (破約。評判を失い、
 // ほかの国が協定を受けにくくなる: politics/diplomacy.js の pactBreach・pactScore)。同盟の相手には宣戦しない。nap = null で前の形 (不可侵の相手にも宣戦しない)。
 // 現実の破約の形 (Leeds 2003: 防衛同盟の義務の 3 割ほどは果たされない。不可侵の協定を破って攻めた例は 1941 年のバルバロッサ作戦など)
-const PACT_BREAK = { nap: 25 };
+// regime = 政変のあとの協定の見直し (回 AI10・B-309。docs/ai-behavior.md の 17): 指導者が政変・反乱など不規則に代わった AI の国の新しい政府は、
+// 前の政府が結んだ不可侵と防衛同盟を、いま申し入れられたら受けるか (pactScore の keep) で見直し、受けない協定は期限の前に抜ける (破約)。
+// Leeds & Savun 2007 (ATOP の加盟 1816〜1989 年): 国の中の政治が大きく変わった国は、協定を期限の前に破りやすい。regime = false で前の形
+const PACT_BREAK = { nap: 25, regime: true };
 // 観戦の人間の代わり (ship/earth-war.js) の講和 (回 AI9・B-307。docs/ai-behavior.md の 16): bargain = true なら、AI の国どうしと同じ交渉の模型 (ship/war-ai.js の bargain) で講和する。
 // false なら前の形 (AI の国の申し入れを、疲れているか勝っていれば受け、実際の戦勝点で講和する)
 const STANDIN = { bargain: true };
