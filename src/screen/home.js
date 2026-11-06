@@ -48,7 +48,7 @@ function singleHtml() {
     <section><h3>経済</h3>
       <div class="row"><label>生産性 <select id="home-prod">${Object.entries(PRODUCTIVITY).map(([k, p]) => `<option value="${k}" ${k === (app.homeProd ?? 'now') ? 'selected' : ''}>${p.label}</option>`).join('')}</select></label>
         <label>倍率 <input id="home-prodk" type="number" inputmode="decimal" min="${PRODUCTIVITY_RANGE[0]}" max="${PRODUCTIVITY_RANGE[1]}" step="any" value="${esc(String(app.homeProdK ?? 1))}" ${(app.homeProd ?? 'now') === 'custom' ? '' : 'disabled'}></label></div>
-      ${ED.physics.pv ? TR`<div class="row"><label>スウォームの素子の作り (全部の星系の既定) <select id="home-pv">${['auto', ...Object.keys(PV_DESIGNS)].map((k) => `<option value="${k}" ${k === (app.homePv ?? 'auto') ? 'selected' : ''}>${k === 'auto' ? TR('星系ごとに自動') : `${k}. ${PV_DESIGNS[k].label} — ${PV_DESIGNS[k].note}`}</option>`).join('')}</select></label></div>` : ''}
+      ${ED.physics.pv === true ? TR`<div class="row"><label>スウォームの素子の作り (全部の星系の既定) <select id="home-pv">${['auto', ...Object.keys(PV_DESIGNS)].map((k) => `<option value="${k}" ${k === (app.homePv ?? 'auto') ? 'selected' : ''}>${k === 'auto' ? TR('星系ごとに自動') : `${k}. ${PV_DESIGNS[k].label} — ${PV_DESIGNS[k].note}`}</option>`).join('')}</select></label></div>` : ''}
       ${homeHelp(TR`生産性: 1 人あたりの産出 (農業・鉱業・工業・採掘基地) の倍率。「現代のまま」は 2023 年の最前線の国の生産性。「2300 年の予測」は、1890〜2023 年の米国の労働生産性の伸び (年 2.0%) とコンドラチェフの波から延ばした値で、最近の伸び (年 1.3%) が続くなら ×33。「自分で決める」は ${PRODUCTIVITY_RANGE[0]}〜${PRODUCTIVITY_RANGE[1]} 倍。`)}</section>
     <section><h3>試合</h3>
       <div class="row"><label>終わりの年 <select id="home-end">${endChoices().map(([y, l]) => `<option value="${y}" ${y === (app.homeEnd ?? (TRIAL ? TRIAL_YEARS : 500)) ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>

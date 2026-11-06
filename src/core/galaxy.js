@@ -435,11 +435,13 @@ function nameBodies(name, stars, primary, maxA, all, known, etaKey) {
   return bodies;
 }
 // 星の行 (REAL_STARS の rows) から恒星を作る。phase は rng で引く。flareCat = フレアの表を引く実在の星の番号 (自動生成でも、型を借りた星の値を使う)
+// フレアの表 (FLARES.stars) は、表を作ったときの薄い銀河 (|z| ≤ 2 光年) の星系だけを持つ。表にない M 型星は、表を作るときに TESS の光度曲線が
+// ない星と同じく、測れた M 型星の中央値 (FLARES.mMedian) にする (回 FU8。前は 0 で、銀河の M 型星 120 個のうち 57 個がフレアのない星になっていた)
 function starsOf(rng, name, rows, flareCat) {
   return rows.map(([cls, label, mass, lum, temp, radius, sep, own], k) => ({
     id: `s${k}`, name: own && k ? own : rows.length > 1 ? `${name} ${'ABCDEFG'[k]}` : name, cls, label, mass, lum, radius, temp,
     color: tempToColor(temp), wd: cls === 'WD', sep: k ? Math.max(sep, 1) : 0, phase: rng.range(0, Math.PI * 2),
-    ...(ED.physics.flare && FLARES ? { flare: cls === 'M' ? FLARES.stars[flareCat]?.[k] ?? 0 : 'FGK'.includes(cls) ? FLARES.sun : 0 } : {}),
+    ...(ED.physics.flare && FLARES ? { flare: cls === 'M' ? FLARES.stars[flareCat]?.[k] || FLARES.mMedian : 'FGK'.includes(cls) ? FLARES.sun : 0 } : {}),
   }));
 }
 function generateRealGalaxy(seed, gen = 1) {

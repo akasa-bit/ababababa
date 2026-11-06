@@ -2544,7 +2544,9 @@ const I18N_EN = {
 "<li><b>{0}. {1}</b>{2} — 出力の残り {3}・倍になる年数 {4} <span class=\"muted\">({5})</span></li>": "<li><b>{0}. {1}</b>{2} — output remaining {3} · doubling time {4} <span class=\"muted\">({5})</span></li>",
 "自動 ({0} 年あとの発電が一番大きい作り)": "Auto (design with the highest output after {0} years)",
 " <small class=\"muted\">届くまで {0} 年</small>": " <small class=\"muted\">arrives in {0} years</small>",
-"<tr><td>スウォームの素子の作り</td><td>いま <b>{0}. {1}</b> {2}<ul>{3}</ul><small class=\"muted\">フレアの陽子が電池を傷める (M 型星で強い)。重い素子ほど自己複製で広がるのが遅い。作りを変えると、いまの覆う割合から新しい速さで広がり直す</small></td></tr>": "<tr><td>Swarm element design</td><td>Now <b>{0}. {1}</b> {2}<ul>{3}</ul><small class=\"muted\">Flare protons damage the cells (worse around M-type stars). Heavier elements spread more slowly by self-replication. Changing the design restarts the spread at the new rate from the current coverage</small></td></tr>",
+"作りを変えると、いまの覆う割合から新しい速さで広がり直す": "Changing the design restarts the spread at the new rate from the current coverage",
+"作りは星系ごとに自動 ({0} 年あとの発電が一番大きい作り)": "The design is chosen automatically for each system (the one with the most power after {0} years)",
+"<tr><td>スウォームの素子の作り</td><td>いま <b>{0}. {1}</b> {2}<ul>{3}</ul><small class=\"muted\">フレアの陽子が電池を傷める (M 型星で強い)。重い素子ほど自己複製で広がるのが遅い。{4}</small></td></tr>": "<tr><td>Swarm element design</td><td>Now <b>{0}. {1}</b> {2}<ul>{3}</ul><small class=\"muted\">Flare protons damage the cells (worse around M-type stars). Heavier elements spread more slowly by self-replication. {4}</small></td></tr>",
 "<tr><td>蓄え</td><td>{0} <span class=\"muted\">(上限 {1})</span></td></tr>{2}": "<tr><td>Stored</td><td>{0} <span class=\"muted\">(cap {1})</span></td></tr>{2}",
 " <span class=\"muted\">({0}年遅れで届いた)</span>": " <span class=\"muted\">(arrived {0} yr late)</span>",
 // == screen/app.js

@@ -1,17 +1,17 @@
 // 物理 (星間の気体と遮蔽・加速の時間・惑星の地表の被曝・スウォームの太陽電池の劣化) の試験。docs/physics.md の 5・6・7・10。ブラウザを使わず、画面なしの版で回す。
-// EDITION=game でゲーム版 (2026-10-21 の P6: 遮蔽と加速の時間を入れ、フレアは惑星の欄の表示だけ、太陽電池の劣化はなし。CI では落ちたら止める)、
+// EDITION=game でゲーム版 (2026-10-21 の P6: 遮蔽と加速の時間を入れ、フレアは惑星の欄の表示だけ。回 FU8 から太陽電池の劣化も入れ、素子の作りは自動。CI では落ちたら止める)、
 // EDITION=sim (既定) でシミュレーション版 (全部入り。CI では参考)。
 // 1. ゲームに書いた値が、生データから作ったファイルと同じ (ISM ← data/derived/ism.json、SHIELD_DOSE ← data/derived/shield.json)
 // 2. ゲームが決めた遮蔽の厚さで、Geant4 の生の点 (均す前) から読んだ線量が限度に合う (統計の誤差のぶん、0.5〜2 倍)。
 //    前: 線量 (核子 1 個/cm² あたり) × 当たる核子の数。横: 宇宙線の線量率 × 船の時間
 // 3. 試合を回して、航路のある便はすべて遮蔽を持ち、遮蔽の厚さが航路の長さとともに増える
 // 4. 加速と減速の遅れが式の値。5. 地表の線量の表と、地球と空気のない星の値
-// 6・7. 太陽電池の劣化と素子の作り (シミュレーション版)。ゲーム版は傷まず、フレアは適性を変えず、物理の切り替えのないセーブは物理なしのまま続く
+// 6・7. 太陽電池の劣化と素子の作り (シミュレーション版は選べる)。ゲーム版は傷み、作りは星系ごとに自動で選べない (回 FU8・QD-06 = b)。フレアは適性を変えず、物理の切り替えのないセーブは物理なしのまま続く
 // 使い方: EDITION=game node tools/tests/physics.js [シード] [年数] [国の数]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
 exports.ci = [
-  // ゲーム版の分 (遮蔽・加速の時間・フレアの表示。2026-10-21 の P6) は落ちたら止める。シミュレーション版の分 (太陽電池の劣化も) は参考
+  // ゲーム版の分 (遮蔽・加速の時間・フレアの表示。2026-10-21 の P6。回 FU8 から太陽電池の劣化と自動の素子も) は落ちたら止める。シミュレーション版の分 (素子を選べる) は参考
   { args: ['5', '150'], judge: (o, code) => (code === 0 && o.trim().split('\n')[0].includes('物理 合格') ? '' : '物理 不合格 (ゲーム版)'), env: { EDITION: 'game' } },
   { args: ['5', '150'], judge: (o, code) => (code === 0 && o.trim().split('\n')[0].includes('物理 合格') ? '' : '物理 不合格 (シミュレーション版)'), optional: true, env: { EDITION: 'sim' } },
 ];
@@ -30,7 +30,7 @@ const sim = H.load({ edition: EDITION });
 const T = sim.tables;
 const PH = T.ED.physics;
 const fails = [];
-if (EDITION === 'game' ? !(PH.shield && PH.accel && PH.flare === 'show' && !PH.pv) : !(PH.shield && PH.accel && PH.flare === true && PH.pv)) fails.push(`物理の切り替えが決めたものと違う ${JSON.stringify(PH)}`);
+if (EDITION === 'game' ? !(PH.shield && PH.accel && PH.flare === 'show' && PH.pv === 'auto') : !(PH.shield && PH.accel && PH.flare === true && PH.pv === true)) fails.push(`物理の切り替えが決めたものと違う ${JSON.stringify(PH)}`); // ゲーム版の pv は 'auto' (回 FU8・QD-06 = b)
 
 // 1
 if (Math.abs(T.ISM.nNuc - ism.n_nucleon) > 1e-4) fails.push(`ISM.nNuc ${T.ISM.nNuc} ≠ ism.json ${ism.n_nucleon}`);
@@ -92,6 +92,17 @@ for (const k of Object.keys(sig)) if (Math.abs(D[k].sigma - sig[k]) > 0.002) fai
 
 const gD = sim.newGame(seed, { nations: Number(nations) });
 const barnard = gD.galaxy.systems.find((s) => s.name === 'バーナード星');
+// フレアの表の M 型星は表の値、表にない M 型星 (表を作ったあとに銀河を広げて足した星系) は測れた M 型星の中央値 (回 FU8。前は 0 で、フレアのない星になっていた)
+{
+  const FL = sim.evaluate('FLARES');
+  let inT = 0, outT = 0, bad = 0;
+  for (const s of gD.galaxy.systems) s.stars.forEach((x, k) => {
+    if (x.cls !== 'M') return;
+    const t = FL.stars[s.cat]?.[k];
+    if (t > 0) { inT++; if (x.flare !== t) bad++; } else { outT++; if (x.flare !== FL.mMedian) bad++; }
+  });
+  if (bad || !inT || !outT) fails.push(`M 型星のフレア (表にある ${inT}・表にない ${outT}・値が違う ${bad})`);
+}
 let pvM = {}, autoM = null;
 if (EDITION === 'sim') {
   // 7. 素子の作り: 太陽は今の標準 (a) を自動で選び、バーナード星 (M 型星) は集光 (c) を選ぶ。作りを変える指令は届いた星系で効く
@@ -103,12 +114,22 @@ if (EDITION === 'sim') {
   const r0 = gD.command('pvdesign', { sys: gD.cap, value: 'b' });
   if (!r0.ok || gD.pvDesign(gD.cap) !== 'b') fails.push(`作りを変える指令 ${JSON.stringify(r0)}`);
 } else {
-  // ゲーム版: 太陽電池は傷まず、スウォームは SWARM.doubling のまま広がる。素子の作りの指令は効かない
+  // ゲーム版 (回 FU8・QD-06 = b): 太陽電池は傷み、素子の作りは星系ごとに自動 (太陽は a・バーナード星は c)。スウォームは自動の作りの速さで広がる。
+  // 星系の政府の作り (pvd) と試合の既定 (pvPolicy) は見ない。素子の作りの指令は効かない
   const gG = sim.newGame(seed, { nations: Number(nations) });
+  const autoSun = gG.pvDesign(gG.cap);
+  autoM = barnard ? gG.pvDesign(barnard.id) : null;
+  pvM = barnard ? Object.fromEntries(Object.keys(D).map((k) => [k, gG.pvOf(barnard.id, k)])) : {};
+  if (gG.physics.pv !== 'auto' || autoSun !== 'a' || (barnard && autoM !== 'c')) fails.push(`ゲーム版の自動の作り ${gG.physics.pv}・太陽 ${autoSun}・バーナード星 ${autoM}`);
   gG.year += 10;
-  const fG = gG.swarmCover(gG.cap), f0 = gG.govs[gG.cap].sw[0];
-  const fExp = 1 / (1 + (1 / f0 - 1) * Math.exp((-Math.LN2 / 5) * (gG.year - gG.govs[gG.cap].sw[1])));
-  if (Math.abs(fG - fExp) > 1e-9) fails.push(`ゲーム版のスウォームの広がり ${fG} (式 ${fExp})`);
+  const fG = gG.swarmCover(gG.cap), f0 = gG.govs[gG.cap].sw[0], rateA = gG.pvOf(gG.cap, 'a').rate;
+  const fExp = 1 / (1 + (1 / f0 - 1) * Math.exp(-rateA * (gG.year - gG.govs[gG.cap].sw[1])));
+  if (!(rateA < Math.LN2 / 5) || Math.abs(fG - fExp) > 1e-9) fails.push(`ゲーム版のスウォームの広がり ${fG} (式 ${fExp}・速さ ${rateA})`);
+  const rfA = gG.pvOf(gG.cap, 'a').rf, noDmg = gG.system(gG.cap).lumSum * sim.evaluate('L_SUN_W') * fG * T.PROP.pv * sim.evaluate('YEAR_S');
+  if (!(rfA < 1 && Math.abs(gG.power(gG.cap) / noDmg - rfA) < 1e-9)) fails.push(`ゲーム版の発電が、傷んだ分 (出力の残り ${rfA}) だけ減っていない (${gG.power(gG.cap) / noDmg})`);
+  gG.govs[gG.cap].pvd = 'b'; gG.pvPolicy = 'b';
+  if (gG.pvDesign(gG.cap) !== 'a') fails.push('ゲーム版で、選んだ素子の作りが効いた');
+  delete gG.govs[gG.cap].pvd; gG.pvPolicy = null;
   if (gG.command('pvdesign', { sys: gG.cap, value: 'b' }).ok) fails.push('ゲーム版で素子の作りの指令が通った');
   // フレアは表示だけ: 地表の線量が限度を超える岩の惑星にも rad があるが、入植適性は変わっていない (適性は radiationOf を切った値と同じ)
   const bodies = gD.galaxy.systems.flatMap((s) => s.bodies.filter((b) => b.rad));
@@ -179,7 +200,7 @@ for (const l of lims.filter((l) => l.what === '合計' && l.ly === 10)) console.
 for (const [k, v] of Object.entries(sum)) console.log(`  ${k}: ${v.n} 便・航路の長さの中央値 ${v.lyMedian.toFixed(1)} 光年・遮蔽の厚さの中央値 ${(v.depthMedian / 100).toFixed(1)} m・遮蔽 ÷ 質量 の中央値 ${(100 * v.fracMedian).toFixed(2)}% (最大 ${(100 * v.fracMax).toFixed(1)}%)`);
 console.log(`  加速の遅れ (4.37 光年・0.95c): 1g で ${ax[0].toFixed(2)} 年・10g で ${ax[1].toFixed(3)} 年`);
 console.log(`  地表の 1 年の線量 (太陽から 1 AU): 地球の大気の下 ${(earth * 1e3).toFixed(3)} mSv・空気なし ${(moon * 1e3).toFixed(0)} mSv`);
-console.log(`  スウォームの太陽電池の出力の残り (15 年で取り替え): 太陽 ${rfSun.toFixed(3)}・M 型星の中央値の陽子で光度 0.005 ${rfM.toFixed(3)}${EDITION === 'game' ? ' (ゲーム版では使わない)' : ''}`);
+console.log(`  スウォームの太陽電池の出力の残り (15 年で取り替え): 太陽 ${rfSun.toFixed(3)}・M 型星の中央値の陽子で光度 0.005 ${rfM.toFixed(3)}`);
 if (barnard && autoM) console.log(`  素子の作り (バーナード星): ${Object.entries(pvM).map(([k, v]) => `${k} 出力の残り ${v.rf.toFixed(2)}・倍の年数 ${(Math.LN2 / v.rate).toFixed(1)} 年`).join('・')} → 自動は ${autoM}`);
 for (const f of fails) console.log('  ×', f);
 process.exit(fails.length ? 1 : 0);

@@ -119,7 +119,7 @@ $('home').onclick = (e) => {
     app.game.challenges = (app.homeCh || []).filter((k) => CHALLENGES[k]).map((id) => ({ id, status: 'active' }));
     app.game.handicap = HANDICAP[app.homeHc] ? app.homeHc : 'normal';
     app.game.productivity = productivityOf(app.homeProd, app.homeProdK);
-    if (ED.physics.pv) app.game.pvPolicy = PV_DESIGNS[app.homePv] ? app.homePv : null;
+    if (ED.physics.pv === true) app.game.pvPolicy = PV_DESIGNS[app.homePv] ? app.homePv : null; // ゲーム版 ('auto') は選べない (回 FU8)
     const customs = (app.homeLib || []).map((id) => NationLib.get(id)).filter(Boolean);
     if ((app.homeNat ?? 1) > 1 || customs.length) {
       // 置き場所のくじは試合ごとに引き直す (依頼 GA-5 = a。app.homeNatDraw は試験で決めるとき)

@@ -62,7 +62,8 @@ const ISM = { nNuc: 0.1142 }; // 航路で前面に当たる核子の平均の�
 // 出力の残り = 1 − C log10(1 + DDD/Dx) (3 接合の電池。Walters ほか 2004)。使う厚さは glass、素子は life 年ごとに取り替える (設定の選択。docs/physics.md の 7)
 const PV_DAMAGE = {"ddd":{"100":0.1243,"300":0.01715,"1000":0.002211,"3000":0.0004067},"glass":100,"C":0.27,"Dx":1700000000.0,"life":15};
 /* PV_DAMAGE:END */
-// スウォームの素子の作り (物理。ED.physics.pv のときだけ = シミュレーション版。docs/physics.md の 7)。星系ごとに選べる (選ばなければ試合の既定、それもなければ自動)。
+// スウォームの素子の作り (物理。試合の physics.pv のとき。docs/physics.md の 7)。シミュレーション版 (pv = true) は星系ごとに選べる (選ばなければ試合の既定、それもなければ自動)。
+// ゲーム版 (pv = 'auto'。回 FU8・QD-06 = b) は、いつも自動。
 // glass = カバーガラス [µm]、life = 取り替えの年数、sigma = 光を受ける面 1 cm² あたりの素子の質量 [g/cm²]、pf = 平板の素子に比べた発電 (集光レンズの光の損)。
 // 平板: 3 接合の電池 (Ge 140 µm) 0.0745 g/cm² + ガラス 2.554 g/cm³。集光: SLA の 8.5 倍のレンズと電池・放熱板 0.060 g/cm² + ガラス ÷ 8.5、
 // レンズの光の効率 0.92 (O'Neill ほか、NASA/CP-2007-214494)。陽子はレンズで集まらないので、同じ厚さのガラスなら電池の傷み方は平板と同じ。
@@ -123,7 +124,7 @@ function annualDose(flare, a, column) {
 function flareOf(star) {
   return star.flare ?? (!FLARES ? 0 : star.cls === 'M' ? FLARES.mMedian : 'FGK'.includes(star.cls) ? FLARES.sun : 0);
 }
-// スウォームの太陽電池の、陽子で傷んだあとの平均の出力の残り (物理。試合の physics.pv のときだけ = シミュレーション版。docs/physics.md の 7)。素子は、地球と同じ明るさになる
+// スウォームの太陽電池の、陽子で傷んだあとの平均の出力の残り (物理。試合の physics.pv のとき。シミュレーション版と、回 FU8 からゲーム版も。docs/physics.md の 7)。素子は、地球と同じ明るさになる
 // 距離 √L AU を回るので、届く陽子は 1 AU の値 ÷ L。出力の残り 1 − C log10(1 + DDD/Dx) を、取り替えるまでの life 年で平均する (design = PV_DESIGNS の作り)
 function pvRemaining(star, design = PV_DAMAGE, on = ED.physics.pv) {
   if (!on || !PV_DAMAGE || !(star.lum > 0)) return 1;
