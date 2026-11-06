@@ -121,6 +121,7 @@
       this.receiveAid(q.to, amt);
       if (!q.auto) this.message(JA`資金援助 ${fmtAmt(amt)} cr が ${this.system(q.to).name} に届いた`, q.to);
     }
+    for (const q of this.requests) if (q.kind === 'colask' && q.arrive <= this.year) this.colonyAskArrived(q); // 入植船の資金の願い (回 KE15)
     for (const q of this.requests) {
       if (q.kind !== 'order' || q.arrive > this.year) continue;
       const pi = this.playerOf(q.by ?? 0); // 指令を出したプレイヤー (古い指令は地球)
@@ -139,7 +140,7 @@
       });
       this.msgTo = undefined;
     }
-    this.requests = this.requests.filter((q) => !['build', 'tribute', 'order', 'grant'].includes(q.kind) || q.arrive > this.year);
+    this.requests = this.requests.filter((q) => !['build', 'tribute', 'order', 'grant', 'colask'].includes(q.kind) || q.arrive > this.year);
     const done = this.projects.filter((j) => j.ready <= this.year);
     if (done.length) {
       changed = true;

@@ -65,6 +65,7 @@
     if ((target.ctax || 0) !== (f0.ctax || 0)) out.push(JA`消費税 ${p(target.ctax || 0)}`);
     if ((target.tariff || 0) !== (f0.tariff || 0)) out.push(JA`関税 ${p(target.tariff || 0)}`);
     if ((target.deficit || 0) !== (f0.deficit || 0)) out.push(JA`赤字の上限 ${p(target.deficit || 0)}`);
+    if ((target.cashcap ?? FISCAL_DEFAULT.cashcap) !== (f0.cashcap ?? FISCAL_DEFAULT.cashcap)) out.push(target.cashcap ? JA`手元の資金の上限 税収の ${target.cashcap} 年分` : '手元の資金の上限なし'); // 回 KE15
     if ((target.rdcredit ?? FISCAL_DEFAULT.rdcredit) !== (f0.rdcredit ?? FISCAL_DEFAULT.rdcredit)) out.push(JA`研究開発の税額控除 ${p(target.rdcredit)}`);
     for (const [k, b] of Object.entries(BUDGET)) if ((target.budget?.[k] || 0) !== (f0.budget?.[k] || 0)) out.push(JA`${b.label}の予算 ${Math.round((target.budget?.[k] || 0) * 100)}%`);
     if (['ceil', 'ration', 'ban', 'embargo', 'reserve', 'floor'].some((k) => JSON.stringify(target[k] || {}) !== JSON.stringify(f0[k] || {}))) out.push(this.ctlText(target) || JA`価格統制と交易の規制をやめる`); // 回 KE9

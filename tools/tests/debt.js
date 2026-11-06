@@ -1,6 +1,7 @@
 // 国債と財政の反応 (段 4 の 3) の試験: 国債が出ること・残高と持ち越しがマイナスにならないこと・手元の資金が税収の DEBT.cash 年分ほどに
-// 収まる (超えた分は国債の返済か行政サービスに使う) こと・人間が動かす首都は、赤字の上限が「なし」なら国債を出さず行政サービスも払わず、
+// 収まる (超えた分は国債の返済か行政サービスに使う) こと・人間が動かす首都は、赤字の上限が「なし」なら国債を出さず、
 // 上限を選ぶとその分だけ借りられる (使える資金が増える) こと・保存と読み込みで残ること。画面なしの版で回す
+// 回 KE15 (B-069・QD-99): 人間が動かす首都の手元の資金は、財政で選んだ上限 (既定は税収の 1 年分) を超えた分を行政サービスに使う。上限なしなら前と同じく使わずに貯める
 // 使い方: node tools/tests/debt.js [シード] [年数]
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
@@ -29,10 +30,24 @@ const d = JSON.parse(JSON.stringify(sim.buildSave(g)));
 const g2 = new sim.Game(sim.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
 g2.restore(d);
 res.saveLoad = Object.keys(g.govs).every((k) => g2.govs[k]?.bond === g.govs[k].bond && JSON.stringify(g2.govs[k]?.fr) === JSON.stringify(g.govs[k].fr));
-// 人間が動かす首都 (観戦でない) は前のまま
+// 人間が動かす首都 (観戦でない): 赤字の上限が「なし」なら国債を出さない
 const h = sim.run(sim.newGame(seed, { nations: 6, spectate: false }), 30);
 const cap = h.gov(h.cap);
-res.humanExempt = !(cap.bond > 0) && !(cap.ledger?.public) && h.funds(h.cap) === cap.credits;
+res.humanExempt = !(cap.bond > 0) && h.funds(h.cap) === cap.credits;
+// 手元の資金の上限 (回 KE15): 既定 (税収の 1 年分) なら、超えた分を行政サービスに使い、資金は上限の近くに収まる (1 刻みで超えた分の 22% を使うので、少し上で釣り合う)
+const capT = () => Math.max((cap.ledger?.tax || 0) + (cap.ledger?.natives || 0), sim.tables.FISCAL_DEFAULT.tax * cap.fr.y);
+const c30 = cap.credits, T30 = capT();
+res.cashCap = h.fiscalFor(h.cap, h.cap).cashcap === 1 && (cap.ledger?.public || 0) < 0 && c30 < 2 * T30 && c30 > 0.5 * T30;
+// 上限なしにすると前と同じく使わずに貯まる。選べない値 (3 年分) は選べない
+const okNone = h.setFiscal({ cashcap: 0 }, true).ok;
+sim.run(h, 20);
+res.cashCapNone = okNone && h.fiscalFor(h.cap, h.cap).cashcap === 0 && cap.credits > c30 + 5 * capT() && h.setFiscal({ cashcap: 3 }, true).ok === false;
+// 保存と読み込みで上限が残る
+const hd = JSON.parse(JSON.stringify(sim.buildSave(h)));
+const h2 = new sim.Game(sim.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));
+h2.restore(hd);
+res.cashCapSave = h2.fiscalFor(h2.cap, h2.cap).cashcap === 0;
+h.setFiscal({ cashcap: 1 }, true);
 const set = h.setFiscal({ deficit: 0.03 }, true).ok, room = h.funds(h.cap) - cap.credits;
 res.deficitRoom = set && Math.abs(room - Math.min(0.03 * cap.fr.y, DEBT.limit * cap.fr.y)) < 1e-6 && room > 0 && h.setFiscal({ deficit: 0.0225 }, true).ok === false && h.setFiscal({ deficit: 0.2 }, true).ok === false; // 刻み (0.5%) と幅 (15%) の外は選べない
 const ok = Object.values(res).every(Boolean);

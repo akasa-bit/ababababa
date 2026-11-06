@@ -142,7 +142,7 @@ function onPanelChange(e) {
   }
   else if (act === 'fiscal') {
     const c = app.game.fiscalDraft(); // 審議中の法案があれば、その値から (政治。回 SE7)
-    const d = { tax: c.tax, ctax: c.ctax || 0, tariff: c.tariff || 0, rate: c.rate, deficit: c.deficit || 0, ...c.budget };
+    const d = { tax: c.tax, ctax: c.ctax || 0, tariff: c.tariff || 0, rate: c.rate, deficit: c.deficit || 0, cashcap: c.cashcap ?? FISCAL_DEFAULT.cashcap, ...c.budget };
     const k = e.target.dataset.k;
     d[k] = Number(v);
     issue('fiscal', d);

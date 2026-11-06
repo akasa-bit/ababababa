@@ -3,7 +3,7 @@ function requestsTable(g) {
   const name = (id) => esc(g.system(id).name);
   const vis = g.requests.filter((q) => g.departSeen(q.from, q.sent));
   const rows = [...vis].sort((a, b) => a.arrive - b.arrive).slice(0, 40).map((q) => {
-    const what = q.kind === 'build' ? TR`建設資材 (${esc(q.label)})` : q.kind === 'order' ? TR`指令「${esc(q.label)}」` : q.kind === 'tribute' ? TR`朝貢 ${fmtAmt(q.amt)} cr` : q.kind === 'grant' ? TR`資金援助 ${fmtAmt(q.amt)} cr${q.auto ? TR(' (自動)') : ''}`
+    const what = q.kind === 'build' ? TR`建設資材 (${esc(q.label)})` : q.kind === 'order' ? TR`指令「${esc(q.label)}」` : q.kind === 'tribute' ? TR`朝貢 ${fmtAmt(q.amt)} cr` : q.kind === 'grant' ? TR`資金援助 ${fmtAmt(q.amt)} cr${q.auto ? TR(' (自動)') : ''}` : q.kind === 'colask' ? TR`入植船の資金の願い ${fmtAmt(q.amt)} cr`
       : `${resText(q.res)} ${fmtAmt(q.amt)}${q.shipped ? TR` <span class="muted">(発送済み ${fmtAmt(q.shipped)})</span>` : ''}`;
     const seen = q.arrive + (g.spectate ? 0 : g.lightDelay(q.to)); // 届いたことが地球に見える年
     const team = q.kind === 'order' && g.orderYears(q.act, q.d, q.to) > g.lightDelay(q.to) + 1e-9; // 人を船で送る指令 (医療団など)

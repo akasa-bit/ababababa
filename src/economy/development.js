@@ -188,6 +188,7 @@
       const id = s.id;
       if (this.isHuman(id) && !this.spectate) continue; // 地球政府はプレイヤー (観戦モードでは自動で動く)
       const gv = this.gov(id);
+      if (gv.colFund?.length) this.colonyFundPay(id); // 国の入植の予算: 取っておいた家臣の入植船の資金を送る (回 KE15)
       if (gv.direct) continue; // 直轄の星系は地球が動かす
       const mine = this.routes.filter((r) => r.a === id || r.b === id);
       if (mine.length < 3) {
@@ -209,9 +210,47 @@
       const why = gv.mandate === 'expand' ? '委任方針「拡張」に従った' : '入植できる時期になり、資金があった';
       const need = (gv.mandate === 'expand' ? 1 : 1.2) * cost.credits;
       // 足りなければ、入植船の分を行政サービスに回さずに取っておく (投資が先。fiscal.js の debtStep。回 KE14・B-131)
-      if (this.funds(id) < need || this.procure(cost, id).why) { gv.saveFor = { c: need, y: this.year }; this.govDidOnce(id, JA`${best.t.name} への入植船を見送った`, '資金か資材が足りなかった'); continue; }
+      if (this.funds(id) < need || this.procure(cost, id).why) {
+        gv.saveFor = { c: need, y: this.year };
+        this.govDidOnce(id, JA`${best.t.name} への入植船を見送った`, '資金か資材が足りなかった');
+        if (this.funds(id) < need) this.askColonyFunds(id, need - Math.max(0, gv.credits)); // 足りない資金を国の首都に願い出る (回 KE15)
+        continue;
+      }
       if (this.dispatch(id, best.t.id, best.b.id, best.kind).ok) { gv.lastColony = this.year; delete gv.saveFor; this.govDid(id, JA`${best.t.name} へ入植船を出した`, why); }
     }
+  }
+  // 国の入植の予算 (回 KE15・B-069。fiscal-consts.js の COLONY_FUND): 家臣の星系の政府が、入植船の足りない資金を国の首都へ光速で願い出る。
+  // 人間が動かす首都には願わない (プレイヤーの資金を勝手に使わない。資金援助は手で送れる)。願いは、往復の光の時間と取っておく年数のあいだに 1 度まで
+  askColonyFunds(id, amt) {
+    const root = this.realmOf(id), gv = this.gov(id);
+    if (root === id || !this.govs[root] || !(amt >= 1) || (this.isHuman(root) && !this.spectate)) return;
+    if (gv.colAsk !== undefined && this.year - gv.colAsk < 2 * this.travelYears(id, root) + INVEST_PLAN.years) return;
+    gv.colAsk = this.year;
+    this.requests.push({ id: this.nextShipId++, kind: 'colask', from: id, to: root, amt, sent: this.year, arrive: this.year + this.travelYears(id, root), state: 'sending' });
+  }
+  // 願いが首都に届いた: まだ同じ国の家臣で、首都を人間が動かしていなければ、取っておく願いに入れる (同じ家臣の前の願いは置き換える)。
+  // 願いの合計は首都の税収の COLONY_FUND.share 年分まで。すぐ払えれば払う
+  colonyAskArrived(q) {
+    const root = q.to, cg = this.govs[root];
+    if (!cg || !this.isColonized(q.from) || this.realmOf(q.from) !== root || (this.isHuman(root) && !this.spectate)) return;
+    const list = (cg.colFund || []).filter((x) => x.to !== q.from && this.year - x.y < INVEST_PLAN.years);
+    const T = Math.max(0, (cg.ledger?.tax || 0) + (cg.ledger?.natives || 0));
+    if (list.reduce((k, x) => k + x.amt, 0) + q.amt > COLONY_FUND.share * T) { cg.colFund = list; return; }
+    list.push({ to: q.from, amt: q.amt, y: this.year });
+    cg.colFund = list;
+    this.colonyFundPay(root);
+  }
+  // 取っておいた願いを、古い順に、首都の手元の資金 (自分の入植船の取り置きを除く) で払える分だけ資金援助で送る (光速で届く)
+  colonyFundPay(root) {
+    const cg = this.govs[root];
+    cg.colFund = (cg.colFund || []).filter((x) => this.year - x.y < INVEST_PLAN.years && this.isColonized(x.to) && this.realmOf(x.to) === root);
+    const own = cg.saveFor && this.year - cg.saveFor.y < INVEST_PLAN.years ? cg.saveFor.c : 0;
+    while (cg.colFund.length && cg.credits - own >= cg.colFund[0].amt) {
+      const x = cg.colFund.shift();
+      if (!this.sendGrant(root, x.to, x.amt, true).ok) break;
+      this.govDid(root, JA`${this.system(x.to).name} の入植船の資金 ${fmtAmt(x.amt)} cr を送った`, '家臣の星系が入植船の資金を願い出て、国の入植の予算に余裕があった');
+    }
+    if (!cg.colFund.length) delete cg.colFund;
   }
   // 入植できる状態か: 人口300万以上、入植船を準備・航行中でなく、前の入植から10年 (観戦モードの地球政府は5年) たっている。
   // 委任方針が拡張なら6年。国家方針が拡張期なら −4年、整備期なら +5年 (最短3年)

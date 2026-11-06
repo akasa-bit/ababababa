@@ -25,7 +25,8 @@
   // 行政サービス (民間の賃金と買い付け) には、式で決まる使える額 (税収 − s* × GDP) から、ふだんの支出 (建設・船・維持費・予算など、
   // DEBT.spend 年ほどでならした額) を除いた残りを使う (投資が先、行政サービスが後)。買い物で資金がマイナスになった分 (funds の
   // 借りられる額で買った分) は国債で埋める。手元の資金が税収の DEBT.cash 年分を超えたら、超えた分を行政サービスに使う (国債を返すのは式の分だけ。回 KE1)。
-  // 人間が動かす首都は、財政で選んだ赤字の上限の範囲で、資金のマイナスを国債で埋め、手元の資金が多すぎれば国債を返す (行政サービスは自動では払わない)
+  // 人間が動かす首都は、財政で選んだ赤字の上限の範囲で、資金のマイナスを国債で埋め、手元の資金が多すぎれば国債を返す。財政で選んだ資金の上限 (税収の何年分) を
+  // 超えた分は行政サービスに使う (回 KE15。前は自動では払わず、何もしないと資金が山になった)
   debtStep(h) {
     const war = new Set(Object.keys(this.realmWars).flatMap((k) => k.split('|').map(Number)));
     const keep = GM.pow(DEBT.ar, h), out = 1 - GM.exp(-h / DEBT.spend), fade = GM.exp(-h);
@@ -49,6 +50,13 @@
         if (gv.credits < 0 && deficit > 0 && !this.dfltOut(gv)) { const x = -gv.credits; gv.credits = 0; gv.bond = (gv.bond || 0) + x; gv.bw += x; }
         const extra = gv.credits - keepCash;
         if (extra > 0 && gv.bond > 0) { const x = Math.min(gv.bond, extra * out); gv.credits -= x; gv.bond -= x; }
+        // 手元の資金の上限 (財政の法 cashcap。税収の何年分。回 KE15・QD-99): 超えた分を AI の国の政府と同じく行政サービスに使う。
+        // 税収は帳簿のならし (始めの数年は 0 から上がる) と、税率 × GDP の見込みの大きいほう (始めの資金を始めの年に使いきらないように)
+        const fi = this.fiscalFor(id, id), cap = fi.cashcap ?? FISCAL_DEFAULT.cashcap;
+        if (cap > 0) {
+          const T = Math.max(0, (gv.ledger?.tax || 0) + (gv.ledger?.natives || 0), taxRateOf(fi.tax) * fr.y), over = gv.credits - cap * T;
+          if (over > 0) this.earn('public', -over * out, id, { hh: id });
+        }
         continue;
       }
       // ふだんの支出 = (税・先住民・利子の受け取り) − 前の刻みの終わりからの資金の増加 (国債の出し入れと行政サービスは含まない)
@@ -71,7 +79,8 @@
       const T = Math.max(0, (gv.ledger?.tax || 0) + (gv.ledger?.natives || 0));
       // 入植船を出したいのに資金が足りない政府は、その額を行政サービスに使わずに取っておく (資本の予算。投資が先、行政サービスが後。回 KE14・B-131)。
       // 前は行政サービスが刻みごとに使える額を使いきり、まとまった買い物 (入植船 500 cr) の資金がたまらなかった
-      const res = gv.saveFor && this.year - gv.saveFor.y < INVEST_PLAN.years ? gv.saveFor.c : 0;
+      const res = (gv.saveFor && this.year - gv.saveFor.y < INVEST_PLAN.years ? gv.saveFor.c : 0)
+        + (gv.colFund || []).reduce((k, x) => k + (this.year - x.y < INVEST_PLAN.years ? x.amt : 0), 0); // 国の入植の予算で取っておく家臣の入植船の資金 (回 KE15)
       const pub = Math.min(Math.max(0, gv.credits - res), Math.max(0, T - s * fr.y - (fr.d ?? 0)) * h);
       if (pub > 0) this.earn('public', -pub, id, { hh: id });
       const extra = gv.credits - Math.max(keepCash, res);
@@ -239,7 +248,7 @@
     if (cb !== 0 && cb !== 1) return fail('選べない値');
     // 任せていたのをやめるときは、いまの中央銀行の政策金利から始める
     const start = cb0 === 1 && cb === 0 && (d.rate === undefined || Number(d.rate) === dec.rate);
-    const tax = taxRateOf(rawTax), rate = start ? clamp(Math.round(this.cbRateAt(this.cap) / RATE_STEP) * RATE_STEP, RATE_RANGE[0], RATE_RANGE[1]) : Number(d.rate ?? dec.rate), deficit = Number(d.deficit ?? cur.deficit ?? 0), ctax = Number(d.ctax ?? cur.ctax ?? 0), tariff = Number(d.tariff ?? cur.tariff ?? 0);
+    const tax = taxRateOf(rawTax), rate = start ? clamp(Math.round(this.cbRateAt(this.cap) / RATE_STEP) * RATE_STEP, RATE_RANGE[0], RATE_RANGE[1]) : Number(d.rate ?? dec.rate), deficit = Number(d.deficit ?? cur.deficit ?? 0), cashcap = Number(d.cashcap ?? cur.cashcap ?? FISCAL_DEFAULT.cashcap), ctax = Number(d.ctax ?? cur.ctax ?? 0), tariff = Number(d.tariff ?? cur.tariff ?? 0);
     const rdcredit = Number(d.rdcredit ?? cur.rdcredit ?? FISCAL_DEFAULT.rdcredit); // 研究開発の税額控除 (回 KE6。前の版のセーブは既定)
     // 物価の目標と量的緩和 (中央銀行の決定なので、政策金利と同じくすぐ)・金融抑圧 (法なので審議にかける)。回 KE9・B-009。前の版のセーブは既定
     const pistar = Number(d.pistar ?? dec.pistar ?? FISCAL_DEFAULT.pistar), qe = Number(d.qe ?? dec.qe ?? 0), repress = Number(d.repress ?? cur.repress ?? 0);
@@ -251,6 +260,7 @@
     if ((typeof rawTax === 'number' && !onStep(tax, TAX_RANGE, TAX_STEP)) || tax < TAX_RANGE[0] - 1e-9 || tax > TAX_RANGE[1] + 1e-9) return fail(JA`税率は ${TAX_RANGE[0] * 100}〜${TAX_RANGE[1] * 100}% (刻み ${TAX_STEP * 100}%)`);
     if (!onStep(rate, RATE_RANGE, RATE_STEP)) return fail(JA`政策金利は年 ${RATE_RANGE[0] * 100}〜${RATE_RANGE[1] * 100}% (刻み ${RATE_STEP * 100}%)`);
     if (!onStep(deficit, DEFICIT_RANGE, DEFICIT_STEP)) return fail(JA`赤字の上限は GDP の 0〜${DEFICIT_RANGE[1] * 100}% (刻み ${DEFICIT_STEP * 100}%)`);
+    if (!CASHCAP_CHOICES.includes(cashcap)) return fail(JA`手元の資金の上限は税収の ${CASHCAP_CHOICES.filter((x) => x).join('・')} 年分か、上限なし`); // 回 KE15
     if (!onStep(ctax, CTAX_RANGE, CTAX_STEP)) return fail(JA`消費税は 0〜${CTAX_RANGE[1] * 100}% (刻み ${CTAX_STEP * 100}%)`);
     if (!onStep(tariff, TARIFF_RANGE, TARIFF_STEP)) return fail(JA`関税は 0〜${TARIFF_RANGE[1] * 100}% (刻み ${TARIFF_STEP * 100}%)`);
     if (tariff > this.modsOf(this.cap).tariffMax + 1e-9) return fail(JA`商才の種族の国は、関税を ${this.modsOf(this.cap).tariffMax * 100}% より上げられない`); // 回 SE8
@@ -268,9 +278,9 @@
     const ctl = this.fiscalCtl(d, cur);
     if (!ctl.ok) return ctl;
     const { ceil, ration, ban, embargo, reserve, floor } = ctl;
-    const next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, ceil, ration, ban, embargo, pistar, qe, repress, soe, capctl, land, reserve, floor };
+    const next = { tax, ctax, tariff, rate, cb, deficit, cashcap, rdcredit, budget, ceil, ration, ban, embargo, pistar, qe, repress, soe, capctl, land, reserve, floor };
     const same = (a, b) => JSON.stringify(a || {}) === JSON.stringify(b || {});
-    const rest = !(Math.abs(tax - taxRateOf(dec.tax)) < 1e-9 && ctax === (dec.ctax || 0) && tariff === (dec.tariff || 0) && deficit === (dec.deficit || 0) && rdcredit === (dec.rdcredit ?? FISCAL_DEFAULT.rdcredit) && Object.keys(BUDGET).every((k) => budget[k] === (dec.budget?.[k] || 0))
+    const rest = !(Math.abs(tax - taxRateOf(dec.tax)) < 1e-9 && ctax === (dec.ctax || 0) && tariff === (dec.tariff || 0) && deficit === (dec.deficit || 0) && cashcap === (dec.cashcap ?? FISCAL_DEFAULT.cashcap) && rdcredit === (dec.rdcredit ?? FISCAL_DEFAULT.rdcredit) && Object.keys(BUDGET).every((k) => budget[k] === (dec.budget?.[k] || 0))
       && same(ceil, dec.ceil) && same(ration, dec.ration) && same(ban, dec.ban) && same(embargo, dec.embargo) && same(reserve, dec.reserve) && same(floor, dec.floor) && repress === (dec.repress || 0) && soe === (dec.soe || 0) && capctl === (dec.capctl || 0) && land === (dec.land || 0));
     const cbPart = rate !== dec.rate || cb !== cb0 || pistar !== (dec.pistar ?? FISCAL_DEFAULT.pistar) || qe !== (dec.qe || 0);
     if (now) return rest || cbPart ? this.applyFiscal(next) : fail('いまと同じ');
@@ -311,15 +321,15 @@
     for (const [r, v] of Object.entries(pick('floor'))) { const k = Number(v); if (!RESERVE_RES.includes(r) || !(k === 0 || onStep(k, FLOOR_RANGE, FLOOR_STEP))) return fail(JA`価格の下限は基準の値段の ${FLOOR_RANGE[0]}〜${FLOOR_RANGE[1]} 倍 (刻み ${FLOOR_STEP})`); if (k) floor[r] = k; }
     return { ok: true, ceil: sorted(ceil), ration: sorted(ration), ban: sorted(ban), embargo: sorted(embargo), reserve: sorted(reserve), floor: sorted(floor) };
   }
-  // 財政をいま変える (法案が通ったとき・政策金利・試験)。next = { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, ceil, ration, ban, embargo, pistar, qe, repress, soe, capctl, land, reserve, floor }
+  // 財政をいま変える (法案が通ったとき・政策金利・試験)。next = { tax, ctax, tariff, rate, cb, deficit, cashcap, rdcredit, budget, ceil, ration, ban, embargo, pistar, qe, repress, soe, capctl, land, reserve, floor }
   applyFiscal(n) {
-    const cur = this.fiscal || FISCAL_DEFAULT, next = { tax: taxRateOf(n.tax), ctax: n.ctax || 0, tariff: n.tariff || 0, rate: n.rate, cb: n.cb ?? 1, deficit: n.deficit || 0, rdcredit: n.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...FISCAL_DEFAULT.budget, ...(n.budget || {}) },
+    const cur = this.fiscal || FISCAL_DEFAULT, next = { tax: taxRateOf(n.tax), ctax: n.ctax || 0, tariff: n.tariff || 0, rate: n.rate, cb: n.cb ?? 1, deficit: n.deficit || 0, cashcap: n.cashcap ?? FISCAL_DEFAULT.cashcap, rdcredit: n.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...FISCAL_DEFAULT.budget, ...(n.budget || {}) },
       ceil: { ...(n.ceil || {}) }, ration: { ...(n.ration || {}) }, ban: { ...(n.ban || {}) }, embargo: { ...(n.embargo || {}) }, pistar: n.pistar ?? FISCAL_DEFAULT.pistar, qe: n.qe || 0, repress: n.repress || 0, soe: n.soe || 0, capctl: n.capctl || 0, land: n.land || 0, reserve: { ...(n.reserve || {}) }, floor: { ...(n.floor || {}) } };
-    const { tax, ctax, tariff, rate, cb, deficit, rdcredit, budget, pistar, qe, repress, soe, capctl, land } = next;
+    const { tax, ctax, tariff, rate, cb, deficit, cashcap, rdcredit, budget, pistar, qe, repress, soe, capctl, land } = next;
     // 前の財政 = いま首都で効いている値 (行政の遅れの途中の手段は、その前の値)。手段ごとの効き始め on: 変えた手段は今 + 行政の遅れ、変えていない手段は前の効き始めのまま。
     // 同じ時に 2 度変えたとき (政策金利と、すぐ通った法案。回 SE7) は 1 度目を直したものとみて、1 度目の前の財政を引き継ぐ (遠い星系が光の遅れなしに 1 度目を受けないように)
     const e = cur.since === this.year && cur.prev ? cur.prev : this.fiscalFor(this.cap, this.cap);
-    const prev = { tax: taxRateOf(e.tax), ctax: e.ctax || 0, tariff: e.tariff || 0, rate: e.rate, cb: e.cb ?? 1, deficit: e.deficit || 0, rdcredit: e.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...(e.budget || FISCAL_DEFAULT.budget) },
+    const prev = { tax: taxRateOf(e.tax), ctax: e.ctax || 0, tariff: e.tariff || 0, rate: e.rate, cb: e.cb ?? 1, deficit: e.deficit || 0, cashcap: e.cashcap ?? FISCAL_DEFAULT.cashcap, rdcredit: e.rdcredit ?? FISCAL_DEFAULT.rdcredit, budget: { ...(e.budget || FISCAL_DEFAULT.budget) },
       ceil: { ...(e.ceil || {}) }, ration: { ...(e.ration || {}) }, ban: { ...(e.ban || {}) }, embargo: { ...(e.embargo || {}) }, pistar: e.pistar ?? FISCAL_DEFAULT.pistar, qe: e.qe || 0, repress: e.repress || 0, soe: e.soe || 0, capctl: e.capctl || 0, land: e.land || 0, reserve: { ...(e.reserve || {}) }, floor: { ...(e.floor || {}) } };
     const on = {};
     const obj = new Set(['ceil', 'ration', 'ban', 'embargo', 'reserve', 'floor']);
@@ -328,7 +338,7 @@
     const changed = Object.keys(next).filter((k) => !eq(k, cur));
     if (changed.length) (this.chron[this.cap] ??= { r: [], m: [] }).m.push([Math.round(this.year * 100) / 100, changed]); // 財政のグラフの印 (回 GA9)
     this.fiscal = { ...next, since: this.year, on, done: Math.max(...Object.values(on)), prev };
-    const parts = [JA`税率は ${(tax * 100).toFixed(1)}%`, JA`消費税は ${(ctax * 100).toFixed(1)}%`, JA`関税は ${(tariff * 100).toFixed(1)}%`, cb ? '政策金利は中央銀行に任せる' : JA`政策金利は年 ${(rate * 100).toFixed(2)}%`, JA`赤字の上限は ${deficit ? JA`GDP の ${(deficit * 100).toFixed(1)}%` : 'なし (国債を出さない)'}`, JA`研究開発の税額控除は ${(rdcredit * 100).toFixed(1)}%`, JA`予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
+    const parts = [JA`税率は ${(tax * 100).toFixed(1)}%`, JA`消費税は ${(ctax * 100).toFixed(1)}%`, JA`関税は ${(tariff * 100).toFixed(1)}%`, cb ? '政策金利は中央銀行に任せる' : JA`政策金利は年 ${(rate * 100).toFixed(2)}%`, JA`赤字の上限は ${deficit ? JA`GDP の ${(deficit * 100).toFixed(1)}%` : 'なし (国債を出さない)'}`, JA`手元の資金の上限は ${cashcap ? JA`税収の ${cashcap} 年分` : 'なし'}`, JA`研究開発の税額控除は ${(rdcredit * 100).toFixed(1)}%`, JA`予算は ${Object.entries(BUDGET).map(([k, b]) => `${b.label} ${Math.round(budget[k] * 100)}%`).join('・')}`];
     const ctl = this.ctlText(next);
     if (ctl) parts.push(JA`価格統制と交易の規制は ${ctl}`);
     if (pistar !== FISCAL_DEFAULT.pistar) parts.push(JA`物価の目標は年 ${(pistar * 100).toFixed(0)}%`);
