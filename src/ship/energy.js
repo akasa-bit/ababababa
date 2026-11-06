@@ -6,8 +6,10 @@
     const rate = this.physics.pv ? this.pvOf(id, this.pvDesign(id)).rate : Math.LN2 / SWARM.doubling;
     return 1 / (1 + (1 / f0 - 1) * GM.exp(-rate * Math.max(0, this.year - t0)));
   }
-  // スウォームの素子の作り (シミュレーション版だけ)。星系の政府が選んだ作り、なければ試合の既定、それもなければ自動 ('auto' も選べる)
+  // スウォームの素子の作り (physics.pv のとき)。星系の政府が選んだ作り、なければ試合の既定、それもなければ自動 ('auto' も選べる)。
+  // physics.pv が 'auto' (ゲーム版。回 FU8・QD-06 = b) なら、選んだ作りは見ずに、いつも自動
   pvDesign(id) {
+    if (this.physics.pv === 'auto') return this.pvAuto(id);
     const k = this.govs[id]?.pvd ?? this.pvPolicy;
     return PV_DESIGNS[k] ? k : this.pvAuto(id);
   }
@@ -34,7 +36,7 @@
   // 素子の作りを変える (星系に届いた指令)。いまの覆う割合から、新しい作りの速さで広がり直す (素子は一度に取り替える。簡単のため)
   setPvDesign(id, k) {
     const gv = this.govs[id];
-    if (!this.physics.pv || !gv || (k !== 'auto' && !PV_DESIGNS[k])) return fail('素子の作りを選べない');
+    if (this.physics.pv !== true || !gv || (k !== 'auto' && !PV_DESIGNS[k])) return fail('素子の作りを選べない'); // 選べるのは physics.pv が true (シミュレーション版) のときだけ
     if (this.isColonized(id)) gv.sw = [Math.max(SWARM.seed, this.swarmCover(id)), this.year];
     gv.pvd = k;
     return { ok: true };
@@ -45,7 +47,7 @@
     if (!cover) return 0;
     const s = this.system(id);
     s.lumSum ??= s.stars.reduce((k, x) => k + (x.lum || 0), 0);
-    // 太陽電池が陽子で傷んだ分と集光の損 (physics.pv のとき = シミュレーション版だけ。ゲーム版は 1 で、星系に何も書かない)
+    // 太陽電池が陽子で傷んだ分と集光の損 (physics.pv のとき。シミュレーション版と、回 FU8 からゲーム版も。物理なしの古いセーブは 1 で、星系に何も書かない)
     const rf = this.physics.pv ? this.pvOf(id, this.pvDesign(id)).rf : 1;
     return s.lumSum * L_SUN_W * cover * PROP.pv * rf * YEAR_S;
   }

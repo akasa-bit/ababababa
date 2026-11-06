@@ -88,21 +88,23 @@ function energyBox(g, id, k) {
   const now = id === g.cap;
   const E = now ? g.energyOf(id) : k?.energy || 0, P = now ? g.power(id) : k?.power || 0;
   const sys = g.system(id), lum = sys.stars.reduce((a, x) => a + (x.lum || 0), 0);
-  const rf = g.physics.pv ? g.pvOf(id, g.pvDesign(id)).rf : 1; // 太陽電池が陽子で傷んだ分と集光の損 (シミュレーション版だけ)
+  const rf = g.physics.pv ? g.pvOf(id, g.pvDesign(id)).rf : 1; // 太陽電池が陽子で傷んだ分と集光の損 (シミュレーション版と、回 FU8 からゲーム版も)
   const cover = lum ? P / (lum * L_SUN_W * PROP.pv * rf * YEAR_S) : 0;
   return TR`<table class="tbl"><tr><td>蓄え</td><td>${fmtJ(E)} <span class="muted">(上限 ${fmtJ(SWARM.store * P)})</span></td></tr>
     <tr><td>スウォームの発電</td><td>${fmtJ(P)}/年</td></tr><tr><td>恒星の光を覆う割合</td><td>${cover >= 0.01 ? pct(cover) : cover.toExponential(1)}${id === 0 ? TR(' <span class="muted">(地球の方向は空けて回る。地球が受ける光は太陽の光の 22 億分の 1 なので、空けても発電はほとんど減らず、地球の気候も変わらない)</span>') : ''}</td></tr>
     <tr><td>交易路で 1 単位 (100 万 t) を運ぶ</td><td>${decUnit() === E_UNIT ? TR`${fmtJ(E_UNIT)} ずつ (送る側の加速・受ける側の減速)` : TR`送る側の加速 ${fmtJ(E_UNIT)}・受ける側の減速 ${fmtJ(decUnit())} (近づく帆を止める光は少なくて済む)`}</td></tr>
     ${g.physics.pv ? pvDesignRows(g, id) : ''}${g.physics.shield ? TR`<tr><td>星間の気体と宇宙線の遮蔽 (10 光年・0.95c)</td><td>${shieldNote(g.physics)}</td></tr>` : ''}</table>`;
 }
-// スウォームの素子の作り (シミュレーション版だけ)。作りごとの出力の残りと、覆う割合が倍になる年数。自国の星系なら選べる (光速の指令)
+// スウォームの素子の作り。作りごとの出力の残りと、覆う割合が倍になる年数。シミュレーション版 (physics.pv = true) は自国の星系なら選べる (光速の指令)。
+// ゲーム版 ('auto'。回 FU8・QD-06 = b) は自動の作りを見せるだけ
 function pvDesignRows(g, id) {
   const cur = g.pvDesign(id), set = g.govs[id]?.pvd ?? g.pvPolicy ?? 'auto';
   const yrs = (r) => (r > 1e-3 ? TR`${(Math.LN2 / r).toFixed(1)} 年` : TR('広がらない'));
   const list = Object.entries(PV_DESIGNS).map(([k, d]) => { const v = g.pvOf(id, k); return TR`<li><b>${k}. ${d.label}</b>${k === cur ? TR(' (いま)') : ''} — 出力の残り ${pct(v.rf)}・倍になる年数 ${yrs(v.rate)} <span class="muted">(${d.note})</span></li>`; }).join('');
-  const own = g.realmOf(id) === g.cap && g.isColonized(id);
+  const own = g.physics.pv === true && g.realmOf(id) === g.cap && g.isColonized(id);
   const sel = own ? `<select data-act="pvdesign" data-sys="${id}">${['auto', ...Object.keys(PV_DESIGNS)].map((k) => `<option value="${k}" ${k === set ? 'selected' : ''}>${k === 'auto' ? TR`自動 (${PV_PICK.horizon} 年あとの発電が一番大きい作り)` : `${k}. ${PV_DESIGNS[k].label}`}</option>`).join('')}</select>${id === g.cap ? '' : TR` <small class="muted">届くまで ${g.lightDelay(id).toFixed(1)} 年</small>`}` : '';
-  return TR`<tr><td>スウォームの素子の作り</td><td>いま <b>${cur}. ${PV_DESIGNS[cur].label}</b> ${sel}<ul>${list}</ul><small class="muted">フレアの陽子が電池を傷める (M 型星で強い)。重い素子ほど自己複製で広がるのが遅い。作りを変えると、いまの覆う割合から新しい速さで広がり直す</small></td></tr>`;
+  const tail = g.physics.pv === true ? TR('作りを変えると、いまの覆う割合から新しい速さで広がり直す') : TR`作りは星系ごとに自動 (${PV_PICK.horizon} 年あとの発電が一番大きい作り)`;
+  return TR`<tr><td>スウォームの素子の作り</td><td>いま <b>${cur}. ${PV_DESIGNS[cur].label}</b> ${sel}<ul>${list}</ul><small class="muted">フレアの陽子が電池を傷める (M 型星で強い)。重い素子ほど自己複製で広がるのが遅い。${tail}</small></td></tr>`;
 }
 // エネルギーの収支 (いまの政府)。使った量は負
 function eLedgerHtml(g) {
