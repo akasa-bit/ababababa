@@ -13,10 +13,9 @@
     for (const x of this.realmSystems(realm)) { const d = this.sysDist(x.id, sys); if (!best || d < best.d) best = { id: x.id, d }; }
     return best;
   }
-  // 補給線の効き: 拠点から SUPPLY_NEAR 光年までは1、遠いほど下がって SUPPLY_FAR 光年で 0.5 (それより先も 0.5)
-  lineEff(d) { return d <= SUPPLY_NEAR ? 1 : Math.max(0.5, 1 - (0.5 * (d - SUPPLY_NEAR)) / (SUPPLY_FAR - SUPPLY_NEAR)); }
-  // 艦隊の戦力の倍率: 補給線の効き × (0.5 + 0.5 × 補給の充足率)。補給がまったくなければ半分
-  fleetEff(k = 1, d = 0) { return this.lineEff(d) * (0.5 + 0.5 * k); }
+  // 艦隊の戦力の倍率: 0.5 + 0.5 × 補給の充足率。補給がまったくなければ半分。
+  // (前は補給線の効きも掛けていた: 補給の拠点から 6 光年までは 1、遠いほど下がって 30 光年で 0.5。依頼 2026-11-07 の FU-2「補給線機能無くそう」でやめた。docs/fleet-groups.md の 6)
+  fleetEff(k = 1) { return 0.5 + 0.5 * k; }
   // 艦隊は直行する。交易路が直接結ぶ区間なら 0.95c、それ以外は 0.9c
   fleetYears(from, to) {
     const onRoute = !!this.routeBetween(from, to);
@@ -24,12 +23,16 @@
   }
   // route = 着いたあとに順に回る経由地 (星系の id の列)。艦隊戦・攻囲をまたいでも保たれる
   // chain = 経由地を回っている艦隊の最初の id (取り消しの指令が後を追うのに使う)
-  sendFleet(from, to, n, prefix = '', route = null, chain = undefined) {
+  // g = 艦隊群 (依頼 FU-1。ship/fgroups.js): 渡せばその群の艦だけを送り、艦隊は群のまま。渡さなければ群に入っていない艦だけを送る
+  // (自動防衛配備・群を言わない指令が、群の艦を持っていかないように。群のない国は前と同じ)
+  sendFleet(from, to, n, prefix = '', route = null, chain = undefined, g = undefined) {
     const have = this.garrison[from] || 0;
-    n = Math.min(n, have);
+    const grp = g === undefined || g === null ? undefined : Number(g);
+    n = Math.min(n, grp !== undefined ? this.fgAt(from)?.[grp] || 0 : this.gship[from] ? this.fgFree(from) : have);
     if (from === to || n < 1) return fail('派遣できる艦隊がない');
     this.garrison[from] = have - n;
-    if (this.held[from]) this.held[from] = Math.max(0, this.held[from] - n);
+    if (grp !== undefined) this.fgTake(from, grp, n);
+    else if (this.held[from]) this.held[from] = Math.max(0, this.held[from] - n);
     if (this.awe[from] > this.garrison[from]) this.awe[from] = this.garrison[from];
     const years = this.fleetYears(from, to);
     // 自動防衛配備 (prefix つき) 以外で送った艦隊は、着いた先に命令で駐留する (自動防衛配備で動かさない)
@@ -40,7 +43,7 @@
     // 加速するレーザー: 出発する星系が自国の入植星系ならそこ。ほか (入植していない星系・他国の星系) は、いちばん近い自国の星系のレーザーで押すので、
     // その光が届くまで出発を待つ (光より速くエネルギーを届けない。B-169・監査の 2.8 の m)。払うのもその星系
     const laser = this.laserBase(owner, this.system(from), from);
-    this.pushFleet({ id: this.nextShipId++, from, to, n, owner, start: this.year, depart: this.year + laser.d, arrive: this.year + laser.d + years, laser: laser.id, auto: !!prefix, surprise, route: route?.length ? [...route] : undefined, chain });
+    this.pushFleet({ id: this.nextShipId++, from, to, n, owner, start: this.year, depart: this.year + laser.d, arrive: this.year + laser.d + years, laser: laser.id, auto: !!prefix, surprise, route: route?.length ? [...route] : undefined, chain, ...(grp !== undefined ? { g: grp } : {}) });
     if (surprise) this.message(JA`${this.system(to).name} (${this.realmName(dest)}) への奇襲攻撃に ${n} 艦隊が出撃した。到着すると戦争になる`, from);
     this.message(JA`${prefix}${this.system(from).name} → ${this.system(to).name} へ ${n} 艦隊が出撃 (到着まで ${(laser.d + years).toFixed(2)} 年${laser.d > 0.01 ? JA`。${this.system(laser.id).name} のレーザーの光が届くまで ${laser.d.toFixed(1)} 年待つ` : ''})`, from);
     return { ok: true };
@@ -54,10 +57,10 @@
     return best || { id: realm, d: 0 };
   }
   // 経由地の残りがあれば、着いた星系から次の経由地へ向かう
-  continueRoute(sys, n, route, chain) {
+  continueRoute(sys, n, route, chain, g = undefined) {
     if (!route?.length) return;
     const [next, ...rest] = route;
-    this.sendFleet(sys, next, n, '', rest, chain);
+    this.sendFleet(sys, next, n, '', rest, chain, g);
   }
   // 移動中の艦隊への進路変更の指令。地球から光速で送り、艦隊に追いついた時刻・地点で届く (艦隊は光より遅いので必ず追いつく)
   // 星系 origin (既定は地球) から光速で送った指令が移動中の艦隊 f に追いつく時刻 (二分法)
@@ -102,6 +105,7 @@
       const had = !!f.route?.length || !f.auto;
       f.route = undefined;
       f.auto = true;
+      delete f.g; // 群の艦隊も、取り消したら群から外れて自動防衛配備に任せる (依頼 FU-1)
       return had ? { ok: true } : fail('取り消す指令がない');
     }
     const sys = Number(d.sys);

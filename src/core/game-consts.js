@@ -7,8 +7,6 @@ const WARSHIP_COST = { credits: 150, metal: 100, fuel: 50, rare: 10 };
 const WARSHIP_UPKEEP = 5; // cr/年
 // 兵站: 1艦隊が1年に使う補給物資。駐留する星系 (攻撃中や入植していない星系なら、その国の最も近い星系) の備蓄から出す
 const FLEET_SUPPLY = { fuel: 2, metal: 1 };
-// 補給線: 補給の拠点からこの距離 [光年] までは戦力そのまま、遠いほど落ち、SUPPLY_FAR で半分 (それより先も半分)
-const SUPPLY_NEAR = 6, SUPPLY_FAR = 30;
 const WARSHIP_BATCH = [1, 5, 10, 20]; // 一括編成の数
 // 編成中の艦隊の数 (一括編成は1件で n 艦隊)
 const queuedWarships = (list, sys) => list.reduce((k, j) => k + (j.type === 'warship' && j.sys === sys ? j.n || 1 : 0), 0);
@@ -33,7 +31,7 @@ const ME_TAX_LABEL = '首都の税収'; // 定期の資金援助の割合の元 
 const REALM_COLORS = ['#ff9f43', '#ee5aa8', '#a3e635', '#f5d142', '#60a5fa', '#c084fc', '#f87171', '#34d399'];
 const CMD_LABEL = {
   peace: '講和の申し入れ', send: '入植船を送る', candsend: '入植船を送る', upgrade: '施設の拡張', route: '交易路の開設', route2: '交易路の開設', uproute: '交易路の拡張',
-  warship: '艦隊の編成', fort: '宇宙要塞の強化', fleet: '艦隊の派遣', strike: '光速の一撃', redirect: '艦隊の進路変更', fleetclear: '艦隊への指令の取り消し', gift: '先住民への贈り物', integrate: '先住民を市民に', conquer: '先住民の制圧', enslave: '奴隷化',
+  warship: '艦隊の編成', fort: '宇宙要塞の強化', fleet: '艦隊の派遣', strike: '光速の一撃', redirect: '艦隊の進路変更', fleetclear: '艦隊への指令の取り消し', fgassign: '艦隊群に入れる', fgfree: '艦隊群から外す', gift: '先住民への贈り物', integrate: '先住民を市民に', conquer: '先住民の制圧', enslave: '奴隷化',
   slavetype: '奴隷の扱いの変更', liberate: '先住民の解放', train: '歩兵の訓練', troopsend: '歩兵の派遣', outpost: '採掘基地の建設', focus: '方針の変更',
   rule: '統治体制の変更', bundle: '約定の交渉', include: '集団の権力への近さ', jointcut: '共同統治の分け前', depose: '統治者の任免', fiscal: '財政の変更', mandate: '委任方針の変更', governor: '総督の方針の変更', decide: '返事', policy: '国家方針の変更',
 };

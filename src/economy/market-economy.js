@@ -727,9 +727,9 @@
     }
     for (const b of this.battles) {
       const sa = supply(b.realm, b.sys, b.a, b.realm), sd = supply(this.realmOf(b.sys), b.sys, b.d);
-      b.sup = smooth(b.sup, sa.k); b.line = sa.d; b.dsup = smooth(b.dsup, sd.k);
+      b.sup = smooth(b.sup, sa.k); b.dsup = smooth(b.dsup, sd.k);
     }
-    for (const g of this.sieges) { const sp = supply(g.realm, g.sys, g.ships, g.realm); g.sup = smooth(g.sup, sp.k); g.line = sp.d; }
+    for (const g of this.sieges) { const sp = supply(g.realm, g.sys, g.ships, g.realm); g.sup = smooth(g.sup, sp.k); }
 
     this.flow = flow;
     // 学歴と学力を決める所得 (SCHOOL.smooth。回 KE5): 刻みの終わりの、市場で測った 1 人あたりの実質の所得 (R10・R62 と同じ incomeUSD) をならす。始めは生産力から。

@@ -53,10 +53,10 @@ function politicsSheet(app) {
   }).join('');
   const myEx = Math.round(g.exhaustion[g.cap] || 0);
   const sieges = g.knownSystems().map((x) => ({ x, sg: g.known(x.id)?.siege })).filter((v) => v.sg).map(({ x, sg }) => TR`<tr><td>${goto(x)}</td>
-    <td><span class="dot" style="background:${realmColor(sg.realm)}"></span>${esc(g.system(sg.realm).name)} の国</td><td>${sg.ships} 艦隊</td><td>${pct(sg.progress)}</td><td>${supplyCell(sg.eff, sg.line)}</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
+    <td><span class="dot" style="background:${realmColor(sg.realm)}"></span>${esc(g.system(sg.realm).name)} の国</td><td>${sg.ships} 艦隊</td><td>${pct(sg.progress)}</td><td>${supplyCell(sg.eff)}</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
   const battles = g.knownSystems().map((x) => ({ x, bt: g.known(x.id)?.battle })).filter((v) => v.bt).map(({ x, bt }) => TR`<tr><td>${goto(x)}</td>
     <td><span class="dot" style="background:${realmColor(bt.realm)}"></span>${esc(g.system(bt.realm).name)} の国</td><td>${Math.ceil(bt.a)} / ${Math.round(bt.a0)} 艦隊</td>
-    <td>${Math.ceil(bt.d)} / ${Math.round(bt.d0)} 艦隊</td><td>攻 ${supplyCell(bt.ea, bt.line)}<br>防 ${supplyCell(bt.ed)}</td><td>${bt.start.toFixed(1)}年から</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
+    <td>${Math.ceil(bt.d)} / ${Math.round(bt.d0)} 艦隊</td><td>攻 ${supplyCell(bt.ea)}<br>防 ${supplyCell(bt.ed)}</td><td>${bt.start.toFixed(1)}年から</td><td>${ageBadge(g, x.id)}</td></tr>`).join('');
   return TR`<h3>忠誠と自立</h3>
     <p class="note">星系の政府は忠誠度を持つ。忠誠度の目標は、主人や首都から遠いほど少し下がる (1光年あたり 0.6 と 0.3)。主人より人口が多い、指令が多すぎても下がり、主人の星系の艦隊・支援・統治体制・認めた要求・国家方針で上下する。遠い星系ほど関与が届くのに時間と政治力がかかる。
       自立を求める動き (<b>不満</b>) は、<b>離反の起きやすさ</b> (年あたりのハザード = 基準 × 統治体制 × 通信の遅れ ÷ 1 世代 (${GENERATION_YEARS} 年) × 主人との人口の比 × 忠誠度) に従って起き、${UNREST_YEARS}年続くと主人へ<b>要求</b> (朝貢の免除か自治) を出す。主人が${ME.home}なら要求は光速で${ME.home}に届き (イベントタブの「決めること」)、返事も光速で戻る。総督の方針を前もって預けておけば、現地ですぐ決まる。のめば不満は収まる。拒めば<b>最後通牒</b>になり、${ULTIMATUM_YEARS}年後に独立を宣言するおそれがある (恐怖度・主人との友好度・忠誠度が高いほど確率が下がる。恐怖度100で 0.1 倍、友好度100で ${1 - FRIEND_DAMP} 倍、忠誠度100で 0.5 倍)。要求を出す前に、忠誠度が${UNREST_CALM}か動きが始まったときの忠誠度 +15 の高いほうまで上がれば収まる。

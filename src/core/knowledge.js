@@ -71,6 +71,7 @@
       })),
       stock: { ...this.stockOf(id) },
       prod: fl ? { ...fl.prod } : zeroRes(), cons: fl ? { ...fl.cons } : zeroRes(),
+      ...(this.gship[id] ? { fg: this.fgAt(id) || undefined, fgn: this.fgCount(id) } : {}), // 艦隊群の艦の数 (依頼 FU-1。ship/fgroups.js)
       garrison: this.garrison[id] || 0, fort: this.forts?.[id] || 0, held: this.held[id] || 0, awe: this.awe[id] || 0, supply: this.supplied[id]?.k,
       projects: this.projects.filter((j) => j.sys === id).map((j) => ({ type: j.type, n: j.n, col: j.col, fac: j.fac, body: j.body, to: j.to, kind: j.kind, start: j.start, ready: j.ready, label: j.label })),
       // gdp = ならした GDP (財政のグラフ。回 GA9・B-059)
@@ -89,8 +90,8 @@
       unrest: gv?.unrest?.stage ? { ...gv.unrest } : null, direct: !!gv?.direct, mandate: gv?.mandate || 'balanced', governor: gv?.governor || 'ask',
       taxFree: gv?.taxFree || 0, autonomy: gv?.autonomy || 0, ...(gv?.regime ? { regime: gv.regime } : {}), ...(gv?.law ? { law: gv.law } : {}), ...(gv?.fact ? { fact: gv.fact } : {}), ...(gv?.elite ? { elite: gv.elite } : {}), ...(gv?.include ? { include: { ...gv.include } } : {}), ...(this.isColonized(id) ? { groups: this.groupsOf(id) } : {}), ...(gv?.lord2 !== undefined ? { lord2: gv.lord2 } : {}), ...(gv?.jointCut ? { jointCut: true } : {}), ...(gv?.arrears ? { arrears: gv.arrears } : {}), ...(gv?.scar ? { scar: gv.scar } : {}), ...(gv?.did?.length ? { did: gv.did.slice() } : {}), ...(this.exhaustion?.[id] && this.isColonized(id) && this.realmOf(id) === id ? { exh: this.exhaustion[id] } : {}), policy: this.isColonized(id) ? this.policyAt(id) : null,
       loyalty: gv ? gv.loyalty ?? LOYALTY_START : null, orders: gv ? gv.orders || 0 : 0, fear: gv ? gv.fear || 0 : 0, friend: gv ? gv.friend || 0 : 0, lordTrade: gv ? gv.lordTrade || 0 : 0, realm: this.isColonized(id) ? this.realmOf(id) : null, independent: !!gv?.independent, founded: gv ? gv.founded : undefined, aid: gv ? gv.aid || 0 : 0, dep: gv ? gv.dep || 0 : 0,
-      siege: (() => { const g = this.sieges.find((x) => x.sys === id); return g ? { realm: g.realm, ships: g.ships, progress: g.progress, eff: this.fleetEff(g.sup, g.line), line: g.line } : null; })(),
-      battle: (() => { const b = this.battleAt(id); return b ? { realm: b.realm, a: b.a, d: b.d, a0: b.a0, d0: b.d0, start: b.start, ea: this.fleetEff(b.sup, b.line), ed: this.fleetEff(b.dsup, 0), line: b.line } : null; })(),
+      siege: (() => { const g = this.sieges.find((x) => x.sys === id); return g ? { realm: g.realm, ships: g.ships, progress: g.progress, eff: this.fleetEff(g.sup) } : null; })(),
+      battle: this.battleSnap(id), // 艦隊戦の様子 (依頼 FU-1: 星間地図と欄で、要塞・勝つ見込み・沈んだ艦・退いている艦と行き先を見せる。ship/fgroups.js)
     };
   }
   // --- AI の国の知っていること (光の遅れ) ---

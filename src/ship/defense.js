@@ -20,7 +20,8 @@
     const orders = this.requests.filter((q) => q.kind === 'order' && q.act === 'fleet');
     const orderedTo = (id) => orders.filter((q) => Number(q.d.sys) === id).reduce((k, q) => k + (Number(q.d.n) || 0), 0);
     const orderedFrom = (id) => orders.filter((q) => Number(q.d.from) === id).reduce((k, q) => k + (Number(q.d.n) || 0), 0);
-    const heldK = (id) => (id === C ? this.held[C] || 0 : this.known(id)?.held || 0);
+    // 命令で駐留している艦と、艦隊群の艦 (依頼 FU-1) は動かさない
+    const heldK = (id) => (id === C ? this.held[C] || 0 : this.known(id)?.held || 0) + this.knownFgN(id);
     // 威圧のための駐留 (awe) は海賊対策とは別なので、数えず動かさない
     const pirateK = (id) => this.knownGarrison(id) - this.knownAwe(id);
     const gapK = (id) => Math.max(0, this.defenseGoal(id) - pirateK(id) - this.incoming(id) - orderedTo(id));
@@ -78,7 +79,7 @@
     for (const t of targets) {
       const gap = this.aweGap(t.id);
       if (gap <= 0) continue;
-      const spare = Math.max(0, (this.garrison[this.cap] || 0) - Math.max(this.defenseGoal(this.cap), this.held[this.cap] || 0));
+      const spare = Math.max(0, (this.garrison[this.cap] || 0) - Math.max(this.defenseGoal(this.cap), (this.held[this.cap] || 0) + this.fgCount(this.cap))); // 艦隊群の艦は使わない (依頼 FU-1)
       const n = Math.min(gap, spare);
       if (n >= 1) this.command('fleet', { from: this.cap, sys: t.id, n, awe: true });
       short += gap - n;

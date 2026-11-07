@@ -94,6 +94,7 @@ $('fleetbar').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-fa]');
   if (!b) return;
   if (b.dataset.fa === 'amount') app.fleetAmount = b.dataset.v;
+  else if (b.dataset.fa === 'grp') app.fleetGroup = b.dataset.v; // 送る艦 (依頼 FU-1): all・free・群の番号
   else if (b.dataset.fa === 'clear') { app.fleetSel.clear(); app.fleetMove.clear(); }
   else if (b.dataset.fa === 'cancel') app.fleetConfirm = null;
   else if (b.dataset.fa === 'go' && app.fleetConfirm) return orderFleets(app.fleetConfirm);

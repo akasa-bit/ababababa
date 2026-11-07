@@ -258,7 +258,7 @@
   // 星系に駐留している地球の国の艦隊 (命令で駐留している分と威圧の分。太陽系はすべて)
   earthFleetAt(id, root = this.cap) {
     const g = this.garrison[id] || 0;
-    return id === root ? g : Math.min(g, (this.held[id] || 0) + (this.awe[id] || 0));
+    return id === root ? g : Math.min(g, (this.held[id] || 0) + (this.awe[id] || 0) + this.fgCount(id)); // 艦隊群の艦も (依頼 FU-1)
   }
   // 反乱 (独立戦争) を起こしたとき、その星系が持つであろう艦隊: 人口と経済 (施設の規模・資金) に応じて
   rebelFleetOf(cols, credits) {
@@ -481,14 +481,15 @@
         const earth = this.earthFleetAt(x.id, formerRealm);
         const n = this.rebelFleet(x.id);
         raised += n;
+        const gs = this.fgTakeAll(x.id, earth); // 駐留していた艦隊群の艦は、群のまま攻め側になる (依頼 FU-1。ship/fgroups.js)
         this.garrison[x.id] = (this.garrison[x.id] || 0) - earth + n;
         delete this.held[x.id];
         delete this.awe[x.id];
-        if (earth >= 1) clashes.push([x.id, earth]);
+        if (earth >= 1) clashes.push([x.id, earth, gs]);
       }
     }
     this.event('politics', id, JA`${this.system(id).name} が ${this.system(lord).name} への従属をやめ、${peaceful ? JA`${reg.label}から交渉で` : ''}独立を宣言した${followers ? JA` (従属する ${followers} 星系も従う)` : ''}${cause}${war ? JA`。${this.realmName(formerRealm)}と戦争状態に入った (独立軍 ${raised} 艦隊)` : ''}`);
-    for (const [x, earth] of clashes) this.startBattle(x, formerRealm, earth, 0);
+    for (const [x, earth, gs] of clashes) this.startBattle(x, formerRealm, earth, 0, null, gs);
   }
   // 指令が届いたとき: 地球の国の外なら拒否、忠誠度が50未満なら (50−忠誠度)/50 の確率で拒否
   obeys(id, act = null) {

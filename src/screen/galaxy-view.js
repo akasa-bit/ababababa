@@ -611,8 +611,9 @@ class GalaxyView {
         const d = game.system(legTo);
         const [tx, ty] = this.toScreen(d.x, d.y, d.z);
         const ang = Math.atan2(ty - py, tx - px);
-        ctx.strokeStyle = f.surprise ? 'rgba(255,90,90,0.6)' : 'rgba(90,169,255,0.5)';
+        ctx.strokeStyle = f.ret ? 'rgba(255,180,80,0.75)' : f.surprise ? 'rgba(255,90,90,0.6)' : 'rgba(90,169,255,0.5)'; // 退却は橙 (依頼 FU-1)
         ctx.setLineDash([5, 4]);
+        if (f.ret) this.labels.push({ text: TR`退却 ${f.n}${f.g !== undefined && game.fgGet(f.g) ? ` (${game.fgGet(f.g).name})` : ''} → ${d.name}`, font: '11px sans-serif', color: '#ffb450', prio: 1, alpha: ctx.globalAlpha, at: (w) => [[px + 6, py - 6], [px - 6 - w, py - 6]] });
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(tx, ty); ctx.stroke();
         ctx.setLineDash([]);
         ctx.beginPath(); ctx.moveTo(tx - 9 * Math.cos(ang - 0.4), ty - 9 * Math.sin(ang - 0.4)); ctx.lineTo(tx, ty); ctx.lineTo(tx - 9 * Math.cos(ang + 0.4), ty - 9 * Math.sin(ang + 0.4)); ctx.stroke();
@@ -783,7 +784,7 @@ class GalaxyView {
         const parts = [];
         if (realm !== game.cap) parts.push([realmFleetKind(game, realm), ships]);
         else {
-          const own = s.id === game.cap || !colonized ? ships : Math.min(ships, (k.held || 0) + (k.awe || 0));
+          const own = s.id === game.cap || !colonized ? ships : Math.min(ships, (k.held || 0) + (k.awe || 0) + (k.fgn || 0)); // 艦隊群の艦も (依頼 FU-1)
           if (ships - own > 0) parts.push(['vassal', ships - own]);
           if (own > 0) parts.push(['own', own]);
         }
@@ -825,7 +826,10 @@ class GalaxyView {
         ctx.fillRect(x + rr + 4, y + rr + 4, w * frac, 4);
         ctx.fillStyle = realmColor(k.realm);
         ctx.fillRect(x + rr + 4 + w * frac, y + rr + 4, w * (1 - frac), 4);
-        this.labels.push({ text: TR`艦隊戦 ${Math.ceil(bt.a)}対${Math.ceil(bt.d)}`, font: 'bold 12px sans-serif', color: '#ff6b6b', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 4, y + rr], [x - rr - 4 - w, y + rr]] });
+        // 札 (依頼 FU-1): 両軍の数・要塞の区画・始まる前の攻め側の見込み。下の段に、攻め側と守り側の沈んだ艦と退いた艦 (いま退いている艦を含む)
+        const fortT = bt.fort ? TR`+要塞${bt.fort}` : '', oddsT = bt.odds !== null && bt.odds !== undefined ? TR`・見込み${Math.round(bt.odds * 100)}%` : '';
+        this.labels.push({ text: TR`艦隊戦 ${Math.ceil(bt.a)}対${Math.ceil(bt.d)}${fortT}${oddsT}`, font: 'bold 12px sans-serif', color: '#ff6b6b', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 4, y + rr], [x - rr - 4 - w, y + rr]] });
+        if (bt.sunk) this.labels.push({ text: TR`攻 沈${bt.sunk[0]}・退${bt.esc[0] + (bt.going?.[0] || 0)} / 防 沈${bt.sunk[1]}・退${bt.esc[1] + (bt.going?.[1] || 0)}`, font: '11px sans-serif', color: '#ff9b9b', prio: 1, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 4, y + rr + 22], [x - rr - 4 - w, y + rr + 22]] });
       }
       if (k && k.cols.length && k.realm !== null && k.realm !== undefined && this.app.game.knownEnemiesOf(k.realm).length && (k.realm !== game.cap || s.id === game.cap)) {
         this.labels.push({ text: TR('交戦中'), font: 'bold 12px sans-serif', color: '#ff6b6b', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x - r - 4 - w, y - r - 4], [x - w / 2, y - r - 12], [x - r - 4 - w, y + r + 14]] });

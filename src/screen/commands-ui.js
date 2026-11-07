@@ -114,6 +114,8 @@ function onPanelChange(e) {
   if (act) PlayLog.add('set', { act, v: e.target.type === 'checkbox' ? e.target.checked : v, ...(col ? { col } : {}), ...(e.target.dataset.sys !== undefined ? { sys: e.target.dataset.sys } : {}) });
   if (act === 'rdest') app.routeDest = Number(v);
   else if (act === 'forigin') app.fleetOrigin = Number(v);
+  else if (act === 'fgpick') app.fgPick = Number(v); // 星系の欄で、艦を入れる艦隊群 (画面だけ。依頼 FU-1)
+  else if (act === 'fgset') { const k = e.target.dataset.k; issue('fgset', { g: Number(e.target.dataset.g), [k]: k === 'base' ? Number(v) : v }); save(); } // 艦隊群の名前・決まり (首都で決まり、光速で広がる)
   else if (act === 'bulkfocus') app.bulkFocus = v;
   else if (act === 'candonly') app.candOnly = e.target.checked;
   else if (act === 'ra') app.routeA = Number(v);

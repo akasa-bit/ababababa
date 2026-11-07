@@ -88,7 +88,8 @@
 | `ship/settler.js` | 船と戦争 | 100 | Game: 入植船の設計 (designOf・setDesign)・費用と便・入植の打ち上げ・入植団が降りる (settlersLand) |
 | `economy/colonies-routes.js` | 経済 | 90 | Game: 入植地を足す・施設の強化・交易路 |
 | `economy/trade.js` | 経済 | 191 | Game: 交易網の自動輸送・荷 |
-| `ship/fleets.js` | 船と戦争 | 141 | Game: 造船・艦隊の補給・艦隊を出す・進路変更 |
+| `ship/fleets.js` | 船と戦争 | 199 | Game: 造船・艦隊の補給 (戦力の倍率は補給の充足率だけ。依頼 FU-2)・艦隊を出す (群を言う派遣)・進路変更 |
+| `ship/fgroups.js` | 船と戦争 | 191 | Game: 艦隊群 (役割・撤退・拠点。決まりの光の遅れ・群への出し入れ・退いた群の艦は拠点へ・数を駐留に合わせる)・艦隊戦の様子 (battleSnap)。依頼 2026-11-07 の FU-1 (`docs/fleet-groups.md`) |
 | `economy/development.js` | 経済 | 206 | Game: 前哨・自動の開発・政府の年ごとの処理・入植の目標・奴隷・ステーション |
 | `politics/grants.js` | 政治 | 50 | Game: 資金援助・朝貢 |
 | `politics/diplomacy.js` | 政治 | 213 | Game: 遅れて届く外交 (協定の申し入れ・受けるか・破約・同盟の参戦。回 SE2。防衛同盟の均衡と便乗・理由の記録は回 AI2) |
@@ -117,14 +118,14 @@
 | `politics/threat-ui.js` | 政治 (レーン「AI の振る舞い」が足した) | 9 | 星系の欄「この国の判断と理由」(aiLogSec。光の遅れで届いた分)。回 AI2 |
 | `politics/coerce-ui.js` | 政治 (レーン「AI の振る舞い」が足した) | 56 | 外交の欄の「威圧」の表 (coerceHtml・こちらの記録での見立て coerceOutlook)・条件を選ぶ窓 (openCoerce・renderCoerce。講和会議と同じ #treatybox)。回 AI8 |
 | `screen/panels-body.js` | 画面と最初の体験 | 90 | 自動の切り替え・天体の一覧・備蓄・交易路の欄 |
-| `ship/fleet-ui.js` | 船と戦争 | 158 | 星間マップでの艦隊の操作・軍事の欄・補給 |
+| `ship/fleet-ui.js` | 船と戦争 | 249 | 星間マップでの艦隊の操作 (送る艦の群)・軍事の欄 (艦隊戦・艦隊群・攻める前の見込み)・補給 |
 | `screen/panels-colony.js` | 画面と最初の体験 | 194 | 先住民・天体・前哨・入植地・歩兵・先住民の欄 |
 | `ship/ships-ui.js` | 船と戦争 | 60 | 派遣の欄・船の一覧 |
 | `economy/empire-ui.js` | 経済 | 50 | 帝国の画面・交易路の表 |
 | `politics/politics-ui.js` | 政治 | 122 | 要求の表・政治の表 |
 | `economy/migration-ui.js` | 経済 | 44 | 移民の表 |
 | `screen/overview.js` | 画面と最初の体験 | 69 | 帝国の概観・種族 |
-| `ship/military-ui.js` | 船と戦争 | 71 | 戦争方針・軍事の表 |
+| `ship/military-ui.js` | 船と戦争 | 136 | 戦争方針・軍事の表・艦隊群の表 |
 | `screen/events-ui.js` | 画面と最初の体験 | 130 | 出来事の一覧・決めることの欄 |
 | `economy/fiscal-ui.js` | 経済 | 53 | 議会のグラフ・財政の画面 |
 | `screen/goals-ui.js` | 画面と最初の体験 | 66 | 目標の画面 (国家方針・政治力・議会・時代の課題) |

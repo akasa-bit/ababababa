@@ -102,6 +102,7 @@
 - QD-46: 艦隊 1 つの乗員 (戦死者に数える `BATTLE.crew`) を船の設計からどう決めるか (回 FU3)
 - B-173: 交易路の受け手の減速のエネルギーを、着いたときに払う (経済からの頼み。回 FU3 で載せた)
 - QD-47: AI の国の光速の一撃の使い方 (回 FU3 で首都への一撃が増え、R15 が外れた)
+- QD-48: 宇宙要塞と艦隊戦のくじの釣り合い (依頼 FU-1 のあとの質問。`docs/fleet-groups.md` の 7)
 - B-174: R15 (戦死者の裾。確認用) の外れ (回 FU3)
 - B-175: 小さな国と家臣の政府の艦隊の配備が維持費を払えない (回 KE7 で経済が船と戦争の範囲から取った)
 
@@ -201,6 +202,7 @@
 - EDITIONS.game.squashSlab (星を取った ±4 光年の板の高さを詰めて、ゲームの中では ±2 光年の板に置く。台帳の C07。値がなければ詰めない = シミュレーション版。回 FU7・FU7-Q2 = b。作りは銀河の版 5 の `core/galaxy.js`)
 - EDITIONS.game.unrestYears (不満が続いてから要求するまでの年数。値がなければ 10 年 = シミュレーション版。台帳の C22。回 SE13・SE13-Q1。`politics/policy-consts.js` の `UNREST_YEARS`)
 - EDITIONS.game.backoffYears (最後通牒の期限に思いとどまった家臣が、不満の年数を数え始めるまでの年数。値がなければ 0 = シミュレーション版。台帳の C22。回 SE13。`BACKOFF_YEARS`。数え始めは `gv.unrest.since` を先の年にして表す)
+- saveField: fgroups・gship (船と戦争。src/ship/war-consts.js。艦隊群の一覧と、駐留している群の艦の数。依頼 2026-11-07 の FU-1。`docs/fleet-groups.md`)
 - saveField: designs (船と戦争。src/ship/colonists.js。国ごとの入植船団の設計 { speed, cargo, ages } (船団は 400 隻 × 500 人に固定。FU-1 の版の ships は読み捨てる)。回 FU3・B-033・FU-2。`docs/colony.md`)
 - saveField: xrec (画面と最初の体験 (core に置く)。src/core/export-rec.js。データの書き出しの記録: 国 × 年などの表の行と、その年の途中の足し上げ。画面の版の試合だけ。回 GA11・B-196)
 

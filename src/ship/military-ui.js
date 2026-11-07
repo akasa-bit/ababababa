@@ -55,6 +55,7 @@ function militarySheet(app) {
       <div><span>悪名</span><b>${g.infamy}</b><span>先住民の友好度に影響</span></div>
     </div>
     ${milTable}
+    ${fgSheet(g)}
     ${rivalViewTable(g)}
     ${battleReportTable(g)}
     <h3>歩兵</h3>
@@ -73,6 +74,32 @@ function militarySheet(app) {
     })()}`;
 }
 
+// 艦隊群 (依頼 2026-11-07 の FU-1。HOI4 の軍を参考に。docs/fleet-groups.md): 群の一覧と決まり (役割・撤退・拠点)。決まりの変更は首都で決め、光速で広がる
+function fgSheet(g) {
+  const groups = g.fgOf();
+  const bases = g.knownOwnSystems().filter((s) => s.id === g.cap || g.known(s.id)?.cols.length);
+  const where = [g.cap, ...Object.keys(g.snaps).map(Number).filter((id) => id !== g.cap)];
+  const seen = g.seenFleets().filter((x) => x.mine);
+  const rows = groups.map((gr) => {
+    const st = where.reduce((k, id) => k + (g.knownFg(id)?.[gr.id] || 0), 0);
+    const mv = seen.filter((x) => x.f.g === gr.id).reduce((k, x) => k + x.f.n, 0);
+    const opt = (list, cur, label) => list.map((v) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${label(v)}</option>`).join('');
+    const pending = gr.prev && g.year < gr.at + g.intelSpanYears() ? TR('<br><span class="muted">変えた決まりが光で広がっている途中</span>') : '';
+    return TR`<tr><td><input data-act="fgset" data-g="${gr.id}" data-k="name" value="${esc(gr.name)}" maxlength="24" size="10"></td>
+      <td><select data-act="fgset" data-g="${gr.id}" data-k="role">${opt(FG.roles, gr.role, (v) => FG_ROLE_LABEL[v])}</select></td>
+      <td><select data-act="fgset" data-g="${gr.id}" data-k="ret">${opt(FG.rets, gr.ret, (v) => FG_RET_LABEL[v])}</select></td>
+      <td><select data-act="fgset" data-g="${gr.id}" data-k="base">${opt(bases.map((s) => s.id), gr.base, (v) => esc(g.system(v).name))}</select>${pending}</td>
+      <td><b>${st}</b> 艦隊${mv ? TR`<br><span class="muted">+ 移動中 ${mv}</span>` : ''}</td>
+      <td><button data-act="fgset" data-g="${gr.id}" data-role="gone">解く</button></td></tr>`;
+  }).join('');
+  return TR`<h3>艦隊群</h3>
+    <p class="note">HOI4 の軍のように、艦隊をまとめて役割を与える。群に入れた艦は、自動防衛配備でも、群を言わない指令でも動かさない (群に入っていない艦は、前と同じく自動防衛配備に任せる)。
+      役割: <b>攻撃</b> = いまいる所に留まり、退いた艦は拠点へ戻って群に残る。<b>守備</b> = 年の切れ目に拠点へ戻って拠点を守る。
+      撤退: <b>組織力で退く</b> = 組織力が ${BATTLE.orgRet * 100}% を切った艦から退く。<b>退かない</b> = 最後まで戦う (勝ちやすいが、沈む艦が増える)。
+      決まりの変更は首都で決まり、光速で広がって、届いた所から効く。群への出し入れは、艦隊のいる星系の欄から (光速の指令)。艦隊を送るときは、艦隊バーで「送る艦」を選べる。</p>
+    ${rows ? TR`<div class="scroll"><table class="tbl"><tr><th>艦隊群</th><th>役割</th><th>撤退</th><th>拠点</th><th>艦 (把握分)</th><th></th></tr>${rows}</table></div>` : ''}
+    <div class="btns"><button data-act="fgnew">${ico('fleet')}新しい艦隊群を作る</button></div>`;
+}
 // 相手が見ている自分 (B-027): ほかの国の首都に届いている光で見える、こちらの艦隊の数。
 // AI の国は、この数に読み違いを掛けて勝つ見込みを出し、宣戦と講和を決める (docs/negotiation.md)
 function rivalViewTable(g) {
@@ -104,6 +131,6 @@ function battleReportTable(g) {
       <td>兵站 ${r.eff[0]} / ${r.eff[1]}<br>戦機 ${tag(r.luck[0])} / ${tag(r.luck[1])}<br>士気 ${tag(r.mor[0])} / ${tag(r.mor[1])}</td></tr>`;
   }).join('');
   return TR`<h3>艦隊戦の報告</h3>
-    <p class="note">艦隊戦は自動で進む。1 艦隊は耐久と組織力を持ち、1 年に ${BATTLE.rounds} 回撃ち合う。組織力が尽きた艦は撃たれながら退き、近くの自国の星系へ戻る (退ける先がなければ最後まで戦う)。大きすぎる艦隊はまとまって動けず、数の差は二乗則ほどには効かない (2 倍の兵力で勝つのは 4 回に 3 回ほど)。戦機 (索敵・先に撃つ側) と士気は戦いごとに引く。沈んだ艦の乗員 ${fmtDead(BATTLE.crew)} が戦死者になる (仮の値)。交戦は光速近くで一瞬に近づいて行われるが、ここでは時間をかけた撃ち合いとして解く。見込みは、同じ形の戦いを 64 回解いた割合。終わりの知らせが首都に届いた戦いだけを載せる。</p>
+    <p class="note">艦隊戦は自動で進む。1 艦隊は耐久と組織力を持ち、1 年に ${BATTLE.rounds} 回撃ち合う。組織力が尽きた艦は撃たれながら退き、近くの自国の星系へ戻る (退ける先がなければ最後まで戦う。艦隊群の艦は群の拠点へ戻り、決まりが「退かない」の群は最後まで戦う)。宇宙要塞の区画は、艦の ${FORT.hp} 倍の耐久で、組織力が減らず退かない。大きすぎる艦隊はまとまって動けず、数の差は二乗則ほどには効かない (2 倍の兵力で勝つのは 4 回に 3 回ほど)。戦機 (索敵・先に撃つ側) と士気は戦いごとに引く。沈んだ艦の乗員 ${fmtDead(BATTLE.crew)} が戦死者になる (仮の値)。交戦は光速近くで一瞬に近づいて行われるが、ここでは時間をかけた撃ち合いとして解く。見込みは、同じ形の戦いを 64 回解いた割合。終わりの知らせが首都に届いた戦いだけを載せる。</p>
     <div class="scroll"><table class="tbl"><tr><th>星系</th><th>攻撃 対 防衛 (艦隊)</th><th>勝った国</th><th>損害 (攻撃 / 防衛)</th><th>戦死</th><th>効いたもの (攻撃 / 防衛)</th></tr>${rows}</table></div>`;
 }
