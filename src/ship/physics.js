@@ -193,7 +193,20 @@ function shieldShape(V, tf, ts) {
 }
 // 1 便の遮蔽。m = 積み荷と船の質量 [kg]、ly = 航路の長さ [光年]、phys = その試合の物理の切り替え (Game.physics。古いセーブは物理なし)。
 // 乗る人の限度は、前 (星間の気体) と横 (宇宙線) に、遮蔽が一番軽くなるように割り振る (黄金分割で探す)
+// 同じ試合 (物理の切り替え phys) で、種類・質量・速さ・航路の長さが同じなら同じ遮蔽なので、試合ごとに覚えて使い回す (呼ぶ側は読むだけ。
+// 黄金分割の探し 40 回が重く、入植船の費用を見るたびに求め直していた。速さ。依頼 common-4・docs/perf.md の 9)。数の文字列は元の数に戻る書き方なので、
+// 違う数が同じ鍵になることはない (+0 と −0 だけは同じ鍵になるので、速さが 0 のときは覚えない。質量と長さが 0 以下なら、どちらでも遮蔽なし)
+const SHIELD_MEMO = new WeakMap();
 function shieldOf(kind, m, beta, ly, phys = ED.physics) {
+  if (beta === 0) return shieldCalc(kind, m, beta, ly, phys);
+  let M = SHIELD_MEMO.get(phys);
+  if (!M) { M = new Map(); SHIELD_MEMO.set(phys, M); }
+  const k = `${kind}|${m}|${beta}|${ly}`;
+  let v = M.get(k);
+  if (v === undefined) { if (M.size >= 20000) M.clear(); v = shieldCalc(kind, m, beta, ly, phys); M.set(k, v); }
+  return v;
+}
+function shieldCalc(kind, m, beta, ly, phys) {
   if (!phys.shield || !(ly > 0) || !(m > 0) || !SHIELD_DOSE) return { kg: 0, depth: 0, side: 0, fluence: 0, area: 0 };
   const crew = SHIELD.crew.includes(kind);
   const key = beta >= 0.925 ? '0.95' : '0.9';

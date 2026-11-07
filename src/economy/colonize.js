@@ -141,6 +141,21 @@
       const fs = fiscQ(id), fb = fiscQ(sysId);
       return !!(fs.ban?.[r] || fs.embargo?.[a] || fb.embargo?.[b]);
     };
+    // 取り寄せ元の候補 (交易路でつながった、取引できる星系) を近い順に。資源によらないので、初めて要るときに 1 度だけ並べる (速さ。依頼 common-4)。
+    // d = 交易路の航行の年数 + 注文の光の年数。同じなら入植地の並び順 (並べ替えは安定)。禁輸の調べ (barredQ) と同じく、ほかの国の星系の財政をここで求めておく
+    // (財政を初めて見ると AI の国の財政の覚え書き aif ができるので、前と同じく、つながったすべての候補の国について)
+    let order = null;
+    const srcOrder = () => {
+      if (order) return order;
+      const { dist } = this.reach(sysId), ra = realmQ(sysId);
+      order = [];
+      for (const s of this.colonizedSystems()) {
+        if (s.id === sysId || dist[s.id] === undefined || blockedQ(s.id)) continue;
+        if (realmQ(s.id) !== ra) { fiscQ(s.id); fiscQ(sysId); }
+        order.push({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id) });
+      }
+      return order.sort((a, b) => a.d - b.d);
+    };
     for (const r of RES) {
       let need = cost[r] || 0;
       if (!need) continue;
@@ -148,26 +163,29 @@
       const local = Math.min(Math.max(this.stockOf(sysId)[r], 0), need);
       if (local > 0) { plan.push({ from: sysId, r, amt: local, ...(MARKET.buy ? { price: this.bulkPrice(sysId, r, local) } : {}) }); need -= local; }
       if (need <= 1e-9) continue;
-      // 資材輸送船は交易路しか通れないので、交易路でつながった星系からだけ取り寄せる
-      const { dist } = this.reach(sysId);
-      const sources = this.colonizedSystems()
-        .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !blockedQ(s.id) && !barredQ(s.id, r) && (onlyFrom === undefined || s.id === onlyFrom))
-        // 取り寄せ元に残す量: 前の版は 1 年分の需要。市場のある版は、目標の在庫の厚さぶん (それより多くは、値段で売る。bulkPrice)
-        // 取り寄せ元は、光の遅れのぶん古い記録で余りが見える星系から選ぶ (回 KE3)。送れる量は、いまの在庫が上限 (取り寄せの注文が届くまでの遅れは、まだ入れていない)
-        .map((s) => ({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id), spare: Math.min(this.spareSeen(sysId, s.id, r), this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) * (MARKET.buy ? MARKET.cover[r] : 1)) }))
-        .filter((x) => x.spare > 0)
-        .sort((a, b) => a.d - b.d);
+      // 資材輸送船は交易路しか通れないので、交易路でつながった星系からだけ取り寄せる。
+      // 取り寄せ元に残す量: 前の版は 1 年分の需要。市場のある版は、目標の在庫の厚さぶん (それより多くは、値段で売る。bulkPrice)
+      // 取り寄せ元は、光の遅れのぶん古い記録で余りが見える星系から選ぶ (回 KE3)。送れる量は、いまの在庫が上限 (取り寄せの注文が届くまでの遅れは、まだ入れていない)
       // 品薄でも買える 2 段目 (回 KE15・QD-101 = 市場で値段を上げて買える): 目標の在庫を超える余りで足りなければ、交易路でつながった売り手
       // (光の遅れのぶん古い記録が届いている星系) から、目標を割る分も 1 回の注文で売り手のいまの在庫の SCARCE.share まで買う。値段は
       // 買ったあとの在庫で決まる品薄の値段 (bulkPrice。在庫が目標の半分なら基準の 2 倍)。主人の援助 (onlyFrom) は前のとおり余りからだけ
+      // 速さ (依頼 common-4・docs/perf.md の 9): 候補は近い順に 1 度だけ並べ (srcOrder)、禁輸と余りは近いものから要るところまでだけ見る。
+      // 前は資源ごとに、すべての候補の余りを求めてから並べていた。並べ替えは安定なので、選んでから並べても並べてから選んでも同じ順になり、選ぶ取り寄せ元も同じ
       const took = new Map();
-      const tier2 = MARKET.buy && SCARCE.share > 0 && onlyFrom === undefined
-        ? this.colonizedSystems()
-          .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !blockedQ(s.id) && !barredQ(s.id, r) && this.econSeen(sysId, s.id) && this.stockOf(s.id)[r] > 0)
-          .map((s) => ({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id), spare: SCARCE.share * this.stockOf(s.id)[r], scarce: true }))
-          .sort((a, b) => a.d - b.d)
-        : [];
-      for (const x of [...sources, ...tier2]) {
+      const C = srcOrder(), tier2 = MARKET.buy && SCARCE.share > 0 && onlyFrom === undefined;
+      let done = false;
+      for (let pass = 0; pass < (tier2 ? 2 : 1) && !done; pass++) for (const c of C) {
+        if (barredQ(c.id, r)) continue;
+        let x;
+        if (pass === 0) {
+          if (onlyFrom !== undefined && c.id !== onlyFrom) continue;
+          const spare = Math.min(this.spareSeen(sysId, c.id, r), this.stockOf(c.id)[r] - (this.flow[c.id]?.cons[r] || 0) * (MARKET.buy ? MARKET.cover[r] : 1));
+          if (!(spare > 0)) continue;
+          x = { id: c.id, t: c.t, d: c.d, spare };
+        } else {
+          if (!this.econSeen(sysId, c.id) || !(this.stockOf(c.id)[r] > 0)) continue;
+          x = { id: c.id, t: c.t, d: c.d, spare: SCARCE.share * this.stockOf(c.id)[r], scarce: true };
+        }
         const eF = this.energyOf(x.id) - (eUsed.get(x.id) || 0), eT = eHave - eIn;
         const kg = RES_KG[r] / UNIT_KG; // 1 単位の質量 [100 万 t]
         const amt = Math.min(x.spare, need, this.routeRoom(x.id, sysId, eF, eT) / kg);
@@ -180,7 +198,7 @@
         if (both) eIn += amt * kg * decUnit();
         need -= amt;
         eta = Math.max(eta, x.d);
-        if (need <= 1e-9) break;
+        if (need <= 1e-9) { done = true; break; }
       }
       if (need > 1e-6) {
         // 買えなかった注文も需要として値段に効かせる (受注残。足りない分を 1 年で満たしたい需要として、この刻みの需要に足す。同じ刻みの注文は大きいほうだけ)

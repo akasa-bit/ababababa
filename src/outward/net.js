@@ -194,10 +194,12 @@ const Net = {
     else this.send(this.peers[0], { t: 'c', ...c });
     return { ok: true, queued: true };
   },
-  // 状態の要約: プレイヤーごとに違う値 (いま操作しているプレイヤーと、その国の資金・政治力などの写し) と、端末ごとの値を除いたセーブの FNV-1a
+  // 状態の要約: プレイヤーごとに違う値 (いま操作しているプレイヤーと、その国の資金・政治力などの写し) と、端末ごとの値を除いたセーブの FNV-1a。
+  // aif (AI の国の財政の覚え書き) も除く: 国ごとに決まった式の値を、初めて見たときに覚えるだけで、ある・ないで試合は変わらない。地図を描くとき
+  // (snapshot の財政) にも作られるので、ホストと参加者で描く物が違うとずれて見え、状態を送り直していた (B-278。依頼 common-4・common-5 の CI で見つけた)
   hash() {
     const d = { ...buildSave(app.game) };
-    for (const k of ['pi', 'savedAt', 'endShown', 'spectate', 'credits', ...PLAYER_KEYS]) delete d[k];
+    for (const k of ['pi', 'savedAt', 'endShown', 'spectate', 'credits', 'aif', ...PLAYER_KEYS]) delete d[k];
     const t = JSON.stringify(d);
     let h = 0x811c9dc5;
     for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193); }
