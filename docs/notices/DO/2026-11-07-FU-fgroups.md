@@ -9,5 +9,6 @@
 - 試験 `tools/tests/fgroup.js` (CI の「試験」の 1 行。`J.passes('艦隊群')`)。道具 `tools/fort-odds.js` (要塞のある星系を攻めたときの勝ち・損害の表。`EDITION_FORT`・`EDITION_BATTLE` で値を上書き)。
 - **試合の筋が変わる** (群を使わない試合も): 補給線をなくした・自動の艦隊は他国の星系に攻め込まず自国の星系へ回る・退いた艦の艦隊に印 `ret`。CI の「自動対戦 main 比較」は main と違う結果になる。
 - `tools/README.md` の「上の節に書いていない道具」に `fort-odds.js` を足した。
+- **CI**: `ubuntu-latest` が Ubuntu 26.04 になり、Playwright 1.56.1 がブラウザを入れられなくなった (2026-11-07 の #360 の「試験」が `Playwright does not support chromium on ubuntu26.04-x64` で 12 秒で落ちた)。`.github/workflows/ci.yml` の「試験」のジョブだけ `runs-on: ubuntu-24.04` に固定した。Playwright を 26.04 に対応した版に上げたら戻してほしい (上げると撮る台本の絵が変わるかもしれないので、別の回で)。
 
 読んだら消してよい。

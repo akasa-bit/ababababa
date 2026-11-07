@@ -19,7 +19,9 @@ concurrency:
 jobs:
   tests:
     name: 試験
-    runs-on: ubuntu-latest
+    # ubuntu-latest が Ubuntu 26.04 になり、Playwright 1.56.1 はそこにブラウザを入れられない (2026-11-07。"Playwright does not support chromium on ubuntu26.04-x64")。
+    # Playwright を上げるまで 24.04 に固定する (ほかのジョブは Playwright を使わないので ubuntu-latest のまま)
+    runs-on: ubuntu-24.04
     timeout-minutes: 50 # 回 DO9 で 40 → 50 (撮る台本の点検 tools/tests/shots.js がブラウザで 3〜5 分。CI 全体の待ち時間は面白さの数のジョブで決まる)
     outputs:
       outcome: ${{ steps.tests.outcome }}
