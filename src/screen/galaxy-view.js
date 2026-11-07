@@ -352,7 +352,7 @@ class GalaxyView {
       lc.clearRect(0, 0, cw, ch);
       lc.setTransform(s, 0, 0, s, m * s, m * s);
       render(lc, m, s);
-      Object.assign(L, { key, w, h, s, cam: { ...cam } });
+      Object.assign(L, { key, w, h, s, cam: { ...cam }, at: performance.now() });
     }
     // 見えている部分だけを切り出して貼る (余白まで貼ると重い)。ずらすだけのときは画面の画素にそろえて 1:1 で写す
     // (半端な位置に貼ると、毎フレーム補間が入って重い)
@@ -441,7 +441,11 @@ class GalaxyView {
       if (k?.cols.length) members.push(`${k.realm ?? 0}:${sx.id}`);
     }
     if (members.length) {
-      this.viewLayer('border', w, h, OWN.hex + members.join(','), (lc, m) => {
+      // 速い速さ (FAST_SPEED 年/秒から) では、国境の絵を 1 秒まで使い回す (国境は毎コマのように変わり、描き直すと 1 回 0.1 秒ほどかかるので。
+      // 視点が動いたときは描き直す。依頼 common-5・QD-82 = c。docs/perf.md の 9)
+      const Lb = this.layers?.border, bkey = OWN.hex + members.join(',');
+      const lazy = this.app.speed >= FAST_SPEED && Lb?.key !== undefined && performance.now() - (Lb.at || 0) < 1000;
+      this.viewLayer('border', w, h, lazy ? Lb.key : bkey, (lc, m) => {
         const owners = [];
         for (const sx of game.knownSystems()) {
           const k = K(sx.id);

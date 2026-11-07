@@ -125,6 +125,7 @@ function bankMove(o, f, v, lf = 'loan') {
   o[lf] = Math.max(0, -net);
 }
 const STEP = 0.25; // 経済シミュレーションの刻み[年]
+const FAST_SPEED = 16; // この速さ [年/秒] から「速い速さ」: 地図と右の欄の描き直しをまとめ、国境の絵を使い回す (core/main-loop.js・screen/galaxy-view.js。依頼 common-5)
 const STEP_BACKLOG = 1; // 画面の進め方 (advanceFixed) でためておく年の上限。計算が追いつかないときは、それより遅れる分を捨てる (QD-81 = a。docs/perf.md の 8.6)
 const GHOST_KINDS = ['cargo', 'fleets', 'requests', 'troopMoves', 'migrants', 'ships', 'projects'];
 

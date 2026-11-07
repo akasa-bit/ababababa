@@ -35,8 +35,11 @@ window.addEventListener('resize', () => { mapActiveUntil = performance.now() + 6
 let acc = 0;
 // 経済は 0.25 年ごとに進める (game.advanceFixed。QD-81 = a。docs/perf.md の 8.6)。16 年/秒までは、1 コマの計算をこの ms までにして画面の反応を保つ
 // (残りは次のコマへ)。16 年/秒で 40 ms だとコマは 2.7 倍になったが進む年が 1 割ほど減り、80 ms ではコマ 1.6 倍・進む年はほぼ同じ (−4%) だったので 80 ms。
-// 64 年/秒 (いちばん速い速さ) は計算を先にして上限を付けない (上限を付けると、進む年が 16〜20% 減ったため)
-const STEP_BUDGET = 80;
+// 64 年/秒 (いちばん速い速さ) も上限を付けて、画面が固まらないようにする (依頼 common-5・QD-82 = c。前は 1 コマに 1 秒ほど計算して、そのあいだ操作が効かなかった)。
+// 速い速さ (FAST_SPEED 年/秒から) では、計算で変わった地図と右の欄の描き直しを、FAST_DRAW ms に 1 度にまとめ、描く時間を計算に回す
+// (押した・動かした・選んだあとは、前と同じくすぐ描き直す)。計算を Worker に分ける手は、後半の試合の状態が 19 MB あり、写すたびに約 170 ms かかるので使わない (docs/perf.md の 9)
+const STEP_BUDGET = 80, FAST_DRAW = { 16: 250, 64: 500 };
+let simDirty = false, lastSimDraw = 0;
 function frame(now) {
   PlayLog.tick(Math.min(1000, now - last));
   const dt = Math.min(0.1, (now - last) / 1000);
@@ -45,7 +48,9 @@ function frame(now) {
   const nosel = app.sel.sys === null;
   if (nosel !== lastNosel) { lastNosel = nosel; document.body.classList.toggle('nosel', nosel); app.dirty = true; } // 欄の幅が変わると ResizeObserver が地図を合わせる
   if (Net.on) { if (Net.frame(dt)) app.dirty = true; }
-  else if (app.speed && game.advanceFixed(dt * app.speed, app.speed < SPEEDS[SPEEDS.length - 1] ? STEP_BUDGET : 0)) app.dirty = true;
+  else if (app.speed && game.advanceFixed(dt * app.speed, STEP_BUDGET)) simDirty = true;
+  // 計算で変わったもの (と 0.5 秒ごとの更新) の描き直し: ふつうの速さでは前と同じくすぐ。速い速さでは FAST_DRAW ms に 1 度にまとめる (地図と右の欄)
+  const fastWait = app.speed >= FAST_SPEED && !Net.on ? FAST_DRAW[app.speed] ?? FAST_DRAW[64] : 0;
   if (app.turnEvery && isHotseat() && $('curtain').hidden && game.year >= (app.turnStart ?? game.year) + app.turnEvery) nextTurn(true);
   if (app.skip) checkSkip();
   // 地図は、変わりうるときだけ描き直す: 動くものが見える距離だけ動いた・画面や表示が変わった・操作の直後 (0.6 秒)・視点が動いた直後 (止まってからの描き直しのため)・点滅しているもの・
@@ -56,9 +61,11 @@ function frame(now) {
   // 動くものは表示の年 (試合の年 + まだ進めていない年) で描くので、描き直すかも表示の年で決める
   const vy = game.viewYear();
   const yearMoved = app.view === 'galaxy' ? Math.abs(vy - lastDrawYear) * 20 * cam.zoom >= 0.25 : vy !== lastDrawYear;
+  const dataDue = (simDirty || yearMoved) && (!fastWait || now - lastSimDraw >= fastWait);
+  if (dataDue && simDirty) { simDirty = false; app.dirty = true; }
   const mapKey = `${app.view}|${w}|${h}|${cam.x}|${cam.y}|${cam.z}|${cam.zoom}|${cam.yaw}|${cam.pitch}|${app.sel.sys}|${app.sel.body}|${app.fleetSel.size}|${app.fleetMove.size}|${app.signalMode}|${systemView.cam.x}|${systemView.cam.y}|${systemView.cam.zoom}`;
-  if (app.dirty || yearMoved || mapKey !== lastMapKey || game !== lastMapGame || now < mapActiveUntil || now - (galaxyView.camMovedAt || 0) < 400 || galaxyView.animating || systemView.animating) {
-    lastMapKey = mapKey; lastMapGame = game; lastDrawYear = vy; galaxyView.animating = systemView.animating = false;
+  if (app.dirty || dataDue || mapKey !== lastMapKey || game !== lastMapGame || now < mapActiveUntil || now - (galaxyView.camMovedAt || 0) < 400 || ((galaxyView.animating || systemView.animating) && (!fastWait || now - lastSimDraw >= fastWait))) { // 点滅 (艦隊戦・戦争・節目の輪) も、速い速さではまとめる
+    lastMapKey = mapKey; lastMapGame = game; lastDrawYear = vy; lastSimDraw = now; galaxyView.animating = systemView.animating = false;
     const ctx = galaxyView.ctx;
     ctx.clearRect(0, 0, w, h); // 透明にして、後ろの宇宙の背景を見せる
     updateSky();
@@ -91,7 +98,7 @@ function frame(now) {
     const evLabel = TR`${ico('events')}イベント${unseen ? ` (${unseen})` : ''}${dec ? ` ⚑${dec}` : ''}`;
     if (lastEvLabel !== evLabel) { lastEvLabel = evLabel; $('tab-events').innerHTML = evLabel; }
     $('tab-events').classList.toggle('hot', dec > 0);
-    app.dirty = true;
+    if (fastWait) simDirty = true; else app.dirty = true; // 速い速さでは、右の欄と地図の描き直しを計算の分とまとめる
   }
   if (app.dirty && !panelBusy()) {
     app.dirty = false;
