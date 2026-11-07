@@ -103,6 +103,15 @@
       if (f === undefined) { f = this.fiscalFor(realmQ(id), id); fiscMemo.set(id, f); }
       return f;
     };
+    // 国の財政を初めて見ると、AI の国の財政の覚え書き (aif。セーブに入る) ができる。覚え書きがすでにある国・人間の国・席の財政がある国は、
+    // 見ても何も残らない (速さ。依頼 common-4: 売れる見込みのない売り手を、財政を見ずに飛ばしてよいかに使う。一度できた覚え書きは消えない)
+    const fiscReady = new Set();
+    const fiscQuiet = (root) => {
+      if (fiscReady.has(root)) return true;
+      const ok = !!this.players[this.playerOf(root)]?.fiscal || this.isHuman(root) || !!this.aif?.[root];
+      if (ok) fiscReady.add(root);
+      return ok;
+    };
     const tariffMemo = new Map();
     const tariffQ = (x, y) => { // 関税も、買い手の星系と売り手の国だけで決まる (tariffFor・dutiable)
       const k = Number(x) * 65536 + Number(realmQ(y));
@@ -145,7 +154,7 @@
       // 売り手ごとの調べ (交戦・同じ国か・禁輸・見えている記録) は資源によらないので、この買い手のあいだ覚えておく。
       // 求める順と条件は前と同じ (交戦中なら財政を見ない。同じ国なら財政を見ない。財政を初めて見るときに AI の国の財政の覚え書きができるので)
       const rT = realmQ(T);
-      const X = { T, Tn: Number(T), rT, info: [], pendingPair, promised, blocked, realmQ, fiscQ, tariffQ, sellMask, dist, rate, fRate };
+      const X = { T, Tn: Number(T), rT, info: [], pendingPair, promised, blocked, realmQ, fiscQ, fiscQuiet, tariffQ, sellMask, dist, rate, fRate };
       for (const res of needs) {
         const min = Math.max(0.5, 0.05 * use(res));
         const ri = RES_INDEX[res]; // sysRes・pairKey と同じ鍵を、ここで組み立てる
@@ -197,7 +206,8 @@
     for (let n = 0; n < list.length; n++) {
       const S = list[n];
       if (cands.length >= maxN) break;
-      if (mayFlat && !(X.sellMask(S) & bit)) { const I0 = info[S]; if (I0 !== undefined && (I0.blk || I0.same !== undefined)) continue; }
+      // 売れる見込みのない売り手は候補にならない。調べると財政の覚え書きができる売り手 (買い手か売り手の国の覚え書きがまだない) だけは、前と同じく調べる
+      if (mayFlat && !(X.sellMask(S) & bit)) { const I0 = info[S]; if (I0 !== undefined ? I0.blk || I0.same !== undefined : X.fiscQuiet(rT) && X.fiscQuiet(X.realmQ(S))) continue; }
       const kpair = (Tn * 65536 + S) * 8 + ri; // = pairKey(T, S, res) (S は交易路網の星系の番号 = 数)
       if (pendingPair.has(kpair)) continue;
       // 交戦中の国どうしでは取引しない (開戦を知ってから)。輸出禁止と禁輸 (回 KE9。式は tradeBarred と同じ)
@@ -305,9 +315,10 @@
     this.inbound = {};
     for (const p of this.cargo) {
       const dest = p.path[p.path.length - 1];
+      let legs = null; // 区間は荷ごとに 1 度だけ求める (前は資源ごとに求め直していた。足す順は同じ。速さ。依頼 common-4・docs/perf.md の 9)
       for (const [res, amt] of Object.entries(p.load)) {
         (this.inbound[dest] ??= zeroRes())[res] += amt;
-        for (const l of this.legsOf(p.path)) l.r.transit[l.dir][res] += amt;
+        for (const l of (legs ??= this.legsOf(p.path))) l.r.transit[l.dir][res] += amt;
       }
     }
   }
