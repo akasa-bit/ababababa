@@ -130,6 +130,17 @@
     let eIn = 0;
     const plan = [];
     let eta = 0;
+    // 取り寄せ元を選ぶあいだ、国・財政・交戦の知らせは変わらないので、相手の国ごと・星系ごとに一度だけ求める (tradeBlocked・tradeBarred と同じ値。速さ。docs/perf.md)
+    const realmM = new Map(), blockM = new Map(), fiscM = new Map();
+    const realmQ = (id) => { let v = realmM.get(id); if (v === undefined) { v = this.realmOf(id); realmM.set(id, v); } return v; };
+    const fiscQ = (id) => { let v = fiscM.get(id); if (v === undefined) { v = this.fiscalFor(realmQ(id), id); fiscM.set(id, v); } return v; };
+    const blockedQ = (id) => { const rb = realmQ(id); let v = blockM.get(rb); if (v === undefined) { v = this.tradeBlockedIn(sysId, realmQ(sysId), rb); blockM.set(rb, v); } return v; };
+    const barredQ = (id, r) => {
+      const a = realmQ(sysId), b = realmQ(id);
+      if (a === b) return false;
+      const fs = fiscQ(id), fb = fiscQ(sysId);
+      return !!(fs.ban?.[r] || fs.embargo?.[a] || fb.embargo?.[b]);
+    };
     for (const r of RES) {
       let need = cost[r] || 0;
       if (!need) continue;
@@ -140,7 +151,7 @@
       // 資材輸送船は交易路しか通れないので、交易路でつながった星系からだけ取り寄せる
       const { dist } = this.reach(sysId);
       const sources = this.colonizedSystems()
-        .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !this.tradeBlocked(sysId, s.id) && !this.tradeBarred(sysId, s.id, r) && (onlyFrom === undefined || s.id === onlyFrom))
+        .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !blockedQ(s.id) && !barredQ(s.id, r) && (onlyFrom === undefined || s.id === onlyFrom))
         // 取り寄せ元に残す量: 前の版は 1 年分の需要。市場のある版は、目標の在庫の厚さぶん (それより多くは、値段で売る。bulkPrice)
         // 取り寄せ元は、光の遅れのぶん古い記録で余りが見える星系から選ぶ (回 KE3)。送れる量は、いまの在庫が上限 (取り寄せの注文が届くまでの遅れは、まだ入れていない)
         .map((s) => ({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id), spare: Math.min(this.spareSeen(sysId, s.id, r), this.stockOf(s.id)[r] - (this.flow[s.id]?.cons[r] || 0) * (MARKET.buy ? MARKET.cover[r] : 1)) }))
@@ -152,7 +163,7 @@
       const took = new Map();
       const tier2 = MARKET.buy && SCARCE.share > 0 && onlyFrom === undefined
         ? this.colonizedSystems()
-          .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !this.tradeBlocked(sysId, s.id) && !this.tradeBarred(sysId, s.id, r) && this.econSeen(sysId, s.id) && this.stockOf(s.id)[r] > 0)
+          .filter((s) => s.id !== sysId && dist[s.id] !== undefined && !blockedQ(s.id) && !barredQ(s.id, r) && this.econSeen(sysId, s.id) && this.stockOf(s.id)[r] > 0)
           .map((s) => ({ id: s.id, t: dist[s.id], d: dist[s.id] + this.travelYears(sysId, s.id), spare: SCARCE.share * this.stockOf(s.id)[r], scarce: true }))
           .sort((a, b) => a.d - b.d)
         : [];

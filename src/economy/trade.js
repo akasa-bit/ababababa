@@ -87,11 +87,48 @@
       if (r === undefined) { r = this.realmOf(id); realmMemo.set(id, r); }
       return r;
     };
+    // 取引できるかは、買い手の星系と、売り手の国 (首都) だけで決まる (tradeBlockedIn) ので、売り手の国ごとに一度だけ調べる (速さ。docs/perf.md)
     const blocked = (x, y) => {
-      const k = Number(x) * 65536 + Number(y);
+      const a = realmQ(x), b = realmQ(y);
+      const k = Number(x) * 65536 + Number(b);
       let v = blockMemo.get(k);
-      if (v === undefined) { v = this.tradeBlockedIn(x, realmQ(x), realmQ(y)); blockMemo.set(k, v); }
+      if (v === undefined) { v = this.tradeBlockedIn(x, a, b); blockMemo.set(k, v); }
       return v;
+    };
+    // 速さ (依頼 2026-11-07。docs/perf.md): 売り手の候補を調べるあいだ、国・財政・関税・見えている記録は変わらないので、星系ごと・組ごとに一度だけ求める。
+    // 式は tradeBarred・tariffFor・spareSeen と同じ (前は資源ごとに何度も呼び直していた)
+    const fiscMemo = new Map();
+    const fiscQ = (id) => {
+      let f = fiscMemo.get(id);
+      if (f === undefined) { f = this.fiscalFor(realmQ(id), id); fiscMemo.set(id, f); }
+      return f;
+    };
+    const tariffMemo = new Map();
+    const tariffQ = (x, y) => { // 関税も、買い手の星系と売り手の国だけで決まる (tariffFor・dutiable)
+      const k = Number(x) * 65536 + Number(realmQ(y));
+      let v = tariffMemo.get(k);
+      if (v === undefined) { v = this.tariffFor(x, y); tariffMemo.set(k, v); }
+      return v;
+    };
+    // 売り手が資源を売れる見込み (星系の経済の記録のどれかで、余りが 0.5 を超えるか。数でない値も「見込みあり」)。記録は年に 1 度しか変わらないので、
+    // 記録の一覧が同じあいだは使い回す (this._sellMask はセーブしない)。見えている余り sp はどれかの記録の値か 0 なので、見込みがなければ sp ≤ 0.5 ≤ min
+    const sellMemo = (this._sellMask ??= new Map());
+    const maskArr = [];
+    const sellMask = (S) => {
+      let m = maskArr[S];
+      if (m !== undefined) return m;
+      const list = this.econIntel.s[S];
+      if (!list?.length) m = 0;
+      else {
+        const c = sellMemo.get(S), y0 = list[0][0], y1 = list[list.length - 1][0];
+        if (c && c.list === list && c.len === list.length && c.y0 === y0 && c.y1 === y1) m = c.m;
+        else {
+          m = 0;
+          for (const e of list) for (let i = 0; i < RES.length; i++) { const v = e[1][i] ?? 0; if (!(v <= 0.5)) m |= 1 << i; }
+          sellMemo.set(S, { list, len: list.length, y0, y1, m });
+        }
+      }
+      return (maskArr[S] = m);
     };
     for (const T of [...new Set(this.routes.flatMap((r) => [r.a, r.b]))]) {
       const ft = flow[T];
@@ -105,28 +142,18 @@
       const inb = (this.inbound[T] ??= zeroRes());
       const sto = this.stockOf(T);
       const lord = this.gov(T).lord;
+      // 売り手ごとの調べ (交戦・同じ国か・禁輸・見えている記録) は資源によらないので、この買い手のあいだ覚えておく。
+      // 求める順と条件は前と同じ (交戦中なら財政を見ない。同じ国なら財政を見ない。財政を初めて見るときに AI の国の財政の覚え書きができるので)
+      const rT = realmQ(T);
+      const X = { T, Tn: Number(T), rT, info: [], pendingPair, promised, blocked, realmQ, fiscQ, tariffQ, sellMask, dist, rate, fRate };
       for (const res of needs) {
         const min = Math.max(0.5, 0.05 * use(res));
+        const ri = RES_INDEX[res]; // sysRes・pairKey と同じ鍵を、ここで組み立てる
         // 代金は買い手の星系の民間が払う (払えない分は銀行から借りる)。前の版 (MARKET.buy = 0) は政府が払い、払えない星系は主人にだけ支援を求める
         const broke = !MARKET.buy && this.gov(T).credits < min * PRICE[res];
         const ka = sysRes(T, res);
-        // 売り手の候補 (交易路網で近い順に TRADE.sources まで)。重み = 売れる量 × (輸送中の利子)^(−σ) (Krugman 1978/2010 と CES の需要)
-        const cands = [];
-        let W = 0, WL = 0;
-        for (const S of broke ? sources.filter((x) => x === lord) : sources) {
-          if (cands.length >= TRADE.sources) break;
-          const kpair = pairKey(T, S, res);
-          if (pendingPair.has(kpair)) continue;
-          if (blocked(T, S) || this.tradeBarred(T, S, res)) continue; // 交戦中の国どうしでは取引しない (開戦を知ってから)。輸出禁止と禁輸 (回 KE9)
-          const kp = sysRes(S, res);
-          const avail = this.spareSeen(T, S, res) - (promised.get(kp) || 0); // 買い手に届いている売り手の余り (回 KE3。前はいまの余り)
-          if (avail <= min) continue;
-          const fr = (fRate * RES_KG[res] * dist[S] * SHIP_SPEED) / UNIT_KG; // 運賃の見込み (航行の年数 × 速さ = 光年)
-          const w = avail * GM.pow((this.tradePrice(S, res, dist[S], rate) * (1 + this.tariffFor(T, S)) + fr) / PRICE[res], -TRADE.sigma); // 値段の安い売り手ほど多く買う。関税のぶん、ほかの国の売り手は高く見え、遠いほど運賃が乗る
-          const lead = dist[S] + this.travelYears(T, S);
-          cands.push({ S, kpair, kp, avail, w });
-          W += w; WL += w * lead;
-        }
+        // 売り手の候補 (交易路網で近い順に TRADE.sources まで)。重み = 売れる量 × (輸送中の利子)^(−σ) (Krugman 1978/2010 と CES の需要)。tradeCands で集める
+        const { cands, W, WL } = this.tradeCands(X, res, ri, min, broke ? sources.filter((x) => x === lord) : sources);
         if (!cands.length) continue;
         // 受け手の目標 = 需要 × (在庫の厚さ + 要求の往復と航行の年数の重み付きの平均)。在庫の厚さは現実の値 (MARKET.cover。前の版は 2 年)
         const want = Math.min(((MARKET.buy ? MARKET.cover[res] : 2) + WL / W) * use(res), 0.8 * stockCap(ft.pop)) - sto[res] - inb[res] - (asked.get(ka) || 0);
@@ -155,6 +182,47 @@
     for (const r of this.routes) {
       for (const dir of [0, 1]) r.vol[dir] += ((sent.get(r.id * 2 + dir) || 0) / h - r.vol[dir]) * Math.min(1, h);
     }
+  }
+  // 買い手 X.T の資源 res の売り手の候補を、交易路網で近い順 (list) に TRADE.sources まで集める (trade の中でいちばん回る繰り返しなので、
+  // 小さな関数に分けた。速さ。docs/perf.md)。X = trade の中の覚え書き (info = 売り手ごとの調べ・pendingPair・promised) と調べる関数。
+  // 調べる順・式・覚え書きのでき方は、分ける前と同じ:
+  // - 売れる見込みのない売り手は候補にならない (下のどの道でも飛ばす)。ただし組の調べ (交戦・禁輸と、そのときに求める財政) は前と同じく 1 度はする
+  //   (財政を初めて見ると AI の国の財政の覚え書きができるので)。済んでいれば飛ばす。min が数のときだけ
+  // - 約束した量 (promised) は 0 以上なので、見えている余りが min 以下なら avail も min 以下 (前と同じく飛ばす)
+  tradeCands(X, res, ri, min, list) {
+    const { T, Tn, rT, info, pendingPair, promised, dist, rate, fRate } = X;
+    const bit = 1 << ri, mayFlat = min >= 0.5, maxN = TRADE.sources;
+    const cands = [];
+    let W = 0, WL = 0;
+    for (let n = 0; n < list.length; n++) {
+      const S = list[n];
+      if (cands.length >= maxN) break;
+      if (mayFlat && !(X.sellMask(S) & bit)) { const I0 = info[S]; if (I0 !== undefined && (I0.blk || I0.same !== undefined)) continue; }
+      const kpair = (Tn * 65536 + S) * 8 + ri; // = pairKey(T, S, res) (S は交易路網の星系の番号 = 数)
+      if (pendingPair.has(kpair)) continue;
+      // 交戦中の国どうしでは取引しない (開戦を知ってから)。輸出禁止と禁輸 (回 KE9。式は tradeBarred と同じ)
+      let I = info[S];
+      if (I === undefined) I = info[S] = { blk: X.blocked(T, S), same: undefined, ban: undefined, emb: false, e: undefined };
+      if (I.blk) continue;
+      if (I.same === undefined) {
+        const rS = X.realmQ(S);
+        I.same = rT === rS;
+        if (!I.same) { const fs = X.fiscQ(S), fb = X.fiscQ(T); I.ban = fs.ban; I.emb = !!(fs.embargo?.[rT] || fb.embargo?.[rS]); }
+      }
+      if (!I.same && (I.ban?.[res] || I.emb)) continue;
+      const kp = S * 8 + ri; // = sysRes(S, res)
+      if (I.e === undefined) I.e = this.econSeen(T, S);
+      const sp = I.e?.[1][ri] ?? 0;
+      if (sp <= min) continue;
+      const avail = sp - (promised.get(kp) || 0); // 買い手に届いている売り手の余り (回 KE3。前はいまの余り)
+      if (avail <= min) continue;
+      const fr = (fRate * RES_KG[res] * dist[S] * SHIP_SPEED) / UNIT_KG; // 運賃の見込み (航行の年数 × 速さ = 光年)
+      const w = avail * GM.pow((this.tradePrice(S, res, dist[S], rate) * (1 + X.tariffQ(T, S)) + fr) / PRICE[res], -TRADE.sigma); // 値段の安い売り手ほど多く買う。関税のぶん、ほかの国の売り手は高く見え、遠いほど運賃が乗る
+      const lead = dist[S] + this.travelYears(T, S);
+      cands.push({ S, kpair, kp, avail, w });
+      W += w; WL += w * lead;
+    }
+    return { cands, W, WL };
   }
   // 取り消した物資移送要求の先払いを、受け手に返す。返金は送り手 (q.to) から光速で届く (回 KE3・B-170。前はすぐ返していた)。
   // 届くまでは運ぶ途中のお金 (this.refunds の v)。届いたら refundsArrive で受け手の会社 (前の版は政府) へ

@@ -192,8 +192,11 @@
       if (gv.direct) continue; // 直轄の星系は地球が動かす
       const mine = this.routes.filter((r) => r.a === id || r.b === id);
       if (mine.length < 3) {
+        // 取引できるか (tradeBlocked) は、相手の国ごとに一度だけ調べる (相手の星系によらず国だけで決まる。同じ値。速さ。docs/perf.md)
+        const ra = this.realmOf(id), bm = new Map();
+        const blockedTo = (o) => { const rb = this.realmOf(o); let v = bm.get(rb); if (v === undefined) { v = this.tradeBlockedIn(id, ra, rb); bm.set(rb, v); } return v; };
         const near = this.colonizedSystems()
-          .filter((o) => o.id !== id && !this.routeBetween(o.id, id) && !this.tradeBlocked(id, o.id))
+          .filter((o) => o.id !== id && !this.routeBetween(o.id, id) && !blockedTo(o.id))
           .map((o) => ({ o, d: distance(o, s) }))
           .filter((x) => !mine.length || x.d <= 12)
           .sort((a, b) => a.d - b.d)[0];

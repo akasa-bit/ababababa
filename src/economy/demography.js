@@ -100,8 +100,16 @@
   }
   // 区分ごとの、集団を合わせた平均 (k = 's' 就学年数・'q' 学力。移民と入植者が運ぶ形)。人のいない区分は 0 (学力は所得の形の値)
   eduAvg(c, k) {
-    const E = Object.values(this.schoolBy(c)), q0 = k === 'q' ? this.learnAgeProfile(this.eduIncome(c)) : null;
-    return Array.from({ length: DEMO.bins }, (_, a) => { let p = 0, v = 0; for (const g of E) { p += g.p[a]; v += g.p[a] * g[k][a]; } return p > 0 ? v / p : q0 ? q0[a] : 0; });
+    const E = Object.values(this.schoolBy(c));
+    let q0; // 所得の形の学力は、人のいない区分があるときだけ求める (同じ値。速さ。docs/perf.md)
+    return Array.from({ length: DEMO.bins }, (_, a) => {
+      let p = 0, v = 0;
+      for (const g of E) { p += g.p[a]; v += g.p[a] * g[k][a]; }
+      if (p > 0) return v / p;
+      if (k !== 'q') return 0;
+      q0 ??= this.learnAgeProfile(this.eduIncome(c));
+      return q0[a];
+    });
   }
   schoolAges(c) { return this.eduAvg(c, 's'); }
   learnAges(c) { return this.eduAvg(c, 'q'); }
@@ -136,7 +144,11 @@
       for (let a = n - 2; a >= 0; a--) { const x = g.p[a] * up; g.p[a] -= x; this.eduAdd(g, a + 1, x, a + 1 === b ? sNew : g.s[a], a + 1 === b ? qNew : g.q[a]); }
     }
     (E.here ??= { p: Array(n).fill(0), s: Array(n).fill(0), q: Array(n).fill(0) }).p[0] += births;
-    const s0 = this.schoolAges(c), q0 = this.learnAges(c);
+    // 下の「集団に人がいない区分」があるときだけ、区分ごとの平均 (s0・q0) が要る。区分 a の人数は、その区分を見るまで変わらないので、先に調べられる
+    // (同じ値。速さ。前はいつも求めていた。docs/perf.md)
+    let need = false;
+    for (let a = 0; a < n && !need; a++) { const T = c.age.f[a] + c.age.m[a]; let S = 0; for (const g of Object.values(E)) S += g.p[a]; if (!(S > 0) && T > 0) need = true; }
+    const s0 = need ? this.schoolAges(c) : null, q0 = need ? this.learnAges(c) : null;
     for (let a = 0; a < n; a++) {
       const T = c.age.f[a] + c.age.m[a], G = Object.values(E), S = G.reduce((k, g) => k + g.p[a], 0);
       if (S > 0) for (const g of G) g.p[a] *= T / S;

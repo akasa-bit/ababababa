@@ -456,21 +456,24 @@ class GalaxyView {
         for (const o of owners) { const key = bk(Math.floor(o.x / R), Math.floor(o.y / R)); if (!bins.has(key)) bins.set(key, []); bins.get(key).push(o); }
         const realms = [...new Set(owners.map((o) => o.realm))];
         const ri = new Map(realms.map((r, n) => [r, n + 1]));
+        for (const o of owners) o.v = ri.get(o.realm);
         // 升目の角 (gw+1)×(gh+1) ごとの a・d1・b・d2
+        // (速さ。docs/perf.md: 角が同じ箱の列にあるあいだは、まわり 3×3 の箱の入植星系を前と同じ順につないだ一覧を使い回す。比べる順も式も前と同じなので、絵も同じ)
         const cw1 = gw + 1, N = cw1 * (gh + 1);
         const A = new Uint8Array(N), B = new Uint8Array(N), D1 = new Float32Array(N).fill(Infinity), D2 = new Float32Array(N).fill(Infinity);
         for (let cy = 0; cy <= gh; cy++) {
           const py = y0 + cy * C, by = Math.floor(py / R);
+          let lbx = NaN, near = null;
           for (let cx = 0; cx <= gw; cx++) {
             const px = x0 + cx * C, bx = Math.floor(px / R), i = cy * cw1 + cx;
+            if (bx !== lbx) {
+              lbx = bx; near = [];
+              for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const list = bins.get(bk(bx + dx, by + dy)); if (list) for (const o of list) near.push(o); }
+            }
             let d1 = Infinity, a = 0, d2 = Infinity, b = 0;
-            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-              const list = bins.get(bk(bx + dx, by + dy));
-              if (!list) continue;
-              for (const o of list) {
-                const d = Math.hypot(o.x - px, o.y - py), v = ri.get(o.realm);
-                if (d < d1) { if (v !== a) { d2 = d1; b = a; } d1 = d; a = v; } else if (v !== a && d < d2) { d2 = d; b = v; }
-              }
+            for (let n = 0; n < near.length; n++) {
+              const o = near[n], d = Math.hypot(o.x - px, o.y - py), v = o.v;
+              if (d < d1) { if (v !== a) { d2 = d1; b = a; } d1 = d; a = v; } else if (v !== a && d < d2) { d2 = d; b = v; }
             }
             A[i] = a; D1[i] = d1; B[i] = b; D2[i] = d2;
           }
@@ -480,12 +483,19 @@ class GalaxyView {
         // 中: 升目の中心がどの国か (中心の値は 4 つの角の平均で見る) を淡く塗る
         const rgb = realms.map((r) => { const c = realmColor(r); return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; });
         const img = new ImageData(gw, gh);
+        // 角の候補 (前と同じ順: 左上・右上・左下・右下の a・b) を、同じ国は 1 度だけ比べる (同じ国の値は同じなので、選ばれる国は前と同じ。配列を作らない)
+        const cand = new Uint8Array(8);
         for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
-          const i = gy * cw1 + gx, js = [i, i + 1, i + cw1, i + cw1 + 1];
+          const i = gy * cw1 + gx, i1 = i + 1, i2 = i + cw1, i3 = i + cw1 + 1;
+          cand[0] = A[i]; cand[1] = B[i]; cand[2] = A[i1]; cand[3] = B[i1]; cand[4] = A[i2]; cand[5] = B[i2]; cand[6] = A[i3]; cand[7] = B[i3];
           let v = 0, best = 0;
-          for (const j of js) for (const c of [A[j], B[j]]) {
+          for (let n = 0; n < 8; n++) {
+            const c = cand[n];
             if (!c) continue;
-            const g = (field(c, i) + field(c, i + 1) + field(c, i + cw1) + field(c, i + cw1 + 1)) / 4;
+            let dup = false;
+            for (let q = 0; q < n; q++) if (cand[q] === c) { dup = true; break; }
+            if (dup) continue;
+            const g = (field(c, i) + field(c, i1) + field(c, i2) + field(c, i3)) / 4;
             if (g > best) { best = g; v = c; }
           }
           if (!v) continue;
@@ -507,26 +517,30 @@ class GalaxyView {
         const paths = realms.map(() => new Path2D());
         const lw = (v) => (realms[v - 1] === game.cap ? 2.4 : 1.8);
         const cross = (ga, gb, t) => (t - ga) / (gb - ga);
+        // 辺の上の交点の x・y (0 = 上・1 = 右・2 = 下・3 = 左。前の pt と同じ式)
+        const ex = (e, px, g0, g1, g2, g3) => (e === 0 ? px + C * cross(g0, g1, 0) : e === 1 ? px + C : e === 2 ? px + C * cross(g3, g2, 0) : px);
+        const ey = (e, py, g0, g1, g2, g3) => (e === 0 ? py : e === 1 ? py + C * cross(g1, g2, 0) : e === 2 ? py + C : py + C * cross(g0, g3, 0));
+        const seen = new Uint8Array(8);
         for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
-          const i = gy * cw1 + gx, js = [i, i + 1, i + cw1 + 1, i + cw1]; // 左上・右上・右下・左下
-          const seen = new Set();
-          for (const j of js) { if (A[j]) seen.add(A[j]); if (B[j]) seen.add(B[j]); }
-          for (const v of seen) {
-            const t = lw(v) / 2;
-            const g = js.map((j) => field(v, j) - t);
-            const k = (g[0] > 0 ? 1 : 0) | (g[1] > 0 ? 2 : 0) | (g[2] > 0 ? 4 : 0) | (g[3] > 0 ? 8 : 0);
+          const i = gy * cw1 + gx, j1 = i + 1, j2 = i + cw1 + 1, j3 = i + cw1; // 左上・右上・右下・左下
+          // 角に出てくる国を、前と同じ順 (左上の a・b、右上の a・b、…) に、重ねずに並べる (前の Set と同じ順。配列を作らない)
+          let ns = 0;
+          for (let q = 0; q < 8; q++) {
+            const j = q < 2 ? i : q < 4 ? j1 : q < 6 ? j2 : j3, c = q % 2 ? B[j] : A[j];
+            if (!c) continue;
+            let dup = false;
+            for (let u = 0; u < ns; u++) if (seen[u] === c) { dup = true; break; }
+            if (!dup) seen[ns++] = c;
+          }
+          for (let u = 0; u < ns; u++) {
+            const v = seen[u], t = lw(v) / 2;
+            const g0 = field(v, i) - t, g1 = field(v, j1) - t, g2 = field(v, j2) - t, g3 = field(v, j3) - t;
+            const k = (g0 > 0 ? 1 : 0) | (g1 > 0 ? 2 : 0) | (g2 > 0 ? 4 : 0) | (g3 > 0 ? 8 : 0);
             if (k === 0 || k === 15) continue;
             const px = x0 + gx * C, py = y0 + gy * C;
-            // 辺の上の交点: 0 = 上・1 = 右・2 = 下・3 = 左
-            const pt = (e) => {
-              if (e === 0) return [px + C * cross(g[0], g[1], 0), py];
-              if (e === 1) return [px + C, py + C * cross(g[1], g[2], 0)];
-              if (e === 2) return [px + C * cross(g[3], g[2], 0), py + C];
-              return [px, py + C * cross(g[0], g[3], 0)];
-            };
-            const segs = MS_SEGS[k] ?? (g[0] + g[1] + g[2] + g[3] > 0 ? MS_SADDLE[k][1] : MS_SADDLE[k][0]);
+            const segs = MS_SEGS[k] ?? (g0 + g1 + g2 + g3 > 0 ? MS_SADDLE[k][1] : MS_SADDLE[k][0]);
             const path = paths[v - 1];
-            for (const [e1, e2] of segs) { const [ax, ay] = pt(e1), [bx2, by2] = pt(e2); path.moveTo(ax, ay); path.lineTo(bx2, by2); }
+            for (const [e1, e2] of segs) { path.moveTo(ex(e1, px, g0, g1, g2, g3), ey(e1, py, g0, g1, g2, g3)); path.lineTo(ex(e2, px, g0, g1, g2, g3), ey(e2, py, g0, g1, g2, g3)); }
           }
         }
         lc.lineCap = 'round'; lc.lineJoin = 'round';
