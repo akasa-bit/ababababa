@@ -66,6 +66,24 @@
     this.stepping = false;
     return changed;
   }
+  // 画面の進め方 (QD-81 = a。docs/perf.md の 8.6): コマごとの年 y をためて、STEP (0.25 年) たまるごとに 1 歩 (advance(STEP)。画面なしの道具・CI と同じ刻み)。
+  // 前は 1 コマごとに「コマの時間 × 速さ」だけ進めていたので、刻みがコマの速さで変わり、細かい刻みほど計算が重く、端末ごとに筋が少し違った。
+  // budget [ms] を渡すと、1 回の計算をその時間までにして、残りは次へ回す (ためるのは STEP_BACKLOG 年まで)。clock = 時計 (試験で差し替える)。
+  // ためた年 (stepAcc) は画面だけのもの (セーブに入れない。読み込んだ試合は 0 から)。地図は viewYear (試合の年 + ためた年) で描く
+  advanceFixed(y, budget = 0, clock = () => performance.now()) {
+    this.stepAcc = (this.stepAcc || 0) + Math.max(0, y);
+    let changed = false;
+    const t0 = budget ? clock() : 0;
+    while (this.stepAcc >= STEP - 1e-9) {
+      if (budget && clock() - t0 > budget) break;
+      this.stepAcc = Math.max(0, this.stepAcc - STEP);
+      if (this.advance(STEP)) changed = true;
+    }
+    if (this.stepAcc > STEP_BACKLOG) this.stepAcc = STEP_BACKLOG;
+    return changed;
+  }
+  // 地図で動くもの (船・荷・光の輪・公転) と日付を描く年。試合の年に、まだ進めていない年 (1 歩ぶんまで) を足す
+  viewYear() { return this.year + Math.min(this.stepAcc || 0, STEP); }
 
   // 政治力・議会・時代の課題・挑戦・語り手・決めること・終わりの年 (年1回)。AI が動かす席 (国家選択の AI の国) も同じ仕組みで動き、観戦モードと同じ AI が決める (回 SE5)
   politicsYearly() {

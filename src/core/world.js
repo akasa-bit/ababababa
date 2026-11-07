@@ -125,5 +125,6 @@ function bankMove(o, f, v, lf = 'loan') {
   o[lf] = Math.max(0, -net);
 }
 const STEP = 0.25; // 経済シミュレーションの刻み[年]
+const STEP_BACKLOG = 1; // 画面の進め方 (advanceFixed) でためておく年の上限。計算が追いつかないときは、それより遅れる分を捨てる (QD-81 = a。docs/perf.md の 8.6)
 const GHOST_KINDS = ['cargo', 'fleets', 'requests', 'troopMoves', 'migrants', 'ships', 'projects'];
 

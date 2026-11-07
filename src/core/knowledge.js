@@ -243,10 +243,11 @@
   routeKnown(r) { return this.spectate || r.built === undefined || r.built + this.lightDelay(r.by ?? r.a) <= this.year; }
   // 地球から見た動くものの位置。posAt(t) は年 t の位置。光が地球に届くのにかかる時間を差し引いた位置を返す
   // (出発がまだ見えていない・到着がもう見えているなら null)
-  apparent(posAt, t0, t1) {
-    if (this.spectate) return this.year < t0 || this.year > t1 ? null : posAt(this.year); // 観戦モードは実際の位置
+  // now = いまの年 (地図は試合の年でなく表示の年 viewYear で描く。QD-81 = a)
+  apparent(posAt, t0, t1, now = this.year) {
+    if (this.spectate) return now < t0 || now > t1 ? null : posAt(now); // 観戦モードは実際の位置
     const E = this.system(this.cap);
-    const f = (t) => { const q = posAt(t); return t + distance(q, E) - this.year; };
+    const f = (t) => { const q = posAt(t); return t + distance(q, E) - now; };
     if (f(t0) > 0 || f(t1) <= 0) return null;
     let lo = t0;
     let hi = t1;
@@ -255,8 +256,8 @@
   }
   // apparent((t) => this.pathPosition(path, times, t), t0, t1) と同じ計算を、途中で物を作らずに行う
   // (地図で毎フレーム、輸送中の荷や船の数だけ呼ぶので)。式と順番は pathPosition・shipPosition と同じ
-  apparentPath(path, times, t0, t1) {
-    if (this.spectate || path.length < 2) return this.apparent((t) => this.pathPosition(path, times, t), t0, t1);
+  apparentPath(path, times, t0, t1, now = this.year) {
+    if (this.spectate || path.length < 2) return this.apparent((t) => this.pathPosition(path, times, t), t0, t1, now);
     const E = this.system(this.cap);
     let px = 0, py = 0, pz = 0;
     const place = (t) => {
@@ -269,7 +270,7 @@
       py = a.y + (b.y - a.y) * f;
       pz = (a.z || 0) + ((b.z || 0) - (a.z || 0)) * f;
     };
-    const f = (t) => { place(t); return t + GM.hypot(px - E.x, py - E.y, pz - (E.z || 0)) - this.year; };
+    const f = (t) => { place(t); return t + GM.hypot(px - E.x, py - E.y, pz - (E.z || 0)) - now; };
     if (f(t0) > 0 || f(t1) <= 0) return null;
     let lo = t0;
     let hi = t1;

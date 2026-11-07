@@ -33,6 +33,10 @@ const railFading = (now) => now - (app.railNewest ?? -Infinity) < 11000;
 for (const ev of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'keydown', 'touchstart', 'touchmove', 'touchend']) window.addEventListener(ev, () => { mapActiveUntil = performance.now() + 600; }, { passive: true, capture: true });
 window.addEventListener('resize', () => { mapActiveUntil = performance.now() + 600; });
 let acc = 0;
+// 経済は 0.25 年ごとに進める (game.advanceFixed。QD-81 = a。docs/perf.md の 8.6)。16 年/秒までは、1 コマの計算をこの ms までにして画面の反応を保つ
+// (残りは次のコマへ)。16 年/秒で 40 ms だとコマは 2.7 倍になったが進む年が 1 割ほど減り、80 ms ではコマ 1.6 倍・進む年はほぼ同じ (−4%) だったので 80 ms。
+// 64 年/秒 (いちばん速い速さ) は計算を先にして上限を付けない (上限を付けると、進む年が 16〜20% 減ったため)
+const STEP_BUDGET = 80;
 function frame(now) {
   PlayLog.tick(Math.min(1000, now - last));
   const dt = Math.min(0.1, (now - last) / 1000);
@@ -41,7 +45,7 @@ function frame(now) {
   const nosel = app.sel.sys === null;
   if (nosel !== lastNosel) { lastNosel = nosel; document.body.classList.toggle('nosel', nosel); app.dirty = true; } // 欄の幅が変わると ResizeObserver が地図を合わせる
   if (Net.on) { if (Net.frame(dt)) app.dirty = true; }
-  else if (app.speed && game.advance(dt * app.speed)) app.dirty = true;
+  else if (app.speed && game.advanceFixed(dt * app.speed, app.speed < SPEEDS[SPEEDS.length - 1] ? STEP_BUDGET : 0)) app.dirty = true;
   if (app.turnEvery && isHotseat() && $('curtain').hidden && game.year >= (app.turnStart ?? game.year) + app.turnEvery) nextTurn(true);
   if (app.skip) checkSkip();
   // 地図は、変わりうるときだけ描き直す: 動くものが見える距離だけ動いた・画面や表示が変わった・操作の直後 (0.6 秒)・視点が動いた直後 (止まってからの描き直しのため)・点滅しているもの・
@@ -49,10 +53,12 @@ function frame(now) {
   const cam = galaxyView.cam;
   // 星図では、年が進んでも動くものが 0.25 ピクセル動くまでは描き直さない。いちばん速く見えるのは地球へ近づく船で、
   // 見かけの速さは光速の 20 倍 (0.95c で近づくとき 1/(1−0.95)) まで。星系図は惑星が回るので毎フレーム描く
-  const yearMoved = app.view === 'galaxy' ? Math.abs(game.year - lastDrawYear) * 20 * cam.zoom >= 0.25 : game.year !== lastDrawYear;
+  // 動くものは表示の年 (試合の年 + まだ進めていない年) で描くので、描き直すかも表示の年で決める
+  const vy = game.viewYear();
+  const yearMoved = app.view === 'galaxy' ? Math.abs(vy - lastDrawYear) * 20 * cam.zoom >= 0.25 : vy !== lastDrawYear;
   const mapKey = `${app.view}|${w}|${h}|${cam.x}|${cam.y}|${cam.z}|${cam.zoom}|${cam.yaw}|${cam.pitch}|${app.sel.sys}|${app.sel.body}|${app.fleetSel.size}|${app.fleetMove.size}|${app.signalMode}|${systemView.cam.x}|${systemView.cam.y}|${systemView.cam.zoom}`;
   if (app.dirty || yearMoved || mapKey !== lastMapKey || game !== lastMapGame || now < mapActiveUntil || now - (galaxyView.camMovedAt || 0) < 400 || galaxyView.animating || systemView.animating) {
-    lastMapKey = mapKey; lastMapGame = game; lastDrawYear = game.year; galaxyView.animating = systemView.animating = false;
+    lastMapKey = mapKey; lastMapGame = game; lastDrawYear = vy; galaxyView.animating = systemView.animating = false;
     const ctx = galaxyView.ctx;
     ctx.clearRect(0, 0, w, h); // 透明にして、後ろの宇宙の背景を見せる
     updateSky();
@@ -60,7 +66,7 @@ function frame(now) {
     else if (app.view === 'system') systemView.draw(w, h);
   }
 
-  const dateText = TR`西暦 ${Math.floor(game.year)}年 ${Math.floor((game.year % 1) * 12) + 1}月`;
+  const dateText = TR`西暦 ${Math.floor(vy)}年 ${Math.floor((vy % 1) * 12) + 1}月`;
   if (dateText !== lastDateText) { lastDateText = dateText; $('date').textContent = dateText; }
   acc += dt;
   // 0.5 秒ごとの更新 (右の欄・ログ・知らせの帯・収支)。年が進んでいない・操作もない・薄れていく知らせもないときは省く

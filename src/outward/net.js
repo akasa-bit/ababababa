@@ -213,7 +213,11 @@ const Net = {
   // 毎画面の更新ごとに呼ぶ。ホストはコマを作って送り、参加者は届いたコマを順に実行する
   frame(dt) {
     if (this.role === 'host') {
-      const y = app.speed ? dt * app.speed : 0;
+      // 時間は 0.25 年 (STEP) の倍数だけコマに入れる (経済は 0.25 年ごと。どの端末も同じ歩で進む。QD-81 = a)。
+      // 残りはためておき、ホストの地図の表示の年に使う (game.viewYear)
+      const g = app.game, want = (g.stepAcc || 0) + (app.speed ? dt * app.speed : 0);
+      const y = Math.floor((want + 1e-9) / STEP) * STEP;
+      g.stepAcc = Math.min(STEP_BACKLOG, Math.max(0, want - y));
       // 止めた・速さを変えたことも、空のコマで知らせる (参加者の速さのボタンがホストと同じになるように)
       if (!y && !this.queue.length && app.speed === this.sentSpeed) return false;
       this.sentSpeed = app.speed;
@@ -225,9 +229,13 @@ const Net = {
     }
     const t0 = performance.now();
     let n = 0;
+    // 参加者は、届いたコマのあいだも地図を滑らかに動かす: 表示の年だけを、ホストの速さで 1 歩ぶん (STEP) まで先へ進める (試合は進めない)
+    const g = app.game;
+    g.stepAcc = Math.min(STEP, (g.stepAcc || 0) + (app.speed ? dt * app.speed : 0));
     while (this.inbox.length && performance.now() - t0 < 40) {
       const f = this.inbox.shift();
       this.apply(f);
+      if (f.y) app.game.stepAcc = 0;
       n++;
       if (f.s !== undefined && f.s !== app.speed) { app.speed = f.s; updateSpeedButtons(); }
       if (f.h && f.h !== this.hash()) {
