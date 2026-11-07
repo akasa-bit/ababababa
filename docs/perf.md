@@ -320,6 +320,9 @@
 - 状態の要約: main と新しい版で、15 試合 × 150 年を 10 年ごとに比べ、すべて同じ (4 の 15 試合と同じ組)。
 - ブラウザの測り (9.5) の終わりの要約も、main と同じ。
 - 試験: `fixedstep`・`net`・`hot`・`newspop`・`home`・`controls`・`resbar`・`guide`・`pick`・`trial`・`playlog`・`save`・`i18n`・`energy`・`physics`・`colfund`・`colony`・`conserve`・`market`・`routeenergy`・`det`・`granary`・`orderpay` が手元で合格。
+- CI で 1 度、試験 `cloud` (ネット対戦で、抜けた参加者が戻ったあとの要約) が落ちた。この PR の直しではなく、前からある別の不具合だった (B-278)。
+  - 地図を描くときに、画面の側が AI の国の財政の覚え書き (`aif`) を作り、ホストと参加者で `aif` の国が 1 つ違っていた。値は国ごとに決まった式なので、試合の中身は変わらない。
+  - 手元で CPU に負荷をかけると、main の版でも 3 回中 1〜2 回落ちる (新しい版は 3 回とも合格)。CI を回し直した。
 
 ### 9.5 測り (ブラウザ。この作業場所の Chromium。銀河 3・8 か国・観戦。2420 年から)
 
