@@ -423,7 +423,9 @@ class GalaxyView {
     }
 
     // 地図はすべて「いま地球に届いている光」で描く: 動くものは見かけの位置、星系の様子は光が届いた時点のもの
-    const seenAt = (posAt, t0, t1) => game.apparent(posAt, t0, t1);
+    // 動くものは表示の年 (試合の年 + まだ進めていない年。経済は 0.25 年ごと。QD-81 = a) の見かけの位置に描くので、刻みのあいだも滑らかに動く
+    const now = game.viewYear ? game.viewYear() : game.year;
+    const seenAt = (posAt, t0, t1) => game.apparent(posAt, t0, t1, now);
     const known = new Map();
     const K = (id) => { if (!known.has(id)) known.set(id, id === game.cap ? game.snapshot(id) : game.known(id)); return known.get(id); };
 
@@ -565,7 +567,7 @@ class GalaxyView {
     ctx.lineWidth = 1;
     ctx.fillStyle = '#6fdc96';
     for (const p of [...game.cargo, ...game.ghosts.cargo]) {
-      const pos = game.apparentPath(p.path, p.times, p.times[0], p.arrive);
+      const pos = game.apparentPath(p.path, p.times, p.times[0], p.arrive, now);
       if (!pos) continue;
       const [px, py] = this.toScreen(pos.x, pos.y, pos.z);
       ctx.fillRect(px - 1.5, py - 1.5, 3, 3);
@@ -654,7 +656,7 @@ class GalaxyView {
     for (const j of [...game.projects, { legs: game.ghosts.legs }]) {
       const legs = j.legs || j.from.map((from) => ({ path: [from, j.sys], times: [j.start, j.start + game.shipYears(from, j.sys)] }));
       for (const l of legs) {
-        const pos = game.apparentPath(l.path, l.times, l.times[0], l.times[l.times.length - 1]);
+        const pos = game.apparentPath(l.path, l.times, l.times[0], l.times[l.times.length - 1], now);
         if (!pos) continue;
         const [px, py] = this.toScreen(pos.x, pos.y, pos.z);
         ctx.beginPath(); ctx.moveTo(px, py - 3); ctx.lineTo(px + 3, py); ctx.lineTo(px, py + 3); ctx.lineTo(px - 3, py); ctx.fill();
@@ -693,7 +695,7 @@ class GalaxyView {
     // 移動中の歩兵 (交易路をたどる)
     ctx.fillStyle = '#ff9f8f';
     for (const m of [...game.troopMoves, ...game.ghosts.troopMoves]) {
-      const pos = game.apparentPath(m.path, m.times, m.times[0], m.arrive);
+      const pos = game.apparentPath(m.path, m.times, m.times[0], m.arrive, now);
       if (!pos) continue;
       const [px, py] = this.toScreen(pos.x, pos.y, pos.z);
       ctx.fillRect(px - 2.5, py - 2.5, 5, 5);
@@ -703,7 +705,7 @@ class GalaxyView {
     ctx.fillStyle = '#8fd3ff';
     for (const m of [...game.migrants, ...game.ghosts.migrants]) {
       if (m.fromSys === m.toSys) continue;
-      const pos = m.path ? game.apparentPath(m.path, m.times, m.depart, m.arrive)
+      const pos = m.path ? game.apparentPath(m.path, m.times, m.depart, m.arrive, now)
         : seenAt((t) => game.shipPosition({ from: m.fromSys, to: m.toSys, depart: m.depart, arrive: m.arrive }, t), m.depart, m.arrive);
       if (!pos) continue;
       const [px, py] = this.toScreen(pos.x, pos.y, pos.z);
@@ -714,7 +716,7 @@ class GalaxyView {
     for (const s of [...game.ships, ...game.ghosts.ships]) {
       const path = s.path || [s.from, s.to];
       const times = s.times || [s.depart, s.arrive];
-      const p = game.apparentPath(path, times, times[0], s.arrive);
+      const p = game.apparentPath(path, times, times[0], s.arrive, now);
       if (!p) continue;
       const [px, py] = this.toScreen(p.x, p.y, p.z);
       ctx.strokeStyle = 'rgba(255,170,60,0.45)';
@@ -1013,15 +1015,16 @@ class GalaxyView {
   drawLightSpheres(game) {
     const { ctx } = this;
     const z = this.cam.zoom;
+    const now = game.viewYear ? game.viewYear() : game.year; // 光の輪も表示の年で広げる (QD-81 = a)
     const list = [];
     for (const q of game.requests) {
-      if (q.kind !== 'order' || (q.by ?? 0) !== game.cap || q.arrive <= game.year) continue;
+      if (q.kind !== 'order' || (q.by ?? 0) !== game.cap || q.arrive <= now) continue;
       list.push({ from: q.from, to: q.to, sent: q.sent, arrive: q.arrive, label: TR`指令「${q.label}」→ ${game.system(q.to).name}`, pred: forecastOf(q.id) });
     }
     for (const d of game.decisions) {
       if (d.state !== 'sent' || d.sentAt === undefined || d.sys === game.cap) continue;
       const arrive = d.sentAt + game.lightDelay(d.sys);
-      if (arrive > game.year) list.push({ from: game.cap, to: d.sys, sent: d.sentAt, arrive, label: TR`返事 → ${game.system(d.sys).name}` });
+      if (arrive > now) list.push({ from: game.cap, to: d.sys, sent: d.sentAt, arrive, label: TR`返事 → ${game.system(d.sys).name}` });
     }
     if (!list.length) return;
     ctx.save();
@@ -1030,7 +1033,7 @@ class GalaxyView {
     list.sort((a, b) => !!b.pred - !!a.pred || a.arrive - b.arrive);
     list.forEach((o, i) => {
       const a = game.system(o.from), b = game.system(o.to);
-      const r = Math.max(0, game.year - o.sent); // 光年 (光は 1 年に 1 光年)
+      const r = Math.max(0, now - o.sent); // 光年 (光は 1 年に 1 光年)
       const [ax, ay] = this.toScreen(a.x, a.y, a.z);
       const glow = ctx.createRadialGradient(ax, ay, Math.max(0, r * z - 14), ax, ay, r * z);
       glow.addColorStop(0, 'rgba(170,220,255,0)');
@@ -1045,9 +1048,9 @@ class GalaxyView {
       ctx.fillStyle = '#aadcff';
       ctx.beginPath(); ctx.arc(ex, ey, 2.5, 0, Math.PI * 2); ctx.fill();
       if (i >= 4) return; // 文字は 4 つまで
-      const text = TR`${o.label} 届くまで あと ${Math.max(0, o.arrive - game.year).toFixed(1)} 年${o.pred?.short ? TR`・${o.pred.short}` : ''}`;
+      const text = TR`${o.label} 届くまで あと ${Math.max(0, o.arrive - now).toFixed(1)} 年${o.pred?.short ? TR`・${o.pred.short}` : ''}`;
       // 入らないときは短い文 (「あと n 年」だけ) で置き直す
-      this.labels.push({ text, short: TR`あと ${Math.max(0, o.arrive - game.year).toFixed(1)} 年`, font: '12px sans-serif', color: '#aadcff', prio: 5 + i * 0.01, at: (w) => [[ex + 6, ey - 6], [ex + 6, ey + 16], [ex - 6 - w, ey - 6], [ex - 6 - w, ey + 16], ...[36, 56, 76].flatMap((d) => [[ex + 6, ey - d], [ex + 6, ey + d], [ex - 6 - w, ey - d], [ex - 6 - w, ey + d]])] });
+      this.labels.push({ text, short: TR`あと ${Math.max(0, o.arrive - now).toFixed(1)} 年`, font: '12px sans-serif', color: '#aadcff', prio: 5 + i * 0.01, at: (w) => [[ex + 6, ey - 6], [ex + 6, ey + 16], [ex - 6 - w, ey - 6], [ex - 6 - w, ey + 16], ...[36, 56, 76].flatMap((d) => [[ex + 6, ey - d], [ex + 6, ey + d], [ex - 6 - w, ey - d], [ex - 6 - w, ey + d]])] });
     });
     ctx.restore();
   }

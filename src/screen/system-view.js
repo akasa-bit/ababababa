@@ -162,7 +162,9 @@ class SystemView {
       this.mark(star, x, y, r);
     };
     // 惑星と伴星は、光が地球に届いた年 (見えている年) の位置に描く。並べて出す入植地の値も光の遅れのぶん古いので揃う (回 SE5・B-171 の画面の分)
-    const seenYear = game.spectate || sys.id === game.cap ? game.year : game.year - game.lightDelay(sys.id);
+    // 公転は表示の年 (試合の年 + まだ進めていない年。経済は 0.25 年ごと。QD-81 = a) で回すので、刻みのあいだも滑らかに動く
+    const now = game.viewYear ? game.viewYear() : game.year;
+    const seenYear = game.spectate || sys.id === game.cap ? now : now - game.lightDelay(sys.id);
     drawStar(primary, cx, cy, true);
     for (const s of sys.stars.slice(1)) {
       const ang = s.phase + (2 * Math.PI * seenYear) / (Math.sqrt(s.sep ** 3 / (primary.mass + s.mass)) || 1);
