@@ -72,6 +72,7 @@ function frame(now) {
     setHtml($('log'), logHtml(game));
     if (!SHEETS[app.view]) setHtml($('rail'), railHtml(game));
     setHtml($('treasury'), treasuryHtml(game));
+    resBarRefresh(); // 資源の残量と変化の割合 (依頼 2026-11-07 の GA-1。screen/resbar.js)
     setHtml($('ledger'), ledgerHtml(game));
     setHtml($('sec-ledger').firstElementChild, TR`${ico('credits')}${ME.gov}の収支`);
     if (hasFleetSelection()) renderFleetBar();

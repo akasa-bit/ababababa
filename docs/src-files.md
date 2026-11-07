@@ -129,6 +129,7 @@
 | `economy/fiscal-ui.js` | 経済 | 53 | 議会のグラフ・財政の画面 |
 | `screen/goals-ui.js` | 画面と最初の体験 | 66 | 目標の画面 (国家方針・政治力・議会・時代の課題) |
 | `screen/candidates.js` | 画面と最初の体験 | 127 | 候補地の画面 |
+| `screen/resbar.js` | 画面と最初の体験 | 153 | 上の帯の資源 (星系と国全体の残量と変化の割合・押すと需要と供給の小さな欄。依頼 2026-11-07 の GA-1) |
 | `screen/app.js` | 画面と最初の体験 | 128 | 画面の状態 (app)・UI のイベント |
 | `core/save.js` | 共通 (世話役: 道具と検証) | 213 | セーブ (Store・buildSave・SAVE_LEGACY・書き出し) |
 | `screen/playlog.js` | 画面と最初の体験 | 159 | プレイ記録 (同意の画面はここに) |

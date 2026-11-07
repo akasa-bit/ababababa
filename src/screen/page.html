@@ -350,11 +350,28 @@ header nav button { padding:8px 16px; }
 #skipbtn, #menubtn { min-width:44px; padding:8px 8px; }
 #menu { position:absolute; right:0; top:calc(100% + 8px); z-index:30; display:flex; flex-direction:column; gap:8px; padding:8px; background:var(--panel); border:1px solid var(--line); border-radius:8px; min-width:200px; box-shadow:0 8px 24px rgba(0,0,0,.5); }
 #menu[hidden] { display:none; }
+/* 上の帯の資源 (依頼 2026-11-07 の GA-1): 資源ごとに、上の段 = 星系・下の段 = 国全体の在庫と変化の割合。押すと需要と供給の小さな欄 (#respop) */
+#resbar { display:flex; gap:3px; align-items:stretch; order:1; flex:1 1 600px; min-width:0; overflow-x:auto; scrollbar-width:thin; font-size:var(--fs1); font-variant-numeric:tabular-nums; }
+#resbar:empty { display:none; }
+#resbar .rl { display:flex; flex-direction:column; justify-content:center; flex:none; max-width:7em; padding-right:4px; color:var(--muted); white-space:nowrap; }
+#resbar .rl b { color:var(--fg); font-weight:normal; overflow:hidden; text-overflow:ellipsis; }
+#resbar .rc { display:grid; grid-template-columns:auto auto; grid-template-rows:auto auto; column-gap:3px; align-items:center; flex:none; min-height:40px; padding:2px 4px; margin:0; white-space:nowrap; text-align:left; font:inherit; color:inherit; background:transparent; border:1px solid var(--line); border-radius:var(--radius, 0); cursor:pointer; }
+#resbar .rc .ico { grid-row:1 / span 2; width:16px; height:16px; }
+#resbar .rc .n { color:var(--muted); }
+#resbar .rc.on { border-color:var(--accent); }
+#resbar i, #respop i { font-style:normal; margin-left:2px; }
+#resbar i.up, #respop i.up { color:var(--good); } #resbar i.dn, #respop i.dn { color:var(--warn); } #resbar i.z, #respop i.z { color:var(--muted); }
+#respop { position:fixed; z-index:40; width:max-content; max-width:min(92vw, 380px); max-height:70vh; overflow:auto; padding:8px 10px; background:var(--panel); border:1px solid var(--line); box-shadow:0 8px 24px rgba(0,0,0,.5); font-size:var(--fs1); }
+#respop[hidden] { display:none; }
+#respop .hd { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px; }
+#respop .hd .x { min-width:44px; min-height:32px; padding:0 8px; }
+#respop .tbl { margin-bottom:6px; } #respop .tbl td, #respop .tbl th { white-space:nowrap; } #respop p { margin:4px 0 0; }
 #menu button { text-align:left; }
 #menu #savestat { display:block; font-size:var(--fs1); padding:0 8px; }
 @media (max-width: 900px) {
   header { gap:8px; padding:8px; }
   #status { flex-basis:100%; order:3; }
+  #resbar { order:4; flex-basis:100%; }
   #ctrl { overflow-x:visible; width:auto; }
   #speed button { padding:8px 4px; }
   header h1 { font-size:var(--fs3); }
@@ -371,6 +388,7 @@ header nav button { padding:8px 16px; }
   #speed { order:4; flex:1 1 calc(100% - 60px); min-width:0; } #speed button { flex:1 1 0; padding:8px 0; }
   #skipbtn { order:5; }
   #status { order:6; flex-wrap:wrap; gap:4px 16px; }
+  #resbar { order:7; flex-basis:100%; }
   #date { font-size:var(--fs2); }
 }
 #rail .railbar button, #legend summary { min-width:44px; }
@@ -556,6 +574,7 @@ h1, #empire h2, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url(#wo
       <button id="tab-cands" class="tab">候補地</button>
     </nav>
     <div id="status"><div id="date">西暦 2300年 1月</div><div id="treasury"></div></div>
+    <div id="resbar" aria-label="資源の残量 (上の段は星系、下の段は国全体)"></div>
     <div id="ctrl">
       <div id="speed" role="group" aria-label="速さ (1秒あたり)">
         <button data-speed="0" aria-label="一時停止">⏸</button>
@@ -584,6 +603,7 @@ h1, #empire h2, .stats b, .kpi b, #date, #treasury .v, .ev .tag { filter:url(#wo
     </div>
     <input id="importfile" type="file" accept="application/json,.json" hidden>
   </header>
+  <div id="respop" hidden></div>
   <main>
     <div id="stage">
       <div id="sky" aria-hidden="true"><div class="sky-galaxy"></div><div class="sky-system"></div></div>

@@ -66,6 +66,7 @@ const I18N_EN = {
 "星間マップ": "Galaxy map",
 "星系マップ": "System map",
 "出来事の履歴 (いまの知らせは地図の左上に出る)": "Event history (current news appears at the top left of the map)",
+"資源の残量 (上の段は星系、下の段は国全体)": "Resource stocks (top row: system, bottom row: whole nation)",
 "速さ (1秒あたり)": "Speed (per second)",
 "一時停止": "Pause",
 "1秒で1ヶ月": "1 month per second",
@@ -2552,6 +2553,20 @@ const I18N_EN = {
 "<tr><td>スウォームの素子の作り</td><td>いま <b>{0}. {1}</b> {2}<ul>{3}</ul><small class=\"muted\">フレアの陽子が電池を傷める (M 型星で強い)。重い素子ほど自己複製で広がるのが遅い。{4}</small></td></tr>": "<tr><td>Swarm element design</td><td>Now <b>{0}. {1}</b> {2}<ul>{3}</ul><small class=\"muted\">Flare protons damage the cells (worse around M-type stars). Heavier elements spread more slowly by self-replication. {4}</small></td></tr>",
 "<tr><td>蓄え</td><td>{0} <span class=\"muted\">(上限 {1})</span></td></tr>{2}": "<tr><td>Stored</td><td>{0} <span class=\"muted\">(cap {1})</span></td></tr>{2}",
 " <span class=\"muted\">({0}年遅れで届いた)</span>": " <span class=\"muted\">(arrived {0} yr late)</span>",
+// == screen/resbar.js
+"<button class=\"rc{0}\" data-res=\"{1}\" title=\"{2} (押すと需要と供給)\" aria-label=\"{3}\">{4}<span class=\"s\">{5}</span><span class=\"n\">{6}</span></button>": "<button class=\"rc{0}\" data-res=\"{1}\" title=\"{2} (tap for supply and demand)\" aria-label=\"{3}\">{4}<span class=\"s\">{5}</span><span class=\"n\">{6}</span></button>",
+"<span class=\"rl\" title=\"上の段は星系 (選んでいる自分の国の星系。選んでいなければ首都)、下の段は国全体。どちらも光が首都に届いた時点の在庫。% は 1 年前からの変化\"><b>{0}</b><small>国全体</small></span>": "<span class=\"rl\" title=\"Top row: the system (the system of your nation you have selected, or the capital). Bottom row: the whole nation. Both are stocks as of when their light reached the capital. % is the change over the past year\"><b>{0}</b><small>Whole nation</small></span>",
+"在庫": "Stock",
+"変化 (年あたり)": "Change (per year)",
+"供給 (生産)": "Supply (production)",
+"需要": "Demand",
+"生産 − 需要": "Production − demand",
+"交易などの出入り (差し引き)": "Trade and other flows (by difference)",
+"このままで尽きるまで": "Runs out at this pace in",
+"足りない入植地": "Colonies short of it",
+"<p class=\"muted\">ほか {0} 星系</p>": "<p class=\"muted\">{0} more systems</p>",
+"<table class=\"tbl\"><tr><th>星系 (生産が需要に足りない順)</th><th>在庫</th><th>生産</th><th>需要</th></tr>{0}</table>{1}": "<table class=\"tbl\"><tr><th>System (largest shortfall of production first)</th><th>Stock</th><th>Production</th><th>Demand</th></tr>{0}</table>{1}",
+"<div class=\"hd\"><b>{0}{1}</b><button class=\"x\" data-act=\"respop-close\" aria-label=\"閉じる\">×</button></div>\n    <table class=\"tbl\"><tr><th></th><th>{2}</th><th>国全体</th></tr>\n    {3}{4}\n    {5}{6}{7}\n    {8}{9}{10}</table>\n    {11}\n    <p class=\"muted\">年あたり。光が首都に届いた時点の記録。生産と需要は交易路での出入りを含まない (経済の画面と同じ)。変化と尽きるまでの年は、この画面で見てきた在庫のおよそ 1 年前との差 (交易も含む)。交易などの出入りは、その差から生産と需要を引いたもの</p>": "<div class=\"hd\"><b>{0}{1}</b><button class=\"x\" data-act=\"respop-close\" aria-label=\"Close\">×</button></div>\n    <table class=\"tbl\"><tr><th></th><th>{2}</th><th>Whole nation</th></tr>\n    {3}{4}\n    {5}{6}{7}\n    {8}{9}{10}</table>\n    {11}\n    <p class=\"muted\">Per year, as of when the light reached the capital. Production and demand leave out trade-route flows (as on the economy screen). Change and run-out time come from the stock seen on this screen compared with about a year earlier (trade included). Trade and other flows are that change minus production plus demand</p>",
 // == screen/app.js
 "斜め": "Tilted",
 // == core/save.js
