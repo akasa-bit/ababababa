@@ -120,25 +120,40 @@
       return v;
     };
     // 売り手が資源を売れる見込み (星系の経済の記録のどれかで、余りが 0.5 を超えるか。数でない値も「見込みあり」)。記録は年に 1 度しか変わらないので、
-    // 記録の一覧が同じあいだは使い回す (this._sellMask はセーブしない)。見えている余り sp はどれかの記録の値か 0 なので、見込みがなければ sp ≤ 0.5 ≤ min
+    // 記録の一覧が同じあいだは使い回す (this._sellMask はセーブしない)。見えている余り sp はどれかの記録の値か 0 なので、見込みがなければ sp ≤ 0.5 ≤ min。
+    // 資源ごとの記録の余りの最大 (sellMax。数でない値があれば Infinity) も一緒に覚える: 最大が min 以下なら、どの記録が見えていても sp ≤ min (速さ。依頼 common-4)
     const sellMemo = (this._sellMask ??= new Map());
-    const maskArr = [];
+    const maskArr = [], maxArr = [];
+    const NO_MAX = new Float64Array(RES.length);
     const sellMask = (S) => {
       let m = maskArr[S];
       if (m !== undefined) return m;
       const list = this.econIntel.s[S];
+      let mx = NO_MAX;
       if (!list?.length) m = 0;
       else {
         const c = sellMemo.get(S), y0 = list[0][0], y1 = list[list.length - 1][0];
-        if (c && c.list === list && c.len === list.length && c.y0 === y0 && c.y1 === y1) m = c.m;
+        if (c && c.list === list && c.len === list.length && c.y0 === y0 && c.y1 === y1) { m = c.m; mx = c.mx; }
         else {
           m = 0;
-          for (const e of list) for (let i = 0; i < RES.length; i++) { const v = e[1][i] ?? 0; if (!(v <= 0.5)) m |= 1 << i; }
-          sellMemo.set(S, { list, len: list.length, y0, y1, m });
+          mx = new Float64Array(RES.length).fill(-Infinity);
+          for (const e of list) {
+            for (let i = 0; i < RES.length; i++) {
+              const v = e[1][i] ?? 0;
+              if (!(v <= 0.5)) m |= 1 << i;
+              if (typeof v !== 'number' || v !== v) mx[i] = Infinity; else if (v > mx[i]) mx[i] = v;
+            }
+          }
+          sellMemo.set(S, { list, len: list.length, y0, y1, m, mx });
         }
       }
+      maxArr[S] = mx;
       return (maskArr[S] = m);
     };
+    const sellMax = (S, ri) => { if (maskArr[S] === undefined) sellMask(S); return maxArr[S][ri]; };
+    // 国の財政の覚え書きがもうある (見ても何も残らない) 国の星系。一度そうなれば変わらないので、true だけ覚える
+    const quietArr = [];
+    const quietS = (S) => quietArr[S] || (quietArr[S] = fiscQuiet(realmQ(S)));
     for (const T of [...new Set(this.routes.flatMap((r) => [r.a, r.b]))]) {
       const ft = flow[T];
       if (!ft) continue;
@@ -154,7 +169,7 @@
       // 売り手ごとの調べ (交戦・同じ国か・禁輸・見えている記録) は資源によらないので、この買い手のあいだ覚えておく。
       // 求める順と条件は前と同じ (交戦中なら財政を見ない。同じ国なら財政を見ない。財政を初めて見るときに AI の国の財政の覚え書きができるので)
       const rT = realmQ(T);
-      const X = { T, Tn: Number(T), rT, info: [], pendingPair, promised, blocked, realmQ, fiscQ, fiscQuiet, tariffQ, sellMask, dist, rate, fRate };
+      const X = { T, Tn: Number(T), rT, info: [], pendingPair, promised, blocked, realmQ, fiscQ, fiscQuiet, quietS, tariffQ, sellMask, sellMax, dist, rate, fRate };
       for (const res of needs) {
         const min = Math.max(0.5, 0.05 * use(res));
         const ri = RES_INDEX[res]; // sysRes・pairKey と同じ鍵を、ここで組み立てる
@@ -203,11 +218,14 @@
     const bit = 1 << ri, mayFlat = min >= 0.5, maxN = TRADE.sources;
     const cands = [];
     let W = 0, WL = 0;
+    // 買い手の国の財政の覚え書きがもうあるかは、1 度だけ見る (覚え書きは一度できたら消えないので、古い「まだない」で調べに回っても、
+    // 調べて何も残らないだけ。結果は同じ。速さ。依頼 common-4)
+    const qT = mayFlat && X.fiscQuiet(rT);
     for (let n = 0; n < list.length; n++) {
       const S = list[n];
       if (cands.length >= maxN) break;
       // 売れる見込みのない売り手は候補にならない。調べると財政の覚え書きができる売り手 (買い手か売り手の国の覚え書きがまだない) だけは、前と同じく調べる
-      if (mayFlat && !(X.sellMask(S) & bit)) { const I0 = info[S]; if (I0 !== undefined ? I0.blk || I0.same !== undefined : X.fiscQuiet(rT) && X.fiscQuiet(X.realmQ(S))) continue; }
+      if (mayFlat && !(X.sellMask(S) & bit)) { const I0 = info[S]; if (I0 !== undefined ? I0.blk || I0.same !== undefined : qT && X.quietS(S)) continue; }
       const kpair = (Tn * 65536 + S) * 8 + ri; // = pairKey(T, S, res) (S は交易路網の星系の番号 = 数)
       if (pendingPair.has(kpair)) continue;
       // 交戦中の国どうしでは取引しない (開戦を知ってから)。輸出禁止と禁輸 (回 KE9。式は tradeBarred と同じ)
@@ -221,6 +239,7 @@
       }
       if (!I.same && (I.ban?.[res] || I.emb)) continue;
       const kp = S * 8 + ri; // = sysRes(S, res)
+      if (mayFlat && !(X.sellMax(S, ri) > min)) continue; // どの記録の余りも min 以下なら、見えている余りも min 以下 (下の sp ≤ min と同じ。記録を探さずに飛ばす)
       if (I.e === undefined) I.e = this.econSeen(T, S);
       const sp = I.e?.[1][ri] ?? 0;
       if (sp <= min) continue;
@@ -313,12 +332,19 @@
   rebuildTransit() {
     for (const r of this.routes) r.transit = [zeroRes(), zeroRes()];
     this.inbound = {};
+    // 荷の区間 (legsOf) は、交易路の一覧が同じあいだ (routeBetween の索引と同じ見分け方: 一覧そのもの・数・最後の番号) は変わらないので、荷ごとに覚えて使い回す
+    // (_legs はセーブしない。足す順は前と同じ。速さ。依頼 common-4・docs/perf.md の 9。前は刻みごと・資源ごとに求め直していた)
+    const sig = `${this.routes.length}:${this.routes[this.routes.length - 1]?.id}`;
+    let LC = this._legs;
+    if (!LC || LC.sig !== sig || LC.list !== this.routes) LC = this._legs = { sig, list: this.routes, map: new WeakMap() };
     for (const p of this.cargo) {
       const dest = p.path[p.path.length - 1];
-      let legs = null; // 区間は荷ごとに 1 度だけ求める (前は資源ごとに求め直していた。足す順は同じ。速さ。依頼 common-4・docs/perf.md の 9)
-      for (const [res, amt] of Object.entries(p.load)) {
+      let legs = null;
+      for (const res in p.load) {
+        const amt = p.load[res];
         (this.inbound[dest] ??= zeroRes())[res] += amt;
-        for (const l of (legs ??= this.legsOf(p.path))) l.r.transit[l.dir][res] += amt;
+        if (legs === null) { legs = LC.map.get(p); if (legs === undefined) { legs = this.legsOf(p.path); LC.map.set(p, legs); } }
+        for (const l of legs) l.r.transit[l.dir][res] += amt;
       }
     }
   }
