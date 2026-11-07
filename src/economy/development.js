@@ -184,6 +184,16 @@
     }
   }
   govsYearly() {
+    // 首都から届いて取っておいた入植船の資金 (heldColony) を、要求の一覧を 1 度だけ見て、星系ごとに同じ順で足しておく (同じ値。速さ。依頼 common-4・docs/perf.md の 9。
+    // 前は星系ごとに一覧を頭から見ていた)。この中で取っておいた資金が変わるのは releaseHeldColony だけ (新しく送る資金援助は、届くまで数えない) なので、そのときは数え直す
+    let heldArr = null, heldIx = null;
+    const heldOf = (id) => {
+      if (heldArr !== this.requests) {
+        heldArr = this.requests; heldIx = new Map();
+        for (const q of heldArr) if (q.kind === 'grant' && q.col && q.held !== undefined) heldIx.set(q.to, (heldIx.get(q.to) || 0) + (q.amt || 0));
+      }
+      return heldIx.get(id) ?? 0;
+    };
     for (const s of this.colonizedSystems()) {
       const id = s.id;
       if (this.govs[id]?.colFund?.length) this.colonyFundPay(id); // 国の入植の予算: 取っておいた家臣の入植船の資金を送る (人間の首都も。回 KE15)
@@ -195,11 +205,17 @@
         // 取引できるか (tradeBlocked) は、相手の国ごとに一度だけ調べる (相手の星系によらず国だけで決まる。同じ値。速さ。docs/perf.md)
         const ra = this.realmOf(id), bm = new Map();
         const blockedTo = (o) => { const rb = this.realmOf(o); let v = bm.get(rb); if (v === undefined) { v = this.tradeBlockedIn(id, ra, rb); bm.set(rb, v); } return v; };
-        const near = this.colonizedSystems()
-          .filter((o) => o.id !== id && !this.routeBetween(o.id, id) && !blockedTo(o.id))
-          .map((o) => ({ o, d: distance(o, s) }))
-          .filter((x) => !mine.length || x.d <= 12)
-          .sort((a, b) => a.d - b.d)[0];
+        // いちばん近い星系 (同じ距離なら一覧の先のもの。前は全部を並べ替えて先頭を取っていた。並べ替えは安定なので同じもの)。距離を先に見て、
+        // それまでの候補より近くないものは、交易路と交戦を調べない (どちらも状態を変えない調べ。速さ。依頼 common-4)
+        let near;
+        for (const o of this.colonizedSystems()) {
+          if (o.id === id) continue;
+          const d = distance(o, s);
+          if (mine.length && !(d <= 12)) continue;
+          if (near && !(d < near.d)) continue;
+          if (this.routeBetween(o.id, id) || blockedTo(o.id)) continue;
+          near = { o, d };
+        }
         if (near) {
           const cost = this.routeCost(id, near.o.id), name = this.system(near.o.id).name;
           if (this.funds(id) >= 1.5 * cost.credits) { if (this.openRoute(id, near.o.id).ok) this.govDidOnce(id, JA`${name} へ交易路を引いた`, JA`交易路が ${mine.length} 本で、3 本より少なかった`); }
@@ -215,13 +231,13 @@
       const pm = this.procureFrom(cost, id, undefined, Infinity);
       const need = (gv.mandate === 'expand' ? 1 : 1.2) * (pm.total ?? cost.credits);
       // 首都から届いて取っておいた入植船の資金は、資材がそろい、合わせて足りるときに資金に入れて使う (回 KE15)
-      const held = this.heldColony(id);
-      if (held > 0 && !pm.why && this.funds(id) + held >= need) this.releaseHeldColony(id);
+      const held = heldOf(id);
+      if (held > 0 && !pm.why && this.funds(id) + held >= need) { this.releaseHeldColony(id); heldArr = null; }
       // 足りなければ、入植船の分を行政サービスに回さずに取っておく (投資が先。fiscal.js の debtStep。回 KE14・B-131)
       if (this.funds(id) < need || this.procure(cost, id).why) {
         gv.saveFor = { c: need, y: this.year };
         this.govDidOnce(id, JA`${best.t.name} への入植船を見送った`, '資金か資材が足りなかった');
-        const short = need - Math.max(0, this.funds(id)) - this.heldColony(id);
+        const short = need - Math.max(0, this.funds(id)) - heldOf(id);
         if (!pm.why && short >= 1) this.askColonyFunds(id, short); // 資材は買えるのに資金が足りなければ、足りない分を国の首都に願い出る (回 KE15)
         continue;
       }
