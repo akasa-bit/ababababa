@@ -27,9 +27,11 @@
     if (!list?.length) return null;
     if (viewer === id) return list[list.length - 1];
     const t = this.year - this.sysDist(viewer, id);
-    let best = null;
-    for (const e of list) { if (e[0] <= t) best = e; else break; }
-    return best;
+    // 記録は年の順 (1 年に 1 つ、古いものから足し、古いものから捨てる) なので、t までのいちばん新しい記録を二分探索で探す
+    // (前は頭から順に見ていた。同じ記録を返す。速さ。docs/perf.md)
+    let lo = 0, hi = list.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (list[mid][0] <= t) lo = mid + 1; else hi = mid; }
+    return lo ? list[lo - 1] : null;
   }
   // viewer から見えている、星系 id の資源 res の余り (見えなければ 0)
   spareSeen(viewer, id, res) { return this.econSeen(viewer, id)?.[1][RES_INDEX[res]] ?? 0; }

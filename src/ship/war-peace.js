@@ -1,7 +1,13 @@
+  // 鍵ごとのいちばん新しい講和の記録 (同じ年なら一覧の先のもの)。一覧は足すか丸ごと置き換えるかでしか変わらないので、
+  // 一覧と長さが同じあいだは索引を使い回す (速さ。前は呼ぶたびに一覧を頭から見ていた。docs/perf.md)
   lastPeace(key) {
-    let best = null;
-    for (const r of this.peaces) if (r.key === key && (!best || r.year > best.year)) best = r;
-    return best;
+    let ix = this._peaceIx;
+    if (!ix || ix.arr !== this.peaces || ix.len !== this.peaces.length) {
+      const map = new Map();
+      for (const r of this.peaces) { const best = map.get(r.key); if (!best || r.year > best.year) map.set(r.key, r); }
+      ix = this._peaceIx = { arr: this.peaces, len: this.peaces.length, map };
+    }
+    return ix.map.get(key) ?? null;
   }
   // 戦っている (と、その場の軍が思っている) か: 戦争中か、終戦の知らせがまだ届いていない。
   // 知らせは講和の結ばれた星系から owner の主星 (首都) へ光速で届き、そこから星系 x の艦隊へ光速で伝えられる

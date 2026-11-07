@@ -194,8 +194,11 @@
     const list = this.snaps[id];
     if (!list) return null;
     const seenYear = this.year - this.lightDelay(id);
-    let best = null;
-    for (const x of list) if (x.year <= seenYear) best = x;
+    // 記録は年の順 (recordSnapshots が足し、古いものから捨てる) なので、seenYear までのいちばん新しい記録を二分探索で探す
+    // (前は全部を順に見ていた。同じ記録を返す。速さ。docs/perf.md)
+    let lo = 0, hi = list.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (list[mid].year <= seenYear) lo = mid + 1; else hi = mid; }
+    const best = lo ? list[lo - 1] : null;
     // 古い記録には新しい資源 (奴隷) がない
     if (best) for (const o of [best.stock, best.prod, best.cons]) for (const r of RES) if (o && !Number.isFinite(o[r])) { o[r] = 0; SNAP_JSON.delete(best); }
     return best;
