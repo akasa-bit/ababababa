@@ -21,16 +21,22 @@
   }
 
   // 国家方針が整備期なら、建設費 (資金) が25%安い
-  upgradeCost(c, fac) {
-    const k = GM.pow(2, c.lv[fac]);
+  // lv = 上げる前の段 (予約を重ねるときは、予約した段。依頼 common-8)
+  upgradeCost(c, fac, lv = c.lv[fac]) {
+    const k = GM.pow(2, lv);
     const f = (this.policyAt(c.sys) === 'consolidate' ? 0.75 : 1) * this.modsOf(c.sys).build; // 勤勉は ×0.75 (回 SE8)
     return { credits: Math.round((100 + 0.05 * c.pop) * k * f), metal: Math.round(50 * k) };
   }
-  upgrade(c, fac) {
-    if (c.lv[fac] >= FACILITY_MAX[fac]) return fail('最大レベル');
+  // 施設を 1 段上げる。建設中なら、stack (プレイヤーの命令。core/commands.js) のときだけ次の段を予約する (2026-11-08 のユーザーの依頼 common-8
+  // 「建設ボタンを 9 回タップしたらレベル 10 までいけるように」。建設期間のある版だけ)。同じ施設は 1 件ずつ順に建ち、費用と建設期間は予約した段の値。
+  // 自動の開発・AI の国は前のとおり、建設中なら頼まない
+  upgrade(c, fac, stack = false) {
     const col = colKey(c);
-    if (this.pending((j) => j.type === 'upgrade' && j.col === col && j.fac === fac)) return fail('建設中');
-    return this.order(this.upgradeCost(c, fac), c.sys, { type: 'upgrade', col, fac, label: JA`${c.name} の${FACILITY[fac]} Lv${c.lv[fac] + 1}` });
+    const q = this.projects.filter((j) => j.type === 'upgrade' && j.col === col && j.fac === fac).length;
+    if (q && !(stack && BUILD_TIME.upgrade)) return fail('建設中');
+    const lv = c.lv[fac] + q;
+    if (lv >= FACILITY_MAX[fac]) return fail(q ? '最大レベルまで予約した' : '最大レベル');
+    return this.order(this.upgradeCost(c, fac, lv), c.sys, { type: 'upgrade', col, fac, label: JA`${c.name} の${FACILITY[fac]} Lv${lv + 1}` });
   }
 
   // --- 交易路 ---
@@ -81,7 +87,7 @@
     return this.order(cost, y.id, { type: 'ships', route: r.id, n, delay: y.t, pay, ...job });
   }
   routeCost(a, b) { return { credits: Math.round(100 + 10 * this.sysDist(a, b)) }; } // 両端の発射所と減速設備 (船は別に造る)
-  routeUpCost(r) { return { credits: 150 * r.lv, metal: 50 * r.lv }; } // 交易路の拡張 = 港を広げる (船は運送業の会社が足す)
+  routeUpCost(r, lv = r.lv) { return { credits: 150 * lv, metal: 50 * lv }; } // 交易路の拡張 = 港を広げる (船は運送業の会社が足す)。lv = 上げる前の段
   // payer = 費用を払う政府 (ふつうは a の星系の政府。国の交易路網では首都。回 KE13)。govShips = 最初の輸送船を政府が造るか
   // (国の交易路網では造らず、交易路の持ち主の運送業の会社が次の年に自分の払いで造る。首都の資金を入植に残すため)
   openRoute(a, b, payer = this.orderBy ?? a, govShips = true) { // 指令で引くときは、指令を出した国の首都が払う (依頼 KE-3)
@@ -98,9 +104,12 @@
     if (govShips) this.buyShips(r, this.shipsFor(r, SHIPPING.base), { gov: payer }, { label: JA`${this.system(a).name} ⇄ ${this.system(b).name} の輸送船` });
     return { ok: true };
   }
-  upgradeRoute(r, tag = '') {
-    if (this.pending((j) => j.type === 'route' && j.route === r.id)) return fail('拡張中');
-    return this.order(this.routeUpCost(r), r.a, { type: 'route', route: r.id, label: JA`${tag}${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路 Lv${r.lv + 1}` });
+  // 拡張中なら、stack (プレイヤーの命令) のときだけ次の段を予約する (施設の upgrade と同じ。依頼 common-8)
+  upgradeRoute(r, tag = '', stack = false) {
+    const q = this.projects.filter((j) => j.type === 'route' && j.route === r.id).length;
+    if (q && !(stack && BUILD_TIME.route)) return fail('拡張中');
+    const lv = r.lv + q;
+    return this.order(this.routeUpCost(r, lv), r.a, { type: 'route', route: r.id, label: JA`${tag}${this.system(r.a).name} ⇄ ${this.system(r.b).name} の交易路 Lv${lv + 1}` });
   }
   routeOwner(r) { const o = r.by ?? r.a; return this.isColonized(o) ? o : this.isColonized(o === r.a ? r.b : r.a) ? (o === r.a ? r.b : r.a) : null; } // 船の持ち主 (開いた星系。いなくなっていれば反対の端)
   routeUse(r) { const c = this.routeCap(r); return c > 0 ? Math.max(r.vol[0], r.vol[1]) / c : r.vol[0] + r.vol[1] > 0 ? Infinity : 0; }

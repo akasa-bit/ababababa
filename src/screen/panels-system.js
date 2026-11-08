@@ -65,18 +65,20 @@ const KIND_ICON = { battle: 'war', war: 'war', famine: 'food', shortage: 'goods'
 const tagIco = (kind) => ico(KIND_ICON[kind]);
 
 // 費用つきボタン。払えないときは理由を添えて無効化する
-function costButton(g, attrs, label, cost, sysId, extraReason = '') {
+// build = 建設期間の年 (依頼 2026-11-08 の common-7。g.buildYears)。あれば「・建設 1.1 年」を添える
+function costButton(g, attrs, label, cost, sysId, extraReason = '', build = 0) {
+  const bt = build > 0 ? TR` ・建設 ${build.toFixed(1)} 年` : '';
   // 太陽系以外での行動は光速の指令になる。向こうの最新の懐具合は分からないので、届いてから実行の可否が決まる
   if (sysId !== undefined && sysId !== g.cap) {
     const c = pcCostOf(g.lightDelay(sysId));
     const pc = g.isDirect(sysId) ? Math.max(1, Math.ceil(c / 2)) : c;
     const why = extraReason || (pc > g.pc ? TR`政治力が足りない (${pc} 必要)` : '');
-    const sub = why ? esc(why) : TR`指令: 届くまで ${g.lightDelay(sysId).toFixed(1)} 年・${ico('pc')}政治力 ${pc}${cost ? TR`・${costHtml(cost)} (${ME.capName}が払う)` : ''}`; // 建設の指令の費用は指令を出した首都が払う (KE13-Q4 = b)
+    const sub = why ? esc(why) : TR`指令: 届くまで ${g.lightDelay(sysId).toFixed(1)} 年・${ico('pc')}政治力 ${pc}${cost ? TR`・${costHtml(cost)} (${ME.capName}が払う)` : ''}${bt}`; // 建設の指令の費用は指令を出した首都が払う (KE13-Q4 = b)
     return `<button ${attrs} ${why ? 'disabled' : ''}>${label}<small>${sub}</small></button>`;
   }
   const p = cost && !extraReason ? g.procure(cost, sysId) : null;
   const why = extraReason || p?.why || '';
-  const sub = why ? esc(why) : (cost ? costHtml(cost) + (p?.eta > 0 ? TR` ・資材搬入 ${p.eta.toFixed(1)}年 (${p.aid ? TR('主人からの支援') : TR`輸入費 ${Math.ceil(p.imp || 0)} cr`})` : '') : '');
+  const sub = why ? esc(why) : (cost ? costHtml(cost) + (p?.eta > 0 ? TR` ・資材搬入 ${p.eta.toFixed(1)}年 (${p.aid ? TR('主人からの支援') : TR`輸入費 ${Math.ceil(p.imp || 0)} cr`})` : '') + bt : '');
   return `<button ${attrs} ${why ? 'disabled' : ''}>${label}${sub ? `<small>${sub}</small>` : ''}</button>`;
 }
 

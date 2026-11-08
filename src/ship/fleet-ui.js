@@ -115,7 +115,7 @@ function militaryBox(app, sys) {
   // 一括編成: 1・5・10・20 艦隊をまとめて (費用は数の倍、指令の政治力は1回ぶん)
   const noYard = g.knownColonies(sys.id).some((c) => c.lv.shipyard >= 1) ? '' : TR('軍事基地がない (入植地で建設できる)');
   const build = g.knownColonized(sys.id)
-    ? `<div class="btns batch">${WARSHIP_BATCH.map((n) => costButton(g, `data-act="warship" data-n="${n}"`, `${ico('fleet')}${n === 1 ? TR('艦隊を編成') : TR`${n} 艦隊を一括編成`}`, mulCost(WARSHIP_COST, n), sys.id, noYard)).join('')}</div>`
+    ? `<div class="btns batch">${WARSHIP_BATCH.map((n) => costButton(g, `data-act="warship" data-n="${n}"`, `${ico('fleet')}${n === 1 ? TR('艦隊を編成') : TR`${n} 艦隊を一括編成`}`, mulCost(WARSHIP_COST, n), sys.id, noYard, g.buildYears('warship', n - 1))).join('')}</div>`
     : '';
   // 交戦中でない他国の星系へ送ると奇襲攻撃になる
   const destRealm = g.known(sys.id)?.cols.length ? g.known(sys.id).realm : null;
@@ -243,10 +243,13 @@ function fortBox(g, sys) {
   if (sys.id !== g.cap && !k?.cols.length) return '';
   const lv = g.knownFort(sys.id), fw = lv ? g.knownFortWear(sys.id) : 0;
   const own = sys.id === g.cap || (k?.realm ?? g.cap) === g.cap;
-  const busy = busyText(g, (j) => j.type === 'fort' && j.sys === sys.id);
+  // 建設中でも次の段を予約できる (依頼 common-8。ships-ui.js の buildPlan)。費用と建設期間は予約した段の値
+  const Q = buildPlan(g, 'fort', lv, (j) => j.type === 'fort' && j.sys === sys.id, 'fort', (d) => Number(d.sys) === sys.id);
+  const full = Q.plan >= FORT.max;
   const btn = own && lv < FORT.max
-    ? costButton(g, `data-act="fort" data-sys="${sys.id}"`, TR`${ico('fleet')}要塞を Lv${lv + 1} に`, g.fortCost(sys.id), sys.id, busy) : '';
-  return TR`<p class="note fact">宇宙要塞 <b>Lv${lv}</b> / ${FORT.max}${fortHpText(fw)}${own ? '' : ` (${esc(g.realmName(k.realm))})`}</p>
+    ? costButton(g, `data-act="fort" data-sys="${sys.id}"`, full ? TR`${ico('fleet')}要塞を Lv${FORT.max} に` : Q.plan > lv ? TR`${ico('fleet')}要塞 Lv${Q.plan + 1} を予約` : TR`${ico('fleet')}要塞を Lv${lv + 1} に`,
+      full ? null : g.fortCost(sys.id, Q.plan), sys.id, Q.busy || (full ? TR('最大レベルまで予約した') : ''), full ? 0 : g.buildYears('fort', Q.plan)) : '';
+  return TR`<p class="note fact">宇宙要塞 <b>Lv${lv}</b> / ${FORT.max}${fortHpText(fw)}${own ? '' : ` (${esc(g.realmName(k.realm))})`}${Q.note ? ` <span class="muted">${Q.note}</span>` : ''}</p>
     <p class="note">艦隊戦では段の数だけ要塞の区画 (艦の ${FORT.hp} 倍の耐久、退かない) が守りに加わる。区画が沈むと段が下がる。${FORT.wear ? TR`戦いのあとに残った区画の傷は次の戦いにも残り、戦っていないあいだ年に ${Math.round(FORT.repair * 100)}% ずつ直る (費用なし)。` : ''}艦隊がいなくても、要塞があれば攻める艦隊は先に艦隊戦をする。</p>
     ${btn ? `<div class="btns">${btn}</div>` : ''}`;
 }

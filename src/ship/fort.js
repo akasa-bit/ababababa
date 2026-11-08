@@ -5,17 +5,20 @@
     for (const x of this.colonizedSystems()) if (this.forts[x.id] === undefined) this.forts[x.id] = FORT.auto;
     for (const k of Object.keys(this.forts)) if (!this.isColonized(Number(k))) delete this.forts[k];
   }
-  // 次の段に上げる費用
-  fortCost(sys) {
-    const k = GM.pow(FORT.growth, Math.max(0, this.fortLevel(sys) - 1));
+  // 次の段に上げる費用 (lv = 上げる前の段。予約を重ねるときは、予約した段。依頼 common-8)
+  fortCost(sys, lv = this.fortLevel(sys)) {
+    const k = GM.pow(FORT.growth, Math.max(0, lv - 1));
     return Object.fromEntries(Object.entries(FORT.cost).map(([r, v]) => [r, Math.round(v * k)]));
   }
-  // 要塞を 1 段上げる (命令 fort。建設の注文と同じく、資材が集まってから完成する)
-  fortUpgrade(sys) {
+  // 要塞を 1 段上げる (命令 fort。建設の注文と同じく、資材が集まってから完成する)。
+  // 建設中なら、stack (プレイヤーの命令) のときだけ次の段を予約する (施設の upgrade と同じ。依頼 common-8)。AI の国は前のとおり 1 段ずつ
+  fortUpgrade(sys, stack = false) {
     if (!this.isColonized(sys)) return fail('入植した星系にだけ建てられる');
-    if (this.fortLevel(sys) >= FORT.max) return fail(JA`要塞は Lv${FORT.max} まで`);
-    if (this.pending((j) => j.type === 'fort' && j.sys === sys)) return fail('要塞を建設中');
-    return this.order(this.fortCost(sys), sys, { type: 'fort', label: JA`${this.system(sys).name} の宇宙要塞 Lv${this.fortLevel(sys) + 1}` });
+    const q = this.projects.filter((j) => j.type === 'fort' && j.sys === sys).length;
+    if (q && !(stack && BUILD_TIME.fort)) return fail('要塞を建設中');
+    const lv = this.fortLevel(sys) + q;
+    if (lv >= FORT.max) return fail(q ? JA`要塞は Lv${FORT.max} まで予約した` : JA`要塞は Lv${FORT.max} まで`);
+    return this.order(this.fortCost(sys, lv), sys, { type: 'fort', label: JA`${this.system(sys).name} の宇宙要塞 Lv${lv + 1}` });
   }
   // 建設が終わった (economy/colonize.js の finish から)。新しい区画は無傷なので、傷の割合は (前の段 ÷ 新しい段) 倍に薄まる (依頼 FU-3)
   fortBuilt(job) {
