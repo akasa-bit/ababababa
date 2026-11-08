@@ -359,6 +359,7 @@ merge = node tools/fun-targets.js --seeds 30 --years 500 --nations 0 --merge $(l
 - `tools/ci-judge.js`: CI の試験の合否の小道具 (`tools/tests` の各ファイルの `exports.ci` から使う)
 - `tools/i18n.js`: 画面の文字列を集めて言語ごとの表 (`src/outward/lang-en.js`) とそろえる (`--sync`・`--todo`・`--stats`。`docs/i18n.md`)。`tools/i18n-scan.js` は英語の画面に残った日本語を探す
 - `tools/battles-headless.js`: 艦隊戦の法則 (R16) を CDB90 と同じ回帰で測る
+- `tools/fort-odds.js`: 宇宙要塞のある星系を攻めたときの勝ち・かかった年・損害を、要塞の段・戦力の倍率・攻めが退くか (艦隊群の「退かない」) ごとに数える (`docs/fleet-groups.md` の 7。`EDITION_FORT`・`EDITION_BATTLE` で値を上書き)
 - `tools/demography-panel.js`: 年齢つきの人口のパネル (R36・R37)。`data/build/build_demography.py` で測る
 - `tools/innovation-panel.js`・`tools/gpt-panel.js`: 技術革新の国・年のパネル (R66〜) と汎用技術の採用の表 (R77)。`data/build/build_innovation.py` で測る
 - `tools/capital-panel.js`: 投資と資本の国・年のパネル (R78・R79)。`data/build/build_capital.py --game` で測る

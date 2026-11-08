@@ -35,7 +35,7 @@ function loyaltyBox(g, id) {
   const sign = (v) => (v > 0.05 ? `+${v.toFixed(0)}` : v < -0.05 ? `−${(-v).toFixed(0)}` : '0');
   const rows = o.terms.filter((t) => Math.abs(t.v) > 0.05).map((t) => `<tr><td>${esc(t.label)}${t.note ? ` <span class="muted">${esc(t.note)}</span>` : ''}</td><td class="${t.v < 0 ? 'bad' : ''}">${sign(t.v)}</td></tr>`).join('');
   const rebel = g.knownRebelFleet(id);
-  const earth = Math.min(g.knownGarrison(id), (k.held || 0) + (k.awe || 0));
+  const earth = Math.min(g.knownGarrison(id), (k.held || 0) + (k.awe || 0) + (k.fgn || 0)); // 艦隊群の艦も (依頼 FU-1)
   const fearT = (k.realm ?? g.cap) === g.cap ? Math.min(100, 50 * earth / rebel) : 0;
   const friendT = g.friendTarget(k.lordTrade || 0);
   return TR`<h3>忠誠と独立</h3>

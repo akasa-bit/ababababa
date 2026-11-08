@@ -29,10 +29,14 @@ function orderFleets(target) {
   }
   PlayLog.add('fleet', { from: ids, moving: moving.length, route, amount: app.fleetAmount });
   let sent = 0;
+  // 送る艦 (依頼 FU-1): すべて (群の艦は群ごとの艦隊に分けて群のまま)・群に入っていない艦・ある艦隊群。半数と 1 艦隊は、群に入っていない艦か選んだ群から
+  const grp = app.fleetGroup ?? 'all';
   for (const id of ids) {
-    const have = g.knownGarrison(id);
+    const inG = g.knownFgN(id), at = g.knownFg(id) || {};
+    const have = grp === 'all' || grp === 'free' ? g.knownGarrison(id) - (app.fleetAmount === 'all' && grp === 'all' ? 0 : inG) : at[grp] || 0;
     const n = app.fleetAmount === 'all' ? 'all' : app.fleetAmount === 'half' ? Math.max(1, Math.floor(have / 2)) : 1;
-    if (issue('fleet', { from: id, sys: first, n, route: rest.length ? rest : undefined }).ok) sent++;
+    const gd = grp === 'all' ? (app.fleetAmount === 'all' ? 'all' : undefined) : grp === 'free' ? undefined : Number(grp);
+    if (issue('fleet', { from: id, sys: first, n, route: rest.length ? rest : undefined, ...(gd !== undefined ? { g: gd } : {}) }).ok) sent++;
   }
   // 移動中の艦隊: 光速の指令が追いついた地点から進路を変える。地球にはまだ移動中に見えていても実はもう着いていれば、着いた星系から送り直す
   for (const id of moving) {
@@ -89,6 +93,7 @@ function renderFleetBar() {
   const orders = [heldK ? TR`駐留命令 ${heldK} か所` : '', routeK ? TR`経由地つき ${routeK}` : ''].filter(Boolean).join(TR('・'));
   setHtml(bar, TR`<b class="lbl">選択中の艦隊</b><span>${app.fleetSel.size ? TR`${app.fleetSel.size} か所` : ''}${app.fleetSel.size && app.fleetMove.size ? TR('・') : ''}${app.fleetMove.size ? TR`移動中 ${app.fleetMove.size}` : ''}・${total} 艦隊</span>
     <span><span class="lbl">送る数</span> ${Object.entries(FLEET_AMOUNT).map(([k, l]) => `<button data-fa="amount" data-v="${k}" class="${app.fleetAmount === k ? 'on' : ''}">${l}</button>`).join('')}</span>
+    ${fleetGroupPick(g)}
     <span class="muted hint">移動先を右クリック (タッチ操作はタップ)・Shift+クリックで追加・Shift+ドラッグで範囲選択・移動中の艦隊 (三角) も選べる (指令は光速で追いついた地点から効く。送る数は全艦)・長押し (右ドラッグ) で線を引くと、触れた星系を順に回る</span>
     <button data-fa="clear">選択を解除</button>
     <button data-fa="orders" title="命令による駐留と経由地をやめ、自動防衛配備に任せる (Delete キー)。移動中の艦隊はいまの行き先までは進む">指令を取り消す${orders ? ` <small>(${orders})</small>` : ''}</button>
@@ -118,7 +123,8 @@ function militaryBox(app, sys) {
   const send = origins.length
     ? TR`${surprise ? TR`<p class="note bad">⚠ ${esc(g.realmName(destRealm))}の星系。ここへ艦隊を送ると奇襲攻撃になり、到着した時点で${esc(g.realmName(destRealm))}との戦争状態に突入し、そのまま艦隊戦になります。</p>` : ''}<label class="field">艦隊の出発地
         <select data-act="forigin">${origins.map((o) => TR`<option value="${o.s.id}" ${o.s.id === from ? 'selected' : ''}>${esc(o.s.name)} (${o.k}艦隊・${g.fleetYears(o.s.id, sys.id).toFixed(1)} 年)</option>`).join('')}</select></label>
-       <div class="btns"><button data-act="fleet" data-from="${from}" data-n="1">${ico(surprise ? 'war' : 'rally')}${surprise ? TR('奇襲攻撃 (1艦隊)') : TR('1艦隊をここへ')}</button><button data-act="fleet" data-from="${from}" data-n="all">${ico(surprise ? 'war' : 'rally')}${surprise ? TR('奇襲攻撃 (全艦隊)') : TR('全艦隊をここへ')}</button></div>
+       <div class="btns"><button data-act="fleet" data-from="${from}" data-n="1">${ico(surprise ? 'war' : 'rally')}${surprise ? TR('奇襲攻撃 (1艦隊)') : TR('1艦隊をここへ')}</button><button data-act="fleet" data-from="${from}" data-n="all" data-g="all">${ico(surprise ? 'war' : 'rally')}${surprise ? TR('奇襲攻撃 (全艦隊)') : TR('全艦隊をここへ')}</button></div>
+       ${attackPreview(g, sys, from, destRealm)}
        ${strikeBox(g, sys, destRealm, from)}`
     : '';
   const queued = queuedWarships(g.knownProjects(), sys.id);
@@ -127,17 +133,19 @@ function militaryBox(app, sys) {
   const unhold = isOwnStack(g, sys.id) && heldN > 0
     ? TR`<button data-act="fleetclear" data-sys="${sys.id}">指令を取り消す<small>命令で駐留中 ${heldN} 艦隊 → 自動防衛配備に任せる${sys.id === g.cap ? '' : TR`・届くまで ${g.lightDelay(sys.id).toFixed(1)} 年`}</small></button>` : '';
   return TR`<h3>軍事</h3>
+    ${battleBox(g, sys)}
     ${fortBox(g, sys)}
     ${pick}${unhold}
+    ${fgStackBox(g, sys.id)}
     ${aweLine(g, sys.id)}
     ${supplyLine(g, sys.id, n)}
     <p class="note">${ico('fleet')}駐留艦隊 <b>${n}</b>${queued ? TR` (編成中 ${queued})` : ''}。宇宙海賊の襲撃 (${PIRATE_START}年以降) を防ぎ、先住民の制圧にも使う。1艦隊あたり維持費 ${WARSHIP_UPKEEP} cr/年。艦隊は直行し、交易路が直接結ぶ区間は 0.95c、それ以外は 0.9c。0.9c の 1 艦隊の運動エネルギーは ${fmtJ(FLEET_KE)} (恐竜を滅ぼした衝突の約 ${Math.round(FLEET_KE / 4.2e23 / 1e4)} 万倍) で、ぶつかれば惑星の表面を焼き尽くす</p>
     ${build}${send}${defenseToggle(g)}`;
 }
 
-// 兵站の表示: 戦力の倍率 (補給線の長さと補給の充足率から)。8割を切ったら赤
-function supplyCell(eff = 1, line = 0) {
-  return `<span class="${eff < 0.8 ? 'bad' : ''}">${pct(eff)}</span>${line > SUPPLY_NEAR && Number.isFinite(line) ? TR` <span class="muted">(拠点まで ${line.toFixed(1)} ly)</span>` : ''}`;
+// 兵站の表示: 戦力の倍率 (補給の充足率から。補給線の長さは見ない。依頼 FU-2)。8割を切ったら赤
+function supplyCell(eff = 1) {
+  return `<span class="${eff < 0.8 ? 'bad' : ''}">${pct(eff)}</span>`;
 }
 // 星系の欄の兵站: 駐留艦隊が使う補給物資と、いまの充足率 (地球に届いている情報で)
 function supplyLine(g, id, n) {
@@ -152,7 +160,7 @@ function aweLine(g, id) {
   const k = id === g.cap ? null : g.known(id);
   if (!k || !k.cols.length || (k.realm ?? g.cap) !== g.cap) return '';
   const rebel = g.knownRebelFleet(id);
-  const earth = Math.min(g.knownGarrison(id), (k.held || 0) + (k.awe || 0));
+  const earth = Math.min(g.knownGarrison(id), (k.held || 0) + (k.awe || 0) + (k.fgn || 0)); // 艦隊群の艦も (依頼 FU-1)
   const why = k.lord !== g.cap ? TR('・直属でないので威圧の対象外') : (k.loyalty ?? LOYALTY_START) >= 50 ? TR('・忠誠度50以上なので威圧の対象外 (いれば引き揚げる)')
     : (k.friend || 0) >= FRIEND_SAFE ? TR`・友好度${FRIEND_SAFE}以上なので威圧の対象外 (いれば引き揚げる)` : TR` / 目標 ${g.aweGoal(id)}`;
   return TR`<p class="note">恐怖度 <b>${Math.round(k.fear || 0)}</b>。反乱したときの推定艦隊 <b>${rebel}</b> (人口と経済の規模から)。駐留する${ME.home}の艦隊 <b>${earth}</b> (うち威圧 ${g.knownAwe(id)}${why})。</p>`;
@@ -169,6 +177,62 @@ function strikeBox(g, sys, realm, from) {
     <p class="note">艦隊を減速させずに ${esc(sys.name)} へ突っ込ませる。1 艦隊で 1 つの天体の入植地を焼き (人口の ${STRIKE.survive * 100}% だけが地下に残り、施設・備蓄・歩兵はなくなる)、艦隊は残らない。光の遅れで、${esc(g.realmName(realm))}には着く直前 (約 ${(ly / OFFROUTE_SPEED - ly).toFixed(1)} 年前) まで見えず、止められない。
       知らせが光速で届いた国は宣戦する (撃たれた国はかならず、${STRIKE.reach} 光年以内の国は ${Math.round(STRIKE.retaliate * 100)}%)。自国の家臣は忠誠度が ${STRIKE.loyalty} 下がり、悪名が ${STRIKE.infamy} 増える。いま知っている天体は ${bodies} つ。</p>
     <div class="btns"><button data-act="strike" data-from="${from}" data-n="1" class="bad">1 艦隊で突入</button>${bodies > 1 ? TR`<button data-act="strike" data-from="${from}" data-n="${bodies}" class="bad">${bodies} 艦隊で突入 (全部の天体)</button>` : ''}</div></details>`;
+}
+
+// --- 艦隊群と艦隊戦の見え方 (依頼 2026-11-07 の FU-1。docs/fleet-groups.md) ---
+// 艦隊バーの「送る艦」: すべて (群の艦は群ごとの艦隊に分けて、群のまま)・群に入っていない艦・選んだ艦隊にいる群
+function fleetGroupPick(g) {
+  const ids = new Set();
+  for (const id of app.fleetSel) for (const gid of Object.keys(g.knownFg(id) || {})) ids.add(Number(gid));
+  const groups = [...ids].map((id) => g.fgGet(id)).filter(Boolean);
+  if (!groups.length && (app.fleetGroup ?? 'all') === 'all') return '';
+  const cur = app.fleetGroup ?? 'all';
+  const btn = (v, label) => `<button data-fa="grp" data-v="${v}" class="${String(cur) === String(v) ? 'on' : ''}">${label}</button>`;
+  return TR`<span><span class="lbl">送る艦</span> ${btn('all', TR('すべて (群は群のまま)'))}${btn('free', TR('群に入っていない艦'))}${groups.map((x) => btn(x.id, esc(x.name))).join('')}</span>`;
+}
+// 星系の欄の艦隊群: 駐留している艦の内訳と、群への出し入れ (艦隊のいる星系への光速の指令)
+function fgStackBox(g, id) {
+  if (!isOwnStack(g, id)) return '';
+  const groups = g.fgOf();
+  const at = g.knownFg(id) || {};
+  const free = Math.max(0, g.knownGarrison(id) - g.knownFgN(id));
+  const parts = [TR`群に入っていない ${free} 艦隊 (自動防衛配備に任せる)`, ...Object.entries(at).map(([gid, n]) => { const gr = g.fgGet(gid); return gr ? TR`${esc(gr.name)} (${FG_ROLE_LABEL[gr.role] || ''}) ${n} 艦隊` : ''; }).filter(Boolean)];
+  const pick = groups.some((x) => x.id === app.fgPick) ? app.fgPick : groups[0]?.id;
+  const delay = id === g.cap ? '' : TR`・届くまで ${g.lightDelay(id).toFixed(1)} 年`;
+  const assign = groups.length && free > 0 ? TR`<div class="row"><select data-act="fgpick">${groups.map((x) => `<option value="${x.id}" ${x.id === pick ? 'selected' : ''}>${esc(x.name)} (${FG_ROLE_LABEL[x.role]})</option>`).join('')}</select>
+      <button data-act="fgassign" data-sys="${id}" data-g="${pick}" data-n="all">群に入れる<small>${free} 艦隊${delay}</small></button>${free > 1 ? TR`<button data-act="fgassign" data-sys="${id}" data-g="${pick}" data-n="${Math.floor(free / 2)}">半数を入れる</button>` : ''}</div>` : '';
+  const out = Object.keys(at).map((gid) => { const gr = g.fgGet(gid); return gr ? TR`<button data-act="fgfree" data-sys="${id}" data-g="${gid}" data-n="all">${esc(gr.name)} から外す</button>` : ''; }).join('');
+  return TR`<p class="note fact">${ico('fleet')}艦隊群: ${parts.join(TR('・'))}${groups.length ? '' : TR('。艦隊群は 帝国 → 軍事 で作る')}</p>${assign}${out ? `<div class="btns">${out}</div>` : ''}`;
+}
+// 攻める前の見込み: 送る艦 (全艦) と、見えている守りの艦隊・宇宙要塞から、同じ形の艦隊戦を 64 回解いた割合 (戦機・士気・補給はふつうとして)
+function attackPreview(g, sys, from, destRealm) {
+  if (destRealm === null || destRealm === undefined || destRealm === g.cap || from === undefined) return '';
+  const na = g.knownGarrison(from), nd = g.knownGarrison(sys.id), nf = g.knownFort(sys.id);
+  if (na < 1) return '';
+  const p = g.battleOdds(na, nd, 1, 1, nf);
+  return TR`<p class="note fact">攻めたときの見込み (見えている数で): ${esc(g.system(from).name)} の ${na} 艦隊 対 ${nd} 艦隊${nf ? TR` + 宇宙要塞 Lv${nf}` : ''} → 勝つ見込み <b class="${p < 0.6 ? 'bad' : ''}">${Math.round(p * 100)}%</b></p>
+    <p class="note">見込みは、同じ形の艦隊戦を 64 回解いて勝った割合 (戦機・士気・補給はふつうとして)。宇宙要塞は段の数だけ区画が守りに加わる (区画は艦の ${FORT.hp} 倍の耐久で、組織力が減らず退かない)。戦いごとの戦機と士気のくじで大きく振れる。組織力の尽きた艦は退く (艦隊群の「退かない」で変えられる)。攻囲に移るのは、守りの艦と要塞の区画がすべていなくなってから。</p>`;
+}
+// 星系の欄の艦隊戦: 両軍の数・要塞・見込み・沈んだ艦と退いた艦・いま退いている艦・退く先と撤退の決まり (地球に届いている記録で)
+function battleBox(g, sys) {
+  const k = sys.id === g.cap ? null : g.known(sys.id);
+  const bt = sys.id === g.cap ? g.battleSnap(sys.id) : k?.battle;
+  if (!bt) return '';
+  const def = k?.cols.length ? k.realm ?? g.cap : sys.id === g.cap ? g.cap : null;
+  const name = (r) => (r === null || r === undefined ? TR('守りの国') : esc(g.realmName(r)));
+  const to = (id) => (id === null || id === undefined ? TR('退く先がない (最後まで戦う)') : esc(g.system(id).name));
+  // 群ごとの数と、その場所に届いている撤退の決まり (「退かない」なら退く先は出さない)
+  const tags = (m) => Object.entries(m || {}).map(([gid, n]) => {
+    const gr = g.fgGet(gid);
+    if (!gr) return '';
+    const ret = g.fgEff(gr, sys.id)?.ret;
+    return ret === 'never' ? TR`${esc(gr.name)} ${n} (${FG_RET_LABEL.never})` : TR`${esc(gr.name)} ${n} (${FG_RET_LABEL[ret] || ''} → ${to(g.fgRetreatTo(gr.realm, sys.id, gr.id))})`;
+  }).filter(Boolean).join(TR('・'));
+  const ga = tags(bt.fga), gd = tags(bt.fgd);
+  return TR`<div class="card"><b class="bad">${ico('war')}艦隊戦</b> <span class="muted">${bt.start.toFixed(1)} 年から${sys.id === g.cap ? '' : TR`・${g.lightDelay(sys.id).toFixed(1)} 年前の様子`}</span>
+    <p class="note fact">攻め ${name(bt.realm)} <b>${Math.ceil(bt.a)}</b> / ${Math.round(bt.a0)} 艦隊 対 守り ${name(def)} <b>${Math.ceil(bt.d)}</b> / ${Math.round(bt.d0)} 艦隊${bt.fort ? TR` + 宇宙要塞の区画 <b>${bt.fort}</b>` : ''}。${bt.odds !== null && bt.odds !== undefined ? TR`始まる前の攻め側の見込み ${Math.round(bt.odds * 100)}%。` : ''}</p>
+    ${bt.sunk ? TR`<p class="note fact">攻め: 沈没 ${bt.sunk[0]}・退却 ${bt.esc[0]}・いま退いている ${bt.going?.[0] || 0} → ${to(bt.to?.[0])}${ga ? TR`<br>群: ${ga}` : ''}<br>守り: 沈没 ${bt.sunk[1]}・退却 ${bt.esc[1]}・いま退いている ${bt.going?.[1] || 0} → ${to(bt.to?.[1])}${gd ? TR`<br>群: ${gd}` : ''}</p>` : ''}
+    <p class="note">撤退の決まり: 撃たれて組織力が ${BATTLE.orgRet * 100}% を切った艦は、${BATTLE.retRounds} 回撃たれながら離れて退く (撃ち返さない)。退く先は、艦隊群の艦は群の拠点、ほかの艦はいちばん近い自国の星系。艦隊群の決まりが「退かない」の艦は、組織力が尽きても退かない。宇宙要塞の区画は組織力が減らず退かない。どちらかの戦っている艦がいなくなれば終わり、攻め側が勝てば攻囲に移る。</p></div>`;
 }
 
 // 宇宙要塞 (星系ごと。入植すると Lv1、あとは手動で Lv10 まで)。地球に届いている記録で

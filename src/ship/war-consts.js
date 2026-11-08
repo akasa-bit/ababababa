@@ -113,3 +113,19 @@ saveField('forts', (game) => game.forts, {
   // 要塞のないセーブ (前の版) だけ、入植した星系に Lv1 を建てる。ある版で建て直すと、年の途中で入植した星系に要塞が早く建ち、保存の前と筋が変わる
   read: (game, d) => { if (d.forts && typeof d.forts === 'object') game.forts = Object.fromEntries(Object.entries(d.forts).filter(([, v]) => Number.isFinite(v))); else { game.forts = {}; game.fortsYearly(); } },
 });
+// 艦隊群 (依頼 2026-11-07 の FU-1。HOI4 の軍 (師団をまとめて役割を与える) を参考にした。docs/fleet-groups.md・ship/fgroups.js)。
+// roles: atk = 攻撃 (自動防衛配備に使わない。いまいる所に留まり、退いた艦は拠点へ戻って群に残る)、hold = 守備 (自動防衛配備に使わない。年の切れ目に拠点へ戻って守る)。
+//   群に入っていない艦は前と同じく自動防衛配備が動かす (画面では「自動防衛」と出す)。
+// rets: org = 組織力の下がった艦から退く (前からの艦隊戦と同じ)、never = 退かない (最後まで戦う)。max = 1 つの国の群の数の上限
+const FG = { roles: ['atk', 'hold'], rets: ['org', 'never'], max: 20 };
+const FG_ROLE_LABEL = { atk: '攻撃', hold: '守備', gone: '解いた' };
+const FG_RET_LABEL = { org: '組織力で退く', never: '退かない' };
+// 群の一覧 [{ id, realm, name, role, ret, base, at (決まりを変えた年), from (変えた首都), prev (前の決まり) }] と、駐留している群の艦の数 { [星系]: { [群]: 数 } }。なければ書かない
+saveField('fgroups', (game) => (game.fgroups.length ? game.fgroups : undefined), {
+  init: (game) => { game.fgroups = []; },
+  read: (game, d) => { game.fgroups = Array.isArray(d.fgroups) ? d.fgroups.filter((x) => x && Number.isFinite(x.id) && Number.isFinite(x.realm)) : []; },
+});
+saveField('gship', (game) => (Object.keys(game.gship).length ? game.gship : undefined), {
+  init: (game) => { game.gship = {}; },
+  read: (game, d) => { game.gship = d.gship && typeof d.gship === 'object' ? d.gship : {}; },
+});

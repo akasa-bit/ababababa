@@ -9,7 +9,7 @@
       case 'uproute': return this.routes.find((r) => r.id === Number(d.route))?.a;
       case 'upgrade': case 'train': case 'focus': return colSys(d.col);
       case 'peace': return Number(d.sys);
-      case 'policy': case 'fiscal': case 'design': case 'restructure': return this.cap;
+      case 'policy': case 'fiscal': case 'design': case 'restructure': case 'fgnew': case 'fgset': return this.cap; // 艦隊群を作る・決まりを変えるのは首都 (決まりは光速で広がる。ship/fgroups.js)
       case 'rule': case 'bundle': case 'jointcut': case 'depose': case 'mandate': case 'governor': case 'decide': case 'pvdesign': case 'include': return Number(d.sys);
       default: return d.sys;
     }
@@ -73,6 +73,8 @@
     if (act === 'coerce') return this.coerceIssue(d); // 国どうしの威圧 (AI の振る舞い。politics/coerce.js。回 AI8)
     if (act === 'meddle') return this.sendMeddle(d); // 外の国の中の勢力を支える・揺さぶる (AI の振る舞い。politics/inner.js。回 AI4)
     if (act === 'design') return this.setDesign(d); // 入植船の設計 (船と戦争。ship/settler.js。B-033)
+    if (act === 'fgnew') return this.fgNew(d); // 艦隊群 (依頼 FU-1。ship/fgroups.js): 首都で決める。決まりは光速で広がり、届いた所から効く
+    if (act === 'fgset') return this.fgSet(d);
     if (act === 'policy') return this.setPolicy(d.value);
     if (act === 'fiscal') return this.setFiscal(d);
     if (act === 'restructure') return this.restructure(d.hc); // 債務の再編 (経済。economy/central-bank.js。回 KE9)
@@ -160,10 +162,18 @@
           else this.awe[from] += k;
           return r;
         }
-        const r = this.sendFleet(from, sys, n, d.awe ? '[威圧] ' : d.auto ? '[自動防衛] ' : '', d.route);
+        if (d.g === 'all') { // すべての艦を、群ごとの艦隊に分けて送る (群の艦は群のまま。依頼 FU-1)
+          let ok = this.sendFleet(from, sys, n, '', d.route).ok;
+          for (const gid of Object.keys(this.fgAt(from) || {})) ok = this.sendFleet(from, sys, Infinity, '', d.route, undefined, Number(gid)).ok || ok;
+          return ok ? { ok: true } : fail('派遣できる艦隊がない');
+        }
+        const grp = d.g === undefined || d.g === null || d.g === '' ? undefined : Number(d.g);
+        const r = this.sendFleet(from, sys, n, d.awe ? '[威圧] ' : d.auto ? '[自動防衛] ' : '', d.route, undefined, grp);
         if (r.ok && d.awe) this.fleets[this.fleets.length - 1].awe = true;
         return r;
       }
+      case 'fgassign': return this.fgAssign(d); // 艦隊群への出し入れ (届いた星系で。依頼 FU-1)
+      case 'fgfree': return this.fgFreeShips(d);
       case 'strike': return this.stackRealm(Number(d.from)) === this.cap ? this.launchStrike(Number(d.from), sys, n) : fail('他国の艦隊には命令できない'); // 光速の一撃 (B-035。ship/strike.js)
       case 'redirect': return this.redirectFleet(Number(d.fleet), sys, d);
       case 'fleetclear': return this.clearFleetOrders(d);
