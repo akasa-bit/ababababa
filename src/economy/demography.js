@@ -41,16 +41,18 @@
   }
   // 1 刻み: 死亡 (率 × 1 ÷ 世代の比、飢えと不穏の上乗せ extra は年あたり)、年をとる (きざみの 1 ÷ (5 × 世代の比) ずつ次へ)、出生 (年齢別出生率 × fert)。
   // fert = 出生のしやすさ (福祉・種族・統治体制・混み具合・食べ物と工業品の充足・疫病。前の人口の増え方 POP_GROWTH に掛けていたもの)。新しい人口を返す
+  // 65 歳以上の死亡は、その星系の政府の医療の水準 (予算の水準 × 払えた割合) で変わる (common-5。DEMO.healthMort。標準なら変わらない)
   demoStep(c, h, fert, extra) {
     this.ageSync(c);
     const G = ED.generation / 28, dt = h / G, r = this.demoRates(c, dt), n = DEMO.bins, up = Math.min(1, dt / DEMO.width), ex = extra ? GM.exp(-extra * h) : 1;
+    const hk = healthMortK(this.healthLvAt(c.sys)), o0 = DEMO.work[1] + 1;
     let births = 0;
     for (let a = 0; a < n; a++) births += c.age.f[a] * r.asfr[a] * dt;
     births *= Math.max(0, fert);
     c.tfr = r.tfr; // その年に当てた合計特殊出生率 (目標 R37 を測る)
     for (const [s, sv] of [['f', r.sf], ['m', r.sm]]) {
       const A = c.age[s];
-      for (let a = 0; a < n; a++) A[a] *= sv[a] * ex;
+      for (let a = 0; a < n; a++) A[a] *= (hk !== 1 && a >= o0 ? GM.pow(sv[a], hk) : sv[a]) * ex;
       for (let a = n - 2; a >= 0; a--) { const x = A[a] * up; A[a] -= x; A[a + 1] += x; }
     }
     c.age.m[0] += births * DEMO.boy;
@@ -184,6 +186,8 @@
   }
   // 政府の年金と医療 (10-3 の c)。星系の政府が、その星系の家計に年金を、会社に医療の代金を払う。人間が動かす首都は、手元の資金の分だけ払う (払えた割合 apaid)
   // 年金と医療は、国の財政の水準 (QD-119。標準 1・0〜3。光の遅れのある財政の値で) を掛けて払う。人間でない国はいつも標準
+  // 星系 id の政府が実際に払っている医療の水準 (予算の水準 × 払えた割合 apaid。1 = 標準)
+  healthLvAt(id) { return budgetLv(this.fiscalAt(id), 'health') * (this.govs[id]?.apaid ?? 1); }
   ageSpendStep(h) {
     for (const key of Object.keys(this.govs)) {
       const id = Number(key), gv = this.govs[key];

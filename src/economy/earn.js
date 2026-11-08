@@ -8,7 +8,7 @@
       if (kind === 'trade') amount *= this.modsOf(sys).trade; // 種族の特性: 商才
       if (AI_INCOME_KINDS.has(kind) && !this.isHuman(this.realmOf(sys))) amount *= HANDICAP[this.handicap].aiIncome; // ハンディキャップ: AI の国の収入
     }
-    if (kind === 'tax' && amount > 0) amount *= (1 - EXHAUST.tax * (this.exhaustion[this.realmOf(sys)] || 0)) * (1 - FORCED.scarTax * (gv.scar || 0)); // 戦争疲弊・強制労働の後遺症
+    if (kind === 'tax' && amount > 0) amount *= (this.civilWarOf(this.realmOf(sys)) ? CIVIL_TAX : 1) * (1 - FORCED.scarTax * (gv.scar || 0)); // 反乱 (独立戦争) の間・強制労働の後遺症 (戦争疲弊では減らさない。common-5)
     gv.credits += amount;
     gv.led ??= {};
     gv.led[kind] = (gv.led[kind] || 0) + amount;
