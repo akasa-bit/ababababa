@@ -1,0 +1,200 @@
+gwn,country,year_min,year_max
+2,United States of America,1816,2017
+20,Canada,1867,2017
+31,Bahamas,1973,2017
+40,Cuba,1902,2017
+41,Haiti,1816,2017
+42,Dominican Republic,1844,2017
+51,Jamaica,1962,2017
+52,Trinidad and Tobago,1962,2017
+53,Barbados,1966,2017
+70,Mexico,1821,2017
+80,Belize,1981,2017
+89,United Provinces of Central America,1823,1839
+90,Guatemala,1840,2017
+91,Honduras,1840,2017
+92,El Salvador,1840,2017
+93,Nicaragua,1840,2017
+94,Costa Rica,1840,2017
+95,Panama,1903,2017
+99,Great Colombia,1821,1830
+100,Colombia,1831,2017
+101,Venezuela,1829,2017
+110,Guyana,1966,2017
+115,Surinam,1975,2017
+130,Ecuador,1830,2017
+135,Peru,1824,2017
+140,Brazil,1822,2017
+145,Bolivia,1825,2017
+150,Paraguay,1816,2017
+155,Chile,1818,2017
+160,Argentina,1816,2017
+165,Uruguay,1830,2017
+200,United Kingdom,1816,2017
+205,Ireland,1921,2017
+210,Netherlands,1816,2017
+211,Belgium,1830,2017
+212,Luxembourg,1867,2017
+220,France,1816,2017
+225,Switzerland,1816,2017
+230,Spain,1816,2017
+235,Portugal,1816,2017
+240,Hanover,1816,1871
+245,Bavaria,1816,1871
+255,Germany,1816,1945
+260,German Federal Republic,1949,2017
+265,German Democratic Republic,1949,1990
+267,Baden,1816,1871
+269,Saxony,1816,1871
+280,Mecklenburg-Schwerin,1816,1871
+290,Poland,1918,2017
+300,Austria-Hungary,1816,1918
+305,Austria,1918,2017
+310,Hungary,1918,2017
+315,Czechoslovakia,1918,1992
+316,Czech Republic,1993,2017
+317,Slovakia,1993,2017
+325,Italy/Sardinia,1816,2017
+327,Papal States,1816,1870
+329,Two Sicilies,1816,1861
+332,Modena,1816,1861
+335,Parma,1816,1861
+337,Tuscany,1816,1861
+338,Malta,1964,2017
+339,Albania,1913,2017
+340,Serbia,1878,2017
+341,Montenegro,1868,2017
+343,Macedonia (Former Yugoslav Republic of),1991,2017
+344,Croatia,1992,2017
+345,Yugoslavia,1918,2006
+346,Bosnia-Herzegovina,1992,2017
+347,Kosovo,2008,2017
+349,Slovenia,1992,2017
+350,Greece,1828,2017
+352,Cyprus,1960,2017
+355,Bulgaria,1878,2017
+359,Moldova,1991,2017
+360,Rumania,1878,2017
+365,Russia (Soviet Union),1816,2017
+366,Estonia,1918,2017
+367,Latvia,1918,2017
+368,Lithuania,1918,2017
+369,Ukraine,1991,2017
+370,Belarus (Byelorussia),1991,2017
+371,Armenia,1991,2017
+372,Georgia,1991,2017
+373,Azerbaijan,1991,2017
+375,Finland,1917,2017
+380,Sweden,1816,2017
+385,Norway,1905,2017
+390,Denmark,1816,2017
+395,Iceland,1944,2017
+402,Cape Verde,1975,2017
+404,Guinea-Bissau,1974,2017
+411,Equatorial Guinea,1968,2017
+420,Gambia,1965,2017
+432,Mali,1960,2017
+433,Senegal,1960,2017
+434,Benin,1960,2017
+435,Mauritania,1960,2017
+436,Niger,1960,2017
+437,Cote D’Ivoire,1960,2017
+438,Guinea,1958,2017
+439,Burkina Faso (Upper Volta),1960,2017
+450,Liberia,1847,2017
+451,Sierra Leone,1961,2017
+452,Ghana,1957,2017
+461,Togo,1960,2017
+471,Cameroon,1960,2017
+475,Nigeria,1960,2017
+481,Gabon,1960,2017
+482,Central African Republic,1960,2017
+483,Chad,1960,2017
+484,Congo,1960,2017
+490,"Congo, Democratic Republic of (Zaire)",1960,2017
+500,Uganda,1962,2017
+501,Kenya,1963,2017
+510,Tanzania/Tanganyika,1961,2017
+511,Zanzibar,1963,1964
+516,Burundi,1962,2017
+517,Rwanda,1962,2017
+520,Somalia,1960,2017
+522,Djibouti,1977,2017
+530,Ethiopia,1855,2017
+531,Eritrea,1993,2017
+540,Angola,1975,2017
+541,Mozambique,1975,2017
+551,Zambia,1964,2017
+552,Zimbabwe (Rhodesia),1965,2017
+553,Malawi,1964,2017
+560,South Africa,1910,2017
+563,Transvaal,1852,1910
+564,Orange Free State,1854,1910
+565,Namibia,1990,2017
+570,Lesotho,1966,2017
+571,Botswana,1966,2017
+572,Swaziland,1968,2017
+580,Madagascar,1960,2017
+580,Madagascar (Malagasy),1816,1896
+581,Comoros,1975,2017
+590,Mauritius,1968,2017
+600,Morocco,1816,2017
+615,Algeria,1816,2017
+616,Tunisia,1816,2017
+620,Libya,1816,2017
+625,Sudan,1956,2017
+626,South Sudan,2011,2017
+630,Iran (Persia),1816,2017
+640,Turkey (Ottoman Empire),1816,2017
+645,Iraq,1932,2017
+651,Egypt,1827,2017
+652,Syria,1946,2017
+660,Lebanon,1944,2017
+663,Jordan,1946,2017
+666,Israel,1948,2017
+670,Saudi Arabia,1932,2017
+678,Yemen (Arab Republic of Yemen),1918,2017
+680,"Yemen, People's Republic of",1967,1990
+690,Kuwait,1961,2017
+692,Bahrain,1971,2017
+694,Qatar,1971,2017
+696,United Arab Emirates,1971,2017
+698,Oman,1816,2017
+700,Afghanistan,1816,2017
+701,Turkmenistan,1991,2017
+702,Tajikistan,1991,2017
+703,Kyrgyz Republic,1991,2017
+704,Uzbekistan,1991,2017
+705,Kazakhstan,1991,2017
+710,China,1816,2017
+711,Tibet,1913,1950
+712,Mongolia,1921,2017
+713,Taiwan,1949,2017
+730,Korea,1816,1910
+731,"Korea, People's Republic of",1948,2017
+732,"Korea, Republic of",1948,2017
+740,Japan,1816,2017
+750,India,1947,2017
+760,Bhutan,1949,2017
+770,Pakistan,1947,2017
+771,Bangladesh,1971,2017
+775,Myanmar (Burma),1816,2017
+780,Sri Lanka (Ceylon),1948,2017
+781,Maldives,1965,2017
+790,Nepal,1816,2017
+800,Thailand,1816,2017
+811,Cambodia (Kampuchea),1953,2017
+812,Laos,1954,2017
+815,Vietnam,1816,1893
+817,Republic of Vietnam,1954,1975
+820,Malaysia,1957,2017
+830,Singapore,1965,2017
+835,Brunei,1984,2017
+840,Philippines,1946,2017
+850,Indonesia,1945,2017
+860,East Timor,2002,2017
+900,Australia,1901,2017
+910,Papua New Guinea,1975,2017
+920,New Zealand,1907,2017
+940,Solomon Islands,1978,2017
+950,Fiji,1970,2017

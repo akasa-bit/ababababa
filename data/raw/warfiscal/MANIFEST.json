@@ -1,0 +1,131 @@
+[
+ {
+  "file": "ucdp_prio_acd_261.csv.gz",
+  "url": "https://ucdp.uu.se/downloads/ucdpprio/ucdp-prio-acd-261-csv.zip#UcdpPrioConflict_v26_1.csv",
+  "fetched": "2026-11-08T10:28:14Z",
+  "sha256": "78c7ef43fbad66c21fcc31076da54d60247f200b8e310fd701a31fa22c02f260",
+  "bytes": 44237,
+  "rows": 2816,
+  "source_zip_sha256": "5f951743222964674a446e32a5a871077b29bd13349588d85fc59953d89c878a",
+  "note": "zip の中の CSV をそのまま gzip にした"
+ },
+ {
+  "file": "ucdp_brd_conf_261.csv.gz",
+  "url": "https://ucdp.uu.se/downloads/brd/ucdp-brd-conf-261-csv.zip#BattleDeaths_v26_1_conf.csv",
+  "fetched": "2026-11-08T10:28:14Z",
+  "sha256": "f84cfe54f2d315f233359138c748db91ecbb61965464e24d066836fa0e4c5167",
+  "bytes": 39010,
+  "rows": 1650,
+  "source_zip_sha256": "a88c81fb727f10a689ff0084bacf78e6fbfaadbbe925a608f6e7be2f44a6141e",
+  "note": "zip の中の CSV をそのまま gzip にした"
+ },
+ {
+  "file": "cow_intrastate_v41.csv.gz",
+  "url": "https://correlatesofwar.org/wp-content/uploads/Intra-StateWarData_v4.1.csv",
+  "fetched": "2026-11-08T10:28:15Z",
+  "sha256": "b027dd4ca38bb21e3485f62fb0e43515e6293b60f29cec33915571d0ab39c06b",
+  "bytes": 13801,
+  "rows": 442,
+  "note": "元の CSV (latin-1) をそのまま gzip にした"
+ },
+ {
+  "file": "cow_nmc60.csv.gz",
+  "url": "https://correlatesofwar.org/wp-content/uploads/NMC_Documentation-6.0.zip#NMC-60-abridged.zip/NMC-60-abridged.csv",
+  "fetched": "2026-11-08T10:28:16Z",
+  "sha256": "e09096ef1272c1f94c3aa1e36a3c6f0c02b141ab1be55edfe38527cce3e6a673",
+  "bytes": 137563,
+  "rows": 15951,
+  "source_zip_sha256": "eba43e2fa0d10624f9f3dcf68a8851547993b2c325b78b4443156f4d11c4f89f",
+  "columns": [
+   "stateabb",
+   "ccode",
+   "year",
+   "milex",
+   "milper",
+   "tpop"
+  ],
+  "note": "milex は 1913 年まで千英ポンド、1914 年から千米ドル (名目)。milper は千人、tpop は千人。-9 は欠け"
+ },
+ {
+  "file": "imf_fpp.csv.gz",
+  "url": "https://www.imf.org/external/datamapper/api/v1/{rev,exp,prim_exp,ie,d}",
+  "fetched": "2026-11-08T10:28:19Z",
+  "sha256": "55fb392e81d83d5a9589b5df6740f5555938244c097ef2871c45f4844ac59e80",
+  "bytes": 361405,
+  "rows": 9528,
+  "note": "Public Finances in Modern History (FPP)。rev 歳入・exp 歳出・prim_exp 利払いを除く歳出・ie 利払い・d 債務、すべて GDP 比 (%)"
+ },
+ {
+  "file": "imf_world.csv.gz",
+  "url": "https://api.imf.org/external/sdmx/2.1/data/IMF.FAD,WORLD,3.0.1/.G1_POGDP_PT_R+G11_POGDP_PT_R+G13_POGDP_PT_R..A",
+  "fetched": "2026-11-08T10:28:20Z",
+  "sha256": "7b51bc7050ae3ea024dae5e13089ebfb3edd6236d1f577a76bac2a5fca154cc7",
+  "bytes": 130489,
+  "rows": 16724,
+  "note": "WoRLD。G1 歳入・G11 税収・G13 贈与の GDP 比 (%)。sector (観測ごとの属性) S13 = 一般政府、S1311MIXED = 中央政府 (国により範囲が違う)。同じ国でも年によって sector が違うことがある"
+ },
+ {
+  "file": "imf_cofog.csv.gz",
+  "url": "https://api.imf.org/external/sdmx/2.1/data/IMF.STA,GFS_COFOG,11.0.0/.S13+S1311+S1311B..GF07_T+GF10_T+GF1020_T+GF02_T+TOTOUT_T.POGDP_PT.A?detail=dataonly",
+  "fetched": "2026-11-08T10:28:21Z",
+  "sha256": "c7f4dfec5b3574db354815960a45a7b999708fbe4274831ae35a3032cd632755",
+  "bytes": 292889,
+  "rows": 26787,
+  "note": "GFS の機能別の支出 (COFOG) の GDP 比 (%)。GF07 保健・GF10 社会保護・GF1020 老齢 (年金)・GF02 防衛・TOTOUT 支出の合計。sector S13 = 一般政府、S1311 = 中央政府 (社会保障基金を除く)、S1311B = 予算の中央政府"
+ },
+ {
+  "file": "wdi_warfiscal.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{SH.XPD.GHED.GD.ZS,MS.MIL.XPND.GD.ZS,GC.TAX.TOTL.GD.ZS,GC.REV.XGRT.GD.ZS,NY.GDP.PCAP.KD,SP.POP.TOTL,FP.CPI.TOTL.ZG,NY.GDP.DEFL.KD.ZG}",
+  "fetched": "2026-11-08T10:28:24Z",
+  "sha256": "6752e42dc4dfbde2db0bb7a6445ace7837acce19652bbc4bc8d4c8b84ad1b0d7",
+  "bytes": 713225,
+  "rows": 68466,
+  "filter": "国だけ (地域の集計を除く)・1960〜2025 年"
+ },
+ {
+  "file": "mpd2023.csv.gz",
+  "url": "https://dataverse.nl/api/access/datafile/421302#mpd2023_web.xlsx/Full data",
+  "fetched": "2026-11-08T10:28:30Z",
+  "sha256": "1d2a8e6500f2d965e7e3956971eff8f0ca8a8de63c4247b66142a39b659a9f16",
+  "bytes": 212896,
+  "rows": 18981,
+  "source_sha256": "ecc5916ca12789b983fc4be437f8a354bbf4291323605324ac3e0aea4c57cbb6",
+  "note": "Maddison Project Database 2023 (doi:10.34894/INZBF2)。1800 年からの行と 4 列だけ。gdppc は 2011 年の購買力平価のドル、pop は千人"
+ },
+ {
+  "file": "owid_social-spending-oecd-longrun.csv",
+  "url": "https://ourworldindata.org/grapher/social-spending-oecd-longrun.csv",
+  "fetched": "2026-11-08T10:28:30Z",
+  "sha256": "fccbbec17da6eb165446ea067727d829128078defa2966e767b40e9d5dadb565",
+  "bytes": 49446,
+  "rows": 1981,
+  "note": "Our World in Data のグラフの CSV (CC BY 4.0)。1960 年より前は 10 年おき"
+ },
+ {
+  "file": "owid_public-health-expenditure-share-gdp-owid.csv",
+  "url": "https://ourworldindata.org/grapher/public-health-expenditure-share-gdp-owid.csv",
+  "fetched": "2026-11-08T10:28:31Z",
+  "sha256": "cb4001d898644913a94179e3fdb2f73f4191af897521ed9cd3aab6b5c2e8c8a8",
+  "bytes": 61012,
+  "rows": 2541,
+  "note": "Our World in Data のグラフの CSV (CC BY 4.0)。1960 年より前は 10 年おき"
+ },
+ {
+  "file": "countrycode_cow.csv",
+  "url": "https://raw.githubusercontent.com/vincentarelbundock/countrycode/main/dictionary/data_cow.csv",
+  "fetched": "2026-11-08T10:28:31Z",
+  "sha256": "59f6bb5c457b77e591cec415d4f51b5535be63ba1788522808d197ef997727b2",
+  "bytes": 5218,
+  "rows": 217,
+  "note": "国・年の行を、番号と国名の組ごとの最初と最後の年にまとめた"
+ },
+ {
+  "file": "countrycode_gw.csv",
+  "url": "https://raw.githubusercontent.com/vincentarelbundock/countrycode/main/dictionary/data_gw.csv",
+  "fetched": "2026-11-08T10:28:31Z",
+  "sha256": "e92db3a3a69474a236c8093fd38e0fc4f5b394ec4515c62d6c35961da3823275",
+  "bytes": 4979,
+  "rows": 199,
+  "note": "国・年の行を、番号と国名の組ごとの最初と最後の年にまとめた"
+ }
+]
