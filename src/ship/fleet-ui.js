@@ -207,11 +207,11 @@ function fgStackBox(g, id) {
 // 攻める前の見込み: 送る艦 (全艦) と、見えている守りの艦隊・宇宙要塞から、同じ形の艦隊戦を 64 回解いた割合 (戦機・士気・補給はふつうとして)
 function attackPreview(g, sys, from, destRealm) {
   if (destRealm === null || destRealm === undefined || destRealm === g.cap || from === undefined) return '';
-  const na = g.knownGarrison(from), nd = g.knownGarrison(sys.id), nf = g.knownFort(sys.id);
+  const na = g.knownGarrison(from), nd = g.knownGarrison(sys.id), nf = g.knownFort(sys.id), fw = nf ? g.knownFortWear(sys.id) : 0;
   if (na < 1) return '';
-  const p = g.battleOdds(na, nd, 1, 1, nf);
-  return TR`<p class="note fact">攻めたときの見込み (見えている数で): ${esc(g.system(from).name)} の ${na} 艦隊 対 ${nd} 艦隊${nf ? TR` + 宇宙要塞 Lv${nf}` : ''} → 勝つ見込み <b class="${p < 0.6 ? 'bad' : ''}">${Math.round(p * 100)}%</b></p>
-    <p class="note">見込みは、同じ形の艦隊戦を 64 回解いて勝った割合 (戦機・士気・補給はふつうとして)。宇宙要塞は段の数だけ区画が守りに加わる (区画は艦の ${FORT.hp} 倍の耐久で、組織力が減らず退かない)。戦いごとの戦機と士気のくじで大きく振れる。組織力の尽きた艦は退く (艦隊群の「退かない」で変えられる)。攻囲に移るのは、守りの艦と要塞の区画がすべていなくなってから。</p>`;
+  const p = g.battleOdds(na, nd, 1, 1, nf, fw);
+  return TR`<p class="note fact">攻めたときの見込み (見えている数で): ${esc(g.system(from).name)} の ${na} 艦隊 対 ${nd} 艦隊${nf ? TR` + 宇宙要塞 Lv${nf}${fortHpText(fw)}` : ''} → 勝つ見込み <b class="${p < 0.6 ? 'bad' : ''}">${Math.round(p * 100)}%</b></p>
+    <p class="note">見込みは、同じ形の艦隊戦を 64 回解いて勝った割合 (戦機・士気・補給はふつうとして)。宇宙要塞は段の数だけ区画が守りに加わる (区画は艦の ${FORT.hp} 倍の耐久で、組織力が減らず退かない。前の戦いの傷は残り、年に ${Math.round(FORT.repair * 100)}% ずつ直る)。戦いごとの戦機と士気のくじで大きく振れる。組織力の尽きた艦は退く (艦隊群の「退かない」で変えられる)。攻囲に移るのは、守りの艦と要塞の区画がすべていなくなってから。</p>`;
 }
 // 星系の欄の艦隊戦: 両軍の数・要塞・見込み・沈んだ艦と退いた艦・いま退いている艦・退く先と撤退の決まり (地球に届いている記録で)
 function battleBox(g, sys) {
@@ -230,20 +230,23 @@ function battleBox(g, sys) {
   }).filter(Boolean).join(TR('・'));
   const ga = tags(bt.fga), gd = tags(bt.fgd);
   return TR`<div class="card"><b class="bad">${ico('war')}艦隊戦</b> <span class="muted">${bt.start.toFixed(1)} 年から${sys.id === g.cap ? '' : TR`・${g.lightDelay(sys.id).toFixed(1)} 年前の様子`}</span>
-    <p class="note fact">攻め ${name(bt.realm)} <b>${Math.ceil(bt.a)}</b> / ${Math.round(bt.a0)} 艦隊 対 守り ${name(def)} <b>${Math.ceil(bt.d)}</b> / ${Math.round(bt.d0)} 艦隊${bt.fort ? TR` + 宇宙要塞の区画 <b>${bt.fort}</b>` : ''}。${bt.odds !== null && bt.odds !== undefined ? TR`始まる前の攻め側の見込み ${Math.round(bt.odds * 100)}%。` : ''}</p>
+    <p class="note fact">攻め ${name(bt.realm)} <b>${Math.ceil(bt.a)}</b> / ${Math.round(bt.a0)} 艦隊 対 守り ${name(def)} <b>${Math.ceil(bt.d)}</b> / ${Math.round(bt.d0)} 艦隊${bt.fort ? TR` + 宇宙要塞の区画 <b>${bt.fort}</b>${fortHpText(bt.fhp === null || bt.fhp === undefined ? 0 : 1 - bt.fhp)}` : ''}。${bt.odds !== null && bt.odds !== undefined ? TR`始まる前の攻め側の見込み ${Math.round(bt.odds * 100)}%。` : ''}</p>
     ${bt.sunk ? TR`<p class="note fact">攻め: 沈没 ${bt.sunk[0]}・退却 ${bt.esc[0]}・いま退いている ${bt.going?.[0] || 0} → ${to(bt.to?.[0])}${ga ? TR`<br>群: ${ga}` : ''}<br>守り: 沈没 ${bt.sunk[1]}・退却 ${bt.esc[1]}・いま退いている ${bt.going?.[1] || 0} → ${to(bt.to?.[1])}${gd ? TR`<br>群: ${gd}` : ''}</p>` : ''}
     <p class="note">撤退の決まり: 撃たれて組織力が ${BATTLE.orgRet * 100}% を切った艦は、${BATTLE.retRounds} 回撃たれながら離れて退く (撃ち返さない)。退く先は、艦隊群の艦は群の拠点、ほかの艦はいちばん近い自国の星系。艦隊群の決まりが「退かない」の艦は、組織力が尽きても退かない。宇宙要塞の区画は組織力が減らず退かない。どちらかの戦っている艦がいなくなれば終わり、攻め側が勝てば攻囲に移る。</p></div>`;
 }
 
+// 要塞の耐久の書き方 (依頼 FU-3): 傷 w (区画の耐久の欠けた割合) があれば「 (耐久 60%)」、無傷なら空
+function fortHpText(w) { return w >= 0.005 ? TR` (耐久 ${Math.round((1 - w) * 100)}%)` : ''; }
 // 宇宙要塞 (星系ごと。入植すると Lv1、あとは手動で Lv10 まで)。地球に届いている記録で
 function fortBox(g, sys) {
   const k = sys.id === g.cap ? null : g.known(sys.id);
   if (sys.id !== g.cap && !k?.cols.length) return '';
-  const lv = g.knownFort(sys.id);
+  const lv = g.knownFort(sys.id), fw = lv ? g.knownFortWear(sys.id) : 0;
   const own = sys.id === g.cap || (k?.realm ?? g.cap) === g.cap;
   const busy = busyText(g, (j) => j.type === 'fort' && j.sys === sys.id);
   const btn = own && lv < FORT.max
     ? costButton(g, `data-act="fort" data-sys="${sys.id}"`, TR`${ico('fleet')}要塞を Lv${lv + 1} に`, g.fortCost(sys.id), sys.id, busy) : '';
-  return TR`<p class="note">宇宙要塞 <b>Lv${lv}</b> / ${FORT.max}${own ? '' : ` (${esc(g.realmName(k.realm))})`}。艦隊戦では段の数だけ要塞の区画 (艦の ${FORT.hp} 倍の耐久、退かない) が守りに加わる。区画が沈むと段が下がる。艦隊がいなくても、要塞があれば攻める艦隊は先に艦隊戦をする。</p>
+  return TR`<p class="note fact">宇宙要塞 <b>Lv${lv}</b> / ${FORT.max}${fortHpText(fw)}${own ? '' : ` (${esc(g.realmName(k.realm))})`}</p>
+    <p class="note">艦隊戦では段の数だけ要塞の区画 (艦の ${FORT.hp} 倍の耐久、退かない) が守りに加わる。区画が沈むと段が下がる。戦いのあとに残った区画の傷は次の戦いにも残り、戦っていないあいだ年に ${Math.round(FORT.repair * 100)}% ずつ直る (費用なし)。艦隊がいなくても、要塞があれば攻める艦隊は先に艦隊戦をする。</p>
     ${btn ? `<div class="btns">${btn}</div>` : ''}`;
 }

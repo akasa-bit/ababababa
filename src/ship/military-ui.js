@@ -24,7 +24,7 @@ function militarySheet(app) {
     const awe = g.knownAwe(id);
     const aweT = g.known(id)?.lord === g.cap && (g.known(id)?.realm ?? g.cap) === g.cap && g.known(id)?.cols.length ? g.aweGoal(id) : 0;
     const fl = g.knownFort(id);
-    return TR`<tr><td>${goto(s)}<br>${ageBadge(g, id)}</td><td><b>${n}</b> 艦隊${fl ? TR`<br><span class="muted">宇宙要塞 Lv${fl}</span>` : ''}${coming ? TR` <span class="muted">(+${coming} 向かっている)</span>` : ''}${awe || aweT ? TR`<br><span class="muted">うち威圧 ${awe}${aweT ? ` / ${aweT}` : ''}</span>` : ''}</td><td>${build}</td>
+    return TR`<tr><td>${goto(s)}<br>${ageBadge(g, id)}</td><td><b>${n}</b> 艦隊${fl ? TR`<br><span class="muted">宇宙要塞 Lv${fl}${fortHpText(g.knownFortWear(id))}</span>` : ''}${coming ? TR` <span class="muted">(+${coming} 向かっている)</span>` : ''}${awe || aweT ? TR`<br><span class="muted">うち威圧 ${awe}${aweT ? ` / ${aweT}` : ''}</span>` : ''}</td><td>${build}</td>
       <td><button data-act="rally" data-sys="${id}">${ico('rally')}全艦隊をここへ集結</button></td></tr>`;
   }).join('');
   const milTable = TR`<h3>艦隊</h3>${defenseToggle(g)}<div class="scroll"><table class="tbl">
@@ -126,8 +126,8 @@ function battleReportTable(g) {
   const rows = reps.map((r) => {
     const atk = esc(g.realmName(r.a)), def = esc(g.realmName(r.d));
     return TR`<tr><td><button data-act="goto" data-sys="${r.sys}">${esc(g.system(r.sys).name)}</button><br><span class="muted">${Math.floor(r.end)} 年</span></td>
-      <td>${atk} ${r.a0}<br><span class="muted">対</span> ${def} ${r.d0}</td><td><b>${r.win ? atk : def}</b>${r.odds !== null && r.odds !== undefined ? TR`<br><span class="muted">攻撃側の見込み ${Math.round(r.odds * 100)}%</span>` : ''}</td>
-      <td>沈没 ${r.sunk[0]}・退却 ${r.esc[0]}<br>沈没 ${r.sunk[1]}・退却 ${r.esc[1]}</td><td>${fmtDead(r.dead)}</td>
+      <td>${atk} ${r.a0}<br><span class="muted">対</span> ${def} ${r.d0}${r.fort ? TR` + 要塞 ${r.fort[0]} 区画` : ''}</td><td><b>${r.win ? atk : def}</b>${r.odds !== null && r.odds !== undefined ? TR`<br><span class="muted">攻撃側の見込み ${Math.round(r.odds * 100)}%</span>` : ''}</td>
+      <td>沈没 ${r.sunk[0]}・退却 ${r.esc[0]}<br>沈没 ${r.sunk[1]}・退却 ${r.esc[1]}${r.fort ? (r.fort[1] >= r.fort[0] ? TR('<br>要塞の区画をすべて壊した') : r.fort[1] ? TR`<br>要塞の区画 ${r.fort[1]} を壊した・残り ${r.fort[0] - r.fort[1]}${fortHpText(r.fw?.[1] || 0)}` : TR`<br>要塞の区画 ${r.fort[0]} は残った${fortHpText(r.fw?.[1] || 0)}`) : ''}</td><td>${fmtDead(r.dead)}</td>
       <td>兵站 ${r.eff[0]} / ${r.eff[1]}<br>戦機 ${tag(r.luck[0])} / ${tag(r.luck[1])}<br>士気 ${tag(r.mor[0])} / ${tag(r.mor[1])}</td></tr>`;
   }).join('');
   return TR`<h3>艦隊戦の報告</h3>

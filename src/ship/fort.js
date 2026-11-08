@@ -17,11 +17,40 @@
     if (this.pending((j) => j.type === 'fort' && j.sys === sys)) return fail('要塞を建設中');
     return this.order(this.fortCost(sys), sys, { type: 'fort', label: JA`${this.system(sys).name} の宇宙要塞 Lv${this.fortLevel(sys) + 1}` });
   }
-  // 建設が終わった (economy/colonize.js の finish から)
+  // 建設が終わった (economy/colonize.js の finish から)。新しい区画は無傷なので、傷の割合は (前の段 ÷ 新しい段) 倍に薄まる (依頼 FU-3)
   fortBuilt(job) {
     if (!this.isColonized(job.sys)) return;
-    this.forts[job.sys] = Math.min(FORT.max, this.fortLevel(job.sys) + 1);
+    const lv0 = this.fortLevel(job.sys);
+    this.forts[job.sys] = Math.min(FORT.max, lv0 + 1);
+    const w = this.fortWearOf(job.sys);
+    if (w && this.forts[job.sys] > lv0) this.fortWearSet(job.sys, (w * lv0) / this.forts[job.sys]);
     this.message(JA`${this.system(job.sys).name} の宇宙要塞を Lv${this.forts[job.sys]} にした`, job.sys);
   }
   // 地球に届いている要塞の段 (首都はいまの値)
   knownFort(id) { return id === this.cap ? this.fortLevel(id) : this.known(id)?.fort ?? 0; }
+
+  // --- 要塞の傷 (2026-11-07 のユーザーの依頼 FU-3「要塞もダメージを食らい、壊れるようにしてほしい」。docs/fleet-groups.md の 8) ---
+  // 前は、艦隊戦のあとに残った区画は次の戦いで無傷に戻っていた (沈んだ区画の数だけ段が下がるだけ)。
+  // いまは、残った区画の傷 (耐久の欠けた割合) を星系ごとに覚え、次の艦隊戦の区画はその耐久で始まる。攻め続ければ要塞は削れて壊れる
+  fortWearOf(sys) { return this.fortWear?.[sys] || 0; }
+  fortWearSet(sys, w) { if (w > 1e-6 && this.fortLevel(sys) > 0) this.fortWear[sys] = Math.min(0.999, +w.toFixed(4)); else delete this.fortWear[sys]; }
+  // 地球に届いている要塞の傷 (首都はいまの値)
+  knownFortWear(id) { return id === this.cap ? this.fortWearOf(id) : this.known(id)?.fw || 0; }
+  // 艦隊戦が終わったとき (攻め側が退いた・終戦・攻め落とした): 残った区画の耐久から傷を覚える。
+  // 戦いのあとに建った区画 (戦いに出ていない分) は無傷として数える。攻め落とされて区画が残らなければ傷も消える
+  fortWearKeep(b) {
+    const lv = this.fortLevel(b.sys);
+    if (!lv) { delete this.fortWear[b.sys]; return; }
+    const fs = (b.ud || []).filter((x) => x[3]).slice(0, lv);
+    const hp = fs.reduce((k, x) => k + Math.max(0, Math.min(FORT.hp, x[0])), 0) + (lv - fs.length) * FORT.hp;
+    this.fortWearSet(b.sys, 1 - hp / (lv * FORT.hp));
+  }
+  // 1 歩ごと: 艦隊戦をしていない星系の要塞の傷が、年に FORT.repair ずつ直る (費用なし)。入植地や要塞がなくなった星系の傷は消す
+  fortsRepair(dt) {
+    for (const k of Object.keys(this.fortWear)) {
+      const sys = Number(k);
+      if (!this.isColonized(sys) || !this.fortLevel(sys)) { delete this.fortWear[k]; continue; }
+      if (this.battleAt(sys)) continue;
+      this.fortWearSet(sys, this.fortWear[k] - FORT.repair * dt);
+    }
+  }

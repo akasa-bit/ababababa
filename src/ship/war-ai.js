@@ -163,10 +163,10 @@
     if (gs) { for (const [gid, n] of Object.entries(gs)) for (let i = 0; i < n; i++) b.ua.push(this.fgShip(gid, sys)); b.fg = 1; }
     this.garrison[sys] = 0;
     this.battles.push(b);
-    const fl = this.fortLevel(sys);
-    const p = this.battleOdds(ships, d, this.battleEff(b, 0), this.battleEff(b, 1), fl);
+    const fl = this.fortLevel(sys), fw = fl ? this.fortWearOf(sys) : 0; // 要塞の傷 (依頼 FU-3) も見込みに入れる
+    const p = this.battleOdds(ships, d, this.battleEff(b, 0), this.battleEff(b, 1), fl, fw);
     b.odds = p;
-    this.event('battle', sys, JA`${this.system(sys).name} で艦隊戦が始まった (攻撃 ${this.realmName(realm)} ${ships} 艦隊 対 防衛 ${d} 艦隊${fl ? JA`・宇宙要塞 Lv${fl}` : ''}。攻撃側の勝つ見込み ${Math.round(p * 100)}%)`, this.isHuman(realm) || this.isHuman(this.realmOf(sys)));
+    this.event('battle', sys, JA`${this.system(sys).name} で艦隊戦が始まった (攻撃 ${this.realmName(realm)} ${ships} 艦隊 対 防衛 ${d} 艦隊${fl ? JA`・宇宙要塞 Lv${fl}${fw >= 0.005 ? JA` (耐久 ${Math.round((1 - fw) * 100)}%)` : ''}` : ''}。攻撃側の勝つ見込み ${Math.round(p * 100)}%)`, this.isHuman(realm) || this.isHuman(this.realmOf(sys)));
   }
   battleLuck(w) { return GM.exp(w * this.randNormal()); }
   // 側 s (0 = 攻撃・1 = 防衛) の兵站と国の補正 (どちらも補給の充足率。補給線の長さは見ない。依頼 FU-2)
@@ -200,17 +200,20 @@
     return true;
   }
   // 攻撃 na 艦隊が防衛 nd 艦隊に勝つ見込み (補正 ea・ed)。同じ形の戦いを、試合の乱数とは別の乱数で 64 回解いて数える (画面に出すだけ。試合の筋は変えない)
-  battleOdds(na, nd, ea = 1, ed = 1, nf = 0) {
+  // nf = 要塞の段、fw = 要塞の傷 (区画の耐久の欠けた割合。依頼 FU-3。0.01 刻みに丸める)
+  battleOdds(na, nd, ea = 1, ed = 1, nf = 0, fw = 0) {
     na = Math.round(na); nd = Math.round(nd);
+    fw = nf ? Math.min(0.99, Math.max(0, Math.round((fw || 0) * 100) / 100)) : 0;
     if (nd < 1 && nf < 1) return 1;
     if (na < 1) return 0;
+    // 乱数の種に傷は入れない: 同じ数どうしなら、傷のちがう見込みを同じくじで解く (差のぶれを小さくする。64 回なので、見込みには ±6 点ほどのぶれが残る。依頼 FU-3)
     let st = hashSeed(`${na}/${nd}/${ea.toFixed(3)}/${ed.toFixed(3)}${nf ? `/${nf}` : ''}`);
     const rnd = () => { st = (st + 0x6d2b79f5) >>> 0; let t = st; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     const nrm = () => Math.sqrt(-2 * GM.log(1 - rnd())) * GM.cos(2 * Math.PI * rnd());
     let win = 0;
     const N = 64;
     for (let k = 0; k < N; k++) {
-      const u = [Array.from({ length: Math.min(na, 300) }, () => [1, 1, -1]), [...Array.from({ length: Math.min(nd, 300) }, () => [1, 1, -1]), ...Array.from({ length: nf }, () => [FORT.hp, 1, -1, 1])]];
+      const u = [Array.from({ length: Math.min(na, 300) }, () => [1, 1, -1]), [...Array.from({ length: Math.min(nd, 300) }, () => [1, 1, -1]), ...Array.from({ length: nf }, () => [FORT.hp * (1 - fw), 1, -1, 1])]];
       const eff = [ea * GM.exp(BATTLE.luck * nrm()), ed * GM.exp(BATTLE.luck * nrm())], mor = [GM.exp(BATTLE.morale * nrm()), GM.exp(BATTLE.morale * nrm())];
       const out = { sunk: [0, 0], esc: [0, 0] };
       for (let r = 0; r < BATTLE.rounds * 20 && this.battleRound(u, eff, mor, rnd, [true, true], out); r++);
@@ -223,8 +226,13 @@
     b.ua ??= []; b.ud ??= []; b.sunk ??= [0, 0]; b.esc ??= [0, 0];
     b.luck ??= [1, 1]; b.mor ??= [1, 1];
     for (const [k, u] of [['a', b.ua], ['d', b.ud]]) while (u.filter((x) => !x[3]).length < Math.round(b[k])) u.push([1, 1, -1]);
-    // 宇宙要塞: 戦いの始めに、段の数だけ区画を防衛側に加える (FORT)
-    if (b.fortIn === undefined) { b.fortIn = this.isColonized(b.sys) ? this.fortLevel(b.sys) : 0; for (let i = 0; i < b.fortIn; i++) b.ud.push([FORT.hp, 1, -1, 1]); }
+    // 宇宙要塞: 戦いの始めに、段の数だけ区画を防衛側に加える (FORT)。区画は前の戦いの傷が残った耐久で始まる (依頼 FU-3。b.fw0 = 始めの傷)
+    if (b.fortIn === undefined) {
+      b.fortIn = this.isColonized(b.sys) ? this.fortLevel(b.sys) : 0;
+      const fw = b.fortIn ? this.fortWearOf(b.sys) : 0;
+      if (fw) b.fw0 = fw;
+      for (let i = 0; i < b.fortIn; i++) b.ud.push([FORT.hp * (1 - fw), 1, -1, 1]);
+    }
   }
   // 防衛側の艦が退く先: 守る国の、この星系のほかでいちばん近い入植星系 (なければ退けない)
   retreatHome(realm, sys) {
@@ -233,10 +241,12 @@
     return best?.id;
   }
   battlesStep(dt) {
+    if (Object.keys(this.fortWear).length) this.fortsRepair(dt); // 戦っていない星系の要塞の傷が直る (依頼 FU-3。ship/fort.js)
     for (const b of [...this.battles]) {
       if (!this.fightingAt(b.realm, this.realmOf(b.sys), b.sys)) { // 終戦の知らせが届いた: 防衛側は駐留に戻り、攻撃側は引き揚げる
         this.event('battle', b.sys, JA`${this.system(b.sys).name} の艦隊戦は、終戦の知らせが届いて終わった`, this.isHuman(b.realm) || this.isHuman(this.realmOf(b.sys)));
         this.battles = this.battles.filter((x) => x !== b);
+        this.fortWearKeep(b); // 残った要塞の区画の傷は残る (依頼 FU-3)
         this.garrison[b.sys] = (this.garrison[b.sys] || 0) + Math.round(b.d);
         if (b.fg) for (const [gid, k] of Object.entries(this.fgTags(b.ud))) this.fgAdd(b.sys, gid, k); // 守っていた群の艦は群のまま駐留に戻る
         this.withdraw({ sys: b.sys, realm: b.realm, ships: Math.round(b.a), ...(b.fg ? { gs: this.fgTags(b.ua) } : {}) });
@@ -285,6 +295,7 @@
     if (win) { out.esc[1] = home !== undefined ? ships : 0; out.sunk[1] = home !== undefined ? 0 : ships; b.ud = []; }
     else { out.esc[0] = b.ua.length; b.ua = []; }
     this.battleCount(b, out, defender, home);
+    this.fortWearKeep(b); // 残った要塞の区画の傷は次の戦いにも残る。攻め落とされれば区画も傷も残らない (依頼 FU-3。ship/fort.js)
     const name = this.system(b.sys).name;
     const left = win ? b.ua.length : b.ud.filter((x) => !x[3]).length;
     const rep = this.battleReport(b, win, defender);
@@ -303,7 +314,7 @@
   battleReport(b, win, defender) {
     const r = {
       sys: b.sys, a: b.realm, d: defender, start: b.start, end: this.year, a0: Math.round(b.a0), d0: Math.round(b.d0), win: win ? 1 : 0, odds: b.odds ?? null,
-      ...(b.fortIn ? { fort: [b.fortIn, b.fortLost || 0] } : {}), sunk: [...b.sunk], esc: [...b.esc], dead: (b.sunk[0] + b.sunk[1]) * BATTLE.crew, eff: [+this.battleEff(b, 0).toFixed(2), +this.battleEff(b, 1).toFixed(2)], luck: b.luck.map((x) => +x.toFixed(2)), mor: b.mor.map((x) => +x.toFixed(2)),
+      ...(b.fortIn ? { fort: [b.fortIn, b.fortLost || 0], fw: [+(b.fw0 || 0).toFixed(2), +this.fortWearOf(b.sys).toFixed(2)] } : {}), sunk: [...b.sunk], esc: [...b.esc], dead: (b.sunk[0] + b.sunk[1]) * BATTLE.crew, eff: [+this.battleEff(b, 0).toFixed(2), +this.battleEff(b, 1).toFixed(2)], luck: b.luck.map((x) => +x.toFixed(2)), mor: b.mor.map((x) => +x.toFixed(2)),
     };
     this.battleReports.unshift(r);
     this.battleReports.length = Math.min(this.battleReports.length, BATTLE.reports);
@@ -566,7 +577,7 @@
           const near = this.galaxy.systems.map((x) => [x, this.seenBy(root, x.id)])
             .filter(([x, v]) => v && foes.has(v[1]) && !this.isHuman(x.id) && distance(x, strong) <= AI_WAR.range)
             .sort((a, b) => distance(a[0], strong) - distance(b[0], strong));
-          const target = near.find(([x, v], i) => v[2] + this.fortLevel(x.id) < n || (i < AI_WAR.tries && this.battleOdds(n, v[2], 1, 1, this.fortLevel(x.id)) >= AI_WAR.attack))?.[0]; // 要塞は動かず大きいので、段も見えるものとする
+          const target = near.find(([x, v], i) => v[2] + this.fortLevel(x.id) < n || (i < AI_WAR.tries && this.battleOdds(n, v[2], 1, 1, this.fortLevel(x.id), this.fortWearOf(x.id)) >= AI_WAR.attack))?.[0]; // 要塞は動かず大きいので、段と傷 (依頼 FU-3) も見えるものとする
           if (target) this.aiOrder(root, strong.id, target.id, n);
         }
       }

@@ -196,8 +196,11 @@
     const def = this.isColonized(id) ? this.realmOf(id) : this.stackRealm(id);
     const fort = b.fortIn === undefined ? (this.isColonized(id) ? this.fortLevel(id) : 0) : Math.max(0, b.fortIn - (b.fortLost || 0));
     const going = (u) => (u || []).filter((x) => !x[3] && x[2] >= 0).length;
+    // 要塞の区画の残りの耐久 (依頼 FU-3。前の戦いの傷を含む。区画がなければ null)
+    const fs = (b.ud || []).filter((x) => x[3]);
+    const fhp = fs.length ? +(fs.reduce((k, x) => k + Math.max(0, x[0]), 0) / (fs.length * FORT.hp)).toFixed(2) : null;
     return {
-      realm: b.realm, a: b.a, d: b.d, a0: b.a0, d0: b.d0, start: b.start, ea: this.fleetEff(b.sup), ed: this.fleetEff(b.dsup), fort, odds: b.odds ?? null,
+      realm: b.realm, a: b.a, d: b.d, a0: b.a0, d0: b.d0, start: b.start, ea: this.fleetEff(b.sup), ed: this.fleetEff(b.dsup), fort, fhp, odds: b.odds ?? null,
       sunk: [...(b.sunk || [0, 0])], esc: [...(b.esc || [0, 0])], going: [going(b.ua), going(b.ud)], to: [this.retreatHome(b.realm, id) ?? null, this.retreatHome(def, id) ?? null],
       ...(b.fg ? { fga: this.fgTags(b.ua), fgd: this.fgTags(b.ud) } : {}),
     };
