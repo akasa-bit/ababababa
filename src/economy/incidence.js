@@ -101,10 +101,10 @@
       const dc = (f1.rdcredit ?? FISCAL_DEFAULT.rdcredit) - (f0.rdcredit ?? FISCAL_DEFAULT.rdcredit);
       if (dc && P > 0 && Ysum > 0) { const x = (dc * P * Y) / Ysum; add(row('rdcredit', '研究開発の税額控除', 'firm', lagOf('rdcredit')), id, 0, x, -x, own); }
     }
-    const gr = this.govs[root], tax = Math.max(0, gr?.ledger?.tax || 0) * (gr?.bpaid ?? 1);
+    const gr = this.govs[root], tax = Math.max(0, gr?.ledger?.tax || 0);
     for (const k of Object.keys(BUDGET)) {
-      const db = (f1.budget?.[k] || 0) - (f0.budget?.[k] || 0);
-      if (db && tax > 0 && ids.includes(root)) { const x = db * tax; add(row(k, JA`${BUDGET[k].label}の予算`, INCIDENCE[k] ? k : 'income', lagOf('budget')), root, x, 0, -x); }
+      const db = budgetExtra(k, budgetLv(f1, k)) - budgetExtra(k, budgetLv(f0, k)); // 標準から動かした額 ÷ 税収の差 (下げれば負)。上げた分は払えた割合だけ
+      if (db && tax > 0 && ids.includes(root)) { const x = db * tax * (db > 0 ? gr?.bpaid ?? 1 : 1); add(row(k, JA`${BUDGET[k].label}の予算`, INCIDENCE[k] ? k : 'income', lagOf('budget')), root, x, 0, -x); }
     }
     // 5 分位に分ける (会社の分は星系の家計が持つ分だけ。遠くの持ち主の分は q に入れない)。所得に比べる手段は星系の所得の分け方で (回 KE11)、土地改革は分位ごとの差 qd
     const sh = (k, q) => INCIDENCE[k][q] / INCIDENCE[k].reduce((a, v) => a + v, 0);

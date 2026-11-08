@@ -125,14 +125,14 @@
   learnOf(c) { return this.schoolMean(c, (s, q) => q); }
   // 働く人の生産性の倍率 (yieldOf): 25〜64 歳の exp(φ(学力で直した就学年数 s × q ÷ full)) の平均 ÷ exp(φ(ref))
   schoolK(c) { return this.schoolMean(c, (s, q) => GM.exp(this.schoolPhi((s * q) / LEARN.full)), SCHOOL.bin, DEMO.work[1]) / GM.exp(this.schoolPhi(SCHOOL.ref)) || 1; }
-  // 予算の教育の支出 ÷ GDP [%] (人間の国だけ。予算の割合 × 払えた割合 × 税収 ÷ 国の所得。光の遅れのある財政の値で)
+  // 予算の教育の、標準から動かした支出 ÷ GDP [%] (人間の国だけ。(水準 − 1) × std × 税収 ÷ 国の所得。上げた分は払えた割合を掛ける。光の遅れのある財政の値で。下げれば負)
   eduSpendPct(c) {
-    const root = this.realmOf(c.sys), share = this.fiscalFor(root, c.sys).budget?.education || 0;
-    if (!(share > 0)) return 0;
+    const root = this.realmOf(c.sys), share = budgetExtra('education', this.budgetPaidLv(root, c.sys, 'education'));
+    if (!share) return 0;
     const gv = this.govs[root], memo = (this._eduY ??= {});
     if (memo.year !== this.year) { memo.year = this.year; memo.y = {}; }
     const y = (memo.y[root] ??= this.colonies.reduce((k, x) => (this.realmOf(x.sys) === root ? k + (x.incY || 0) : k), 0));
-    return y > 0 ? (100 * share * (gv?.bpaid ?? 1) * Math.max(0, gv?.ledger?.tax || 0)) / y : 0;
+    return y > 0 ? (100 * share * Math.max(0, gv?.ledger?.tax || 0)) / y : 0;
   }
   // 1 刻み (demoStep の年をとったあと): 集団ごとに年齢の表と同じ割合 up で次の区分へ移し、25 歳の区分に入る人は学校を出た世代の就学年数
   // ((1 − rho) × 所得の曲線 + rho × 大人の平均) と学力 (所得の曲線) を持つ。生まれた子 births は「ここ生まれ」の 0 歳の区分へ。最後に区分ごとの人数を c.age に合わせる

@@ -12,7 +12,9 @@ const path = require('path');
 const H = require(path.resolve(__dirname, '..', 'headless'));
 const [seed = '3', years = '80'] = process.argv.slice(2);
 const sim = H.load({});
-const { FISCAL_DEFAULT, ENACT, SUPPORT, GROUP_STATUS, GROUPS } = sim.tables;
+const { FISCAL_DEFAULT, ENACT, SUPPORT, GROUP_STATUS, GROUPS, BUDGET } = sim.tables;
+// 予算は標準を 1 とする水準 (2026-11-08 の common-3)。支持は標準から動かした額 ÷ 税収で数えるので、その差が ref になる水準を使う
+const lvFor = (k, share) => 1 + share / BUDGET[k].std;
 const g = sim.run(sim.newGame(seed, { nations: 6 }), Number(years)); // 観戦で国を育ててから、人間が動かす
 g.setSpectate(false);
 g.pc = 200;
@@ -20,7 +22,7 @@ const res = {}, near = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol * Math.max(1
 const f0 = g.fiscal || FISCAL_DEFAULT;
 const ff = (over) => ({ ...FISCAL_DEFAULT, ...f0, budget: { ...FISCAL_DEFAULT.budget, ...(f0.budget || {}) }, ...over });
 // 1. 支持
-const welfare = g.billSupport('fiscal', ff({ budget: { ...FISCAL_DEFAULT.budget, welfare: 0.15 } }));
+const welfare = g.billSupport('fiscal', ff({ budget: { ...FISCAL_DEFAULT.budget, welfare: lvFor('welfare', 0.15) } }));
 res.range = welfare.S > 0 && welfare.S < 1 && welfare.groups.length > 0 && welfare.groups.every((x) => x.p > 0 && x.p < 1 && x.w > 0);
 const capG = (s, q) => s.groups.find((x) => x.sys === g.cap && x.q === q && x.k === s.groups.find((y) => y.sys === g.cap)?.k);
 res.welfareQ = capG(welfare, 0).p > capG(welfare, 4).p; // 福祉: 下の分位ほど得
@@ -34,7 +36,7 @@ res.clout = near(capG(welfare, 4).w / capG(welfare, 0).w, Math.pow(Q[4] / Q[0], 
 // 声を持つのは権力に加わっている集団だけ (締め出された民族の集団は数えない)
 res.included = welfare.groups.every((x) => { const id = x.sys, k = id === g.cap ? null : g.known(id), G = k ? k.groups : g.groupsOf(id); return GROUP_STATUS[G.eth.find((e) => e.k === x.k).st].incl; });
 // 価値観: 軍事の予算は伝統的な集団ほど支持する (同じ集団の価値観だけを動かして比べる)
-const Gc = g.groupsOf(g.cap), e0 = Gc.eth[0].k, fm = ff({ budget: { ...FISCAL_DEFAULT.budget, military: 0.1 } });
+const Gc = g.groupsOf(g.cap), e0 = Gc.eth[0].k, fm = ff({ budget: { ...FISCAL_DEFAULT.budget, military: lvFor('military', 0.1) } });
 const lo = g.supportLogit('fiscal', fm, f0, { ...Gc, values: { ...Gc.values, secular: Gc.values.secular - 1 } }, e0, 2, [], false);
 const hi = g.supportLogit('fiscal', fm, f0, { ...Gc, values: { ...Gc.values, secular: Gc.values.secular + 1 } }, e0, 2, [], false);
 res.values = lo > hi && near(lo - hi, 2 * 0.45, 1e-9);

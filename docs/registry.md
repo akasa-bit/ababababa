@@ -172,6 +172,7 @@
 - saveField: capacity (経済。src/economy/market-consts.js。星系の会社が持つ民間の採掘の能力。回 KE5。`docs/regions.md` の 5)
 - saveField: gpts (経済。src/economy/market-consts.js。銀河の汎用技術の表。回 KE6 で `core/save.js` の一覧に足したものを、回 DO7 で登録の形に移した)
 - saveField: demand (経済。src/economy/market-consts.js。国ごとの需要のずれと、税率・政府の買い付け・GDP の傾向。回 KE7・QD-97)
+- saveField: bv (経済。src/economy/fiscal-consts.js。予算の形の版。2 = 標準を 1 とする水準。ないセーブの予算は読み込みで割合から水準に直す。ユーザーの依頼 2026-11-08 の common-3)
 
 ### 政治
 

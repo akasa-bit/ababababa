@@ -39,18 +39,22 @@ function fiscalHtml(g) {
   const wait = Object.entries(g.fiscal?.on || {}).filter(([, t]) => t > g.year).map(([k, t]) => TR`${FISCAL_LAG_LABEL[k]} (あと ${(t - g.year).toFixed(2)} 年)`); // 行政の遅れで、首都でまだ効いていない手段 (回 KE8・B-012)
   // 値はスライダーで細かく選ぶ (幅と刻みは docs/policy-ranges.md)。離すと命令になる。動かしているあいだは値だけ変わる (onPanelInput)
   const slider = (k, [lo, hi], step, cur, fmt, label) => `<label class="slider"><input type="range" data-act="fiscal" data-k="${k}" data-fmt="${fmt}" min="${lo}" max="${hi}" step="${step}" value="${cur}" aria-label="${label}"><output>${fiscalFmt(fmt, cur)}</output></label>`;
-  const used = Object.keys(BUDGET).reduce((a, k) => a + (f.budget?.[k] || 0), 0);
+  const net = Object.keys(BUDGET).reduce((a, k) => a + budgetExtra(k, budgetLv(f, k)), 0); // 標準から動かした額 ÷ 税収の合計 (負 = 浮く)
+  const up = Object.keys(BUDGET).some((k) => budgetLv(f, k) > 1);
   const paid = g.gov(g.cap).bpaid ?? 1;
   const taxRate = taxRateOf(f.tax), taxK = taxRate / MARKET.tax, loss = g.policyLoss(g.cap, f), lossAll = loss.tax + loss.ctax + loss.tariff; // 家計の損の割合 (首都。回 KE8・B-012)
   const rule = (fd.cb ?? 1) === 1, cbRate = g.cbRateAt(g.cap), cbs = g.cb[g.cap] || { pi: CB.pistar }; // 中央銀行 (回 KE1。画面から状態を作らない)
   const rows = Object.entries(BUDGET).map(([k, b]) => {
-    const sh = f.budget?.[k] || 0;
-    const T = g.tech[g.cap], w = T?.rd && T.S > 0 ? T.rd.spend / T.S : 0; // 研究は、払った額 ÷ 研究者 1 人の費用だけ公の研究者を足す (回 KE6)
-    const eff = k === 'education' ? TR`教育の支出 GDP の ${g.eduSpendPct({ sys: g.cap }).toFixed(1)}%` : k === 'research' ? TR`公の研究者 +${fmtAmt(w > 0 ? (sh * paid * tax) / w : 0)} 人 (効くのは ${RND.lag[0]}〜${RND.lag[1]} 年あと)` : TR`効き目 ${pct(budgetEffect(sh * paid))}`; // 教育は budgetEffect でなく教育の支出 ÷ GDP で効く (回 KE5)
-    return `<tr><td>${ico(BUDGET_ICON[k])}${b.label}</td><td>${slider(k, BUDGET_RANGE, BUDGET_STEP, sh, 'pct0', b.label)}</td><td>${sh ? TR`${fmtAmt(sh * tax)} cr/年・${eff}` : TR('<span class="muted">使わない</span>')}</td><td class="muted wrap">${esc(b.good)}</td></tr>`;
+    const lv = budgetLv(f, k), x = budgetExtra(k, lv) * tax * (lv > 1 ? paid : 1); // 標準から動かした額 [cr/年] (上げた分は払えた割合だけ)
+    const lvPaid = lv > 1 ? 1 + (lv - 1) * paid : lv; // 効き目はスライダーの値 (審議中なら出した値) で、上げた分は払えた割合だけ (fiscal.js の budgetPaidLv と同じ形)
+    const T = g.tech[g.cap], w = T?.rd && T.S > 0 ? T.rd.spend / T.S : 0; // 研究は、動かした額 ÷ 研究者 1 人の費用だけ公の研究者を足す・減らす (回 KE6)
+    const sgn = (v) => (v > 0 ? '+' : v < 0 ? '−' : '±');
+    const eff = k === 'education' ? TR`教育の支出 GDP の ${sgn(g.eduSpendPct({ sys: g.cap }))}${Math.abs(g.eduSpendPct({ sys: g.cap })).toFixed(1)}%` : k === 'research' ? TR`公の研究者 ${sgn(x)}${fmtAmt(w > 0 ? Math.abs(x) / w : 0)} 人 (効くのは ${RND.lag[0]}〜${RND.lag[1]} 年あと)` : TR`効き目 ${sgn(budgetEffect(lvPaid))}${pct(Math.abs(budgetEffect(lvPaid)))}`; // 教育は budgetEffect でなく教育の支出 ÷ GDP で効く (回 KE5)
+    const std = TR`標準 ${fmtAmt(b.std * tax)} cr/年 (税収の ${(b.std * 100).toFixed(1)}%)`;
+    return `<tr><td>${ico(BUDGET_ICON[k])}${b.label}</td><td>${slider(k, BUDGET_RANGE, BUDGET_STEP, lv, 'pct0', b.label)}</td><td>${lv === 1 ? TR`<span class="muted">標準</span>` : x > 0 ? TR`+${fmtAmt(x)} cr/年・${eff}` : TR`${fmtAmt(-x)} cr/年 浮く・${eff}`}<br><span class="muted">${std}</span></td><td class="muted wrap">${esc(b.good)}</td></tr>`;
   }).join('');
   return TR`<h3>${ico('credits')}財政</h3>${billHtml(g, 'fiscal')}
-    <p class="note">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・政策金利・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の割り振りは政治力が要らない。政策金利と中央銀行の任せ方のほかは、議会の審議にかける (国の権力に加わっている集団の支持が ${pct(ENACT.now)} 以上ならすぐ通る)。どれも、行政の遅れ (所得への税と研究開発の税額控除 ${ADMIN_LAG.tax} 年・消費税の率 ${ADMIN_LAG.ctax} 年 (新しく入れるときは ${ADMIN_LAG.ctaxNew} 年)・関税 ${ADMIN_LAG.tariff} 年・予算 ${ADMIN_LAG.budget} 年。政策金利と赤字の上限はすぐ) のあと首都で効き、遠い星系にはそのうえ知らせが光速で届いてから効く${wait.length ? TR` (首都でまだ効いていない: ${wait.join('・')})` : ''}${pend ? TR` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
+    <p class="note">値はスライダーで細かく選ぶ (幅は現実の国で使われた値の 1〜99% 点。離すと決まる)。税率・政策金利・赤字の上限を変えるには政治力 ${FISCAL_COST} が要る。予算の水準は政治力が要らない。政策金利と中央銀行の任せ方のほかは、議会の審議にかける (国の権力に加わっている集団の支持が ${pct(ENACT.now)} 以上ならすぐ通る)。どれも、行政の遅れ (所得への税と研究開発の税額控除 ${ADMIN_LAG.tax} 年・消費税の率 ${ADMIN_LAG.ctax} 年 (新しく入れるときは ${ADMIN_LAG.ctaxNew} 年)・関税 ${ADMIN_LAG.tariff} 年・予算 ${ADMIN_LAG.budget} 年。政策金利と赤字の上限はすぐ) のあと首都で効き、遠い星系にはそのうえ知らせが光速で届いてから効く${wait.length ? TR` (首都でまだ効いていない: ${wait.join('・')})` : ''}${pend ? TR` (いまの財政がまだ届いていない星系 ${pend})` : ''}。効き目の大きさは仮の値。</p>
     ${fiscalChartsHtml(g)}
     <table class="tbl">
       <tr><td>税率</td><td>${slider('tax', TAX_RANGE, TAX_STEP, taxRate, 'pct1', TR('税率'))}</td><td colspan="2" class="muted wrap">所得への税 (標準 ${(MARKET.tax * 100).toFixed(1)}% の ×${taxK.toFixed(2)})${Math.abs(lossAll) > 1e-9 ? TR`・消費税と関税と合わせた家計の損は${ME.capName}の家計の所得の ${lossAll > 0 ? '' : '−'}${Math.abs(lossAll * 100).toFixed(1)}% (標準と比べて): 家臣の忠誠度の目標 ${LOSS.loyalty * lossAll > 0 ? '+' : ''}${(LOSS.loyalty * lossAll).toFixed(1)}・議会の支持 年 ${LOSS.council * lossAll > 0 ? '+' : ''}${(LOSS.council * lossAll).toFixed(2)} (所得の 1% の損ごとに ${(-LOSS.loyalty / 100).toFixed(2)} 点・年 ${(-LOSS.council / 100).toFixed(3)})` : ''}。自給の所得には掛からない</td></tr>
@@ -72,9 +76,10 @@ function fiscalHtml(g) {
       return c ? TR`<h3>年齢と、年金・医療</h3><table class="tbl"><tr><td>${esc(c.name)}の年齢</td><td>${ageBarHtml(g.ageShares(c))}</td></tr>
         <tr><td>年金・医療</td><td>${fmtAmt(-(L.pension || 0))} cr/年・${fmtAmt(-(L.health || 0))} cr/年${(cg.apaid ?? 1) < 0.99 ? TR` <span class="bad">(資金が足りず ${pct(cg.apaid)} しか払えていない)</span>` : ''} <span class="muted">高齢 (65 歳〜。ゲームの年数は 100 ÷ 28 倍) が多いほど増える。政府が自動で払う</span></td></tr></table>` : '';
     })()}
-    <h3>予算 (${ME.capName}の税収 ${fmtAmt(tax)} cr/年 のうち ${Math.round(used * 100)}% を使う。合わせて ${BUDGET_TOTAL * 100}% まで)</h3>
+    <h3>予算 (機能ごとに標準を 100% として 0〜${BUDGET_RANGE[1] * 100}%。${ME.capName}の税収 ${fmtAmt(tax)} cr/年 に対して、標準から ${net > 1e-9 ? TR`+${fmtAmt(net * tax)} cr/年 多く使う` : net < -1e-9 ? TR`${fmtAmt(-net * tax)} cr/年 浮く` : '動かしていない'})</h3>
+    <p class="note">標準の分は政府のふだんの支出に入っている。上げると標準より多く払い、下げると浮く (首都の家計への給付・給料・買い付けが減る)。効き目は 100% で 0、300% で表の最大、0% で逆向きに同じ大きさ。</p>
     <table class="tbl">${rows}</table>
-    ${paid < 0.99 && used ? TR`<p class="note bad">資金が足りず、予算を ${pct(paid)} しか払えていない (効き目もそのぶん下がる)</p>` : ''}` + ctlHtml(g) + cofogHtml(g) + incidenceHtml(g);
+    ${paid < 0.99 && up ? TR`<p class="note bad">資金が足りず、標準より上げた予算を ${pct(paid)} しか払えていない (上げた分の効き目もそのぶん下がる)</p>` : ''}` + ctlHtml(g) + cofogHtml(g) + incidenceHtml(g);
 }
 // 物価の目標・量的緩和・金融抑圧・債務の再編 (回 KE9・B-009。docs/fiscal.md の 9)。物価の目標と量的緩和は中央銀行の決定なのですぐ (決めた値 fd)、金融抑圧は法案 (審議中の値 f)
 function debtToolsHtml(g, f, fd, slider) {
