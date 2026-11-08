@@ -65,13 +65,16 @@ function outpostBox(g, sys, b) {
   const res = outpostRes(b);
   if (!res.length) return '';
   const o = g.knownOutposts(sys.id).find((x) => x.body === b.id);
-  const c = sys.id === g.cap ? g.outpostCheck(sys.id, b.id) : { ok: g.knownColonized(sys.id), reason: TR('同じ星系に入植地が必要') };
-  const busy = busyText(g, (j) => j.type === 'outpost' && j.sys === sys.id && j.body === b.id);
-  const next = { sys: sys.id, body: b.id, lv: (o?.lv || 0) + 1 };
+  const lv = o?.lv || 0;
+  const c = sys.id === g.cap ? g.outpostCheck(sys.id, b.id, true) : { ok: g.knownColonized(sys.id), reason: TR('同じ星系に入植地が必要') };
+  // 建設中でも次の段を予約できる (依頼 common-8。ships-ui.js の buildPlan)
+  const Q = buildPlan(g, 'outpost', lv, (j) => j.type === 'outpost' && j.sys === sys.id && j.body === b.id, 'outpost', (d) => Number(d.sys) === sys.id && d.body === b.id);
+  const maxed = Q.plan >= 10 ? (Q.plan > lv ? TR('最大レベルまで予約した') : TR('最大レベル')) : '';
+  const next = { sys: sys.id, body: b.id, lv: Math.min(10, Q.plan + 1) };
   return TR`<h3>${ico('outpost')}採掘基地</h3>
     <p class="note">${o ? TR`Lv${o.lv} 稼働中: ${yieldText(g.outpostYield(o))} /年` : TR`無人の採掘基地で${res.map((r) => RES_LABEL[r]).join(TR('と'))}を採る。採れた資源はこの星系の備蓄に入る。`}
       <br>${o ? TR('拡張後') : TR('建設後')}: ${yieldText(g.outpostYield(next))} /年</p>
-    ${costButton(g, `data-act="outpost" data-sys="${sys.id}" data-body="${esc(b.id)}"`, o ? TR('採掘基地を拡張') : TR('採掘基地を建設'), g.outpostCost(o, sys.id), sys.id, busy || (c.ok ? '' : c.reason))}`;
+    ${(Q.note ? `<p class="note fact">${Q.note}</p>` : '') + costButton(g, `data-act="outpost" data-sys="${sys.id}" data-body="${esc(b.id)}"`, Q.plan > lv && !maxed ? TR`採掘基地 Lv${Q.plan + 1} を予約` : o ? TR('採掘基地を拡張') : TR('採掘基地を建設'), maxed ? null : g.outpostCost({ lv: Q.plan }, sys.id), sys.id, Q.busy || maxed || (c.ok ? '' : c.reason), maxed ? 0 : g.buildYears('outpost', Q.plan))}`;
 }
 
 function depositRow(b) {
@@ -89,10 +92,11 @@ function colonyBox(g, c) {
   if (s.food < 0.99) warn.push(TR('食料'));
   if (g.needsWater(c) && s.water < 0.99) warn.push(TR('水'));
   const facs = Object.keys(FACILITY).map((f) => {
-    const max = c.lv[f] >= FACILITY_MAX[f];
-    const busy = busyText(g, (j) => j.type === 'upgrade' && j.col === key && j.fac === f);
-    return `<div class="fac"><span>${ico(f)}${FACILITY[f]} <b>Lv${c.lv[f]}</b></span>
-      ${costButton(g, `data-act="upgrade" data-col="${key}" data-fac="${f}"`, max ? TR('最大') : TR('拡張'), max ? null : g.upgradeCost(c, f), c.sys, max ? TR('最大レベル') : busy)}</div>`;
+    // 建設中でも次の段を予約できる (依頼 common-8: 資源があれば拡張を 9 回押すと Lv10 まで 1 段ずつ順に建つ。ships-ui.js の buildPlan)
+    const Q = buildPlan(g, 'upgrade', c.lv[f], (j) => j.type === 'upgrade' && j.col === key && j.fac === f, 'upgrade', (d) => d.col === key && d.fac === f);
+    const max = Q.plan >= FACILITY_MAX[f], top = c.lv[f] >= FACILITY_MAX[f];
+    return `<div class="fac"><span>${ico(f)}${FACILITY[f]} <b>Lv${c.lv[f]}</b>${Q.note ? ` <small class="muted">${Q.note}</small>` : ''}</span>
+      ${costButton(g, `data-act="upgrade" data-col="${key}" data-fac="${f}"`, max ? TR('最大') : Q.plan > c.lv[f] ? TR`Lv${Q.plan + 1} を予約` : TR('拡張'), max ? null : g.upgradeCost(c, f, Q.plan), c.sys, top ? TR('最大レベル') : max ? TR('最大レベルまで予約した') : Q.busy, max ? 0 : g.buildYears('upgrade', Q.plan))}</div>`;
   }).join('');
   return TR`<h3>${KIND_LABEL[c.kind]}</h3>
     <table class="tbl kv">

@@ -19,7 +19,7 @@ function militarySheet(app) {
     const coming = seen.filter((x) => x.mine && x.leg.to === id).reduce((k, x) => k + x.f.n, 0); // 自国の艦隊だけ (他国の行き先は分からない)
     const yard = g.knownColonies(id).some((c) => c.lv.shipyard >= 1);
     const build = yard
-      ? `<div class="btns batch">${[1, 5, 10].map((k) => costButton(g, `data-act="warship" data-sys="${id}" data-n="${k}"`, k === 1 ? TR('編成') : `×${k}`, mulCost(WARSHIP_COST, k), id)).join('')}</div>`
+      ? `<div class="btns batch">${[1, 5, 10].map((k) => costButton(g, `data-act="warship" data-sys="${id}" data-n="${k}"`, k === 1 ? TR('編成') : `×${k}`, mulCost(WARSHIP_COST, k), id, '', g.buildYears('warship', k - 1))).join('')}</div>`
       : TR('<span class="muted">軍事基地なし</span>');
     const awe = g.knownAwe(id);
     const aweT = g.known(id)?.lord === g.cap && (g.known(id)?.realm ?? g.cap) === g.cap && g.known(id)?.cols.length ? g.aweGoal(id) : 0;

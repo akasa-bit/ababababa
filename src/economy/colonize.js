@@ -219,15 +219,40 @@
     if (!this.nations || this.isHuman(this.realmOf(sysId)) || !cost.credits) return cost;
     return { ...cost, credits: Math.round(cost.credits * HANDICAP[this.handicap].aiCost) };
   }
+  // 建設期間 (依頼 2026-11-08 の common-7。core/game-consts.js の BUILD_TIME): 種類 type を、いまの段 size (艦隊は数 − 1) から 1 つ建てる年。期間のない種類は 0
+  buildYears(type, size = 0) { const k = BUILD_TIME[type]; return k ? k[0] + k[1] * Math.max(0, size) : 0; }
+  // 同じ物を建てる注文か (同じ物の注文は 1 件ずつ順に建つ。予約を重ねたときも。依頼 2026-11-08 の common-8)。sysId は job を建てる星系。
+  // 艦隊の編成と要塞は星系ごと、施設は入植地の施設ごと、採掘基地は天体ごと、交易路は交易路ごと
+  sameBuild(job, sysId) {
+    const t = job.type;
+    return (j) => j.type === t && (t === 'upgrade' ? j.col === job.col && j.fac === job.fac
+      : t === 'outpost' ? j.sys === sysId && j.body === job.body
+      : t === 'route' ? j.route === job.route : j.sys === sysId);
+  }
+  // 注文 job の建設期間 (建てる星系 sysId)。段は、いまの段に、先に頼んだ同じ物の注文の数を足したもの (予約を重ねたときは、予約した段の期間)
+  jobBuildYears(job, sysId) {
+    if (!BUILD_TIME[job.type]) return 0;
+    if (job.type === 'warship') return this.buildYears('warship', (job.n || 1) - 1);
+    const lv = job.type === 'upgrade' ? this.colonyByKey(job.col)?.lv?.[job.fac] || 0
+      : job.type === 'outpost' ? this.outpostAt(sysId, job.body)?.lv || 0
+      : job.type === 'route' ? this.routes.find((r) => r.id === job.route)?.lv || 0
+      : job.type === 'fort' ? this.fortLevel(sysId) : 0;
+    return this.buildYears(job.type, lv + this.projects.filter(this.sameBuild(job, sysId)).length);
+  }
   // job.pay: 払う帳簿 ({ gov: 星系 } か { fm: 星系 })。ないときは建てる星系の政府。輸送船は造船所の星系 sysId で造り、交易路の持ち主が払う (回 KE5)。
   // job.delay: 完成してから使えるまでの年数 (造った輸送船が交易路まで飛ぶ)
+  // 完成は、資材がそろってから建設期間 (jobBuildYears) のあと。同じ物 (sameBuild) の前の注文が終わってから建て始める
+  // (艦隊の編成は星系の軍事基地で 1 件ずつ。施設・採掘基地・交易路・要塞は、プレイヤーが予約を重ねたとき 1 段ずつ)
   order(cost, sysId, job) {
     // 指令で建てるときは、指令を出した国の首都が払う (this.orderBy。依頼 KE-3・KE13-Q4 = b。core/game-loop.js の指令の到着)
     const payer = job.pay ?? { gov: this.orderBy ?? sysId }, firm = payer.fm !== undefined;
     if (!firm) cost = this.aiCost(cost, payer.gov);
     const p = this.procure(cost, sysId, firm ? Infinity : payer.gov !== sysId ? this.funds(payer.gov) : undefined);
     if (p.why) return fail(p.why);
-    const eta = Math.max(p.eta, job.delay || 0);
+    const build = this.jobBuildYears(job, sysId);
+    let wait = Math.max(p.eta, job.delay || 0);
+    if (build > 0) { const same = this.sameBuild(job, sysId); wait = Math.max(wait, this.projects.reduce((k, j) => (same(j) ? Math.max(k, j.ready) : k), this.year) - this.year); }
+    const eta = wait + build;
     // 支払いは建てる星系の民間へ。入植船の開拓資金は船が運び、着いた星系に渡す
     const seed = job.type === 'ship' ? SEED_FUNDS[job.kind] || 0 : 0;
     if (cost.credits) { this.cash('build', -cost.credits, payer); this.cash('build', cost.credits - seed, { hh: sysId }); } // 賃金は家計へ
@@ -269,7 +294,9 @@
       this.requests.push({ id: this.nextShipId++, kind: 'build', from: sysId, to: l.path[0], job: job.id, label: job.label, sent: this.year, arrive: l.times[0], state: 'sending' });
     }
     this.projects.push(job);
-    if (!firm) this.message(JA`${job.label}: 資材を周辺の星系から搬入中 (${p.aid ? JA`主人の ${this.system(this.gov(sysId).lord).name} から支援 ${Math.ceil(p.aid)} cr 相当` : JA`輸入費 ${Math.ceil(p.imp || 0)} cr`}、完成まで ${eta.toFixed(1)} 年)`, sysId);
+    // 着工の知らせは人間の国の注文だけ (AI の国の分まで出すと、記録の欄 (120 件) がすぐ埋まる。完成の知らせは前のとおり)
+    if (!firm && job.from.length) this.message(JA`${job.label}: 資材を周辺の星系から搬入中 (${p.aid ? JA`主人の ${this.system(this.gov(sysId).lord).name} から支援 ${Math.ceil(p.aid)} cr 相当` : JA`輸入費 ${Math.ceil(p.imp || 0)} cr`}、完成まで ${eta.toFixed(1)} 年)`, sysId);
+    else if (!firm && this.isHuman(this.realmOf(sysId))) this.message(JA`${job.label}: 着工した (完成まで ${eta.toFixed(1)} 年)`, sysId);
     return { ok: true };
   }
   pending(pred) { return this.projects.find(pred); }

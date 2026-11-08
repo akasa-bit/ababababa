@@ -204,6 +204,7 @@
 - EDITIONS.game.backoffYears (最後通牒の期限に思いとどまった家臣が、不満の年数を数え始めるまでの年数。値がなければ 0 = シミュレーション版。台帳の C22。回 SE13。`BACKOFF_YEARS`。数え始めは `gv.unrest.since` を先の年にして表す)
 - saveField: fortWear (船と戦争。src/ship/war-consts.js。要塞の傷: 星系ごとの、残っている区画の耐久の欠けた割合。依頼 FU-3。`docs/fleet-groups.md` の 8)
 - EDITIONS.game.fortWear (要塞の傷が次の艦隊戦にも残る。値がなければ残らない = シミュレーション版。依頼 FU-3。`FORT.wear`)
+- EDITIONS.game.build (建設期間 [基本の年, 1 段・1 隻ごとの上乗せ]。種類 upgrade・outpost・route・fort・warship。値がなければすぐ完成 = シミュレーション版。依頼 2026-11-08 の common-7。`core/game-consts.js` の `BUILD_TIME`・`docs/build-time.md`)
 - saveField: fgroups・gship (船と戦争。src/ship/war-consts.js。艦隊群の一覧と、駐留している群の艦の数。依頼 2026-11-07 の FU-1。`docs/fleet-groups.md`)
 - saveField: designs (船と戦争。src/ship/colonists.js。国ごとの入植船団の設計 { speed, cargo, ages } (船団は 400 隻 × 500 人に固定。FU-1 の版の ships は読み捨てる)。回 FU3・B-033・FU-2。`docs/colony.md`)
 - saveField: xrec (画面と最初の体験 (core に置く)。src/core/export-rec.js。データの書き出しの記録: 国 × 年などの表の行と、その年の途中の足し上げ。画面の版の試合だけ。回 GA11・B-196)

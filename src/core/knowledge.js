@@ -73,7 +73,7 @@
       prod: fl ? { ...fl.prod } : zeroRes(), cons: fl ? { ...fl.cons } : zeroRes(),
       ...(this.gship[id] ? { fg: this.fgAt(id) || undefined, fgn: this.fgCount(id) } : {}), // 艦隊群の艦の数 (依頼 FU-1。ship/fgroups.js)
       garrison: this.garrison[id] || 0, fort: this.forts?.[id] || 0, ...(this.fortWear?.[id] ? { fw: +this.fortWear[id].toFixed(2) } : {}), held: this.held[id] || 0, awe: this.awe[id] || 0, supply: this.supplied[id]?.k,
-      projects: this.projects.filter((j) => j.sys === id).map((j) => ({ type: j.type, n: j.n, col: j.col, fac: j.fac, body: j.body, to: j.to, kind: j.kind, start: j.start, ready: j.ready, label: j.label })),
+      projects: this.projects.filter((j) => j.sys === id).map((j) => ({ type: j.type, n: j.n, col: j.col, fac: j.fac, body: j.body, route: j.route, to: j.to, kind: j.kind, start: j.start, ready: j.ready, label: j.label })),
       // gdp = ならした GDP (財政のグラフ。回 GA9・B-059)
       credits: gv ? gv.credits : 0, bond: gv?.bond || 0, gdp: gv?.fr?.y || 0, hh: gv?.hh || 0, loan: gv?.loan || 0, income: gv ? this.income(id) : 0, lord: gv ? gv.lord : null, energy: gv?.E || 0, power: this.power(id),
       ...(() => { // その星系で効いている財政 (標準でないものだけ)

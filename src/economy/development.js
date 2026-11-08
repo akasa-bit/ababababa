@@ -34,23 +34,25 @@
       }
     }
   }
-  outpostCheck(sysId, bodyId) {
+  // stack: プレイヤーの命令なら、建設中でも次の段を予約できる (施設の upgrade と同じ。依頼 common-8)。q = 先に頼んだ同じ採掘基地の注文の数
+  outpostCheck(sysId, bodyId, stack = false) {
     const b = this.target(sysId, bodyId);
     const res = outpostRes(b);
     if (!res.length) return fail('採掘できる天体ではない');
     if (!res.some((r) => b.deposits?.[r] > 0.05)) return fail('採掘できる資源がない');
     if (!this.isColonized(sysId)) return fail('同じ星系に入植地が必要');
     if (this.colonyAt(sysId, bodyId, 'planet')) return fail('入植地が採掘している');
-    if (this.pending((j) => j.type === 'outpost' && j.sys === sysId && j.body === bodyId)) return fail('建設中');
-    if ((this.outpostAt(sysId, bodyId)?.lv || 0) >= 10) return fail('最大レベル');
-    return { ok: true };
+    const q = this.projects.filter((j) => j.type === 'outpost' && j.sys === sysId && j.body === bodyId).length;
+    if (q && !(stack && BUILD_TIME.outpost)) return fail('建設中');
+    if ((this.outpostAt(sysId, bodyId)?.lv || 0) + q >= 10) return fail(q ? '最大レベルまで予約した' : '最大レベル');
+    return { ok: true, q };
   }
-  buildOutpost(sysId, bodyId, prefix = '') {
-    const c = this.outpostCheck(sysId, bodyId);
+  buildOutpost(sysId, bodyId, prefix = '', stack = false) {
+    const c = this.outpostCheck(sysId, bodyId, stack);
     if (!c.ok) return c;
-    const o = this.outpostAt(sysId, bodyId);
-    const label = JA`${prefix}${this.target(sysId, bodyId).name} の採掘基地 ${o ? `Lv${o.lv + 1}` : '建設'}`;
-    return this.order(this.outpostCost(o, sysId), sysId, { type: 'outpost', body: bodyId, label });
+    const lv = (this.outpostAt(sysId, bodyId)?.lv || 0) + c.q; // 上げる前の段 (予約を重ねるときは、予約した段)
+    const label = JA`${prefix}${this.target(sysId, bodyId).name} の採掘基地 ${lv ? `Lv${lv + 1}` : '建設'}`;
+    return this.order(this.outpostCost({ lv }, sysId), sysId, { type: 'outpost', body: bodyId, label });
   }
 
   // --- 自動開発 ---
@@ -130,7 +132,11 @@
       const cols = this.coloniesIn(id).sort((a, b) => b.pop - a.pop);
       const tag = JA`[自動] `;
       const tryOrder = (cost, run) => (cost && this.funds(id) >= 2 * (cost.credits || 0) && !this.procure(cost, id).why ? run() : null);
+      // 建設期間 (依頼 2026-11-08 の common-7) のあいだも不足は続いて見えるので、その資源を増やす建設がこの星系で着工済み (資材を待っていない) なら、重ねて頼まない
+      const building = (r) => this.projects.some((j) => j.sys === id && !j.from?.length && ((j.type === 'upgrade' && j.fac === (r === 'food' ? 'farm' : r === 'goods' || r === 'hitech' ? 'factory' : 'mine'))
+        || (j.type === 'outpost' && outpostRes(sys.bodies.find((b) => b.id === j.body) || {}).includes(r))));
       for (const { r } of short) {
+        if (BUILD_TIME.upgrade && building(r)) continue;
         let done = null;
         if (r === 'food' || r === 'goods' || r === 'hitech') { // 高付加価値物品も工場で (回 KE5)
           const fac = r === 'food' ? 'farm' : 'factory';

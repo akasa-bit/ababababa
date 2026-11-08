@@ -142,12 +142,12 @@
     const col = d.col ? this.colonyByKey(d.col) : null;
     switch (act) {
       case 'send': case 'candsend': return this.dispatch(Number(d.from), sys, body, d.kind, d.regime); // regime = 新しい星系の政府の型 (入植のときに選ぶ。依頼 KE-5)
-      case 'upgrade': return col ? this.upgrade(col, d.fac) : fail('入植地がない');
+      case 'upgrade': return col ? this.upgrade(col, d.fac, true) : fail('入植地がない'); // 建設中なら次の段を予約する (依頼 common-8。採掘基地・交易路・要塞も)
       case 'route': return this.openRoute(sys, Number(d.dest));
       case 'route2': return this.openRoute(Number(d.a), Number(d.b));
-      case 'uproute': { const r = this.routes.find((x) => x.id === Number(d.route)); return r ? this.upgradeRoute(r) : fail('交易路がない'); }
+      case 'uproute': { const r = this.routes.find((x) => x.id === Number(d.route)); return r ? this.upgradeRoute(r, '', true) : fail('交易路がない'); }
       case 'warship': return this.buildWarship(sys, Number(d.n) || 1);
-      case 'fort': return this.fortUpgrade(sys); // 宇宙要塞 (船と戦争。ship/fort.js)
+      case 'fort': return this.fortUpgrade(sys, true); // 宇宙要塞 (船と戦争。ship/fort.js)
       case 'fleet': {
         const from = Number(d.from);
         if (this.stackRealm(from) !== this.cap) return fail('他国の艦隊には命令できない');
@@ -185,7 +185,7 @@
       case 'liberate': return this.liberate(sys, body);
       case 'train': return col ? this.trainTroop(col) : fail('入植地がない');
       case 'troopsend': return this.sendTroops(d.from, d.to, n);
-      case 'outpost': return this.buildOutpost(sys, body);
+      case 'outpost': return this.buildOutpost(sys, body, '', true);
       case 'focus': if (MARKET.buy) return fail('方針はなくなった (就業は値段で決まる)'); if (col && FOCUS[d.value]) { col.focus = d.value; return { ok: true }; } return fail('入植地がない');
       case 'peace': return this.offerPeace(sys);
       case 'rule': return this.setRule(sys, d.value);

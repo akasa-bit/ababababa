@@ -83,11 +83,12 @@ function routesSheet(app) {
     const b = g.system(r.b);
     const cap = g.routeCap(r);
     const use = g.routeUse(r);
-    const busy = busyText(g, (j) => j.type === 'route' && j.route === r.id);
+    // 拡張中でも次の段を予約できる (依頼 common-8。ship/ships-ui.js の buildPlan)
+    const Q = buildPlan(g, 'route', r.lv, (j) => j.type === 'route' && j.route === r.id, 'uproute', (d) => Number(d.route) === r.id);
     return TR`<tr><td>${goto(a)} ⇄ ${goto(b)}</td><td>${distance(a, b).toFixed(1)} ly</td><td>Lv${r.lv} <span class="muted">(輸送船 ${Math.round(g.routeShips(r))} 隻・${fmtAmt(cap)}/年)</span></td>
       <td>${fmtAmt(r.vol[0])}/年</td><td>${fmtAmt(r.vol[1])}/年</td><td class="${use > 0.9 ? 'bad' : ''}">${pct(Math.min(use, 1))}</td>
       <td>${top(r.transit[0])}</td><td>${top(r.transit[1])}</td>
-      <td>${costButton(g, `data-act="uproute" data-route="${r.id}"`, TR('拡張'), g.routeUpCost(r), r.a, busy)}</td></tr>`;
+      <td>${costButton(g, `data-act="uproute" data-route="${r.id}"`, Q.plan > r.lv ? TR`Lv${Q.plan + 1} を予約` : TR('拡張'), g.routeUpCost(r, Q.plan), r.a, Q.busy, g.buildYears('route', Q.plan)) + (Q.note ? `<small class="muted">${Q.note}</small>` : '')}</td></tr>`;
   }).join('');
   const cols = g.knownOwnSystems().sort((x, y) => x.name.localeCompare(y.name));
   const a = cols.some((s) => s.id === app.routeA) ? app.routeA : cols[0]?.id;

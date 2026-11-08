@@ -47,6 +47,22 @@ function busyText(g, pred) {
   const j = g.knownProjects().find(pred); // 地球から見えている建設中の事業
   return j ? TR`建設中 あと ${(j.ready - g.year).toFixed(1)} 年` : '';
 }
+// 建設の予約 (2026-11-08 のユーザーの依頼 common-8): 同じ物の建設中・予約中の注文 (地球から見えているもの。pred で選ぶ) と、
+// まだ届いていない自分の指令 (act と、指令の中身 d を sent で選ぶ) を数える。lv = いまの段 (見えている値)。
+// plan = 予約がみな済んだあとの段 (次のボタンはこの段から上げる)。note = 欄に添える文言 (予約がなければ空)。
+// 建設期間のない種類 (シミュレーション版) は前のとおり予約を重ねない: busy = 建設中ならボタンを止める文言
+function buildPlan(g, type, lv, pred, act, sent) {
+  if (!BUILD_TIME[type]) return { plan: lv, note: '', busy: busyText(g, pred) };
+  const jobs = g.knownProjects().filter(pred);
+  const k = g.requests.filter((q) => q.kind === 'order' && q.from === g.cap && q.act === act && q.arrive > g.year && sent(q.d)).length;
+  const plan = lv + jobs.length + k;
+  if (!jobs.length && !k) return { plan, note: '', busy: '' };
+  const last = jobs.reduce((t, j) => Math.max(t, j.ready), -Infinity);
+  const parts = [];
+  if (jobs.length) parts.push(last > g.year ? TR`あと ${(last - g.year).toFixed(1)} 年` : TR('完成したころ (知らせ待ち)'));
+  if (k) parts.push(TR`指令 ${k} 件が向かっている`);
+  return { plan, busy: '', note: jobs.length ? TR`建設中: Lv${plan} まで (${parts.join(TR('・'))})` : TR`予約: Lv${plan} まで (${parts.join(TR('・'))})` };
+}
 
 // 到着までの年数。着いているはずでも、到着の光が首都に届くまでは「着いたころ」と書く
 function arriveText(game, t) { return t > game.year ? TR`あと ${(t - game.year).toFixed(1)} 年` : TR('<span class="muted">着いたころ (知らせ待ち)</span>'); }
