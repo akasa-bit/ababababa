@@ -98,6 +98,15 @@ const COFOG = [
   { code: 'GF10', label: '社会保護', kinds: ['welfare', 'pension'], oecd: 0.40 },
 ];
 const COFOG_EXTRA = ['build', 'education', 'research']; // 収支の表 (LEDGER_LABEL) にない支出。政府ごとに gv.cof でならす (market-economy.js)
+// 年金と医療の水準 (ユーザーの依頼 2026-11-08 の common-4・QD-119 = a。docs/fiscal.md の 16.2): 予算と同じく標準を 100% として 0〜300% (刻み 5%)。値は f.budget.pension・f.budget.health。
+//   標準 = いまの式 (demography.js の ageSpendStep。年金 = govScale × pension × 高齢の割合 × 所得、医療 = govScale × health × (1 + 2 × 高齢の割合) × 所得)。国のどの星系の政府も、
+//   水準を掛けた額を払う (所得への税と同じく、変えた知らせが光速で届いた星系から)。標準から下げた分は、その星系の家計の所得の損として、税の損 (LOSS) と同じ道で
+//   家臣の忠誠度の目標と首都の議会の支持を下げる (上げれば上がる。policyLoss の age)。医療を下げても死亡率は変えない (まだ入れていない)
+const AGE_BUDGET = {
+  pension: { label: '年金', good: '国のどの星系の政府も、年金を標準のこの割合だけ払う。下げると浮くが、浮いた分が家計の所得の損になり、家臣の忠誠度の目標と議会の支持が下がる (所得の 1% の損で忠誠度 −0.97 点。所得への税と同じ重さ)' },
+  health: { label: '医療', good: '国のどの星系の政府も、医療の代金を標準のこの割合だけ払う。下げると浮くが、家計の損として年金と同じく忠誠度と議会の支持が下がる (死亡率はまだ変えない)' },
+};
+const BUDGET_KEYS = () => [...Object.keys(BUDGET), ...Object.keys(AGE_BUDGET)];
 // 予算の水準 (1 = 標準。ない手段は標準)・標準から動かした額 ÷ 税収 (負 = 浮く)・効き目 (−1〜+1)
 const budgetLv = (f, k) => f?.budget?.[k] ?? 1;
 const budgetExtra = (k, lv) => (lv - 1) * BUDGET[k].std;
@@ -148,7 +157,7 @@ const INEQ_Z = [-0.8416212335729143, -0.2533471031357997, 0.2533471031357997, 0.
 // 対数正規 (ばらつき s) の所得の 5 分位の分け前 (下から。合計 1)
 const quintShares = (s) => { const c = INEQ_Z.map((z) => normCdf(z - s)); return [c[0], c[1] - c[0], c[2] - c[1], c[3] - c[2], 1 - c[3]]; };
 const TARGET_RANGE = [0, 0.2], TARGET_STEP = 0.01, QE_RANGE = [0, 0.6], QE_STEP = 0.05, REPRESS_RANGE = [0, 0.04], REPRESS_STEP = 0.005;
-const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, cashcap: 1, rdcredit: 0.04, budget: { welfare: 1, security: 1, military: 1, education: 1, research: 1 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0, soe: 0, capctl: 0, land: 0, reserve: {}, floor: {} };
+const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, cashcap: 1, rdcredit: 0.04, budget: { welfare: 1, security: 1, military: 1, education: 1, research: 1, pension: 1, health: 1 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0, soe: 0, capctl: 0, land: 0, reserve: {}, floor: {} };
 const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の水準は政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)

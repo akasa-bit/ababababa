@@ -6,7 +6,7 @@ const J = require('../ci-judge');
 exports.ci = [{
   args: (c) => [c.shots],
   judge: J.byJson((j) => Object.values(j).every((v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1,1,1,0.05' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
-    && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.bad2.every((b) => b === false) && v.ok2 && v.ctax.join() === '0.1,0.05,true,1.935,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.noCap && v.cut && v.cutLedger.join() === 'true,true,-1,0' && v.oldSave.join() === '1.8,3,1' && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length), '財政の結果が違う'),
+    && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.bad2.every((b) => b === false) && v.ok2 && v.ctax.join() === '0.1,0.05,true,1.935,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.noCap && v.cut && v.cutLedger.join() === 'true,true,-1,0' && v.oldSave.join() === '1.8,3,1' && v.age && v.ageBack && v.ageLedger.every(Boolean) && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length), '財政の結果が違う'),
 }];
 if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
@@ -76,6 +76,17 @@ const { chromium } = require('playwright');
       pass();
       for (let i = 0; i < 12; i++) { keep(); g.advance(0.25); }
       res.cutLedger = [g.gov(0).ledger.welfare > 0, g.gov(0).ledger.security > 0, g.budgetAt(0, 0, 'welfare'), g.budgetAt(0, 0, 'military')];
+      // 年金と医療の水準 (QD-119): 年金 50%・医療 0% にすると、首都の政府が払う年金はほぼ半分、医療は 0 になり、家計の損 (policyLoss の age) が出て、遠い家臣にも光が届けば忠誠度の項が負になる
+      const pen0 = -(g.gov(0).ledger.pension || 0), med0 = -(g.gov(0).ledger.health || 0);
+      res.age = issue('fiscal', { pension: 0.5, health: 0 }).ok;
+      pass();
+      for (let i = 0; i < Math.ceil((g.sysDist(0, far) + 1) * 4) + 8; i++) { keep(); g.advance(0.25); }
+      const pen1 = -(g.gov(0).ledger.pension || 0), med1 = -(g.gov(0).ledger.health || 0);
+      const std = g.ageSpendStd(0).pen * (g.gov(0).apaid ?? 1); // 標準の年金 × 払えた割合 (前の項で資金を使い切っていると 1 より小さい)
+      res.ageLedger = [pen0 > 0 && Math.abs(pen1 / (0.5 * std) - 1) < 0.15, med0 > 0 && med1 < 0.05 * med0, g.policyLoss(0).age > 0, g.realmOf(far) !== 0 || g.loyaltyTerms(far).some((t) => t.label === '年金と医療の水準' && t.v < 0)];
+      if (!res.ageLedger.every(Boolean)) res.ageSeen = { pen0, pen1, std, apaid: g.gov(0).apaid, med0, med1, loss: g.policyLoss(0), terms: (g.loyaltyTerms(far) || []).map((t) => [t.label, t.v]) };
+      res.ageBack = issue('fiscal', { pension: 1, health: 1 }).ok;
+      pass();
       // 保存と読み込み
       const d = JSON.parse(JSON.stringify(buildSave(g)));
       const g2 = new Game(generateGalaxy({ seed: d.seed, starCount: 400, meanSpacing: 4, kind: d.galaxy === 'real' ? 'real' : 'flat', gen: d.gen || 1 }));
