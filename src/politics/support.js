@@ -16,7 +16,7 @@
     x += val(SUPPORT.values.tax, (taxRateOf(target.tax) - taxRateOf(f0.tax)) / R.tax);
     const dt = d('tariff') / R.tariff;
     x += val(SUPPORT.values.tariff, dt) - SUPPORT.skill * GM.log(5 * (G.quint?.[q] ?? groupQuint(q))) * dt; // 関税: 所得の低い分位ほど働き口を守る保護を支持する (分け前は星系の。回 KE11)
-    for (const b of Object.keys(BUDGET)) x += val(SUPPORT.values[b], ((target.budget?.[b] || 0) - (f0.budget?.[b] || 0)) / R.budget);
+    for (const b of Object.keys(BUDGET)) x += val(SUPPORT.values[b], (budgetExtra(b, budgetLv(target, b)) - budgetExtra(b, budgetLv(f0, b))) / R.budget); // 動かした額 ÷ 税収で (水準でなく)
     // 輸出禁止と禁輸 (回 KE9・B-008): 関税と同じく、生存の価値観 (排外) の集団ほど支持する (1 つ足すごとに関税を ref 上げるのと同じ重さ)
     const n = (k) => Object.keys(target[k] || {}).length - Object.keys(f0[k] || {}).length;
     x += val(SUPPORT.values.tariff, n('ban') + n('embargo'));
@@ -67,7 +67,7 @@
     if ((target.deficit || 0) !== (f0.deficit || 0)) out.push(JA`赤字の上限 ${p(target.deficit || 0)}`);
     if ((target.cashcap ?? FISCAL_DEFAULT.cashcap) !== (f0.cashcap ?? FISCAL_DEFAULT.cashcap)) out.push(target.cashcap ? JA`手元の資金の上限 税収の ${target.cashcap} 年分` : '手元の資金の上限なし'); // 回 KE15
     if ((target.rdcredit ?? FISCAL_DEFAULT.rdcredit) !== (f0.rdcredit ?? FISCAL_DEFAULT.rdcredit)) out.push(JA`研究開発の税額控除 ${p(target.rdcredit)}`);
-    for (const [k, b] of Object.entries(BUDGET)) if ((target.budget?.[k] || 0) !== (f0.budget?.[k] || 0)) out.push(JA`${b.label}の予算 ${Math.round((target.budget?.[k] || 0) * 100)}%`);
+    for (const [k, b] of Object.entries(BUDGET)) if (budgetLv(target, k) !== budgetLv(f0, k)) out.push(JA`${b.label}の予算 ${Math.round(budgetLv(target, k) * 100)}%`);
     if (['ceil', 'ration', 'ban', 'embargo', 'reserve', 'floor'].some((k) => JSON.stringify(target[k] || {}) !== JSON.stringify(f0[k] || {}))) out.push(this.ctlText(target) || JA`価格統制と交易の規制をやめる`); // 回 KE9
     if ((target.repress || 0) !== (f0.repress || 0)) out.push(JA`金融抑圧 ${((target.repress || 0) * 100).toFixed(1)} 点`); // 回 KE9 (B-009)
     if ((target.soe || 0) !== (f0.soe || 0)) out.push(JA`国有の割合 ${Math.round((target.soe || 0) * 100)}%`); // 回 KE9 (B-011)

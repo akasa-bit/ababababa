@@ -195,11 +195,11 @@
     const T = (this.tech[key] ??= { A: { farm: 1, mine: 1, ind: 1, hi: 1 } });
     if (!(R.Sc > 0)) { T.rd = { spend: 0, pub: 0, credit: 0, y: R.y }; return 0; }
     const root = Number(key), w = R.cost / R.Sc; // 研究者 1 人の費用 [cr/年] (国の平均)
-    // 予算の「研究」(人間の国だけ。budgetStep が首都の家計に払う): 払った額 ÷ 1 人の費用だけ公の研究者を足す。効くのは lag 年前の値の平均
-    const share = this.fiscalFor(root, root).budget?.research || 0, gv = this.govs[root];
-    const paid = this.isHuman(root) && share > 0 ? share * (gv?.bpaid ?? 1) * Math.max(0, gv?.ledger?.tax || 0) : 0;
+    // 予算の「研究」(人間の国だけ。budgetStep が首都の家計との間で動かす): 標準から動かした額 ÷ 1 人の費用だけ公の研究者を足す (下げたら減らす。曲線の政府の分まで)。効くのは lag 年前の値の平均
+    const gv = this.govs[root], extra = budgetExtra('research', this.budgetPaidLv(root, root, 'research'));
+    const paid = this.isHuman(root) && extra ? extra * Math.max(0, gv?.ledger?.tax || 0) : 0;
     const P = (T.pe ??= []);
-    const room = Math.max(0, (RND.max[0] / 100) * R.y - R.Sg * w), hired = Math.min(paid, room); // 政府の研究開発費の上限までに足せる額 [cr/年]
+    const room = Math.max(0, (RND.max[0] / 100) * R.y - R.Sg * w), hired = paid > 0 ? Math.min(paid, room) : Math.max(paid, -R.Sg * w); // 政府の研究開発費の上限までに足せる額・曲線の政府の分まで減らせる額 [cr/年]
     const Snow = w > 0 ? hired / w : 0; // いま予算で雇っている公の研究者
     if (!P.length || this.year - P[P.length - 1][0] >= 1 - 1e-9) P.push([this.year, Snow]);
     while (P.length > 1 && this.year - P[0][0] > RND.lag[1] + 1) P.shift();
@@ -207,7 +207,7 @@
     const Sx = lagged.length ? lagged.reduce((k, [, x]) => k + x, 0) / lagged.length : 0;
     // 会社の分の倍率: 税額控除 (首都で効いている率) と、公の研究者の呼び水
     const s = this.fiscalFor(root, root).rdcredit ?? FISCAL_DEFAULT.rdcredit, s0 = FISCAL_DEFAULT.rdcredit;
-    const want = GM.pow((1 - s) / (1 - s0), -RND.elastic) * (R.Sg > 0 ? GM.pow((R.Sg + Snow) / R.Sg, RND.crowd) : 1); // 呼び水はいまの公の研究者で
+    const want = GM.pow((1 - s) / (1 - s0), -RND.elastic) * (R.Sg > 0 && Snow > 0 ? GM.pow((R.Sg + Snow) / R.Sg, RND.crowd) : 1); // 呼び水はいまの公の研究者で (増やしたときだけ。弾力性は増やした側で測ったもの)
     const cap = R.priv > 0 ? Math.max(1, ((RND.max[1] / 100) * R.y) / R.priv) : 1; // 会社の研究開発費の上限 (曲線の分は超えていてもそのまま)
     T.m = (T.m ?? 1) + (Math.min(want, cap) - (T.m ?? 1)) * (1 - GM.exp(-h / RND.adjust));
     // 税額控除: 星系ごとの会社の研究開発費 × その星系で効いている控除の率 (首都の政府が払う)

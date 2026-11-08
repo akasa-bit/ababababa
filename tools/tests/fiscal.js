@@ -6,7 +6,7 @@ const J = require('../ci-judge');
 exports.ci = [{
   args: (c) => [c.shots],
   judge: J.byJson((j) => Object.values(j).every((v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1,1,1,0.05' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
-    && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.bad2.every((b) => b === false) && v.ok2 && v.ctax.join() === '0.1,0.05,true,1.935,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length), '財政の結果が違う'),
+    && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.bad2.every((b) => b === false) && v.ok2 && v.ctax.join() === '0.1,0.05,true,1.935,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.noCap && v.cut && v.cutLedger.join() === 'true,true,-1,0' && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length), '財政の結果が違う'),
 }];
 if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
@@ -35,16 +35,16 @@ const { chromium } = require('playwright');
       // 試すのは税の項なので、待つあいだに遠い星系が重税で離反しないよう落ち着かせておく (回 GA9 の CI で、重税の 6 年のあいだに独立して忠誠度の内訳が null になり止まった)
       const keep = () => { const gv = g.govs[far]; if (gv && gv.lord !== null) { gv.loyalty = Math.max(gv.loyalty ?? 0, 90); delete gv.unrest; delete gv.autonomy; } };
       g.pc = 50;
-      // 選べない値: 予算の合計が 10 割を超える・税率が幅の外 (40%)・利子率が刻みの外・前の段階の名前でないもの
-      res.bad = [issue('fiscal', { tax: 0.279, rate: 0.05, welfare: 0.6, security: 0.3, military: 0.2 }).ok, issue('fiscal', { tax: 0.4 }).ok, issue('fiscal', { rate: 0.051 }).ok, issue('fiscal', { tax: 'nope' }).ok];
-      res.ok = issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.1, military: 0.1 }).ok; // 前の段階の名前 (重税 = 15.5% × 1.8) も通る
+      // 選べない値: 予算が標準の 300% を超える・予算が刻み (5%) の外・税率が幅の外 (40%)・利子率が刻みの外・前の段階の名前でないもの
+      res.bad = [issue('fiscal', { tax: 0.279, rate: 0.05, welfare: 3.05 }).ok, issue('fiscal', { welfare: 1.01 }).ok, issue('fiscal', { tax: 0.4 }).ok, issue('fiscal', { rate: 0.051 }).ok, issue('fiscal', { tax: 'nope' }).ok];
+      res.ok = issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 1.5, security: 1.3, military: 1.3 }).ok; // 前の段階の名前 (重税 = 15.5% × 1.8) も通る
       pass();
       res.pc = 50 - g.pc; // 税と利子率を変えたので 5
       res.now = [+g.taxK(0).toFixed(3), +g.taxK(far).toFixed(3), g.fiscalFor(0, far).cb ?? 1, g.cbRateAt(0)]; // 所得への税は行政の遅れ (ADMIN_LAG.tax 年) のあいだ首都でもまだ前のまま、遠い星系も前のまま (1・中央銀行に任せたまま)。政策金利はすぐ効くので首都は自分で決める (0.05)
       const L0 = g.loyaltyTerms(far).map((t) => t.label);
       for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) { keep(); g.advance(0.25); }
       const pc0 = g.pc;
-      res.budgetOnly = [issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 0.2, security: 0.2, military: 0.1 }).ok, pc0 - g.pc]; // 予算だけなら政治力は要らない (0)
+      res.budgetOnly = [issue('fiscal', { tax: 'heavy', rate: 0.05, welfare: 1.5, security: 2, military: 2 }).ok, pc0 - g.pc]; // 予算だけなら政治力は要らない (0)
       pass();
       const cr0 = g.council;
       for (let i = 0; i < Math.ceil(res.far * 4) + 8; i++) { keep(); g.advance(0.25); }
@@ -69,6 +69,13 @@ const { chromium } = require('playwright');
       const led = g.gov(0).ledger;
       res.ledger = { welfare: led.welfare < 0, security: led.security < 0, military: led.military < 0, interest: !!led.interest }; // 利子は純額 (貯えの利子 − 国債の利子) なので、0 でなく記帳されていればよい
       res.council = +(g.council - cr0).toFixed(2);
+      // 合わせた上限はない (5 つとも 300%)。下げた手段は浮く (記帳が正 = 家計から政府へ) し、効き目は負 (ユーザーの依頼 2026-11-08 の common-3)
+      res.noCap = issue('fiscal', { welfare: 3, security: 3, military: 3, education: 3, research: 3 }).ok;
+      pass();
+      res.cut = issue('fiscal', { welfare: 0, security: 0, military: 1, education: 1, research: 1 }).ok;
+      pass();
+      for (let i = 0; i < 12; i++) { keep(); g.advance(0.25); }
+      res.cutLedger = [g.gov(0).ledger.welfare > 0, g.gov(0).ledger.security > 0, g.budgetAt(0, 0, 'welfare'), g.budgetAt(0, 0, 'military')];
       // 保存と読み込み
       const d = JSON.parse(JSON.stringify(buildSave(g)));
       const g2 = new Game(generateGalaxy({ seed: d.seed, starCount: 400, meanSpacing: 4, kind: d.galaxy === 'real' ? 'real' : 'flat', gen: d.gen || 1 }));
