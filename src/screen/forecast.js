@@ -22,11 +22,13 @@ function forecastSent(g, after) {
     if (q.kind !== 'order' || q.id <= after || (q.by ?? 0) !== g.cap || forecastOf(q.id)) continue;
     const p = obeyChance(g, q.to, q.act, q.arrive);
     let short = p < 1 ? TR`従う見込み ${Math.round(p * 100)}%` : '';
-    // 艦隊を敵の星系へ: いま知っている守りの数で、着いた先で勝つ見込み (FU2 の battleOdds。試合の筋は変えない)
+    // 艦隊を敵の星系へ: いま知っている守りの数と宇宙要塞 (段と傷) で、着いた先で勝つ見込み (FU2 の battleOdds。試合の筋は変えない)
+    // (前は要塞を数えておらず、要塞のある首都への見込みが高く出ていた。依頼 FU-1 のあとの質問・FU-3)
     if (q.act === 'fleet' && q.d?.sys !== undefined) {
       const tgt = Number(q.d.sys), realm = tgt === g.cap ? g.cap : g.known(tgt)?.realm;
-      const nd = realm !== undefined && realm !== null && realm !== g.cap && g.knownEnemiesOf(g.cap).includes(realm) ? g.knownGarrison(tgt) : 0;
-      if (nd > 0) short = TR`${g.system(tgt).name}で勝つ見込み ${Math.round(100 * g.battleOdds(Number(q.d.n) || g.knownGarrison(q.to), nd))}% (守り ${Math.round(nd)} 艦隊として)`;
+      const enemy = realm !== undefined && realm !== null && realm !== g.cap && g.knownEnemiesOf(g.cap).includes(realm);
+      const nd = enemy ? g.knownGarrison(tgt) : 0, nf = enemy ? g.knownFort(tgt) : 0, fw = nf ? g.knownFortWear(tgt) : 0;
+      if (nd > 0 || nf > 0) short = TR`${g.system(tgt).name}で勝つ見込み ${Math.round(100 * g.battleOdds(Number(q.d.n) || g.knownGarrison(q.to), nd, 1, 1, nf, fw))}% (守り ${Math.round(nd)} 艦隊${nf ? TR` + 宇宙要塞 Lv${nf}${fortHpText(fw)}` : ''} として)`;
     }
     const x = { id: q.id, label: q.label, to: q.to, act: q.act, sent: q.sent, arrive: q.arrive, p, short };
     Forecast.list.push(x);

@@ -827,7 +827,8 @@ class GalaxyView {
         ctx.fillStyle = realmColor(k.realm);
         ctx.fillRect(x + rr + 4 + w * frac, y + rr + 4, w * (1 - frac), 4);
         // 札 (依頼 FU-1): 両軍の数・要塞の区画・始まる前の攻め側の見込み。下の段に、攻め側と守り側の沈んだ艦と退いた艦 (いま退いている艦を含む)
-        const fortT = bt.fort ? TR`+要塞${bt.fort}` : '', oddsT = bt.odds !== null && bt.odds !== undefined ? TR`・見込み${Math.round(bt.odds * 100)}%` : '';
+        // 要塞の区画のあとの (60%) は、区画の残りの耐久 (前の戦いの傷を含む。依頼 FU-3)
+        const fortT = bt.fort ? TR`+要塞${bt.fort}${bt.fhp !== null && bt.fhp !== undefined && bt.fhp < 0.995 ? `(${Math.round(bt.fhp * 100)}%)` : ''}` : '', oddsT = bt.odds !== null && bt.odds !== undefined ? TR`・見込み${Math.round(bt.odds * 100)}%` : '';
         this.labels.push({ text: TR`艦隊戦 ${Math.ceil(bt.a)}対${Math.ceil(bt.d)}${fortT}${oddsT}`, font: 'bold 12px sans-serif', color: '#ff6b6b', prio: 2, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 4, y + rr], [x - rr - 4 - w, y + rr]] });
         if (bt.sunk) this.labels.push({ text: TR`攻 沈${bt.sunk[0]}・退${bt.esc[0] + (bt.going?.[0] || 0)} / 防 沈${bt.sunk[1]}・退${bt.esc[1] + (bt.going?.[1] || 0)}`, font: '11px sans-serif', color: '#ff9b9b', prio: 1, alpha: ctx.globalAlpha, at: (w) => [[x + rr + 4, y + rr + 22], [x - rr - 4 - w, y + rr + 22]] });
       }

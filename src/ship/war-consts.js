@@ -66,7 +66,10 @@ const STRIKE = { survive: 0.001, retaliate: 0.6, retaliateHit: 1, reach: 40, loy
 // 段を上げる費用 = cost × growth^(いまの段 − 1) (建設の注文と同じく資材を集めてから完成)。
 // 艦隊戦では、段の数だけ「要塞の区画」が防衛側に加わる: 耐久 hp (艦の hp 倍)、撃ち合いは艦と同じ、退かない、組織力は減らない。
 // 沈んだ区画の数だけ段が下がる (攻め落とされれば 0。建て直しは手動)。艦隊がいなくても要塞があれば、攻める艦隊は先に艦隊戦をする
-const FORT = { max: 10, auto: 1, hp: 3, cost: { credits: 200, metal: 100 }, growth: 1.35, aiGoal: 3 };
+// 要塞の傷 (2026-11-07 のユーザーの依頼 FU-3。docs/fleet-groups.md の 8): 艦隊戦のあとに残った区画の傷は、次の艦隊戦にも残る
+// (星系ごとの fortWear = 区画の耐久の欠けた割合)。戦っていないあいだ、年に repair ずつ費用なしで直る。段を上げると、新しい区画は無傷なので傷の割合は薄まる。
+// 傷が残るのはゲーム版だけ (wear = EDITIONS.game.fortWear。シミュレーション版は前のとおり、残った区画は次の戦いで無傷に戻る。シミュレーション版の R08 (従属国の独立までの年) を動かさないため)
+const FORT = { max: 10, auto: 1, hp: 3, cost: { credits: 200, metal: 100 }, growth: 1.35, aiGoal: 3, repair: 0.25, wear: !!ED.fortWear };
 // AI の国の攻め方と守り方 (B-168。回 FU5): いちばん艦隊の多い自国の星系 (minFleet 艦隊以上) から、
 // 1. 救援: 首都に届いた記録で敵に攻囲されている自国の星系があれば、勝つ見込み (battleOdds) が relief 以上なら、まずそこへ全艦隊 (1 つ残す) を送る
 // 2. 攻撃: そうでなければ、range 光年以内の敵の星系 (人間の国は除く) の近い順に、首都に見えている駐留 + 要塞の段より多く送れるもの (前からの形)、または近い tries 個のうち勝つ見込み (battleOdds) が attack 以上のもの
@@ -77,7 +80,11 @@ const AI_WAR = { relief: 0.5, attack: 0.5, tries: 3, range: 20, minFleet: 3 };
 function fmtDead(n) { return n >= 1e8 ? JA`${(n / 1e8).toFixed(1)} 億人` : n >= 1e4 ? JA`${Math.round(n / 1e4)} 万人` : JA`${Math.round(n)} 人`; } // 出来事の文にも入るので、端末ごとに違う toLocaleString は使わない
 // 艦隊戦の報告の 1 行 (battleReports の 1 つから)
 function battleText(r) {
-  return JA`${(r.end - r.start).toFixed(1)} 年、攻撃 ${r.a0} 艦隊 (沈没 ${r.sunk[0]}・退却 ${r.esc[0]}) 対 防衛 ${r.d0} 艦隊 (沈没 ${r.sunk[1]}・退却 ${r.esc[1]})、戦死 ${fmtDead(r.dead)}${r.odds !== null && r.odds !== undefined ? JA`。始まる前の攻撃側の見込み ${Math.round(r.odds * 100)}%` : ''}`;
+  // 要塞 (依頼 FU-3): 壊した区画と、残った区画の耐久 (傷は次の戦いにも残る)
+  const hp = Math.round((1 - (r.fw?.[1] || 0)) * 100);
+  const fort = !r.fort ? '' : r.fort[1] >= r.fort[0] ? JA`、宇宙要塞の区画 ${r.fort[0]} をすべて壊した`
+    : r.fort[1] ? JA`、宇宙要塞の区画 ${r.fort[0]} のうち ${r.fort[1]} を壊した (残った区画の耐久 ${hp}%)` : JA`、宇宙要塞の区画 ${r.fort[0]} は残った (耐久 ${hp}%)`;
+  return JA`${(r.end - r.start).toFixed(1)} 年、攻撃 ${r.a0} 艦隊 (沈没 ${r.sunk[0]}・退却 ${r.esc[0]}) 対 防衛 ${r.d0} 艦隊 (沈没 ${r.sunk[1]}・退却 ${r.esc[1]})${fort}、戦死 ${fmtDead(r.dead)}${r.odds !== null && r.odds !== undefined ? JA`。始まる前の攻撃側の見込み ${Math.round(r.odds * 100)}%` : ''}`;
 }
 // 光速で届く途中の講和の申し入れ・講和会議の知らせ (B-030。届いたら peaceOffers・conferences へ移す)。なければ書かない
 saveField('peaceSent', (game) => (game.peaceSent.length ? game.peaceSent : undefined), {
@@ -121,6 +128,11 @@ const FG = { roles: ['atk', 'hold'], rets: ['org', 'never'], max: 20 };
 const FG_ROLE_LABEL = { atk: '攻撃', hold: '守備', gone: '解いた' };
 const FG_RET_LABEL = { org: '組織力で退く', never: '退かない' };
 // 群の一覧 [{ id, realm, name, role, ret, base, at (決まりを変えた年), from (変えた首都), prev (前の決まり) }] と、駐留している群の艦の数 { [星系]: { [群]: 数 } }。なければ書かない
+// 要塞の傷 (依頼 FU-3): { 星系: 区画の耐久の欠けた割合 (0〜1) }。傷のない星系は書かない
+saveField('fortWear', (game) => (Object.keys(game.fortWear).length ? game.fortWear : undefined), {
+  init: (game) => { game.fortWear = {}; },
+  read: (game, d) => { game.fortWear = d.fortWear && typeof d.fortWear === 'object' ? Object.fromEntries(Object.entries(d.fortWear).filter(([, v]) => Number.isFinite(v) && v > 0 && v < 1)) : {}; },
+});
 saveField('fgroups', (game) => (game.fgroups.length ? game.fgroups : undefined), {
   init: (game) => { game.fgroups = []; },
   read: (game, d) => { game.fgroups = Array.isArray(d.fgroups) ? d.fgroups.filter((x) => x && Number.isFinite(x.id) && Number.isFinite(x.realm)) : []; },
