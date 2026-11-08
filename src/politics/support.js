@@ -68,6 +68,7 @@
     if ((target.cashcap ?? FISCAL_DEFAULT.cashcap) !== (f0.cashcap ?? FISCAL_DEFAULT.cashcap)) out.push(target.cashcap ? JA`手元の資金の上限 税収の ${target.cashcap} 年分` : '手元の資金の上限なし'); // 回 KE15
     if ((target.rdcredit ?? FISCAL_DEFAULT.rdcredit) !== (f0.rdcredit ?? FISCAL_DEFAULT.rdcredit)) out.push(JA`研究開発の税額控除 ${p(target.rdcredit)}`);
     for (const [k, b] of Object.entries(BUDGET)) if (budgetLv(target, k) !== budgetLv(f0, k)) out.push(JA`${b.label}の予算 ${Math.round(budgetLv(target, k) * 100)}%`);
+    for (const [k, b] of Object.entries(AGE_BUDGET)) if (budgetLv(target, k) !== budgetLv(f0, k)) out.push(JA`${b.label}の水準 ${Math.round(budgetLv(target, k) * 100)}%`); // QD-119
     if (['ceil', 'ration', 'ban', 'embargo', 'reserve', 'floor'].some((k) => JSON.stringify(target[k] || {}) !== JSON.stringify(f0[k] || {}))) out.push(this.ctlText(target) || JA`価格統制と交易の規制をやめる`); // 回 KE9
     if ((target.repress || 0) !== (f0.repress || 0)) out.push(JA`金融抑圧 ${((target.repress || 0) * 100).toFixed(1)} 点`); // 回 KE9 (B-009)
     if ((target.soe || 0) !== (f0.soe || 0)) out.push(JA`国有の割合 ${Math.round((target.soe || 0) * 100)}%`); // 回 KE9 (B-011)

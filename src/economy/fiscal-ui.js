@@ -73,8 +73,15 @@ function fiscalHtml(g) {
     ${(() => { // 年金と医療 (回 KE2)。首都の星系の年齢と、払った額
       const c = g.coloniesIn(g.cap).sort((a, b) => b.pop - a.pop)[0];
       const L = cg.ledger || {};
+      // 年金と医療の水準 (QD-119): 国の星系の標準の額の合計と、スライダーの値 (審議中なら出した値) で払う額、首都の家計の損
+      const S = g.realmSystems(g.cap).reduce((a, x) => { const s = g.ageSpendStd(x.id); return { pen: a.pen + s.pen, med: a.med + s.med }; }, { pen: 0, med: 0 });
+      const ageLoss = g.policyLoss(g.cap, f).age || 0;
+      const ageRows = TR`<table class="tbl">${Object.entries(AGE_BUDGET).map(([k, b]) => {
+        const lv = budgetLv(f, k), std = k === 'pension' ? S.pen : S.med, d = (lv - 1) * std;
+        return `<tr><td>${ico(BUDGET_ICON[k])}${b.label}の水準</td><td>${slider(k, BUDGET_RANGE, BUDGET_STEP, lv, 'pct0', TR`${b.label}の水準`)}</td><td>${lv === 1 ? TR`<span class="muted">標準</span>` : d > 0 ? TR`+${fmtAmt(d)} cr/年 多く払う` : TR`${fmtAmt(-d)} cr/年 浮く`}<br><span class="muted">${TR`標準 ${fmtAmt(std)} cr/年 (国の星系の合計)`}</span></td><td class="muted wrap">${esc(b.good)}</td></tr>`;
+      }).join('')}</table>${Math.abs(ageLoss) > 1e-9 ? TR`<p class="note ${ageLoss > 0 ? 'bad' : ''}">年金と医療の水準で、${ME.capName}の家計の所得の ${ageLoss > 0 ? '−' : '+'}${Math.abs(ageLoss * 100).toFixed(1)}% (家臣の忠誠度の目標 ${ageLoss > 0 ? '−' : '+'}${Math.abs(LOSS.loyalty * ageLoss).toFixed(1)}・議会の支持 年 ${ageLoss > 0 ? '−' : '+'}${Math.abs(LOSS.council * ageLoss).toFixed(2)})</p>` : ''}`;
       return c ? TR`<h3>年齢と、年金・医療</h3><table class="tbl"><tr><td>${esc(c.name)}の年齢</td><td>${ageBarHtml(g.ageShares(c))}</td></tr>
-        <tr><td>年金・医療</td><td>${fmtAmt(-(L.pension || 0))} cr/年・${fmtAmt(-(L.health || 0))} cr/年${(cg.apaid ?? 1) < 0.99 ? TR` <span class="bad">(資金が足りず ${pct(cg.apaid)} しか払えていない)</span>` : ''} <span class="muted">高齢 (65 歳〜。ゲームの年数は 100 ÷ 28 倍) が多いほど増える。政府が自動で払う</span></td></tr></table>` : '';
+        <tr><td>年金・医療</td><td>${fmtAmt(-(L.pension || 0))} cr/年・${fmtAmt(-(L.health || 0))} cr/年${(cg.apaid ?? 1) < 0.99 ? TR` <span class="bad">(資金が足りず ${pct(cg.apaid)} しか払えていない)</span>` : ''} <span class="muted">高齢 (65 歳〜。ゲームの年数は 100 ÷ 28 倍) が多いほど増える。国のどの星系の政府も、下の水準を掛けて払う</span></td></tr></table>` + ageRows : '';
     })()}
     <h3>予算 (機能ごとに標準を 100% として 0〜${BUDGET_RANGE[1] * 100}%。${ME.capName}の税収 ${fmtAmt(tax)} cr/年 に対して、標準から ${net > 1e-9 ? TR`+${fmtAmt(net * tax)} cr/年 多く使う` : net < -1e-9 ? TR`${fmtAmt(-net * tax)} cr/年 浮く` : '動かしていない'})</h3>
     <p class="note">標準の分は政府のふだんの支出に入っている。上げると標準より多く払い、下げると浮く (首都の家計への給付・給料・買い付けが減る)。効き目は 100% で 0、300% で表の最大、0% で逆向きに同じ大きさ。</p>

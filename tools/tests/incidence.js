@@ -19,10 +19,11 @@ const res = {}, near = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol * Math.max(1
 const ids = g.realmSystems(g.cap).map((s) => s.id).filter((id) => g.isColonized(id));
 const Y = ids.reduce((a, id) => a + g.hhIncomeOf(id), 0);
 // 1. 帰着の表 (標準から、すべての手段を動かした財政へ)
-const f1 = { ...FISCAL_DEFAULT, tax: 0.2, ctax: 0.1, tariff: 0.05, rate: 0.04, cb: 0, rdcredit: 0.1, budget: { ...FISCAL_DEFAULT.budget, welfare: 1.4, education: 1.35, military: 2.4 } }; // 予算は標準を 1 とする水準 (2026-11-08 の common-3)
+const f1 = { ...FISCAL_DEFAULT, tax: 0.2, ctax: 0.1, tariff: 0.05, rate: 0.04, cb: 0, rdcredit: 0.1, budget: { ...FISCAL_DEFAULT.budget, welfare: 1.4, education: 1.35, military: 2.4, pension: 0.8 } }; // 予算は標準を 1 とする水準 (2026-11-08 の common-3)
 const rows = g.incidenceOf(g.cap, f1, FISCAL_DEFAULT), by = Object.fromEntries(rows.map((r) => [r.k, r]));
 res.rows = ['tax', 'ctax', 'rate', 'welfare', 'education', 'military'].every((k) => by[k]); // 関税と研究開発の税額控除は、輸入と会社の研究開発がなければ行がない
 res.zeroSum = rows.every((r) => near(r.hh + r.fm + r.gov + r.row, 0, 1e-9));
+res.ageRow = !!by.pension && by.pension.hh < 0 && near(by.pension.gov, -by.pension.hh); // 年金を 80% に下げると家計が損をし、政府が同じだけ浮く (QD-119)
 res.taxHH = Y > 0 && near(by.tax.hh, -(0.2 - FISCAL_DEFAULT.tax) * Y);
 res.qSum = rows.every((r) => near(r.q.reduce((a, v) => a + v, 0), Object.values(r.sys).reduce((a, s) => a + s.hh + s.fm * s.own, 0)));
 const rel = (r, q) => r.q[q] / (Y * sim.tables.GROUPS.quint[q] / sim.tables.GROUPS.quint.reduce((a, v) => a + v, 0));

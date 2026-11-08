@@ -171,5 +171,5 @@ const MANDATE_ICON = { balanced: 'md-balanced', expand: 'md-expand', develop: 'd
 const PACT_ICON = { nap: 'peace', ally: 'friend', trade: 'route' };
 // 帝国の中のタブと予算の項目のアイコン (目標・交易路・移民・軍事は、いまある時代の課題・交易路・移民・戦争のアイコンを使い回す)
 const EMPIRE_TAB_ICON = { overview: 'overview', goals: 'goal', vassals: 'vassal', routes: 'route', migration: 'migration', military: 'war', politics: 'politics' };
-const BUDGET_ICON = { welfare: 'pop', security: 'loyalty', military: 'fleet', education: 'education', research: 'research' };
+const BUDGET_ICON = { welfare: 'pop', security: 'loyalty', military: 'fleet', education: 'education', research: 'research', pension: 'pop', health: 'pop' };
 const ico = (k) => (ICONS[k] ? `<svg class="ico" viewBox="${ICONS[k][0]}" aria-hidden="true">${ICONS[k][1]}</svg>` : '');

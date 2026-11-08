@@ -172,17 +172,24 @@
     const g = (E.away ??= { p: Array(DEMO.bins).fill(0), s: Array(DEMO.bins).fill(0), q: Array(DEMO.bins).fill(0) });
     for (let a = 0; a < DEMO.bins; a++) this.eduAdd(g, a, (n * mig[a]) / ms, Array.isArray(S) ? S[a] : S, Array.isArray(Q) ? Q[a] : Q);
   }
+  // 標準の年金と医療 [cr/年] (星系 id の入植地の合計。水準を掛ける前): { pen, med }
+  ageSpendStd(id) {
+    let pen = 0, med = 0;
+    for (const c of this.coloniesIn(id)) {
+      const y = MARKET.buy ? c.incY ?? this.incomeOf(c) : 0, s = this.ageShares(c); // 所得は、この刻みの消費の所で計算したもの
+      pen += DEMO.govScale * DEMO.pension * s.old * y;
+      med += DEMO.govScale * DEMO.health * (1 + (DEMO.oldCost - 1) * s.old) * y;
+    }
+    return { pen, med };
+  }
   // 政府の年金と医療 (10-3 の c)。星系の政府が、その星系の家計に年金を、会社に医療の代金を払う。人間が動かす首都は、手元の資金の分だけ払う (払えた割合 apaid)
+  // 年金と医療は、国の財政の水準 (QD-119。標準 1・0〜3。光の遅れのある財政の値で) を掛けて払う。人間でない国はいつも標準
   ageSpendStep(h) {
     for (const key of Object.keys(this.govs)) {
       const id = Number(key), gv = this.govs[key];
       if (!this.isColonized(id)) continue;
-      let pen = 0, med = 0;
-      for (const c of this.coloniesIn(id)) {
-        const y = MARKET.buy ? c.incY ?? this.incomeOf(c) : 0, s = this.ageShares(c); // 所得は、この刻みの消費の所で計算したもの
-        pen += DEMO.govScale * DEMO.pension * s.old * y;
-        med += DEMO.govScale * DEMO.health * (1 + (DEMO.oldCost - 1) * s.old) * y;
-      }
+      const std = this.ageSpendStd(id), fs = this.fiscalAt(id);
+      const pen = std.pen * budgetLv(fs, 'pension'), med = std.med * budgetLv(fs, 'health');
       const want = (pen + med) * h;
       if (!(want > 0)) continue;
       const f = this.isHuman(id) && !this.spectate ? clamp(Math.max(0, gv.credits) / want, 0, 1) : 1;
