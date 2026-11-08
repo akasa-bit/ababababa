@@ -1,0 +1,54 @@
+[
+ {
+  "file": "wdi_countries.csv",
+  "url": "https://api.worldbank.org/v2/country?format=json&per_page=400",
+  "fetched": "2026-11-08T10:22:12Z",
+  "sha256": "268cadd41e1e94ddb4a81f8a1bb49edd67ad67e497ea0f12ab4feb3cdb5e12e8",
+  "bytes": 10408,
+  "rows": 217,
+  "filter": "地域の集計を除く (region.id が NA でないもの)・列 id,name,region,incomeLevel"
+ },
+ {
+  "file": "wdi_health.csv.gz",
+  "url": "https://api.worldbank.org/v2/country/all/indicator/{SH.XPD.GHED.GD.ZS,SH.XPD.CHEX.GD.ZS,SH.XPD.GHED.CH.ZS,NY.GDP.PCAP.PP.KD,SP.POP.TOTL,SP.DYN.AMRT.MA,SP.DYN.AMRT.FE,SP.REG.DTHS.ZS}?format=json&date=1995:2022",
+  "fetched": "2026-11-08T10:22:15Z",
+  "sha256": "1b68859db55c48a8f05aa52ca8b76d568058a14dd65f27e97bbf2fb272be525a",
+  "bytes": 337130,
+  "rows": 37223,
+  "lastupdated": {
+   "SH.XPD.GHED.GD.ZS": "2026-10-08",
+   "SH.XPD.CHEX.GD.ZS": "2026-10-08",
+   "SH.XPD.GHED.CH.ZS": "2026-10-08",
+   "NY.GDP.PCAP.PP.KD": "2026-10-08",
+   "SP.POP.TOTL": "2026-10-08",
+   "SP.DYN.AMRT.MA": "2026-10-08",
+   "SP.DYN.AMRT.FE": "2026-10-08",
+   "SP.REG.DTHS.ZS": "2026-10-08"
+  },
+  "filter": "国だけ (wdi_countries.csv にあるもの)・1995〜2022 年・値のない行を除く"
+ },
+ {
+  "file": "ucdp_prio_acd_261.csv.gz",
+  "url": "https://ucdp.uu.se/downloads/ucdpprio/ucdp-prio-acd-261-csv.zip",
+  "fetched": "2026-11-08T10:22:15Z",
+  "sha256": "78c7ef43fbad66c21fcc31076da54d60247f200b8e310fd701a31fa22c02f260",
+  "bytes": 44237,
+  "source_sha256": "5f951743222964674a446e32a5a871077b29bd13349588d85fc59953d89c878a",
+  "member": "UcdpPrioConflict_v26_1.csv",
+  "member_sha256": "2aea044f1bcae7b050bb6c79fb796743e787edeed3b90e74e146cfc4e5b05447",
+  "rows": 2817,
+  "filter": "zip の中の CSV をそのまま gzip にしたもの (行も列も削らない)"
+ },
+ {
+  "file": "ucdp_brd_conf_261.csv.gz",
+  "url": "https://ucdp.uu.se/downloads/brd/ucdp-brd-conf-261-csv.zip",
+  "fetched": "2026-11-08T10:22:16Z",
+  "sha256": "f84cfe54f2d315f233359138c748db91ecbb61965464e24d066836fa0e4c5167",
+  "bytes": 39010,
+  "source_sha256": "a88c81fb727f10a689ff0084bacf78e6fbfaadbbe925a608f6e7be2f44a6141e",
+  "member": "BattleDeaths_v26_1_conf.csv",
+  "member_sha256": "b34ecb57f1fc0e73d4bfd7b080212da429af3135a8d360b1c902e45506f81147",
+  "rows": 1650,
+  "filter": "zip の中の CSV をそのまま gzip にしたもの (行も列も削らない)"
+ }
+]
