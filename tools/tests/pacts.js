@@ -93,14 +93,19 @@ const callOf = () => g.decisions.find((x) => x.kind === 'pact' && x.type === 'ca
 let call = callOf();
 while (!call && g.year < t0 + dhme + 2) { g.advance(0.25); call = callOf(); }
 check(call && call.enemy === f2 && call.ally === h && g.year >= t0 + dhme - 1e-9, '人間の同盟国に「参戦するか」が届かない、か光より速く届いた');
+let s1b = null; // 人間の国が破約する前の、AI の同盟国から見た人間の国との交易協定の点
 if (call) {
+  s1b = g.pactScore(al, g.cap, 'trade').s;
   const c0 = g.council;
   g.pc = 100;
   g.command('decide', { sys: call.sys, id: call.id, opt: 'refuse' });
   check(!g.diplo.pacts.some((x) => x.id === 9001) && g.pactBreaches(g.cap) === 1 && g.council <= c0 - T.PACT.breachCouncil + 1e-9, `参戦を断っても破約にならない (${g.pactBreaches(g.cap)}・議会 ${c0} → ${g.council})`);
 }
-const s0 = g.pactScore(al, e === al ? f : e, 'trade').s, s1 = g.pactScore(al, g.cap, 'trade').s;
-check(s1 < s0 || g.atWar(al, g.cap), `破約の多い国の申し入れが受けにくくなっていない (${s1.toFixed(2)} / ${s0.toFixed(2)})`);
+// 比べる国にも同じ数の破約があると点が同じになる (試合の筋による。2026-11-08 に要塞の傷で筋が変わって起きた)。そのときは、人間の国の破約の前と後で比べる
+const other = e === al ? f : e;
+const s0 = g.pactScore(al, other, 'trade').s, s1 = g.pactScore(al, g.cap, 'trade').s;
+const fewer = g.pactBreaches(other) < g.pactBreaches(g.cap);
+check(g.atWar(al, g.cap) || (fewer ? s1 < s0 : s1b !== null && s1 < s1b), `破約の多い国の申し入れが受けにくくなっていない (${s1.toFixed(2)} / ${fewer ? `破約の少ない国 ${s0.toFixed(2)}` : `破約の前 ${s1b?.toFixed(2)}`})`);
 
 // 5
 const q2 = g.pactBetween(f, g.cap, 'nap');

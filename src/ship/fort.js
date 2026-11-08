@@ -39,6 +39,7 @@
   // 艦隊戦が終わったとき (攻め側が退いた・終戦・攻め落とした): 残った区画の耐久から傷を覚える。
   // 戦いのあとに建った区画 (戦いに出ていない分) は無傷として数える。攻め落とされて区画が残らなければ傷も消える
   fortWearKeep(b) {
+    if (!FORT.wear) return; // シミュレーション版は傷を残さない (FORT.wear)
     const lv = this.fortLevel(b.sys);
     if (!lv) { delete this.fortWear[b.sys]; return; }
     const fs = (b.ud || []).filter((x) => x[3]).slice(0, lv);
