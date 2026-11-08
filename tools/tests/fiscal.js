@@ -6,7 +6,7 @@ const J = require('../ci-judge');
 exports.ci = [{
   args: (c) => [c.shots],
   judge: J.byJson((j) => Object.values(j).every((v) => v.ok && v.bad.every((b) => b === false) && v.pc === 5 && v.now.join() === '1,1,1,0.05' && v.budgetOnly.join() === 'true,0' && v.later.join() === '1.8,0.05'
-    && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.bad2.every((b) => b === false) && v.ok2 && v.ctax.join() === '0.1,0.05,true,1.935,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.noCap && v.cut && v.cutLedger.join() === 'true,true,-1,0' && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length), '財政の結果が違う'),
+    && v.loyalty.join() === 'false,true,true' && v.fine.join() === 'true,0.2,-0.0075,0.075' && v.bad2.every((b) => b === false) && v.ok2 && v.ctax.join() === '0.1,0.05,true,1.935,true' && v.hazard && v.fleet[1] > v.fleet[0] && Object.values(v.ledger).every(Boolean) && v.noCap && v.cut && v.cutLedger.join() === 'true,true,-1,0' && v.oldSave.join() === '1.8,3,1' && v.saveLoad && Math.abs(v.ui - 0.095) < 1e-9 && v.wide[0] === v.wide[1] && !v.errs.length), '財政の結果が違う'),
 }];
 if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
@@ -80,6 +80,10 @@ const { chromium } = require('playwright');
       const d = JSON.parse(JSON.stringify(buildSave(g)));
       const g2 = new Game(generateGalaxy({ seed: d.seed, starCount: 400, meanSpacing: 4, kind: d.galaxy === 'real' ? 'real' : 'flat', gen: d.gen || 1 }));
       res.saveLoad = g2.restore(d) && JSON.stringify(g2.players[0].fiscal) === JSON.stringify(g.players[0].fiscal) && g2.taxK(far) === g.taxK(far);
+      // 前の版のセーブ (bv がない) の予算は「標準に足す税収の割合」なので、読み込みで水準 1 + 割合 ÷ 標準 に直る (刻み 5% に丸め、300% で止める。2026-11-08 の common-3)
+      const d0 = JSON.parse(JSON.stringify(d)); delete d0.bv; d0.players[0].fiscal.budget = { welfare: 0.2, security: 0, military: 0.6, education: 0, research: 0 };
+      const g3 = new Game(generateGalaxy({ seed: d0.seed, starCount: 400, meanSpacing: 4, kind: d0.galaxy === 'real' ? 'real' : 'flat', gen: d0.gen || 1 }));
+      res.oldSave = g3.restore(d0) ? [g3.players[0].fiscal.budget.welfare, g3.players[0].fiscal.budget.military, g3.players[0].fiscal.budget.security] : [];
       __app.setView('empire'); __app.empireTab = 'overview'; __app.dirty = true; // 財政は「経済・政策」のタブ (依頼 KE-4)
       return res;
     });
