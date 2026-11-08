@@ -19,10 +19,11 @@ const res = {}, near = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol * Math.max(1
 const ids = g.realmSystems(g.cap).map((s) => s.id).filter((id) => g.isColonized(id));
 const Y = ids.reduce((a, id) => a + g.hhIncomeOf(id), 0);
 // 1. 帰着の表 (標準から、すべての手段を動かした財政へ)
-const f1 = { ...FISCAL_DEFAULT, tax: 0.2, ctax: 0.1, tariff: 0.05, rate: 0.04, cb: 0, rdcredit: 0.1, budget: { ...FISCAL_DEFAULT.budget, welfare: 0.1, education: 0.05, military: 0.05 } };
+const f1 = { ...FISCAL_DEFAULT, tax: 0.2, ctax: 0.1, tariff: 0.05, rate: 0.04, cb: 0, rdcredit: 0.1, budget: { ...FISCAL_DEFAULT.budget, welfare: 1.4, education: 1.35, military: 2.4, pension: 0.8 } }; // 予算は標準を 1 とする水準 (2026-11-08 の common-3)
 const rows = g.incidenceOf(g.cap, f1, FISCAL_DEFAULT), by = Object.fromEntries(rows.map((r) => [r.k, r]));
 res.rows = ['tax', 'ctax', 'rate', 'welfare', 'education', 'military'].every((k) => by[k]); // 関税と研究開発の税額控除は、輸入と会社の研究開発がなければ行がない
 res.zeroSum = rows.every((r) => near(r.hh + r.fm + r.gov + r.row, 0, 1e-9));
+res.ageRow = !!by.pension && by.pension.hh < 0 && near(by.pension.gov, -by.pension.hh); // 年金を 80% に下げると家計が損をし、政府が同じだけ浮く (QD-119)
 res.taxHH = Y > 0 && near(by.tax.hh, -(0.2 - FISCAL_DEFAULT.tax) * Y);
 res.qSum = rows.every((r) => near(r.q.reduce((a, v) => a + v, 0), Object.values(r.sys).reduce((a, s) => a + s.hh + s.fm * s.own, 0)));
 const rel = (r, q) => r.q[q] / (Y * sim.tables.GROUPS.quint[q] / sim.tables.GROUPS.quint.reduce((a, v) => a + v, 0));
@@ -33,12 +34,12 @@ res.groups = vas !== undefined && gi.length > 0 && near(gi.reduce((a, x) => a + 
 // 2. 忠誠と議会: 所得への税だけなら前の式と同じ・倍率の平均は 1・集団の差の平均は 0
 res.factor = Object.keys(INCIDENCE).every((k) => near([0, 1, 2, 3, 4].reduce((a, q) => a + g.incFactor(k, q), 0) / 5, 1));
 g.pc = 100;
-res.set = g.setFiscal({ tax: 0.2, ctax: 0.1, tariff: 0.05, welfare: 0.1 }, true).ok; // 審議を通さずすぐ (審議は tools/tests/support.js)
+res.set = g.setFiscal({ tax: 0.2, ctax: 0.1, tariff: 0.05, welfare: 1.4 }, true).ok; // 審議を通さずすぐ (審議は tools/tests/support.js)
 const t0 = g.year;
 res.lagged = g.fiscalFor(g.cap, g.cap).tax === FISCAL_DEFAULT.tax && g.fiscalFor(g.cap, g.cap).tariff === 0 && g.fiscalFor(g.cap, g.cap).ctax === 0; // 決めたばかりでは、首都でもまだ効いていない
 g.advance(0.25); g.advance(0.25); // 0.5 年: 関税 (0.05 年) と予算 (0.5 年) は効き、所得への税 (0.85 年) と消費税 (新しく入れる 1.75 年) はまだ
 const e1 = g.fiscalFor(g.cap, g.cap);
-res.lagMid = e1.tariff === 0.05 && e1.budget.welfare === 0.1 && e1.tax === FISCAL_DEFAULT.tax && e1.ctax === 0;
+res.lagMid = e1.tariff === 0.05 && e1.budget.welfare === 1.4 && e1.tax === FISCAL_DEFAULT.tax && e1.ctax === 0;
 res.pendingKept = g.setFiscal({ tariff: 0.06 }, true).ok && near(g.fiscal.on.ctax, t0 + ADMIN_LAG.ctaxNew) && near(g.fiscal.on.tax, t0 + ADMIN_LAG.tax) && g.fiscal.prev.ctax === 0; // 遅れの途中で関税を変えても、消費税と所得への税の効き始めは動かない
 const d = JSON.parse(JSON.stringify(sim.buildSave(g)));
 const g2 = new sim.Game(sim.generateGalaxy({ seed: String(seed), starCount: 400, meanSpacing: 4, kind: 'real', gen: sim.GALAXY_GEN }));

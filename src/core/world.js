@@ -25,6 +25,7 @@ function loyaltyTermsOf({ dLord, dCapital, bigger, orders, lordShips, dep, regim
     ...(exhaustion ? [{ label: '国の戦争疲弊', v: -EXHAUST.loyalty * exhaustion, note: `${Math.round(exhaustion)}` }] : []),
     ...(Math.abs(l.tax) > 1e-9 || l.ctax > 0 || l.tariff > 0 ? [{ label: JA`税 (${(t * 100).toFixed(1)}%${ctax ? JA` + 消費税 ${(ctax * 100).toFixed(1)}%` : ''}${tariff ? JA` + 関税 ${(tariff * 100).toFixed(1)}%` : ''})`, v: parts.tax + parts.ctax + parts.tariff, parts }] : []),
     ...(welfare ? [{ label: '福祉の予算', v: BUDGET.welfare.loyalty * welfare }] : []),
+    ...(l.age ? [{ label: '年金と医療の水準', v: LOSS.loyalty * l.age, note: JA`家計の所得の ${l.age > 0 ? '−' : '+'}${Math.abs(l.age * 100).toFixed(1)}%` }] : []), // QD-119: 標準から下げた分は家計の損 (税と同じ重さ)
     ...(infl !== null && Math.abs(infl - CB.pistar) > 1e-9 ? [{ label: JA`物価の上がり方 (年 ${(infl * 100).toFixed(1)}%)`, v: LOSS.loyalty * INFL_LOSS * Math.abs(infl - CB.pistar), note: JA`目標 ${(CB.pistar * 100).toFixed(0)}% からの差` }] : []),
     ...(rsx > 0 ? [{ label: '債務の再編', v: LOSS.loyalty * rsx, note: JA`所得の ${(rsx * 100).toFixed(0)}% の損と同じ` }] : []),
     ...(trait ? [{ label: '種族の特性 (信心深い)', v: trait }] : []), // 回 SE10

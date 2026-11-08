@@ -63,6 +63,9 @@
 - 回 SE4 からの頼み (星系の政府の判断を `govDid` で覚える) を片付けた (`development.js`。知らせは `docs/notices/SE/2026-10-23-KE-gov-did.md`)。
 - 返事待ちはない。QD-26〜QD-28・QD-31・QD-32 は回 KE7 の始めに、QD-34・QD-97 は回 KE7 の B-006 のあとに決まった。
 - 前のレーン C は 2026-10-21 にセッション 20 で止めた。コミットしていない変更と `docs/wip/` の KE のものはない。
+- 2026-11-08 の依頼 common-3 (共通のセッションで作った。`docs/requests/2026-11-08-common.md`): 予算の 5 つを、機能ごとに標準を 100% として 0〜300% (5% 刻み・合わせた上限なし) にした。標準の額は OECD の機能ごとの支出 ÷ 税収 (福祉 25.5%・治安 4.8%・軍事 3.6%・教育 14.5%・研究 1.5%)。動かした分だけ首都の政府と家計のあいだでお金が動く (下げれば浮く)。効き目は 3 (水準 − 1) ÷ (3 + 水準)。セーブに `bv` を足し、前の版の割合は読み込みで水準に直す。`docs/fiscal.md` の 16
+- 2026-11-08 の依頼 common-4 (QD-119 = a。共通のセッションで作った): 年金と医療の水準 (`AGE_BUDGET`。財政の budget.pension・budget.health。標準 1・0〜3) を足した。国のどの星系の政府も `ageSpendStd` × 水準を払い、下げた分 ÷ 家計の所得を `policyLoss` の `age` として忠誠度と議会の支持に入れる。帰着の表にも行を足した。医療の死亡率への効き目はまだ。`docs/fiscal.md` の 16.2
+- 2026-11-08 の依頼 common-5 (共通のセッションで作った): 医療の水準 L (budget.health × apaid) で 65 歳以上のきざみの死亡のハザードを (1 + 0.7227 (L − 1))^−0.0436 倍にした (`DEMO.healthMort`・`healthMortK`・`demoStep`・`healthLvAt`。標準なら前と同じ)。元は `data/derived/healthmort.json`。戦争疲弊で税収を減らすのをやめ (`earn` の `EXHAUST.tax` を除いた)、独立戦争を戦っている元の国だけ税収 × `CIVIL_TAX` 0.95。`docs/fiscal.md` の 16.3・16.4・`docs/demography.md` の 3.3
 
 ## 済んだ回
 

@@ -97,6 +97,7 @@
 - B-172: R14 の測り直し (回 SE5 で AI の国が大きくなったあと。政治のレーンが船と戦争の範囲から取った)
 - C27: 艦隊戦の数の効き (回 FU2)
 - C28: 艦隊戦の勝ち負けの偶然 (回 FU2)
+- C29: 戦争疲弊の溜まり方 (依頼 common-6・QD-120。共通のセッション)
 - QD-44: 負けた側はどこまで失ったら退くか → HOI4 の海戦を元にした艦隊戦を作る (回 FU2)
 - QD-45: 入植団の失敗に遺伝の多様性 (Smith 2014 の前提) を効かせるか (回 FU3)
 - QD-46: 艦隊 1 つの乗員 (戦死者に数える `BATTLE.crew`) を船の設計からどう決めるか (回 FU3)
@@ -172,6 +173,7 @@
 - saveField: capacity (経済。src/economy/market-consts.js。星系の会社が持つ民間の採掘の能力。回 KE5。`docs/regions.md` の 5)
 - saveField: gpts (経済。src/economy/market-consts.js。銀河の汎用技術の表。回 KE6 で `core/save.js` の一覧に足したものを、回 DO7 で登録の形に移した)
 - saveField: demand (経済。src/economy/market-consts.js。国ごとの需要のずれと、税率・政府の買い付け・GDP の傾向。回 KE7・QD-97)
+- saveField: bv (経済。src/economy/fiscal-consts.js。予算の形の版。2 = 標準を 1 とする水準。ないセーブの予算は読み込みで割合から水準に直す。ユーザーの依頼 2026-11-08 の common-3)
 
 ### 政治
 
@@ -205,6 +207,7 @@
 - saveField: fortWear (船と戦争。src/ship/war-consts.js。要塞の傷: 星系ごとの、残っている区画の耐久の欠けた割合。依頼 FU-3。`docs/fleet-groups.md` の 8)
 - EDITIONS.game.fortWear (要塞の傷が次の艦隊戦にも残る。値がなければ残らない = シミュレーション版。依頼 FU-3。`FORT.wear`)
 - EDITIONS.game.build (建設期間 [基本の年, 1 段・1 隻ごとの上乗せ]。種類 upgrade・outpost・route・fort・warship。値がなければすぐ完成 = シミュレーション版。依頼 2026-11-08 の common-7。`core/game-consts.js` の `BUILD_TIME`・`docs/build-time.md`)
+- EDITIONS.game.exhaust (戦争疲弊の溜まり方の重みの上書き。いまは warYear 1。値がなければ現実の戦争の終わりの疲弊に合わせた値 (warYear 0.1) = シミュレーション版。台帳の C29。依頼 common-6・QD-120。`ship/war-consts.js` の `EXHAUST`)
 - saveField: fgroups・gship (船と戦争。src/ship/war-consts.js。艦隊群の一覧と、駐留している群の艦の数。依頼 2026-11-07 の FU-1。`docs/fleet-groups.md`)
 - saveField: designs (船と戦争。src/ship/colonists.js。国ごとの入植船団の設計 { speed, cargo, ages } (船団は 400 隻 × 500 人に固定。FU-1 の版の ships は読み捨てる)。回 FU3・B-033・FU-2。`docs/colony.md`)
 - saveField: xrec (画面と最初の体験 (core に置く)。src/core/export-rec.js。データの書き出しの記録: 国 × 年などの表の行と、その年の途中の足し上げ。画面の版の試合だけ。回 GA11・B-196)

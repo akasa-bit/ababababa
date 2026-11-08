@@ -41,16 +41,18 @@
   }
   // 1 刻み: 死亡 (率 × 1 ÷ 世代の比、飢えと不穏の上乗せ extra は年あたり)、年をとる (きざみの 1 ÷ (5 × 世代の比) ずつ次へ)、出生 (年齢別出生率 × fert)。
   // fert = 出生のしやすさ (福祉・種族・統治体制・混み具合・食べ物と工業品の充足・疫病。前の人口の増え方 POP_GROWTH に掛けていたもの)。新しい人口を返す
+  // 65 歳以上の死亡は、その星系の政府の医療の水準 (予算の水準 × 払えた割合) で変わる (common-5。DEMO.healthMort。標準なら変わらない)
   demoStep(c, h, fert, extra) {
     this.ageSync(c);
     const G = ED.generation / 28, dt = h / G, r = this.demoRates(c, dt), n = DEMO.bins, up = Math.min(1, dt / DEMO.width), ex = extra ? GM.exp(-extra * h) : 1;
+    const hk = healthMortK(this.healthLvAt(c.sys)), o0 = DEMO.work[1] + 1;
     let births = 0;
     for (let a = 0; a < n; a++) births += c.age.f[a] * r.asfr[a] * dt;
     births *= Math.max(0, fert);
     c.tfr = r.tfr; // その年に当てた合計特殊出生率 (目標 R37 を測る)
     for (const [s, sv] of [['f', r.sf], ['m', r.sm]]) {
       const A = c.age[s];
-      for (let a = 0; a < n; a++) A[a] *= sv[a] * ex;
+      for (let a = 0; a < n; a++) A[a] *= (hk !== 1 && a >= o0 ? GM.pow(sv[a], hk) : sv[a]) * ex;
       for (let a = n - 2; a >= 0; a--) { const x = A[a] * up; A[a] -= x; A[a + 1] += x; }
     }
     c.age.m[0] += births * DEMO.boy;
@@ -125,14 +127,14 @@
   learnOf(c) { return this.schoolMean(c, (s, q) => q); }
   // 働く人の生産性の倍率 (yieldOf): 25〜64 歳の exp(φ(学力で直した就学年数 s × q ÷ full)) の平均 ÷ exp(φ(ref))
   schoolK(c) { return this.schoolMean(c, (s, q) => GM.exp(this.schoolPhi((s * q) / LEARN.full)), SCHOOL.bin, DEMO.work[1]) / GM.exp(this.schoolPhi(SCHOOL.ref)) || 1; }
-  // 予算の教育の支出 ÷ GDP [%] (人間の国だけ。予算の割合 × 払えた割合 × 税収 ÷ 国の所得。光の遅れのある財政の値で)
+  // 予算の教育の、標準から動かした支出 ÷ GDP [%] (人間の国だけ。(水準 − 1) × std × 税収 ÷ 国の所得。上げた分は払えた割合を掛ける。光の遅れのある財政の値で。下げれば負)
   eduSpendPct(c) {
-    const root = this.realmOf(c.sys), share = this.fiscalFor(root, c.sys).budget?.education || 0;
-    if (!(share > 0)) return 0;
+    const root = this.realmOf(c.sys), share = budgetExtra('education', this.budgetPaidLv(root, c.sys, 'education'));
+    if (!share) return 0;
     const gv = this.govs[root], memo = (this._eduY ??= {});
     if (memo.year !== this.year) { memo.year = this.year; memo.y = {}; }
     const y = (memo.y[root] ??= this.colonies.reduce((k, x) => (this.realmOf(x.sys) === root ? k + (x.incY || 0) : k), 0));
-    return y > 0 ? (100 * share * (gv?.bpaid ?? 1) * Math.max(0, gv?.ledger?.tax || 0)) / y : 0;
+    return y > 0 ? (100 * share * Math.max(0, gv?.ledger?.tax || 0)) / y : 0;
   }
   // 1 刻み (demoStep の年をとったあと): 集団ごとに年齢の表と同じ割合 up で次の区分へ移し、25 歳の区分に入る人は学校を出た世代の就学年数
   // ((1 − rho) × 所得の曲線 + rho × 大人の平均) と学力 (所得の曲線) を持つ。生まれた子 births は「ここ生まれ」の 0 歳の区分へ。最後に区分ごとの人数を c.age に合わせる
@@ -172,17 +174,26 @@
     const g = (E.away ??= { p: Array(DEMO.bins).fill(0), s: Array(DEMO.bins).fill(0), q: Array(DEMO.bins).fill(0) });
     for (let a = 0; a < DEMO.bins; a++) this.eduAdd(g, a, (n * mig[a]) / ms, Array.isArray(S) ? S[a] : S, Array.isArray(Q) ? Q[a] : Q);
   }
+  // 標準の年金と医療 [cr/年] (星系 id の入植地の合計。水準を掛ける前): { pen, med }
+  ageSpendStd(id) {
+    let pen = 0, med = 0;
+    for (const c of this.coloniesIn(id)) {
+      const y = MARKET.buy ? c.incY ?? this.incomeOf(c) : 0, s = this.ageShares(c); // 所得は、この刻みの消費の所で計算したもの
+      pen += DEMO.govScale * DEMO.pension * s.old * y;
+      med += DEMO.govScale * DEMO.health * (1 + (DEMO.oldCost - 1) * s.old) * y;
+    }
+    return { pen, med };
+  }
   // 政府の年金と医療 (10-3 の c)。星系の政府が、その星系の家計に年金を、会社に医療の代金を払う。人間が動かす首都は、手元の資金の分だけ払う (払えた割合 apaid)
+  // 年金と医療は、国の財政の水準 (QD-119。標準 1・0〜3。光の遅れのある財政の値で) を掛けて払う。人間でない国はいつも標準
+  // 星系 id の政府が実際に払っている医療の水準 (予算の水準 × 払えた割合 apaid。1 = 標準)
+  healthLvAt(id) { return budgetLv(this.fiscalAt(id), 'health') * (this.govs[id]?.apaid ?? 1); }
   ageSpendStep(h) {
     for (const key of Object.keys(this.govs)) {
       const id = Number(key), gv = this.govs[key];
       if (!this.isColonized(id)) continue;
-      let pen = 0, med = 0;
-      for (const c of this.coloniesIn(id)) {
-        const y = MARKET.buy ? c.incY ?? this.incomeOf(c) : 0, s = this.ageShares(c); // 所得は、この刻みの消費の所で計算したもの
-        pen += DEMO.govScale * DEMO.pension * s.old * y;
-        med += DEMO.govScale * DEMO.health * (1 + (DEMO.oldCost - 1) * s.old) * y;
-      }
+      const std = this.ageSpendStd(id), fs = this.fiscalAt(id);
+      const pen = std.pen * budgetLv(fs, 'pension'), med = std.med * budgetLv(fs, 'health');
       const want = (pen + med) * h;
       if (!(want > 0)) continue;
       const f = this.isHuman(id) && !this.spectate ? clamp(Math.max(0, gv.credits) / want, 0, 1) : 1;

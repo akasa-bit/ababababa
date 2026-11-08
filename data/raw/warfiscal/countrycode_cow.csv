@@ -1,0 +1,218 @@
+cown,country,year_min,year_max
+2,United States of America,1816,2016
+20,Canada,1920,2016
+31,Bahamas,1973,2016
+40,Cuba,1902,2016
+41,Haiti,1859,2016
+42,Dominican Republic,1894,2016
+51,Jamaica,1962,2016
+52,Trinidad and Tobago,1962,2016
+53,Barbados,1966,2016
+54,Dominica,1978,2016
+55,Grenada,1974,2016
+56,St. Lucia,1979,2016
+57,St. Vincent and the Grenadines,1979,2016
+58,Antigua & Barbuda,1981,2016
+60,St. Kitts and Nevis,1983,2016
+70,Mexico,1831,2016
+80,Belize,1981,2016
+90,Guatemala,1868,2016
+91,Honduras,1899,2016
+92,El Salvador,1875,2016
+93,Nicaragua,1900,2016
+94,Costa Rica,1920,2016
+95,Panama,1903,2016
+100,Colombia,1831,2016
+101,Venezuela,1841,2016
+110,Guyana,1966,2016
+115,Suriname,1975,2016
+130,Ecuador,1854,2016
+135,Peru,1839,2016
+140,Brazil,1822,2016
+145,Bolivia,1848,2016
+150,Paraguay,1846,2016
+155,Chile,1839,2016
+160,Argentina,1841,2016
+165,Uruguay,1882,2016
+200,United Kingdom,1816,2016
+205,Ireland,1922,2016
+210,Netherlands,1816,2016
+211,Belgium,1830,2016
+212,Luxembourg,1920,2016
+220,France,1816,2016
+221,Monaco,1993,2016
+223,Liechtenstein,1990,2016
+225,Switzerland,1816,2016
+230,Spain,1816,2016
+232,Andorra,1993,2016
+235,Portugal,1816,2016
+240,Hanover,1837,1866
+245,Bavaria,1816,1871
+255,Germany,1816,2016
+260,German Federal Republic,1955,1989
+265,German Democratic Republic,1954,1990
+267,Baden,1816,1871
+269,Saxony,1816,1867
+271,Wuerttemburg,1816,1871
+273,Hesse Electoral,1816,1866
+275,Hesse Grand Ducal,1816,1867
+280,Mecklenburg Schwerin,1843,1867
+290,Poland,1918,2016
+300,Austria-Hungary,1816,1918
+305,Austria,1919,2016
+310,Hungary,1918,2016
+315,Czechoslovakia,1918,1992
+316,Czech Republic,1993,2016
+317,Slovakia,1993,2016
+325,Italy,1816,2016
+327,Papal States,1816,1860
+329,Two Sicilies,1816,1861
+331,San Marino,1992,2016
+332,Modena,1842,1860
+335,Parma,1851,1860
+337,Tuscany,1816,1860
+338,Malta,1964,2016
+339,Albania,1914,2016
+341,Montenegro,2006,2016
+343,Macedonia,1993,2016
+344,Croatia,1992,2016
+345,Yugoslavia,1878,2016
+346,Bosnia and Herzegovina,1992,2016
+347,Kosovo,2008,2016
+349,Slovenia,1992,2016
+350,Greece,1828,2016
+352,Cyprus,1960,2016
+355,Bulgaria,1908,2016
+359,Moldova,1991,2016
+360,Romania,1878,2016
+365,Russia,1816,2016
+366,Estonia,1918,2016
+367,Latvia,1918,2016
+368,Lithuania,1918,2016
+369,Ukraine,1991,2016
+370,Belarus,1991,2016
+371,Armenia,1991,2016
+372,Georgia,1991,2016
+373,Azerbaijan,1991,2016
+375,Finland,1917,2016
+380,Sweden,1816,2016
+385,Norway,1905,2016
+390,Denmark,1816,2016
+395,Iceland,1944,2016
+402,Cape Verde,1975,2016
+403,Sao Tome and Principe,1975,2016
+404,Guinea-Bissau,1974,2016
+411,Equatorial Guinea,1968,2016
+420,Gambia,1965,2016
+432,Mali,1960,2016
+433,Senegal,1960,2016
+434,Benin,1960,2016
+435,Mauritania,1960,2016
+436,Niger,1960,2016
+437,Ivory Coast,1960,2016
+438,Guinea,1958,2016
+439,Burkina Faso,1960,2016
+450,Liberia,1920,2016
+451,Sierra Leone,1961,2016
+452,Ghana,1957,2016
+461,Togo,1960,2016
+471,Cameroon,1960,2016
+475,Nigeria,1960,2016
+481,Gabon,1960,2016
+482,Central African Republic,1960,2016
+483,Chad,1960,2016
+484,Congo,1960,2016
+490,Democratic Republic of the Congo,1960,2016
+500,Uganda,1962,2016
+501,Kenya,1963,2016
+510,Tanzania,1961,2016
+511,Zanzibar,1963,1964
+516,Burundi,1962,2016
+517,Rwanda,1962,2016
+520,Somalia,1960,2016
+522,Djibouti,1977,2016
+530,Ethiopia,1898,2016
+531,Eritrea,1993,2016
+540,Angola,1975,2016
+541,Mozambique,1975,2016
+551,Zambia,1964,2016
+552,Zimbabwe,1965,2016
+553,Malawi,1964,2016
+560,South Africa,1920,2016
+565,Namibia,1990,2016
+570,Lesotho,1966,2016
+571,Botswana,1966,2016
+572,Swaziland,1968,2016
+580,Madagascar,1960,2016
+581,Comoros,1975,2016
+590,Mauritius,1968,2016
+591,Seychelles,1976,2016
+600,Morocco,1847,2016
+615,Algeria,1962,2016
+616,Tunisia,1825,2016
+620,Libya,1951,2016
+625,Sudan,1956,2016
+626,South Sudan,2011,2016
+630,Iran,1855,2016
+640,Turkey,1816,2016
+645,Iraq,1932,2016
+651,Egypt,1855,2016
+652,Syria,1946,2016
+660,Lebanon,1946,2016
+663,Jordan,1946,2016
+666,Israel,1948,2016
+670,Saudi Arabia,1927,2016
+678,Yemen Arab Republic,1926,1990
+679,Yemen,1990,2016
+680,Yemen People's Republic,1967,1990
+690,Kuwait,1961,2016
+692,Bahrain,1971,2016
+694,Qatar,1971,2016
+696,United Arab Emirates,1971,2016
+698,Oman,1971,2016
+700,Afghanistan,1919,2016
+701,Turkmenistan,1991,2016
+702,Tajikistan,1991,2016
+703,Kyrgyzstan,1991,2016
+704,Uzbekistan,1991,2016
+705,Kazakhstan,1991,2016
+710,China,1860,2016
+712,Mongolia,1921,2016
+713,Taiwan,1949,2016
+730,Korea,1887,1905
+731,North Korea,1948,2016
+732,South Korea,1949,2016
+740,Japan,1860,2016
+750,India,1947,2016
+760,Bhutan,1971,2016
+770,Pakistan,1947,2016
+771,Bangladesh,1971,2016
+775,Myanmar,1948,2016
+780,Sri Lanka,1948,2016
+781,Maldives,1965,2016
+790,Nepal,1920,2016
+800,Thailand,1887,2016
+811,Cambodia,1953,2016
+812,Laos,1953,2016
+816,Vietnam,1954,2016
+817,Republic of Vietnam,1954,1975
+820,Malaysia,1957,2016
+830,Singapore,1965,2016
+835,Brunei,1984,2016
+840,Philippines,1946,2016
+850,Indonesia,1949,2016
+860,East Timor,2002,2016
+900,Australia,1920,2016
+910,Papua New Guinea,1975,2016
+920,New Zealand,1920,2016
+935,Vanuatu,1981,2016
+940,Solomon Islands,1978,2016
+946,Kiribati,1999,2016
+947,Tuvalu,2000,2016
+950,Fiji,1970,2016
+955,Tonga,1999,2016
+970,Nauru,1999,2016
+983,Marshall Islands,1991,2016
+986,Palau,1994,2016
+987,Federated States of Micronesia,1991,2016
+990,Samoa,1976,2016

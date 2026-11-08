@@ -2,6 +2,8 @@
 
 2026-10-21 の再出発 (`docs/restart.md`。回 R4) で作ったレーン。持つ場所は `src/ship/` (`docs/parallel.md` の 1・`docs/src-files.md` の 5)。前のレーンの状態は `docs/archive/status/`。
 
+- 2026-11-08 の依頼 common-5 (共通のセッションで作った。船と戦争に触れた所): `EXHAUST` から `tax` を除いた (戦争疲弊で税収を減らさない。現実の国家間戦争では歳入 ÷ GDP が疲弊とともに上がる。`docs/research/war-fiscal.md`)。独立戦争の印 `warStats[鍵].cv` (= 独立された元の国) を `declareIndependence` で付け、`civilWarOf(r)` で見て、元の国の税収を戦っている間 × `CIVIL_TAX` 0.95 にする。戦争の終わりの疲弊が現実より高い (中央値 92 対 3) ので、溜まり方を合わせるかを QD-120 で聞いた。`docs/fiscal.md` の 16.4
+- 2026-11-08 の依頼 common-6 (QD-120。共通のセッションで作った): `EXHAUST.warYear` を 0.1 (シミュレーション版の値) にし、ゲーム版は `EDITIONS.game.exhaust` で 1 のまま (台帳の C29)。シミュレーション版の戦争は少し長くなった (平均 23.2 → 26.8 年)。R29 1.88 → 1.91・R15 1.42 → 1.32 (どちらも合格)。`docs/reality-check.md` の 6
 - 依頼 FU-3 (2026-11-08。`docs/requests/2026-11-07-FU.md` の FU-3) を作った (#361)。`docs/fleet-groups.md` の 8。
   - **要塞の傷が残る** (`ship/fort.js`。ゲーム版だけ: `EDITIONS.game.fortWear`。両方の版に入れるとシミュレーション版の R08 が 97 → 107 年で帯の外に出た): 艦隊戦のあとに残った区画の傷 (耐久の欠けた割合。セーブの項目 `fortWear`) を覚え、次の艦隊戦の区画はその耐久で始まる。戦っていないあいだ年に `FORT.repair` (0.25) ずつ費用なしで直る。段を上げると薄まる。攻め落とせば消える。前は、沈めきれなかった区画が次の戦いで無傷に戻っていた。
   - 見込み (`battleOdds` の 6 つめ `fw`) に傷を入れた: 攻める前の見込み・艦隊戦の始めの見込み・AI の国の攻める先・注文の見込みの知らせ (`screen/forecast.js`。前は要塞そのものを数えていなかった)。

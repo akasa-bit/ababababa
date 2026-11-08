@@ -475,6 +475,7 @@
     const clashes = [];
     if (war) {
       this.beginWar(id, formerRealm, id);
+      this.warStats[this.warKey(id, formerRealm)].cv = formerRealm; // 独立戦争の印 (元の国の税収が戦っている間 × CIVIL_TAX。common-5)
       // 独立戦争: 各星系は人口と経済の規模に応じた艦隊を持つ (それまでの自前の守りも加わる)。
       // 駐留していた地球の艦隊は、その場で艦隊戦を始める (勝てば攻囲に移る)
       for (const x of members) {

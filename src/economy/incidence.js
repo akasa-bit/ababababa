@@ -31,9 +31,12 @@
   hhIncomeOf(id) { let y = 0; for (const c of this.coloniesIn(id)) y += c.incY || 0; return y; }
   // 家計の損の割合 ℓ (標準の財政と比べた、家計の市場の所得に対する 1 年の損。LOSS)。f = その星系で効いている財政。
   // 関税は、関税の掛かる輸入 (gv.mx) × 税率 を値段を通して家計が負うとみる (輸入 ÷ 所得は 1 まで。立ち上がりの入植地で、所得より輸入が大きくても損が膨らまないように)
+  // age = 年金と医療を標準から下げた分 ÷ 家計の所得 (上げれば負 = 得。QD-119。docs/fiscal.md の 16.2)
   policyLoss(id, f = this.fiscalAt(id)) {
-    const t = taxRateOf(f.tax), ct = f.ctax || 0, Y = f.tariff > 0 ? this.hhIncomeOf(id) : 0, M = this.govs[id]?.mx || 0;
-    return { tax: t - MARKET.tax, ctax: (ct * (1 - t)) / (1 + ct), tariff: Y > 0 ? f.tariff * Math.min(1, M / Y) : 0 };
+    const t = taxRateOf(f.tax), ct = f.ctax || 0, lp = budgetLv(f, 'pension'), lh = budgetLv(f, 'health'), age = lp !== 1 || lh !== 1;
+    const Y = f.tariff > 0 || age ? this.hhIncomeOf(id) : 0, M = this.govs[id]?.mx || 0;
+    const A = age && Y > 0 ? (() => { const s = this.ageSpendStd(id); return ((1 - lp) * s.pen + (1 - lh) * s.med) / Y; })() : 0;
+    return { tax: t - MARKET.tax, ctax: (ct * (1 - t)) / (1 + ct), tariff: f.tariff > 0 && Y > 0 ? f.tariff * Math.min(1, M / Y) : 0, age: A };
   }
   // 帰着の表: 国 root の財政を f0 から f1 にしたときの、手段ごとの 1 年の損得 [cr/年] (+ が得)。いまの帳簿の大きさに率の差を掛けた 1 次の近い形で、
   // 行動の変化 (買い物・輸入・研究の量) と、そのあとの景気や物価の動きは入れない (Harberger 1962 の帰着の表を、部門の帳簿の行で数える)。
@@ -101,10 +104,16 @@
       const dc = (f1.rdcredit ?? FISCAL_DEFAULT.rdcredit) - (f0.rdcredit ?? FISCAL_DEFAULT.rdcredit);
       if (dc && P > 0 && Ysum > 0) { const x = (dc * P * Y) / Ysum; add(row('rdcredit', '研究開発の税額控除', 'firm', lagOf('rdcredit')), id, 0, x, -x, own); }
     }
-    const gr = this.govs[root], tax = Math.max(0, gr?.ledger?.tax || 0) * (gr?.bpaid ?? 1);
+    const gr = this.govs[root], tax = Math.max(0, gr?.ledger?.tax || 0);
+    // 年金と医療の水準 (QD-119): 国のどの星系でも、標準の額 × 水準の差を、その星系の家計が受け取る (医療は会社を通すが、家計の得とみる)。分位には所得の割合で
+    for (const k of Object.keys(AGE_BUDGET)) {
+      const dl = budgetLv(f1, k) - budgetLv(f0, k);
+      if (!dl) continue;
+      for (const id of ids) { const s = this.ageSpendStd(id), x = dl * (k === 'pension' ? s.pen : s.med); if (x) add(row(k, JA`${AGE_BUDGET[k].label}の水準`, 'income', lagOf('budget')), id, x, 0, -x); }
+    }
     for (const k of Object.keys(BUDGET)) {
-      const db = (f1.budget?.[k] || 0) - (f0.budget?.[k] || 0);
-      if (db && tax > 0 && ids.includes(root)) { const x = db * tax; add(row(k, JA`${BUDGET[k].label}の予算`, INCIDENCE[k] ? k : 'income', lagOf('budget')), root, x, 0, -x); }
+      const db = budgetExtra(k, budgetLv(f1, k)) - budgetExtra(k, budgetLv(f0, k)); // 標準から動かした額 ÷ 税収の差 (下げれば負)。上げた分は払えた割合だけ
+      if (db && tax > 0 && ids.includes(root)) { const x = db * tax * (db > 0 ? gr?.bpaid ?? 1 : 1); add(row(k, JA`${BUDGET[k].label}の予算`, INCIDENCE[k] ? k : 'income', lagOf('budget')), root, x, 0, -x); }
     }
     // 5 分位に分ける (会社の分は星系の家計が持つ分だけ。遠くの持ち主の分は q に入れない)。所得に比べる手段は星系の所得の分け方で (回 KE11)、土地改革は分位ごとの差 qd
     const sh = (k, q) => INCIDENCE[k][q] / INCIDENCE[k].reduce((a, v) => a + v, 0);

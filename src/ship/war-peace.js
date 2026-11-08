@@ -70,6 +70,11 @@
     this.warBy[key] = by;
     this.warNews[key] = { year: this.year, from };
   }
+  // 国 r が、自分から独立した国と独立戦争を戦っているか (税収 × CIVIL_TAX。common-5)。warStats の cv = 独立された元の国
+  civilWarOf(r) {
+    for (const k in this.warStats) if (this.warStats[k].cv === r && this.realmWars[k] !== undefined) return true;
+    return false;
+  }
   // 国でなくなった (首都が攻め落とされた・従属した) 側の戦争を片づける
   cleanWars() {
     const alive = (r) => this.isColonized(r) && this.realmOf(r) === r;

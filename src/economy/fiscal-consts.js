@@ -1,10 +1,11 @@
 // 財政 (プレイヤーが選ぶ。国家方針と同じく、変えた知らせが光速で届いた星系から効く)。効き目の大きさは仮の値 (docs/fiscal.md)
 // 税: k = 人口あたりの税の倍率、loyalty = 家臣の忠誠度の目標、council = 議会の支持の年あたりの変化
 // 財政の手段の幅 (セッション 20。docs/policy-ranges.md)。生データ (BIS の政策金利・WDI) の国・年の 1〜99% 点で、作る前に固定した。
-//   税率 (所得への税) 2〜34% (刻み 0.5%。標準は MARKET.tax = 15.5%)、利子率 −1〜50% (0.25%)、予算は機能ごとに 0〜60% で合わせて 100% まで (1%)、赤字の上限 0〜15% (0.5%)
+//   税率 (所得への税) 2〜34% (刻み 0.5%。標準は MARKET.tax = 15.5%)、利子率 −1〜50% (0.25%)、赤字の上限 0〜15% (0.5%)
+//   予算は機能ごとに標準の 0〜300% (刻み 5%。合わせた上限はない。ユーザーの依頼 2026-11-08 の common-3。前は税収の 0〜60% ずつ・合わせて 100% まで)
 const TAX_RANGE = [0.02, 0.34], TAX_STEP = 0.005;
 const RATE_RANGE = [-0.01, 0.5], RATE_STEP = 0.0025;
-const BUDGET_RANGE = [0, 0.6], BUDGET_STEP = 0.01, BUDGET_TOTAL = 1;
+const BUDGET_RANGE = [0, 3], BUDGET_STEP = 0.05;
 const DEFICIT_RANGE = [0, 0.15], DEFICIT_STEP = 0.005;
 // 人間が動かす首都が手元に置く資金の上限 (税収の何年分。回 KE15・B-069・QD-99 = 上限 1 年分・変えられる)。超えた分は行政サービスに使う (AI の国の政府の DEBT.cash と同じ形)。
 // 0 = 上限なし (前の形。いくらでも貯める)。前は人間の首都の政府が税を集めるだけで使わず、何もしないと 100 年で GDP の 9 倍、300 年で 53 倍まで積もった
@@ -63,15 +64,22 @@ const adminLag = (k, f, prev) => (k === 'ctax' && !(prev.ctax > 0) && f.ctax > 0
 //   3 つはシードと首都から別々に引く (試合の乱数は使わない)。vary = 0 なら標準 (所得への税 15.5%・消費税 0・関税 0)
 // 利子率 (政策金利) は中央銀行の則 (CB) で決まる (回 KE1)。rate は人間の国が「自分で決める」を選んだときの政策金利 (名目)、cb = 1 なら中央銀行に任せる
 const AI_FISCAL = { vary: 0, taxK: [0.51, 1, 1.54], ctaxShare: [0.096, 0.313, 0.442], tariff: [0.02, 0.0526, 0.1367] };
-// 予算: 首都の税収のうち、毎年その政策に使う割合。効き目 = 最大 × 割合 ÷ (割合 + BUDGET_HALF) (使うほど伸びが鈍る)
+// 予算 (ユーザーの依頼 2026-11-08 の common-3。docs/fiscal.md の 16): 機能ごとに標準を 100% として 0〜300% を選ぶ (合わせた上限はない)。
+//   標準 (100%) は、いまの政府のふだんの支出に入っているとみて、お金の流れは足さない (人間でない国と同じ。研究者の曲線の政府の分と同じ考え。docs/innovation.md の 3.2)。
+//   標準から動かした分だけ、首都の政府と首都の家計のあいだでお金が動く: 1 年に (水準 − 1) × std × 首都の税収。上げれば政府が払い (給付・給料・買い付け)、下げれば浮く (家計への給付が減る)。
+//   std = 標準の額 ÷ 税収。OECD の一般政府の機能ごとの支出 (COFOG の割合 × 支出 ÷ GDP 40.8%。Government at a Glance 2021 の 2019 年) を、税収 ÷ GDP 33.8% で割ったもの
+//   (年金と医療の govScale と同じ考え: 税収に対する割合を OECD に合わせる。QD-30)。福祉は社会保護から公的年金 7.7% を引いた分、研究は政府が出す研究開発費の中央値 0.522% (OECD MSTI。
+//   data/derived/innovation.json の rnd.caps.public_median)。
+//   効き目は budgetEffect (水準 → −1〜+1): 100% で 0、300% で +1 (下の good の「最大」)、0% で −1。上げるほど伸びは鈍り、下げた痛みは同じ幅の上げの得より大きい
+const BUDGET_GOV = 0.408, BUDGET_TAX = 0.338, BUDGET_PENSION = 0.077;
 const BUDGET = {
-  welfare: { label: '福祉', good: '家臣の忠誠度の目標 +最大 12・人口の増え方 ×最大 1.15', loyalty: 12, growth: 0.15 },
-  security: { label: '治安', good: '離反の起きやすさ ×最大 0.6', hazard: 0.4 },
-  military: { label: '軍事', good: '艦隊の戦力 ×最大 1.25', fleet: 0.25 },
-  // 教育 (回 KE5・B-117。ユーザーの依頼 2026-10-24): 効き目は budgetEffect でなく、教育の支出 ÷ GDP で学校を出る世代の就学年数を延ばす (SCHOOL.spend。docs/hcap.md)
-  education: { label: '教育', good: '学校を出る世代の就学年数が延び、その世代が働くようになると生産性が上がる (教育の支出 GDP の 1% ごとに、所得 5,000 ドルの入植地で約 0.2 年。効くのは世代が入れ替わる数十年あと)' },
-  // 研究 (回 KE6・B-122): 効き目は budgetEffect でなく、払った額 ÷ 研究者 1 人の費用だけ公の研究者を足す (RND。docs/innovation.md の 3)
-  research: { label: '研究', good: '公の研究者が増え、8〜15 年あとから国の技術の伸びが速くなる (研究者 1 人の費用は 1 人あたり所得の約 4〜5 倍)。民間の研究も呼び込む (弾力性 0.5)' },
+  welfare: { label: '福祉', std: (0.40 * BUDGET_GOV - BUDGET_PENSION) / BUDGET_TAX, good: '家臣の忠誠度の目標 ±最大 12・人口の増え方 ×0.85〜1.15', loyalty: 12, growth: 0.15 },
+  security: { label: '治安', std: (0.04 * BUDGET_GOV) / BUDGET_TAX, good: '離反の起きやすさ ×1.4〜0.6', hazard: 0.4 },
+  military: { label: '軍事', std: (0.03 * BUDGET_GOV) / BUDGET_TAX, good: '艦隊の戦力 ×0.75〜1.25', fleet: 0.25 },
+  // 教育 (回 KE5・B-117。ユーザーの依頼 2026-10-24): 効き目は budgetEffect でなく、標準から動かした教育の支出 ÷ GDP で学校を出る世代の就学年数を延ばす・縮める (SCHOOL.spend。docs/hcap.md)
+  education: { label: '教育', std: (0.12 * BUDGET_GOV) / BUDGET_TAX, good: '学校を出る世代の就学年数が延びる (縮む)。その世代が働くようになると生産性が上がる (下がる) (教育の支出 GDP の 1% ごとに、所得 5,000 ドルの入植地で約 0.2 年。効くのは世代が入れ替わる数十年あと)' },
+  // 研究 (回 KE6・B-122): 効き目は budgetEffect でなく、標準から動かした額 ÷ 研究者 1 人の費用だけ公の研究者を足す・減らす (RND。docs/innovation.md の 3)
+  research: { label: '研究', std: 0.00522 / BUDGET_TAX, good: '公の研究者が増え (減り)、8〜15 年あとから国の技術の伸びが速く (遅く) なる (研究者 1 人の費用は 1 人あたり所得の約 4〜5 倍)。増やすと民間の研究も呼び込む (弾力性 0.5)' },
 };
 // 支出の 10 機能 (COFOG。国連 1999 の政府の機能の分類。回 KE8・B-007。docs/fiscal.md の 6): 帳簿 (ledger) の出入りの種類を機能に当てる。
 // 建設は経済業務、研究の予算は一般公共サービスの基礎研究 (GF0105)、国債の利子は一般公共サービスの公債の取引 (GF0107)、年金と福祉は社会保護、医療は保健。
@@ -90,8 +98,20 @@ const COFOG = [
   { code: 'GF10', label: '社会保護', kinds: ['welfare', 'pension'], oecd: 0.40 },
 ];
 const COFOG_EXTRA = ['build', 'education', 'research']; // 収支の表 (LEDGER_LABEL) にない支出。政府ごとに gv.cof でならす (market-economy.js)
-const BUDGET_HALF = 0.1;
-const budgetEffect = (share) => (share > 0 ? share / (share + BUDGET_HALF) : 0);
+// 年金と医療の水準 (ユーザーの依頼 2026-11-08 の common-4・QD-119 = a。docs/fiscal.md の 16.2): 予算と同じく標準を 100% として 0〜300% (刻み 5%)。値は f.budget.pension・f.budget.health。
+//   標準 = いまの式 (demography.js の ageSpendStep。年金 = govScale × pension × 高齢の割合 × 所得、医療 = govScale × health × (1 + 2 × 高齢の割合) × 所得)。国のどの星系の政府も、
+//   水準を掛けた額を払う (所得への税と同じく、変えた知らせが光速で届いた星系から)。標準から下げた分は、その星系の家計の所得の損として、税の損 (LOSS) と同じ道で
+//   家臣の忠誠度の目標と首都の議会の支持を下げる (上げれば上がる。policyLoss の age)。医療の水準 (× 払えた割合) は 65 歳以上の死亡率も動かす
+//   (common-5。DEMO.healthMort・healthMortK。現実のデータで効き目は小さく、統計的にはっきりしない: 0% で ×1.058、300% で ×0.962)
+const AGE_BUDGET = {
+  pension: { label: '年金', good: '国のどの星系の政府も、年金を標準のこの割合だけ払う。下げると浮くが、浮いた分が家計の所得の損になり、家臣の忠誠度の目標と議会の支持が下がる (所得の 1% の損で忠誠度 −0.97 点。所得への税と同じ重さ)' },
+  health: { label: '医療', good: '国のどの星系の政府も、医療の代金を標準のこの割合だけ払う。下げると浮くが、家計の損として年金と同じく忠誠度と議会の支持が下がり、65 歳以上の死亡率が少し上がる (現実のデータで効き目は小さく、はっきりしない。0% で ×1.06)' },
+};
+const BUDGET_KEYS = () => [...Object.keys(BUDGET), ...Object.keys(AGE_BUDGET)];
+// 予算の水準 (1 = 標準。ない手段は標準)・標準から動かした額 ÷ 税収 (負 = 浮く)・効き目 (−1〜+1)
+const budgetLv = (f, k) => f?.budget?.[k] ?? 1;
+const budgetExtra = (k, lv) => (lv - 1) * BUDGET[k].std;
+const budgetEffect = (lv) => (3 * (lv - 1)) / (3 + lv);
 // 研究開発の税額控除 (回 KE6・B-122): 会社の研究開発費の rdcredit の割合を、国の政府が会社に返す。幅は OECD の R&D Tax Incentives の、税の優遇 ÷ 会社の研究開発費の
 // 国・年の 1〜99% 点 (0〜27.9%)。既定はその国ごとの平均の中央値 3.90% を刻みに丸めた 4% (data/derived/innovation.json の rnd.credit)
 const RDCREDIT_RANGE = [0, 0.28], RDCREDIT_STEP = 0.005;
@@ -138,8 +158,8 @@ const INEQ_Z = [-0.8416212335729143, -0.2533471031357997, 0.2533471031357997, 0.
 // 対数正規 (ばらつき s) の所得の 5 分位の分け前 (下から。合計 1)
 const quintShares = (s) => { const c = INEQ_Z.map((z) => normCdf(z - s)); return [c[0], c[1] - c[0], c[2] - c[1], c[3] - c[2], 1 - c[3]]; };
 const TARGET_RANGE = [0, 0.2], TARGET_STEP = 0.01, QE_RANGE = [0, 0.6], QE_STEP = 0.05, REPRESS_RANGE = [0, 0.04], REPRESS_STEP = 0.005;
-const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, cashcap: 1, rdcredit: 0.04, budget: { welfare: 0, security: 0, military: 0, education: 0, research: 0 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0, soe: 0, capctl: 0, land: 0, reserve: {}, floor: {} };
-const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の割り振りは政治力が要らない)
+const FISCAL_DEFAULT = { tax: MARKET.tax, ctax: 0, tariff: 0, rate: 0.01, cb: 1, deficit: 0, cashcap: 1, rdcredit: 0.04, budget: { welfare: 1, security: 1, military: 1, education: 1, research: 1, pension: 1, health: 1 }, ceil: {}, ration: {}, ban: {}, embargo: {}, pistar: 0.02, qe: 0, repress: 0, soe: 0, capctl: 0, land: 0, reserve: {}, floor: {} };
+const FISCAL_COST = 5; // 税か利子率を変えるときの政治力 (予算の水準は政治力が要らない)
 // 国債と財政の反応 (docs/debt.md)。人間が動かしていない政府は、目標の基礎収支 ÷ GDP
 //   s* = a + rho × (国債 ÷ GDP) + beta × (GDP の傾向からのずれ) + war × (国が戦争中) + u   (u は 1 年の自己相関 ar・ばらつき sd)
 // に合わせて国債を出し入れする (Bohn 1998 の形。係数は JST R6 の 18 か国 1870〜2020 年を国ごとに推定した中央値。data/build/analyze_fiscal.py)。
@@ -219,6 +239,18 @@ const INFL_LOSS = 1;
 // 財政のグラフの記録 (回 GA9・B-059。docs/fiscal.md の 11): 人間の国ごと (首都の星系) に { r: 1 年 1 行の [年, GDP の伸び, 物価の上がり方, 政策金利, 長期の利回り,
 // 国債 ÷ GDP, 政府の収支 ÷ GDP], m: 財政を変えた [年, 変えた手段の名前の列], p: 前の年の星系ごとの [GDP, 政府の純額] }。試合の始めから全部持つ (期間は画面で選ぶ。GA-1)
 // 政府の倉 (回 KE12・B-128): 星系ごとの { 資源: 量 }。物の出入りは mv の種類 store (市場から倉へ)・release (倉から市場へ)
+// 予算の形の版 (ユーザーの依頼 2026-11-08 の common-3)。bv = 2 は「標準を 1 とする水準 (0〜3)」。ないセーブ (前の版) の予算は「税収のうち標準に足す割合 (0〜0.6)」なので、
+// 読み込みで水準 1 + 割合 ÷ std に直す (刻みに丸め、3 で止める)。席の財政・その前の財政・審議中の法案の値を直す
+const budgetFromShares = (f) => {
+  if (!f || typeof f !== 'object' || !f.budget || typeof f.budget !== 'object') return;
+  for (const k of Object.keys(BUDGET)) { const v = Number(f.budget[k]) || 0; f.budget[k] = clamp(Math.round((1 + v / BUDGET[k].std) / BUDGET_STEP) / Math.round(1 / BUDGET_STEP), BUDGET_RANGE[0], BUDGET_RANGE[1]); }
+};
+saveField('bv', () => 2, {
+  read: (game, d) => {
+    if (d.bv === 2) return;
+    for (const p of game.players || []) { budgetFromShares(p.fiscal); budgetFromShares(p.fiscal?.prev); budgetFromShares(p.bills?.fiscal?.target); }
+  },
+});
 saveField('gran', (game) => (Object.keys(game.gran || {}).length ? game.gran : undefined), {
   init: (game) => { game.gran = {}; },
   read: (game, d) => { game.gran = d.gran && typeof d.gran === 'object' ? Object.fromEntries(Object.entries(d.gran).filter(([, g]) => g && typeof g === 'object')) : {}; },

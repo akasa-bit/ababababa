@@ -79,7 +79,7 @@
       ...(() => { // その星系で効いている財政 (標準でないものだけ)
         if (!this.isColonized(id)) return {};
         const root = this.realmOf(id), f = this.fiscalAt(id), t = taxRateOf(f.tax), w = this.budgetAt(root, id, 'welfare'), sc = this.budgetAt(root, id, 'security');
-        const l = f.ctax > 0 || f.tariff > 0 ? this.policyLoss(id, f) : null; // 家計の損の割合 (消費税・関税があるときだけ。回 KE8・B-012)
+        const l = f.ctax > 0 || f.tariff > 0 || budgetLv(f, 'pension') !== 1 || budgetLv(f, 'health') !== 1 ? this.policyLoss(id, f) : null; // 家計の損の割合 (消費税・関税・年金と医療の水準があるときだけ。回 KE8・B-012・QD-119)
         const pi = this.inflOf(id); // 国の物価の上がり方 (忠誠度の物価の項。回 KE9)
         const rx = this.rsxLoss(root); // 国の債務の再編の損 (忠誠度の再編の項。回 KE10・B-125)
         return { ...(Math.abs(t - MARKET.tax) > 1e-9 ? { tax: t } : {}), ...(l ? { ctax: f.ctax || 0, tariff: f.tariff || 0, loss: l } : {}), ...(w ? { welfare: w } : {}), ...(sc ? { security: sc } : {}), ...(Math.abs(pi - CB.pistar) > 1e-9 ? { infl: pi } : {}), ...(rx > 0 ? { rsx: rx } : {}) };
