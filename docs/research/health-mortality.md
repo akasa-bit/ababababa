@@ -1,5 +1,7 @@
 # 政府の医療の支出と死亡率 (医療の水準 L を死亡率につなぐための調べもの)
 
+> この調べの 65 歳以上の倍率は、依頼 common-5 でゲームに入れた (`DEMO.healthMort`・`healthMortK`。`docs/fiscal.md` の 16.3・`docs/demography.md` の 3.3)。下の「いまは死亡率は変わらない」は、調べた時点のゲームのこと。
+
 ユーザーの依頼 (医療の水準 0〜300% の続き。`src/economy/fiscal-consts.js` の `AGE_BUDGET`): いまは医療の水準を下げても家計の所得の損になるだけで、死亡率は変わらない。死亡率への効き目を「似たデータ点を 500 ほど集め、統計的に整合するものだけを残して」実データから作る。ここではデータと統計の部分だけを書く。ゲームへの入れ方は別に決める。
 
 - 取得: `python3 data/fetch/fetch_healthmort.py` → `data/raw/healthmort/` (中身は `data/raw/healthmort/README.md`)
