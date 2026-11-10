@@ -66,15 +66,21 @@ const Cloud = {
       return true;
     })());
   },
+  // つなぐときの失敗を、直し方の分かる文にする (招待コードを作る・入れるときに画面に出す)
+  errText(e) {
+    const t = `${e?.code || ''} ${e?.message || e}`;
+    if (/operation-not-allowed|admin-restricted/.test(t)) return TR('ゲストのログインが止められている (Firebase のコンソール → Authentication →「匿名」をオンにする)');
+    if (/permission-denied|insufficient permissions/i.test(t)) return TR('Firestore の決まりで断られた (Firebase のコンソール → Firestore →「ルール」に、リポジトリの firestore.rules を公開する)');
+    if (/unavailable|offline|network|failed to fetch/i.test(t)) return TR('ネットにつながらない (回線を確かめて、もう一度ためす)');
+    return e?.message || String(e);
+  },
   // ログインしていなければ、ゲストとして入る (2026-11-10 のユーザーの依頼 common-1「Firebaseの接続もっと簡単にして」: 招待コードを作る・入れる前に、
   // アカウントのタブでログインしなくてよい)。前のログイン (Google など) が戻るのを待ってから決める (待たずにゲストで入ると、前のアカウントから切り替わる)
   async ensureUser() {
     if (!(await this.init())) throw new Error(this.status || TR('オンラインの部屋は、いま使えない'));
     await Promise.race([this.authReady, new Promise((r) => setTimeout(r, 8000))]);
     if (this.user) return;
-    try { await this.api.guest(); } catch (e) {
-      throw new Error(/operation-not-allowed|admin-restricted/.test(`${e?.code} ${e?.message}`) ? TR('ゲストのログインが止められている (Firebase のコンソール → Authentication →「匿名」をオンにする)') : e?.message || String(e));
-    }
+    try { await this.api.guest(); } catch (e) { throw new Error(this.errText(e)); }
     for (let i = 0; i < 100 && !this.user; i++) await new Promise((r) => setTimeout(r, 50)); // ログインの知らせ (onAuth) が届くまで
     if (!this.user) throw new Error(TR('ゲストでログインできなかった'));
   },
@@ -168,6 +174,7 @@ const Cloud = {
     const g = app.game;
     await this.dropStale();
     await Promise.all(seats.map((p) => Net.makeOffer(p)));
+    if (seats.some((p) => !p.offer)) throw new Error(TR('席の招待を作れなかった (もう一度ためす)'));
     let code = '';
     for (let i = 0; ; i++) {
       code = await this.freeCode();

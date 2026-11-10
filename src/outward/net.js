@@ -114,7 +114,7 @@ const Net = {
     this.roomBusy = true;
     this.redraw();
     let room = null, err = '';
-    try { room = await Cloud.openRoom(seats); } catch (e) { err = e?.message || String(e); }
+    try { room = await Cloud.openRoom(seats); } catch (e) { err = Cloud.errText(e); }
     if (seq !== this.roomSeq) { if (room) Cloud.closeRoom(room); return; } // 作っているあいだに、画面を閉じた・作り直した
     this.roomBusy = false; this.roomErr = err; this.room = room;
     this.redraw();
@@ -214,7 +214,7 @@ const Net = {
     this.codeIn = code; this.nameIn = name;
     this.joining = true; this.joinErr = '';
     this.render();
-    try { await Cloud.joinRoom(code, name.trim().slice(0, 20)); } catch (e) { this.joinErr = e?.message || String(e); }
+    try { await Cloud.joinRoom(code, name.trim().slice(0, 20)); } catch (e) { this.joinErr = Cloud.errText(e); }
     this.joining = false;
     this.redraw();
   },

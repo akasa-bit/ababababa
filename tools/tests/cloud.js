@@ -26,9 +26,10 @@ const store = (op, path, data, merge) => {
   if (op === 'list') { const pre = `${path}/`; return [...DB.keys()].filter((k) => k.startsWith(pre) && !k.slice(pre.length).includes('/')).map((k) => ({ id: k.slice(pre.length), data: JSON.parse(DB.get(k)) })); }
   return null;
 };
-// ページに入れる偽物 (Firebase の窓口と同じ形)。watch は 0.2 秒ごとに読み直す
+// ページに入れる偽物 (Firebase の窓口と同じ形)。watch は 0.2 秒ごとに読み直す。本物と同じく、undefined の入った文書は書けない
 const fake = () => {
   const call = (...a) => window.__fbStore(...a);
+  const hasUndef = (o) => o === undefined || (o !== null && typeof o === 'object' && Object.values(o).some(hasUndef)); // 本物の Firestore は undefined の入った文書を断る
   let user = null; const subs = [];
   const tell = () => subs.forEach((cb) => cb(user));
   window.__FB_FAKE = {
@@ -38,7 +39,7 @@ const fake = () => {
     guest: async () => { user = { uid: `g${Math.random().toString(36).slice(2, 8)}`, name: '', email: '', guest: true }; tell(); },
     signOut: async () => { user = null; tell(); },
     setName: async (n) => { user.name = n; },
-    get: (p) => call('get', p), set: (p, d, m) => call('set', p, d, !!m), del: (p) => call('del', p), list: (p) => call('list', p),
+    get: (p) => call('get', p), set: async (p, d, m) => { if (hasUndef(d)) throw new Error(`Unsupported field value: undefined (${p})`); return call('set', p, d, !!m); }, del: (p) => call('del', p), list: (p) => call('list', p),
     watch: (p, cb) => { let last = ''; const t = setInterval(async () => { const d = await call('get', p); const s = JSON.stringify(d); if (s !== last) { last = s; cb(d); } }, 200); return () => clearInterval(t); },
   };
 };
