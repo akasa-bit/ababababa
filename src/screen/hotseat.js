@@ -109,7 +109,7 @@ $('home').onclick = (e) => {
   if (act.startsWith('acct')) return accountAction(act, b.dataset.id);
   if (act.startsWith('nat')) return natAction(act, b.dataset.id);
   if (act === 'nethost') { closeHome(0); setSpeed(0); return Net.openHost(); }
-  if (act === 'netjoin') { closeHome(0); setSpeed(0); Net.role = null; return Net.render(); }
+  if (act === 'netjoin') { closeHome(0); setSpeed(0); return Net.openJoin(); }
   // シングルプレイの設定を決めたら地図を作る。いまのゲームが進んでいるときだけ 2 回押して確定する (B-194)
   if (act === 'new') {
     if (homeGoing() && !confirm2('new')) return;

@@ -152,7 +152,10 @@ table.vassals td.vgrant { white-space:nowrap; } table.vassals td.vgrant select {
 #netbox .nethelp { margin-top:12px; font-size:var(--fs1); color:var(--muted); }
 #netbox .nethelp summary { cursor:pointer; min-height:32px; color:var(--fg); }
 #netbox .nethelp ul { margin:4px 0 0 18px; padding:0; }
-#netbox .roomcode { font:22px var(--font-num); letter-spacing:.2em; color:var(--accent); margin-left:8px; }
+#netbox .roomcode { font:34px var(--font-num); letter-spacing:.25em; color:var(--accent); margin:0 8px; user-select:all; }
+#netbox #netcode { width:11em; text-transform:uppercase; letter-spacing:.15em; }
+#netbox #netcode::placeholder { letter-spacing:0; text-transform:none; }
+#netbox .invite h3 { display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
 #netbox input { font:16px var(--font-num); padding:8px; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; min-height:44px; }
 #toast { position:fixed; z-index:45; left:50%; bottom:24px; transform:translateX(-50%); background:var(--panel); border:1px solid var(--accent); border-radius:8px; padding:10px 16px; max-width:calc(100% - 32px); font-size:14px; }
 #toast[hidden] { display:none; }
@@ -198,6 +201,7 @@ table.vassals td.vgrant { white-space:nowrap; } table.vassals td.vgrant select {
 #home .big { font-size:16px; padding:10px 22px; border-color:var(--accent); color:var(--accent); }
 /* ホームの表紙: 天の川の写真の上に名前と「はじめる」1 つ (B-045)。細かい設定は下の「詳しい設定」に畳む */
 #home details.sec { margin-top:8px; } #home details.sec > summary { font-size:var(--fs2); min-height:44px; }
+#home details.acctcfg > summary { cursor:pointer; color:var(--muted); font-size:var(--fs1); }
 #home .natc { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px 0; border-bottom:1px solid var(--line); }
 #home .natc .info { flex:1; min-width:220px; font-size:14px; } #home .natc .nm { font-size:17px; } #home .natc .btns { display:flex; gap:6px; } #home .natc .btns button { white-space:nowrap; min-width:64px; margin:0; }
 #home .tr { display:inline-block; border:1px solid var(--line); border-radius:4px; padding:0 6px; margin:3px 4px 0 0; font-size:13px; }

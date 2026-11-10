@@ -75,9 +75,9 @@ function multiHtml() {
   return TR`<section><h3>ホットシート (1 台を交代で使う)</h3>
       <div class="row"><div class="info">シングルプレイで国の数を 2 つ以上にし、国家選択で「＋人間」を 2 つ以上にする。</div><button data-home="tab" data-t="single">シングルプレイの設定へ</button></div></section>
     <section><h3>ネット対戦</h3>
-      <div class="row"><div class="info">別の端末の人と、サーバーなしでつないで遊ぶ。ホストは国家選択で「＋人間」を 2 つ以上にして「ネット対戦」を選ぶ (いまのゲームに人間が 2 人以上いれば、ここからもホストになれる)。参加する人は、ホストの招待コードを貼る。</div>
+      <div class="row"><div class="info">別の端末の人とつないで遊ぶ。ホストは国家選択で「＋人間」を 2 つ以上にして「ネット対戦」を選ぶと、4 文字の招待コードが出る (いまのゲームに人間が 2 人以上いれば、ここからもホストになれる)。参加する人は、「参加する」でその招待コードを入れるだけ。ログインは要らない。</div>
         ${app.game.humans().length > 1 ? TR('<button data-home="nethost">ホストになる</button>') : ''}<button data-home="netjoin">参加する</button></div>
-      <div class="row"><div class="info">ログインしていれば、ホストは「部屋を作る」でコードを出し、参加する人はそのコードを入れるだけでつながる。</div><button data-home="tab" data-t="account" data-from="multi">アカウント${Cloud.user ? TR(' (ログイン中)') : ''}</button></div></section>`;
+      <div class="row"><div class="info">相手に見せる名前を決めておく・Google などでログインするときは、アカウントへ (しなくても遊べる)。</div><button data-home="tab" data-t="account" data-from="multi">アカウント${Cloud.user ? TR(' (ログイン中)') : ''}</button></div></section>`;
 }
 // 友達と遊ぶ (回 GA12・B-063。回 W4 の W4-Q1 = b・W4-Q2 = a): はじめての友達に渡す 1 枚の遊び方。短い版 (100 年) をネット対戦で 1 回遊び、
 // 終わったら感想を書いて「記録を書き出す」のファイルを送ってもらう (感想もそのファイルに入る)
@@ -93,13 +93,12 @@ function friendsHtml() {
     <section><h3>2. ホスト (誘った人) のすること</h3><ol class="steps">
       <li>下のボタンで、終わりの年を「100 年」・国の数を 4 か国にした設定のページを開き、「次へ (国家選択)」。</li>
       <li>国家選択で、友達の国を「＋人間」にして「ネット対戦」を押す。</li>
-      <li>友達ごとに「招待コードを作る」→「コピー」してメッセージアプリで送る → 返ってきた返事コードを貼って「つなぐ」。全員つながったら「はじめる」。アカウントにログインしていれば、「部屋を作る」で出る 6 文字の部屋のコードを伝えるだけでもよい。</li>
+      <li>4 文字の招待コードが出るので、「コピー」してメッセージアプリで送る (声で伝えてもよい)。友達が入ると、国の名前の横に友達の名前と「つながった」が出る。全員つながったら「はじめる」。</li>
       <li>速さはホストが決める。はじめは「1 年」(1 秒に 1 年) がよい。だれかが考えたいときは止める。</li></ol>
-      <div class="row"><div class="info">遅れて来た人・途中で切れた人は、メニューの「ホーム」で開くネット対戦の画面の「入っていない国」から招待を作り直すと、その国に入れる。</div><button data-home="friendsetup">100 年の版の設定へ</button></div></section>
+      <div class="row"><div class="info">遅れて来た人・途中で切れた人は、メニューの「ホーム」で開くネット対戦の画面の「入っていない国」で招待コードを作って伝えると、その国に入れる。</div><button data-home="friendsetup">100 年の版の設定へ</button></div></section>
     <section><h3>3. 参加する人のすること</h3><ol class="steps">
       <li>ホーム → マルチプレイ →「参加する」(下のボタンでもよい)。</li>
-      <li>ホストからもらった招待コードを貼って「返事コードを作る」→ できた返事コードを「コピー」してホストに送る。</li>
-      <li>ホストから 6 文字の部屋のコードが来たときは、先にホーム →「アカウント」→「ゲストではじめる」を押す (名前を入れておくと、ホストの画面に出る)。そのあと「参加する」の画面の「部屋に入る」にコードを入れる (返事コードは要らない)。</li>
+      <li>ホストからもらった 4 文字の招待コードと、自分の名前を入れて「参加する」。ログインは要らない。</li>
       <li>つながったら、ホストが始めるのを待つ。速さのボタンを押すと、ホストに頼む形で変わる。</li></ol>
       <div class="row"><div class="info">つながらないときは、ネット対戦の画面の「つながらないとき」を見る。</div><button data-home="netjoin">参加する</button></div></section>
     <section><h3>4. 最初の 10 分</h3><ol class="steps">
@@ -132,11 +131,14 @@ function homeGoing() { return !!app.started || app.game.year > START_YEAR + 0.01
 function accountTabHtml() {
   const C = Cloud;
   const st = C.status ? `<p class="note">${esc(C.status)}</p>` : '';
-  const cfg = TR`<section><h3>Firebase の設定</h3>
-      <p class="note">${FIREBASE_CONFIG ? TR('このゲームには Firebase の設定が入っている。') : TR('このゲームには、まだ Firebase の設定が入っていない。')}Firebase のコンソールで作ったウェブアプリの設定 (firebaseConfig の JSON) を貼ると、この端末だけで使える。</p>
-      <textarea id="acct-cfg" rows="4" placeholder='{"apiKey": "…", "authDomain": "…", "projectId": "…", "appId": "…"}'>${esc(localStorage.getItem?.(C.configKey) || '')}</textarea>
-      <div class="row"><button data-home="acctcfg">設定を使う</button><button class="ghost" data-home="acctcfgdel">貼った設定を消す</button></div></section>`;
-  if (!C.available()) return TR`<section><h3>アカウント</h3><p>アカウントを作ると、セーブと自作の国をクラウドに置いて別の端末でも使えるようになり、ネット対戦も部屋のコードだけでつなげる。</p></section>${st}${cfg}`;
+  // Firebase の設定を貼る欄: このゲームに設定が入っていれば、たたんでおく (ふつうは触らない。別の Firebase で試すときだけ開く。依頼 2026-11-10 の common-1)
+  const pasted = localStorage.getItem?.(C.configKey) || '';
+  const cfgBody = TR`<p class="note">${FIREBASE_CONFIG ? TR('このゲームには Firebase の設定が入っている。') : TR('このゲームには、まだ Firebase の設定が入っていない。')}Firebase のコンソールで作ったウェブアプリの設定 (firebaseConfig の JSON) を貼ると、この端末だけで使える。</p>
+      <textarea id="acct-cfg" rows="4" placeholder='{"apiKey": "…", "authDomain": "…", "projectId": "…", "appId": "…"}'>${esc(pasted)}</textarea>
+      <div class="row"><button data-home="acctcfg">設定を使う</button><button class="ghost" data-home="acctcfgdel">貼った設定を消す</button></div>`;
+  const cfg = FIREBASE_CONFIG && !pasted ? TR`<section><details class="acctcfg"><summary>別の Firebase を使う (ふつうは要らない)</summary>${cfgBody}</details></section>` : TR`<section><h3>Firebase の設定</h3>
+      ${cfgBody}</section>`;
+  if (!C.available()) return TR`<section><h3>アカウント</h3><p>アカウントを作ると、セーブと自作の国をクラウドに置いて別の端末でも使えるようになり、ネット対戦も 4 文字の招待コードだけでつなげる。</p></section>${st}${cfg}`;
   if (!C.api) { C.init(); return TR`<section><h3>アカウント</h3><p class="muted">Firebase につないでいる…</p></section>${st}${cfg}`; }
   if (!C.user) {
     return TR`<section><h3>ログイン</h3>
@@ -157,6 +159,6 @@ function accountTabHtml() {
       ${C.saves ? saves || TR('<p class="muted">まだない</p>') : TR('<p class="muted">読んでいる…</p>')}</section>
     <section><h3>自作の国 (国家づくり)</h3>
       <div class="row"><div class="info">この端末に ${NationLib.list.length} つ</div><button data-home="acctnatpush">クラウドへ送る</button><button data-home="acctnatpull">クラウドから足す</button></div></section>
-    <section><h3>ネット対戦</h3><p class="note">ログインしていれば、ネット対戦のホストは「部屋を作る」でコードを出し、参加する人はそのコードを入れるだけでつながる。</p></section>
+    <section><h3>ネット対戦</h3><p class="note">ネット対戦は、ログインしていなくても 4 文字の招待コードでつなげる (そのときはゲストとして自動で入る)。ここで名前を決めておくと、相手の画面に出る。</p></section>
     ${cfg}`;
 }
