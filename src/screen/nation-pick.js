@@ -111,11 +111,11 @@ function renderPick() {
   const g = app.game;
   const hs = app.picking.humans;
   $('pick').innerHTML = TR`<div class="phead"><button class="ghost" data-pick="back">戻る</button><h2>国家選択</h2></div>
-    <p class="muted">カードを押して国を選ぶ。「アレンジする」で国の名前・種族・特性・母星を変えられる。「＋人間」で人間の国を増やすと、ホットシート (1 台を交代で使う) かネット対戦で遊べる。選ばなかった国は AI が動かす。難易度: <b>${HANDICAP[g.handicap].label}</b></p>
+    <p class="muted">カードを押して国を選ぶ。「アレンジする」で国の名前・種族・特性・母星を変えられる。「＋人間」で人間の国を増やすと、ホットシート (1 台を交代で使う) で遊べる。ネット対戦は、自分の国を選んで「ネット対戦の部屋を作る」(ほかの人は、部屋に入ってから自分で国を選ぶ)。選ばなかった国は AI が動かす。難易度: <b>${HANDICAP[g.handicap].label}</b></p>
     <div class="nats">${g.nations.map((n) => nationCard(g, n)).join('')}</div>
     <div class="go">${hs.length > 1
-    ? TR`<button class="big" data-pick="go">人間 ${hs.length} 人・交代で遊ぶ</button><button class="big" data-pick="net">人間 ${hs.length} 人・ネット対戦</button>`
-    : TR`<button class="big" data-pick="go">${esc(g.nationOf(hs[0]).name)}ではじめる</button>`}</div>`;
+    ? TR`<button class="big" data-pick="go">人間 ${hs.length} 人・交代で遊ぶ</button>`
+    : TR`<button class="big" data-pick="go">${esc(g.nationOf(hs[0]).name)}ではじめる</button>`}${TRIAL ? '' : TR`<button class="big" data-pick="net">${esc(g.nationOf(app.picking.cap).name)}でネット対戦の部屋を作る</button>`}</div>`;
 }
 // 首都を地図の真ん中に出す (国家選択は全画面なので、はじめたときに見える)
 function centerPick(sys) { galaxyView.centerOn(sys); }
@@ -151,17 +151,22 @@ $('pick').onclick = (e) => {
   if (!el) return;
   if (el.dataset.pick === 'back') { app.picking = null; $('pick').hidden = true; app.homeTab = 'single'; return openHome(); }
   if (el.dataset.pick === 'go' || el.dataset.pick === 'net') {
-    const caps = g.nations.map((n) => n.cap).filter((c) => app.picking.humans.includes(c)); // 国の順
+    // ネット対戦の部屋は、自分の国だけを決めて開く (2026-11-10 のユーザーの依頼 common-3: ほかの人は、部屋に入ってから自分で国を選ぶ。
+    // 選ばれた国を人間の席にするのは、ホストが始めるとき。outward/net.js の start)。「歩みはじめた」の知らせも、そのときに出す
+    const net = el.dataset.pick === 'net';
+    const caps = net ? [app.picking.cap] : g.nations.map((n) => n.cap).filter((c) => app.picking.humans.includes(c)); // 国の順
     g.setPlayers(caps);
     g.pi = Math.max(0, caps.indexOf(app.picking.cap));
     app.picking = null;
     $('pick').hidden = true;
-    PlayLog.add('home', { act: 'nation', caps });
-    for (let i = 0; i < caps.length; i++) if (caps[i] !== 0) g.asPlayer(i, () => { if (caps.length > 1) g.msgTo = i; g.message(JA`${g.nationOf(caps[i]).name}として歩みはじめた。首都は ${g.system(caps[i]).name}。`); g.msgTo = undefined; });
+    if (!net) {
+      PlayLog.add('home', { act: 'nation', caps });
+      for (let i = 0; i < caps.length; i++) if (caps[i] !== 0) g.asPlayer(i, () => { if (caps.length > 1) g.msgTo = i; g.message(JA`${g.nationOf(caps[i]).name}として歩みはじめた。首都は ${g.system(caps[i]).name}。`); g.msgTo = undefined; });
+    }
     app.selectSystem(g.cap);
     galaxyView.centerOn(g.system(g.cap));
     save();
-    if (el.dataset.pick === 'net') { closeHome(1); setSpeed(0); return Net.openHost(); }
+    if (net) { closeHome(1); setSpeed(0); return Net.openHost(true); }
     closeHome(1);
     pauseForFirstMove();
     if (caps.length > 1) showCurtain(g.pi, false);

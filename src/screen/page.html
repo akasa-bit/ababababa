@@ -156,6 +156,15 @@ table.vassals td.vgrant { white-space:nowrap; } table.vassals td.vgrant select {
 #netbox #netcode { width:11em; text-transform:uppercase; letter-spacing:.15em; }
 #netbox #netcode::placeholder { letter-spacing:0; text-transform:none; }
 #netbox .invite h3 { display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
+#netbox .row .info, #netbox .lrow .info { flex:1; min-width:0; }
+#netbox .lobby { display:grid; gap:6px; margin:10px 0; }
+#netbox .lrow { display:flex; gap:8px; align-items:center; border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+#netbox .lrow.on { border-color:var(--accent); background:rgba(255,255,255,.05); }
+#netbox .lrow.host, #netbox .lrow.taken, #netbox .lrow.gone { opacity:.7; }
+#netbox .lrow .who { font-size:var(--fs1); color:var(--muted); }
+#netbox .lrow.on .who { color:var(--accent); }
+#netbox .lobbynat { margin:4px 0 8px 18px; padding:0; font-size:var(--fs1); }
+#netbox .lobbynat li.gone { opacity:.6; }
 #netbox input { font:16px var(--font-num); padding:8px; background:#0b0f18; color:var(--fg); border:1px solid var(--line); border-radius:6px; min-height:44px; }
 #toast { position:fixed; z-index:45; left:50%; bottom:24px; transform:translateX(-50%); background:var(--panel); border:1px solid var(--accent); border-radius:8px; padding:10px 16px; max-width:calc(100% - 32px); font-size:14px; }
 #toast[hidden] { display:none; }

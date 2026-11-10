@@ -148,7 +148,8 @@ const Cloud = {
   },
   // --- 部屋 (ネット対戦のつなぎ方): ホストが部屋を作り、席ごとの招待 (WebRTC の offer) を Firestore に置く。部屋の名前が招待コード (4 文字)。
   //     参加者は招待コードで席を取り、返事 (answer) を置く。ホストは返事を見てつなぐ (長いコードを手で渡し合わなくてよい)。
-  //     どちらも、ログインしていなければゲストとして自動で入る (ensureUser) ---
+  //     どちらも、ログインしていなければゲストとして自動で入る (ensureUser)。
+  //     席 = つながる口 (Net.slots の id)。国とは別で、どの国を動かすかは、つながったあとに部屋の中で選ぶ (依頼 common-3。outward/net.js) ---
   // 招待コードを 1 つ作る。画面のための乱数 (試合の乱数は使わない)
   roomCode() {
     const all = ROOM_LETTERS + ROOM_DIGITS;
@@ -167,48 +168,46 @@ const Cloud = {
     }
     throw new Error(TR('空いている招待コードが見つからなかった (もう一度ためす)'));
   },
-  // seats: 席を出す参加者 (まだつながっていない国。試合の途中は、切れた国だけ。回 SO5)。席の招待がみなそろってから部屋を返す
+  // seats: 席を出す口 (まだだれも入っていない口)。席の招待がみなそろってから部屋を返す
   // (そろう前に招待コードを見せると、先に入れた人が「あいている席がない」になる)。作った部屋を Net.room に置くのは呼んだ側 (Net.autoRoom)
   async openRoom(seats) {
     await this.ensureUser();
-    const g = app.game;
     await this.dropStale();
     await Promise.all(seats.map((p) => Net.makeOffer(p)));
     if (seats.some((p) => !p.offer)) throw new Error(TR('席の招待を作れなかった (もう一度ためす)'));
     let code = '';
     for (let i = 0; ; i++) {
       code = await this.freeCode();
-      try { await this.api.set(`rooms/${code}`, { host: this.user.uid, hostName: this.name(), ed: EDITION, open: true, created: Date.now(), seats: seats.map((p) => ({ pi: p.pi, realm: g.realmName(p.cap) })) }); break; } catch (e) { if (i >= 2) throw e; } // 探してから書くまでに同じコードを取られた (とても稀): 引き直す
+      try { await this.api.set(`rooms/${code}`, { host: this.user.uid, hostName: this.name(), ed: EDITION, open: true, created: Date.now(), seats: seats.map((p) => ({ pi: p.id })) }); break; } catch (e) { if (i >= 2) throw e; } // 探してから書くまでに同じコードを取られた (とても稀): 引き直す
     }
-    const room = { code, host: true, seats: seats.map((p) => p.pi), unsub: [] };
+    const room = { code, host: true, seats: seats.map((p) => p.id), unsub: [] };
     try { localStorage.setItem(ROOM_KEY, code); } catch { /* 保存できない環境 */ }
     for (const peer of seats) {
-      await this.api.set(`rooms/${code}/seats/${peer.pi}`, { offer: peer.offer, realm: g.realmName(peer.cap) });
-      peer.guest = ''; peer.answered = null; peer.state = TR('参加を待っている');
+      await this.api.set(`rooms/${code}/seats/${peer.id}`, { offer: peer.offer });
+      peer.name = ''; peer.answered = null; peer.state = TR('参加を待っている');
       room.unsub.push(this.watchSeat(room, peer));
     }
     return room;
   },
-  // 席を見張る: 取った人の名前を出し、返事 (answer) が置かれたらつなぐ
+  // 席を見張る: 取った人の名前を出し (つながるまでのあいだ)、返事 (answer) が置かれたらつなぐ
   watchSeat(room, peer) {
-    return this.api.watch(`rooms/${room.code}/seats/${peer.pi}`, (d) => {
-      if (d?.name) peer.guest = d.name;
+    return this.api.watch(`rooms/${room.code}/seats/${peer.id}`, (d) => {
+      if (d?.name && !peer.joined) peer.name = d.name;
       if (d?.answer && peer.answered !== d.answer) { peer.answered = d.answer; Net.takeAnswer(peer, d.answer); } else Net.redraw();
     });
   },
-  // つながらなかった・切れた席に、新しい招待を置き直す (Net.reseat から。招待コードはそのまま。席を取った人と返事は消える)
-  // コードを作り直したときにつながっていて席を出していなかった国は、いまの部屋に席を足す
+  // つながらなかった・切れた口の席に、新しい招待を置き直す (Net.reseat から。招待コードはそのまま。席を取った人と返事は消える)
+  // コードを作り直したときに人が入っていて席を出していなかった口は、いまの部屋に席を足す
   async reseat(room, peer) {
-    const g = app.game;
     await Net.makeOffer(peer);
     if (Net.room !== room || !peer.offer) return; // 作り直しているあいだに、部屋を閉じた
-    await this.api.set(`rooms/${room.code}/seats/${peer.pi}`, { offer: peer.offer, realm: g.realmName(peer.cap) });
-    if (!room.seats.includes(peer.pi)) {
-      room.seats.push(peer.pi);
-      await this.api.set(`rooms/${room.code}`, { seats: room.seats.map((pi) => ({ pi, realm: g.realmName(g.players[pi].cap) })) }, true);
+    await this.api.set(`rooms/${room.code}/seats/${peer.id}`, { offer: peer.offer });
+    if (!room.seats.includes(peer.id)) {
+      room.seats.push(peer.id);
+      await this.api.set(`rooms/${room.code}`, { seats: room.seats.map((id) => ({ pi: id })) }, true);
       room.unsub.push(this.watchSeat(room, peer));
     }
-    peer.guest = ''; peer.answered = null; peer.state = TR('もう一度、参加を待っている (同じ招待コードで入り直せる)');
+    peer.name = ''; peer.answered = null; peer.state = TR('参加を待っている');
   },
   // 部屋を閉じる: 見張りを止め、ホストなら部屋を消す (招待コードが空く)
   closeRoom(room = Net.room) {
@@ -236,7 +235,8 @@ const Cloud = {
       else localStorage.removeItem(ROOM_KEY);
     } catch { /* 消せなくても先へ進む */ }
   },
-  // 参加: 招待コードで、あいている席を取る (先に取られていたら次の席)。招待を受けて返事を置く。name = ホストの画面に出す名前 (入れたときだけ変える)
+  // 参加: 招待コードで、あいている席 (つながる口) を取る (先に取られていたら次の席)。招待を受けて返事を置く。つながると部屋に入り、国は部屋の中で選ぶ。
+  // name = ほかの人の画面に出す名前 (入れたときだけ変える)
   async joinRoom(raw, name = '') {
     const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (code.length !== ROOM_LEN) throw new Error(TR`招待コードは ${ROOM_LEN} 文字 (英字と数字)`);
@@ -260,10 +260,10 @@ const Cloud = {
         if (!ans) throw new Error(Net.status || TR('返事を作れなかった'));
         await this.api.set(path, { answer: ans }, true);
       } catch (e) { Net.room = null; throw e; }
-      Net.status = TR`招待コード ${code} で、${st.realm}の席についた。ホストが始めるのを待つ`;
+      Net.status = TR`招待コード ${code} の部屋に入るところ。つながると、国を選べる`;
       return;
     }
-    throw new Error(TR('あいている席がない (ホストに、招待コードを作り直してもらう)'));
+    throw new Error(TR('部屋に入る口があいていない (少し待って入り直すか、ホストに招待コードを作り直してもらう)'));
   },
 };
 function accountAction(act, id) {

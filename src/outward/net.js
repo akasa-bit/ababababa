@@ -1,6 +1,10 @@
 // --- ネット対戦 (WebRTC。端末どうしを直接つなぐ) ---
 // つなぎ方は 2 つ: (1) 招待コード (4 文字): ホストが Firebase に部屋を作り、参加者がコードを入れるだけ (outward/cloud.js の openRoom・joinRoom。
 // 2026-11-10 のユーザーの依頼 common-1・common-2 から、こちらが表。ログインは要らない)。(2) 長いコード (招待と返事) を手で渡し合う (サーバーなし。予備)
+// 部屋 (ロビー。2026-11-10 のユーザーの依頼 common-3「Hoi４のマルチを参考に、招待コードが必要なのは部屋にはいるだけにして、どの国を選ぶのかは参加者が選べるようにして」):
+// つながる口 (slot) は国と別。参加者は、招待コード (か長いコード) でホストにつながると部屋に入り、部屋の中で動かす国を自分で選ぶ。
+// ホストが始めると、選ばれた国が人間の席になる。始まったあとに入った人・切れて戻った人は、AI が動かしている国を選ぶと、その国ですぐ入る (途中参加)。
+// 部屋のやりとり (データチャネル): 参加者 → hello (名前)・pick (選んだ国)、ホスト → lobby (国の一覧と、だれが選んだか)・bye (部屋から外した)
 // ロックステップ: 時間を進めるのはホストだけ。ホストは 1 コマごとに「そのコマで実行する命令と、進める年数」を全員に送り、
 // どの端末も同じ順に「命令を実行 → advance(年数)」をくり返す。試合の乱数もシードから続く 1 本なので、全員が同じ結果になる。
 // ずれを見つけるため、ときどき状態の要約 (ハッシュ) を添える。合わなければ、ホストの状態をまるごと受け取って合わせ直す
@@ -13,13 +17,16 @@ const NET_HELP = () => TR`<details class="nethelp"><summary>つながらない�
   <li>スマートフォンの回線 (テザリングを含む)・会社や学校のネットでは、つながらないことがある (中継のサーバーを置いていないため)。片方だけでも家の Wi-Fi にすると通ることがある。</li>
   <li>「つないでいる…」のまま 20 秒たったら、ホストが「コードを作り直す」を押して新しい招待コードを伝え、相手は「コードを入れ直す」で入り直す (長いコードの方法なら、招待と返事のコードを両方作り直す)。</li>
   <li>両方とも同じ版 (同じ URL のゲーム) を開いているかを確かめる。</li>
-  <li>試合の途中で切れたら (遅れて来た人も)、ホストがメニューの「ホーム」でネット対戦の画面を開き、招待コードを作って伝えると、その国に入れる。</li>
+  <li>試合の途中で切れたら (遅れて来た人も)、同じ招待コードで部屋に入り直し、AI が動かしている国を選ぶと、その国で入れる (コードが使えなければ、ホストがメニューの「ホーム」で開くネット対戦の画面で作り直す)。</li>
   <li>どうしてもつながらなければ、その場はホットシートにする: はじめる前に、ホストがこの画面を「閉じる」。人間の国はそのまま残り、上の帯の「交代」で 1 台を順に回して遊べる。</li></ul></details>`;
 const Net = {
   on: false, role: null, pi: 0, k: 0,
-  peers: [], // ホスト: 参加者ごとの { pi, pc, dc, state, offer }。参加者: ホストへの 1 本
+  // ホスト: slots = つながる口 { id, pc, dc, state, offer, name, joined, pick, pi, cap }。joined = 相手が部屋に入っている。
+  //   pick = 部屋の中で選んだ国の首都 (始める前)。pi・cap = 試合で動かしている席と国 (始めたあと)。peers = 試合に入っている口 (コマを送る相手)。
+  // 参加者: peers = ホストへの 1 本。lobby = ホストから届いた部屋の様子 (国の一覧と、だれが選んだか)
+  slots: [], peers: [], lobby: null,
+  fresh: false, // ホスト: 国家選択から開いた、まだ始めていない試合の部屋。始めるときに、選ばれた国を人間の席にして席を作り直す
   queue: [], inbox: [], parts: {}, resyncs: 0, status: '',
-  left: [], // ホスト: 入っていない人間の席 (始めるときにつながっていなかった・途中で切れた。招待を作り直せば入れる。回 SO5)
   // 招待コードの部屋 (outward/cloud.js): room = { code, … }・roomBusy = 作っている途中・roomErr = 作れなかった理由・roomSeq = 作り直し・やめたの印。
   // manual = 長いコードを手で渡す方法を出す (オンラインの部屋が使えないとき・自分で切りかえたとき)。codeIn・nameIn = 参加の欄に入れた字 (描き直しても消さない)
   room: null, roomBusy: false, roomErr: '', roomSeq: 0, manual: false, codeIn: '', nameIn: '', joining: false, joinErr: '',
@@ -57,7 +64,8 @@ const Net = {
     peer.dc = dc;
     dc.onopen = () => {
       peer.state = TR('つながった');
-      if (this.role === 'host' && this.on && this.left.includes(peer)) return this.rejoin(peer);
+      if (this.role === 'host') { peer.joined = true; return this.lobbyChanged(); } // 部屋に入った: 国の一覧を送る
+      this.send(peer, { t: 'hello', name: this.myName() });
       this.render();
     };
     dc.onclose = () => { if (peer.dc === dc) this.lost(peer); }; // 招待を作り直したあとに届く、前のつながりの close は数えない
@@ -73,43 +81,53 @@ const Net = {
       this.receive(peer, m);
     };
   },
-  // つながらなかった (STUN だけでは届かない回線どうし。中継のサーバーは置いていない) ことを画面に出す
-  // 試合の途中では、相手のタブが閉じた・回線が落ちたことも、ここで知る (データチャネルの close は届かないことがある)
+  // つながらなかった (STUN だけでは届かない回線どうし。中継のサーバーは置いていない) ことを画面に出す。
+  // つながっていた相手のタブが閉じた・回線が落ちたことも、ここで知る (データチャネルの close は届かないことがあり、open のまま残ることもある)
   watch(peer, pc) {
     pc.addEventListener('connectionstatechange', () => {
       const st = pc.connectionState;
       if (pc !== peer.pc || (st !== 'failed' && st !== 'closed')) return;
-      if (this.on && (this.role !== 'host' || this.peers.includes(peer))) return this.lost(peer);
-      if (peer.dc?.readyState === 'open') return this.lost(peer); // 始める前につながっていた相手が落ちた (データチャネルは open のまま残ることがある)
+      if (this.role === 'host' ? peer.joined : this.on || peer.dc?.readyState === 'open') return this.lost(peer);
       peer.state = TR('つながらなかった (下の「つながらないとき」を見る)');
       peer.failed = true;
       this.reseat(peer);
-      if (!this.on || this.role === 'host') this.render();
+      if (this.role === 'host') this.redraw(); else if (!this.on) this.render();
     });
   },
   // --- ホスト ---
-  // ホストの画面を開く。オンラインの部屋が使えれば、すぐに招待コード (4 文字) を作る (ボタンもログインも要らない。依頼 common-1)
-  openHost() {
+  // 部屋を開く。fresh = 国家選択から開いた、まだ始めていない試合。つながる口は、国の数 − 1 (自分のほかの国を、みな人が動かせる数)。
+  // オンラインの部屋が使えれば、すぐに招待コード (4 文字) を作る (ボタンもログインも要らない。依頼 common-1)
+  openHost(fresh = false) {
     const g = app.game;
     this.leaveRoom();
+    this.closeSlots();
     this.role = 'host';
     this.pi = g.pi;
-    this.peers = g.players.map((p, i) => ({ pi: i, cap: p.cap })).filter((p, i) => g.players[i].human && i !== this.pi).map((p) => ({ ...p, state: TR('まだ') }));
+    this.fresh = fresh;
+    this.slots = Array.from({ length: Math.max(1, (g.nations?.length || 2) - 1) }, (_, id) => ({ id, state: TR('まだ'), name: '', joined: false, pick: null, pi: null, cap: null }));
+    this.peers = [];
     this.manual = !Cloud.available();
     this.render();
     if (!this.manual) this.autoRoom();
   },
+  // つながる口をみな閉じる (前のつながりの close・failed は数えない)
+  closeSlots() {
+    for (const s of this.slots) { const pc = s.pc; s.pc = s.dc = null; pc?.close(); }
+    this.slots = [];
+  },
+  // 始める前にホストが部屋をやめる (画面を閉じた): 部屋を消し、入っていた人とのつながりも切る
+  closeHost() { this.leaveRoom(); this.closeSlots(); this.peers = []; this.role = null; },
   // いまの招待コードの部屋をやめる (作っている途中のものも)
   leaveRoom() {
     this.roomSeq++;
     this.roomBusy = false; this.roomErr = '';
     if (this.room) { Cloud.closeRoom(this.room); this.room = null; }
   },
-  // 招待コードの部屋を作る (作り直す)。席を出すのは、まだつながっていない国だけ (つながった相手はそのまま)。試合の途中は、入っていない国
+  // 招待コードの部屋を作る (作り直す)。席を出すのは、まだだれも入っていない口だけ (入っている人はそのまま)
   async autoRoom() {
     this.leaveRoom();
     const seq = this.roomSeq;
-    const seats = this.on ? [...this.left] : this.peers.filter((p) => p.dc?.readyState !== 'open'); // 切れた国のデータチャネルは open のまま残ることがあるので、試合の途中は left をそのまま
+    const seats = this.slots.filter((s) => !s.joined);
     if (!seats.length) return this.redraw();
     this.roomBusy = true;
     this.redraw();
@@ -119,24 +137,24 @@ const Net = {
     this.roomBusy = false; this.roomErr = err; this.room = room;
     this.redraw();
   },
-  // 長いコードを手で渡す方法に切りかえる: 招待コードの部屋をやめ、まだつながっていない席の招待は作り直してもらう
+  // 長いコードを手で渡す方法に切りかえる: 招待コードの部屋をやめ、まだだれも入っていない口の招待は作り直してもらう
   toManual() {
     this.leaveRoom();
     this.manual = true;
-    for (const p of this.on ? [] : this.peers) if (p.dc?.readyState !== 'open') { p.pc?.close(); p.pc = p.dc = p.offer = null; p.state = TR('まだ'); p.guest = ''; }
+    for (const s of this.slots) if (!s.joined) { const pc = s.pc; s.pc = s.dc = s.offer = null; pc?.close(); s.state = TR('まだ'); s.name = ''; }
     this.render();
   },
   // ネット対戦の画面が出ているときだけ描き直す (あとから届く知らせで、閉じた画面を勝手に開かない)
   redraw() { if (!$('netbox').hidden) this.render(); },
-  // 招待コードの部屋で、つながらなかった・切れた席に、新しい招待を置き直す (招待コードはそのまま。相手は同じコードで入り直せる)
-  // 部屋がもうないとき (全員つながったあとに作り直して、出す席がなかった) は、始める前なら新しい招待コードの部屋を作る
-  reseat(peer) {
+  // 招待コードの部屋で、つながらなかった・切れた口に、新しい招待を置き直す (招待コードはそのまま。相手は同じコードで入り直せる)。
+  // 部屋がもうないとき (全員が入ったあとに作り直して、出す口がなかった) は、新しい招待コードの部屋を作る。手渡しの方法では、ホストが招待コードを作り直す
+  reseat(slot) {
     if (this.role !== 'host') return;
     const room = this.room;
-    if (!room?.host) { if (!this.on && !this.manual && !this.roomBusy && Cloud.available()) this.autoRoom(); return; }
-    if (peer.reseating) return;
-    peer.reseating = true;
-    Cloud.reseat(room, peer).catch(() => {}).finally(() => { peer.reseating = false; this.redraw(); });
+    if (!room?.host) { if (!this.manual && !this.roomBusy && Cloud.available()) this.autoRoom(); return; }
+    if (slot.reseating) return;
+    slot.reseating = true;
+    Cloud.reseat(room, slot).catch(() => {}).finally(() => { slot.reseating = false; this.redraw(); });
   },
   async makeOffer(peer) {
     peer.pc?.close();
@@ -147,8 +165,8 @@ const Net = {
     this.wire(peer, pc.createDataChannel(STORE, { ordered: true }));
     await pc.setLocalDescription(await pc.createOffer());
     await this.iceDone(pc);
-    if (peer.pc !== pc) return; // 待つあいだに、この席の招待を作り直した (新しいほうを使う)
-    peer.offer = await this.pack({ t: 'o', ed: EDITION, sdp: pc.localDescription.sdp, pi: peer.pi, cap: peer.cap });
+    if (peer.pc !== pc) return; // 待つあいだに、この口の招待を作り直した (新しいほうを使う)
+    peer.offer = await this.pack({ t: 'o', ed: EDITION, sdp: pc.localDescription.sdp, slot: peer.id });
     peer.state = TR('招待コードを渡して、返事を待っている');
     this.redraw();
   },
@@ -161,42 +179,89 @@ const Net = {
     } catch { peer.state = TR('返事コードが読めなかった'); this.reseat(peer); }
     this.redraw();
   },
+  // 相手に見せる自分の名前 (参加の欄に入れた名前か、アカウントの名前)
+  myName() { return String(this.nameIn || Cloud.user?.name || '').trim().slice(0, 20); },
+  // 部屋の国の一覧 (ホストの画面に出す・参加者に送る)。st: host = ホストの国、taken = 参加者が選んだ・動かしている、
+  // free = 選べる (AI が動かす)、gone = もう国ではない (滅んだ・従属した)。slot = 選んだ参加者の口
+  nationList() {
+    const g = app.game, hostCap = g.players[this.pi]?.cap;
+    return (g.nations || []).map((n) => {
+      const s = this.slots.find((x) => x.joined && (x.pi != null ? x.cap === n.cap : x.pick === n.cap));
+      const st = n.cap === hostCap ? 'host' : s ? 'taken' : !g.realmAlive(n.cap) ? 'gone' : 'free';
+      return { cap: n.cap, name: n.name, sp: n.species, tr: n.traits || [], st, who: st === 'host' ? this.myName() : s?.name || '', slot: s ? s.id : null };
+    });
+  },
+  lobbyMsg(slot, note = '') { return { t: 'lobby', on: this.on, you: slot.id, year: app.game.year, nations: this.nationList(), note }; },
+  // 部屋の様子が変わった (だれかが入った・国を選んだ・抜けた・試合が始まった): 試合に入っていない参加者みなに送り、画面を描き直す
+  lobbyChanged() {
+    for (const s of this.slots) if (s.joined && s.pi == null) this.send(s, this.lobbyMsg(s));
+    this.redraw();
+  },
+  // 参加者が国を選んだ (cap が null なら、選ぶのをやめた)。ほかの人が選んだ国・ホストの国・もう国ではない国は選べない。
+  // 始める前は選んだ印を付けるだけ (変えられる)。試合の途中は、その国ですぐ入る
+  takePick(slot, cap) {
+    if (!slot.joined || slot.pi != null) return;
+    if (cap === null || cap === undefined) { slot.pick = null; return this.lobbyChanged(); }
+    const n = this.nationList().find((x) => x.cap === Number(cap));
+    if (!n || !(n.st === 'free' || (n.st === 'taken' && n.slot === slot.id))) return this.send(slot, this.lobbyMsg(slot, 'taken'));
+    if (this.on) return this.hotJoin(slot, n.cap);
+    slot.pick = n.cap;
+    this.lobbyChanged();
+  },
+  // 途中参加 (始まったあとに入った人・切れて戻った人): いまの状態を送り、次のコマでその国を人の手に渡す (命令 rejoin)
+  hotJoin(slot, cap) {
+    const g = app.game;
+    slot.pi = g.playerOf(cap); slot.cap = cap; slot.pick = null;
+    this.peers.push(slot);
+    this.queue.push({ p: slot.pi, a: 'rejoin', d: {} });
+    this.sendState(slot);
+    uiNote(TR`${g.realmName(cap)}がネット対戦に入った`);
+    this.lobbyChanged();
+  },
+  // 部屋から外す (知らない人が入ったとき・席をあけたいとき)。試合に入っていた国は AI に任せる
+  kick(slot) {
+    if (!slot?.joined) return;
+    this.send(slot, { t: 'bye' });
+    this.lost(slot);
+  },
   start() {
     const g = app.game;
-    // つながらなかった国は AI に任せる。あとから招待を作り直せば、その国に入れる (遅れて来た人。回 SO5)
-    const late = this.peers.filter((p) => p.dc?.readyState !== 'open');
-    for (const p of late) { g.players[p.pi].human = false; p.pc?.close(); p.pc = p.dc = p.offer = null; p.state = TR('まだ'); }
-    this.peers = this.peers.filter((p) => p.dc?.readyState === 'open');
+    const ready = this.slots.filter((s) => s.joined && s.pick != null);
+    const hostCap = g.players[this.pi].cap;
+    if (this.fresh) {
+      // まだ始めていない試合: 選ばれた国 (とホストの国) を人間の席にして、席を作り直す (どの人も同じ初期値で始まる。ほかの国は AI の席)
+      const caps = g.nations.map((n) => n.cap).filter((c) => c === hostCap || ready.some((s) => s.pick === c));
+      g.setPlayers(caps);
+      g.pi = caps.indexOf(hostCap);
+      PlayLog.add('home', { act: 'nation', caps });
+      for (let i = 0; i < caps.length; i++) if (caps[i] !== 0) g.asPlayer(i, () => { if (caps.length > 1) g.msgTo = i; g.message(JA`${g.nationOf(caps[i]).name}として歩みはじめた。首都は ${g.system(caps[i]).name}。`); g.msgTo = undefined; });
+    } else {
+      // 続きの試合 (セーブを読んだ・ひとりで遊んでいた試合を開いた): 席はそのまま。選ばれた国は人の手に、選ばれなかった人間の席 (ホストのほか) は AI に任せる
+      g.players.forEach((p, i) => { if (i !== g.pi) p.human = ready.some((s) => s.pick === p.cap); });
+    }
+    this.fresh = false;
+    this.pi = g.pi;
+    for (const s of ready) { s.pi = g.playerOf(s.pick); s.cap = s.pick; s.pick = null; }
+    this.peers = ready;
     this.on = true;
     this.k = 0;
-    this.left = late;
-    this.leaveRoom();
     for (const p of this.peers) this.sendState(p);
     $('netbox').hidden = true;
     uiNote(TR`ネット対戦を始めた (${this.peers.length + 1} 人)。速さはホストが決める`);
     setSpeed(SPEEDS[1]);
     app.dirty = true;
+    this.lobbyChanged(); // 国を選んでいない参加者に、始まったことを知らせる (AI の国を選べば、その国で入れる)
   },
   sendState(peer) { this.send(peer, { t: 'init', pi: peer.pi, k: this.k, save: buildSave(app.game) }); },
-  // 入っていない席に、作り直した招待でつながった (途中で切れた人・遅れて来た人): いまの状態を送り、次のコマで国を人の手に戻す (命令 rejoin)
-  rejoin(peer) {
-    this.left = this.left.filter((p) => p !== peer);
-    this.peers.push(peer);
-    this.queue.push({ p: peer.pi, a: 'rejoin', d: {} });
-    this.sendState(peer);
-    if (!this.left.length) this.leaveRoom();
-    uiNote(TR`${app.game.realmName(peer.cap)}がネット対戦に入った`);
-    if (!$('netbox').hidden) this.render();
-  },
   // --- 参加者 ---
   async join(code) {
     let d;
     try { d = await this.unpack(code); if (d.t !== 'o') throw new Error(); } catch { this.status = TR('招待コードが読めなかった'); return this.render(); }
     if ((d.ed || 'game') !== EDITION) { this.status = TR`招待コードは${EDITION_LABEL[d.ed || 'game']}のもの。同じ版どうしでしかつなげない`; return this.render(); }
-    if (this.role === 'guest') this.peers[0]?.pc?.close(); // 入り直すときは、前のつながりを閉じる
+    if (this.role === 'guest' && this.peers[0]) { this.peers[0].gone = true; this.peers[0].pc?.close(); } // 入り直すときは、前のつながりを閉じる
     this.role = 'guest';
-    this.pi = d.pi;
-    const peer = { pi: 0, state: TR('つないでいる…') };
+    this.lobby = null;
+    const peer = { state: TR('つないでいる…') };
     this.peers = [peer];
     const pc = new RTCPeerConnection({ iceServers: NET_ICE });
     peer.pc = pc;
@@ -206,10 +271,10 @@ const Net = {
     await pc.setLocalDescription(await pc.createAnswer());
     await this.iceDone(pc);
     peer.answer = await this.pack({ t: 'a', sdp: pc.localDescription.sdp });
-    this.status = TR('返事コードをホストに渡してください。つながったら、ホストが始めるのを待つ');
+    this.status = TR('返事コードをホストに渡してください。つながったら、部屋で国を選ぶ');
     this.render();
   },
-  // 招待コード (4 文字) で参加する。ログインしていなければ、ゲストとして自動で入る (outward/cloud.js の joinRoom)
+  // 招待コード (4 文字) で部屋に入る。ログインしていなければ、ゲストとして自動で入る (outward/cloud.js の joinRoom)
   async joinCode(code, name) {
     this.codeIn = code; this.nameIn = name;
     this.joining = true; this.joinErr = '';
@@ -218,26 +283,35 @@ const Net = {
     this.joining = false;
     this.redraw();
   },
-  // 招待コードを入れ直す (つながらなかった・ホストがコードを作り直した): 参加の欄に戻す
+  // 部屋を出る・招待コードを入れ直す: 参加の欄に戻す
   leaveJoin() {
-    this.peers[0]?.pc?.close();
-    this.peers = []; this.role = null; this.room = null; this.status = ''; this.joinErr = '';
+    const peer = this.peers[0];
+    if (peer) { peer.gone = true; peer.pc?.close(); }
+    this.peers = []; this.role = null; this.room = null; this.lobby = null; this.status = ''; this.joinErr = '';
     this.render();
   },
-  // 参加の画面を開く (ホーム → マルチプレイ →「参加する」)。ホストの画面で作りかけた部屋はやめる
+  // 参加の画面を開く (ホーム → マルチプレイ →「参加する」)。ホストの画面で開いていた部屋はやめる
   openJoin() {
-    if (this.role === 'host') this.leaveRoom();
+    if (this.role === 'guest' && !this.on && this.peers[0] && !this.peers[0].gone) return this.render(); // もう部屋にいる・つないでいる途中: その画面に戻る
+    if (this.role === 'host') this.closeHost();
     this.role = null; this.manual = false; this.joinErr = '';
     this.render();
   },
+  // 部屋で国を選ぶ (cap が null なら、選ぶのをやめる)。決めるのはホスト (lobby の知らせが返る)
+  sendPick(cap) { this.send(this.peers[0], { t: 'pick', cap }); },
   // --- 通信 ---
   receive(peer, m) {
     if (this.role === 'host') {
+      if (m.t === 'hello') { peer.name = String(m.name || '').slice(0, 20) || peer.name; return this.lobbyChanged(); }
+      if (m.t === 'pick') return this.takePick(peer, m.cap);
+      if (peer.pi == null) return; // 試合に入っていない人 (部屋で国を選んでいる人) の命令は受けない
       if (m.t === 'c') this.queue.push({ p: peer.pi, a: m.a, d: m.d });
       else if (m.t === 'resync') { this.resyncs++; this.sendState(peer); }
       else if (m.t === 'speed') { setSpeed(SPEEDS.includes(m.v) ? m.v : 0); uiNote(TR`${app.game.realmName(app.game.players[peer.pi].cap)}が速さを変えた`); }
       return;
     }
+    if (m.t === 'lobby') { if (!this.on) { this.lobby = m; this.redraw(); } return; }
+    if (m.t === 'bye') return this.lost(peer, TR('ホストが部屋から外した'));
     if (m.t === 'init') return this.applyState(m);
     if (m.t === 'f') this.inbox.push(m);
   },
@@ -247,6 +321,7 @@ const Net = {
     g.pi = this.pi = m.pi;
     this.k = m.k;
     this.inbox = this.inbox.filter((f) => f.k > m.k);
+    this.lobby = null;
     if (!this.on) {
       this.on = true;
       closeHome(0);
@@ -323,31 +398,34 @@ const Net = {
     }
     return n > 0;
   },
-  lost(peer) {
+  // つながっていた相手が落ちた。why = 参加者の画面に出す理由 (なければ「接続が切れた」)
+  lost(peer, why) {
     if (this.role === 'host') {
-      if (!this.on) { // 始める前に相手が落ちた: つながりを片づける。招待コードの部屋なら、同じコードのまま席に新しい招待を置き直す (相手は入り直せる)
-        peer.pc?.close(); peer.pc = peer.dc = peer.offer = null;
-        peer.state = TR('切れた');
-        this.reseat(peer);
-        return this.redraw();
+      const g = app.game, was = peer.pi, cap = peer.cap, pc = peer.pc;
+      peer.pc = peer.dc = peer.offer = null; pc?.close(); // つながりを片づける (あとから届く、このつながりの close・failed は数えない)
+      peer.joined = false; peer.pick = null; peer.pi = null; peer.cap = null; peer.name = '';
+      peer.state = TR('切れた');
+      if (was !== null && was !== undefined) { // 試合に入っていた国は、AI に任せる
+        this.peers = this.peers.filter((p) => p !== peer);
+        this.queue.push({ p: was, a: 'drop', d: {} });
+        uiNote(TR`${g.realmName(cap)}との接続が切れた。この国は AI が動かす (招待コードで部屋に入り直して、同じ国を選ぶと戻れる)`);
       }
-      if (!this.peers.includes(peer)) return; // つなぎ直しの途中で切れた (もう AI が動かしている)
-      this.peers = this.peers.filter((p) => p !== peer);
-      this.queue.push({ p: peer.pi, a: 'drop', d: {} });
-      peer.state = TR('切れた'); peer.offer = null;
-      this.left.push(peer);
-      uiNote(TR`${app.game.realmName(peer.cap)}との接続が切れた。この国は AI が動かす (メニューの「ホーム」で開くネット対戦の画面から、招待を作り直すと戻れる)`);
-      if (!$('netbox').hidden) this.render();
-      return;
+      this.reseat(peer); // 招待コードの部屋なら、同じコードのまま、この口に新しい招待を置き直す
+      return this.lobbyChanged();
     }
     if (peer.gone) return; // データチャネルの close と、つながりの failed の両方から呼ばれる
     peer.gone = true;
-    if (!this.on) { this.status = TR('接続が切れた'); return this.render(); }
+    if (!this.on) { // 部屋にいるあいだに切れた: 参加の欄に戻して、理由を出す
+      peer.pc?.close();
+      this.peers = []; this.role = null; this.room = null; this.lobby = null;
+      this.status = this.joinErr = why || TR('接続が切れた');
+      return this.render();
+    }
     this.on = false;
     const g = app.game;
     g.players.forEach((p, i) => { if (i !== this.pi) p.human = false; });
     setSpeed(0);
-    uiNote(TR('ホストとの接続が切れた。ここからはひとりで続けられる (ほかの国は AI)。ホストに招待を作り直してもらえば、ホーム →「ネット対戦に参加」から戻れる'));
+    uiNote(TR('ホストとの接続が切れた。ここからはひとりで続けられる (ほかの国は AI)。ホーム → マルチプレイ →「参加する」で招待コードを入れ直し、同じ国を選ぶと戻れる'));
   },
   toast(text) {
     let el = $('toast');
@@ -358,19 +436,38 @@ const Net = {
     this.toastT = setTimeout(() => { el.hidden = true; }, 4000);
   },
   // --- 画面 ---
-  // 招待コードの欄 (ホスト)。mid = 試合の途中 (入っていない国のために作る。自動では作らない)
+  // 招待コードの欄 (ホスト)。mid = 試合の途中 (自動では作らない)
   roomHtml(mid) {
     if (!Cloud.available()) return '';
     const hand = mid ? '' : TR('<button class="ghost" data-net="manual">長いコードを手で渡してつなぐ</button>');
     if (this.room) {
       return TR`<section class="invite"><h3>招待コード <b class="roomcode">${esc(this.room.code)}</b> <button data-net="copycode">コピー</button></h3>
-        <p class="note">この 4 文字を相手に伝える。相手は、ホーム → マルチプレイ →「参加する」でコードを入れると、自動でつながる (ログインは要らない)。</p>
+        <p class="note">この 4 文字を相手に伝える。相手は、ホーム → マルチプレイ →「参加する」でコードを入れると部屋に入り、動かす国を自分で選ぶ (ログインは要らない)。</p>
         <div class="row"><button class="ghost" data-net="room">コードを作り直す</button>${hand}</div></section>`;
     }
     if (this.roomBusy) return TR('<section class="invite"><p>招待コードを作っている…</p></section>');
     if (this.roomErr) return TR`<section class="invite"><p class="bad">招待コードを作れなかった: ${esc(this.roomErr)}</p><div class="row"><button data-net="room">もう一度ためす</button>${hand}</div></section>`;
-    if (mid || this.manual || this.peers.some((p) => p.dc?.readyState !== 'open')) return TR`<section class="invite"><div class="row"><button ${mid ? '' : 'class="big"'} data-net="room">招待コード (4 文字) を作る</button></div></section>`;
+    if (mid || this.manual || this.slots.some((s) => !s.joined)) return TR`<section class="invite"><div class="row"><button ${mid ? '' : 'class="big"'} data-net="room">招待コード (4 文字) を作る</button></div></section>`;
     return '';
+  },
+  // 長いコードを手で渡す欄 (ホスト): まだだれも入っていない口のうち、招待を作ったものと、次の 1 つ
+  slotRows() {
+    const copyBtn = (id) => TR`<button data-net="copy" data-id="${id}">コピー</button>`;
+    const open = this.slots.filter((s) => !s.joined), next = open.find((s) => !s.offer);
+    return open.filter((s) => s.offer || s === next).map((s) => TR`<section><h3>招待 ${s.id + 1} <span class="muted">${esc(s.state)}</span></h3>
+      <div class="row"><button data-net="offer" data-i="${s.id}">招待コードを作る</button>${s.offer ? copyBtn(`netoffer${s.id}`) : ''}</div>
+      ${s.offer ? TR`<textarea id="netoffer${s.id}" readonly rows="3">${esc(s.offer)}</textarea>
+      <textarea id="netans${s.id}" rows="3" placeholder="相手の返事コードを貼る"></textarea><button data-net="answer" data-i="${s.id}">つなぐ</button>` : ''}</section>`).join('');
+  },
+  // 部屋にいる人 (ホスト): 名前と、選んだ国 (試合の途中は、動かしている国)。「外す」で部屋から外せる。list = nationList()
+  membersHtml(list) {
+    const rows = this.slots.filter((s) => s.joined).map((s) => {
+      const n = list.find((x) => x.slot === s.id);
+      return TR`<div class="row"><div class="info"><b>${esc(s.name || TR('ゲスト'))}</b> — ${n ? esc(n.name) : TR('国を選んでいる…')}</div><button class="ghost" data-net="kick" data-i="${s.id}">外す</button></div>`;
+    });
+    // 招待コードで入ってきて、つないでいる途中の人
+    const coming = this.slots.filter((s) => !s.joined && s.name).map((s) => `<p class="muted">${esc(s.name)}: ${esc(s.state)}</p>`);
+    return rows.join('') + coming.join('') || TR('<p class="muted">まだだれも入っていない</p>');
   },
   render() {
     const box = $('netbox');
@@ -381,32 +478,46 @@ const Net = {
     const g = app.game;
     const copyBtn = (id) => TR`<button data-net="copy" data-id="${id}">コピー</button>`;
     if (this.on) {
-      // 入っていない国 (ホストだけ。始めるときにつながっていなかった国と、途中で切れた国): 招待を作り直して入ってもらう
-      const left = this.role !== 'host' || !this.left.length ? ''
-        : TR`<h3>入っていない国</h3><p class="note">始めるときにつながっていなかった国と、途中で切れた国は、AI が動かしている。招待コードを作って相手に伝えると、その国に入れる (相手はホーム → マルチプレイ →「参加する」)。</p>
-        ${this.roomHtml(true)}
-        ${this.left.map((p, i) => `<section><h3>${esc(g.realmName(p.cap))}${p.guest ? ` — ${esc(p.guest)}` : ''} <span class="muted">${esc(p.state)}</span></h3>
-          ${this.room || this.roomBusy ? '' : TR`<div class="row"><button class="ghost" data-net="reoffer" data-i="${i}">長い招待コードを作り直す (手で渡す)</button>${p.offer ? copyBtn(`netreoffer${i}`) : ''}</div>
-          ${p.offer ? TR`<textarea id="netreoffer${i}" readonly rows="3">${esc(p.offer)}</textarea>
-          <textarea id="netreans${i}" rows="3" placeholder="相手の返事コードを貼る"></textarea><button data-net="reanswer" data-i="${i}">つなぐ</button>` : ''}`}</section>`).join('')}`;
+      // あとから入る人・戻る人 (ホストだけ): 招待コードで部屋に入り、AI が動かしている国を選ぶと、その国で入る
+      const late = this.role !== 'host' ? ''
+        : TR`<h3>部屋にいる人</h3>${this.membersHtml(this.nationList())}
+        <h3>あとから入る人・戻る人</h3><p class="note">招待コードで部屋に入り、AI が動かしている国を選ぶと、その国で入れる (遅れて来た人も、切れた人も同じ。相手はホーム → マルチプレイ →「参加する」)。</p>
+        ${this.roomHtml(true)}${this.room || this.roomBusy ? '' : this.slotRows()}`;
       box.innerHTML = TR`<div class="card"><h2>ネット対戦</h2><p>${esc(ME.realm)}として${this.role === 'host' ? TR('ホストをしている') : TR('参加している')} (${this.role === 'host' ? this.peers.length + 1 : '?'} 人)。コマ ${this.k}・合わせ直し ${this.resyncs} 回</p>
-        <p class="note">${this.role === 'host' ? TR('速さはホストが決める。') : TR('速さのボタンを押すと、ホストに頼む。')}ネット対戦のあいだは、ホーム画面の新しいゲーム・ロードは使えない。</p>${left}<div class="row"><button data-net="close">閉じる</button></div></div>`;
+        <p class="note">${this.role === 'host' ? TR('速さはホストが決める。') : TR('速さのボタンを押すと、ホストに頼む。')}ネット対戦のあいだは、ホーム画面の新しいゲーム・ロードは使えない。</p>${late}<div class="row"><button data-net="close">閉じる</button></div></div>`;
       return;
     }
     if (this.role === 'host') {
-      const ready = this.peers.filter((p) => p.dc?.readyState === 'open').length;
+      const list = this.nationList();
+      const inRoom = this.slots.filter((s) => s.joined), ready = inRoom.filter((s) => s.pick !== null).length;
       const hand = this.manual || !Cloud.available(); // 長いコードを手で渡す方法を出す
+      const who = (n) => (n.st === 'host' ? TR('あなた') : n.st === 'taken' ? esc(n.who || TR('ゲスト')) : n.st === 'gone' ? TR('もう国ではない') : TR('AI (だれも選んでいない)'));
       box.innerHTML = TR`<div class="card"><h2>ネット対戦 (ホスト)</h2>${this.roomHtml(false)}
-        ${hand ? TR`<p class="note">相手ごとに「招待コードを作る」→ コードを相手に渡す (メッセージアプリなどで) → 相手が作った返事コードを下に貼って「つなぐ」。全員つながったら「はじめる」。あなたは <b>${esc(g.realmName(g.cap))}</b>。</p>` : TR`<p class="note">あなたは <b>${esc(g.realmName(g.cap))}</b>。相手がつながると、国の名前の横に「つながった」と出る。全員つながったら「はじめる」。</p>`}
-        ${this.peers.map((p, i) => `<section><h3>${esc(g.realmName(p.cap))}${p.guest ? ` — ${esc(p.guest)}` : ''} <span class="muted">${esc(p.state)}</span></h3>
-          ${p.dc?.readyState === 'open' || !hand ? '' : TR`<div class="row"><button data-net="offer" data-i="${i}">招待コードを作る</button>${p.offer ? copyBtn(`netoffer${i}`) : ''}</div>
-          ${p.offer ? TR`<textarea id="netoffer${i}" readonly rows="3">${esc(p.offer)}</textarea>
-          <textarea id="netans${i}" rows="3" placeholder="相手の返事コードを貼る"></textarea><button data-net="answer" data-i="${i}">つなぐ</button>` : ''}`}</section>`).join('')}
-        <div class="row"><button class="big" data-net="start">はじめる (${ready + 1} 人${ready < this.peers.length ? TR('・つながっていない国は AI') : ''})</button><button data-net="close" class="ghost">閉じる</button></div>${NET_HELP()}</div>`;
+        ${hand ? TR`<p class="note">相手ごとに「招待コードを作る」→ コードを相手に渡す (メッセージアプリなどで) → 相手が作った返事コードを下に貼って「つなぐ」。つながった人は部屋に入り、動かす国を自分で選ぶ。あなたは <b>${esc(g.realmName(g.cap))}</b>。</p>${this.slotRows()}` : TR`<p class="note">あなたは <b>${esc(g.realmName(g.cap))}</b>。部屋に入った人は、動かす国を自分で選ぶ。みなが選んだら「はじめる」。</p>`}
+        <h3>部屋にいる人</h3>${this.membersHtml(list)}
+        <h3>国</h3><ul class="lobbynat">${list.map((n) => `<li class="${n.st}"><b>${esc(n.name)}</b> <span class="muted">${esc(n.sp)}</span> — ${who(n)}</li>`).join('')}</ul>
+        <div class="row"><button class="big" data-net="start">はじめる (${ready + 1} 人${ready < inRoom.length ? TR('・国を選んでいない人は、あとから入れる') : ''})</button><button data-net="close" class="ghost">閉じる</button></div>
+        <p class="note">選ばれなかった国は AI が動かす。始めたあとも、同じ招待コードで部屋に入って AI の国を選べば、その国で入れる。</p>${NET_HELP()}</div>`;
       return;
     }
     const peer = this.peers[0];
-    if (this.room && this.role === 'guest') { // 招待コードで入った: 手で渡すコードは要らない
+    if (this.role === 'guest' && this.lobby) { // 部屋に入った: 動かす国を選ぶ
+      const L = this.lobby, mine = L.nations.find((n) => n.slot === L.you);
+      const row = (n) => {
+        const me = n.slot === L.you;
+        const lab = me ? TR('あなた') : n.st === 'host' ? TR`ホスト${n.who ? ` (${esc(n.who)})` : ''}` : n.st === 'taken' ? esc(n.who || TR('ゲスト')) : n.st === 'gone' ? TR('もう国ではない') : TR('AI (選べる)');
+        const btn = me ? TR('<button class="ghost" data-net="pick" data-cap="">やめる</button>') : n.st === 'free' ? `<button data-net="pick" data-cap="${n.cap}">${L.on ? TR('この国で入る') : TR('この国にする')}</button>` : '';
+        const traits = (n.tr || []).map((t) => SPECIES_TRAITS[t]?.label).filter(Boolean).join(TR('・'));
+        return `<div class="lrow ${me ? 'on' : n.st}"><div class="info"><b>${esc(n.name)}</b> <span class="muted">${esc(n.sp)}${traits ? ` (${traits})` : ''}</span><br><span class="who">${lab}</span></div>${btn}</div>`;
+      };
+      box.innerHTML = TR`<div class="card"><h2>ネット対戦の部屋</h2>
+        <p>${L.on ? TR`試合は始まっている (西暦 ${Math.floor(L.year)} 年)。AI が動かしている国を選ぶと、その国で入る。` : mine ? TR`<b>${esc(mine.name)}</b>を選んだ。ホストが始めるのを待つ (ほかの国に変えてもよい)。` : TR('動かす国を選ぶ。選んだら、ホストが始めるのを待つ。')}</p>
+        ${L.note === 'taken' ? TR('<p class="bad">その国は選べない (ほかの人が先に選んだ)。ほかの国を選ぶ。</p>') : ''}
+        <div class="lobby">${L.nations.map(row).join('')}</div>
+        <div class="row"><button data-net="leavejoin" class="ghost">部屋を出る</button><button data-net="close" class="ghost">閉じる</button></div>${NET_HELP()}</div>`;
+      return;
+    }
+    if (this.room && this.role === 'guest') { // 招待コードを入れた: つながるのを待っている
       box.innerHTML = TR`<div class="card"><h2>ネット対戦に参加</h2><p>${esc(this.status)}${peer ? ` <span class="muted">(${esc(peer.state)})</span>` : ''}</p>
         <div class="row"><button data-net="leavejoin" class="ghost">コードを入れ直す</button><button data-net="close" class="ghost">閉じる</button></div>${NET_HELP()}</div>`;
       return;
@@ -414,8 +525,8 @@ const Net = {
     // 参加: 招待コード (4 文字) を入れるだけ。長いコードを貼る方法は、たたんでおく (オンラインの部屋が使えない版では、そのまま出す)
     const codeBox = !Cloud.available() ? ''
       : TR`<section class="invite"><div class="row"><input id="netcode" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="招待コード (4 文字)" value="${esc(this.codeIn)}"><input id="netname" maxlength="20" placeholder="名前 (なくてもよい)" value="${esc(this.nameIn || Cloud.user?.name || '')}"><button class="big" data-net="roomjoin" ${this.joining ? 'disabled' : ''}>${this.joining ? TR('つないでいる…') : TR('参加する')}</button></div>
-        <p class="note">ホストからもらった 4 文字の招待コードを入れる。ログインは要らない。名前は、ホストの画面に出る。</p>${this.joinErr ? `<p class="bad">${esc(this.joinErr)}</p>` : ''}</section>`;
-    const hand = TR`<p class="note">ホストからもらった招待コードを貼って「返事コードを作る」。できた返事コードをホストに渡す。</p>
+        <p class="note">ホストからもらった 4 文字の招待コードを入れると、部屋に入る。動かす国は、部屋の中で選ぶ。ログインは要らない。名前は、ほかの人の画面に出る。</p>${this.joinErr ? `<p class="bad">${esc(this.joinErr)}</p>` : ''}</section>`;
+    const hand = TR`<p class="note">ホストからもらった招待コードを貼って「返事コードを作る」。できた返事コードをホストに渡す。つながったら、部屋で国を選ぶ。</p>
       <textarea id="netinvite" rows="3" placeholder="招待コードを貼る"></textarea><div class="row"><button data-net="join">返事コードを作る</button>${codeBox ? '' : TR('<button data-net="close" class="ghost">閉じる</button>')}</div>
       ${peer?.answer ? TR`<h3>返事コード ${copyBtn('netanswer')}</h3><textarea id="netanswer" readonly rows="3">${esc(peer.answer)}</textarea>` : ''}
       <p class="muted">${esc(this.status)}${peer ? ` (${esc(peer.state)})` : ''}</p>`;
@@ -430,16 +541,16 @@ $('netbox').onclick = async (e) => {
   const act = b.dataset.net;
   const i = Number(b.dataset.i);
   if (act === 'copy') { const t = $(b.dataset.id); t.select(); try { await navigator.clipboard.writeText(t.value); } catch { document.execCommand?.('copy'); } b.textContent = TR('コピーした'); return; }
-  if (act === 'close') { if (!Net.on && Net.role === 'host') Net.leaveRoom(); $('netbox').hidden = true; return; } // 始める前にホストが閉じたら、招待コードの部屋もやめる
-  if (act === 'room') { Net.manual = false; return Net.autoRoom(); } // 招待コードを作る・作り直す (試合の途中なら、入っていない国の席だけ)
+  if (act === 'close') { if (!Net.on && Net.role === 'host') Net.closeHost(); $('netbox').hidden = true; return; } // 始める前にホストが閉じたら、部屋もやめる
+  if (act === 'room') { Net.manual = false; return Net.autoRoom(); } // 招待コードを作る・作り直す (入っている人はそのまま)
   if (act === 'manual') return Net.toManual(); // 長いコードを手で渡す方法に切りかえる
   if (act === 'copycode') { try { await navigator.clipboard.writeText(Net.room.code); } catch { /* 写せない環境では、見て伝える */ } b.textContent = TR('コピーした'); return; }
   if (act === 'roomjoin') return Net.joinCode($('netcode').value, $('netname')?.value || '');
   if (act === 'leavejoin') return Net.leaveJoin();
-  if (act === 'offer') { b.disabled = true; b.textContent = TR('作っている…'); return Net.makeOffer(Net.peers[i]); }
-  if (act === 'answer') return Net.takeAnswer(Net.peers[i], $(`netans${i}`).value);
-  if (act === 'reoffer') { b.disabled = true; b.textContent = TR('作っている…'); return Net.makeOffer(Net.left[i]); }
-  if (act === 'reanswer') return Net.takeAnswer(Net.left[i], $(`netreans${i}`).value);
+  if (act === 'pick') return Net.sendPick(b.dataset.cap === '' ? null : Number(b.dataset.cap)); // 部屋で国を選ぶ・やめる
+  if (act === 'kick') return Net.kick(Net.slots[i]);
+  if (act === 'offer') { b.disabled = true; b.textContent = TR('作っている…'); return Net.makeOffer(Net.slots[i]); }
+  if (act === 'answer') return Net.takeAnswer(Net.slots[i], $(`netans${i}`).value);
   if (act === 'start') return Net.start();
   if (act === 'join') { b.disabled = true; b.textContent = TR('作っている…'); return Net.join($('netinvite').value); }
 };
