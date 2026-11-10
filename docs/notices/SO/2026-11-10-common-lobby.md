@@ -11,6 +11,8 @@
 - 部屋は始めたあとも開いている (`start` で `leaveRoom` しない)。切れた人の口には `reseat` で新しい招待が置き直されるので、同じ招待コードで戻れる。
 - `outward/cloud.js`: 席の文書は `seats/{口の番号}` で、中身は `offer`・取った人の `uid`・`name`・`answer` (国の名前 `realm` は入れない)。部屋の文書の `seats` は `[{ pi: 口の番号 }]`。`firestore.rules` はそのまま。
 - `outward/lang-en.js`: 38 の鍵 (部屋の画面・国家選択・マルチプレイと友達と遊ぶの頁)。「この国にする」= Choose this nation・「この国で入る」= Join as this nation・「外す」= Remove・「部屋を出る」= Leave room。校正のときに見てほしい。
+- 続き (小さな PR): `nationList()` の国ごとの項目に、選ぶ手がかり `home` (首都のある星系の名前)・`pop` (人口)・`sys` (星系の数)・`stars` (難しさの目安。`screen/nation-pick.js` の `nationRating`) を足し、
+  参加者の国の行に出す (特性は名前と効き目を 1 つ 1 行で)。前の版のホストから来た一覧 (項目がない) では、手がかりの行を出さないだけ。英語の鍵を 1 つ足した (「首都 {0}・人口 {1}・星系 {2}・難しさの目安 {3}」= Capital {0} · population {1} · systems {2} · difficulty {3})。
 - 試験 `tools/tests/net.js`・`tools/tests/cloud.js` を部屋の流れに直した (国を選ぶ・選び直す・選ばれた国だけが人間の席・同じコードで戻る・AI の国に途中参加)。
 
 読んだら消してよい。

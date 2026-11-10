@@ -136,10 +136,10 @@
 | `screen/playlog.js` | 画面と最初の体験 | 159 | プレイ記録 (同意の画面はここに) |
 | `screen/nationlib.js` | 画面と最初の体験 | 88 | 自作の国 |
 | `screen/home.js` | 画面と最初の体験 | 85 | ホーム画面 |
-| `screen/nation-pick.js` | 画面と最初の体験 | 199 | 国家選択・国のアレンジ |
+| `screen/nation-pick.js` | 画面と最初の体験 | 213 | 国家選択・国のアレンジ・難しさの目安 (`nationRating`。ネット対戦の部屋の国の一覧でも使う) |
 | `screen/hotseat.js` | 画面と最初の体験 | 273 | ホットシート |
 | `outward/cloud.js` | 外向き | 293 | アカウントとクラウド (Firebase)・招待コード (4 文字) の部屋・ゲストの自動ログイン |
-| `outward/net.js` | 外向き | 557 | ネット対戦 (WebRTC)・部屋 (つながる口と、部屋の中で国を選ぶやりとり)・招待コードでつなぐ画面 (長いコードの手渡しは予備) |
+| `outward/net.js` | 外向き | 563 | ネット対戦 (WebRTC)・部屋 (つながる口と、部屋の中で国を選ぶやりとり)・招待コードでつなぐ画面 (長いコードの手渡しは予備) |
 | `outward/trial.js` | 外向き | 26 | 体験版 (回 SO4・B-082。`docs/trial.md`): 出さないホームの頁・終わりの年の選び (endChoices)・読めるセーブ (trialSaveOk)・終わりの画面の案内 (trialEndPatch)。`TRIAL` は core/base.js |
 | `ship/treaty-ui.js` | 船と戦争 | 32 | 講和会議で条件を選ぶ画面 |
 | `screen/commands-ui.js` | 画面と最初の体験 | 256 | 命令の入口 (ボタンから指令へ) |

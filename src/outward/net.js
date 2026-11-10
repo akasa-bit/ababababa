@@ -188,7 +188,9 @@ const Net = {
     return (g.nations || []).map((n) => {
       const s = this.slots.find((x) => x.joined && (x.pi != null ? x.cap === n.cap : x.pick === n.cap));
       const st = n.cap === hostCap ? 'host' : s ? 'taken' : !g.realmAlive(n.cap) ? 'gone' : 'free';
-      return { cap: n.cap, name: n.name, sp: n.species, tr: n.traits || [], st, who: st === 'host' ? this.myName() : s?.name || '', slot: s ? s.id : null };
+      // 選ぶ手がかり: 首都のある星系・いまの人口と星系の数・難しさの目安 (国家選択のカードと同じ。screen/nation-pick.js の nationRating)
+      return { cap: n.cap, name: n.name, sp: n.species, tr: n.traits || [], st, who: st === 'host' ? this.myName() : s?.name || '', slot: s ? s.id : null,
+        home: g.system(n.cap).name, pop: g.colonies.reduce((k, c) => (g.realmOf(c.sys) === n.cap ? k + c.pop : k), 0), sys: g.realmSystems(n.cap).length, stars: nationRating(g, n).stars };
     });
   },
   lobbyMsg(slot, note = '') { return { t: 'lobby', on: this.on, you: slot.id, year: app.game.year, nations: this.nationList(), note }; },
@@ -507,8 +509,10 @@ const Net = {
         const me = n.slot === L.you;
         const lab = me ? TR('あなた') : n.st === 'host' ? TR`ホスト${n.who ? ` (${esc(n.who)})` : ''}` : n.st === 'taken' ? esc(n.who || TR('ゲスト')) : n.st === 'gone' ? TR('もう国ではない') : TR('AI (選べる)');
         const btn = me ? TR('<button class="ghost" data-net="pick" data-cap="">やめる</button>') : n.st === 'free' ? `<button data-net="pick" data-cap="${n.cap}">${L.on ? TR('この国で入る') : TR('この国にする')}</button>` : '';
-        const traits = (n.tr || []).map((t) => SPECIES_TRAITS[t]?.label).filter(Boolean).join(TR('・'));
-        return `<div class="lrow ${me ? 'on' : n.st}"><div class="info"><b>${esc(n.name)}</b> <span class="muted">${esc(n.sp)}${traits ? ` (${traits})` : ''}</span><br><span class="who">${lab}</span></div>${btn}</div>`;
+        // 選ぶ手がかり (数字はホストが送ってくる): 首都・人口・星系の数・難しさの目安。特性は、名前と効き目を 1 つ 1 行で。もう国ではない国には出さない
+        const facts = n.stars && n.st !== 'gone' ? `<div class="facts">${TR`首都 ${esc(n.home)}・人口 ${fmtPop(n.pop)}・星系 ${n.sys}・難しさの目安 ${'★'.repeat(n.stars) + '☆'.repeat(3 - n.stars)}`}</div>` : '';
+        const what = n.st === 'gone' ? '' : (n.tr || []).map((t) => SPECIES_TRAITS[t]).filter(Boolean).map((t) => `<div class="facts"><b>${TX(t.label)}</b>: ${TX(t.desc)}</div>`).join('');
+        return `<div class="lrow ${me ? 'on' : n.st}"><div class="info"><b>${esc(n.name)}</b> <span class="muted">${esc(n.sp)}</span> <span class="who">${lab}</span>${facts}${what}</div>${btn}</div>`;
       };
       box.innerHTML = TR`<div class="card"><h2>ネット対戦の部屋</h2>
         <p>${L.on ? TR`試合は始まっている (西暦 ${Math.floor(L.year)} 年)。AI が動かしている国を選ぶと、その国で入る。` : mine ? TR`<b>${esc(mine.name)}</b>を選んだ。ホストが始めるのを待つ (ほかの国に変えてもよい)。` : TR('動かす国を選ぶ。選んだら、ホストが始めるのを待つ。')}</p>

@@ -2951,6 +2951,7 @@ const I18N_EN = {
 "<button class=\"ghost\" data-net=\"pick\" data-cap=\"\">やめる</button>": "<button class=\"ghost\" data-net=\"pick\" data-cap=\"\">Cancel choice</button>",
 "この国で入る": "Join as this nation",
 "この国にする": "Choose this nation",
+"首都 {0}・人口 {1}・星系 {2}・難しさの目安 {3}": "Capital {0} · population {1} · systems {2} · difficulty {3}",
 "試合は始まっている (西暦 {0} 年)。AI が動かしている国を選ぶと、その国で入る。": "The match has started (year {0}). Choose a nation the AI is running to join as that nation.",
 "<b>{0}</b>を選んだ。ホストが始めるのを待つ (ほかの国に変えてもよい)。": "You chose <b>{0}</b>. Waiting for the host to start (you can still change to another nation).",
 "動かす国を選ぶ。選んだら、ホストが始めるのを待つ。": "Choose the nation you will play. Then wait for the host to start.",

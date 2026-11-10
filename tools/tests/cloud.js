@@ -130,10 +130,13 @@ const fake = () => {
   await H.waitForFunction((c) => Net.slots.some((s) => s.joined && s.pick === c), caps[2], { timeout: 15000 });
   await H.waitForTimeout(300);
   out.hostSees = await H.evaluate(() => Net.slots.find((s) => s.joined)?.name);
-  // lobby: [ホストの国は選べない, 選び直した国がホストに届いた, ホストの画面に名前と国が並ぶ, 参加者の画面で自分の国に印が付く]
+  // 国の行に出る、選ぶ手がかり (首都・人口・星系の数・難しさの目安・特性の効き目)。数字はホストの試合のもの (参加者の手元の試合は、始まるまで別物)
+  const facts = await H.evaluate(() => __app.game.nations.map((n) => { const g = __app.game; return { cap: n.cap, home: g.system(n.cap).name, pop: fmtPop(g.colonies.reduce((k, c) => (g.realmOf(c.sys) === n.cap ? k + c.pop : k), 0)), sys: g.realmSystems(n.cap).length, stars: nationRating(g, n).stars, trait: n.traits.map((t) => SPECIES_TRAITS[t].desc) }; }));
+  const rowsOk = await G.evaluate((facts) => { const rows = [...document.querySelectorAll('#netbox .lrow')]; return rows.length === facts.length && facts.every((f, i) => { const t = rows[i].innerText; return Net.lobby.nations[i].cap === f.cap && f.stars >= 1 && f.stars <= 3 && f.sys >= 1 && t.includes(`首都 ${f.home}`) && t.includes(`人口 ${f.pop}`) && t.includes(`星系 ${f.sys}`) && t.includes(`難しさの目安 ${'★'.repeat(f.stars)}${'☆'.repeat(3 - f.stars)}`) && f.trait.every((d) => t.includes(d)); }); }, facts);
+  // lobby: [ホストの国は選べない, 選び直した国がホストに届いた, ホストの画面に名前と国が並ぶ, 参加者の画面で自分の国に印が付く, 国の行に選ぶ手がかりがホストの数字で出る]
   out.lobby = [!hostFree, await H.evaluate((c) => Net.slots.filter((s) => s.joined).map((s) => s.pick).join() === String(c), caps[2]),
     await H.evaluate(() => { const t = document.querySelector('#netbox .card').innerText; return t.includes('参加さん') && t.includes(__app.game.nationOf(Net.slots.find((s) => s.joined).pick).name); }),
-    await G.evaluate((c) => Net.lobby.nations.find((n) => n.slot === Net.lobby.you)?.cap === c && !!document.querySelector('#netbox .lrow.on'), caps[2])];
+    await G.evaluate((c) => Net.lobby.nations.find((n) => n.slot === Net.lobby.you)?.cap === c && !!document.querySelector('#netbox .lrow.on'), caps[2]), rowsOk];
   out.auto.push(await G.evaluate(() => Cloud.user?.guest === true), out.hostSees === '参加さん'); // 参加者もゲストで自動ログイン・名前がホストに出る
   await G.screenshot({ path: `${SHOTS}/cloud-room-picked.png` });
   await H.screenshot({ path: `${SHOTS}/cloud-room-ready.png` });
