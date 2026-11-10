@@ -301,6 +301,15 @@ const Net = {
   },
   // 部屋で国を選ぶ (cap が null なら、選ぶのをやめる)。決めるのはホスト (lobby の知らせが返る)
   sendPick(cap) { this.send(this.peers[0], { t: 'pick', cap }); },
+  // ホストから届いた部屋の一覧 (lobby) は、型をそろえてから持つ: 相手の端末から来たものを、そのまま画面の HTML に入れない
+  // (数は数に・状態は決まった 4 つだけ・特性は表にあるものだけ。名前は字にして、描くときに esc する)。前の版のホストは手がかり (home・pop・sys・stars) を送らない
+  lobbyIn(m) {
+    const str = (x) => String(x ?? '').slice(0, 80), num = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
+    const nation = (n) => ({ cap: num(n?.cap), name: str(n?.name), sp: str(n?.sp), tr: (Array.isArray(n?.tr) ? n.tr : []).filter((t) => typeof t === 'string' && Object.prototype.hasOwnProperty.call(SPECIES_TRAITS, t)),
+      st: ['host', 'taken', 'free', 'gone'].includes(n?.st) ? n.st : 'gone', who: str(n?.who), slot: n?.slot == null ? null : num(n.slot),
+      home: str(n?.home), pop: Math.max(0, num(n?.pop)), sys: Math.max(0, Math.round(num(n?.sys))), stars: clamp(Math.round(num(n?.stars)), 0, 3) });
+    return { on: !!m.on, you: num(m.you), year: num(m.year), note: str(m.note), nations: (Array.isArray(m.nations) ? m.nations : []).slice(0, 64).map(nation) };
+  },
   // --- 通信 ---
   receive(peer, m) {
     if (this.role === 'host') {
@@ -312,7 +321,7 @@ const Net = {
       else if (m.t === 'speed') { setSpeed(SPEEDS.includes(m.v) ? m.v : 0); uiNote(TR`${app.game.realmName(app.game.players[peer.pi].cap)}が速さを変えた`); }
       return;
     }
-    if (m.t === 'lobby') { if (!this.on) { this.lobby = m; this.redraw(); } return; }
+    if (m.t === 'lobby') { if (!this.on) { this.lobby = this.lobbyIn(m); this.redraw(); } return; }
     if (m.t === 'bye') return this.lost(peer, TR('ホストが部屋から外した'));
     if (m.t === 'init') return this.applyState(m);
     if (m.t === 'f') this.inbox.push(m);
