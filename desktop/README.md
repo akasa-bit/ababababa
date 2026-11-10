@@ -34,7 +34,7 @@ npm run package:linux   # → desktop/electron/out/NoLongerUbiquitous-linux-x64/
 - 組み立てた `index.html` は圧縮してあり、中の `<link>` を書き換えられない。そこで `electron/main.js` が `https` の読み込みを横取りし、`fonts.googleapis.com/css2` には同梱の `fonts.css` を、字体のファイルには同梱のファイルを返す。ほかの `https` はそのままネットへ出す。
 - 確かめ方: `xvfb-run -a node desktop/check.mjs [包装した実行ファイル]` (下の 1-4。回 SO2 で、字体だけでなくゲームが動くかも見る形にした)。ネットへの読み込みを全部止めた状態で開き、4 つの字体で日本語と英数字が描けること、6 つの字体と太さが読めたこと、Google Fonts の CSS を横取りしたことを見る。2026-10-22 に、`electron .` と包装した Linux 版の両方で合格 (CSS 1 回・字体のファイル 82 個。ほかのネットへの読み込みなし)。包装の大きさは 292 → 302 MB。
 - 字体の版を上げるとき: `electron/package.json` の `@fontsource/*` を同じ版の組で上げ、`check.mjs` を回す。ゲームが字体や太さを変えたら (`src/index.html` の `<link>`)、`prepare.mjs` の `FONTS` も合わせる。
-- **Firebase の SDK** (アカウント機能。`src/outward/cloud.js` の `FB_SDK`) は同梱しない。クラウドのセーブと部屋のコードはネットがないと使えないので、オフラインで SDK だけあっても意味がない。いまは設定がなく隠れている (QD-23)。設定を入れたあとは、起動のときに SDK を読みにいく (`Cloud.init`)。ネットがなければアカウントの画面に「Firebase につなげなかった」と出るだけで、ゲームのほかの所は動く (読めなかったときは、そこで止まる作り)。
+- **Firebase の SDK** (アカウント機能。`src/outward/cloud.js` の `FB_SDK`) は同梱しない。クラウドのセーブと招待コードの部屋はネットがないと使えないので、オフラインで SDK だけあっても意味がない。いまは設定がなく隠れている (QD-23)。設定を入れたあとは、起動のときに SDK を読みにいく (`Cloud.init`)。ネットがなければアカウントの画面に「Firebase につなげなかった」と出るだけで、ゲームのほかの所は動く (読めなかったときは、そこで止まる作り)。
 
 ## 1-3. ストアの画像を撮る (B-079。回 SO1)
 

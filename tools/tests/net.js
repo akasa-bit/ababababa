@@ -3,6 +3,8 @@
 // 参加者のタブが閉じたら AI に任せ、招待を作り直すと同じ国に戻れる・2400 年の終わりまで両方の端末でずれない (書き出しの表も同じ)
 // 回 AI5 (B-304): 参加者が外の国の首都の派閥に資金を出す命令 (meddle。回 AI4 の中の勢力への手) も、ホストと参加者の両方で同じく通り、筋がずれない
 // 回 DO9 (B-226): 参加者の威圧 (命令 coerce。回 AI8) も同じく。命令を数えるのは参加者の国から出た分だけ (AI の国の席の分は数えない)
+// 2026-11-10 の依頼 common-3 (HoI4 式の部屋): ホストは自分の国だけを決めて部屋を開く。参加者は、つながったあとに部屋の中で国を選ぶ。選ばれなかった国は AI の席になる。
+// 切れた参加者は、作り直した招待でつながり、部屋で同じ国 (AI が動かしている) を選ぶと戻る (途中参加)
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
 exports.ci = [{
@@ -14,8 +16,9 @@ exports.ci = [{
     if (!/^coerce \[true\] \[true\]$/m.test(o)) return '参加者の威圧 (命令 coerce) が、ホストと参加者の両方で通っていない';
     if (!/^pause 0 0$/m.test(o)) return 'ホストが止めても参加者の速さが止まらない';
     if (!/^consent true true$/m.test(o)) return 'ネット対戦で記録の同意を聞いていない';
-    if (!/^late 1 false 1$/m.test(o)) return '始めるときにつながっていない席を、AI に任せて入っていない席に残していない';
-    if (!/^drop false 0 2$/m.test(o)) return '参加者が切れたのに AI に任せていない';
+    if (!/^lobby true true$/m.test(o)) return '参加者が部屋の中で国を選べていない';
+    if (!/^late 2 false 1$/m.test(o)) return '始めるときに、選ばれた国だけが人間の席になっていない (選ばれなかった国は AI の席)';
+    if (!/^drop false 0 0$/m.test(o)) return '参加者が切れたのに AI に任せていない';
     const r = o.match(/^rejoin (\w+) (\w+) true$/m);
     if (!r || r[1] !== r[2]) return '招待を作り直して戻った参加者が、ホストとずれた';
     const e = o.match(/^end (\w+) (\w+) true true (\S+) (\S+)$/m);
@@ -39,9 +42,7 @@ const URL = `file://${HTML}?seed=11`;
   await H.selectOption('#home-end', '100'); // 短い試遊の版 (2400 年まで。回 GA11)。最後まで通す (回 SO5)
   await H.click('[data-home="new"]'); await H.waitForTimeout(400);
   const caps = await H.evaluate(() => __app.game.nations.map((n) => n.cap));
-  await H.click(`#pick [data-human="${caps[2]}"]`);
-  await H.click(`#pick [data-human="${caps[3]}"]`); // 3 人目の席は、始めるときにつながっていない (遅れて来る人。回 SO5)
-  await H.click('#pick [data-pick="net"]'); await H.waitForTimeout(300);
+  await H.click('#pick [data-pick="net"]'); await H.waitForTimeout(300); // 自分の国 (caps[0]) だけを決めて部屋を開く。ほかの人は部屋の中で国を選ぶ (依頼 common-3)
   await H.click('[data-net="offer"]');
   await H.waitForSelector('#netoffer0', { timeout: 15000 });
   const offer = await H.inputValue('#netoffer0');
@@ -53,12 +54,21 @@ const URL = `file://${HTML}?seed=11`;
   const answer = await G.inputValue('#netanswer');
   await G.screenshot({ path: 'shots/net-guest.png' });
   await H.fill('#netans0', answer); await H.click('[data-net="answer"]');
-  await H.waitForFunction(() => Net.peers[0].dc && Net.peers[0].dc.readyState === 'open', null, { timeout: 15000 });
+  await H.waitForFunction(() => Net.slots[0].joined, null, { timeout: 15000 });
+  // 参加者は部屋に入り、国の一覧から自分で選ぶ (ホストの国は選べない)。選んだ国がホストの画面に出る
+  await G.waitForSelector(`#netbox [data-net="pick"][data-cap="${caps[2]}"]`, { timeout: 15000 });
+  const hostPickable = await G.evaluate((c) => !!document.querySelector(`#netbox [data-net="pick"][data-cap="${c}"]`), await H.evaluate(() => __app.game.cap));
+  await G.screenshot({ path: 'shots/net-guest-lobby.png' });
+  await G.click(`#netbox [data-net="pick"][data-cap="${caps[2]}"]`);
+  await H.waitForFunction((c) => Net.slots[0].pick === c, caps[2], { timeout: 15000 });
+  await G.waitForFunction(() => Net.lobby?.nations.some((n) => n.slot === Net.lobby.you), null, { timeout: 15000 });
+  console.log('lobby', !hostPickable, await G.evaluate((c) => Net.lobby.nations.find((n) => n.slot === Net.lobby.you).cap === c, caps[2]));
   await H.waitForTimeout(300);
+  await H.screenshot({ path: 'shots/net-host-lobby.png' });
   await H.click('[data-net="start"]');
   await G.waitForFunction(() => Net.on, null, { timeout: 15000 });
   console.log('codes', offer.length, answer.length);
-  console.log('late', ...(await H.evaluate(() => [Net.left.length, Net.left.map((p) => __app.game.players[p.pi].human).join(','), Net.peers.length]))); // つながっていない席は AI に任せ、入っていない席として残る
+  console.log('late', ...(await H.evaluate((c) => [__app.game.humans().length, __app.game.players[__app.game.playerOf(c)].human, Net.peers.length], caps[3]))); // 人間の席は選ばれた国だけ (ホストと参加者)。選ばれなかった国は AI の席
   const chart = () => { const g = __app.game.galaxy; let h = 0; for (const ch of JSON.stringify(g.systems.map((s) => [s.name, s.x, s.y, s.z, s.stars.map((t) => t.cls)]))) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return `${g.kind} ${h}`; };
   console.log('galaxy', await H.evaluate(chart), await G.evaluate(chart)); // 親と参加者の星図
   const hook = () => { window.__st = {}; const orig = Net.hash.bind(Net); Net.hash = function () { const d = { ...buildSave(__app.game) }; for (const k of ['pi', 'savedAt', 'endShown', 'spectate', 'credits', ...PLAYER_KEYS]) delete d[k]; window.__st[this.k] = JSON.stringify(d); const ks = Object.keys(window.__st); if (ks.length > 30) delete window.__st[ks[0]]; return orig(); }; };
@@ -129,21 +139,23 @@ const URL = `file://${HTML}?seed=11`;
   // 参加者のタブが閉じた: ホストはつながりの failed で気づき、その国を AI に任せる
   const gpi = gi[0];
   await G.close();
-  await H.waitForFunction(() => Net.left.length === 2, null, { timeout: 90000 });
+  await H.waitForFunction(() => Net.peers.length === 0, null, { timeout: 90000 });
   await H.waitForTimeout(500);
-  console.log('drop', ...(await H.evaluate((pi) => [__app.game.players[pi].human, Net.peers.length, Net.left.length], gpi)));
-  // ホストが招待を作り直し、新しく開いた参加者が同じ国に戻る
+  console.log('drop', ...(await H.evaluate((pi) => [__app.game.players[pi].human, Net.peers.length, Net.slots.filter((s) => s.joined).length], gpi)));
+  // ホストが招待を作り直し、新しく開いた参加者がつながって、部屋で同じ国 (いまは AI が動かしている) を選んで戻る
   await H.evaluate(() => Net.render());
-  const li = await H.evaluate((pi) => Net.left.findIndex((p) => p.pi === pi), gpi);
-  await H.click(`[data-net="reoffer"][data-i="${li}"]`); await H.waitForSelector(`#netreoffer${li}`, { timeout: 15000 });
-  const offer2 = await H.inputValue(`#netreoffer${li}`);
+  const li = 0; // 切れた口は空いて、最初の口として出る
+  await H.click(`[data-net="offer"][data-i="${li}"]`); await H.waitForSelector(`#netoffer${li}`, { timeout: 15000 });
+  const offer2 = await H.inputValue(`#netoffer${li}`);
   await H.screenshot({ path: 'shots/net-host-rejoin.png' });
   const G2 = await mk(854, 1200);
   await G2.evaluate(() => { if ($('home').hidden) openHome(); app.homeTab = 'multi'; renderHome(); });
   await G2.click('[data-home="netjoin"]');
   await G2.fill('#netinvite', offer2); await G2.click('[data-net="join"]');
   await G2.waitForSelector('#netanswer', { timeout: 15000 });
-  await H.fill(`#netreans${li}`, await G2.inputValue('#netanswer')); await H.click(`[data-net="reanswer"][data-i="${li}"]`);
+  await H.fill(`#netans${li}`, await G2.inputValue('#netanswer')); await H.click(`[data-net="answer"][data-i="${li}"]`);
+  await G2.waitForSelector(`#netbox [data-net="pick"][data-cap="${gi[1]}"]`, { timeout: 20000 });
+  await G2.click(`#netbox [data-net="pick"][data-cap="${gi[1]}"]`);
   await G2.waitForFunction(() => Net.on, null, { timeout: 20000 });
   await H.evaluate(() => setSpeed(SPEEDS[4])); await G2.waitForTimeout(3000);
   await H.evaluate(() => setSpeed(0)); await H.waitForTimeout(500); await caught(G2);
