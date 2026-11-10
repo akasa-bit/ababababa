@@ -1,11 +1,15 @@
 // --- 国家選択 (銀河地図の上で国を選ぶ。時間は止めたまま) ---
+// 国の難しさの目安 (★ 1〜3) と、その元: 近い国が多いほど難しい (地球は議会・時代の課題などの手引きがあるぶん易しめ)。
+// 開始の大きさ (回 SE8・QD-111 = c) が小さいほど難しく、大きいほど易しい。国家選択のカードと、ネット対戦の部屋の国の一覧 (outward/net.js) で使う
+function nationRating(g, n) {
+  const others = g.nations.filter((m) => m.cap !== n.cap).map((m) => ({ m, d: g.sysDist(n.cap, m.cap) })).sort((a, b) => a.d - b.d);
+  const near = others[0], crowd = others.filter((o) => o.d < 25).length, size = n.size ?? 1;
+  const stars = clamp((n.cap === 0 ? 1 : 2) + (near && near.d < 18 ? 1 : 0) + (crowd >= 2 ? 1 : 0) + (size < 0.7 ? 1 : size > 1.4 ? -1 : 0), 1, 3);
+  return { near, crowd, size, stars };
+}
 function nationCard(g, n) {
   const cols = g.colonies.filter((c) => g.realmOf(c.sys) === n.cap);
-  const others = g.nations.filter((m) => m.cap !== n.cap).map((m) => ({ m, d: g.sysDist(n.cap, m.cap) })).sort((a, b) => a.d - b.d);
-  const near = others[0];
-  // 難しさの目安: 近い国が多いほど難しい (地球は議会・時代の課題などの手引きがあるぶん易しめ)。開始の大きさ (回 SE8・QD-111 = c) が小さいほど難しく、大きいほど易しい
-  const crowd = others.filter((o) => o.d < 25).length, size = n.size ?? 1;
-  const stars = clamp((n.cap === 0 ? 1 : 2) + (near && near.d < 18 ? 1 : 0) + (crowd >= 2 ? 1 : 0) + (size < 0.7 ? 1 : size > 1.4 ? -1 : 0), 1, 3);
+  const { near, crowd, size, stars } = nationRating(g, n);
   const home = g.target(n.cap, n.body)?.name || g.system(n.cap).name;
   const hm = app.picking.humans.includes(n.cap);
   return TR`<div class="nat ${app.picking.cap === n.cap ? 'on' : ''}" data-pick="${n.cap}">

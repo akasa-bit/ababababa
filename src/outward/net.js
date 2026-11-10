@@ -188,7 +188,9 @@ const Net = {
     return (g.nations || []).map((n) => {
       const s = this.slots.find((x) => x.joined && (x.pi != null ? x.cap === n.cap : x.pick === n.cap));
       const st = n.cap === hostCap ? 'host' : s ? 'taken' : !g.realmAlive(n.cap) ? 'gone' : 'free';
-      return { cap: n.cap, name: n.name, sp: n.species, tr: n.traits || [], st, who: st === 'host' ? this.myName() : s?.name || '', slot: s ? s.id : null };
+      // 選ぶ手がかり: 首都のある星系・いまの人口と星系の数・難しさの目安 (国家選択のカードと同じ。screen/nation-pick.js の nationRating)
+      return { cap: n.cap, name: n.name, sp: n.species, tr: n.traits || [], st, who: st === 'host' ? this.myName() : s?.name || '', slot: s ? s.id : null,
+        home: g.system(n.cap).name, pop: g.colonies.reduce((k, c) => (g.realmOf(c.sys) === n.cap ? k + c.pop : k), 0), sys: g.realmSystems(n.cap).length, stars: nationRating(g, n).stars };
     });
   },
   lobbyMsg(slot, note = '') { return { t: 'lobby', on: this.on, you: slot.id, year: app.game.year, nations: this.nationList(), note }; },
@@ -299,6 +301,15 @@ const Net = {
   },
   // 部屋で国を選ぶ (cap が null なら、選ぶのをやめる)。決めるのはホスト (lobby の知らせが返る)
   sendPick(cap) { this.send(this.peers[0], { t: 'pick', cap }); },
+  // ホストから届いた部屋の一覧 (lobby) は、型をそろえてから持つ: 相手の端末から来たものを、そのまま画面の HTML に入れない
+  // (数は数に・状態は決まった 4 つだけ・特性は表にあるものだけ。名前は字にして、描くときに esc する)。前の版のホストは手がかり (home・pop・sys・stars) を送らない
+  lobbyIn(m) {
+    const str = (x) => String(x ?? '').slice(0, 80), num = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
+    const nation = (n) => ({ cap: num(n?.cap), name: str(n?.name), sp: str(n?.sp), tr: (Array.isArray(n?.tr) ? n.tr : []).filter((t) => typeof t === 'string' && Object.prototype.hasOwnProperty.call(SPECIES_TRAITS, t)),
+      st: ['host', 'taken', 'free', 'gone'].includes(n?.st) ? n.st : 'gone', who: str(n?.who), slot: n?.slot == null ? null : num(n.slot),
+      home: str(n?.home), pop: Math.max(0, num(n?.pop)), sys: Math.max(0, Math.round(num(n?.sys))), stars: clamp(Math.round(num(n?.stars)), 0, 3) });
+    return { on: !!m.on, you: num(m.you), year: num(m.year), note: str(m.note), nations: (Array.isArray(m.nations) ? m.nations : []).slice(0, 64).map(nation) };
+  },
   // --- 通信 ---
   receive(peer, m) {
     if (this.role === 'host') {
@@ -310,7 +321,7 @@ const Net = {
       else if (m.t === 'speed') { setSpeed(SPEEDS.includes(m.v) ? m.v : 0); uiNote(TR`${app.game.realmName(app.game.players[peer.pi].cap)}が速さを変えた`); }
       return;
     }
-    if (m.t === 'lobby') { if (!this.on) { this.lobby = m; this.redraw(); } return; }
+    if (m.t === 'lobby') { if (!this.on) { this.lobby = this.lobbyIn(m); this.redraw(); } return; }
     if (m.t === 'bye') return this.lost(peer, TR('ホストが部屋から外した'));
     if (m.t === 'init') return this.applyState(m);
     if (m.t === 'f') this.inbox.push(m);
@@ -507,8 +518,10 @@ const Net = {
         const me = n.slot === L.you;
         const lab = me ? TR('あなた') : n.st === 'host' ? TR`ホスト${n.who ? ` (${esc(n.who)})` : ''}` : n.st === 'taken' ? esc(n.who || TR('ゲスト')) : n.st === 'gone' ? TR('もう国ではない') : TR('AI (選べる)');
         const btn = me ? TR('<button class="ghost" data-net="pick" data-cap="">やめる</button>') : n.st === 'free' ? `<button data-net="pick" data-cap="${n.cap}">${L.on ? TR('この国で入る') : TR('この国にする')}</button>` : '';
-        const traits = (n.tr || []).map((t) => SPECIES_TRAITS[t]?.label).filter(Boolean).join(TR('・'));
-        return `<div class="lrow ${me ? 'on' : n.st}"><div class="info"><b>${esc(n.name)}</b> <span class="muted">${esc(n.sp)}${traits ? ` (${traits})` : ''}</span><br><span class="who">${lab}</span></div>${btn}</div>`;
+        // 選ぶ手がかり (数字はホストが送ってくる): 首都・人口・星系の数・難しさの目安。特性は、名前と効き目を 1 つ 1 行で。もう国ではない国には出さない
+        const facts = n.stars && n.st !== 'gone' ? `<div class="facts">${TR`首都 ${esc(n.home)}・人口 ${fmtPop(n.pop)}・星系 ${n.sys}・難しさの目安 ${'★'.repeat(n.stars) + '☆'.repeat(3 - n.stars)}`}</div>` : '';
+        const what = n.st === 'gone' ? '' : (n.tr || []).map((t) => SPECIES_TRAITS[t]).filter(Boolean).map((t) => `<div class="facts"><b>${TX(t.label)}</b>: ${TX(t.desc)}</div>`).join('');
+        return `<div class="lrow ${me ? 'on' : n.st}"><div class="info"><b>${esc(n.name)}</b> <span class="muted">${esc(n.sp)}</span> <span class="who">${lab}</span>${facts}${what}</div>${btn}</div>`;
       };
       box.innerHTML = TR`<div class="card"><h2>ネット対戦の部屋</h2>
         <p>${L.on ? TR`試合は始まっている (西暦 ${Math.floor(L.year)} 年)。AI が動かしている国を選ぶと、その国で入る。` : mine ? TR`<b>${esc(mine.name)}</b>を選んだ。ホストが始めるのを待つ (ほかの国に変えてもよい)。` : TR('動かす国を選ぶ。選んだら、ホストが始めるのを待つ。')}</p>

@@ -12,7 +12,7 @@
 // CI での回し方と合否 (tools/ci-tests.js が拾う。書き方は docs/parallel.md の 7 の道具と検証)
 const J = require('../ci-judge');
 exports.ci = [{ args: (c) => [c.shots], judge: J.byJson((j) => j.sync[0][1] === j.sync[1][1] && j.roomKept === true && j.rejoin?.[0] === j.rejoin?.[1] && j.rejoin?.[2] === true
-  && j.code?.every((x) => x === true) && j.auto?.every((x) => x === true) && j.badJoin?.every((x) => x === true) && j.lobby?.every((x) => x === true) && j.reseat?.every((x) => x === true)
+  && j.code?.every((x) => x === true) && j.auto?.every((x) => x === true) && j.badJoin?.every((x) => x === true) && j.lobby?.every((x) => x === true) && j.hostile?.every((x) => x === true) && j.reseat?.every((x) => x === true)
   && j.seats?.every((x) => x === true) && j.hot?.every((x) => x === true) && j.kept === true && j.robot?.every((x) => x === true) && !j.errs.length, 'クラウドの結果が違う') }];
 if (require.main !== module) return;
 const ROOT = require('path').resolve(__dirname, '../..');
@@ -130,10 +130,28 @@ const fake = () => {
   await H.waitForFunction((c) => Net.slots.some((s) => s.joined && s.pick === c), caps[2], { timeout: 15000 });
   await H.waitForTimeout(300);
   out.hostSees = await H.evaluate(() => Net.slots.find((s) => s.joined)?.name);
-  // lobby: [ホストの国は選べない, 選び直した国がホストに届いた, ホストの画面に名前と国が並ぶ, 参加者の画面で自分の国に印が付く]
+  // 国の行に出る、選ぶ手がかり (首都・人口・星系の数・難しさの目安・特性の効き目)。数字はホストの試合のもの (参加者の手元の試合は、始まるまで別物)
+  const facts = await H.evaluate(() => __app.game.nations.map((n) => { const g = __app.game; return { cap: n.cap, home: g.system(n.cap).name, pop: fmtPop(g.colonies.reduce((k, c) => (g.realmOf(c.sys) === n.cap ? k + c.pop : k), 0)), sys: g.realmSystems(n.cap).length, stars: nationRating(g, n).stars, trait: n.traits.map((t) => SPECIES_TRAITS[t].desc) }; }));
+  const rowsOk = await G.evaluate((facts) => { const rows = [...document.querySelectorAll('#netbox .lrow')]; return rows.length === facts.length && facts.every((f, i) => { const t = rows[i].innerText; return Net.lobby.nations[i].cap === f.cap && f.stars >= 1 && f.stars <= 3 && f.sys >= 1 && t.includes(`首都 ${f.home}`) && t.includes(`人口 ${f.pop}`) && t.includes(`星系 ${f.sys}`) && t.includes(`難しさの目安 ${'★'.repeat(f.stars)}${'☆'.repeat(3 - f.stars)}`) && f.trait.every((d) => t.includes(d)); }); }, facts);
+  // ホストから届く部屋の一覧は、型をそろえてから描く (相手の端末から来た字が HTML にならない・おかしな数で描くのが止まらない)。確かめたら、元の一覧に戻す
+  // hostile: [2 行とも描けた, 差しこんだ札 (img・b) ができていない, 名前は字のまま見える, 数にした国の番号でボタンが出る, 知らない状態の国は選べない, 仕込んだ onerror が動いていない]
+  out.hostile = await G.evaluate(() => {
+    const keep = Net.lobby, bad = '<img src=x onerror="window.__pwned=1">', box = document.querySelector('#netbox');
+    Net.receive(Net.peers[0], { t: 'lobby', on: false, you: keep.you, year: bad, note: bad, nations: [
+      { cap: '1"><b id="inj1">x</b>', name: bad, sp: bad, tr: ['constructor', bad, 'miners'], st: 'free"><b id="inj2">x</b>', who: bad, slot: null, home: bad, pop: bad, sys: bad, stars: 99 },
+      { cap: '7', name: 'ふつうの国', sp: bad, tr: ['miners'], st: 'free', who: bad, slot: null, home: bad, pop: 5, sys: '<b id="inj3">x</b>', stars: 2.4 }] });
+    const rows = [...box.querySelectorAll('.lrow')];
+    const res = [rows.length === 2 && rows[1].querySelectorAll('.facts').length === 2, !box.querySelector('img, #inj1, #inj2, #inj3'), rows[0].innerText.includes('<img') && rows[1].innerText.includes('<img'),
+      !!box.querySelector('[data-net="pick"][data-cap="7"]'), !rows[0].querySelector('button') && rows[0].className === 'lrow gone'];
+    Net.lobby = keep; Net.redraw();
+    return res;
+  });
+  await G.waitForTimeout(300);
+  out.hostile.push(await G.evaluate(() => !window.__pwned && !!document.querySelector('#netbox .lrow.on')));
+  // lobby: [ホストの国は選べない, 選び直した国がホストに届いた, ホストの画面に名前と国が並ぶ, 参加者の画面で自分の国に印が付く, 国の行に選ぶ手がかりがホストの数字で出る]
   out.lobby = [!hostFree, await H.evaluate((c) => Net.slots.filter((s) => s.joined).map((s) => s.pick).join() === String(c), caps[2]),
     await H.evaluate(() => { const t = document.querySelector('#netbox .card').innerText; return t.includes('参加さん') && t.includes(__app.game.nationOf(Net.slots.find((s) => s.joined).pick).name); }),
-    await G.evaluate((c) => Net.lobby.nations.find((n) => n.slot === Net.lobby.you)?.cap === c && !!document.querySelector('#netbox .lrow.on'), caps[2])];
+    await G.evaluate((c) => Net.lobby.nations.find((n) => n.slot === Net.lobby.you)?.cap === c && !!document.querySelector('#netbox .lrow.on'), caps[2]), rowsOk];
   out.auto.push(await G.evaluate(() => Cloud.user?.guest === true), out.hostSees === '参加さん'); // 参加者もゲストで自動ログイン・名前がホストに出る
   await G.screenshot({ path: `${SHOTS}/cloud-room-picked.png` });
   await H.screenshot({ path: `${SHOTS}/cloud-room-ready.png` });

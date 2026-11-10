@@ -192,7 +192,7 @@ const Cloud = {
   // 席を見張る: 取った人の名前を出し (つながるまでのあいだ)、返事 (answer) が置かれたらつなぐ
   watchSeat(room, peer) {
     return this.api.watch(`rooms/${room.code}/seats/${peer.id}`, (d) => {
-      if (d?.name && !peer.joined) peer.name = d.name;
+      if (d?.name && !peer.joined) peer.name = String(d.name).slice(0, 20); // 席を取った人が書いた名前 (ほかの人の端末から来る字。描くときは esc する)
       if (d?.answer && peer.answered !== d.answer) { peer.answered = d.answer; Net.takeAnswer(peer, d.answer); } else Net.redraw();
     });
   },
